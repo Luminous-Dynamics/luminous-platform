@@ -37,10 +37,10 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 
 | Repo | Role | Flake? | Status |
 |------|------|--------|--------|
-| [sovereign-boot](https://github.com/Luminous-Dynamics/sovereign-boot) | Boot animation (DRM/KMS), fail-open state machine, Linux recovery executor | ✅ | Qualified (v0.3.4f) |
-| [nixward](https://github.com/Luminous-Dynamics/nixward) | Conscious NixOS management, machine contracts, warded node security | ✅ | Active |
+| [sovereign-boot](https://github.com/Luminous-Dynamics/sovereign-boot) | Boot animation (DRM/KMS), fail-open state machine, Linux recovery executor | ✅ | **Qualification blocked: extraction audit** |
+| [nixward](https://github.com/Luminous-Dynamics/nixward) | Conscious NixOS management, machine contracts, warded node security | ✅ | **Standalone hardening PR #2** |
 | [sovereign-ops](https://github.com/Luminous-Dynamics/sovereign-ops) | Fleet intent, ops console, Nixward receipt verification | 🔒 private | Incubating |
-| [luminous-edge](https://github.com/Luminous-Dynamics/luminous-edge) | Meta-flake composing the platform layer | ✅ | v0.1 |
+| [luminous-edge](https://github.com/Luminous-Dynamics/luminous-edge) | Meta-flake composing the platform layer | ✅ | **Integration qualification pending** |
 | [xenia-peer](https://github.com/Luminous-Dynamics/xenia-peer) | Sovereign operations daemon (H.264, PQC handshake, consent ledger) | ✅ | Active |
 | [xenia-wire](https://github.com/Luminous-Dynamics/xenia-wire) | Wire protocol | ✅ | Active |
 
@@ -50,7 +50,7 @@ Every platform component follows the same core safety rule:
 
 > **Platform components may observe host state; they must never be required for host boot.**
 
-- `sovereign-boot` — disabled by default; QEMU-gated before any host enable
+- `sovereign-boot` — disabled by default; QEMU qualification remains blocked until the extracted state/recovery implementation is independently buildable
 - `nixward` — read-only diagnosis by default; actuation requires explicit operator receipt
 - `sovereign-ops` — intent-only; never directly mutates NixOS configuration
 
@@ -79,7 +79,7 @@ inputs.nixward.url         = "github:Luminous-Dynamics/nixward";
 
 | luminous-edge | sovereign-boot | nixward | sovereign-ops | nixpkgs |
 |---------------|----------------|---------|---------------|---------|
-| v0.1 | v0.3.4f (605735c) | main (Aug 2026) | incubating | nixos-unstable |
+| v0.1 (f402cb0) | 605735c (**qualification re-audit required**) | ae60256 (**standalone PR #2**) | incubating | nixos-unstable |
 
 ## License
 
