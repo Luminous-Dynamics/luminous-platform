@@ -80,6 +80,57 @@ def _add(errors: list[str], path: str, message: str) -> None:
     errors.append(f"{path}: {message}")
 
 
+def consent_scope_payload(document: dict[str, Any]) -> dict[str, Any]:
+    """Build the exact party/recipient/field scope approved by the recorded consent."""
+    buyer = document["buyer"]
+    demand = document["demand"]
+    sharing = document["sharing"]
+    consent = sharing["consent"]
+    fields = set(sharing["shareable_fields"])
+    shared_data: dict[str, Any] = {}
+
+    if "product_reference" in fields:
+        shared_data["product_reference"] = demand["product_reference"]
+    if "aggregate_quantity" in fields:
+        shared_data["aggregate_quantity"] = {
+            "requested_quantity": demand["requested_quantity"],
+            "requested_unit_code": demand["requested_unit_code"],
+            "requested_unit_code_system": demand["requested_unit_code_system"],
+        }
+    if "destination_country" in fields:
+        shared_data["destination_country"] = demand["destination_country_code"]
+    if "destination_region" in fields:
+        shared_data["destination_region"] = demand.get("destination_region")
+    if "delivery_window" in fields:
+        shared_data["delivery_window"] = {
+            "start": demand.get("delivery_window_start"),
+            "end": demand.get("delivery_window_end"),
+        }
+    if "buyer_contact_via_platform" in fields:
+        shared_data["buyer_contact_via_platform"] = {"buyer_party_id": buyer["buyer_party_id"]}
+
+    return {
+        "schema": "luminous.sharing-consent-scope/v1",
+        "consent_id": consent["consent_id"],
+        "granted_by": consent["granted_by"],
+        "granted_at": consent["granted_at"],
+        "expires_at": consent["expires_at"],
+        "revocable": consent["revocable"],
+        "buyer_party_id": buyer["buyer_party_id"],
+        "buyer_legal_entity_id": buyer["buyer_legal_entity_id"],
+        "purpose": sharing["purpose"],
+        "recipient_scope": sharing["recipient_scope"],
+        "recipients": sorted(sharing["recipients"]),
+        "shareable_fields": sorted(fields),
+        "shared_data": shared_data,
+    }
+
+
+def consent_scope_sha256(document: dict[str, Any]) -> str:
+    """Hash the exact consent scope using RFC 8785 canonical JSON bytes."""
+    return hashlib.sha256(rfc8785.dumps(consent_scope_payload(document))).hexdigest()
+
+
 def purchase_scope_payload(document: dict[str, Any]) -> dict[str, Any]:
     """Return the fixed v1 projection that a single-use mandate must bind."""
     metadata = document["metadata"]
@@ -211,6 +262,14 @@ def validate_intent(
         _add(errors, "metadata.updated_at", "active intent must not claim a future update")
     if created and created > current:
         _add(errors, "metadata.created_at", "must not be in the future")
+
+    expected_consent_scope_digest = consent_scope_sha256(document)
+    if document["sharing"]["consent"]["scope_sha256"].lower() != expected_consent_scope_digest:
+        _add(
+            errors,
+            "sharing.consent.scope_sha256",
+            "does not match the RFC 8785 canonical consent scope; changing recipients, purpose, fields, buyer entity, or any approved field value requires fresh consent",
+        )
 
     consent_granted = timestamps.get("sharing.consent.granted_at")
     consent_expires = timestamps.get("sharing.consent.expires_at")
