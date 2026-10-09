@@ -58,8 +58,10 @@ jobs:
         run: |
           python tools/validate_cooperative_offer.py business-packs/cooperative-buying/fixtures/example-offer-zar.json > cooperative-offer-zar-validation.json
           python tools/validate_cooperative_offer.py business-packs/cooperative-buying/fixtures/example-offer-eur.json > cooperative-offer-eur-validation.json
+          python tools/validate_cooperative_purchase_intent.py business-packs/cooperative-buying/fixtures/example-nonbinding-interest.json > cooperative-purchase-intent-validation.json
           cat cooperative-offer-zar-validation.json
           cat cooperative-offer-eur-validation.json
+          cat cooperative-purchase-intent-validation.json
 
       - name: Check resolved dependency compatibility
         run: python -m pip check
@@ -77,6 +79,7 @@ jobs:
             profile-validation.json
             cooperative-offer-zar-validation.json
             cooperative-offer-eur-validation.json
+            cooperative-purchase-intent-validation.json
           if-no-files-found: error
           retention-days: 30
 
