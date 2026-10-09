@@ -166,21 +166,54 @@ jobs:
             exit 0
           fi
 
-          # Only clone direct submodules hosted in the caller's GitHub owner.
-          # This prevents a pull request from redirecting the audit runner to
-          # arbitrary Git hosts. Credentials are not persisted or forwarded.
+          # Only initialize direct submodules hosted in the caller's GitHub owner.
+          # This prevents a PR from redirecting the runner to arbitrary Git hosts.
           while IFS= read -r line; do
             url="${line#* }"
-            if [[ ! "$url" =~ ^https://github\\.com/${REPOSITORY_OWNER}/[A-Za-z0-9._-]+(\\.git)?$ ]]; then
+            if [[ ! "$url" =~ ^https://github[.]com/${REPOSITORY_OWNER}/[A-Za-z0-9._-]+([.]git)?$ ]]; then
               echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
               echo "incomplete_reason=submodule_url_not_allowlisted" | tee -a security-audit-results/summary.txt
               exit 2
             fi
-          done < <(git config -f .gitmodules --get-regexp '^submodule\\..*\\.url
+          done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]url$')
+
+          while IFS= read -r line; do
+            path="${line#* }"
+            if [[ ! "$path" =~ ^[A-Za-z0-9_./-]+$ || "$path" == /* || "$path" == *".."* ]]; then
+              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
+              echo "incomplete_reason=submodule_path_invalid" | tee -a security-audit-results/summary.txt
+              exit 2
+            fi
+          done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$')
+
+          if ! git submodule update --init; then
+            echo "submodule_audit_status=INCOMPLETE" | tee -a security-audit-results/summary.txt
+            echo "incomplete_reason=submodule_checkout_failed" | tee -a security-audit-results/summary.txt
+            exit 2
+          fi
+
+          while IFS= read -r line; do
+            path="${line#* }"
+            expected="$(git ls-files --stage -- "$path" | awk '$1 == "160000" {print $2}')"
+            if [[ -z "$expected" || ! -d "$path" ]]; then
+              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
+              echo "incomplete_reason=submodule_gitlink_missing" | tee -a security-audit-results/summary.txt
+              exit 2
+            fi
+            actual="$(git -C "$path" rev-parse HEAD)"
+            if [[ "$actual" != "$expected" ]]; then
+              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
+              echo "incomplete_reason=submodule_head_mismatch" | tee -a security-audit-results/summary.txt
+              exit 2
+            fi
+          done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$')
+
+          echo "submodule_audit_status=PASS" | tee -a security-audit-results/summary.txt
+
+      - name: Install pinned Rust toolchain
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
         with:
           toolchain: 1.96.0
-
       - name: Install pinned cargo-audit
         working-directory: ${{ runner.temp }}
         run: cargo install --locked cargo-audit --version 0.22.2
