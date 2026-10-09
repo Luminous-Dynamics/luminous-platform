@@ -270,7 +270,7 @@ The current upstream candidates were pinned for further evaluation (not adopted 
 - `waywallen` v0.4.4: commit `f42cb1a6b12301dfd1b46e1ef1cfbce6140bc5d3`.
 - `waywallen-display` v0.4.0: commit `4fc25d632125967de0be34d095206ca9420432e8`.
 
-The upstream GitHub release notes document daemon-controlled transitions, Plasma/GNOME/layer-shell integrations, COSMIC window-state pause, and fixes around successful presentation and renderer respawn. Both current upstream repositories expose MIT licensing, but before adopting source, recheck the license files and dependency provenance at the exact pinned commits. The candidate architecture can reuse the display protocol and adapters without inheriting Waywallen's entire wallpaper library or input policy. In particular, do not enable app-title-based exclusion rules or other window-content inputs by default.
+The upstream GitHub release notes document daemon-controlled transitions, Plasma/GNOME/layer-shell integrations, COSMIC window-state pause, and fixes around successful presentation and renderer respawn. I fetched each `LICENSE` at the exact pinned commit; both are MIT (copyright `hypengw`, 2026). This confirms the headline license only—not transitive dependency provenance, patent posture, or whether code transfer is the right choice. The candidate architecture can reuse the display protocol and adapters without inheriting Waywallen's entire wallpaper library or input policy. In particular, do not enable app-title-based exclusion rules or other window-content inputs by default.
 
 - [Waywallen v0.4.4 release](https://github.com/waywallen/waywallen/releases/tag/v0.4.4)
 - [Waywallen Display v0.4.0 release](https://github.com/waywallen/waywallen-display/releases/tag/v0.4.0)
