@@ -80,9 +80,10 @@ def validate_offer(
     max_availability_age: timedelta = timedelta(hours=DEFAULT_MAX_AVAILABILITY_AGE_HOURS),
 ) -> dict[str, Any]:
     """Validate structure and cross-field invariants without authorizing commerce."""
-    current = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
-    if current.tzinfo is None or current.utcoffset() is None:
+    supplied_now = now if now is not None else datetime.now(timezone.utc)
+    if supplied_now.tzinfo is None or supplied_now.utcoffset() is None:
         raise ValueError("now must be timezone-aware")
+    current = supplied_now.astimezone(timezone.utc)
 
     structural_validator = Draft202012Validator(schema, format_checker=FormatChecker())
     structural_errors = sorted(
