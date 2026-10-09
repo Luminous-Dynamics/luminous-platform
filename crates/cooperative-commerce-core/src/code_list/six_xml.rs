@@ -305,14 +305,22 @@ pub fn parse_six_list_one_xml(input: &str) -> Result<SixListOneImport, SixXmlErr
                 if stack.is_empty() {
                     if root_seen || root_closed { return Err(fail("XML must have exactly one root element")); }
                     if name != ROOT_ELEMENT { return Err(fail(format!("expected root {ROOT_ELEMENT:?}, got {name:?}"))); }
+                    if attrs.keys().any(|key| key != "Pblshd") {
+                        return Err(fail("unexpected ISO_4217 attribute; only Pblshd is supported"));
+                    }
                     root_seen = true;
                     if let Some(value) = attrs.get("Pblshd") {
                         let parsed = value.parse::<CivilDate>().map_err(|_| fail(format!("invalid Pblshd publication date {value:?}")))?;
                         publication_date = Some(parsed.to_string());
                     }
                     if empty { root_closed = true; }
-                } else if name == ROOT_ELEMENT {
-                    return Err(fail("nested ISO_4217 root element"));
+                } else {
+                    if !attrs.is_empty() {
+                        return Err(fail(format!("attributes are not supported on element {name:?}")));
+                    }
+                    if name == ROOT_ELEMENT {
+                        return Err(fail("nested ISO_4217 root element"));
+                    }
                 }
 
                 if stack.len() == 1 && stack[0] == ROOT_ELEMENT {
@@ -538,6 +546,18 @@ mod tests {
     fn requires_publisher_release_identity() {
         let without_publication_date = XML.replace(' Pblshd="2026-08-14"', "");
         assert!(parse_six_list_one_xml(&without_publication_date).unwrap_err().to_string().contains("missing required Pblshd"));
+    }
+
+    #[test]
+    fn rejects_unexpected_attributes_outside_the_publisher_date() {
+        let unknown_root_attribute = XML.replace(
+            "Pblshd=\"2026-08-14\"",
+            "Pblshd=\"2026-08-14\" revision=\"surprise\"",
+        );
+        assert!(parse_six_list_one_xml(&unknown_root_attribute).unwrap_err().to_string().contains("unexpected ISO_4217 attribute"));
+
+        let unknown_entry_attribute = XML.replace("<CcyNtry>", "<CcyNtry revision=\"surprise\">");
+        assert!(parse_six_list_one_xml(&unknown_entry_attribute).unwrap_err().to_string().contains("attributes are not supported"));
     }
 
     #[test]
