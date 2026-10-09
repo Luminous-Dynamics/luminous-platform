@@ -799,30 +799,30 @@ jobs:
         id: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: \${{ inputs.subject_sha }}
+          ref: ${{ inputs.subject_sha }}
           persist-credentials: false
       - name: Assert exact checkout identity
         id: subject
         env:
-          SUBJECT_SHA: \${{ inputs.subject_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
         run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
       - name: Initialize npm audit receipt
         shell: bash
         env:
-          AUDIT_ENGINE_SHA: \${{ inputs.audit_engine_sha }}
-          SUBJECT_SHA: \${{ inputs.subject_sha }}
+          AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
         run: |
           set -euo pipefail
           mkdir -p security-audit-results/npm/lockfiles
           {
             echo "schema=luminous.security-audit.npm-receipt.v1"
-            echo "repository=\${GITHUB_REPOSITORY}"
+            echo "repository=${GITHUB_REPOSITORY}"
             echo "subject_sha=$(git rev-parse HEAD)"
-            echo "caller_workflow_ref=\${GITHUB_WORKFLOW_REF}"
-            echo "caller_workflow_sha=\${GITHUB_WORKFLOW_SHA:-unknown}"
+            echo "caller_workflow_ref=${GITHUB_WORKFLOW_REF}"
+            echo "caller_workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}"
             echo "declared_audit_engine_sha=$AUDIT_ENGINE_SHA"
-            echo "run_id=\${GITHUB_RUN_ID}"
-            echo "run_attempt=\${GITHUB_RUN_ATTEMPT}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
             echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "npm_status=INCOMPLETE"
             echo "incomplete_reason=setup_or_audit_not_completed"
@@ -850,10 +850,10 @@ jobs:
           )
           echo "node=$(node --version)" >> "$result_root/summary.txt"
           echo "npm=$(npm --version)" >> "$result_root/summary.txt"
-          echo "lockfile_count=\${#lockfiles[@]}" >> "$result_root/summary.txt"
+          echo "lockfile_count=${#lockfiles[@]}" >> "$result_root/summary.txt"
           npm_failed=0
 
-          if [[ "\${#lockfiles[@]}" -eq 0 ]]; then
+          if [[ "${#lockfiles[@]}" -eq 0 ]]; then
             npm_failed=1
             sed -i 's/^npm_status=.*/npm_status=FAIL/' "$result_root/summary.txt"
             echo "incomplete_reason=no_tracked_npm_lockfiles" >> "$result_root/summary.txt"
@@ -866,7 +866,7 @@ jobs:
           cd "$RUNNER_TEMP"
           : > "$RUNNER_TEMP/npm-audit-userconfig"
           : > "$RUNNER_TEMP/npm-audit-globalconfig"
-          for lockfile in "\${lockfiles[@]}"; do
+          for lockfile in "${lockfiles[@]}"; do
             lock_dir="$(dirname -- "$lockfile")"
             if [[ "$lock_dir" == "." ]]; then
               manifest="package.json"
@@ -877,8 +877,8 @@ jobs:
             fi
             report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
             path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
-            report="$result_root/lockfiles/\${report_id}_$path_hash.json"
-            stderr="$result_root/lockfiles/\${report_id}_$path_hash.stderr"
+            report="$result_root/lockfiles/${report_id}_$path_hash.json"
+            stderr="$result_root/lockfiles/${report_id}_$path_hash.stderr"
             lock_abs="$workspace/$lockfile"
 
             if ! git -C "$workspace" ls-files --error-unmatch -- "$manifest" >/dev/null 2>&1 || [[ ! -f "$workspace/$manifest" ]]; then
@@ -920,8 +920,8 @@ jobs:
         if: always()
         shell: bash
         env:
-          AUDIT_ENGINE_SHA: \${{ inputs.audit_engine_sha }}
-          SUBJECT_SHA: \${{ inputs.subject_sha }}
+          AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
         run: |
           set -euo pipefail
           mkdir -p security-audit-results/npm/lockfiles
@@ -929,13 +929,13 @@ jobs:
           if [[ ! -f "$summary" ]]; then
             {
               echo "schema=luminous.security-audit.npm-receipt.v1"
-              echo "repository=\${GITHUB_REPOSITORY}"
+              echo "repository=${GITHUB_REPOSITORY}"
               echo "subject_sha=$SUBJECT_SHA"
-              echo "caller_workflow_ref=\${GITHUB_WORKFLOW_REF}"
-              echo "caller_workflow_sha=\${GITHUB_WORKFLOW_SHA:-unknown}"
+              echo "caller_workflow_ref=${GITHUB_WORKFLOW_REF}"
+              echo "caller_workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}"
               echo "declared_audit_engine_sha=$AUDIT_ENGINE_SHA"
-              echo "run_id=\${GITHUB_RUN_ID}"
-              echo "run_attempt=\${GITHUB_RUN_ATTEMPT}"
+              echo "run_id=${GITHUB_RUN_ID}"
+              echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
               echo "npm_status=INCOMPLETE"
               echo "incomplete_reason=checkout_or_receipt_initialization_failed"
             } > "$summary"
@@ -944,7 +944,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: security-audit-\${{ github.event.repository.name }}-\${{ inputs.subject_sha }}-npm
+          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-npm
           path: security-audit-results/npm/
           if-no-files-found: error
           retention-days: 14
