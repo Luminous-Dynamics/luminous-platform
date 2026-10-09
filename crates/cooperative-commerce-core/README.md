@@ -20,6 +20,10 @@ The arithmetic and comparability rules belong in a reusable Rust library rather 
 - Distinguishes an estimate, an invoice-vs-quote comparison, a historical-invoice comparison, and a calculation without delivery evidence.
 - Returns evidence_authenticated_by_calculator=false unconditionally. It does not validate code-list membership, authenticity, legal compliance, or transaction authority.
 
+## Portable receipt
+
+The proposed [Savings Receipt schema](../../schemas/cooperative-savings-receipt-v1.schema.json) defines the source snapshot, itemized inputs, calculation fields, claim class, and explicit limitation that the calculator has not authenticated evidence. An illustrative fixture lives in the cooperative-buying pack. This crate currently returns Rust structs; JSON receipt serialization and independent re-verification remain separate work.
+
 ## Formula
 
 **net_difference = baseline_merchandise + baseline_other_costs − actual_merchandise − actual_other_costs − participation_costs**
