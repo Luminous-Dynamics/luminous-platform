@@ -1224,6 +1224,43 @@ jobs:
             sed -i '/^incomplete_reason=setup_or_audit_not_completed$/d' "$result_root/summary.txt"
           fi
 
+          # Run npm only against a metadata-only sandbox. This intentionally
+          # excludes all project/user/global .npmrc files and all source code:
+          # a PR cannot redirect audit payloads to a scope registry via project
+          # configuration, and lifecycle scripts/source code are never needed.
+          npm_sandbox="$RUNNER_TEMP/npm-audit-sandbox"
+          npm_home="$RUNNER_TEMP/npm-audit-home"
+          rm -rf -- "$npm_sandbox" "$npm_home"
+          mkdir -p "$npm_sandbox" "$npm_home"
+          mapfile -t manifests < <(
+            {
+              git ls-files -- 'package.json' '**/package.json'
+              while IFS= read -r module_path; do
+                [[ -n "$module_path" && -d "$workspace/$module_path" ]] || continue
+                git -C "$workspace/$module_path" ls-files -- 'package.json' '**/package.json' | sed "s#^#${module_path}/#"
+              done < "$verified_npm_submodules"
+            } | LC_ALL=C sort -u
+          )
+          echo "tracked_package_manifest_count=${#manifests[@]}" >> "$result_root/summary.txt"
+          for manifest_path in "${manifests[@]}"; do
+            source_path="$workspace/$manifest_path"
+            if [[ ! -f "$source_path" || -L "$source_path" ]]; then
+              npm_failed=1
+              echo "npm_sandbox_manifest_status=FAIL path=$manifest_path reason=missing_nonregular_or_symlink" >> "$result_root/summary.txt"
+              continue
+            fi
+            mkdir -p "$npm_sandbox/$(dirname -- "$manifest_path")"
+            cp -- "$source_path" "$npm_sandbox/$manifest_path"
+          done
+          for lockfile in "${lockfiles[@]}"; do
+            source_path="$workspace/$lockfile"
+            [[ -f "$source_path" && ! -L "$source_path" ]] || continue
+            mkdir -p "$npm_sandbox/$(dirname -- "$lockfile")"
+            cp -- "$source_path" "$npm_sandbox/$lockfile"
+          done
+          echo "npm_audit_environment=sandbox_without_project_npmrc" >> "$result_root/summary.txt"
+          echo "npm_audit_registry=https://registry.npmjs.org/" >> "$result_root/summary.txt"
+
           cd "$RUNNER_TEMP"
           : > "$RUNNER_TEMP/npm-audit-userconfig"
           : > "$RUNNER_TEMP/npm-audit-globalconfig"
@@ -1231,10 +1268,10 @@ jobs:
             lock_dir="$(dirname -- "$lockfile")"
             if [[ "$lock_dir" == "." ]]; then
               manifest="package.json"
-              project_dir="$workspace"
+              project_dir="$npm_sandbox"
             else
               manifest="$lock_dir/package.json"
-              project_dir="$workspace/$lock_dir"
+              project_dir="$npm_sandbox/$lock_dir"
             fi
             report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
             path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
@@ -1358,7 +1395,7 @@ jobs:
             lock_sha="$(sha256sum "$lock_abs" | cut -d' ' -f1)"
             manifest_sha="$(sha256sum "$workspace/$manifest" | cut -d' ' -f1)"
             rc=0
-            if npm --prefix "$project_dir" audit \
+            if env -i PATH="$PATH" HOME="$npm_home" npm --prefix "$project_dir" audit \
               --package-lock-only \
               --audit=true \
               --audit-level=high \
