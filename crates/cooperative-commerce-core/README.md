@@ -17,7 +17,7 @@ The arithmetic and comparability rules belong in a reusable Rust library rather 
 - Refuses mixed currencies. FX conversion needs a separately reviewed rate record with source, timestamp, purpose, and rounding rules; no implicit conversion occurs.
 - Preserves negative net differences rather than clipping them to zero.
 - Binds delivery receipts to the exact product identities, unit systems, and quantities being compared; a partial or mismatched delivery blocks the full-basket comparison.
-- Distinguishes estimates, pure invoice-vs-quote comparisons, historical-invoice comparisons, mixed invoice/quote baselines, and calculations without delivery evidence.
+- Distinguishes estimates, pure invoice-vs-quote comparisons, historical-invoice comparisons, mixed invoice/quote baselines, and calculations without delivery evidence. A cost-coverage summary document does not itself determine the comparison's evidence class.
 - Returns evidence_authenticated_by_calculator=false unconditionally. It does not validate code-list membership, authenticity, legal compliance, or transaction authority.
 
 ## Portable receipt
