@@ -625,5 +625,37 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "fixture_only"
+            ],
+            "properties": {
+              "fixture_only": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "status": {
+                "const": "draft"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
