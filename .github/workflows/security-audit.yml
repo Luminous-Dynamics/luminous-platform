@@ -36,7 +36,24 @@ jobs:
           SUBJECT_SHA: ${{ inputs.subject_sha }}
         run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
 
+      - name: Initialize workflow audit evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p security-audit-results/workflows
+          {
+            echo "schema=luminous.security-audit.workflow-receipt.v1"
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "subject_sha=$(git rev-parse HEAD)"
+            echo "workflow_ref=${GITHUB_WORKFLOW_REF}"
+            echo "workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "zizmor_status=INCOMPLETE"
+          } > security-audit-results/workflows/summary.txt
+
       - name: Audit workflow definitions
+        id: zizmor
         uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
         with:
           inputs: .github/
@@ -45,6 +62,36 @@ jobs:
           online-audits: true
           persona: auditor
           version: v1.30.1
+
+      - name: Preserve workflow audit output
+        if: always()
+        shell: bash
+        env:
+          ZIZMOR_OUTCOME: ${{ steps.zizmor.outcome }}
+        run: |
+          set -u
+          report="$RUNNER_TEMP/zizmor"
+          destination="security-audit-results/workflows/zizmor.txt"
+          if [[ -f "$report" ]]; then
+            cp "$report" "$destination"
+            report_sha256="$(sha256sum "$destination" | cut -d' ' -f1)"
+            printf 'zizmor_action_outcome=%s\\nzizmor_report_sha256=%s\\n' \\
+              "${ZIZMOR_OUTCOME:-unknown}" "$report_sha256" \\
+              >> security-audit-results/workflows/summary.txt
+          else
+            printf 'zizmor_action_outcome=%s\\nzizmor_status=INCOMPLETE\\nreport_missing=true\\n' \\
+              "${ZIZMOR_OUTCOME:-unknown}" \\
+              >> security-audit-results/workflows/summary.txt
+          fi
+
+      - name: Upload workflow audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-workflows
+          path: security-audit-results/workflows/
+          if-no-files-found: error
+          retention-days: 14
 
   rustsec:
     name: RustSec dependency audit
@@ -286,7 +333,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}
+          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-rustsec
           path: security-audit-results/
           if-no-files-found: error
           retention-days: 14
