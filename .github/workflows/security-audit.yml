@@ -173,7 +173,7 @@ jobs:
             if [[ ! "$url" =~ ^https://github[.]com/${REPOSITORY_OWNER}/[A-Za-z0-9._-]+([.]git)?$ ]]; then
               echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
               echo "incomplete_reason=submodule_url_not_allowlisted" | tee -a security-audit-results/summary.txt
-              exit 2
+              exit 0
             fi
           done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]url$')
 
@@ -182,14 +182,14 @@ jobs:
             if [[ ! "$path" =~ ^[A-Za-z0-9_./-]+$ || "$path" == /* || "$path" == *".."* ]]; then
               echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
               echo "incomplete_reason=submodule_path_invalid" | tee -a security-audit-results/summary.txt
-              exit 2
+              exit 0
             fi
           done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$')
 
           if ! git submodule update --init; then
             echo "submodule_audit_status=INCOMPLETE" | tee -a security-audit-results/summary.txt
             echo "incomplete_reason=submodule_checkout_failed" | tee -a security-audit-results/summary.txt
-            exit 2
+            exit 0
           fi
 
           while IFS= read -r line; do
@@ -198,13 +198,13 @@ jobs:
             if [[ -z "$expected" || ! -d "$path" ]]; then
               echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
               echo "incomplete_reason=submodule_gitlink_missing" | tee -a security-audit-results/summary.txt
-              exit 2
+              exit 0
             fi
             actual="$(git -C "$path" rev-parse HEAD)"
             if [[ "$actual" != "$expected" ]]; then
               echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
               echo "incomplete_reason=submodule_head_mismatch" | tee -a security-audit-results/summary.txt
-              exit 2
+              exit 0
             fi
           done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$')
 
@@ -332,12 +332,28 @@ jobs:
           declared_paths = declared_submodule_paths(repo)
           roots = [("", repo)]
           unaudited_submodules = []
+          summary_path = output.parent / "summary.txt"
+          summary_text = summary_path.read_text() if summary_path.exists() else ""
+          submodule_status = next(
+              (line.split("=", 1)[1] for line in summary_text.splitlines()
+               if line.startswith("submodule_audit_status=")),
+              "INCOMPLETE"
+          )
+          if submodule_status not in ("PASS", "NOT_REQUIRED"):
+              unaudited_submodules.append(f"submodule_initialization:{submodule_status}")
           for path in declared_paths:
               expected = root_links.get(path)
               if not expected:
                   unaudited_submodules.append(f"{path}:declared_path_without_gitlink")
                   continue
-              module_root = (repo / path).resolve()
+              relative_path = Path(path)
+              if relative_path.is_absolute() or ".." in relative_path.parts or "." in relative_path.parts:
+                  unaudited_submodules.append(f"{path}:invalid_declared_path")
+                  continue
+              module_root = (repo / relative_path).resolve()
+              if repo not in module_root.parents:
+                  unaudited_submodules.append(f"{path}:path_outside_checkout")
+                  continue
               if not module_root.is_dir():
                   unaudited_submodules.append(f"{path}:not_initialized")
                   continue
