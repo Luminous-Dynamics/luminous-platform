@@ -62,7 +62,7 @@ jobs:
 
       - name: Validate native Work Case Contract V1
         run: >-
-          "$RUNNER_TEMP/operations-event-contract-venv/bin/python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 28
+          "$RUNNER_TEMP/operations-event-contract-venv/bin/python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 30
 
       - name: Write bounded qualification summary
         if: success()
@@ -72,7 +72,7 @@ jobs:
           {
             echo "## Luminous operations contracts"
             echo "- Tested source revision: $SOURCE_SHA"
-            echo "- Operations Event V1 suite executed with fail-closed discovery; Work Case V1 requires at least 28 discovered test cases and executes the discovered set."
+            echo "- Operations Event V1 suite executed with fail-closed discovery; Work Case V1 requires at least 30 discovered test cases and executes the discovered set."
             echo "- Covers the Operations Event V1 schemas/synthetic adapter/local SQLite reference model and Work Case V1 schema/synthetic fixture/in-memory state-machine reference model."
             echo "- Does not qualify a live ConnectWise adapter, production database isolation/durability, production tenant authorization, distributed-writer behavior, cryptographic evidence verification, or remote execution."
           } >> "$GITHUB_STEP_SUMMARY"
