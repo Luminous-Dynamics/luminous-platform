@@ -1247,12 +1247,12 @@ jobs:
               "lockfile": lockfile,
               "manifest": manifest,
               "lock_reference_sha256": target_sha
-          }, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           PY
-              printf '%s\\n' "npm audit was not invoked because the tracked lockfile is missing, not regular, or a symlink." > "$stderr"
+              printf '%s\n' "npm audit was not invoked because the tracked lockfile is missing, not regular, or a symlink." > "$stderr"
               report_sha="$(sha256sum "$report" | cut -d' ' -f1)"
               stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1)"
-              printf 'lockfile=%s manifest=%s exit_code=NOT_RUN report_parse_status=NOT_APPLICABLE outcome=FAIL report_sha256=%s stderr_sha256=%s reason=lockfile_not_regular_file\\n' "$lockfile" "$manifest" "$report_sha" "$stderr_sha" >> "$result_root/summary.txt"
+              printf 'lockfile=%s manifest=%s exit_code=NOT_RUN report_parse_status=NOT_APPLICABLE outcome=FAIL report_sha256=%s stderr_sha256=%s reason=lockfile_not_regular_file\n' "$lockfile" "$manifest" "$report_sha" "$stderr_sha" >> "$result_root/summary.txt"
               npm_failed=1
               continue
             fi
