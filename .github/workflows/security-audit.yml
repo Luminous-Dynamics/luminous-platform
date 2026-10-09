@@ -232,6 +232,7 @@ jobs:
             } | LC_ALL=C sort -u
           )
           printf '%s\n' "${lockfiles[@]}" > "$inventory_file"
+          echo "lockfile_inventory_sha256=$(sha256sum "$inventory_file" | cut -d' ' -f1)" >> "$result_root/summary.txt"
 
           rustsec_failed=0
           coverage_failed=0
@@ -286,7 +287,21 @@ jobs:
                 rustsec_failed=1
               fi
               if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
-              echo "lockfile=$lockfile sha256=$lock_sha256 exit_code=$rc outcome=$outcome" >> "$result_root/summary.txt"
+              if [[ -f "$report" ]]; then
+                report_sha256="$(sha256sum "$report" | cut -d' ' -f1)"
+              else
+                report_sha256="missing"
+                rustsec_failed=1
+              fi
+              if [[ -f "$stderr" ]]; then
+                stderr_sha256="$(sha256sum "$stderr" | cut -d' ' -f1)"
+              else
+                stderr_sha256="missing"
+                rustsec_failed=1
+              fi
+              printf 'lockfile=%s lockfile_sha256=%s exit_code=%s outcome=%s report_sha256=%s stderr_sha256=%s\n' \
+                "$lockfile" "$lock_sha256" "$rc" "$outcome" "$report_sha256" "$stderr_sha256" \
+                >> "$result_root/summary.txt"
             done
           fi
 
