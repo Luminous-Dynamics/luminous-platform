@@ -9,7 +9,7 @@
 //! savings claim merely because this function returned a report.
 
 use std::cmp::Ordering;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::str::FromStr;
 
@@ -297,6 +297,7 @@ pub enum CommerceError {
     EmptyBasket,
     InvalidProductIdentity,
     InvalidEvidence,
+    ConflictingEvidenceReference,
     UnexpectedEvidenceKind,
     NegativeQuantityOrCost,
     CurrencyMismatch,
@@ -312,7 +313,8 @@ impl fmt::Display for CommerceError {
             Self::InvalidCurrency => write!(f, "currency must have a three-letter uppercase shape; official code-list membership is not checked"),
             Self::EmptyBasket => write!(f, "baseline and actual baskets must both contain at least one line"),
             Self::InvalidProductIdentity => write!(f, "product identity requires scheme, identifier, a 64-hex specification digest, unit code, and unit code-system"),
-            Self::InvalidEvidence => write!(f, "evidence reference is incomplete or its SHA-256 field is malformed"),
+            Self::InvalidEvidence => write!(f, "evidence reference is incomplete, its timestamp is malformed, or its SHA-256 field is malformed"),
+            Self::ConflictingEvidenceReference => write!(f, "one evidence identifier refers to conflicting source, digest, timestamp, or evidence-kind values"),
             Self::UnexpectedEvidenceKind => write!(f, "evidence kind is not valid for this comparison role"),
             Self::NegativeQuantityOrCost => write!(f, "quantities and line/cost amounts must be non-negative; quantities must be positive"),
             Self::CurrencyMismatch => write!(f, "currencies differ; no implicit foreign-exchange conversion is performed"),
@@ -336,15 +338,56 @@ fn valid_sha256(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|b| b.is_ascii_hexdigit())
 }
 
+fn has_explicit_timestamp_zone(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    if !value.contains('T') || !bytes.iter().all(u8::is_ascii) {
+        return false;
+    }
+    if value.ends_with('Z') {
+        return true;
+    }
+    if bytes.len() < 6 {
+        return false;
+    }
+    let zone = &bytes[bytes.len() - 6..];
+    (zone[0] == b'+' || zone[0] == b'-')
+        && zone[1..3].iter().all(u8::is_ascii_digit)
+        && zone[3] == b':'
+        && zone[4..6].iter().all(u8::is_ascii_digit)
+}
+
 fn validate_evidence(evidence: &EvidenceRef) -> Result<(), CommerceError> {
     if evidence.id.trim().is_empty()
         || evidence.source_reference.trim().is_empty()
-        || evidence.captured_at.trim().is_empty()
+        || !has_explicit_timestamp_zone(evidence.captured_at.trim())
         || !valid_sha256(&evidence.sha256)
     {
         return Err(CommerceError::InvalidEvidence);
     }
     Ok(())
+}
+
+fn collect_evidence_references(input: &SavingsInput) -> Result<Vec<String>, CommerceError> {
+    let mut by_id: BTreeMap<String, EvidenceRef> = BTreeMap::new();
+    let evidence = input.baseline_lines.iter().map(|line| &line.evidence)
+        .chain(input.actual_lines.iter().map(|line| &line.evidence))
+        .chain(input.baseline_costs.iter().map(|line| &line.evidence))
+        .chain(input.actual_costs.iter().map(|line| &line.evidence))
+        .chain(input.participation_costs.iter().map(|line| &line.evidence))
+        .chain(std::iter::once(&input.baseline_coverage.evidence))
+        .chain(std::iter::once(&input.actual_coverage.evidence))
+        .chain(input.delivery_evidence.iter());
+
+    for reference in evidence {
+        if let Some(existing) = by_id.get(&reference.id) {
+            if existing != reference {
+                return Err(CommerceError::ConflictingEvidenceReference);
+            }
+        } else {
+            by_id.insert(reference.id.clone(), reference.clone());
+        }
+    }
+    Ok(by_id.into_keys().collect())
 }
 
 fn valid_currency_shape(value: &str) -> bool {
@@ -514,18 +557,7 @@ pub fn calculate_savings(input: &SavingsInput) -> Result<SavingsReport, Commerce
         ClaimClass::InvoiceVsAlternativeQuote
     };
 
-    let mut evidence_references = BTreeSet::new();
-    for evidence in input.baseline_lines.iter().map(|line| &line.evidence)
-        .chain(input.actual_lines.iter().map(|line| &line.evidence))
-        .chain(input.baseline_costs.iter().map(|line| &line.evidence))
-        .chain(input.actual_costs.iter().map(|line| &line.evidence))
-        .chain(input.participation_costs.iter().map(|line| &line.evidence))
-        .chain(std::iter::once(&input.baseline_coverage.evidence))
-        .chain(std::iter::once(&input.actual_coverage.evidence))
-        .chain(input.delivery_evidence.iter())
-    {
-        evidence_references.insert(evidence.id.clone());
-    }
+    let evidence_references = collect_evidence_references(input)?;
 
     let mut notes = vec![
         "Arithmetic only: source references, digest format, and declared coverage were checked; evidence contents, signatures, supplier identity, and official code-list membership were not independently verified.".to_string(),
@@ -552,7 +584,7 @@ pub fn calculate_savings(input: &SavingsInput) -> Result<SavingsReport, Commerce
         actual_total: actual_total.to_string(),
         net_difference: net.to_string(),
         claim_class,
-        evidence_references: evidence_references.into_iter().collect(),
+        evidence_references,
         evidence_authenticated_by_calculator: false,
         notes,
     })
@@ -588,7 +620,7 @@ mod tests {
             quantity: Decimal::parse("10").unwrap(),
             line_total: Decimal::parse(amount).unwrap(),
             currency: "ZAR".into(),
-            evidence: evidence("line", kind),
+            evidence: evidence(&format!("line-{kind:?}"), kind),
         }
     }
 
@@ -597,7 +629,7 @@ mod tests {
             category: category.into(),
             amount: Decimal::parse(amount).unwrap(),
             currency: "ZAR".into(),
-            evidence: evidence(category, kind),
+            evidence: evidence(&format!("{category}-{kind:?}"), kind),
         }
     }
 
@@ -689,6 +721,20 @@ mod tests {
         let mut candidate = input();
         candidate.actual_lines[0].currency = "EUR".into();
         assert_eq!(calculate_savings(&candidate), Err(CommerceError::CurrencyMismatch));
+    }
+
+    #[test]
+    fn conflicting_evidence_ids_cannot_hide_distinct_sources() {
+        let mut candidate = input();
+        candidate.actual_lines[0].evidence.id = candidate.baseline_lines[0].evidence.id.clone();
+        assert_eq!(calculate_savings(&candidate), Err(CommerceError::ConflictingEvidenceReference));
+    }
+
+    #[test]
+    fn timezone_missing_from_evidence_timestamp_is_rejected() {
+        let mut candidate = input();
+        candidate.actual_lines[0].evidence.captured_at = "2026-10-09T00:00:00".into();
+        assert_eq!(calculate_savings(&candidate), Err(CommerceError::InvalidEvidence));
     }
 
     #[test]
