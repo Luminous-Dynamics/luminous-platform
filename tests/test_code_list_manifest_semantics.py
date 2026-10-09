@@ -48,6 +48,7 @@ def active_candidate() -> dict:
         "status": "passed",
         "checks": [
             "source_digest_checked",
+"source_authority_checked",
             "schema_validated",
             "duplicate_codes_checked",
             "effective_dates_checked"
