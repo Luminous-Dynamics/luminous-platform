@@ -80,6 +80,31 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
         self.assertTrue(report["semantic_valid"], report["errors"])
         self.assertFalse(report["transaction_authorized"])
 
+    def test_consent_digest_binds_the_exact_recipient_set(self):
+        document = copy.deepcopy(FIXTURE)
+        document["sharing"]["recipients"] = ["fixture:other-recipient:002"]
+        report = self.validate(document)
+        self.assertFalse(report["semantic_valid"])
+        self.assertTrue(any("consent scope" in error for error in report["errors"]))
+
+    def test_consent_digest_binds_the_fields_approved_for_sharing(self):
+        document = copy.deepcopy(FIXTURE)
+        document["sharing"]["shareable_fields"].append("destination_region")
+        report = self.validate(document)
+        self.assertFalse(report["semantic_valid"])
+        self.assertTrue(any("consent scope" in error for error in report["errors"]))
+
+    def test_named_supplier_scope_requires_exactly_one_recipient(self):
+        from jsonschema import Draft202012Validator, FormatChecker
+
+        schema_validator = Draft202012Validator(SCHEMA, format_checker=FormatChecker())
+        document = copy.deepcopy(FIXTURE)
+        document["sharing"]["recipient_scope"] = "named_supplier_only"
+        document["sharing"]["recipients"] = ["fixture:supplier:1", "fixture:supplier:2"]
+        errors = list(schema_validator.iter_errors(document))
+        self.assertTrue(errors)
+        self.assertTrue(any("recipients" in error.message for error in errors))
+
     def test_purchase_scope_uses_rfc8785_canonicalization(self):
         document = binding_order_candidate()
         payload = purchase_scope_payload(document)
