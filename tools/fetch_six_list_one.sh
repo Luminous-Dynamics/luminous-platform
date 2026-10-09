@@ -32,12 +32,10 @@ trap cleanup EXIT
 
 curl \
   --fail \
-  --location \
   --silent \
   --show-error \
   --proto '=https' \
   --tlsv1.2 \
-  --max-redirs 3 \
   --connect-timeout 15 \
   --max-time 60 \
   --max-filesize 10485760 \

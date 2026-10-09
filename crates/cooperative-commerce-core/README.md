@@ -45,7 +45,7 @@ This is a record-semantics layer, not an importer or source-authenticity system.
 
 The dependency-free `six-iso4217-import` binary parses a retained XML copy of SIX's current List One and emits deterministic normalized JSON. It preserves numeric codes as strings, aggregates repeated currency rows across entities, reports entries without a currency tuple, and rejects partial/conflicting tuples, malformed records, DTDs, custom entities, duplicate fields, and invalid publication dates. A usable source must include a valid `Pblshd` publication-date identity.
 
-The acquisition script retrieves only the fixed official SIX HTTPS URL, caps the download at 10 MiB, runs the importer, hashes the **exact downloaded bytes** and normalized JSON, and retains a timestamped three-file bundle without overwriting an existing bundle:
+The acquisition script requests only the fixed official SIX HTTPS URL and **does not follow redirects** (a changed endpoint fails closed when the returned body is parsed). It caps the download at 10 MiB, runs the importer, hashes the **exact downloaded bytes** and normalized JSON, and retains a timestamped three-file bundle without overwriting an existing bundle:
 
 ```sh
 bash tools/fetch_six_list_one.sh ./data/code-list-snapshots
