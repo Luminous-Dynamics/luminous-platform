@@ -63,6 +63,8 @@ Prohibited monetization patterns:
 
 Publish fee schedules and rebate-allocation rules in machine-readable as well as human-readable form. Report the operating cost of shared services and how fees or surplus are allocated. The project must earn enough revenue, grants, or contributions to maintain security and support; “free” must not mean relying on unpaid labor indefinitely.
 
+**No franchise-style turnover royalty by default.** Prefer published flat service fees, cost-based logistics charges, or a clearly disclosed fixed transaction fee. A fee tied to realized savings may be tested only with explicit consent, a published cap/formula, an independently reproducible baseline, and no incentive to inflate savings. Any optional dues must buy defined services or member rights; they must not be a toll for accessing one's own records or operating an independent business.
+
 ## 4. Global-first data and interoperability rules
 
 Never encode one country's assumptions into the shared domain model. Country-specific behavior belongs in versioned jurisdiction packs and provider adapters.
@@ -282,6 +284,9 @@ Do not start with a token, a proprietary payment rail, a warehouse, a global cor
 ## References and standards to adapt
 
 - [International Cooperative Alliance — Guidance Notes to the Co-operative Principles](https://ica.coop/en/media/library/the-guidance-notes-on-the-co-operative-principles)
+- [U.S. Federal Trade Commission — A Consumer's Guide to Buying a Franchise](https://search.ftc.gov/business-guidance/resources/consumers-guide-buying-franchise) (illustrates why required continuing royalties and franchise controls deserve scrutiny; U.S.-specific guidance, not global law)
+- [European Commission — Horizontal Guidelines on purchasing agreements](https://competition-policy.ec.europa.eu/system/files/2022-03/kd0722013enn_purchasing_agreements.pdf) (illustrates that buyer-group structure and effects require context-specific competition analysis; EU-specific guidance)
+- [Costco Wholesale Corporation — 2025 Annual Report](https://s201.q4cdn.com/287523651/files/doc_financials/2025/ar/COST-Annual-Report-2025.pdf) (reference model for studying high-volume wholesale operations; not a template to copy wholesale)
 - [OpenPeppol — BIS Billing 3.0](https://docs.peppol.eu/poacc/billing/3.0/bis/)
 - [GS1 — Global Traceability Standard](https://www.gs1.org/standards/gs1-global-traceability-standard/current-standard)
 - [GS1 — EPCIS and Core Business Vocabulary](https://www.gs1.org/standards/epcis)
