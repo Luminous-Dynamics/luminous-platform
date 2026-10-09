@@ -58,7 +58,7 @@ jobs:
           log="$RUNNER_TEMP/runner-selftest.log"
           python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
           "$python" scripts/run_unittest_suite.py scripts/tests --minimum-tests 6 2>&1 | tee "$log"
-          count="$(sed -nE 's/^EXECUTED_TEST_CASES=([0-9]+)$/\\1/p' "$log" | tail -n 1)"
+          count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
           if [[ -z "$count" || "$count" -lt 6 ]]; then
             echo "::error::Test-runner regression suite did not execute its required test count."
             exit 1
@@ -73,7 +73,7 @@ jobs:
           log="$RUNNER_TEMP/operations-event-tests.log"
           python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
           "$python" scripts/run_unittest_suite.py contracts/operations-event-v1/tests --minimum-tests 1 2>&1 | tee "$log"
-          count="$(sed -nE 's/^EXECUTED_TEST_CASES=([0-9]+)$/\\1/p' "$log" | tail -n 1)"
+          count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
           if [[ -z "$count" || "$count" -lt 1 ]]; then
             echo "::error::Operations Event tests did not execute a nonzero count."
             exit 1
@@ -88,7 +88,7 @@ jobs:
           log="$RUNNER_TEMP/holochain-attestation-tests.log"
           python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
           "$python" scripts/run_unittest_suite.py contracts/holochain-attestation-v1/tests --minimum-tests 20 2>&1 | tee "$log"
-          count="$(sed -nE 's/^EXECUTED_TEST_CASES=([0-9]+)$/\\1/p' "$log" | tail -n 1)"
+          count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
           if [[ -z "$count" || "$count" -lt 20 ]]; then
             echo "::error::Holochain attestation tests did not execute the required 20 cases."
             exit 1
