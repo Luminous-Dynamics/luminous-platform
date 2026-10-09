@@ -249,3 +249,34 @@ These are engineering goals, not measured results:
 One scene package renders a visually coherent sequence across boot, desktop, idle and supported lock/greeter surfaces; per-surface adapters announce their actual capabilities; the renderer adapts or pauses safely; unsupported paths degrade to a static image; secure authentication remains owned by the desktop; Nix packages are reproducible; and exact-head visual, resource and lifecycle evidence exists for every advertised target.
 
 This RFC authorizes none of those completion claims by itself.
+
+
+## 10. Contract artifacts and existing visual work discovered during follow-up
+
+A first, intentionally data-only Scene Pack v1 contract is now included in this branch:
+
+- [JSON Schema](../../contracts/ambient-scene-pack-v1.schema.json)
+- [First Germination fixture](../../contracts/examples/first-germination.scene.json)
+- [Scene Pack semantics and loader validation contract](AMBIENT_SCENE_PACK_V1.md)
+
+The fixture is procedural-only (`assets: []`) so it does not accidentally pull artwork of unclear origin into the product. It includes explicit boot, desktop, idle, locked-background and static-fallback variants, safe regions for desktop UI, a fixed simulation seed, resource ceilings, and opt-in-only inputs. The schema rejects unknown fields. The accompanying semantic contract adds checks JSON Schema cannot express by itself, including canonicalized asset path containment, checksum verification, safe-region bounds and cross-field fallback/resource invariants.
+
+These files are contract artifacts, not evidence that a scene renderer, importer, UI or compositor adapter already exists. The first validation during authoring checked schema shape, required fields, types, enum/constant values, ranges, patterns, unknown fields, presentation FPS limits, safe-region bounds and the static-fallback semantics. That was a purpose-built structural validation, not yet a standards-complete JSON Schema validator or runtime conformance suite. A real consumer implementation must add independent schema validation and negative fixtures before this contract is called qualified.
+
+### Exact upstream review targets
+
+The current upstream candidates were pinned for further evaluation (not adopted as production dependencies):
+
+- `waywallen` v0.4.4: commit `f42cb1a6b12301dfd1b46e1ef1cfbce6140bc5d3`.
+- `waywallen-display` v0.4.0: commit `4fc25d632125967de0be34d095206ca9420432e8`.
+
+The upstream GitHub release notes document daemon-controlled transitions, Plasma/GNOME/layer-shell integrations, COSMIC window-state pause, and fixes around successful presentation and renderer respawn. Both current upstream repositories expose MIT licensing, but before adopting source, recheck the license files and dependency provenance at the exact pinned commits. The candidate architecture can reuse the display protocol and adapters without inheriting Waywallen's entire wallpaper library or input policy. In particular, do not enable app-title-based exclusion rules or other window-content inputs by default.
+
+- [Waywallen v0.4.4 release](https://github.com/waywallen/waywallen/releases/tag/v0.4.4)
+- [Waywallen Display v0.4.0 release](https://github.com/waywallen/waywallen-display/releases/tag/v0.4.0)
+
+### Existing Mycelix visual foundation
+
+The private monorepo has an open [PR #3748, “style(mycelix): establish Pulse and Sensorium visual foundation”](https://github.com/Luminous-Dynamics/luminous-dynamics/pull/3748), on branch `feat/mycelix-pulse-visual-foundation-2026-10`. It introduces semantic palette tokens, quieter effects, local system-font fallbacks, focus-visible and reduced-motion rules for Mycelix Pulse and Sensorium. Its own description keeps browser builds, deterministic screenshots and full accessibility qualification pending.
+
+Use this as a design-system input only after source ownership and review: the dark canvas (`#0A100E`) and mineral teal (`#76D9C1`) can map to semantic ambient tokens, while the existing boot renderer retains its early-boot palette and dependency boundary. Do not copy app CSS or make an open UI PR a required build dependency for the boot renderer. Preserve the rule already used by Mycelix's visual foundation: shared visual language, domain-owned interactions.
