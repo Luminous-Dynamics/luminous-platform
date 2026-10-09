@@ -503,6 +503,64 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     // Kill a separate receiver process after ingest_event has committed but
     // before the caller can acknowledge the source event. Redelivery after the
     // process death must return DuplicateEvent without another local effect.
+    // Race two distinct deliveries that reuse one idempotency key with
+    // different semantics. The per-key advisory lock must make the loser an
+    // idempotency conflict, not a stale/equal-revision outcome, regardless of
+    // which process wins the scheduling race.
+    let race_left = revised_event(
+        "revision-4",
+        "event-ci-idem-race-left",
+        "idem-ci-racing-conflicting-effects",
+        "Synthetic winner candidate A",
+    );
+    let race_right = revised_event(
+        "revision-4",
+        "event-ci-idem-race-right",
+        "idem-ci-racing-conflicting-effects",
+        "Synthetic winner candidate B with different semantics",
+    );
+    let before_race = row_count_snapshot(&pool).await;
+    let quarantine_before_race = scalar_count(&pool, "quarantined_events").await;
+    let (race_left_result, race_right_result) = tokio::join!(
+        store.ingest_event(&auth, &race_left),
+        store.ingest_event(&auth, &race_right),
+    );
+    let accepted = |result: &Result<IngestOutcome, StoreError>| {
+        matches!(result, Ok(IngestOutcome::Accepted { outbox_sequence: 4 }))
+    };
+    let conflicted = |result: &Result<IngestOutcome, StoreError>| {
+        matches!(result, Err(StoreError::IdempotencyConflict))
+    };
+    assert_eq!(
+        accepted(&race_left_result) as usize + accepted(&race_right_result) as usize,
+        1
+    );
+    assert_eq!(
+        conflicted(&race_left_result) as usize + conflicted(&race_right_result) as usize,
+        1
+    );
+    assert_eq!(
+        row_count_snapshot(&pool).await,
+        [
+            before_race[0] + 2,
+            before_race[1] + 1,
+            before_race[2],
+            before_race[3] + 1,
+            before_race[4] + 1,
+        ]
+    );
+    assert_eq!(
+        scalar_count(&pool, "quarantined_events").await,
+        quarantine_before_race + 1
+    );
+
+    // Drain the one accepted race result so the next sequence is available for
+    // the crash-before-acknowledgement probe.
+    let race_lease = store.claim_next_outbox(TENANT, "worker-idem-race", 30).await.unwrap().unwrap();
+    assert_eq!(race_lease.sequence_no, 4);
+    assert!(store.acknowledge_outbox(TENANT, &race_lease.outbox_id, "worker-idem-race").await.unwrap());
+    assert!(store.claim_next_outbox(TENANT, "worker-idem-race", 30).await.unwrap().is_none());
+
     let before_crash = row_count_snapshot(&pool).await;
     let probe = Command::new(env::current_exe().expect("current test executable"))
         .args([
@@ -533,7 +591,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     );
 
     let crash_event = revised_event(
-        "revision-4",
+        "revision-5",
         "event-ci-crash-before-ack",
         "idem-ci-crash-before-ack",
         "Synthetic post-commit crash/replay scenario",
@@ -544,7 +602,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     );
     assert_eq!(row_count_snapshot(&pool).await, after_crash);
     let recovered_lease = store.claim_next_outbox(TENANT, "worker-after-crash", 30).await.unwrap().unwrap();
-    assert_eq!(recovered_lease.sequence_no, 4);
+    assert_eq!(recovered_lease.sequence_no, 5);
     assert!(store.acknowledge_outbox(TENANT, &recovered_lease.outbox_id, "worker-after-crash").await.unwrap());
     assert!(store.claim_next_outbox(TENANT, "worker-after-crash", 30).await.unwrap().is_none());
 }
@@ -574,7 +632,7 @@ async fn crash_probe_after_commit_before_ack() {
         )
         .await
         .expect("commit durable local effect before simulated process death");
-    assert_eq!(outcome, IngestOutcome::Accepted { outbox_sequence: 4 });
+    assert_eq!(outcome, IngestOutcome::Accepted { outbox_sequence: 5 });
 
     // Calling process exit deliberately skips destructors, approximating abrupt
     // process loss immediately after the database commit has returned.
