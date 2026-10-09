@@ -552,7 +552,7 @@ jobs:
                 report_parse_status="FAIL"
                 rustsec_failed=1
               fi
-              printf 'report_parse_status=%s lockfile=%s\\n' "$report_parse_status" "$lockfile" >> "$result_root/summary.txt"
+              printf 'report_parse_status=%s lockfile=%s\n' "$report_parse_status" "$lockfile" >> "$result_root/summary.txt"
               if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" ]]; then outcome="PASS"; else outcome="FAIL"; fi
               if [[ -f "$report" ]]; then
                 report_sha256="$(sha256sum "$report" | cut -d' ' -f1)"
@@ -1065,7 +1065,7 @@ jobs:
               report_parse_status="FAIL"
               npm_failed=1
             fi
-            printf 'report_parse_status=%s lockfile=%s\\n' "$report_parse_status" "$lockfile" >> "$result_root/summary.txt"
+            printf 'report_parse_status=%s lockfile=%s\n' "$report_parse_status" "$lockfile" >> "$result_root/summary.txt"
             if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" ]]; then outcome="PASS"; else outcome="FAIL"; fi
             if [[ -f "$report" ]]; then report_sha="$(sha256sum "$report" | cut -d' ' -f1); else report_sha="missing"; npm_failed=1; fi
             if [[ -f "$stderr" ]]; then stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1); else stderr_sha="missing"; npm_failed=1; fi
