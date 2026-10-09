@@ -194,6 +194,8 @@ def download_artifact_zip(repo: str, artifact_id: int, token: str) -> bytes:
         signed_url = exc.headers.get("Location")
         if not signed_url or not signed_url.startswith("https://"):
             raise VerificationError("artifact download API omitted a valid HTTPS signed URL") from exc
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise VerificationError(f"artifact download API unavailable: {exc}") from exc
     try:
         # Intentionally no Authorization header on the signed storage URL.
         with urllib.request.urlopen(urllib.request.Request(signed_url, headers={
@@ -312,7 +314,7 @@ def verify_verdict_artifact(repo: str, policy: dict[str, Any], run: dict[str, An
         verdict = json.loads(verdict_bytes)
     except VerificationError:
         raise
-    except (zipfile.BadZipFile, json.JSONDecodeError, KeyError, OSError) as exc:
+    except Exception as exc:
         raise VerificationError(f"verdict artifact ZIP/JSON is invalid: {type(exc).__name__}: {exc}") from exc
     validate_verdict(verdict, repo, policy, run)
 
