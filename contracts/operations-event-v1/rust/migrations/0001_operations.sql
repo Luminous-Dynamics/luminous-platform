@@ -243,6 +243,47 @@ GRANT INSERT (
 GRANT UPDATE (status, attempts, lease_owner, lease_until, delivered_at)
   ON ops.outbox_events TO luminous_ops_app;
 
+-- Runtime cannot directly mutate available_at. This narrowly granted function
+-- only reschedules the current tenant's still-live lease held by the named
+-- worker and applies a database-controlled exponential retry schedule.
+CREATE OR REPLACE FUNCTION ops.schedule_outbox_retry(
+  p_tenant_id text,
+  p_outbox_id text,
+  p_worker_id text
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, ops
+AS $retry$
+BEGIN
+  UPDATE ops.outbox_events
+  SET status = 'PENDING',
+      available_at = clock_timestamp() + make_interval(
+        secs => LEAST(
+          5.0::double precision * power(
+            2.0::double precision,
+            LEAST(GREATEST(attempts - 1, 0), 10)::double precision
+          ),
+          3600.0::double precision
+        )
+      ),
+      lease_owner = NULL,
+      lease_until = NULL
+  WHERE tenant_id = p_tenant_id
+    AND tenant_id = ops.current_tenant_id()
+    AND outbox_id = p_outbox_id
+    AND status = 'LEASED'
+    AND lease_owner = p_worker_id
+    AND lease_until > clock_timestamp();
+
+  RETURN FOUND;
+END
+$retry$;
+
+REVOKE ALL ON FUNCTION ops.schedule_outbox_retry(text, text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION ops.schedule_outbox_retry(text, text, text) TO luminous_ops_app;
+
 GRANT INSERT (
   tenant_id, connection_id, source_uri, event_id, event_digest, reason_code
 ) ON ops.quarantined_events TO luminous_ops_app;

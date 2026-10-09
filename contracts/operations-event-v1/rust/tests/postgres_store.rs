@@ -166,6 +166,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
            has_column_privilege('luminous_ops_app', 'ops.inbox_events', 'content_digest', 'UPDATE') AS inbox_update_digest, \
            has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'lease_owner', 'UPDATE') AS outbox_update_lease, \
            has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'available_at', 'UPDATE') AS outbox_update_schedule, \
+           has_function_privilege('luminous_ops_app', 'ops.schedule_outbox_retry(text, text, text)', 'EXECUTE') AS outbox_retry_function, \
            has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'payload', 'UPDATE') AS outbox_update_payload"
     )
     .fetch_one(&pool)
@@ -178,6 +179,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert!(!privileges.try_get::<bool, _>("inbox_update_digest").unwrap());
     assert!(privileges.try_get::<bool, _>("outbox_update_lease").unwrap());
     assert!(!privileges.try_get::<bool, _>("outbox_update_schedule").unwrap());
+    assert!(privileges.try_get::<bool, _>("outbox_retry_function").unwrap());
     assert!(!privileges.try_get::<bool, _>("outbox_update_payload").unwrap());
 
     // The database must reject state claiming an external resource that is not
@@ -585,8 +587,41 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
 
     let lease_three = store.claim_next_outbox(TENANT, "worker-d", 30).await.unwrap().unwrap();
     assert_eq!(lease_three.sequence_no, 3);
-    assert!(store.acknowledge_outbox(TENANT, &lease_three.outbox_id, "worker-d").await.unwrap());
-    assert!(store.claim_next_outbox(TENANT, "worker-e", 30).await.unwrap().is_none());
+    assert!(!store.retry_outbox_after_failure(TENANT, &lease_three.outbox_id, "worker-not-owner").await.unwrap(),
+        "a different worker must not reschedule the live lease");
+    assert!(store.retry_outbox_after_failure(TENANT, &lease_three.outbox_id, "worker-d").await.unwrap(),
+        "the current owner may return a failed delivery to the retry schedule");
+    assert!(store.claim_next_outbox(TENANT, "worker-e", 30).await.unwrap().is_none(),
+        "the failed event must not be immediately claimable during backoff");
+    let retry_is_delayed: bool = sqlx::query(
+        "SELECT available_at > clock_timestamp() + interval '1 second' AS delayed \\
+         FROM ops.outbox_events WHERE tenant_id = $1 AND outbox_id = $2",
+    )
+    .bind(TENANT)
+    .bind(&lease_three.outbox_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap()
+    .try_get("delayed")
+    .unwrap();
+    assert!(retry_is_delayed, "retry uses a database-controlled positive backoff");
+
+    // Fast-forward only the disposable test database instead of sleeping for
+    // the production retry delay.
+    sqlx::query(
+        "UPDATE ops.outbox_events SET available_at = clock_timestamp() - interval '1 second' \\
+         WHERE tenant_id = $1 AND outbox_id = $2",
+    )
+    .bind(TENANT)
+    .bind(&lease_three.outbox_id)
+    .execute(&pool)
+    .await
+    .expect("make scheduled retry eligible in isolated test database");
+    let lease_three_retry = store.claim_next_outbox(TENANT, "worker-e", 30).await.unwrap().unwrap();
+    assert_eq!(lease_three_retry.sequence_no, 3);
+    assert_eq!(lease_three_retry.attempts, 2);
+    assert!(store.acknowledge_outbox(TENANT, &lease_three_retry.outbox_id, "worker-e").await.unwrap());
+    assert!(store.claim_next_outbox(TENANT, "worker-f", 30).await.unwrap().is_none());
 
     // Kill a separate receiver process after ingest_event has committed but
     // before the caller can acknowledge the source event. Redelivery after the

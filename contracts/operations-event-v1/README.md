@@ -57,6 +57,10 @@ The CI workflow qualifies the Rust contract separately from the Python reference
 
 Conflicting content under an already accepted event identity records a digest-only quarantine receipt without changing the original inbox outcome. Reusing a business idempotency key with different semantics keeps the new inbox event quarantined and returns an explicit conflict. Re-delivery of that quarantined event returns the stored quarantine reason keyed to the original event digest, even if later conflicting payloads reuse its event ID, instead of a generic duplicate result. Quarantine uniqueness includes the rejected-content digest, so identical repeated attempts collapse to one receipt while distinct conflicting contents remain distinguishable without storing raw payloads.
 
+## PostgreSQL outbox retry behavior
+
+A worker that detects a failed delivery may call `retry_outbox_after_failure` while its lease is still valid. PostgreSQL confirms the current tenant, lease owner, and expiry, clears the lease, and schedules the next attempt with bounded exponential backoff starting at 5 seconds and capped at 1 hour. The runtime role receives EXECUTE permission on this narrow database function, not direct UPDATE permission for `available_at`. Lease expiry after a crashed worker remains a separate recovery path. Retries preserve per-incident predecessor ordering and are at-least-once; there is no automatic dead-letter state or operator replay workflow yet, so a permanently failing predecessor can still block later events.
+
 ## Important limits
 
 Schema-valid does **not** mean trusted, authorized, current, correctly sequenced, or safe to execute. The envelope schema validates metadata shape; `dataschema` identifies a specific domain payload schema. Neither schema is a policy engine, identity provider, proof verifier, or cross-tenant authorization mechanism.

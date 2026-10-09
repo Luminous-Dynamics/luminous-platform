@@ -94,7 +94,7 @@ jobs:
           echo "test_count=$count" >> "$GITHUB_OUTPUT"
 
       - name: Export resolved Rust dependency lock candidate
-        if: always()
+        if: always() && steps.operations_event.outcome == 'success'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: operations-event-cargo-lock-${{ github.event.pull_request.head.sha || github.sha }}

@@ -688,6 +688,34 @@ impl PostgresOperationsStore {
         }))
     }
 
+    /// Reschedule a known failed delivery using bounded exponential backoff.
+    ///
+    /// The database function clears the lease only when this worker still owns
+    /// an unexpired lease in the current tenant. It returns false for a stale
+    /// lease or owner mismatch. Delays start at 5 seconds and cap at 1 hour.
+    /// A retryable outbox predecessor continues to block later incident events.
+    pub async fn retry_outbox_after_failure(
+        &self,
+        tenant_id: &str,
+        outbox_id: &str,
+        worker_id: &str,
+    ) -> Result<bool, StoreError> {
+        if worker_id.trim().is_empty() {
+            return Err(StoreError::InvalidLeaseRequest);
+        }
+        let mut tx = self.tenant_transaction(tenant_id).await?;
+        let rescheduled: bool = sqlx::query_scalar(
+            "SELECT ops.schedule_outbox_retry($1, $2, $3)",
+        )
+        .bind(tenant_id)
+        .bind(outbox_id)
+        .bind(worker_id)
+        .fetch_one(&mut *tx)
+        .await?;
+        tx.commit().await?;
+        Ok(rescheduled)
+    }
+
     /// Acknowledge only the currently owned, unexpired lease.
     pub async fn acknowledge_outbox(
         &self,
