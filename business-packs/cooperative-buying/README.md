@@ -11,6 +11,8 @@ Provide the first concrete path toward a globally portable, member-oriented whol
 - [Proposed cooperative-offer schema](../../schemas/cooperative-offer-v1.schema.json) — Draft 2020-12 structural schema for supplier offers.
 - [Synthetic ZAR offer](fixtures/example-offer-zar.json) — South African-shaped example; not a real supplier or quote.
 - [Synthetic EUR cross-border offer](fixtures/example-offer-eur.json) — Germany/Netherlands-shaped example; no legal, tax, payment, or delivery capability is implied.
+- [Semantic validator](../../tools/validate_cooperative_offer.py) — deterministic cross-field checks; it never authorizes a transaction.
+- [Semantic regression tests](../../tests/test_cooperative_offer_semantics.py) — dates, publication evidence, offer expiry/freshness, quantity relationships, price-break ordering, and cross-border constraints.
 - [Global architecture and staged plan](../../docs/GLOBAL_COOPERATIVE_COMMERCE.md).
 
 ## Schema contract and limits
@@ -51,3 +53,16 @@ The default first-pilot hypothesis is supplier-direct contracting and invoicing 
 ## Qualification status
 
 **Current maturity: M0 / proposed.** JSON Schema and regression tests only check declared structure. The data is synthetic. There is no purchase engine, supplier connector, tax engine, payments integration, savings result, or runtime qualification in this pack.
+
+
+## Running the declaration and semantic checks
+
+From the repository root, after installing the pinned validator dependencies:
+
+```bash
+python tools/validate_cooperative_offer.py business-packs/cooperative-buying/fixtures/example-offer-zar.json
+python tools/validate_cooperative_offer.py business-packs/cooperative-buying/fixtures/example-offer-eur.json
+python -m unittest discover -s tests -p 'test_cooperative_offer_*.py' -v
+```
+
+A report of `DECLARATION_VALID_NO_TRANSACTION_AUTHORIZED` means only that the declaration passed the implemented schema and cross-field checks. It is **not** an authorization, verified supplier claim, official currency/country code-list check, tax or competition-law assessment, live inventory confirmation, or realized-savings proof. Published offers must have current validity/availability observations, retained evidence references and digests, non-unknown tax treatment, and a non-synthetic declaration; these are necessary gates, not sufficient proof of transaction safety.
