@@ -125,7 +125,7 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
 
     def test_unpaired_surrogate_fails_closed_before_consent_hashing(self):
         document = copy.deepcopy(FIXTURE)
-        document["buyer"]["buyer_party_id"] = "\\ud800"
+        document["buyer"]["buyer_party_id"] = "\ud800"
         report = self.validate(document)
         self.assertTrue(report["structural_valid"])
         self.assertFalse(report["semantic_valid"])
