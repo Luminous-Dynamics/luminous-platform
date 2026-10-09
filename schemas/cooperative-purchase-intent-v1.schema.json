@@ -36,7 +36,9 @@
         },
         "revision": {
           "type": "integer",
-          "minimum": 1
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "description": "Bounded to the interoperable RFC 8785/JCS safe-integer range because revision is included in signed/hash-bound canonical scope."
         },
         "state": {
           "enum": [
@@ -313,7 +315,9 @@
         },
         "revision": {
           "type": "integer",
-          "minimum": 1
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "description": "Bounded to the interoperable RFC 8785/JCS safe-integer range because offer revision is included in signed/hash-bound canonical scope."
         },
         "offer_sha256": {
           "type": "string",
