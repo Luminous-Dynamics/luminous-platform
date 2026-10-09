@@ -6,7 +6,7 @@
 
 This repository hosts the reusable workflow used to audit the public Luminous-Dynamics repositories. It separates scanner execution from the repository being scanned and makes the requested source commit explicit. The first implementation covers:
 
-1. GitHub Actions workflow analysis with `zizmor` v1.30.1, using the auditor persona and online audits; both the action commit and scanner release are pinned.
+1. GitHub Actions workflow analysis with `zizmor` v1.30.1, using the auditor persona and online audits; both the action commit and scanner release are pinned. A separate `actionlint` v1.7.12 gate checks the security-audit entrypoint workflows, with the release archive verified against its published SHA-256 before execution.
 2. RustSec dependency-advisory checks for every *tracked* `Cargo.lock` file when the caller opts into Rust auditing, plus deterministic coverage mapping from each tracked `Cargo.toml` to its nearest workspace and tracked lockfile.
 3. Machine-readable `cargo-audit --json` output, scanner stderr, a JSON manifest-coverage report, lockfile-inventory and coverage-report SHA-256 values, and per-lockfile SHA-256 digests for both raw JSON and stderr output. Each result records the lockfile digest and exit code; the exact RustSec advisory-database commit, exact checked-out commit, caller workflow identity, run identity, tool versions, and overall pass/fail status are also recorded. Workflow-analysis output is preserved as a separate artifact from RustSec output.
 4. Read-only token permissions, immutable action references, an exact-subject checkout assertion, no repository secrets, and no write-capable token permissions.
