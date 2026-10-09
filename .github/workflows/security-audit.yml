@@ -172,6 +172,28 @@ jobs:
 
           coverage_failed=0
           rustsec_failed="$lockfile_missing"
+
+          # Freeze one RustSec advisory database snapshot for the entire run.
+          # Every lockfile is evaluated against the same recorded database
+          # revision, avoiding different findings as the upstream DB advances.
+          advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
+          if ! git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
+            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
+            echo "incomplete_reason=advisory_database_clone_failed" | tee -a "$result_root/summary.txt"
+            exit 2
+          fi
+          advisory_db_commit="$(git -C "$advisory_db" rev-parse HEAD)"
+          if [[ ! "$advisory_db_commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
+            echo "incomplete_reason=advisory_database_revision_invalid" | tee -a "$result_root/summary.txt"
+            exit 2
+          fi
+          {
+            echo "advisory_db_status=PASS"
+            echo "advisory_db_commit=$advisory_db_commit"
+            echo "advisory_db_url=https://github.com/RustSec/advisory-db"
+          } | tee -a "$result_root/summary.txt"
+
           # Prove tracked Cargo manifests map to tracked workspace lockfiles.
           # This is intentionally separate from cargo-audit: scanner coverage
           # must be evidenced, not inferred from finding some lockfiles.
@@ -313,7 +335,7 @@ jobs:
             echo "Auditing $lockfile (sha256=$lock_sha256)"
 
             rc=0
-            if cargo audit --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
+            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
               rc=0
             else
               rc=$?
