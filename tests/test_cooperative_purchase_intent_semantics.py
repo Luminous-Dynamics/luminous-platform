@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import sys
 import unittest
@@ -84,7 +85,8 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
         payload = purchase_scope_payload(document)
         reordered_payload = dict(reversed(list(payload.items())))
         self.assertEqual(rfc8785.dumps(payload), rfc8785.dumps(reordered_payload))
-        self.assertEqual(purchase_scope_sha256(document), purchase_scope_sha256(document))
+        self.assertEqual(rfc8785.dumps({"b": 2, "a": 1}), b'{"a":1,"b":2}')
+        self.assertEqual(purchase_scope_sha256(document), hashlib.sha256(rfc8785.dumps(payload)).hexdigest())
 
     def test_changed_quantity_invalidates_previously_authorized_scope_digest(self):
         document = binding_order_candidate()
