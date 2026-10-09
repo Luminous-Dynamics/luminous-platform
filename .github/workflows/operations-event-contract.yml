@@ -40,11 +40,36 @@ jobs:
       - name: Install pinned schema validator
         run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
 
-      - name: Validate schemas, fixtures, adapter model, and SQLite fault-injection cases
-        run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m unittest discover -s contracts/operations-event-v1/tests -p 'test_*.py' -v
+      - name: Run Operations Event tests and require non-empty discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/operations-event-tests.log"
+          python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
+          "$python" -m unittest discover -s contracts/operations-event-v1/tests -p 'test_*.py' -v 2>&1 | tee "$log"
+          count="$(sed -nE 's/^Ran ([0-9]+) tests? in .*/\1/p' "$log" | tail -n 1)"
+          if [[ -z "$count" || "$count" -lt 1 ]]; then
+            echo "::error::Operations Event test discovery was empty or unparseable; this is not a pass."
+            exit 1
+          fi
+          printf '%s\n' "$count" > "$RUNNER_TEMP/operations-event-test-count"
 
-      - name: Validate Holochain attestation share-package schema and adversarial fixtures
-        run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m unittest discover -s contracts/holochain-attestation-v1/tests -p 'test_*.py' -v
+      - name: Run Holochain attestation tests and require non-empty discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/holochain-attestation-tests.log"
+          python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
+          "$python" -m unittest discover -s contracts/holochain-attestation-v1/tests -p 'test_*.py' -v 2>&1 | tee "$log"
+          count="$(sed -nE 's/^Ran ([0-9]+) tests? in .*/\1/p' "$log" | tail -n 1)"
+          if [[ -z "$count" || "$count" -lt 1 ]]; then
+            echo "::error::Holochain attestation test discovery was empty or unparseable; this is not a pass."
+            exit 1
+          fi
+          printf '%s\n' "$count" > "$RUNNER_TEMP/holochain-attestation-test-count"
+
+      - name: Confirm checkout stayed unchanged
+        run: git diff --exit-code && test -z "$(git status --porcelain)"
 
       - name: Write bounded qualification summary
         if: success()
@@ -54,9 +79,9 @@ jobs:
           {
             echo "## Operations Event Contract"
             echo "- Tested source revision: $SOURCE_SHA"
-            echo "- This pass covers the Operations Event contract/model tests and the Holochain attestation share-package schema/adversarial tests."
+            echo "- Operations Event contract/model tests executed: $(cat "$RUNNER_TEMP/operations-event-test-count")"
+            echo "- Holochain attestation share-package tests executed: $(cat "$RUNNER_TEMP/holochain-attestation-test-count")"
+            echo "- Both suites require at least one discovered test; empty/unparseable discovery fails the job."
+            echo "- This pass covers JSON Schema validation, the synthetic Operations Event fixture, the in-memory adapter model, SQLite local reference/fault-injection tests, and the Holochain share-package shape/adversarial tests."
             echo "- It does not qualify a live ConnectWise adapter, PostgreSQL implementation or database tenant isolation, Holochain integrity zome/multi-agent DHT behavior, identity or membership binding, evidence-signature verification, hardware power-loss behavior, or any remote-action path."
           } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Confirm checkout stayed unchanged
-        run: git diff --exit-code && test -z "$(git status --porcelain)"
