@@ -13,7 +13,7 @@ This repository hosts the reusable workflow used to audit the public Luminous-Dy
 5. Read-only token permissions, immutable action references, an exact-subject checkout assertion, no repository secrets, and no write-capable token permissions. GitHub Actions used by the engine are pinned to full SHAs for Node 24-capable releases.
 4. Read-only token permissions, immutable action references, an exact-subject checkout assertion, no repository secrets, and no write-capable token permissions.
 
-The platform self-check runs the workflow audit on pushes to `main`, pull requests, a weekly schedule, and manual dispatch. Callers with Rust dependency graphs set `audit_rust: true`; repositories with tracked npm lockfiles should set `audit_node: true`. The npm coverage currently includes the root repository tree, not the npm lockfiles inside submodules.
+The platform self-check runs the workflow audit on pushes to `main`, pull requests, a weekly schedule, and manual dispatch. Callers with Rust dependency graphs set `audit_rust: true`; repositories with tracked npm lockfiles should set `audit_node: true`. The npm coverage currently includes the root repository tree, not the npm lockfiles inside submodules. Its audit command pins the public npm registry, enforces TLS certificate verification, and uses isolated user/global configuration and cache locations.
 
 The self-check and consumer entrypoints include `github.run_id` in their concurrency groups. That is deliberate: a newer push may supersede ordinary build CI, but it should not replace a pending audit receipt for an older exact commit before the audit can start. Every audited subject remains separately identifiable by its SHA and run ID/attempt.
 
