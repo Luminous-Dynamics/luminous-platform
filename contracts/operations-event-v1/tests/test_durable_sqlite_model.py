@@ -151,6 +151,34 @@ class DurableSQLiteInboxTests(unittest.TestCase):
         second=self.store.claim_outbox("worker-b",now=105,lease_seconds=20)
         self.assertEqual(json.loads(second["payload_json"])["revision"],"revision-2")
 
+    def test_v1_outbox_schema_migrates_with_sequence_and_preserves_order(self):
+        legacy = Path(self.tmp.name) / "legacy-v1.sqlite3"
+        with closing(sqlite3.connect(legacy)) as db:
+            db.executescript("""
+              CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY, applied_at INTEGER NOT NULL);
+              INSERT INTO schema_migrations VALUES(1,100);
+              CREATE TABLE outbox_events (
+                outbox_id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, incident_id TEXT NOT NULL,
+                source TEXT NOT NULL, source_event_id TEXT NOT NULL, payload_json TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('PENDING','LEASED','DELIVERED')),
+                attempts INTEGER NOT NULL DEFAULT 0, lease_owner TEXT, lease_until INTEGER,
+                created_at INTEGER NOT NULL, delivered_at INTEGER);
+              CREATE INDEX outbox_ready_idx ON outbox_events(status,lease_until,created_at);
+              INSERT INTO outbox_events(outbox_id,tenant_id,incident_id,source,source_event_id,payload_json,status,created_at)
+                VALUES('legacy-a','tenant-demo','incident-7301','urn:test','a','{}','PENDING',100);
+              INSERT INTO outbox_events(outbox_id,tenant_id,incident_id,source,source_event_id,payload_json,status,created_at)
+                VALUES('legacy-b','tenant-demo','incident-7301','urn:test','b','{}','PENDING',100);
+            """)
+        migrated=SQLiteInbox(legacy,self.boundary,revision_compare=numeric_revision_compare)
+        rows=migrated.list_outbox()
+        self.assertEqual([row["outbox_id"] for row in rows],["legacy-a","legacy-b"])
+        self.assertTrue(all("outbox_seq" in row for row in rows))
+        with closing(sqlite3.connect(legacy)) as db:
+            columns={row[1] for row in db.execute("PRAGMA table_info(outbox_events)")}
+            version=db.execute("SELECT MAX(version) FROM schema_migrations").fetchone()[0]
+        self.assertIn("outbox_seq",columns)
+        self.assertEqual(version,2)
+
     def test_outbox_ack_requires_current_owner_and_live_lease(self):
         self.store.accept(self.event,now=100)
         claim=self.store.claim_outbox("worker",now=101,lease_seconds=5)

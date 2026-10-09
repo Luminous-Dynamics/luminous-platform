@@ -59,6 +59,7 @@ def numeric_revision_compare(incoming: str, current: str) -> int | None:
 
 class SQLiteInbox:
     """SQLite transaction model; unknown source-revision order fails closed."""
+    SCHEMA_VERSION = 2
     def __init__(self, database_path: str | Path, boundary: IngestionBoundary,
                  *, revision_compare: RevisionComparator | None = None) -> None:
         self.path = str(database_path)
@@ -83,8 +84,9 @@ class SQLiteInbox:
                 state_digest TEXT NOT NULL, payload_json TEXT NOT NULL, updated_at INTEGER NOT NULL,
                 PRIMARY KEY(tenant_id,incident_id));
               CREATE TABLE IF NOT EXISTS outbox_events (
-                outbox_id TEXT PRIMARY KEY, tenant_id TEXT NOT NULL, incident_id TEXT NOT NULL,
-                source TEXT NOT NULL, source_event_id TEXT NOT NULL, payload_json TEXT NOT NULL,
+                outbox_seq INTEGER PRIMARY KEY AUTOINCREMENT, outbox_id TEXT NOT NULL UNIQUE,
+                tenant_id TEXT NOT NULL, incident_id TEXT NOT NULL, source TEXT NOT NULL,
+                source_event_id TEXT NOT NULL, payload_json TEXT NOT NULL,
                 status TEXT NOT NULL CHECK(status IN ('PENDING','LEASED','DELIVERED')),
                 attempts INTEGER NOT NULL DEFAULT 0, lease_owner TEXT, lease_until INTEGER,
                 created_at INTEGER NOT NULL, delivered_at INTEGER);
@@ -95,9 +97,33 @@ class SQLiteInbox:
                 reason_code TEXT NOT NULL, quarantined_at INTEGER NOT NULL);
             """)
             version = db.execute("SELECT COALESCE(MAX(version),0) FROM schema_migrations").fetchone()[0]
-            if version > 1:
+            if version > self.SCHEMA_VERSION:
                 raise RuntimeError("database schema is newer than this reference model")
-            db.execute("INSERT OR IGNORE INTO schema_migrations VALUES (1,?)", (int(time.time()),))
+            # Version 1 used implicit rowid for outbox ordering. Rebuild as an
+            # explicit sequence so VACUUM cannot reorder pending events.
+            columns = {row["name"] for row in db.execute("PRAGMA table_info(outbox_events)")}
+            if "outbox_seq" not in columns:
+                db.executescript("""
+                  CREATE TABLE outbox_events_v2 (
+                    outbox_seq INTEGER PRIMARY KEY AUTOINCREMENT,
+                    outbox_id TEXT NOT NULL UNIQUE, tenant_id TEXT NOT NULL,
+                    incident_id TEXT NOT NULL, source TEXT NOT NULL, source_event_id TEXT NOT NULL,
+                    payload_json TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK(status IN ('PENDING','LEASED','DELIVERED')),
+                    attempts INTEGER NOT NULL DEFAULT 0, lease_owner TEXT, lease_until INTEGER,
+                    created_at INTEGER NOT NULL, delivered_at INTEGER);
+                  INSERT INTO outbox_events_v2
+                    (outbox_id,tenant_id,incident_id,source,source_event_id,payload_json,status,
+                     attempts,lease_owner,lease_until,created_at,delivered_at)
+                  SELECT outbox_id,tenant_id,incident_id,source,source_event_id,payload_json,status,
+                    attempts,lease_owner,lease_until,created_at,delivered_at
+                  FROM outbox_events ORDER BY rowid;
+                  DROP TABLE outbox_events;
+                  ALTER TABLE outbox_events_v2 RENAME TO outbox_events;
+                """)
+                db.execute("CREATE INDEX IF NOT EXISTS outbox_ready_idx ON outbox_events(status,lease_until,created_at)")
+            db.execute("INSERT OR IGNORE INTO schema_migrations VALUES (?,?)",
+                       (self.SCHEMA_VERSION, int(time.time())))
 
     def _connection(self):
         db = sqlite3.connect(self.path, timeout=10, isolation_level=None)
@@ -256,9 +282,9 @@ class SQLiteInbox:
                   SELECT 1 FROM outbox_events AS prior
                   WHERE prior.tenant_id=o.tenant_id AND prior.incident_id=o.incident_id
                     AND prior.status!='DELIVERED'
-                    AND prior.rowid<o.rowid
+                    AND prior.outbox_seq<o.outbox_seq
                 )
-              ORDER BY o.rowid LIMIT 1""", (int(now),)).fetchone()
+              ORDER BY o.outbox_seq LIMIT 1""", (int(now),)).fetchone()
             if row is None:
                 db.commit()
                 return None
@@ -305,4 +331,4 @@ class SQLiteInbox:
 
     def list_outbox(self) -> list[dict[str, Any]]:
         with closing(self._connection()) as db:
-            return [dict(row) for row in db.execute("SELECT * FROM outbox_events ORDER BY rowid")]
+            return [dict(row) for row in db.execute("SELECT * FROM outbox_events ORDER BY outbox_seq")]
