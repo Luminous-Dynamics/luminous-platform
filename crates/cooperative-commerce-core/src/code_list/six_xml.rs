@@ -123,7 +123,7 @@ impl<'a> XmlTokenizer<'a> {
                 return Ok(Some(Token::Text(decode_entities(raw)?)));
             }
             if rest.starts_with("<!--") {
-                self.skip_through("-->", "unterminated XML comment")?;
+                self.skip_comment()?;
                 continue;
             }
             if rest.starts_with("<?") {
@@ -147,6 +147,21 @@ impl<'a> XmlTokenizer<'a> {
             self.offset = end + 1;
             return parse_tag(&content).map(Some);
         }
+    }
+
+    fn skip_comment(&mut self) -> Result<(), SixXmlError> {
+        let start = self.offset + "<!--".len();
+        let rest = &self.input[start..];
+        let end = rest.find("-->").ok_or_else(|| fail("unterminated XML comment"))?;
+        let body = &rest[..end];
+        if body.contains("--") {
+            return Err(fail("XML comments must not contain '--'"));
+        }
+        if !body.chars().all(is_xml_char) {
+            return Err(fail("invalid XML character in comment"));
+        }
+        self.offset = start + end + "-->".len();
+        Ok(())
     }
 
     fn skip_through(&mut self, terminator: &str, error: &str) -> Result<(), SixXmlError> {
@@ -182,7 +197,12 @@ fn name_continue(byte: u8) -> bool {
     name_start(byte) || byte.is_ascii_digit() || matches!(byte, b'-' | b'.')
 }
 fn skip_ws(input: &str, offset: &mut usize) {
-    while *offset < input.len() && input.as_bytes()[*offset].is_ascii_whitespace() { *offset += 1; }
+    // XML 1.0 S is exactly space, tab, carriage return, or line feed.
+    while *offset < input.len()
+        && matches!(input.as_bytes()[*offset], b' ' | b'\\t' | b'\\r' | b'\\n')
+    {
+        *offset += 1;
+    }
 }
 fn parse_name(input: &str, offset: &mut usize) -> Result<String, SixXmlError> {
     let bytes = input.as_bytes();
@@ -514,6 +534,18 @@ mod tests {
         assert!(parse_six_list_one_xml(r#"<!DOCTYPE ISO_4217 [<!ENTITY e SYSTEM "file:///etc/passwd">]><ISO_4217><CcyTbl/></ISO_4217>"#).unwrap_err().to_string().contains("DTD"));
         let xml = XML.replace("Small Island &amp; Coast", "Small Island &custom; Coast");
         assert!(parse_six_list_one_xml(&xml).unwrap_err().to_string().contains("unknown XML entity"));
+    }
+
+    #[test]
+    fn rejects_non_xml_whitespace_and_malformed_comments() {
+        let vertical_tab = XML.replace("<ISO_4217 Pblshd=", "<ISO_4217\\u{000B}Pblshd=");
+        assert!(parse_six_list_one_xml(&vertical_tab).is_err());
+
+        let malformed_comment = XML.replace("<CcyTbl>", "<CcyTbl><!-- invalid -- comment -->");
+        assert!(parse_six_list_one_xml(&malformed_comment)
+            .unwrap_err()
+            .to_string()
+            .contains("comments must not contain '--'"));
     }
 
     #[test]
