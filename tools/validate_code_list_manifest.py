@@ -145,6 +145,8 @@ def validate_manifest(
     if effective_from and effective_until and effective_until <= effective_from:
         errors.append("snapshot.effective_until: must be after effective_from")
     if status == "active":
+        if code_list["version_label"].strip().lower() in {"", "not-retrieved", "unknown", "unversioned"}:
+            errors.append("code_list.version_label: active registries require a publisher version or an explicitly assigned immutable snapshot label")
         if review_due and current >= review_due:
             errors.append("metadata.review_due_at: active manifest is stale because its review deadline has passed")
         if effective_from and current < effective_from:
