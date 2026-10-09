@@ -53,6 +53,13 @@ class CooperativeOfferSchemaTests(unittest.TestCase):
         for document in documents:
             self.assertEqual(self.errors(document), [])
 
+    def test_unit_code_systems_are_required_for_global_comparability(self):
+        document = self.load_fixture(FIXTURE_PATHS[0])
+        del document["product"]["pack"]["order_unit_code_system"]
+        errors = self.errors(document)
+        self.assertTrue(errors)
+        self.assertTrue(any("order_unit_code_system" in error.message for error in errors))
+
     def test_binary_floating_point_money_amount_is_rejected(self):
         document = self.load_fixture(FIXTURE_PATHS[0])
         document["terms"]["unit_price"]["amount"] = 250.0
