@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - "contracts/operations-event-v1/**"
+      - "contracts/holochain-attestation-v1/**"
       - ".github/workflows/operations-event-contract.yml"
   push:
     branches: ["main"]
@@ -41,6 +42,9 @@ jobs:
       - name: Validate schemas, fixtures, adapter model, and SQLite fault-injection cases
         run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m unittest discover -s contracts/operations-event-v1/tests -p 'test_*.py' -v
 
+      - name: Validate Holochain attestation share-package schema and adversarial fixtures
+        run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m unittest discover -s contracts/holochain-attestation-v1/tests -p 'test_*.py' -v
+
       - name: Write bounded qualification summary
         if: success()
         env:
@@ -49,8 +53,8 @@ jobs:
           {
             echo "## Operations Event Contract"
             echo "- Tested source revision: $SOURCE_SHA"
-            echo "- This pass covers JSON Schema validation, the synthetic incident snapshot fixture, the in-memory adapter model, and the SQLite-backed local reference/fault-injection tests."
-            echo "- It does not qualify a live ConnectWise adapter, production database or distributed-writer behavior, database tenant isolation, provider authentication, cryptographic evidence verification, hardware power-loss behavior, or any remote-action path."
+            echo "- This pass covers the Operations Event contract/model tests and the Holochain attestation share-package schema/adversarial tests."
+            echo "- It does not qualify a live ConnectWise adapter, PostgreSQL implementation or database tenant isolation, Holochain integrity zome/multi-agent DHT behavior, identity or membership binding, evidence-signature verification, hardware power-loss behavior, or any remote-action path."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Confirm checkout stayed unchanged
