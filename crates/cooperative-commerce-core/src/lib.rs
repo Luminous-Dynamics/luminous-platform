@@ -311,6 +311,88 @@ pub struct SavingsReport {
     pub notes: Vec<String>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SavingsReceiptStatus {
+    Illustrative,
+    Computed,
+}
+
+/// Typed receipt model. JSON serialization is deliberately a separate, future adapter.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct SavingsReceipt {
+    pub receipt_id: String,
+    pub revision: u64,
+    pub status: SavingsReceiptStatus,
+    pub fixture_only: bool,
+    pub algorithm_name: String,
+    pub algorithm_version: String,
+    /// Git source revision of the calculator used to produce a computed receipt.
+    pub source_revision: Option<String>,
+    /// SHA-256 of the exact calculator implementation/build artifact, not a signature.
+    pub implementation_digest_sha256: Option<String>,
+    pub input_snapshot: SavingsInput,
+    pub claimed_calculation: SavingsReport,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ReceiptVerificationError {
+    InvalidMetadata,
+    CalculationMismatch,
+    Calculation(CommerceError),
+}
+
+impl fmt::Display for ReceiptVerificationError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidMetadata => write!(f, "receipt metadata/status/source identity is invalid"),
+            Self::CalculationMismatch => write!(f, "claimed receipt calculation does not match a recomputation from the included snapshot"),
+            Self::Calculation(err) => write!(f, "receipt input snapshot cannot be calculated: {err}"),
+        }
+    }
+}
+
+impl std::error::Error for ReceiptVerificationError {}
+
+/// Recompute all reported totals/classification/limitations from the included inputs.
+/// This verifies internal arithmetic consistency only; it does not authenticate the
+/// source bytes, issuer, signatures, supplier identity, or causation.
+pub fn verify_savings_receipt(receipt: &SavingsReceipt) -> Result<SavingsReport, ReceiptVerificationError> {
+    if receipt.receipt_id.trim().is_empty()
+        || receipt.revision == 0
+        || receipt.algorithm_name.trim().is_empty()
+        || receipt.algorithm_version.trim().is_empty()
+    {
+        return Err(ReceiptVerificationError::InvalidMetadata);
+    }
+    match receipt.status {
+        SavingsReceiptStatus::Illustrative => {
+            if !receipt.fixture_only {
+                return Err(ReceiptVerificationError::InvalidMetadata);
+            }
+        }
+        SavingsReceiptStatus::Computed => {
+            if receipt.fixture_only {
+                return Err(ReceiptVerificationError::InvalidMetadata);
+            }
+            let valid_revision = receipt.source_revision.as_deref().is_some_and(|value| {
+                (value.len() == 40 || value.len() == 64) && value.bytes().all(|b| b.is_ascii_hexdigit())
+            });
+            let valid_implementation_digest = receipt.implementation_digest_sha256.as_deref()
+                .is_some_and(valid_sha256);
+            if !valid_revision || !valid_implementation_digest {
+                return Err(ReceiptVerificationError::InvalidMetadata);
+            }
+        }
+    }
+
+    let recomputed = calculate_savings(&receipt.input_snapshot)
+        .map_err(ReceiptVerificationError::Calculation)?;
+    if recomputed != receipt.claimed_calculation {
+        return Err(ReceiptVerificationError::CalculationMismatch);
+    }
+    Ok(recomputed)
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CommerceError {
     InvalidCurrency,
@@ -776,6 +858,73 @@ mod tests {
     fn decimal_overflow_fails_closed() {
         let huge = Decimal::parse("99999999999999999999999999999999999999").unwrap();
         assert_eq!(huge.checked_mul(Decimal::parse("10").unwrap()), Err(DecimalError::Overflow));
+    }
+
+    fn receipt(input: SavingsInput, status: SavingsReceiptStatus, fixture_only: bool) -> SavingsReceipt {
+        let calculation = calculate_savings(&input).unwrap();
+        SavingsReceipt {
+            receipt_id: "fixture:receipt:001".into(),
+            revision: 1,
+            status,
+            fixture_only,
+            algorithm_name: "cooperative-commerce-core".into(),
+            algorithm_version: "0.1.0".into(),
+            source_revision: if status == SavingsReceiptStatus::Computed {
+                Some("a".repeat(40))
+            } else {
+                None
+            },
+            implementation_digest_sha256: if status == SavingsReceiptStatus::Computed {
+                Some("b".repeat(64))
+            } else {
+                None
+            },
+            input_snapshot: input,
+            claimed_calculation: calculation,
+        }
+    }
+
+    #[test]
+    fn receipt_verifier_recomputes_all_claimed_arithmetic() {
+        let candidate = receipt(input(), SavingsReceiptStatus::Computed, false);
+        let report = verify_savings_receipt(&candidate).unwrap();
+        assert_eq!(report.net_difference, "120");
+    }
+
+    #[test]
+    fn receipt_verifier_rejects_a_forged_total() {
+        let mut candidate = receipt(input(), SavingsReceiptStatus::Computed, false);
+        candidate.claimed_calculation.net_difference = "999999".into();
+        assert_eq!(
+            verify_savings_receipt(&candidate),
+            Err(ReceiptVerificationError::CalculationMismatch)
+        );
+    }
+
+    #[test]
+    fn illustrative_fixture_cannot_claim_computed_status() {
+        let candidate = receipt(input(), SavingsReceiptStatus::Computed, true);
+        assert_eq!(
+            verify_savings_receipt(&candidate),
+            Err(ReceiptVerificationError::InvalidMetadata)
+        );
+    }
+
+    #[test]
+    fn computed_receipt_requires_source_and_implementation_identity() {
+        let mut candidate = receipt(input(), SavingsReceiptStatus::Computed, false);
+        candidate.implementation_digest_sha256 = None;
+        assert_eq!(
+            verify_savings_receipt(&candidate),
+            Err(ReceiptVerificationError::InvalidMetadata)
+        );
+    }
+
+    #[test]
+    fn illustrative_receipt_is_verified_only_as_an_arithmetic_fixture() {
+        let candidate = receipt(input(), SavingsReceiptStatus::Illustrative, true);
+        let report = verify_savings_receipt(&candidate).unwrap();
+        assert!(!report.evidence_authenticated_by_calculator);
     }
 
     #[test]
