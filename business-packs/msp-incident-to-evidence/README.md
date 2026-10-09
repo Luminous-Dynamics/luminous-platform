@@ -4,6 +4,15 @@
 
 This pack gives a small MSP a repeatable first service. It is designed to work manually using customer-approved exports and established tools while the Luminous platform connector, tenant isolation, and operational workflow are still being qualified.
 
+## Files in this starter pack
+
+- [Service pack manifest](service-pack.yaml) — proposed scope, inputs, outputs, limits, and acceptance.
+- [Customer intake template](templates/customer-intake.md) — clarify authority, target, data boundary, and acceptance.
+- [Statement-of-work template](templates/statement-of-work.md) — record scope, exclusions, responsibilities, data handling, and fees.
+- [Delivery report template](templates/delivery-report.md) — separate observed facts, assertions, simulations, test results, and unknowns.
+
+The templates are drafting aids. Adapt contracts, tax, insurance, privacy and retention terms to the relevant jurisdiction with a qualified adviser.
+
 ## Customer promise
 
 Turn one agreed incident or operational-risk review into a source-linked record of what is known, what action is planned, who owns the next step, and what evidence would show it is resolved.
