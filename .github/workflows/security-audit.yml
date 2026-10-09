@@ -310,7 +310,12 @@ jobs:
             || ! git -C "$fixture" ls-files --stage -z > "$fixture_stage"; then
             incomplete tracked_snapshot_fixture_setup_failed; exit 0
           fi
-          if git -C "$fixture" archive HEAD | tar -tf - | grep -Fxq "secret-fixture.txt"; then
+          fixture_archive="$RUNNER_TEMP/gitleaks-export-ignore-fixture.tar"
+          fixture_listing="$RUNNER_TEMP/gitleaks-export-ignore-listing.txt"
+          if ! git -C "$fixture" archive HEAD > "$fixture_archive" || ! tar -tf "$fixture_archive" > "$fixture_listing"; then
+            incomplete tracked_snapshot_fixture_archive_failed; exit 0
+          fi
+          if grep -Fxq "secret-fixture.txt" "$fixture_listing"; then
             incomplete tracked_snapshot_fixture_not_exercising_export_ignore; exit 0
           fi
           if ! python3 - "$fixture_paths" "$fixture_stage" <<'PY'
