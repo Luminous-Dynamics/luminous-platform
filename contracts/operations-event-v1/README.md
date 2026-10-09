@@ -53,7 +53,7 @@ The CI workflow qualifies the Rust contract separately from the Python reference
 
 ## Conflict and quarantine replay behavior
 
-Conflicting content under an already accepted event identity records a digest-only quarantine receipt without changing the original inbox outcome. Reusing a business idempotency key with different semantics keeps the new inbox event quarantined and returns an explicit conflict. Re-delivery of that quarantined event returns the stored quarantine reason instead of a generic duplicate result. Quarantine uniqueness includes the rejected-content digest, so identical repeated attempts collapse to one receipt while distinct conflicting contents remain distinguishable without storing raw payloads.
+Conflicting content under an already accepted event identity records a digest-only quarantine receipt without changing the original inbox outcome. Reusing a business idempotency key with different semantics keeps the new inbox event quarantined and returns an explicit conflict. Re-delivery of that quarantined event returns the stored quarantine reason keyed to the original event digest, even if later conflicting payloads reuse its event ID, instead of a generic duplicate result. Quarantine uniqueness includes the rejected-content digest, so identical repeated attempts collapse to one receipt while distinct conflicting contents remain distinguishable without storing raw payloads.
 
 ## Important limits
 

@@ -834,6 +834,8 @@ async fn latest_quarantine_reason(
     let row = sqlx::query(
         "SELECT reason_code FROM ops.quarantined_events \
          WHERE tenant_id = $1 AND connection_id = $2 AND source_uri = $3 AND event_id = $4 \
+           AND event_digest = (SELECT content_digest FROM ops.inbox_events \
+             WHERE tenant_id = $1 AND connection_id = $2 AND source_uri = $3 AND event_id = $4) \
          ORDER BY recorded_at DESC, quarantine_id DESC LIMIT 1",
     )
     .bind(&authenticated.tenant_id)
