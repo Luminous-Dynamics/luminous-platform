@@ -103,7 +103,7 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
         document["sharing"]["recipients"] = ["fixture:supplier:1", "fixture:supplier:2"]
         errors = list(schema_validator.iter_errors(document))
         self.assertTrue(errors)
-        self.assertTrue(any("recipients" in error.message for error in errors))
+        self.assertTrue(any(list(error.absolute_path) == ["sharing", "recipients"] for error in errors))
 
     def test_purchase_scope_uses_rfc8785_canonicalization(self):
         document = binding_order_candidate()
