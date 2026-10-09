@@ -908,6 +908,7 @@ mod tests {
             actual_coverage: CostCoverage {
                 declared_complete: true,
                 considered_categories: vec!["freight".into()],
+                zero_confirmed_categories: vec![],
                 unresolved_costs: vec![],
                 evidence: evidence("actual-coverage", EvidenceKind::SupplierInvoice),
             },
