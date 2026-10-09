@@ -1255,7 +1255,21 @@ jobs:
             report="$result_root/lockfiles/${report_id}_$path_hash.json"
             stderr="$result_root/lockfiles/${report_id}_$path_hash.stderr"
             lock_abs="$workspace/$lockfile"
-            if [[ ! -f "$lock_abs" || -L "$lock_abs" ]]; then
+            lock_repo="$workspace"
+            lock_rel="$lockfile"
+            lock_prefix=""
+            while IFS= read -r module_path; do
+              [[ -n "$module_path" ]] || continue
+              case "$lockfile" in
+                "$module_path"/*)
+                  lock_repo="$workspace/$module_path"
+                  lock_rel="${lockfile#${module_path}/}"
+                  lock_prefix="${module_path}/"
+                  break
+                  ;;
+              esac
+            done < "$verified_npm_submodules"
+                        if [[ ! -f "$lock_abs" || -L "$lock_abs" ]]; then
               lock_reference="non-regular-or-missing"
               if [[ -L "$lock_abs" ]]; then lock_reference="$(readlink -- "$lock_abs")"; fi
               lock_reference_sha="$(printf '%s' "$lock_reference" | sha256sum | cut -d' ' -f1)"
@@ -1285,10 +1299,11 @@ jobs:
             # same package root. A report for the ignored package-lock must not
             # be misrepresented as an audit of the effective dependency graph.
             if [[ "$lockfile" == "package-lock.json" || "$lockfile" == */package-lock.json ]]; then
-              shrinkwrap="${lockfile%package-lock.json}npm-shrinkwrap.json"
-              if git -C "$workspace" ls-files --error-unmatch -- "$shrinkwrap" >/dev/null 2>&1 && [[ -f "$workspace/$shrinkwrap" ]]; then
+              shrinkwrap_rel="${lock_rel%package-lock.json}npm-shrinkwrap.json"
+              shrinkwrap="${lock_prefix}${shrinkwrap_rel}"
+              if git -C "$lock_repo" ls-files --error-unmatch -- "$shrinkwrap_rel" >/dev/null 2>&1 && [[ -f "$lock_repo/$shrinkwrap_rel" && ! -L "$lock_repo/$shrinkwrap_rel" ]]; then
                 lock_sha="$(sha256sum "$lock_abs" | cut -d' ' -f1)"
-                shrinkwrap_sha="$(sha256sum "$workspace/$shrinkwrap" | cut -d' ' -f1)"
+                shrinkwrap_sha="$(sha256sum "$lock_repo/$shrinkwrap_rel" | cut -d' ' -f1)"
                 python3 - "$report" "$lockfile" "$lock_sha" "$shrinkwrap" "$shrinkwrap_sha" <<'PY'
           import json
           import sys
