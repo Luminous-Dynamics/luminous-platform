@@ -441,21 +441,73 @@ fn valid_sha256(value: &str) -> bool {
 }
 
 fn has_explicit_timestamp_zone(value: &str) -> bool {
+    // Validate the full RFC 3339 timestamp shape and calendar/time fields without
+    // silently treating an arbitrary string ending in Z as a timestamp.
     let bytes = value.as_bytes();
-    if !value.contains('T') || !bytes.iter().all(u8::is_ascii) {
+    if !bytes.iter().all(u8::is_ascii) || bytes.len() < 20 {
         return false;
     }
-    if value.ends_with('Z') {
-        return true;
-    }
-    if bytes.len() < 6 {
+    if bytes[4] != b'-' || bytes[7] != b'-'
+        || !(bytes[10] == b'T' || bytes[10] == b't')
+        || bytes[13] != b':' || bytes[16] != b':'
+        || !bytes[0..4].iter().all(u8::is_ascii_digit)
+        || !bytes[5..7].iter().all(u8::is_ascii_digit)
+        || !bytes[8..10].iter().all(u8::is_ascii_digit)
+        || !bytes[11..13].iter().all(u8::is_ascii_digit)
+        || !bytes[14..16].iter().all(u8::is_ascii_digit)
+        || !bytes[17..19].iter().all(u8::is_ascii_digit)
+    {
         return false;
     }
-    let zone = &bytes[bytes.len() - 6..];
-    (zone[0] == b'+' || zone[0] == b'-')
-        && zone[1..3].iter().all(u8::is_ascii_digit)
-        && zone[3] == b':'
-        && zone[4..6].iter().all(u8::is_ascii_digit)
+
+    let year = digits(&bytes[0..4]);
+    let month = digits(&bytes[5..7]);
+    let day = digits(&bytes[8..10]);
+    let hour = digits(&bytes[11..13]);
+    let minute = digits(&bytes[14..16]);
+    let second = digits(&bytes[17..19]);
+    if year == 0 || month == 0 || month > 12 || hour > 23 || minute > 59 || second > 60 {
+        return false;
+    }
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let days_in_month = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if leap => 29,
+        2 => 28,
+        _ => return false,
+    };
+    if day == 0 || day > days_in_month {
+        return false;
+    }
+
+    let mut zone_index = 19;
+    if bytes.get(zone_index) == Some(&b'.') {
+        zone_index += 1;
+        let fraction_start = zone_index;
+        while bytes.get(zone_index).is_some_and(u8::is_ascii_digit) {
+            zone_index += 1;
+        }
+        if zone_index == fraction_start {
+            return false;
+        }
+    }
+
+    match bytes.get(zone_index..) {
+        Some([b'Z']) | Some([b'z']) => true,
+        Some([sign, zh1, zh2, b':', zm1, zm2])
+            if *sign == b'+' || *sign == b'-' =>
+        {
+            [zh1, zh2, zm1, zm2].iter().all(u8::is_ascii_digit)
+                && digits(&[*zh1, *zh2]) <= 23
+                && digits(&[*zm1, *zm2]) <= 59
+        }
+        _ => false,
+    }
+}
+
+fn digits(bytes: &[u8]) -> u32 {
+    bytes.iter().fold(0, |value, byte| value * 10 + u32::from(byte - b'0'))
 }
 
 fn validate_evidence(evidence: &EvidenceRef) -> Result<(), CommerceError> {
@@ -1011,6 +1063,20 @@ mod tests {
         let mut candidate = input();
         candidate.actual_lines[0].evidence.id = candidate.baseline_lines[0].evidence.id.clone();
         assert_eq!(calculate_savings(&candidate), Err(CommerceError::ConflictingEvidenceReference));
+    }
+
+    #[test]
+    fn malformed_calendar_timestamp_is_rejected() {
+        let mut candidate = input();
+        candidate.actual_lines[0].evidence.captured_at = "2026-02-30T00:00:00Z".into();
+        assert_eq!(calculate_savings(&candidate), Err(CommerceError::InvalidEvidence));
+    }
+
+    #[test]
+    fn arbitrary_string_with_a_z_suffix_is_not_a_timestamp() {
+        let mut candidate = input();
+        candidate.actual_lines[0].evidence.captured_at = "made-upTZ".into();
+        assert_eq!(calculate_savings(&candidate), Err(CommerceError::InvalidEvidence));
     }
 
     #[test]
