@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Copyright (C) 2026 Luminous Dynamics
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Strict, fail-closed validator for proposed Luminous deployment profiles.
 
 Schema validity is not runtime qualification, production readiness, or legal compliance.
@@ -184,6 +187,9 @@ def validate_profile_data(
         "source": source,
         "result": "INVALID",
         "qualification_evaluated": False,
+        "profile_schema_id": schema.get("$id") if isinstance(schema, dict) else None,
+        "profile_schema_version": data.get("schema") if isinstance(data, dict) else None,
+        "schema_digest_sha256": profile_digest(schema) if isinstance(schema, dict) else None,
         "profile_digest_sha256": None,
         "errors": [],
         "blockers": [],
@@ -399,6 +405,9 @@ def validate_profile_text(
             "source": source,
             "result": "INVALID",
             "qualification_evaluated": False,
+            "profile_schema_id": schema.get("$id") if isinstance(schema, dict) else None,
+            "profile_schema_version": None,
+            "schema_digest_sha256": profile_digest(schema) if isinstance(schema, dict) else None,
             "profile_digest_sha256": None,
             "errors": [{"path": "/", "message": str(exc)}],
             "blockers": [],
@@ -441,6 +450,9 @@ def main(argv: list[str] | None = None) -> int:
             "source": str(args.profile),
             "result": "INVALID",
             "qualification_evaluated": False,
+            "profile_schema_id": None,
+            "profile_schema_version": None,
+            "schema_digest_sha256": None,
             "profile_digest_sha256": None,
             "errors": [{"path": "/", "message": str(exc)}],
             "blockers": [],
