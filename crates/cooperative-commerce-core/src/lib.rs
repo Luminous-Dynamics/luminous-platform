@@ -493,17 +493,19 @@ fn has_explicit_timestamp_zone(value: &str) -> bool {
         }
     }
 
-    match bytes.get(zone_index..) {
-        Some([b'Z']) | Some([b'z']) => true,
-        Some([sign, zh1, zh2, b':', zm1, zm2])
-            if *sign == b'+' || *sign == b'-' =>
-        {
-            [zh1, zh2, zm1, zm2].iter().all(u8::is_ascii_digit)
-                && digits(&[*zh1, *zh2]) <= 23
-                && digits(&[*zm1, *zm2]) <= 59
-        }
-        _ => false,
+    let zone = &bytes[zone_index..];
+    if zone.len() == 1 {
+        return zone[0] == b'Z' || zone[0] == b'z';
     }
+    if zone.len() != 6
+        || (zone[0] != b'+' && zone[0] != b'-')
+        || zone[3] != b':'
+        || !zone[1..3].iter().all(u8::is_ascii_digit)
+        || !zone[4..6].iter().all(u8::is_ascii_digit)
+    {
+        return false;
+    }
+    digits(&zone[1..3]) <= 23 && digits(&zone[4..6]) <= 59
 }
 
 fn digits(bytes: &[u8]) -> u32 {
