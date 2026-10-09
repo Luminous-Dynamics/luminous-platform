@@ -185,12 +185,13 @@ jobs:
           tar -xzf "$archive" -C "$tool_dir" actionlint
           binary="$tool_dir/actionlint"
           mapfile -d '' -t audit_workflows < <(
-            find .github/workflows -maxdepth 1 -type f \( -name 'security-audit.yml' -o -name 'security-audit-self.yml' \) -print0 | sort -z
+            git ls-files -z -- '.github/workflows/*.yml' '.github/workflows/*.yaml' | LC_ALL=C sort -z
           )
           if [[ "${#audit_workflows[@]}" -eq 0 ]]; then
-            echo "FAIL: no tracked security audit workflow files found" >> "$report"
+            echo "FAIL: no tracked GitHub Actions workflow YAML files found" >> "$report"
             exit 2
           fi
+          echo "workflow_file_count=${#audit_workflows[@]}" >> "$report"
           "$binary" -version >> "$report" 2>&1
           if "$binary" "${audit_workflows[@]}" >> "$report" 2>&1; then
             rc=0
