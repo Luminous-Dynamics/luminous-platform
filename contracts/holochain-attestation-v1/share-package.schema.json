@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/contracts/holochain-attestation-v1/share-package.schema.json",
+  "title": "Luminous Holochain Share Package V1",
+  "description": "Data-minimized cross-organization attestation payload. Schema validity and Holochain DHT validation do not prove issuer authority, truth of claims, evidence authenticity, or permission to execute operations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "shareId",
+    "caseRef",
+    "recordType",
+    "issuerRef",
+    "issuerRoleClaim",
+    "issuedAt",
+    "statementCode",
+    "privacyReview",
+    "authorityEffect"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "shareId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "caseRef": {
+      "type": "string",
+      "pattern": "^case_[a-f0-9]{32}$",
+      "description": "Random opaque reference; external ticket/customer/asset IDs are resolved only in the authorized local service."
+    },
+    "recordType": {
+      "type": "string",
+      "enum": [
+        "incident-acknowledgement",
+        "evidence-attestation",
+        "dispute",
+        "supersession"
+      ]
+    },
+    "issuerRef": {
+      "type": "string",
+      "pattern": "^org_[a-f0-9]{32}$",
+      "description": "Opaque application-level reference. The claimed reference/role must be bound to the actual Holochain author by an independent trust policy."
+    },
+    "issuerRoleClaim": {
+      "type": "string",
+      "enum": [
+        "customer",
+        "service-provider",
+        "independent-reviewer",
+        "auditor"
+      ],
+      "description": "Issuer-supplied role claim, not an authorization or credential by itself."
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Author-asserted timestamp; do not use it as trusted global ordering or freshness evidence."
+    },
+    "statementCode": {
+      "type": "string",
+      "enum": [
+        "received",
+        "reviewed",
+        "disputed",
+        "supersedes"
+      ],
+      "description": "Closed vocabulary only; free-form ticket/customer content is intentionally excluded."
+    },
+    "targetShareId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Required for dispute and supersession records; identifies a prior share record, not proof that it was valid."
+    },
+    "evidenceManifest": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "manifestRef",
+          "digestAlgorithm",
+          "digest",
+          "classification",
+          "assessmentClaim"
+        ],
+        "properties": {
+          "manifestRef": {
+            "type": "string",
+            "pattern": "^manifest_[a-f0-9]{32}$"
+          },
+          "digestAlgorithm": {
+            "const": "sha-256"
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "Integrity commitment only; it does not prove confidentiality, authenticity, or truth."
+          },
+          "classification": {
+            "const": "approved-shareable"
+          },
+          "assessmentClaim": {
+            "type": "string",
+            "enum": [
+              "not-assessed",
+              "digest-comparison-reported",
+              "signature-check-reported",
+              "independent-review-reported"
+            ],
+            "description": "A reported claim by the issuer; verification method, signer, trust basis, and result must be checked independently."
+          }
+        }
+      },
+      "description": "References to separately stored, access-controlled evidence manifests. No raw files, URLs, credentials, screen/audio, or diagnostic content."
+    },
+    "privacyReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approvedForDht",
+        "policyRef",
+        "dataClass",
+        "rawSensitiveDataIncluded"
+      ],
+      "properties": {
+        "approvedForDht": {
+          "const": true,
+          "description": "Declaration only; the adapter must enforce an authenticated sharing policy before publication."
+        },
+        "policyRef": {
+          "type": "string",
+          "pattern": "^policy_[a-f0-9]{32}$"
+        },
+        "dataClass": {
+          "const": "partner-shareable"
+        },
+        "rawSensitiveDataIncluded": {
+          "const": false
+        }
+      }
+    },
+    "authorityEffect": {
+      "const": "none",
+      "description": "This record cannot authorize a remote action, a system mutation, a provider write, billing, or settlement."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "recordType": {
+            "const": "incident-acknowledgement"
+          }
+        },
+        "required": [
+          "recordType"
+        ]
+      },
+      "then": {
+        "properties": {
+          "statementCode": {
+            "const": "received"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "recordType": {
+            "const": "evidence-attestation"
+          }
+        },
+        "required": [
+          "recordType"
+        ]
+      },
+      "then": {
+        "properties": {
+          "statementCode": {
+            "const": "reviewed"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "recordType": {
+            "const": "dispute"
+          }
+        },
+        "required": [
+          "recordType"
+        ]
+      },
+      "then": {
+        "required": [
+          "targetShareId"
+        ],
+        "properties": {
+          "statementCode": {
+            "const": "disputed"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "recordType": {
+            "const": "supersession"
+          }
+        },
+        "required": [
+          "recordType"
+        ]
+      },
+      "then": {
+        "required": [
+          "targetShareId"
+        ],
+        "properties": {
+          "statementCode": {
+            "const": "supersedes"
+          }
+        }
+      }
+    }
+  ]
+}
