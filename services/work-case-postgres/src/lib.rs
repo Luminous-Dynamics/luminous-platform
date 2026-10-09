@@ -493,6 +493,29 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn finalized_idempotency_snapshot_is_immutable() {
+        let pool = pool(1).await;
+        let repo = WorkCaseRepository { pool: pool.clone() };
+        let p = principal();
+        let command_value = command(
+            "immutable-seed-key-001", "case-immutable-seed-001", "Immutable snapshot test"
+        );
+        let created = repo.create_case(&p, command_value.clone()).await.expect("create seed case");
+
+        let mut tx = pool.begin().await.expect("begin snapshot tamper transaction");
+        set_tenant(&mut tx, &p.tenant_id).await.expect("set tenant context");
+        let update = sqlx::query!(
+            "UPDATE command_idempotency SET result_payload = $3 WHERE tenant_id = $1 AND idempotency_key = $2",
+            p.tenant_id, command_value.idempotency_key, Json(json!({}))
+        ).execute(&mut *tx).await;
+        assert!(update.is_err(), "database must reject rewriting a finalized idempotency snapshot");
+        tx.rollback().await.expect("roll back rejected snapshot rewrite");
+
+        let replay = repo.create_case(&p, command_value).await.expect("replay finalized result");
+        assert_eq!(replay, created, "rejected snapshot mutation must preserve the original response");
+    }
+
+    #[tokio::test]
     async fn rls_and_single_connection_reuse_isolate_tenants() {
         let pool = pool(1).await;
         let repo = WorkCaseRepository { pool: pool.clone() };

@@ -85,7 +85,7 @@ jobs:
           python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
           "$python" scripts/run_unittest_suite.py scripts/tests --minimum-tests 6 2>&1 | tee "$log"
           count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
-          if [[ -z "$count" || "$count" -lt 6 ]]; then
+          if [[ -z "$count" || "$count" -lt 7 ]]; then
             echo "::error::Test-runner regression suite did not execute its required test count."
             exit 1
           fi
@@ -152,7 +152,7 @@ jobs:
           cargo +1.96.0 test --manifest-path "$RUNNER_TEMP/work-case-postgres/Cargo.toml" --all-targets 2>&1 | tee "$log"
           count="$(awk '/^test result:/ { for (i = 1; i <= NF; i++) if ($i == "passed;") total += $(i - 1) } END { print total + 0 }' "$log")"
           if [[ -z "$count" || "$count" -lt 6 ]]; then
-            echo "::error::PostgreSQL Work Case suite must execute at least 6 tests; observed $count."
+            echo "::error::PostgreSQL Work Case suite must execute at least 7 tests; observed $count."
             exit 1
           fi
           echo "test_count=$count" >> "$GITHUB_OUTPUT"
