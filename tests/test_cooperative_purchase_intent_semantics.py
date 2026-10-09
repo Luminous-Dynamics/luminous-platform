@@ -115,6 +115,13 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
         self.assertEqual(rfc8785.dumps({"b": 2, "a": 1}), b'{"a":1,"b":2}')
         self.assertEqual(purchase_scope_sha256(document), hashlib.sha256(rfc8785.dumps(payload)).hexdigest())
 
+    def test_changed_consent_evidence_invalidates_purchase_authorization(self):
+        document = binding_order_candidate()
+        document["sharing"]["consent"]["evidence_reference"] = "fixture:replaced-consent-evidence"
+        report = self.validate(document)
+        self.assertFalse(report["semantic_valid"])
+        self.assertTrue(any("canonical purchase-scope projection" in error for error in report["errors"]))
+
     def test_changed_consent_scope_invalidates_purchase_authorization(self):
         document = binding_order_candidate()
         document["sharing"]["shareable_fields"].append("destination_region")
