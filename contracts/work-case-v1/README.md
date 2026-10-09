@@ -1,19 +1,17 @@
 # Native Work Case Contract V1
 
-**Status:** executable in-memory reference model and portable snapshot schema. This is not a production service, durable store, authorization server, or qualified PSA.
+**Status:** versioned snapshot schema, in-memory state-machine model, and SQLite persistence reference. Not a production PSA service or qualified ConnectWise integration.
 
-This is the first owned service-management domain slice for a Luminous ConnectWise-class platform. A work case joins the people, resources, service work, lifecycle, external mappings, and evidence references needed to manage an incident, request, problem, or change. External PSA identifiers are mappings, not local primary keys.
+## Artifacts
 
-## Contents
+- \`schema.json\`: JSON Schema Draft 2020-12 for the portable snapshot.
+- \`examples/incident-work-case.json\`: deterministic synthetic fixture.
+- \`work_case_model.py\`: domain/state-machine model.
+- \`sqlite_work_case_store.py\`: local persistence conformance reference.
+- \`tests/test_work_case_model.py\`: lifecycle and domain boundary tests.
+- \`tests/test_sqlite_work_case_store.py\`: restart/replay, transaction, mapping, concurrency, and tenant-negative tests.
 
-- schema.json: JSON Schema Draft 2020-12 for the portable work-case snapshot.
-- examples/incident-work-case.json: deterministic synthetic fixture.
-- work_case_model.py: typed state machine, expected-revision checks, idempotency semantics, tenant-bound access, append-only timeline, evidence references, and external mapping uniqueness.
-- tests/test_work_case_model.py: schema validation plus lifecycle, transition-matrix, duplicate/replay, concurrency, cross-tenant, stale revision, external mapping, and evidence-kind tests.
-
-## Local reproduction
-
-From the repository root:
+## Reproduce locally
 
 ~~~sh
 python3 -m venv /tmp/work-case-v1-venv
@@ -21,9 +19,13 @@ python3 -m venv /tmp/work-case-v1-venv
 PYTHONDONTWRITEBYTECODE=1 /tmp/work-case-v1-venv/bin/python -m unittest discover -s contracts/work-case-v1/tests -p 'test_*.py' -v
 ~~~
 
-The JSON Schema validation uses the already pinned jsonschema 4.26.0 dependency. Core state-machine behavior uses Python's standard library.
+## Persistence and event semantics
 
-## Lifecycle rules
+The SQLite reference commits case snapshot, revision, append-only activity row, idempotency response, external mapping (when present), and a minimal outbox event in one local transaction. Fault-injection tests target selected write boundaries. Each mutation opens a fresh connection; tests reconstruct the store against the same database file and run duplicate calls through separate store objects.
+
+The outbox represents pending local delivery, not exactly-once messaging. A future dispatcher needs authenticated destination configuration, lease/claim/ack behavior, retry bounds, a visible dead-letter state, per-case ordering, reconciliation, and idempotent consumers. The event envelope omits summaries, evidence payloads, and credentials by design.
+
+## Lifecycle
 
 | Current state | Allowed next states |
 |---|---|
@@ -34,19 +36,10 @@ The JSON Schema validation uses the already pinned jsonschema 4.26.0 dependency.
 | closed | none |
 | cancelled | none |
 
-Every mutation carries an expected revision, a tenant-bound principal, an idempotency key, command identifier, timestamp, and reason. Activity records include the actor, actor role, time, prior/new revisions, and typed activity label. A stale revision fails without changing the snapshot or timeline. An identical retry returns its original result; reuse of the same idempotency key for different semantics conflicts.
+Every mutation is tenant-scoped and revision-checked. Reuse of an idempotency key with different semantics conflicts. External mapping uniqueness is scoped by tenant, configured connection, provider, and external ID. A real API must resolve connection identity through trusted connector configuration, not trust a request-body string as authority.
 
-## Authority and data boundaries
+## Qualification boundary
 
-- Tenant context comes from Principal, which a future authenticated API must construct. Commands do not accept caller-supplied tenant fields. A real service must authorize every API request and every referenced resource.
-- A requester can open a case; lifecycle, assignment, evidence-linking, and external mapping mutations require technician, admin, or configured integration authority in this reference model. This role table is illustrative, not a universal organization policy.
-- External provider/company/ticket identifiers remain explicit mappings and never become canonical local case IDs. Mapping uniqueness is scoped by tenant, configured connection, provider, and external ID, so separate provider instances cannot collide. The real API must derive or authorize connection identity from trusted connector configuration rather than trust a request-body string. An identifier already mapped to another local case within that scope conflicts; no best-guess matching.
-- Evidence references carry a digest, classification, issuer, and evidence kind (observation, customer assertion, simulation, interpretation, or unverified). A digest proves byte identity only. Linking evidence does not verify it, establish its truth, or authorize execution.
-- Summaries must be redacted/minimized before entering this boundary. The reference model does not detect secrets or scrub sensitive text.
-- No command-execution endpoint or AI-approved state exists. Symthaea can recommend, explain, and prepare work; deterministic authority and the subsystem that owns an operation remain separate.
+These tests cover this model and the selected local SQLite runtime only. They do not establish power-loss guarantees on every filesystem/hardware combination, distributed consensus, production database semantics, multi-region failover, API authentication, complete tenant isolation, backup/restore, data retention, SLA/billing correctness, live ConnectWise behavior, cryptographic evidence verification, or remote actions. This is not a production migration or service deployment.
 
-## Qualification limits
-
-This model is deliberately in-memory. Its lock and idempotency map show reference state-machine behavior and duplicate-command collapse within one process only. They do not prove crash durability, database transaction atomicity, multi-process concurrency, tenant isolation in a real API, cryptographic verification, backup/restore, provider API semantics, SLA accuracy, billing correctness, or live ConnectWise interoperability.
-
-Before production use, the next gates are an independently implemented state-machine oracle; persistent schema/migrations with unique constraints and database-backed idempotency; process-kill/crash/restart and backup/restore tests; tenant-negative tests across list/search/attachments/evidence/export/subscriptions; current-authorization checks including concurrent revocation; audit/retention/export policy; and provider-specific conformance before live synchronization.
+Required next gates: visible exact-head CI job logs; process-kill/restore/disk-full tests; schema migration tests from every released version; tenant-negative API tests across list/search/attachments/evidence/export/subscriptions; current-authorization/revocation checks; provider-specific API conformance; and an operator-visible outbox dispatcher with retries/dead letters.
