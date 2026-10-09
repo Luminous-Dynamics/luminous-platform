@@ -8,6 +8,8 @@
 //! purchases. Callers must not present a calculation as an independently verified
 //! savings claim merely because this function returned a report.
 
+pub mod code_list;
+
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;

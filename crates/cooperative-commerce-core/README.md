@@ -32,6 +32,13 @@ Each line amount is already the total for the exact comparable quantity. The cal
 
 A positive result is a computed difference, not proof that the platform caused the difference or that all source documents are genuine. A public list-price baseline is always labeled an estimate. An invoice comparison without delivery evidence is provisional.
 
+
+## Effective-dated code-list lookup
+
+The `code_list` module provides a dependency-free Rust index over **already-normalized** records. It strictly parses Gregorian `YYYY-MM-DD` dates, requires unambiguous validity windows, permits a code to recur only across non-overlapping historical periods, performs exact case-sensitive lookups, and fails closed if the snapshot itself is outside its effective window. Regression tests cover boundary dates, overlapping historical entries, malformed dates, empty values, and unknown/ineffective codes.
+
+This is a record-semantics layer, not an importer or source-authenticity system. It does not read SIX/UNECE source files, compute source/payload hashes, verify signatures or publisher authority, determine review freshness, or enable registry activation. Callers must complete those independent checks before constructing a runtime index. No official source payload is bundled or claimed as verified.
+
 ## Tests
 
 From the repository root:
