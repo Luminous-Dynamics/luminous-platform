@@ -38,7 +38,7 @@ jobs:
       - name: Install pinned schema validator
         run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
 
-      - name: Validate schemas, fixtures, and adversarial adapter-model cases
+      - name: Validate schemas, fixtures, adapter model, and SQLite fault-injection cases
         run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m unittest discover -s contracts/operations-event-v1/tests -p 'test_*.py' -v
 
       - name: Write bounded qualification summary
@@ -49,8 +49,8 @@ jobs:
           {
             echo "## Operations Event Contract"
             echo "- Tested source revision: $SOURCE_SHA"
-            echo "- This pass covers JSON Schema validation, the synthetic incident snapshot fixture, and the in-memory adapter/inbox reference model."
-            echo "- It does not qualify a live ConnectWise adapter, durable inbox/outbox behavior, database tenant isolation, cryptographic evidence verification, or any remote-action path."
+            echo "- This pass covers JSON Schema validation, the synthetic incident snapshot fixture, the in-memory adapter model, and the SQLite-backed local reference/fault-injection tests."
+            echo "- It does not qualify a live ConnectWise adapter, production database or distributed-writer behavior, database tenant isolation, provider authentication, cryptographic evidence verification, hardware power-loss behavior, or any remote-action path."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Confirm checkout stayed unchanged

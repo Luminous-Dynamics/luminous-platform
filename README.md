@@ -48,6 +48,7 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 
 - [Xenia Operations Fabric](docs/XENIA_OPERATIONS_FABRIC_RFC.md) — proposed boundaries and integration plan for a sovereign, AI-native MSP/service-management platform, including a ConnectWise-first adoption path. This is a design proposal, not a production-readiness claim.
 - [Unified Platform Product and UI Decision](docs/UNIFIED_PLATFORM_PRODUCT_AND_UI_DECISION.md) — recommendation to build toward a broader sovereign operations platform, phase the ConnectWise alternative, and adopt Leptos for new Rust-native operator/customer web surfaces without coupling the platform API to the frontend framework.
+- [Durable SQLite Reference Model](contracts/operations-event-v1/DURABLE_SQLITE_REFERENCE_MODEL.md) — local conformance harness for event idempotency, atomic inbox/state/outbox writes, conservative revision handling, fault injection, and retryable outbox leases.
 
 ## Safety Contracts
 
