@@ -103,25 +103,32 @@ class SQLiteInbox:
             # explicit sequence so VACUUM cannot reorder pending events.
             columns = {row["name"] for row in db.execute("PRAGMA table_info(outbox_events)")}
             if "outbox_seq" not in columns:
-                db.executescript("""
-                  CREATE TABLE outbox_events_v2 (
-                    outbox_seq INTEGER PRIMARY KEY AUTOINCREMENT,
-                    outbox_id TEXT NOT NULL UNIQUE, tenant_id TEXT NOT NULL,
-                    incident_id TEXT NOT NULL, source TEXT NOT NULL, source_event_id TEXT NOT NULL,
-                    payload_json TEXT NOT NULL,
-                    status TEXT NOT NULL CHECK(status IN ('PENDING','LEASED','DELIVERED')),
-                    attempts INTEGER NOT NULL DEFAULT 0, lease_owner TEXT, lease_until INTEGER,
-                    created_at INTEGER NOT NULL, delivered_at INTEGER);
-                  INSERT INTO outbox_events_v2
-                    (outbox_id,tenant_id,incident_id,source,source_event_id,payload_json,status,
-                     attempts,lease_owner,lease_until,created_at,delivered_at)
-                  SELECT outbox_id,tenant_id,incident_id,source,source_event_id,payload_json,status,
-                    attempts,lease_owner,lease_until,created_at,delivered_at
-                  FROM outbox_events ORDER BY rowid;
-                  DROP TABLE outbox_events;
-                  ALTER TABLE outbox_events_v2 RENAME TO outbox_events;
-                """)
-                db.execute("CREATE INDEX IF NOT EXISTS outbox_ready_idx ON outbox_events(status,lease_until,created_at)")
+                # SQLite DDL is transactional; avoid executescript here because it
+                # implicitly commits and would leave a partial migration on failure.
+                db.execute("BEGIN IMMEDIATE")
+                try:
+                    db.execute("""CREATE TABLE outbox_events_v2 (
+                      outbox_seq INTEGER PRIMARY KEY AUTOINCREMENT,
+                      outbox_id TEXT NOT NULL UNIQUE, tenant_id TEXT NOT NULL,
+                      incident_id TEXT NOT NULL, source TEXT NOT NULL, source_event_id TEXT NOT NULL,
+                      payload_json TEXT NOT NULL,
+                      status TEXT NOT NULL CHECK(status IN ('PENDING','LEASED','DELIVERED')),
+                      attempts INTEGER NOT NULL DEFAULT 0, lease_owner TEXT, lease_until INTEGER,
+                      created_at INTEGER NOT NULL, delivered_at INTEGER)""")
+                    db.execute("""INSERT INTO outbox_events_v2
+                      (outbox_id,tenant_id,incident_id,source,source_event_id,payload_json,status,
+                       attempts,lease_owner,lease_until,created_at,delivered_at)
+                      SELECT outbox_id,tenant_id,incident_id,source,source_event_id,payload_json,status,
+                        attempts,lease_owner,lease_until,created_at,delivered_at
+                      FROM outbox_events ORDER BY rowid""")
+                    db.execute("DROP TABLE outbox_events")
+                    db.execute("ALTER TABLE outbox_events_v2 RENAME TO outbox_events")
+                    db.execute("CREATE INDEX IF NOT EXISTS outbox_ready_idx ON outbox_events(status,lease_until,created_at)")
+                    db.commit()
+                except Exception:
+                    if db.in_transaction:
+                        db.rollback()
+                    raise
             db.execute("INSERT OR IGNORE INTO schema_migrations VALUES (?,?)",
                        (self.SCHEMA_VERSION, int(time.time())))
 
