@@ -26,6 +26,7 @@ def binding_order_candidate() -> dict:
     document = copy.deepcopy(FIXTURE)
     document["metadata"]["state"] = "binding_order"
     document["metadata"]["idempotency_key"] = "fixture-once-only-key-000001"
+    document["demand"]["product_reference"]["offer_specification_sha256"] = "e" * 64
     document["accepted_offer"] = {
         "offer_id": "fixture:offer:001",
         "revision": 1,
@@ -69,6 +70,13 @@ class CooperativePurchaseIntentSchemaTests(unittest.TestCase):
         self.assertEqual(FIXTURE["metadata"]["state"], "non_binding_interest")
         self.assertNotIn("accepted_offer", FIXTURE)
         self.assertNotIn("authorization", FIXTURE)
+
+    def test_binding_order_requires_product_specification_digest(self):
+        document = binding_order_candidate()
+        del document["demand"]["product_reference"]["offer_specification_sha256"]
+        errors = self.errors(document)
+        self.assertTrue(errors)
+        self.assertTrue(any("offer_specification_sha256" in error.message for error in errors))
 
     def test_binding_order_requires_accepted_offer_authority_and_idempotency(self):
         document = copy.deepcopy(FIXTURE)
