@@ -486,6 +486,45 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "state"
+            ],
+            "properties": {
+              "state": {
+                "enum": [
+                  "draft",
+                  "non_binding_interest",
+                  "quote_request"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "accepted_offer"
+              ]
+            },
+            {
+              "required": [
+                "authorization"
+              ]
+            }
+          ]
+        }
+      }
     }
   ],
   "$defs": {
