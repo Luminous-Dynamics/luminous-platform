@@ -1,0 +1,533 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:cooperative-savings-receipt:v1",
+  "title": "Luminous Cooperative Savings Receipt v1",
+  "description": "Portable calculation record for comparable purchase costs. Structural validity does not prove source evidence authenticity, legal compliance, causation, or arithmetic correctness; a trusted verifier must recompute totals from the snapshot.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "metadata",
+    "comparison_currency",
+    "source_snapshot",
+    "calculation",
+    "claim"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous.cooperative-savings-receipt/v1"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_id",
+        "revision",
+        "status",
+        "fixture_only",
+        "created_at",
+        "algorithm"
+      ],
+      "properties": {
+        "receipt_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 240
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "enum": [
+            "illustrative",
+            "computed"
+          ]
+        },
+        "fixture_only": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "algorithm": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "version"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)([-+][0-9A-Za-z.-]+)?$"
+            },
+            "source_revision": {
+              "type": "string",
+              "pattern": "^([a-fA-F0-9]{40}|[a-fA-F0-9]{64})$"
+            },
+            "implementation_digest_sha256": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "comparison_currency": {
+      "$ref": "#/$defs/currencyCode"
+    },
+    "source_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline",
+        "actual",
+        "participation_costs"
+      ],
+      "properties": {
+        "baseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lines",
+            "other_costs",
+            "cost_coverage"
+          ],
+          "properties": {
+            "lines": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/basketLine"
+              }
+            },
+            "other_costs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/costLine"
+              }
+            },
+            "cost_coverage": {
+              "$ref": "#/$defs/costCoverage"
+            }
+          }
+        },
+        "actual": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "lines",
+            "other_costs",
+            "cost_coverage",
+            "delivery_lines"
+          ],
+          "properties": {
+            "lines": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/basketLine"
+              }
+            },
+            "other_costs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/costLine"
+              }
+            },
+            "cost_coverage": {
+              "$ref": "#/$defs/costCoverage"
+            },
+            "delivery_lines": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/deliveryLine"
+              }
+            }
+          }
+        },
+        "participation_costs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/costLine"
+          }
+        }
+      }
+    },
+    "calculation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currency",
+        "baseline_merchandise",
+        "baseline_other_costs",
+        "actual_merchandise",
+        "actual_other_costs",
+        "participation_costs",
+        "baseline_total",
+        "actual_total",
+        "net_difference"
+      ],
+      "properties": {
+        "currency": {
+          "$ref": "#/$defs/currencyCode"
+        },
+        "baseline_merchandise": {
+          "$ref": "#/$defs/nonnegativeDecimal"
+        },
+        "baseline_other_costs": {
+          "$ref": "#/$defs/signedDecimal"
+        },
+        "actual_merchandise": {
+          "$ref": "#/$defs/nonnegativeDecimal"
+        },
+        "actual_other_costs": {
+          "$ref": "#/$defs/signedDecimal"
+        },
+        "participation_costs": {
+          "$ref": "#/$defs/signedDecimal"
+        },
+        "baseline_total": {
+          "$ref": "#/$defs/signedDecimal"
+        },
+        "actual_total": {
+          "$ref": "#/$defs/signedDecimal"
+        },
+        "net_difference": {
+          "$ref": "#/$defs/signedDecimal"
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "class",
+        "evidence_authenticated_by_calculator",
+        "notes",
+        "limitations"
+      ],
+      "properties": {
+        "class": {
+          "enum": [
+            "Estimate",
+            "InvoiceVsAlternativeQuote",
+            "HistoricalInvoiceComparison",
+            "ProvisionalWithoutDeliveryEvidence"
+          ]
+        },
+        "evidence_authenticated_by_calculator": {
+          "const": false
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "fixture_only"
+            ],
+            "properties": {
+              "fixture_only": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "status": {
+                "const": "illustrative"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "computed"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "algorithm": {
+                "required": [
+                  "source_revision",
+                  "implementation_digest_sha256"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    null
+  ],
+  "$defs": {
+    "currencyCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "Syntactic ISO 4217-style shape only; current code-list membership is external."
+    },
+    "countryCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "nonnegativeDecimal": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+    },
+    "signedDecimal": {
+      "type": "string",
+      "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source_reference",
+        "sha256",
+        "captured_at",
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "source_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "captured_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "enum": [
+            "AlternativeInvoice",
+            "AlternativeQuote",
+            "PublicListPriceEstimate",
+            "SupplierInvoice",
+            "DeliveryReceipt",
+            "CostInvoice",
+            "ParticipationFeeInvoice",
+            "CreditNote"
+          ]
+        }
+      }
+    },
+    "productIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identifier_scheme",
+        "identifier",
+        "specification_sha256",
+        "unit_code",
+        "unit_code_system"
+      ],
+      "properties": {
+        "identifier_scheme": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "identifier": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "specification_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "unit_code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "unit_code_system": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "format": "uri"
+        }
+      }
+    },
+    "basketLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product",
+        "quantity",
+        "line_total",
+        "currency",
+        "evidence"
+      ],
+      "properties": {
+        "product": {
+          "$ref": "#/$defs/productIdentity"
+        },
+        "quantity": {
+          "$ref": "#/$defs/nonnegativeDecimal"
+        },
+        "line_total": {
+          "$ref": "#/$defs/nonnegativeDecimal"
+        },
+        "currency": {
+          "$ref": "#/$defs/currencyCode"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    },
+    "costLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category",
+        "direction",
+        "amount",
+        "currency",
+        "evidence"
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "direction": {
+          "enum": [
+            "Charge",
+            "Credit"
+          ]
+        },
+        "amount": {
+          "$ref": "#/$defs/nonnegativeDecimal"
+        },
+        "currency": {
+          "$ref": "#/$defs/currencyCode"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    },
+    "costCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "declared_complete",
+        "considered_categories",
+        "unresolved_costs",
+        "evidence"
+      ],
+      "properties": {
+        "declared_complete": {
+          "type": "boolean"
+        },
+        "considered_categories": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        },
+        "unresolved_costs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    },
+    "deliveryLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product",
+        "quantity",
+        "evidence"
+      ],
+      "properties": {
+        "product": {
+          "$ref": "#/$defs/productIdentity"
+        },
+        "quantity": {
+          "$ref": "#/$defs/nonnegativeDecimal"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    }
+  }
+}
