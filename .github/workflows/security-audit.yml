@@ -981,6 +981,8 @@ jobs:
               --package-lock-only \
               --audit-level=high \
               --registry=https://registry.npmjs.org/ \
+              --strict-ssl=true \
+              --cache="$RUNNER_TEMP/npm-audit-cache" \
               --userconfig="$RUNNER_TEMP/npm-audit-userconfig" \
               --globalconfig="$RUNNER_TEMP/npm-audit-globalconfig" \
               --json > "$report" 2> "$stderr"; then
