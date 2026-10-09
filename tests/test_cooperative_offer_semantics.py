@@ -11,6 +11,7 @@ import sys
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
@@ -169,13 +170,11 @@ class CooperativeOfferSemanticTests(unittest.TestCase):
         self.assertTrue(any("must be true for cross-border" in error for error in report["errors"]))
 
     def test_duplicate_json_keys_are_rejected(self):
-        source = ROOT / "tests" / "duplicate-offer-key-fixture.json"
-        source.write_text('{"schema":"first","schema":"second"}', encoding="utf-8")
-        try:
+        with TemporaryDirectory() as temporary_directory:
+            source = Path(temporary_directory) / "duplicate-offer-key-fixture.json"
+            source.write_text('{"schema":"first","schema":"second"}', encoding="utf-8")
             with self.assertRaises(DuplicateJsonKey):
                 _load_json(source)
-        finally:
-            source.unlink(missing_ok=True)
 
     def test_unknown_or_unverified_third_party_code_lists_are_not_claimed_as_validated(self):
         report = self.validate(ZAR)
