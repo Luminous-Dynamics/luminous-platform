@@ -448,15 +448,11 @@ fn validate_basket_equivalence(baseline: &[BasketLine], actual: &[BasketLine]) -
     if baseline.len() != actual.len() {
         return Err(CommerceError::BasketMismatch);
     }
-    let baseline_map: std::collections::BTreeMap<&ProductIdentity, &BasketLine> =
-        baseline.iter().map(|line| (&line.product, line)).collect();
-    let actual_map: std::collections::BTreeMap<&ProductIdentity, &BasketLine> =
-        actual.iter().map(|line| (&line.product, line)).collect();
-    if baseline_map.len() != baseline.len() || actual_map.len() != actual.len() {
-        return Err(CommerceError::DuplicateProductLine);
-    }
-    for (identity, baseline_line) in baseline_map {
-        let actual_line = actual_map.get(identity).ok_or(CommerceError::BasketMismatch)?;
+    for baseline_line in baseline {
+        let actual_line = actual
+            .iter()
+            .find(|candidate| candidate.product == baseline_line.product)
+            .ok_or(CommerceError::BasketMismatch)?;
         if baseline_line.quantity != actual_line.quantity {
             return Err(CommerceError::BasketMismatch);
         }
