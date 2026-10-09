@@ -199,6 +199,7 @@ pub enum EvidenceKind {
     DeliveryReceipt,
     CostInvoice,
     ParticipationFeeInvoice,
+    CostCoverageStatement,
     CreditNote,
 }
 
@@ -639,7 +640,10 @@ fn validate_costs(
                 EvidenceKind::AlternativeInvoice | EvidenceKind::AlternativeQuote | EvidenceKind::PublicListPriceEstimate
             ),
             (true, _, CostDirection::Credit) => cost.evidence.kind == EvidenceKind::CreditNote,
-            (false, EvidenceKind::CostInvoice, CostDirection::Charge) => cost.evidence.kind == EvidenceKind::CostInvoice,
+            (false, EvidenceKind::CostInvoice, CostDirection::Charge) => matches!(
+                cost.evidence.kind,
+                EvidenceKind::CostInvoice | EvidenceKind::SupplierInvoice
+            ),
             (false, EvidenceKind::CostInvoice, CostDirection::Credit) => cost.evidence.kind == EvidenceKind::CreditNote,
             (false, EvidenceKind::ParticipationFeeInvoice, CostDirection::Charge) => cost.evidence.kind == EvidenceKind::ParticipationFeeInvoice,
             (false, EvidenceKind::ParticipationFeeInvoice, CostDirection::Credit) => cost.evidence.kind == EvidenceKind::CreditNote,
@@ -670,9 +674,20 @@ fn validate_coverage(coverage: &CostCoverage, baseline: bool) -> Result<(), Comm
         }
     }
     let valid_kind = if baseline {
-        matches!(coverage.evidence.kind, EvidenceKind::AlternativeInvoice | EvidenceKind::AlternativeQuote | EvidenceKind::PublicListPriceEstimate)
+        matches!(
+            coverage.evidence.kind,
+            EvidenceKind::AlternativeInvoice
+                | EvidenceKind::AlternativeQuote
+                | EvidenceKind::PublicListPriceEstimate
+                | EvidenceKind::CostCoverageStatement
+        )
     } else {
-        matches!(coverage.evidence.kind, EvidenceKind::SupplierInvoice | EvidenceKind::CostInvoice)
+        matches!(
+            coverage.evidence.kind,
+            EvidenceKind::SupplierInvoice
+                | EvidenceKind::CostInvoice
+                | EvidenceKind::CostCoverageStatement
+        )
     };
     if !valid_kind {
         return Err(CommerceError::UnexpectedEvidenceKind);
@@ -796,13 +811,13 @@ pub fn calculate_savings(input: &SavingsInput) -> Result<SavingsReport, Commerce
     let actual_total = actual_merchandise.checked_add(actual_other)?.checked_add(participation)?;
     let net = baseline_total.checked_sub(actual_total)?;
 
+    // Claim strength is based on baseline price/cost inputs, not merely on
+    // the document type used to summarize cost coverage.
     let baseline_kinds: BTreeSet<EvidenceKind> = input.baseline_lines.iter().map(|line| line.evidence.kind)
         .chain(input.baseline_costs.iter().map(|line| line.evidence.kind))
-        .chain(std::iter::once(input.baseline_coverage.evidence.kind))
         .collect();
     let baseline_has_estimate = baseline_kinds.contains(&EvidenceKind::PublicListPriceEstimate)
-        || input.baseline_coverage.evidence.kind == EvidenceKind::PublicListPriceEstimate
-        || input.baseline_costs.iter().any(|line| line.evidence.kind == EvidenceKind::PublicListPriceEstimate);
+        || input.baseline_coverage.evidence.kind == EvidenceKind::PublicListPriceEstimate;
     let has_alternative_invoice = baseline_kinds.contains(&EvidenceKind::AlternativeInvoice);
     let has_alternative_quote = baseline_kinds.contains(&EvidenceKind::AlternativeQuote);
     let claim_class = if baseline_has_estimate {
@@ -811,10 +826,7 @@ pub fn calculate_savings(input: &SavingsInput) -> Result<SavingsReport, Commerce
         ClaimClass::ProvisionalWithoutDeliveryEvidence
     } else if has_alternative_invoice && has_alternative_quote {
         ClaimClass::MixedBaselineEvidence
-    } else if baseline_kinds.len() == 1
-        && has_alternative_invoice
-        && input.baseline_coverage.evidence.kind == EvidenceKind::AlternativeInvoice
-    {
+    } else if baseline_kinds.len() == 1 && has_alternative_invoice {
         ClaimClass::HistoricalInvoiceComparison
     } else {
         ClaimClass::InvoiceVsAlternativeQuote
