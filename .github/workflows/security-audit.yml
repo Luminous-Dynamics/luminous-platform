@@ -179,7 +179,7 @@ jobs:
 
           while IFS= read -r line; do
             path="${line#* }"
-            if [[ ! "$path" =~ ^[A-Za-z0-9_./-]+$ || "$path" == /* || "$path" == *".."* ]]; then
+            if [[ ! "$path" =~ ^[A-Za-z0-9_./-]+$ || "$path" == /* || "$path" == *".."* || "$path" == "." || "$path" == ./* || "$path" == */./* || "$path" == */. ]]; then
               echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
               echo "incomplete_reason=submodule_path_invalid" | tee -a security-audit-results/summary.txt
               exit 0
