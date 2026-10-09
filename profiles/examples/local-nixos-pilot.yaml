@@ -7,7 +7,6 @@ metadata:
   status: proposed
   owner: customer-organization
   description: Local-only pilot with no remote privileged control plane.
-  documentation_uri: https://luminousdynamics.io/docs/deployment-profiles/local-nixos-pilot
 
 target:
   os: nixos
@@ -33,7 +32,6 @@ authority:
   break_glass:
     enabled: false
     documented_out_of_band_recovery: required
-    procedure_uri: https://luminousdynamics.io/docs/recovery/local-break-glass
 
 services:
   coordinator:
