@@ -132,6 +132,13 @@ class CooperativeOfferSemanticTests(unittest.TestCase):
         self.assertFalse(report["semantic_valid"])
         self.assertTrue(any("must match the base unit-price currency" in error for error in report["errors"]))
 
+    def test_price_unit_must_match_order_unit(self):
+        document = copy.deepcopy(ZAR)
+        document["terms"]["unit_price"]["per_unit_code"] = "item"
+        report = self.validate(document)
+        self.assertFalse(report["semantic_valid"])
+        self.assertTrue(any("must match product.pack.order_unit_code" in error for error in report["errors"]))
+
     def test_price_break_thresholds_must_increase_and_respect_minimum_order(self):
         document = copy.deepcopy(ZAR)
         document["terms"]["price_breaks"] = [
