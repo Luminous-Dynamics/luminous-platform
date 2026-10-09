@@ -194,39 +194,56 @@ fn parse_name(input: &str, offset: &mut usize) -> Result<String, SixXmlError> {
 }
 
 fn parse_tag(input: &str) -> Result<Token, SixXmlError> {
-    let input = input.trim();
     if let Some(rest) = input.strip_prefix('/') {
-        let name = rest.trim();
         let mut offset = 0;
-        let parsed = parse_name(name, &mut offset)?;
-        if offset != name.len() { return Err(fail("end tag contains trailing data")); }
-        return Ok(Token::End { name: parsed });
+        let name = parse_name(rest, &mut offset)?;
+        skip_ws(rest, &mut offset);
+        if offset != rest.len() {
+            return Err(fail("end tag contains trailing data"));
+        }
+        return Ok(Token::End { name });
     }
-    let empty = input.trim_end().ends_with('/');
-    let content = if empty { input.trim_end().strip_suffix('/').unwrap_or(input).trim_end() } else { input };
+
+    // XML does not allow whitespace before an element name. A self-closing
+    // slash must be the final byte before '>'; whitespace before it is valid.
+    let empty = input.ends_with('/');
+    let content = if empty { &input[..input.len() - 1] } else { input };
     let mut offset = 0;
     let name = parse_name(content, &mut offset)?;
     let mut attrs = BTreeMap::new();
     loop {
         skip_ws(content, &mut offset);
-        if offset == content.len() { break; }
+        if offset == content.len() {
+            break;
+        }
         let attr = parse_name(content, &mut offset)?;
         skip_ws(content, &mut offset);
-        if content.as_bytes().get(offset) != Some(&b'=') { return Err(fail(format!("attribute {attr:?} missing '='"))); }
+        if content.as_bytes().get(offset) != Some(&b'=') {
+            return Err(fail(format!("attribute {attr:?} missing '='")));
+        }
         offset += 1;
         skip_ws(content, &mut offset);
-        let quote = *content.as_bytes().get(offset).ok_or_else(|| fail("missing quoted attribute value"))?;
-        if quote != b'\'' && quote != b'"' { return Err(fail("XML attribute values must be quoted")); }
+        let quote = *content.as_bytes().get(offset)
+            .ok_or_else(|| fail("missing quoted attribute value"))?;
+        if quote != b'\'' && quote != b'"' {
+            return Err(fail("XML attribute values must be quoted"));
+        }
         offset += 1;
         let start = offset;
         while offset < content.len() && content.as_bytes()[offset] != quote {
-            if content.as_bytes()[offset] == b'<' { return Err(fail("raw '<' in XML attribute value")); }
+            if content.as_bytes()[offset] == b'<' {
+                return Err(fail("raw '<' in XML attribute value"));
+            }
             offset += 1;
         }
-        if offset == content.len() { return Err(fail("unterminated XML attribute value")); }
+        if offset == content.len() {
+            return Err(fail("unterminated XML attribute value"));
+        }
         let value = decode_entities(&content[start..offset])?;
         offset += 1;
-        if attrs.insert(attr.clone(), value).is_some() { return Err(fail(format!("duplicate XML attribute {attr:?}"))); }
+        if attrs.insert(attr.clone(), value).is_some() {
+            return Err(fail(format!("duplicate XML attribute {attr:?}")));
+        }
     }
     Ok(Token::Start { name, attrs, empty })
 }
@@ -298,9 +315,19 @@ pub fn parse_six_list_one_xml(input: &str) -> Result<SixListOneImport, SixXmlErr
                     return Err(fail("nested ISO_4217 root element"));
                 }
 
-                if stack.len() == 1 && stack[0] == ROOT_ELEMENT && name == CURRENCY_TABLE_ELEMENT {
+                if stack.len() == 1 && stack[0] == ROOT_ELEMENT {
+                    if name != CURRENCY_TABLE_ELEMENT {
+                        return Err(fail(format!("unexpected ISO_4217 child {name:?}; expected CcyTbl")));
+                    }
                     if table_seen { return Err(fail("multiple CcyTbl elements are unsupported")); }
                     table_seen = true;
+                }
+                if stack.len() == 2
+                    && stack[0] == ROOT_ELEMENT
+                    && stack[1] == CURRENCY_TABLE_ELEMENT
+                    && name != CURRENCY_ENTRY_ELEMENT
+                {
+                    return Err(fail(format!("unexpected CcyTbl child {name:?}; expected CcyNtry")));
                 }
                 let begins_entry = stack.len() == 2 && stack[0] == ROOT_ELEMENT
                     && stack[1] == CURRENCY_TABLE_ELEMENT && name == CURRENCY_ENTRY_ELEMENT;
@@ -314,7 +341,10 @@ pub fn parse_six_list_one_xml(input: &str) -> Result<SixListOneImport, SixXmlErr
                 } else if entry.is_some() {
                     let direct_child = stack.len() == 3 && stack[0] == ROOT_ELEMENT
                         && stack[1] == CURRENCY_TABLE_ELEMENT && stack[2] == CURRENCY_ENTRY_ELEMENT;
-                    if direct_child && CURRENCY_FIELDS.contains(&name.as_str()) {
+                    if direct_child {
+                        if !CURRENCY_FIELDS.contains(&name.as_str()) {
+                            return Err(fail(format!("unexpected CcyNtry field {name:?} in record {source_entry_count}")));
+                        }
                         let builder = entry.as_ref().expect("entry checked");
                         if builder.fields.contains_key(&name) { return Err(fail(format!("duplicate {name} field in record {source_entry_count}"))); }
                         if empty {
@@ -348,8 +378,11 @@ pub fn parse_six_list_one_xml(input: &str) -> Result<SixListOneImport, SixXmlErr
                 if stack.is_empty() { root_closed = true; }
             }
             Token::Text(text) => {
-                if active_field.is_some() { field_text.push_str(&text); }
-                else if stack.is_empty() && !text.trim().is_empty() { return Err(fail("non-whitespace text outside root")); }
+                if active_field.is_some() {
+                    field_text.push_str(&text);
+                } else if !text.trim().is_empty() {
+                    return Err(fail("non-whitespace text outside an approved currency scalar field"));
+                }
             }
         }
     }
@@ -443,7 +476,6 @@ mod tests {
     <CcyNtry><CtryNm>Small Island &amp; Coast</CtryNm><CcyNm>Test dollar</CcyNm><Ccy>TST</Ccy><CcyNbr>001</CcyNbr><CcyMnrUnts>N.A.</CcyMnrUnts></CcyNtry>
     <CcyNtry><CtryNm>Unassigned area</CtryNm><CcyNm>No universal currency</CcyNm></CcyNtry>
   </CcyTbl>
-  <FundTbl><FundNtry><CtryNm>Fund</CtryNm><CcyNm>Ignored</CcyNm><Ccy>IGN</Ccy><CcyNbr>999</CcyNbr><CcyMnrUnts>2</CcyMnrUnts></FundNtry></FundTbl>
 </ISO_4217>"#;
 
     #[test]
@@ -467,7 +499,6 @@ mod tests {
         assert!(json.contains("\"numeric_code\": \"001\""));
         assert!(json.contains("\"Small Island & Coast\""));
         assert!(json.ends_with("}\n"));
-        assert!(!json.contains("\"alpha_code\": \"IGN\""));
     }
 
     #[test]
@@ -507,6 +538,24 @@ mod tests {
     fn requires_publisher_release_identity() {
         let without_publication_date = XML.replace(' Pblshd="2026-08-14"', "");
         assert!(parse_six_list_one_xml(&without_publication_date).unwrap_err().to_string().contains("missing required Pblshd"));
+    }
+
+    #[test]
+    fn rejects_whitespace_before_markup_names_and_malformed_empty_tags() {
+        let spaced_name = XML.replace("<ISO_4217 Pblshd", "< ISO_4217 Pblshd");
+        assert!(parse_six_list_one_xml(&spaced_name).is_err());
+        let malformed_empty = XML.replace("<CcyTbl>", "<CcyTbl / >");
+        assert!(parse_six_list_one_xml(&malformed_empty).is_err());
+    }
+
+    #[test]
+    fn rejects_unexpected_tables_fields_and_structural_text() {
+        let unknown_table = XML.replace("</CcyTbl>", "</CcyTbl><FundTbl/>");
+        assert!(parse_six_list_one_xml(&unknown_table).unwrap_err().to_string().contains("unexpected ISO_4217 child"));
+        let unknown_field = XML.replace("</CcyNtry>", "<NewField>ignored</NewField></CcyNtry>");
+        assert!(parse_six_list_one_xml(&unknown_field).unwrap_err().to_string().contains("unexpected CcyNtry field"));
+        let stray_text = XML.replace("</CcyTbl>", "stray-text</CcyTbl>");
+        assert!(parse_six_list_one_xml(&stray_text).unwrap_err().to_string().contains("non-whitespace text"));
     }
 
     #[test]

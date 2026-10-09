@@ -1,0 +1,134 @@
+name: six-currency-source-smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: six-currency-source-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live-source:
+    name: Parse and qualify current SIX List One syntax
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact workflow revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up pinned Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
+        with:
+          toolchain: 1.96.0
+          components: rustfmt
+
+      - name: Capture exact SIX List One XML bytes
+        env:
+          SOURCE_URL: https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --proto '=https' \
+            --tlsv1.2 \
+            --connect-timeout 15 \
+            --max-time 60 \
+            --max-filesize 10485760 \
+            --output evidence/list-one.xml \
+            "$SOURCE_URL"
+          test -s evidence/list-one.xml
+          source_sha256="$(sha256sum evidence/list-one.xml | cut -d ' ' -f 1)"
+          echo "source_sha256=$source_sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Run Rust regression tests
+        run: cargo test --locked --manifest-path crates/cooperative-commerce-core/Cargo.toml
+
+      - name: Parse current publisher XML
+        run: |
+          set -euo pipefail
+          cargo run --locked --quiet \
+            --manifest-path crates/cooperative-commerce-core/Cargo.toml \
+            --bin six-iso4217-import -- evidence/list-one.xml \
+            > evidence/list-one.normalized.json
+
+      - name: Validate normalized source invariants
+        run: |
+          set -euo pipefail
+          jq -e '
+            .schema == "luminous.six-iso4217-normalized/v1"
+            and .publisher == "SIX ISO 4217 List One"
+            and (.publication_date | type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}$"))
+            and (.source_entry_count >= .record_count)
+            and (.source_entry_count > 100)
+            and (.record_count > 100)
+            and (.entries_without_currency_code >= 1)
+            and (.records | map(.alpha_code) | length == (unique | length))
+            and (.records | any(.[]; .alpha_code == "EUR" and .numeric_code == "978"))
+            and (.records | any(.[]; .alpha_code == "ALL" and .numeric_code == "008"))
+            and (.records | any(.[]; .minor_units == "N.A."))
+            and (.records | all(.[]; (.alpha_code | test("^[A-Z]{3}$"))
+              and (.numeric_code | test("^[0-9]{3}$"))
+              and (.currency_name | type == "string" and length > 0)
+              and (.entities | type == "array" and length > 0)))
+          ' evidence/list-one.normalized.json > /dev/null
+
+      - name: Create non-authorizing evidence report
+        env:
+          SOURCE_URL: https://www.six-group.com/dam/download/financial-information/data-center/iso-currrency/lists/list-one.xml
+        run: |
+          set -euo pipefail
+          fetched_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          source_sha256="$(sha256sum evidence/list-one.xml | cut -d ' ' -f 1)"
+          normalized_sha256="$(sha256sum evidence/list-one.normalized.json | cut -d ' ' -f 1)"
+          publisher_date="$(jq -r '.publication_date' evidence/list-one.normalized.json)"
+          source_entries="$(jq -r '.source_entry_count' evidence/list-one.normalized.json)"
+          record_count="$(jq -r '.record_count' evidence/list-one.normalized.json)"
+          jq -n \
+            --arg source_url "$SOURCE_URL" \
+            --arg fetched_at "$fetched_at" \
+            --arg source_sha256 "$source_sha256" \
+            --arg normalized_sha256 "$normalized_sha256" \
+            --slurpfile normalized evidence/list-one.normalized.json \
+            '{
+              schema: "luminous.code-list-source-smoke-report/v1",
+              source_url: $source_url,
+              retrieved_at: $fetched_at,
+              publisher_publication_date: $normalized[0].publication_date,
+              source_payload_sha256: $source_sha256,
+              normalized_payload_sha256: $normalized_sha256,
+              importer_id: $normalized[0].importer_id,
+              source_entry_count: $normalized[0].source_entry_count,
+              normalized_record_count: $normalized[0].record_count,
+              structural_checks: "passed",
+              source_authentication: "not_independently_authenticated",
+              independent_review: "not_performed",
+              registry_activation: "disabled"
+            }' > evidence/provenance.json
+          {
+            echo "## SIX ISO 4217 List One source smoke"
+            echo
+            printf '%s\n' "- Publisher publication date: \`$publisher_date\`"
+            printf '%s\n' "- Source entries: \`$source_entries\`"
+            printf '%s\n' "- Normalized records: \`$record_count\`"
+            printf '%s\n' "- Source SHA-256: \`$source_sha256\`"
+            printf '%s\n' "- Normalized SHA-256: \`$normalized_sha256\`"
+            echo "- Result: structural parse and invariant checks passed."
+            echo "- Authentication/review/activation: not performed / disabled."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload retained source and report
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: six-list-one-source-smoke-${{ github.run_id }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30

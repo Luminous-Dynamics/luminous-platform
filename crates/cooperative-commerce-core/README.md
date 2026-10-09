@@ -51,7 +51,7 @@ The acquisition script requests only the fixed official SIX HTTPS URL and **does
 bash tools/fetch_six_list_one.sh ./data/code-list-snapshots
 ```
 
-Each bundle contains `list-one.xml`, `list-one.normalized.json`, and `provenance.json`. This is a capture-and-hash workflow, not cryptographic source authentication: TLS and URL control are not a publisher signature. Provenance explicitly records `authentication_status: not_independently_authenticated`, `review_status: not_reviewed`, and `registry_activation: disabled`. The XML `Pblshd` field is publication metadata, not a per-code effective date; historical membership requires SIX's separate List Three. Tests use synthetic XML only; no official payload is bundled or claimed tested.
+Each bundle contains `list-one.xml`, `list-one.normalized.json`, and `provenance.json`. This is a capture-and-hash workflow, not cryptographic source authentication: TLS and URL control are not a publisher signature. Provenance explicitly records `authentication_status: not_independently_authenticated`, `review_status: not_reviewed`, and `registry_activation: disabled`. The XML `Pblshd` field is publication metadata, not a per-code effective date; historical membership requires SIX's separate List Three. Tests use synthetic XML only; no official payload is bundled or claimed tested. To run a real-source parse check after this workflow is present on the default branch, open GitHub Actions → `six-currency-source-smoke` → Run workflow. The same workflow is scheduled weekly on the default branch. It retains the XML, normalized output, and digest report for 30 days; a passing run does not authenticate a publisher signature or enable activation.
 
 ## Tests
 

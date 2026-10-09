@@ -11,6 +11,7 @@ on:
       - "tests/**"
       - "requirements-profile-validator.txt"
       - ".github/workflows/deployment-profile-validator.yml"
+      - ".github/workflows/six-currency-source-smoke.yml"
   push:
     branches: [main]
     paths:
@@ -22,6 +23,7 @@ on:
       - "tests/**"
       - "requirements-profile-validator.txt"
       - ".github/workflows/deployment-profile-validator.yml"
+      - ".github/workflows/six-currency-source-smoke.yml"
   workflow_dispatch:
 
 permissions:
