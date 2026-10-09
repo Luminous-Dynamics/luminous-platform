@@ -4,8 +4,8 @@ from __future__ import annotations
 import copy
 import json
 import unittest
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
@@ -27,6 +27,7 @@ class HolochainSharePackageContractTests(unittest.TestCase):
         cls.schema = load_json(SCHEMA_PATH)
         cls.fixture = load_json(FIXTURE_PATH)
         Draft202012Validator.check_schema(cls.schema)
+
     def errors(self, instance: object) -> list[str]:
         return validate_share_package(instance)
 
