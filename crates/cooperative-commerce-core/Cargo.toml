@@ -8,3 +8,7 @@ description = "Exact-decimal comparison kernel for a proposed cooperative-buying
 
 [lib]
 path = "src/lib.rs"
+
+[[bin]]
+name = "six-iso4217-import"
+path = "src/bin/six_iso4217_import.rs"
