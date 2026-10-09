@@ -11,7 +11,7 @@ on:
       - ".github/workflows/operations-event-contract.yml"
       - ".github/workflows/work-case-v1.yml"
   push:
-    branches: ["main"]
+    branches: ["**"]
     paths:
       - "contracts/work-case-v1/**"
       - "contracts/operations-event-v1/requirements.txt"
