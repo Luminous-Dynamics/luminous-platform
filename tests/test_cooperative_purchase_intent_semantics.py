@@ -123,6 +123,14 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
         self.assertFalse(report["semantic_valid"])
         self.assertTrue(any("canonical purchase-scope projection" in error for error in report["errors"]))
 
+    def test_out_of_range_revision_fails_closed_before_jcs_hashing(self):
+        document = binding_order_candidate()
+        document["metadata"]["revision"] = 9007199254740992
+        report = self.validate(document)
+        self.assertFalse(report["structural_valid"])
+        self.assertFalse(report["semantic_valid"])
+        self.assertFalse(report["transaction_authorized"])
+
     def test_binding_order_product_specification_digest_is_pinned(self):
         document = binding_order_candidate()
         del document["demand"]["product_reference"]["offer_specification_sha256"]
