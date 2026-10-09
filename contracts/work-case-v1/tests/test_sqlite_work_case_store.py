@@ -96,6 +96,48 @@ class SQLiteWorkCaseStoreTests(unittest.TestCase):
             }
         self.assertEqual(tables, {"work_cases"})
 
+    def test_versioned_database_missing_activity_unique_key_fails_closed(self):
+        damaged_db = Path(self.tmp.name) / "damaged-activity-unique.sqlite3"
+        SQLiteWorkCaseStore(damaged_db)
+        with closing(sqlite3.connect(damaged_db)) as db:
+            db.execute("PRAGMA foreign_keys=OFF")
+            db.execute("DROP TABLE case_activity")
+            db.execute(
+                "CREATE TABLE case_activity ("
+                "tenant_id TEXT NOT NULL, case_id TEXT NOT NULL, "
+                "sequence INTEGER NOT NULL CHECK(sequence >= 1), activity_id TEXT NOT NULL, "
+                "command_id TEXT NOT NULL, actor_id TEXT NOT NULL, actor_role TEXT NOT NULL, "
+                "activity_type TEXT NOT NULL, occurred_at TEXT NOT NULL, reason TEXT NOT NULL, "
+                "prior_revision INTEGER NOT NULL, new_revision INTEGER NOT NULL, details_json TEXT NOT NULL, "
+                "PRIMARY KEY(tenant_id, case_id, sequence), "
+                "FOREIGN KEY(tenant_id, case_id) REFERENCES work_cases(tenant_id, case_id))"
+            )
+            db.execute(
+                "CREATE INDEX case_activity_timeline_idx "
+                "ON case_activity(tenant_id, case_id, sequence)"
+            )
+            db.commit()
+
+        with self.assertRaisesRegex(RuntimeError, "case_activity missing required unique keys"):
+            SQLiteWorkCaseStore(damaged_db)
+
+    def test_versioned_database_missing_tenant_scoped_foreign_key_fails_closed(self):
+        damaged_db = Path(self.tmp.name) / "damaged-mapping-foreign-key.sqlite3"
+        SQLiteWorkCaseStore(damaged_db)
+        with closing(sqlite3.connect(damaged_db)) as db:
+            db.execute("PRAGMA foreign_keys=OFF")
+            db.execute("DROP TABLE external_case_mappings")
+            db.execute(
+                "CREATE TABLE external_case_mappings ("
+                "tenant_id TEXT NOT NULL, connection_id TEXT NOT NULL, provider TEXT NOT NULL, "
+                "external_id TEXT NOT NULL, case_id TEXT NOT NULL, linked_at TEXT NOT NULL, "
+                "PRIMARY KEY(tenant_id, connection_id, provider, external_id))"
+            )
+            db.commit()
+
+        with self.assertRaisesRegex(RuntimeError, "external_case_mappings tenant-scoped foreign key mismatch"):
+            SQLiteWorkCaseStore(damaged_db)
+
     def test_versioned_database_with_weakened_primary_key_fails_closed(self):
         damaged_db = Path(self.tmp.name) / "damaged-primary-key.sqlite3"
         SQLiteWorkCaseStore(damaged_db)
