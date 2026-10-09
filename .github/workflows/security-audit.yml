@@ -293,6 +293,7 @@ jobs:
           fixture="$RUNNER_TEMP/gitleaks-export-ignore-fixture"
           fixture_snapshot="$RUNNER_TEMP/gitleaks-export-ignore-snapshot"
           fixture_paths="$RUNNER_TEMP/gitleaks-export-ignore-paths.nul"
+          fixture_stage="$RUNNER_TEMP/gitleaks-export-ignore-stage.nul"
           rm -rf -- "$fixture" "$fixture_snapshot"
           mkdir -p "$fixture" "$fixture_snapshot"
           if ! git init -q "$fixture" \
@@ -302,20 +303,42 @@ jobs:
           fi
           printf '%s\n' 'secret-fixture.txt export-ignore' > "$fixture/.gitattributes"
           printf '%s\n' 'TRACKED_FILE_MUST_REMAIN_SCANNABLE' > "$fixture/secret-fixture.txt"
-          if ! git -C "$fixture" add .gitattributes secret-fixture.txt \
+          printf '%s\n' 'TRACKED_PATH_MUST_REMAIN_SCANNABLE' > "$fixture/mycelix-health"
+          if ! git -C "$fixture" add .gitattributes secret-fixture.txt mycelix-health \
             || ! git -C "$fixture" commit -qm "tracked snapshot fixture" \
-            || ! git -C "$fixture" ls-files -z --cached > "$fixture_paths"; then
+            || ! git -C "$fixture" ls-files -z --cached > "$fixture_paths" \
+            || ! git -C "$fixture" ls-files --stage -z > "$fixture_stage"; then
             incomplete tracked_snapshot_fixture_setup_failed; exit 0
           fi
           if git -C "$fixture" archive HEAD | tar -tf - | grep -Fxq "secret-fixture.txt"; then
             incomplete tracked_snapshot_fixture_not_exercising_export_ignore; exit 0
           fi
+          if ! python3 - "$fixture_paths" "$fixture_stage" <<'PY'
+          import sys
+          from pathlib import Path
+          paths_file, stage_file = map(Path, sys.argv[1:])
+          nul = bytes([0])
+          entries = [item for item in paths_file.read_bytes().split(nul) if item]
+          gitlinks = set()
+          for record in stage_file.read_bytes().split(nul):
+              if not record or b"\t" not in record:
+                  continue
+              metadata, path = record.split(b"\t", 1)
+              fields = metadata.split()
+              if fields and fields[0] == b"160000":
+                  gitlinks.add(path)
+          entries = sorted(item for item in entries if not (item == b"mycelix-health" and item in gitlinks))
+          paths_file.write_bytes(nul.join(entries) + (nul if entries else b""))
+          PY
+          then
+            incomplete tracked_snapshot_fixture_filter_failed; exit 0
+          fi
           if ! (cd "$fixture" && tar --null --verbatim-files-from --no-recursion --files-from="$fixture_paths" -cf -) \
             | tar -xf - -C "$fixture_snapshot"; then
             incomplete tracked_snapshot_fixture_copy_failed; exit 0
           fi
-          if [[ ! -f "$fixture_snapshot/secret-fixture.txt" ]]; then
-            incomplete tracked_snapshot_export_ignore_bypass; exit 0
+          if [[ ! -f "$fixture_snapshot/secret-fixture.txt" || ! -f "$fixture_snapshot/mycelix-health" ]]; then
+            incomplete tracked_snapshot_bypass_fixture; exit 0
           fi
 
           # Snapshot tracked worktree paths from the checked-out exact subject.
@@ -323,14 +346,24 @@ jobs:
           # from a separately verified checkout below. NUL delimiters preserve
           # unusual path names and --no-recursion prevents following directories.
           root_paths="$RUNNER_TEMP/gitleaks-root-paths.nul"
-          if ! git ls-files -z --cached > "$root_paths"; then incomplete tracked_source_inventory_failed; exit 0; fi
-          if ! python3 - "$root_paths" <<'PY'
+          root_stage="$RUNNER_TEMP/gitleaks-root-stage.nul"
+          if ! git ls-files -z --cached > "$root_paths" || ! git ls-files --stage -z > "$root_stage"; then incomplete tracked_source_inventory_failed; exit 0; fi
+          if ! python3 - "$root_paths" "$root_stage" <<'PY'
           import sys
           from pathlib import Path
-          path = Path(sys.argv[1])
-          entries = [item for item in path.read_bytes().split(bytes([0])) if item and item != b"mycelix-health"]
-          entries.sort()
-          path.write_bytes(bytes([0]).join(entries) + (bytes([0]) if entries else b""))
+          paths_file, stage_file = map(Path, sys.argv[1:])
+          nul = bytes([0])
+          entries = [item for item in paths_file.read_bytes().split(nul) if item]
+          gitlinks = set()
+          for record in stage_file.read_bytes().split(nul):
+              if not record or b"\t" not in record:
+                  continue
+              metadata, path = record.split(b"\t", 1)
+              fields = metadata.split()
+              if fields and fields[0] == b"160000":
+                  gitlinks.add(path)
+          entries = sorted(item for item in entries if not (item == b"mycelix-health" and item in gitlinks))
+          paths_file.write_bytes(nul.join(entries) + (nul if entries else b""))
           PY
           then
             incomplete tracked_source_inventory_failed; exit 0
