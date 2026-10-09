@@ -21,6 +21,16 @@ The platform self-check runs the workflow audit on pushes to `main`, pull reques
 
 A workflow being queued, starting, or finishing successfully is not by itself a security pass. A pass from this initial workflow only covers its declared checks. It does not prove absence of unknown vulnerabilities, correctness of application logic, security of the GitHub organization settings, or resilience against a determined attacker.
 
+## Availability versus authorization
+
+The platform's host-availability contract and its security decision contract must remain separate:
+
+- **Availability may fail open only for non-authoritative/ancillary services.** An audit service outage must not prevent a host from booting or make essential recovery depend on the remote audit plane.
+- **Security authorization fails closed.** A missing, stale, malformed, untrusted, or incomplete audit receipt cannot authorize a merge, a privileged mutation, or a claim that a release is qualified.
+- A model-produced risk score or a Mycelix trust/reputation value may prioritize findings, but cannot override a deterministic block, a failed scanner, or absent evidence.
+- Security-critical policy enforcement must work when Symthaea, Mycelix, network connectivity, or the audit service is unavailable. Those systems can improve analysis and coordination; they must not become a single point of authorization failure.
+
+
 ## Trust boundaries
 
 - The audited source is checked out at the caller-supplied commit SHA and `git rev-parse HEAD` must match it.
