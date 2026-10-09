@@ -30,11 +30,13 @@ jobs:
       contents: read
     steps:
       - name: Check out exact audit subject
+        id: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.subject_sha }}
           persist-credentials: false
       - name: Assert exact checkout identity
+        id: subject
         env:
           SUBJECT_SHA: ${{ inputs.subject_sha }}
         run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
@@ -55,6 +57,7 @@ jobs:
             echo "run_id=${GITHUB_RUN_ID}"
             echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
             echo "zizmor_status=INCOMPLETE"
+            echo "actionlint_status=INCOMPLETE"
           } > security-audit-results/workflows/summary.txt
           if [[ ! "$AUDIT_ENGINE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             sed -i 's/^zizmor_status=.*/zizmor_status=FAIL/' security-audit-results/workflows/summary.txt
@@ -71,13 +74,69 @@ jobs:
           online-audits: true
           persona: auditor
           version: v1.30.1
+      - name: Validate audit workflow syntax
+        id: actionlint
+        if: always() && steps.checkout.outcome == 'success' && steps.subject.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="security-audit-results/workflows/actionlint.txt"
+          archive="$RUNNER_TEMP/actionlint_1.7.12_linux_amd64.tar.gz"
+          tool_dir="$RUNNER_TEMP/actionlint_1.7.12"
+          mkdir -p security-audit-results/workflows "$tool_dir"
+          echo "version=v1.7.12" > "$report"
+          echo "expected_archive_sha256=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8" >> "$report"
+          curl -fsSL --retry 3 \
+            -o "$archive" \
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
+          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $archive" | sha256sum -c -
+          tar -xzf "$archive" -C "$tool_dir" actionlint
+          binary="$tool_dir/actionlint"
+          mapfile -d '' -t audit_workflows < <(
+            find .github/workflows -maxdepth 1 -type f \\
+              \\( -name 'security-audit.yml' -o -name 'security-audit-self.yml' \\) -print0 \\
+              | sort -z
+          )
+          if [[ "${#audit_workflows[@]}" -eq 0 ]]; then
+            echo "FAIL: no tracked security audit workflow files found" >> "$report"
+            exit 2
+          fi
+          "$binary" -version >> "$report" 2>&1
+          if "$binary" "${audit_workflows[@]}" >> "$report" 2>&1; then
+            rc=0
+          else
+            rc=$?
+          fi
+          echo "actionlint_exit_code=$rc" >> "$report"
+          cat "$report"
+          exit "$rc"
       - name: Preserve workflow audit output
         if: always()
         shell: bash
         env:
           ZIZMOR_OUTCOME: ${{ steps.zizmor.outcome }}
+          ACTIONLINT_OUTCOME: ${{ steps.actionlint.outcome }}
+          AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
         run: |
           set -euo pipefail
+          mkdir -p security-audit-results/workflows
+          summary="security-audit-results/workflows/summary.txt"
+          if [[ ! -f "$summary" ]]; then
+            {
+              echo "schema=luminous.security-audit.workflow-receipt.v1"
+              echo "repository=${GITHUB_REPOSITORY}"
+              echo "subject_sha=$SUBJECT_SHA"
+              echo "caller_workflow_ref=${GITHUB_WORKFLOW_REF}"
+              echo "caller_workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}"
+              echo "declared_audit_engine_sha=$AUDIT_ENGINE_SHA"
+              echo "run_id=${GITHUB_RUN_ID}"
+              echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+              echo "zizmor_status=INCOMPLETE"
+              echo "actionlint_status=INCOMPLETE"
+              echo "incomplete_reason=checkout_or_receipt_initialization_failed"
+            } > "$summary"
+          fi
           report="$RUNNER_TEMP/zizmor"
           destination="security-audit-results/workflows/zizmor.txt"
           if [[ -f "$report" ]]; then
@@ -94,6 +153,18 @@ jobs:
             sed -i 's/^zizmor_status=.*/zizmor_status=INCOMPLETE/' security-audit-results/workflows/summary.txt
             echo "zizmor_action_outcome=${ZIZMOR_OUTCOME:-unknown}" >> security-audit-results/workflows/summary.txt
             echo "report_missing=true" >> security-audit-results/workflows/summary.txt
+          fi
+          case "${ACTIONLINT_OUTCOME:-unknown}" in
+            success) sed -i 's/^actionlint_status=.*/actionlint_status=PASS/' "$summary" ;;
+            failure|cancelled) sed -i 's/^actionlint_status=.*/actionlint_status=FAIL/' "$summary" ;;
+            *) sed -i 's/^actionlint_status=.*/actionlint_status=INCOMPLETE/' "$summary" ;;
+          esac
+          echo "actionlint_action_outcome=${ACTIONLINT_OUTCOME:-unknown}" >> "$summary"
+          actionlint_report="security-audit-results/workflows/actionlint.txt"
+          if [[ -f "$actionlint_report" ]]; then
+            echo "actionlint_report_sha256=$(sha256sum "$actionlint_report" | cut -d' ' -f1)" >> "$summary"
+          else
+            echo "actionlint_report_missing=true" >> "$summary"
           fi
       - name: Upload workflow audit evidence
         if: always()
@@ -113,11 +184,13 @@ jobs:
       contents: read
     steps:
       - name: Check out exact audit subject
+        id: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.subject_sha }}
           persist-credentials: false
       - name: Assert exact checkout identity
+        id: subject
         env:
           SUBJECT_SHA: ${{ inputs.subject_sha }}
         run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
@@ -507,6 +580,32 @@ jobs:
           echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
           cat "$result_root/summary.txt"
           if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
+      - name: Ensure RustSec evidence receipt exists
+        if: always()
+        shell: bash
+        env:
+          AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p security-audit-results/lockfiles
+          summary="security-audit-results/summary.txt"
+          if [[ ! -f "$summary" ]]; then
+            {
+              echo "schema=luminous.security-audit.receipt.v1"
+              echo "repository=${GITHUB_REPOSITORY}"
+              echo "subject_sha=$SUBJECT_SHA"
+              echo "caller_workflow_ref=${GITHUB_WORKFLOW_REF}"
+              echo "caller_workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}"
+              echo "declared_audit_engine_sha=$AUDIT_ENGINE_SHA"
+              echo "run_id=${GITHUB_RUN_ID}"
+              echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+              echo "event=${GITHUB_EVENT_NAME}"
+              echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              echo "rustsec_status=INCOMPLETE"
+              echo "incomplete_reason=checkout_or_receipt_initialization_failed"
+            } > "$summary"
+          fi
       - name: Upload RustSec audit evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
