@@ -1,15 +1,17 @@
-name: Operations Event Contract
+name: Operations Event and Work Case Contracts
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - "contracts/operations-event-v1/**"
+      - "contracts/work-case-v1/**"
       - ".github/workflows/operations-event-contract.yml"
   push:
     branches: ["main"]
     paths:
       - "contracts/operations-event-v1/**"
+      - "contracts/work-case-v1/**"
       - ".github/workflows/operations-event-contract.yml"
 
 permissions:
@@ -22,7 +24,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 8
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
@@ -32,14 +34,22 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
+      - name: Set up pinned Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.12"
+
       - name: Create isolated Python environment
         run: python3 -m venv "$RUNNER_TEMP/operations-event-contract-venv"
 
       - name: Install pinned schema validator
         run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
 
-      - name: Validate schemas, fixtures, adapter model, and SQLite fault-injection cases
+      - name: Validate Operations Event Contract V1
         run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m unittest discover -s contracts/operations-event-v1/tests -p 'test_*.py' -v
+
+      - name: Validate native Work Case Contract V1
+        run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m unittest discover -s contracts/work-case-v1/tests -p 'test_*.py' -v
 
       - name: Write bounded qualification summary
         if: success()
@@ -47,10 +57,10 @@ jobs:
           SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           {
-            echo "## Operations Event Contract"
+            echo "## Luminous operations contracts"
             echo "- Tested source revision: $SOURCE_SHA"
-            echo "- This pass covers JSON Schema validation, the synthetic incident snapshot fixture, the in-memory adapter model, and the SQLite-backed local reference/fault-injection tests."
-            echo "- It does not qualify a live ConnectWise adapter, production database or distributed-writer behavior, database tenant isolation, provider authentication, cryptographic evidence verification, hardware power-loss behavior, or any remote-action path."
+            echo "- Covers the Operations Event V1 schemas/synthetic adapter/local SQLite reference model and Work Case V1 schema/synthetic fixture/in-memory state-machine reference model."
+            echo "- Does not qualify a live ConnectWise adapter, production database isolation/durability, production tenant authorization, distributed-writer behavior, cryptographic evidence verification, or remote execution."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Confirm checkout stayed unchanged
