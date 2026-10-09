@@ -339,6 +339,13 @@ def process(repo: str, policy: dict[str, Any], run_id: int, token: str, mode: st
         return 0
 
     target = run.get("html_url")
+    # A failed invariant suite must actively replace an old green status.
+    self_test_outcome = os.environ.get("VERIFIER_TEST_OUTCOME", "success")
+    if self_test_outcome != "success":
+        post_status(repo, subject, token, "failure",
+                    f"Independent verifier self-tests did not pass: {self_test_outcome}", target)
+        print("FAIL: independent verifier self-tests did not pass", file=sys.stderr)
+        return 1
     if mode == "workflow_run" and activity in {"requested", "in_progress"}:
         post_status(repo, subject, token, "pending", "Exact-head security audit is running; no pass is implied.", target)
         print(f"PENDING: {repo}@{subject} run {run_id}.")
