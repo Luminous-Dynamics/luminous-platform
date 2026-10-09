@@ -2112,7 +2112,7 @@ jobs:
           verify_workflow_report_digests() {
             local receipt="$1" root expected actual file key
             root="$(dirname "$receipt")"
-            for spec in "zizmor.txt:zizmor_report_sha256" "actionlint.txt:actionlint_report_sha256" "gitleaks-sanitized.json:secret_report_sha256"; do
+            for spec in "zizmor.txt:zizmor_report_sha256" "actionlint.txt:actionlint_report_sha256" "gitleaks-sanitized.json:secret_report_sha256" "gitleaks-history-sanitized.json:secret_history_report_sha256"; do
               file="${spec%%:*}"
               key="${spec#*:}"
               if ! expected="$(field "$receipt" "$key")" || [[ ! "$expected" =~ ^[0-9a-f]{64}$ ]] || [[ ! -f "$root/$file" ]]; then
@@ -2185,9 +2185,14 @@ jobs:
 
           verify_gitleaks_report() {
             local receipt="$1" root report expected actual config_sha raw_sha source_count source_inventory
+            local history_report history_inventory history_expected history_actual inventory_expected inventory_actual
+            local history_raw history_root_count history_sub_count history_finding_count history_tip history_sub_tip history_exit
             root="$(dirname "$receipt")"
             report="$root/gitleaks-sanitized.json"
-            if ! field_equals "$receipt" secret_scan_status PASS; then return 1; fi
+            history_report="$root/gitleaks-history-sanitized.json"
+            history_inventory="$root/gitleaks-history-inventory.json"
+
+            if ! field_equals "$receipt" secret_scan_status PASS || ! field_equals "$receipt" secret_history_scan_status PASS; then return 1; fi
             if ! expected="$(field "$receipt" secret_report_sha256)" || [[ ! "$expected" =~ ^[0-9a-f]{64}$ ]] || [[ ! -f "$report" ]]; then
               failure_reasons+=("gitleaks_sanitized_report_missing_or_uncommitted")
               return 1
@@ -2218,6 +2223,62 @@ jobs:
               (.findings | type == "array" and length == 0)
             ' "$report" >/dev/null; then
               failure_reasons+=("gitleaks_sanitized_report_policy_mismatch")
+              return 1
+            fi
+
+            history_expected="$(field "$receipt" secret_history_report_sha256 2>/dev/null || true)"
+            inventory_expected="$(field "$receipt" secret_history_inventory_sha256 2>/dev/null || true)"
+            history_raw="$(field "$receipt" secret_history_raw_report_sha256 2>/dev/null || true)"
+            history_root_count="$(field "$receipt" secret_history_root_commit_count 2>/dev/null || true)"
+            history_sub_count="$(field "$receipt" secret_history_submodule_commit_count 2>/dev/null || true)"
+            history_finding_count="$(field "$receipt" secret_history_finding_count 2>/dev/null || true)"
+            history_exit="$(field "$receipt" secret_history_exit_code 2>/dev/null || true)"
+            if [[ ! "$history_expected" =~ ^[0-9a-f]{64}$ || ! -f "$history_report" || ! "$inventory_expected" =~ ^[0-9a-f]{64}$ || ! -f "$history_inventory" ]]; then
+              failure_reasons+=("gitleaks_history_report_or_inventory_missing")
+              return 1
+            fi
+            history_actual="$(sha256sum "$history_report" | cut -d' ' -f1)"
+            inventory_actual="$(sha256sum "$history_inventory" | cut -d' ' -f1)"
+            if [[ "$history_actual" != "$history_expected" || "$inventory_actual" != "$inventory_expected" ]]; then
+              failure_reasons+=("gitleaks_history_report_or_inventory_digest_mismatch")
+              return 1
+            fi
+            if [[ ! "$history_raw" =~ ^[0-9a-f]{64}$ || ! "$history_root_count" =~ ^[0-9]+$ || "$history_root_count" -lt 1 || ! "$history_sub_count" =~ ^[0-9]+$ || ! "$history_finding_count" =~ ^[0-9]+$ || "$history_finding_count" -ne 0 ]]; then
+              failure_reasons+=("gitleaks_history_receipt_counts_or_digests_invalid")
+              return 1
+            fi
+            if [[ "$history_exit" != "root=0,submodule=0" && "$history_exit" != "root=0,submodule=NOT_REQUIRED" ]]; then
+              failure_reasons+=("gitleaks_history_scanner_exit_codes_not_clean")
+              return 1
+            fi
+            history_tip="$(jq -er '.history_tip | strings' "$history_report" 2>/dev/null || true)"
+            history_sub_tip="$(jq -er '.submodule_tip | strings' "$history_report" 2>/dev/null || true)"
+            if [[ "$history_tip" != "$SUBJECT_SHA" ]]; then
+              failure_reasons+=("gitleaks_history_tip_mismatch")
+              return 1
+            fi
+            if ! jq -e --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config_sha "$config_sha" --arg raw_sha "$history_raw" --arg inventory_sha "$inventory_expected" --arg history_tip "$history_tip" --arg submodule_tip "$history_sub_tip" --argjson root_count "$history_root_count" --argjson sub_count "$history_sub_count" --argjson finding_count "$history_finding_count" '
+              .schema == "luminous.security-audit.gitleaks-history-summary.v1" and
+              .repository == $repository and .subject_sha == $subject and .scanner_version == "v8.30.1" and
+              .status == "PASS" and .reason == "none" and .history_tip == $history_tip and
+              .history_commit_count == $root_count and .submodule_tip == $submodule_tip and
+              .submodule_commit_count == $sub_count and .history_inventory_sha256 == $inventory_sha and
+              .config_sha256 == $config_sha and .raw_report_sha256 == $raw_sha and
+              .finding_count == $finding_count and $finding_count == 0 and
+              (.findings | type == "array" and length == 0) and
+              (if $sub_count == 0 then $submodule_tip == "not_required" else ($submodule_tip | test("^[0-9a-f]{40}$")) end)
+            ' "$history_report" >/dev/null; then
+              failure_reasons+=("gitleaks_history_report_policy_mismatch")
+              return 1
+            fi
+            if ! jq -e --arg subject "$SUBJECT_SHA" --arg inventory_sha "$inventory_expected" --arg submodule_tip "$history_sub_tip" --argjson root_count "$history_root_count" --argjson sub_count "$history_sub_count" '
+              .schema == "luminous.security-audit.gitleaks-history-inventory.v1" and
+              .subject_sha == $subject and .status == "PASS" and
+              .root.head == $subject and .root.commit_count == $root_count and .root.is_shallow == false and
+              .submodule.head == $submodule_tip and .submodule.commit_count == $sub_count and .submodule.is_shallow == false and
+              ($sub_count == 0 or .submodule.path == "mycelix-health")
+            ' "$history_inventory" >/dev/null; then
+              failure_reasons+=("gitleaks_history_inventory_policy_mismatch")
               return 1
             fi
             return 0
