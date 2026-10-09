@@ -23,7 +23,8 @@
     "audit_rust",
     "audit_node",
     "required_lanes",
-    "findings_below_block_threshold",
+    "non_blocking_findings_present",
+    "non_blocking_finding_sources",
     "status",
     "failure_reasons",
     "evidence_files"
@@ -110,9 +111,6 @@
         }
       }
     },
-    "findings_below_block_threshold": {
-      "type": "boolean"
-    },
     "status": {
       "enum": [
         "PASS",
@@ -182,6 +180,19 @@
     },
     "aggregate_artifact_retention_days": {
       "const": 30
+    },
+    "non_blocking_findings_present": {
+      "type": "boolean"
+    },
+    "non_blocking_finding_sources": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "rustsec_warnings",
+          "npm_below_threshold"
+        ]
+      }
     }
   },
   "allOf": [
@@ -222,6 +233,12 @@
                 ]
               }
             }
+          },
+          "non_blocking_findings_present": {
+            "const": false
+          },
+          "non_blocking_finding_sources": {
+            "maxItems": 0
           }
         }
       }
@@ -261,8 +278,11 @@
               }
             }
           },
-          "audit_node": {
+          "non_blocking_findings_present": {
             "const": true
+          },
+          "non_blocking_finding_sources": {
+            "minItems": 1
           }
         }
       }
@@ -285,6 +305,62 @@
         "properties": {
           "failure_reasons": {
             "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "non_blocking_finding_sources": {
+            "contains": {
+              "const": "rustsec_warnings"
+            }
+          }
+        },
+        "required": [
+          "non_blocking_finding_sources"
+        ]
+      },
+      "then": {
+        "properties": {
+          "audit_rust": {
+            "const": true
+          },
+          "required_lanes": {
+            "properties": {
+              "rustsec": {
+                "const": "PASS"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "non_blocking_finding_sources": {
+            "contains": {
+              "const": "npm_below_threshold"
+            }
+          }
+        },
+        "required": [
+          "non_blocking_finding_sources"
+        ]
+      },
+      "then": {
+        "properties": {
+          "audit_node": {
+            "const": true
+          },
+          "required_lanes": {
+            "properties": {
+              "npm": {
+                "const": "PASS"
+              }
+            }
           }
         }
       }
