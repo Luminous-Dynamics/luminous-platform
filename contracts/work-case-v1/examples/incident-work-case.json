@@ -17,6 +17,7 @@
   "external_refs": [
     {
       "provider": "connectwise-psa",
+      "connection_id": "connectwise-sandbox-demo",
       "external_id": "synthetic-ticket-7301",
       "linked_at": "2026-10-09T08:01:00Z"
     }

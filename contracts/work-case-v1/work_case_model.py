@@ -86,11 +86,15 @@ class Principal:
 @dataclass(frozen=True)
 class ExternalReference:
     provider: str
+    connection_id: str
     external_id: str
     linked_at: str
 
     def to_dict(self) -> dict[str, str]:
-        return {"provider": self.provider, "external_id": self.external_id, "linked_at": self.linked_at}
+        return {
+            "provider": self.provider, "connection_id": self.connection_id,
+            "external_id": self.external_id, "linked_at": self.linked_at,
+        }
 
 
 @dataclass(frozen=True)
@@ -438,45 +442,49 @@ class WorkCaseStore:
         return self._execute(principal, idempotency_key, "case.add_evidence", payload, action)
 
     def link_external_reference(self, principal: Principal, case_id: str, *,
-                                provider: str, external_id: str, expected_revision: int,
-                                reason: str, idempotency_key: str, command_id: str,
-                                occurred_at: str) -> WorkCase:
+                                provider: str, connection_id: str, external_id: str,
+                                expected_revision: int, reason: str, idempotency_key: str,
+                                command_id: str, occurred_at: str) -> WorkCase:
         _mutator(principal)
         local_id = _case_id(case_id)
         provider_key = _nonempty(provider, "provider", 64).lower()
         if not re.fullmatch(r"[a-z0-9][a-z0-9.-]{0,63}", provider_key):
             raise ValidationError("provider must be a stable provider key")
+        connection = _nonempty(connection_id, "connection_id", 128)
         foreign_id = _nonempty(external_id, "external_id", 256)
         explanation = _nonempty(reason, "reason", 1000)
         cmd = _nonempty(command_id, "command_id", 128)
         timestamp = _timestamp(occurred_at)
-        payload = {"case_id": local_id, "provider": provider_key, "external_id": foreign_id,
-                   "expected_revision": expected_revision, "reason": explanation}
+        payload = {"case_id": local_id, "provider": provider_key, "connection_id": connection,
+                   "external_id": foreign_id, "expected_revision": expected_revision, "reason": explanation}
 
         def action() -> WorkCase:
             current = self._owned(principal, local_id)
             self._check_revision(current, expected_revision)
-            map_key = (principal.tenant_id, provider_key, foreign_id)
+            map_key = (principal.tenant_id, connection, provider_key, foreign_id)
             already_bound = self._external_map.get(map_key)
             if already_bound is not None:
                 if already_bound != local_id:
                     raise MappingConflict("external identifier is already mapped to another local case")
                 return current
-            ref = ExternalReference(provider_key, foreign_id, timestamp)
+            ref = ExternalReference(provider_key, connection, foreign_id, timestamp)
             changed = replace(current, external_refs=current.external_refs + (ref,),
                               revision=current.revision + 1, updated_at=timestamp)
             self._external_map[map_key] = local_id
             return self._append(principal, current, changed, command_id=cmd, occurred_at=timestamp,
                                 activity_type="case.external_reference_linked", reason=explanation,
-                                details={"provider": provider_key, "external_id": foreign_id})
+                                details={"provider": provider_key, "connection_id": connection,
+                                         "external_id": foreign_id})
         return self._execute(principal, idempotency_key, "case.link_external_reference", payload, action)
 
-    def find_by_external_reference(self, principal: Principal, provider: str, external_id: str) -> WorkCase:
+    def find_by_external_reference(self, principal: Principal, provider: str,
+                                   connection_id: str, external_id: str) -> WorkCase:
         _principal(principal)
         provider_key = _nonempty(provider, "provider", 64).lower()
+        connection = _nonempty(connection_id, "connection_id", 128)
         foreign_id = _nonempty(external_id, "external_id", 256)
         with self._lock:
-            local_id = self._external_map.get((principal.tenant_id, provider_key, foreign_id))
+            local_id = self._external_map.get((principal.tenant_id, connection, provider_key, foreign_id))
             if local_id is None:
                 raise NotFound("external reference not found")
             return self._owned(principal, local_id)

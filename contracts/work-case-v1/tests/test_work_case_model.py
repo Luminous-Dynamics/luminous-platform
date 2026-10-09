@@ -20,6 +20,16 @@ from work_case_model import (  # noqa: E402
 T0 = "2026-10-09T08:00:00Z"
 T1 = "2026-10-09T08:01:00Z"
 
+# Independent expected-state oracle; do not derive this from the implementation.
+ORACLE_TRANSITIONS = {
+    CaseState.OPEN: frozenset({CaseState.IN_PROGRESS, CaseState.WAITING, CaseState.CANCELLED}),
+    CaseState.IN_PROGRESS: frozenset({CaseState.WAITING, CaseState.RESOLVED, CaseState.CANCELLED}),
+    CaseState.WAITING: frozenset({CaseState.IN_PROGRESS, CaseState.RESOLVED, CaseState.CANCELLED}),
+    CaseState.RESOLVED: frozenset({CaseState.OPEN, CaseState.CLOSED}),
+    CaseState.CLOSED: frozenset(),
+    CaseState.CANCELLED: frozenset(),
+}
+
 
 class WorkCaseCoreTests(unittest.TestCase):
     def setUp(self):
@@ -85,6 +95,7 @@ class WorkCaseCoreTests(unittest.TestCase):
         self.assertEqual(dict(timeline[-1].details)["to"], "closed")
 
     def test_published_transition_matrix_is_enforced(self):
+        self.assertEqual(ALLOWED_TRANSITIONS, ORACLE_TRANSITIONS)
         paths = {
             CaseState.OPEN: [],
             CaseState.IN_PROGRESS: [CaseState.IN_PROGRESS],
@@ -94,7 +105,7 @@ class WorkCaseCoreTests(unittest.TestCase):
             CaseState.CANCELLED: [CaseState.CANCELLED],
         }
         # The source-state setup is built only by public legal transitions.
-        for source, allowed_targets in ALLOWED_TRANSITIONS.items():
+        for source, allowed_targets in ORACLE_TRANSITIONS.items():
             for target in CaseState:
                 with self.subTest(source=source.value, target=target.value):
                     store = WorkCaseStore()
@@ -207,18 +218,34 @@ class WorkCaseCoreTests(unittest.TestCase):
 
     def test_external_ids_are_explicit_unique_mappings_not_local_primary_keys(self):
         linked = self.store.link_external_reference(
-            self.tech, "case-1", provider="ConnectWise-PSA", external_id="ticket-7301",
-            expected_revision=1, reason="import from source system", idempotency_key="map-1",
+            self.tech, "case-1", provider="ConnectWise-PSA", connection_id="cw-instance-a",
+            external_id="ticket-7301", expected_revision=1,
+            reason="import from source system", idempotency_key="map-1",
             command_id="map-command-1", occurred_at=T1,
         )
         self.assertEqual((linked.case_id, linked.revision), ("case-1", 2))
-        self.assertEqual(self.store.find_by_external_reference(self.tech, "connectwise-psa", "ticket-7301"), linked)
+        self.assertEqual(
+            self.store.find_by_external_reference(self.tech, "connectwise-psa", "cw-instance-a", "ticket-7301"),
+            linked,
+        )
         second = self.create_case("case-2", key="create-2")
+        # The same external ID can legitimately exist in another configured instance.
+        second_link = self.store.link_external_reference(
+            self.tech, second.case_id, provider="connectwise-psa", connection_id="cw-instance-b",
+            external_id="ticket-7301", expected_revision=1, reason="different source instance",
+            idempotency_key="map-2", command_id="map-command-2", occurred_at=T1,
+        )
+        self.assertEqual(
+            self.store.find_by_external_reference(self.tech, "connectwise-psa", "cw-instance-b", "ticket-7301"),
+            second_link,
+        )
+        third = self.create_case("case-3", key="create-3")
         with self.assertRaises(MappingConflict):
             self.store.link_external_reference(
-                self.tech, second.case_id, provider="connectwise-psa", external_id="ticket-7301",
-                expected_revision=1, reason="must not hijack mapping", idempotency_key="map-2",
-                command_id="map-command-2", occurred_at=T1,
+                self.tech, third.case_id, provider="connectwise-psa", connection_id="cw-instance-a",
+                external_id="ticket-7301", expected_revision=1,
+                reason="must not hijack mapping", idempotency_key="map-3",
+                command_id="map-command-3", occurred_at=T1,
             )
 
     def test_evidence_kind_is_not_automatically_verification(self):

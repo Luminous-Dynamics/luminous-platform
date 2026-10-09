@@ -27,9 +27,10 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["provider", "external_id", "linked_at"],
+        "required": ["provider", "connection_id", "external_id", "linked_at"],
         "properties": {
           "provider": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]{0,63}$" },
+          "connection_id": { "type": "string", "minLength": 1, "maxLength": 128 },
           "external_id": { "type": "string", "minLength": 1, "maxLength": 256 },
           "linked_at": { "type": "string", "format": "date-time" }
         }
