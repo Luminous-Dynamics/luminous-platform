@@ -7,7 +7,7 @@ This package is the deliberately narrow public payload for the first proposed My
 ## Files
 
 - `share-package.schema.json`: JSON Schema Draft 2020-12 for the share package.
-- `validator.py`: reusable schema plus semantic validator for unique manifest references and non-self-referential dispute/supersession targets.
+- `validator.py`: reusable schema plus semantic validator for unique manifest references, record-type-scoped target references, and non-self-referential dispute/supersession targets.
 - `examples/evidence-attestation.synthetic.json`: deterministic synthetic fixture with opaque references.
 - `tests/test_share_package_contract.py`: positive and adversarial schema/semantic tests.
 
@@ -42,4 +42,4 @@ python3 -m venv /tmp/holochain-attestation-contract-venv
 PYTHONDONTWRITEBYTECODE=1 /tmp/holochain-attestation-contract-venv/bin/python -m unittest discover -s contracts/holochain-attestation-v1/tests -p 'test_*.py' -v
 ```
 
-The test suite defines 19 positive/adversarial test functions covering schema shape, conditional record semantics, case-insensitive UUID self-reference, duplicate manifest IDs, malformed input, and error-value redaction. It does **not** test Holochain zome validation, multi-agent DHT propagation, identity/membership binding, privacy of network metadata, PostgreSQL/outbox recovery, or production readiness. Those require a selected hApp and a compatible pinned conductor/toolchain.
+The test suite defines 20 positive/adversarial test functions covering schema shape, conditional record semantics, case-insensitive UUID self-reference, duplicate manifest IDs, malformed input, and error-value redaction. It does **not** test Holochain zome validation, multi-agent DHT propagation, identity/membership binding, privacy of network metadata, PostgreSQL/outbox recovery, or production readiness. Those require a selected hApp and a compatible pinned conductor/toolchain.
