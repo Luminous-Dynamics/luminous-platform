@@ -102,15 +102,16 @@ jobs:
           subject_sha="$(git rev-parse HEAD)"
           mapfile -t lockfiles < <(git ls-files -- 'Cargo.lock' '**/Cargo.lock' | LC_ALL=C sort -u)
 
+          lockfile_missing=0
           if [[ "${#lockfiles[@]}" -eq 0 ]]; then
+            lockfile_missing=1
             sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' "$result_root/summary.txt"
             echo "incomplete_reason=no_tracked_Cargo.lock_files" >> "$result_root/summary.txt"
             echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
-            exit 2
+          else
+            sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
+            sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
           fi
-
-          sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
-          sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
           {
             echo "rustc=$(rustc +1.96.0 --version)"
             echo "cargo=$(cargo +1.96.0 --version)"
@@ -118,7 +119,8 @@ jobs:
             echo "lockfile_count=${#lockfiles[@]}"
           } >> "$result_root/summary.txt"
 
-          failed=0
+          coverage_failed=0
+          rustsec_failed="$lockfile_missing"
           # Prove tracked Cargo manifests map to tracked workspace lockfiles.
           # This is intentionally separate from cargo-audit: scanner coverage
           # must be evidenced, not inferred from finding some lockfiles.
@@ -227,15 +229,15 @@ jobs:
             coverage_status="PASS"
           else
             coverage_status="FAIL"
-            failed=1
+            coverage_failed=1
           fi
           echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
+          echo "manifest_coverage_sha256=$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)" | tee -a "$result_root/summary.txt"
 
           # RustSec explicitly recommends reading untrusted lockfiles from
           # outside the checked-out project directory so project-local Cargo
           # configuration cannot influence the audit invocation.
           cd "$RUNNER_TEMP"
-          failed=0
           for lockfile in "${lockfiles[@]}"; do
             report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
             path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
@@ -250,7 +252,7 @@ jobs:
               rc=0
             else
               rc=$?
-              failed=1
+              rustsec_failed=1
             fi
 
             if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
@@ -259,11 +261,12 @@ jobs:
               | tee -a "$result_root/summary.txt"
           done
 
-          if [[ "$failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
-          sed -i "s/^rustsec_status=.*/rustsec_status=$overall/" "$result_root/summary.txt"
+          if [[ "$rustsec_failed" -eq 0 ]]; then rustsec_status="PASS"; else rustsec_status="FAIL"; fi
+          sed -i "s/^rustsec_status=.*/rustsec_status=$rustsec_status/" "$result_root/summary.txt"
+          if [[ "$rustsec_failed" -eq 0 && "$coverage_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
           echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
           cat "$result_root/summary.txt"
-          exit "$failed"
+          if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
 
       - name: Upload dependency audit evidence
         if: always()
