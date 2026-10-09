@@ -988,12 +988,12 @@ jobs:
               "lockfile_sha256": lock_sha,
               "authoritative_lockfile": authoritative,
               "authoritative_lockfile_sha256": authoritative_sha
-          }, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           PY
                 : > "$stderr"
                 report_sha="$(sha256sum "$report" | cut -d' ' -f1)"
                 stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1)"
-                printf 'lockfile=%s lockfile_sha256=%s outcome=SKIPPED_NOT_AUTHORITATIVE authoritative_lockfile=%s authoritative_lockfile_sha256=%s report_sha256=%s stderr_sha256=%s\\n' \
+                printf 'lockfile=%s lockfile_sha256=%s outcome=SKIPPED_NOT_AUTHORITATIVE authoritative_lockfile=%s authoritative_lockfile_sha256=%s report_sha256=%s stderr_sha256=%s\n' \
                   "$lockfile" "$lock_sha" "$shrinkwrap" "$shrinkwrap_sha" "$report_sha" "$stderr_sha" \
                   >> "$result_root/summary.txt"
                 continue
