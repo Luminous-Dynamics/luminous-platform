@@ -458,12 +458,13 @@ impl PostgresOperationsStore {
 
         sqlx::query(
             "INSERT INTO ops.outbox_events \
-             (tenant_id, outbox_id, incident_id, sequence_no, source_uri, source_event_id, payload) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+             (tenant_id, outbox_id, incident_id, connection_id, sequence_no, source_uri, source_event_id, payload) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         )
         .bind(&authenticated.tenant_id)
         .bind(&outbox_id)
         .bind(&incident_id)
+        .bind(&authenticated.connection_id)
         .bind(sequence_no)
         .bind(source_uri)
         .bind(event_id)

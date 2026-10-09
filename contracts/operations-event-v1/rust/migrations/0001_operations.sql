@@ -97,7 +97,9 @@ CREATE TABLE ops.business_effects (
   created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
   PRIMARY KEY (tenant_id, connection_id, idempotency_key),
   FOREIGN KEY (connection_id, tenant_id)
-    REFERENCES ops.connector_connections(connection_id, tenant_id)
+    REFERENCES ops.connector_connections(connection_id, tenant_id),
+  FOREIGN KEY (tenant_id, connection_id, source_uri, event_id)
+    REFERENCES ops.inbox_events(tenant_id, connection_id, source_uri, event_id)
 );
 
 CREATE TABLE ops.incident_activity (
@@ -114,13 +116,16 @@ CREATE TABLE ops.incident_activity (
   FOREIGN KEY (tenant_id, incident_id)
     REFERENCES ops.incident_heads(tenant_id, incident_id),
   FOREIGN KEY (connection_id, tenant_id)
-    REFERENCES ops.connector_connections(connection_id, tenant_id)
+    REFERENCES ops.connector_connections(connection_id, tenant_id),
+  FOREIGN KEY (tenant_id, connection_id, source_uri, event_id)
+    REFERENCES ops.inbox_events(tenant_id, connection_id, source_uri, event_id)
 );
 
 CREATE TABLE ops.outbox_events (
   tenant_id text NOT NULL,
   outbox_id text NOT NULL CHECK (outbox_id ~ '^[0-9a-f]{64}$'),
   incident_id text NOT NULL,
+  connection_id text NOT NULL,
   sequence_no bigint NOT NULL CHECK (sequence_no > 0),
   source_uri text NOT NULL,
   source_event_id text NOT NULL,
@@ -137,6 +142,10 @@ CREATE TABLE ops.outbox_events (
   UNIQUE (tenant_id, incident_id, sequence_no),
   FOREIGN KEY (tenant_id, incident_id)
     REFERENCES ops.incident_heads(tenant_id, incident_id),
+  FOREIGN KEY (connection_id, tenant_id)
+    REFERENCES ops.connector_connections(connection_id, tenant_id),
+  FOREIGN KEY (tenant_id, connection_id, source_uri, source_event_id)
+    REFERENCES ops.inbox_events(tenant_id, connection_id, source_uri, event_id),
   CHECK (
     (status = 'LEASED' AND lease_owner IS NOT NULL AND lease_until IS NOT NULL)
     OR
