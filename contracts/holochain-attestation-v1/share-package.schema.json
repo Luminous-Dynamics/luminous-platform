@@ -183,8 +183,14 @@
         "properties": {
           "statementCode": {
             "const": "reviewed"
+          },
+          "evidenceManifest": {
+            "minItems": 1
           }
-        }
+        },
+        "required": [
+          "evidenceManifest"
+        ]
       }
     },
     {
