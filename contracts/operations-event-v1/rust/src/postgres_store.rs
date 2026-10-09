@@ -86,6 +86,23 @@ enum RevisionOrder {
     Unproven,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum RevisionDecision {
+    First,
+    Newer,
+    Older,
+    DuplicateRevision,
+    ContentConflict,
+    Unproven,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum EffectClaim {
+    Inserted,
+    Duplicate,
+    Conflict,
+}
+
 #[derive(Clone, Debug)]
 struct ConnectionPolicy {
     source_uri: String,
@@ -400,60 +417,86 @@ impl PostgresOperationsStore {
             return Ok(IngestOutcome::Quarantined { reason_code: "REVISION_SOURCE_CHANGED".to_owned() });
         }
 
-        if let Some(current_revision) = current_revision.as_deref() {
+        let revision_decision = if let Some(current_revision) = current_revision.as_deref() {
             match compare_revision(&policy, revision, current_revision)? {
                 RevisionOrder::Equal => {
                     if current_digest.as_deref() == Some(state_digest.as_str()) {
-                        set_inbox_outcome(&mut tx, authenticated, source_uri, event_id, "DUPLICATE_REVISION").await?;
-                        tx.commit().await?;
-                        return Ok(IngestOutcome::DuplicateRevision);
+                        RevisionDecision::DuplicateRevision
+                    } else {
+                        RevisionDecision::ContentConflict
                     }
-                    quarantine(&mut tx, authenticated, source_uri, event_id, &event_digest, "REVISION_CONTENT_CONFLICT").await?;
-                    tx.commit().await?;
-                    return Ok(IngestOutcome::Quarantined { reason_code: "REVISION_CONTENT_CONFLICT".to_owned() });
                 }
-                RevisionOrder::Older => {
-                    set_inbox_outcome(&mut tx, authenticated, source_uri, event_id, "STALE_REVISION").await?;
-                    tx.commit().await?;
-                    return Ok(IngestOutcome::StaleRevision);
-                }
-                RevisionOrder::Unproven => {
-                    quarantine(&mut tx, authenticated, source_uri, event_id, &event_digest, "REVISION_ORDER_UNPROVEN").await?;
-                    tx.commit().await?;
-                    return Ok(IngestOutcome::Quarantined { reason_code: "REVISION_ORDER_UNPROVEN".to_owned() });
-                }
-                RevisionOrder::Newer => {}
+                RevisionOrder::Older => RevisionDecision::Older,
+                RevisionOrder::Unproven => RevisionDecision::Unproven,
+                RevisionOrder::Newer => RevisionDecision::Newer,
             }
+        } else {
+            RevisionDecision::First
+        };
+
+        // Contradictory or unorderable observations are quarantined without
+        // reserving a business idempotency key.
+        match revision_decision {
+            RevisionDecision::ContentConflict => {
+                quarantine(
+                    &mut tx,
+                    authenticated,
+                    source_uri,
+                    event_id,
+                    &event_digest,
+                    "REVISION_CONTENT_CONFLICT",
+                )
+                .await?;
+                tx.commit().await?;
+                return Ok(IngestOutcome::Quarantined {
+                    reason_code: "REVISION_CONTENT_CONFLICT".to_owned(),
+                });
+            }
+            RevisionDecision::Unproven => {
+                quarantine(
+                    &mut tx,
+                    authenticated,
+                    source_uri,
+                    event_id,
+                    &event_digest,
+                    "REVISION_ORDER_UNPROVEN",
+                )
+                .await?;
+                tx.commit().await?;
+                return Ok(IngestOutcome::Quarantined {
+                    reason_code: "REVISION_ORDER_UNPROVEN".to_owned(),
+                });
+            }
+            _ => {}
         }
 
-        let effect_inserted = sqlx::query(
-            "INSERT INTO ops.business_effects \
-             (tenant_id, connection_id, idempotency_key, semantic_digest, source_uri, event_id) \
-             VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING \
-             RETURNING idempotency_key",
+        // A well-formed stale or already-applied observation still consumes its
+        // idempotency key. Without this fence, a later event could reuse the key
+        // with different semantics even though the first observation was stale.
+        match claim_business_effect(
+            &mut tx,
+            authenticated,
+            idempotency_key,
+            &semantic_digest,
+            source_uri,
+            event_id,
         )
-        .bind(&authenticated.tenant_id)
-        .bind(&authenticated.connection_id)
-        .bind(idempotency_key)
-        .bind(&semantic_digest)
-        .bind(source_uri)
-        .bind(event_id)
-        .fetch_optional(&mut *tx)
-        .await?;
-
-        if effect_inserted.is_none() {
-            let prior = sqlx::query(
-                "SELECT semantic_digest FROM ops.business_effects \
-                 WHERE tenant_id = $1 AND connection_id = $2 AND idempotency_key = $3",
-            )
-            .bind(&authenticated.tenant_id)
-            .bind(&authenticated.connection_id)
-            .bind(idempotency_key)
-            .fetch_optional(&mut *tx)
-            .await?
-            .ok_or(StoreError::ConnectorUnavailable)?;
-            let prior_digest: String = prior.try_get("semantic_digest")?;
-            if prior_digest != semantic_digest {
+        .await?
+        {
+            EffectClaim::Inserted => {}
+            EffectClaim::Duplicate => {
+                set_inbox_outcome(
+                    &mut tx,
+                    authenticated,
+                    source_uri,
+                    event_id,
+                    "DUPLICATE_EFFECT",
+                )
+                .await?;
+                tx.commit().await?;
+                return Ok(IngestOutcome::DuplicateEffect);
+            }
+            EffectClaim::Conflict => {
                 quarantine(
                     &mut tx,
                     authenticated,
@@ -466,9 +509,37 @@ impl PostgresOperationsStore {
                 tx.commit().await?;
                 return Err(StoreError::IdempotencyConflict);
             }
-            set_inbox_outcome(&mut tx, authenticated, source_uri, event_id, "DUPLICATE_EFFECT").await?;
-            tx.commit().await?;
-            return Ok(IngestOutcome::DuplicateEffect);
+        }
+
+        match revision_decision {
+            RevisionDecision::DuplicateRevision => {
+                set_inbox_outcome(
+                    &mut tx,
+                    authenticated,
+                    source_uri,
+                    event_id,
+                    "DUPLICATE_REVISION",
+                )
+                .await?;
+                tx.commit().await?;
+                return Ok(IngestOutcome::DuplicateRevision);
+            }
+            RevisionDecision::Older => {
+                set_inbox_outcome(
+                    &mut tx,
+                    authenticated,
+                    source_uri,
+                    event_id,
+                    "STALE_REVISION",
+                )
+                .await?;
+                tx.commit().await?;
+                return Ok(IngestOutcome::StaleRevision);
+            }
+            RevisionDecision::First | RevisionDecision::Newer => {}
+            RevisionDecision::ContentConflict | RevisionDecision::Unproven => {
+                unreachable!("unaccepted revision decisions were handled above")
+            }
         }
 
         let updated_head = sqlx::query(
@@ -757,6 +828,51 @@ fn compare_revision(
         (Some(incoming), Some(current)) if incoming > current => Ok(RevisionOrder::Newer),
         (Some(_), Some(_)) => Ok(RevisionOrder::Equal),
         _ => Ok(RevisionOrder::Unproven),
+    }
+}
+
+async fn claim_business_effect(
+    tx: &mut Transaction<'_, Postgres>,
+    authenticated: &AuthenticatedConnector,
+    idempotency_key: &str,
+    semantic_digest: &str,
+    source_uri: &str,
+    event_id: &str,
+) -> Result<EffectClaim, StoreError> {
+    let inserted = sqlx::query(
+        "INSERT INTO ops.business_effects \
+         (tenant_id, connection_id, idempotency_key, semantic_digest, source_uri, event_id) \
+         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING \
+         RETURNING idempotency_key",
+    )
+    .bind(&authenticated.tenant_id)
+    .bind(&authenticated.connection_id)
+    .bind(idempotency_key)
+    .bind(semantic_digest)
+    .bind(source_uri)
+    .bind(event_id)
+    .fetch_optional(&mut **tx)
+    .await?;
+
+    if inserted.is_some() {
+        return Ok(EffectClaim::Inserted);
+    }
+
+    let prior = sqlx::query(
+        "SELECT semantic_digest FROM ops.business_effects \
+         WHERE tenant_id = $1 AND connection_id = $2 AND idempotency_key = $3",
+    )
+    .bind(&authenticated.tenant_id)
+    .bind(&authenticated.connection_id)
+    .bind(idempotency_key)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or(StoreError::ConnectorUnavailable)?;
+    let prior_digest: String = prior.try_get("semantic_digest")?;
+    if prior_digest == semantic_digest {
+        Ok(EffectClaim::Duplicate)
+    } else {
+        Ok(EffectClaim::Conflict)
     }
 }
 

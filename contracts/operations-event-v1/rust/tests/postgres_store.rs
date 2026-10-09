@@ -307,6 +307,23 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         IngestOutcome::StaleRevision
     );
     assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
+    assert_eq!(
+        store.ingest_event(&auth, &stale).await.unwrap(),
+        IngestOutcome::StaleRevision
+    );
+
+    let stale_key_reuse = revised_event(
+        "revision-3",
+        "event-ci-stale-key-reuse",
+        "idem-ci-stale",
+        "Different semantics reusing a stale observation key",
+    );
+    assert!(matches!(
+        store.ingest_event(&auth, &stale_key_reuse).await,
+        Err(StoreError::IdempotencyConflict)
+    ));
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 5);
+    assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
 
     sqlx::query(
         "UPDATE ops.connector_connections SET revision_mode = 'opaque', revision_prefix = NULL \
@@ -328,7 +345,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         store.ingest_event(&auth, &unordered).await.unwrap(),
         IngestOutcome::Quarantined { reason_code: "REVISION_ORDER_UNPROVEN".to_owned() }
     );
-    assert_eq!(scalar_count(&pool, "quarantined_events").await, 5);
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 6);
     assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
 
     sqlx::query(
@@ -349,7 +366,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     );
     let conflict = store.ingest_event(&auth, &conflicting_idempotency).await;
     assert!(matches!(conflict, Err(StoreError::IdempotencyConflict)));
-    assert_eq!(scalar_count(&pool, "quarantined_events").await, 6);
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 7);
     assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
 
     // Independent pooled connections race on one event identity. One state

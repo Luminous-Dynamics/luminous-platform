@@ -46,9 +46,10 @@ A receiver's accept operation must follow one database transaction:
 3. Claim (authenticated source binding, CloudEvents source, event id) under a unique constraint. Equal replay is a duplicate; changed content is a conflict.
 4. Claim (connection id, canonical tenant id, idempotency key) under a unique constraint. Equal semantic effect is a duplicate; a different effect is a conflict.
 5. Check the provider revision using a provider-specific documented comparator. Do not sort opaque revisions lexically or use arrival time as a substitute.
-6. Apply any accepted case/resource change and append activity.
-7. Insert resulting outbox rows.
-8. Commit, then acknowledge receipt to the source.
+6. A stale revision or an equal revision with identical state still consumes its idempotency key, but creates no state mutation or outbox event. A contradictory equal revision or an unorderable revision is quarantined without claiming the key.
+7. Apply any accepted case/resource change and append activity.
+8. Insert resulting outbox rows.
+9. Commit, then acknowledge receipt to the source.
 
 All local writes in that sequence commit or roll back together. Unknown mappings, invalid bindings, conflicting identities, and unorderable/stale revisions must have explicit outcomes and must not mutate business state or create an outgoing business event.
 
