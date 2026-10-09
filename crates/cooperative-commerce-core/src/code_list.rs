@@ -1,3 +1,5 @@
+pub mod six_xml;
+
 //! Effective-dated lookup over already-normalized code-list records.
 //!
 //! This module checks record semantics only. It does not import publisher files,
