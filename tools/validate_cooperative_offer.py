@@ -165,6 +165,8 @@ def validate_offer(
 
     if price_amount is None or price_amount < 0:
         _error(errors, "terms.unit_price.amount", "amount must be a finite non-negative decimal string")
+    if price["per_unit_code"] != pack["order_unit_code"]:
+        _error(errors, "terms.unit_price.per_unit_code", "must match product.pack.order_unit_code unless a separately reviewed conversion is defined")
 
     base_currency = price["currency"]
     previous_break_quantity: Decimal | None = None
