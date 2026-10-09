@@ -325,7 +325,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             now = datetime.now(timezone.utc)
         report = validate_intent(document, schema=schema, now=now)
-    except (OSError, UnicodeError, json.JSONDecodeError, DuplicateJsonKey, ValueError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError, DuplicateJsonKey, ValueError, rfc8785.CanonicalizationError) as exc:
         report = {
             "result": "INVALID_DECLARATION",
             "structural_valid": False,
