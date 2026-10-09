@@ -26,9 +26,10 @@ jobs:
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
-      - name: Checkout exact revision
+      - name: Checkout exact source revision
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Create isolated Python environment
@@ -39,6 +40,18 @@ jobs:
 
       - name: Validate schemas, fixtures, and adversarial adapter-model cases
         run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m unittest discover -s contracts/operations-event-v1/tests -p 'test_*.py' -v
+
+      - name: Write bounded qualification summary
+        if: success()
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          {
+            echo "## Operations Event Contract"
+            echo "- Tested source revision: $SOURCE_SHA"
+            echo "- This pass covers JSON Schema validation, the synthetic incident snapshot fixture, and the in-memory adapter/inbox reference model."
+            echo "- It does not qualify a live ConnectWise adapter, durable inbox/outbox behavior, database tenant isolation, cryptographic evidence verification, or any remote-action path."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Confirm checkout stayed unchanged
         run: git diff --exit-code && test -z "$(git status --porcelain)"
