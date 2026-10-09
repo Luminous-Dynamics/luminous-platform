@@ -240,7 +240,7 @@ class WorkCaseStore:
     def __init__(self) -> None:
         self._cases: dict[tuple[str, str], WorkCase] = {}
         self._history: dict[tuple[str, str], list[CaseActivity]] = {}
-        self._external_map: dict[tuple[str, str, str], str] = {}
+        self._external_map: dict[tuple[str, str, str, str], str] = {}
         self._idempotency: dict[tuple[str, str], tuple[str, WorkCase]] = {}
         self._lock = RLock()
 
