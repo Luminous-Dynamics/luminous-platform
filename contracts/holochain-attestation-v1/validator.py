@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from jsonschema import Draft202012Validator, FormatChecker
 
@@ -25,6 +26,15 @@ def load_schema() -> dict[str, Any]:
 def _instance_path(path: Any) -> str:
     parts = [str(part).replace("~", "~0").replace("/", "~1") for part in path]
     return "/" + "/".join(parts) if parts else "/"
+
+
+def _same_uuid(left: object, right: object) -> bool:
+    if not isinstance(left, str) or not isinstance(right, str):
+        return False
+    try:
+        return UUID(left) == UUID(right)
+    except ValueError:
+        return False
 
 
 def validate_share_package(instance: object) -> list[str]:
@@ -45,7 +55,7 @@ def validate_share_package(instance: object) -> list[str]:
         share_id = instance.get("shareId")
         target_id = instance.get("targetShareId")
         record_type = instance.get("recordType")
-        if isinstance(record_type, str) and record_type in {"dispute", "supersession"} and target_id == share_id:
+        if isinstance(record_type, str) and record_type in {"dispute", "supersession"} and _same_uuid(target_id, share_id):
             semantic_errors.append(
                 "semantic /targetShareId: dispute/supersession cannot target its own shareId"
             )
