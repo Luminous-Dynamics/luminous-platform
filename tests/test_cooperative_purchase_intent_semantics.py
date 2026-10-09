@@ -73,6 +73,20 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
         self.assertTrue(report["semantic_valid"], report["errors"])
         self.assertFalse(report["transaction_authorized"])
 
+    def test_changed_quantity_invalidates_previously_authorized_scope_digest(self):
+        document = binding_order_candidate()
+        document["demand"]["requested_quantity"] = "11"
+        report = self.validate(document)
+        self.assertFalse(report["semantic_valid"])
+        self.assertTrue(any("canonical purchase-scope projection" in error for error in report["errors"]))
+
+    def test_changed_authorized_maximum_invalidates_scope_digest(self):
+        document = binding_order_candidate()
+        document["authorization"]["maximum_total"]["amount"] = "9000.00"
+        report = self.validate(document)
+        self.assertFalse(report["semantic_valid"])
+        self.assertTrue(any("canonical purchase-scope projection" in error for error in report["errors"]))
+
     def test_accepted_total_cannot_exceed_authorized_maximum(self):
         document = binding_order_candidate()
         document["accepted_offer"]["accepted_total"]["amount"] = "3000.01"
