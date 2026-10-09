@@ -186,3 +186,10 @@ No claim that this platform is bigger or better than every existing product shou
 - [CloudEvents core specification](https://github.com/cloudevents/spec/blob/main/cloudevents/spec.md) and [JSON event format](https://github.com/cloudevents/spec/blob/main/cloudevents/formats/json-format.md).
 - [CISA Guide to Securing Remote Access Software](https://www.cisa.gov/resources-tools/resources/guide-securing-remote-access-software).
 - Existing implementation anchors: [Xenia sovereign-admin](https://github.com/Luminous-Dynamics/xenia-peer/tree/main/apps/sovereign-admin), [Mycelix Leptos client](https://github.com/Luminous-Dynamics/mycelix-leptos-client), [Sol Atlas Leptos](https://github.com/Luminous-Dynamics/sol-atlas-leptos), and [Mycelix Music](https://github.com/Luminous-Dynamics/Mycelix-Music).
+
+
+## Production language and runtime boundary
+
+Rust is the default implementation language for production services, contract validators, authorization decisions, persistence boundaries, connector workers, and privileged operations. Production daemon/API/worker builds must not require a Python interpreter or import Python modules to make an authorization, validation, or execution decision.
+
+Python may be used temporarily for explicitly labelled research scripts, migration tooling, and non-production reference/conformance models. Such models are specifications and test aids—not shipping implementations or independent production authorities. New runtime behavior should be implemented and tested in Rust, with shared fixtures and adversarial cases used to establish contract parity. The Holochain share-package validator and its normative contract tests are Rust-native; the existing Operations Event Python modules remain clearly marked reference models until their behavior has been ported into the production Rust service.

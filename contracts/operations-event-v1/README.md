@@ -1,5 +1,11 @@
 # Operations Event Contract V1
 
+## Implementation-language boundary
+
+**Production services and domain logic are Rust-first; production Python is not permitted.** The Python files in this directory are explicitly non-production reference models and test harnesses used to explore semantics, not deployable adapters, daemons, API services, authorization boundaries, or durable repositories. They must not be imported or packaged by production binaries or used as the only evidence for production correctness.
+
+The next implementation step is to port the event schema validation and durable inbox/outbox behavior into Rust crates, with typed domain APIs and Rust integration tests against the actual persistence layer. Until that port exists, these Python models are research fixtures only; their passing tests do not qualify a Rust implementation or production deployment. Keep production build/deployment artifacts free of Python runtimes and Python dependencies.
+
 This folder defines the first portable cross-repository event contract for the proposed Xenia Operations Fabric. The envelope uses the **CloudEvents 1.0 structured JSON format** instead of introducing a proprietary envelope.
 
 ## Files
