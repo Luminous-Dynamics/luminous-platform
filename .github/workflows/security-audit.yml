@@ -1588,7 +1588,8 @@ jobs:
           rustsec_status=SKIPPED_NOT_REQUESTED
           npm_status=SKIPPED_NOT_REQUESTED
           failure_reasons=()
-          findings_below_block_threshold=false
+          finding_sources=()
+          non_blocking_findings_present=false
 
           field() {
             local file="$1" key="$2"
@@ -1731,6 +1732,10 @@ jobs:
                 && field_equals "$rustsec_receipt" overall_status PASS \
                 && verify_dependency_report_digests "$(dirname "$rustsec_receipt")" "$rustsec_receipt" lockfile_count manifest_coverage_sha256 manifest-coverage.json rustsec; then
                 rustsec_status=PASS
+                if grep -Fq 'outcome=PASS_WITH_WARNINGS' "$rustsec_receipt"; then
+                  finding_sources+=("rustsec_warnings")
+                  non_blocking_findings_present=true
+                fi
               else
                 rustsec_status=FAIL
                 failure_reasons+=("rustsec_receipt_not_qualified")
@@ -1755,7 +1760,8 @@ jobs:
                 && verify_dependency_report_digests "$(dirname "$npm_receipt")" "$npm_receipt" lockfile_count '' '' npm; then
                 npm_status=PASS
                 if grep -Fq 'outcome=PASS_BELOW_BLOCKING_THRESHOLD_WITH_FINDINGS' "$npm_receipt"; then
-                  findings_below_block_threshold=true
+                  finding_sources+=("npm_below_threshold")
+                  non_blocking_findings_present=true
                 fi
                 if [[ "$(field "$npm_receipt" npm_submodule_audit_status 2>/dev/null || true)" != "PASS" && "$(field "$npm_receipt" npm_submodule_audit_status 2>/dev/null || true)" != "NOT_REQUIRED" ]]; then
                   npm_status=FAIL
@@ -1775,7 +1781,7 @@ jobs:
             verdict_status=FAIL
           elif [[ "$workflow_status" == "INCOMPLETE" || ( "$AUDIT_RUST" == "true" && "$rustsec_status" == "INCOMPLETE" ) || ( "$AUDIT_NODE" == "true" && "$npm_status" == "INCOMPLETE" ) ]]; then
             verdict_status=INCOMPLETE
-          elif [[ "$findings_below_block_threshold" == "true" ]]; then
+          elif [[ "$non_blocking_findings_present" == "true" ]]; then
             verdict_status=PASS_WITH_FINDINGS
           fi
           for reason in "${failure_reasons[@]}"; do echo "AUDIT_BLOCK: $reason" >&2; done
@@ -1783,6 +1789,11 @@ jobs:
           failure_reasons_json='[]'
           if ((${#failure_reasons[@]} > 0)); then
             failure_reasons_json="$(printf '%s\n' "${failure_reasons[@]}" | jq -Rsc 'split("\n") | map(select(length>0))')"
+          fi
+
+          finding_sources_json='[]'
+          if ((${#finding_sources[@]} > 0)); then
+            finding_sources_json="$(printf '%s\n' "${finding_sources[@]}" | jq -Rsc 'split("\n") | map(select(length>0))')"
           fi
 
           files_json='[]'
@@ -1813,10 +1824,11 @@ jobs:
             --arg status "$verdict_status" \
             --argjson audit_rust "$AUDIT_RUST" \
             --argjson audit_node "$AUDIT_NODE" \
-            --argjson findings_below_block_threshold "$findings_below_block_threshold" \
+            --argjson non_blocking_findings_present "$non_blocking_findings_present" \
+            --argjson non_blocking_finding_sources "$finding_sources_json" \
             --argjson failure_reasons "$failure_reasons_json" \
             --argjson evidence_files "$files_json" \
-            '{schema:$schema, repository:$repository, subject_sha:$subject_sha, audit_engine_sha:$audit_engine_sha, workflow_ref:$workflow_ref, workflow_sha:$workflow_sha, workflow_run_url:$workflow_run_url, generated_at_utc:$generated_at_utc, aggregate_artifact_retention_days:$aggregate_artifact_retention_days, run_id:$run_id, run_attempt:$run_attempt, workflow_job_result:$workflow_job_result, rustsec_job_result:$rustsec_job_result, npm_job_result:$npm_job_result, audit_rust:$audit_rust, audit_node:$audit_node, required_lanes:{workflow_security:$workflow_security_status, rustsec:(if $audit_rust then $rustsec_status else "SKIPPED_NOT_REQUESTED" end), npm:(if $audit_node then $npm_status else "SKIPPED_NOT_REQUESTED" end)}, findings_below_block_threshold:$findings_below_block_threshold, status:$status, failure_reasons:$failure_reasons, evidence_files:$evidence_files}' > audit-evidence/verdict.json
+            '{schema:$schema, repository:$repository, subject_sha:$subject_sha, audit_engine_sha:$audit_engine_sha, workflow_ref:$workflow_ref, workflow_sha:$workflow_sha, workflow_run_url:$workflow_run_url, generated_at_utc:$generated_at_utc, aggregate_artifact_retention_days:$aggregate_artifact_retention_days, run_id:$run_id, run_attempt:$run_attempt, workflow_job_result:$workflow_job_result, rustsec_job_result:$rustsec_job_result, npm_job_result:$npm_job_result, audit_rust:$audit_rust, audit_node:$audit_node, required_lanes:{workflow_security:$workflow_security_status, rustsec:(if $audit_rust then $rustsec_status else "SKIPPED_NOT_REQUESTED" end), npm:(if $audit_node then $npm_status else "SKIPPED_NOT_REQUESTED" end)}, non_blocking_findings_present:$non_blocking_findings_present, non_blocking_finding_sources:$non_blocking_finding_sources, status:$status, failure_reasons:$failure_reasons, evidence_files:$evidence_files}' > audit-evidence/verdict.json
 
           cat audit-evidence/verdict.json
           {
