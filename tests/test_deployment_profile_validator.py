@@ -70,6 +70,15 @@ class DeploymentProfileValidatorTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertIn("explicit YAML tags", report["errors"][0]["message"])
 
+    def test_remote_control_requires_explicit_network_exposure(self):
+        profile = copy.deepcopy(BASE_PROFILE)
+        profile["services"]["remote_control"]["enabled"] = True
+        profile["services"]["remote_control"]["authentication_authority"] = "customer-local-auth"
+        # No network_exposure is supplied: remote control must not inherit an implicit scope.
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("explicit active network_exposure" in err["message"] for err in report["errors"]))
+
     def test_yaml_11_yes_is_not_coerced_to_boolean(self):
         text = FIXTURE.read_text(encoding="utf-8").replace(
             "privileged_execution: false", "privileged_execution: yes"
