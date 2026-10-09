@@ -309,9 +309,8 @@ jobs:
             exit 0
           fi
 
-          # Build a committed-tree snapshot, not a view containing generated CI
-          # reports or .git metadata. Only the exact reviewed direct-submodule
-          # mapping below is admitted; unknown/nested modules fail closed.
+          # Scan an exact committed-tree snapshot, excluding .git metadata and
+          # CI-generated files. Only one reviewed direct submodule is admitted.
           if ! git archive --format=tar "$SUBJECT_SHA" | tar -xf - -C "$source_dir"; then
             mark_incomplete git_archive_failed
             exit 0
