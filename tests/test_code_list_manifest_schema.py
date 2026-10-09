@@ -82,7 +82,7 @@ class CodeListManifestTests(unittest.TestCase):
             "reviewer_id": "fixture:reviewer",
             "review_report_sha256": "d" * 64,
             "review_report_reference": "fixture:review-report",
-            "checks": ["source_digest_checked", "schema_validated", "duplicate_codes_checked", "effective_dates_checked"]
+            "checks": ["source_digest_checked", "source_authority_checked", "schema_validated", "duplicate_codes_checked", "effective_dates_checked"]
         })
         errors = self.errors(document)
         self.assertTrue(errors)
