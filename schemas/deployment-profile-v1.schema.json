@@ -197,6 +197,12 @@
               "format": "uri"
             }
           }
+        },
+        "authorization_authority": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "description": "Named local or remote authority that authorizes privileged operations; configuration alone is not proof that it exists or is verified."
         }
       }
     },
@@ -417,7 +423,8 @@
       "required": [
         "claimed_level",
         "required_checks",
-        "unqualified_capabilities"
+        "unqualified_capabilities",
+        "qualified_capabilities"
       ],
       "properties": {
         "claimed_level": {
@@ -466,6 +473,52 @@
         "last_qualification_at": {
           "type": "string",
           "format": "date-time"
+        },
+        "qualified_capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Explicit capability scope covered by the stated evidence; empty for unqualified draft profiles."
+        },
+        "assessment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "assessor",
+            "scope",
+            "assessment_date",
+            "exceptions"
+          ],
+          "properties": {
+            "assessor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "assessment_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "exceptions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "report_uri": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
         }
       }
     }
