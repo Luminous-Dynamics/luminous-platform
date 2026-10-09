@@ -1230,7 +1230,32 @@ jobs:
             report="$result_root/lockfiles/${report_id}_$path_hash.json"
             stderr="$result_root/lockfiles/${report_id}_$path_hash.stderr"
             lock_abs="$workspace/$lockfile"
-
+            if [[ ! -f "$lock_abs" || -L "$lock_abs" ]]; then
+              lock_reference="non-regular-or-missing"
+              if [[ -L "$lock_abs" ]]; then lock_reference="$(readlink -- "$lock_abs")"; fi
+              lock_reference_sha="$(printf '%s' "$lock_reference" | sha256sum | cut -d' ' -f1)"
+              python3 - "$report" "$lockfile" "$manifest" "$lock_reference_sha" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          report, lockfile, manifest, target_sha = sys.argv[1:]
+          Path(report).write_text(json.dumps({
+              "schema": "luminous.security-audit.npm-lockfile-result.v1",
+              "status": "FAIL",
+              "scanner_invoked": False,
+              "reason": "lockfile_not_regular_file",
+              "lockfile": lockfile,
+              "manifest": manifest,
+              "lock_reference_sha256": target_sha
+          }, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+          PY
+              printf '%s\\n' "npm audit was not invoked because the tracked lockfile is missing, not regular, or a symlink." > "$stderr"
+              report_sha="$(sha256sum "$report" | cut -d' ' -f1)"
+              stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1)"
+              printf 'lockfile=%s manifest=%s exit_code=NOT_RUN report_parse_status=NOT_APPLICABLE outcome=FAIL report_sha256=%s stderr_sha256=%s reason=lockfile_not_regular_file\\n' "$lockfile" "$manifest" "$report_sha" "$stderr_sha" >> "$result_root/summary.txt"
+              npm_failed=1
+              continue
+            fi
             # npm prefers npm-shrinkwrap.json over package-lock.json in the
             # same package root. A report for the ignored package-lock must not
             # be misrepresented as an audit of the effective dependency graph.
@@ -1264,7 +1289,19 @@ jobs:
               fi
             fi
 
-            if ! git -C "$workspace" ls-files --error-unmatch -- "$manifest" >/dev/null 2>&1 || [[ ! -f "$workspace/$manifest" ]]; then
+            manifest_repo="$workspace"
+            manifest_rel="$manifest"
+            while IFS= read -r module_path; do
+              [[ -n "$module_path" ]] || continue
+              case "$manifest" in
+                "$module_path"/*)
+                  manifest_repo="$workspace/$module_path"
+                  manifest_rel="${manifest#${module_path}/}"
+                  break
+                  ;;
+              esac
+            done < "$verified_npm_submodules"
+            if ! git -C "$manifest_repo" ls-files --error-unmatch -- "$manifest_rel" >/dev/null 2>&1 || [[ ! -f "$workspace/$manifest" || -L "$workspace/$manifest" ]]; then
               lock_sha="$(sha256sum "$lock_abs" | cut -d' ' -f1)"
               python3 - "$report" "$lockfile" "$lock_sha" "$manifest" <<'PY'
           import json
