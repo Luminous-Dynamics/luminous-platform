@@ -183,11 +183,11 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert!(!privileges.try_get::<bool, _>("outbox_update_payload").unwrap());
 
     let retry_owner = sqlx::query(
-        "SELECT r.rolname, r.rolsuper, r.rolbypassrls, r.rolcanlogin, \\
-                has_table_privilege(r.rolname, 'ops.outbox_events', 'SELECT') AS can_select_outbox, \\
-                has_column_privilege(r.rolname, 'ops.outbox_events', 'available_at', 'UPDATE') AS can_schedule, \\
-                has_column_privilege(r.rolname, 'ops.outbox_events', 'payload', 'UPDATE') AS can_rewrite_payload \\
-         FROM pg_proc AS p JOIN pg_roles AS r ON r.oid = p.proowner \\
+        "SELECT r.rolname::text AS rolname, r.rolsuper, r.rolbypassrls, r.rolcanlogin, \
+                has_table_privilege(r.rolname, 'ops.outbox_events', 'SELECT') AS can_select_outbox, \
+                has_column_privilege(r.rolname, 'ops.outbox_events', 'available_at', 'UPDATE') AS can_schedule, \
+                has_column_privilege(r.rolname, 'ops.outbox_events', 'payload', 'UPDATE') AS can_rewrite_payload \
+         FROM pg_proc AS p JOIN pg_roles AS r ON r.oid = p.proowner \
          WHERE p.oid = 'ops.schedule_outbox_retry(text,text,text)'::regprocedure"
     )
     .fetch_one(&pool)
