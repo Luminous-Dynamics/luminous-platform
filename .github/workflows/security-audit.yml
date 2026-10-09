@@ -787,6 +787,7 @@ jobs:
           path: security-audit-results/
           if-no-files-found: error
           retention-days: 14
+
   npmsec:
     name: npm dependency audit
     if: inputs.audit_node
@@ -825,6 +826,7 @@ jobs:
             echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
             echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "npm_status=INCOMPLETE"
+            echo "engine_identity_status=INCOMPLETE"
             echo "incomplete_reason=setup_or_audit_not_completed"
           } > security-audit-results/npm/summary.txt
           if [[ ! "$AUDIT_ENGINE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
@@ -832,6 +834,90 @@ jobs:
             echo "incomplete_reason=invalid_audit_engine_sha" >> security-audit-results/npm/summary.txt
             exit 2
           fi
+      - name: Verify declared audit engine identity
+        id: engine_identity
+        shell: bash
+        env:
+          AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
+          EVENT_SHA: ${{ github.sha }}
+          AUDITED_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          engine = os.environ["AUDIT_ENGINE_SHA"]
+          subject = os.environ["SUBJECT_SHA"]
+          event_sha = os.environ["EVENT_SHA"]
+          repository = os.environ["AUDITED_REPOSITORY"]
+          summary = Path("security-audit-results/npm/summary.txt")
+
+          def set_receipt_value(key, value):
+              lines = summary.read_text(encoding="utf-8").splitlines()
+              prefix = f"{key}="
+              matches = [i for i, line in enumerate(lines) if line.startswith(prefix)]
+              if len(matches) != 1:
+                  raise SystemExit(f"receipt field {key} has {len(matches)} entries")
+              lines[matches[0]] = f"{key}={value}"
+              summary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+          def fail(reason):
+              set_receipt_value("engine_identity_status", "FAIL")
+              with summary.open("a", encoding="utf-8") as receipt:
+                  receipt.write(f"engine_identity_reason={reason}\n")
+              print(f"FAIL: {reason}", file=sys.stderr)
+              raise SystemExit(1)
+
+          if not re.fullmatch(r"[0-9a-f]{40}", engine):
+              fail("invalid_engine_sha")
+          if not re.fullmatch(r"[0-9a-f]{40}", subject):
+              fail("invalid_subject_sha")
+
+          if repository == "Luminous-Dynamics/luminous-platform":
+              # The platform audits its local reusable workflow from the
+              # event commit (including the PR merge ref), while it scans the
+              # PR head separately as subject_sha.
+              caller = Path(".github/workflows/security-audit-self.yml")
+              if not caller.is_file():
+                  fail("platform_self_workflow_missing")
+              text = caller.read_text(encoding="utf-8")
+              local_uses = re.findall(
+                  r"^\s*uses:\s*\./\.github/workflows/security-audit\.yml\s*$",
+                  text, re.MULTILINE
+              )
+              if len(local_uses) != 1:
+                  fail("platform_local_engine_reference_missing_or_ambiguous")
+              if engine != event_sha:
+                  fail("platform_local_engine_sha_does_not_match_event_sha")
+          else:
+              caller = Path(".github/workflows/security-audit.yml")
+              if not caller.is_file():
+                  fail("caller_security_workflow_missing")
+              text = caller.read_text(encoding="utf-8")
+              refs = re.findall(
+                  r"^\s*uses:\s*Luminous-Dynamics/luminous-platform/\.github/workflows/security-audit\.yml@([0-9a-f]{40})\s*$",
+                  text, re.MULTILINE
+              )
+              declared = re.findall(
+                  r"^\s*audit_engine_sha:\s*([0-9a-f]{40})\s*$",
+                  text, re.MULTILINE
+              )
+              if len(refs) != 1:
+                  fail("immutable_shared_workflow_reference_missing_or_ambiguous")
+              if len(declared) != 1:
+                  fail("declared_engine_sha_missing_or_ambiguous")
+              if refs[0] != engine or declared[0] != engine:
+                  fail("caller_reference_and_engine_sha_mismatch")
+
+          set_receipt_value("engine_identity_status", "PASS")
+          with summary.open("a", encoding="utf-8") as receipt:
+              receipt.write(f"engine_identity_checked_sha={engine}\n")
+          print("PASS: declared audit engine identity matches the caller reference")
+          PY
       - name: Install pinned Node.js LTS runtime
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
