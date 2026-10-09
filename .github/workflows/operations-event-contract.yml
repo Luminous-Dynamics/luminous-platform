@@ -95,10 +95,10 @@ jobs:
           set -euo pipefail
           log="$RUNNER_TEMP/work-case-tests.log"
           python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
-          "$python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 32 2>&1 | tee "$log"
+          "$python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 34 2>&1 | tee "$log"
           count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
           if [[ -z "$count" || "$count" -lt 31 ]]; then
-            echo "::error::Work Case Contract V1 must execute at least 32 tests; observed $count."
+            echo "::error::Work Case Contract V1 must execute at least 34 tests; observed $count."
             exit 1
           fi
           echo "test_count=$count" >> "$GITHUB_OUTPUT"
@@ -142,6 +142,6 @@ jobs:
             echo "- Operations Event Contract V1 tests executed: $OPERATIONS_TESTS"
             echo "- Work Case Contract V1 tests executed: $WORK_CASE_TESTS"
             echo "- Rust Holochain Attestation Share Package V1 tests executed: $HOLOCHAIN_TESTS"
-            echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Work Case suite requires at least 32 tests. The Holochain share-package validator and its contract tests are Rust-native."
+            echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Work Case suite requires at least 34 tests. The Holochain share-package validator and its contract tests are Rust-native."
             echo "- This workflow does not qualify the production PostgreSQL repository, provider authentication, Holochain integrity zome or multi-agent DHT behavior, identity/membership binding, cryptographic evidence verification, or remote execution."
           } >> "$GITHUB_STEP_SUMMARY"

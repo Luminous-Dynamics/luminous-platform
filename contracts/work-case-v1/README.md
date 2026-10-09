@@ -23,7 +23,7 @@ See [Work-Case Storage and Tenant-Isolation Decision](../../docs/WORK_CASE_STORA
 
 ## Persistence and event semantics
 
-The SQLite reference commits case snapshot, revision, append-only activity row, idempotency response, external mapping (when present), and a minimal outbox event in one local transaction. Fault-injection tests target selected write boundaries. Each mutation opens a fresh connection; tests reconstruct the store against the same database file and run duplicate calls through separate store objects. Initialization is fail-closed: only an empty unversioned database is initialized, future or unsupported versions are rejected, and a versioned database with missing required tables, columns, indexes, primary keys, unique keys, or tenant-scoped foreign keys is rejected rather than silently repaired. Validation checks constraint shape, not just table/column existence. WAL mode is confirmed after schema preflight and required on subsequent connections; a backend that cannot provide WAL (including SQLite's per-connection `:memory:` database) is rejected instead of silently using a different journal mode.
+The SQLite reference commits case snapshot, revision, append-only activity row, idempotency response, external mapping (when present), and a minimal outbox event in one local transaction. Fault-injection tests target selected write boundaries. Each mutation opens a fresh connection; tests reconstruct the store against the same database file and run duplicate calls through separate store objects. Initialization is fail-closed: only an empty unversioned database is initialized, future or unsupported versions are rejected, and a versioned database with missing required tables, columns, indexes, primary keys, unique keys, or tenant-scoped foreign keys is rejected rather than silently repaired. Validation checks constraint shape, not just table/column existence. WAL mode is confirmed after schema preflight and required on subsequent connections; a backend that cannot provide WAL (including SQLite's per-connection `:memory:` database) is rejected instead of silently using a different journal mode. Schema-versioned stores are also checked for the expected primary-key shape, required unique constraints, tenant-scoped composite foreign keys, and required indexes; matching column names alone is not enough.
 
 The outbox represents pending local delivery, not exactly-once messaging. A future dispatcher needs authenticated destination configuration, lease/claim/ack behavior, retry bounds, a visible dead-letter state, per-case ordering, reconciliation, and idempotent consumers. The event envelope omits summaries, evidence payloads, and credentials by design.
 
@@ -39,6 +39,8 @@ The outbox represents pending local delivery, not exactly-once messaging. A futu
 | cancelled | none |
 
 Every mutation is tenant-scoped and revision-checked. Reuse of an idempotency key with different semantics conflicts. External mapping uniqueness is scoped by tenant, configured connection, provider, and external ID. A real API must resolve connection identity through trusted connector configuration, not trust a request-body string as authority.
+
+The current reference suite contains 34 test methods (14 in-memory model tests and 20 SQLite store tests). The primary workflow requires at least 34 discovered Work Case tests, and publishes the executed count. This count requirement detects empty/truncated discovery; it does not replace the individual behavioral assertions.
 
 ## Qualification boundary
 
