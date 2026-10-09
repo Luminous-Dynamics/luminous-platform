@@ -461,6 +461,153 @@ jobs:
           set_field secret_finding_count "$finding_count"
           set_field secret_report_sha256 "$(sha256sum "$safe_report" | cut -d' ' -f1)"
 
+          # The directory scan only sees present-day files. Scan the exact
+          # audited commit's full ancestry as well so deleting a secret later
+          # cannot erase evidence that it was committed.
+          history_root_sha="$(git rev-parse HEAD 2>/dev/null || true)"
+          history_root_count="$(git rev-list --count HEAD 2>/dev/null || echo 0)"
+          history_root_shallow="$(git rev-parse --is-shallow-repository 2>/dev/null || echo unknown)"
+          history_sub_sha="not_required"
+          history_sub_count=0
+          history_sub_shallow=false
+          history_status=PASS
+          history_reason=none
+          history_root_rc=NOT_RUN
+          history_sub_rc=NOT_REQUIRED
+          history_findings=0
+
+          if [[ "$history_root_sha" != "$SUBJECT_SHA" || ! "$history_root_count" =~ ^[0-9]+$ || "$history_root_count" -lt 1 || "$history_root_shallow" != "false" ]]; then
+            history_status=INCOMPLETE
+            history_reason=exact_subject_history_incomplete_or_shallow
+          else
+            if env -i PATH="$PATH" HOME="$home_dir" GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null "$binary" git "$GITHUB_WORKSPACE" --log-opts=HEAD --config "$config" --gitleaks-ignore-path "$empty_ignore" --redact=100 --no-banner --log-level error --report-format json --report-path "$history_raw_root" --timeout 1800 > /dev/null 2> "$RUNNER_TEMP/gitleaks-history-root.log"; then
+              history_root_rc=0
+            else
+              history_root_rc=$?
+            fi
+            if [[ ! -f "$history_raw_root" ]] || ! jq -e 'type == "array" and all(.[]; type == "object" and (.RuleID | type == "string") and (.File | type == "string") and (.Commit | type == "string" and test("^[0-9a-f]{40}$")) and (.StartLine | type == "number") and (.EndLine | type == "number"))' "$history_raw_root" >/dev/null 2>&1; then
+              history_status=INCOMPLETE
+              history_reason=root_history_report_missing_or_invalid
+            else
+              history_findings="$(jq -er 'length' "$history_raw_root")"
+              if [[ "$history_findings" -gt 0 ]]; then
+                history_status=FAIL
+                history_reason=secret_findings_in_git_history
+              elif [[ "$history_root_rc" -ne 0 ]]; then
+                history_status=INCOMPLETE
+                history_reason=root_history_scanner_nonzero_without_findings
+              fi
+            fi
+          fi
+
+          # If the parent has the reviewed direct health submodule, scan its
+          # complete ancestry too. Do not silently count its present-day files
+          # as equivalent to its historical coverage.
+          if [[ -f .gitmodules ]]; then
+            expected_sub_sha="$(git ls-files --stage -- mycelix-health | awk '$1 == "160000" {print $2}')"
+            actual_sub_sha="$(git -C mycelix-health rev-parse HEAD 2>/dev/null || true)"
+            sub_count_raw="$(git -C mycelix-health rev-list --count HEAD 2>/dev/null || echo 0)"
+            sub_shallow_raw="$(git -C mycelix-health rev-parse --is-shallow-repository 2>/dev/null || echo unknown)"
+            if [[ "$expected_sub_sha" != "$actual_sub_sha" || ! "$sub_count_raw" =~ ^[0-9]+$ || "$sub_count_raw" -lt 1 || "$sub_shallow_raw" != "false" ]]; then
+              if [[ "$history_status" != "FAIL" ]]; then history_status=INCOMPLETE; history_reason=allowlisted_submodule_history_incomplete_or_shallow; fi
+              history_sub_rc=NOT_RUN
+              history_sub_sha="${actual_sub_sha:-unknown}"
+              history_sub_count=0
+              history_sub_shallow="$sub_shallow_raw"
+              printf 'mycelix-health history was not qualified: exact gitlink or complete history check failed.\n' > "$RUNNER_TEMP/gitleaks-history-submodule.log"
+              printf '[]\n' > "$history_raw_submodule"
+            else
+              history_sub_sha="$actual_sub_sha"
+              history_sub_count="$sub_count_raw"
+              history_sub_shallow="$sub_shallow_raw"
+              if env -i PATH="$PATH" HOME="$home_dir" GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null "$binary" git "$GITHUB_WORKSPACE/mycelix-health" --log-opts=HEAD --config "$config" --gitleaks-ignore-path "$empty_ignore" --redact=100 --no-banner --log-level error --report-format json --report-path "$history_raw_submodule" --timeout 1800 > /dev/null 2> "$RUNNER_TEMP/gitleaks-history-submodule.log"; then
+                history_sub_rc=0
+              else
+                history_sub_rc=$?
+              fi
+              if [[ ! -f "$history_raw_submodule" ]] || ! jq -e 'type == "array" and all(.[]; type == "object" and (.RuleID | type == "string") and (.File | type == "string") and (.Commit | type == "string" and test("^[0-9a-f]{40}$")) and (.StartLine | type == "number") and (.EndLine | type == "number"))' "$history_raw_submodule" >/dev/null 2>&1; then
+                if [[ "$history_status" != "FAIL" ]]; then history_status=INCOMPLETE; history_reason=submodule_history_report_missing_or_invalid; fi
+              else
+                sub_findings="$(jq -er 'length' "$history_raw_submodule")"
+                history_findings="$((history_findings + sub_findings))"
+                if [[ "$sub_findings" -gt 0 ]]; then
+                  history_status=FAIL
+                  history_reason=secret_findings_in_git_history
+                elif [[ "$history_sub_rc" -ne 0 && "$history_status" != "FAIL" ]]; then
+                  history_status=INCOMPLETE
+                  history_reason=submodule_history_scanner_nonzero_without_findings
+                fi
+              fi
+            fi
+          else
+            printf '[]\n' > "$history_raw_submodule"
+          fi
+
+          history_inventory_sha="missing"
+          if [[ "$history_root_sha" =~ ^[0-9a-f]{40}$ && "$history_root_count" =~ ^[0-9]+$ && "$history_sub_count" =~ ^[0-9]+$ ]]; then
+            if ! jq -n \
+              --arg schema "luminous.security-audit.gitleaks-history-inventory.v1" \
+              --arg subject_sha "$SUBJECT_SHA" \
+              --arg root_head "$history_root_sha" \
+              --arg root_count "$history_root_count" \
+              --arg root_shallow "$history_root_shallow" \
+              --arg submodule_path "$( [[ -f .gitmodules ]] && printf 'mycelix-health' || printf 'not_required' )" \
+              --arg submodule_head "$history_sub_sha" \
+              --arg submodule_count "$history_sub_count" \
+              --arg submodule_shallow "$history_sub_shallow" \
+              --arg status "$history_status" \
+              '{schema:$schema,subject_sha:$subject_sha,status:$status,root:{head:$root_head,commit_count:($root_count|tonumber),is_shallow:($root_shallow=="true")},submodule:{path:$submodule_path,head:$submodule_head,commit_count:($submodule_count|tonumber),is_shallow:($submodule_shallow=="true")}}' > "$history_inventory"; then
+              history_status=INCOMPLETE
+              history_reason=history_inventory_generation_failed
+            else
+              history_inventory_sha="$(sha256sum "$history_inventory" | cut -d' ' -f1)"
+            fi
+          else
+            history_status=INCOMPLETE
+            history_reason=history_inventory_fields_invalid
+            jq -n --arg subject "$SUBJECT_SHA" --arg reason "$history_reason" '{schema:"luminous.security-audit.gitleaks-history-inventory.v1",subject_sha:$subject,status:"INCOMPLETE",reason:$reason,root:{head:"unknown",commit_count:null,is_shallow:null},submodule:{path:"unknown",head:"unknown",commit_count:null,is_shallow:null}}' > "$history_inventory"
+          fi
+
+          if [[ -f "$history_raw_root" ]] && jq -e 'type == "array"' "$history_raw_root" >/dev/null 2>&1; then
+            if [[ -f "$history_raw_submodule" ]] && jq -e 'type == "array"' "$history_raw_submodule" >/dev/null 2>&1; then
+              if ! jq -s '.[0] + .[1]' "$history_raw_root" "$history_raw_submodule" > "$history_raw_report"; then
+                history_status=INCOMPLETE
+                history_reason=history_report_merge_failed
+                printf '[]\n' > "$history_raw_report"
+              fi
+            else
+              cp "$history_raw_root" "$history_raw_report"
+            fi
+          else
+            printf '[]\n' > "$history_raw_report"
+            history_status=INCOMPLETE
+            history_reason=root_history_report_missing
+          fi
+          history_raw_sha="$(sha256sum "$history_raw_report" | cut -d' ' -f1)"
+          history_findings="$(jq -er 'length' "$history_raw_report" 2>/dev/null || echo unknown)"
+          if [[ ! "$history_findings" =~ ^[0-9]+$ ]]; then
+            history_status=INCOMPLETE
+            history_reason=history_report_count_invalid
+            history_findings=0
+          elif [[ "$history_findings" -gt 0 ]]; then
+            history_status=FAIL
+            history_reason=secret_findings_in_git_history
+          fi
+          if ! jq --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config "$config_sha" --arg inventory "$history_inventory_sha" --arg raw "$history_raw_sha" --arg history_tip "$history_root_sha" --argjson root_count "$history_root_count" --arg submodule_tip "$history_sub_sha" --argjson submodule_count "$history_sub_count" --arg status "$history_status" --arg reason "$history_reason" --argjson count "$history_findings" '{schema:"luminous.security-audit.gitleaks-history-summary.v1",repository:$repository,subject_sha:$subject,scanner_version:"v8.30.1",status:$status,reason:$reason,history_tip:$history_tip,history_commit_count:$root_count,submodule_tip:$submodule_tip,submodule_commit_count:$submodule_count,history_inventory_sha256:$inventory,config_sha256:$config,raw_report_sha256:$raw,finding_count:$count,findings:map({rule_id:.RuleID,file:.File,start_line:.StartLine,end_line:.EndLine,commit:.Commit})}' "$history_raw_report" > "$history_safe_report"; then
+            history_status=INCOMPLETE
+            history_reason=history_report_sanitization_failed
+            jq -n --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config "$config_sha" --arg inventory "$history_inventory_sha" --arg raw "$history_raw_sha" --arg reason "$history_reason" '{schema:"luminous.security-audit.gitleaks-history-summary.v1",repository:$repository,subject_sha:$subject,scanner_version:"v8.30.1",status:"INCOMPLETE",reason:$reason,history_tip:"unknown",history_commit_count:null,submodule_tip:"unknown",submodule_commit_count:null,history_inventory_sha256:$inventory,config_sha256:$config,raw_report_sha256:$raw,finding_count:null,findings:[]}' > "$history_safe_report"
+          fi
+          set_field secret_history_scan_status "$history_status"
+          set_field secret_history_scan_reason "$history_reason"
+          set_field secret_history_exit_code "root=$history_root_rc,submodule=$history_sub_rc"
+          set_field secret_history_raw_report_sha256 "$history_raw_sha"
+          set_field secret_history_report_sha256 "$(sha256sum "$history_safe_report" | cut -d' ' -f1)"
+          set_field secret_history_inventory_sha256 "$history_inventory_sha"
+          set_field secret_history_root_commit_count "$history_root_count"
+          set_field secret_history_submodule_commit_count "$history_sub_count"
+          set_field secret_history_finding_count "$history_findings"
+
       - name: Preserve workflow audit output
         if: always()
         shell: bash
