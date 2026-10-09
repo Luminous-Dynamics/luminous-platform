@@ -611,4 +611,23 @@ mod tests {
         let (_, n) = side_effect_counts(repo.pool(), &p, &a.case_id).await.expect("side-effect counts");
         assert_eq!(n, 1);
     }
+    #[tokio::test]
+    async fn application_role_lacks_unneeded_schema_and_mutation_privileges() {
+        let pool = pool(1).await;
+        let privileges = sqlx::query!(
+            r#"SELECT
+                has_schema_privilege(current_user, 'public', 'CREATE') AS "schema_create!",
+                has_table_privilege(current_user, 'external_case_mappings', 'INSERT') AS "mapping_insert!",
+                has_table_privilege(current_user, 'case_evidence_refs', 'INSERT') AS "evidence_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'status', 'UPDATE') AS "outbox_status_update!",
+                has_table_privilege(current_user, 'case_activity', 'UPDATE') AS "activity_update!""#
+        ).fetch_one(&pool).await.expect("read application-role privilege boundary");
+
+        assert!(!privileges.schema_create, "runtime role must not create objects in public");
+        assert!(!privileges.mapping_insert, "mapping writes are not exposed yet");
+        assert!(!privileges.evidence_insert, "evidence writes are not exposed yet");
+        assert!(!privileges.outbox_status_update, "outbox delivery state belongs to a qualified dispatcher");
+        assert!(!privileges.activity_update, "activity is append-only");
+    }
+
 }
