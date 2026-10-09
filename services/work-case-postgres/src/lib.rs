@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use sqlx::{postgres::PgPoolOptions, PgPool, Postgres, Transaction};
+use sqlx::{postgres::PgPoolOptions, types::Json, PgPool, Postgres, Transaction};
 use std::collections::HashSet;
 use uuid::Uuid;
 
