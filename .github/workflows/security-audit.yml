@@ -262,12 +262,14 @@ jobs:
             reason="$1"; raw_sha="missing"; config_sha="missing"
             if [[ -f "$raw_report" ]]; then raw_sha="$(sha256sum "$raw_report" | cut -d' ' -f1)"; fi
             if [[ -f "$config" ]]; then config_sha="$(sha256sum "$config" | cut -d' ' -f1)"; fi
-            jq -n --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config "$config_sha" --arg reason "$reason" '{schema:"luminous.security-audit.gitleaks-summary.v1",repository:$repository,subject_sha:$subject,scanner_version:"v8.30.1",config_sha256:$config,status:"INCOMPLETE",reason:$reason,finding_count:null,findings:[]}' > "$safe_report"
+            jq -n --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config "$config_sha" --arg reason "$reason" '{schema:"luminous.security-audit.gitleaks-summary.v1",repository:$repository,subject_sha:$subject,scanner_version:"v8.30.1",config_sha256:$config,source_file_count:null,source_inventory_sha256:"missing",status:"INCOMPLETE",reason:$reason,finding_count:null,findings:[]}' > "$safe_report"
             set_field secret_scan_status INCOMPLETE
             set_field secret_scan_reason "$reason"
             set_field secret_scan_exit_code NOT_RUN
             set_field secret_config_sha256 "$config_sha"
             set_field secret_raw_report_sha256 "$raw_sha"
+            set_field secret_source_file_count unknown
+            set_field secret_source_inventory_sha256 missing
             set_field secret_finding_count unknown
             set_field secret_report_sha256 "$(sha256sum "$safe_report" | cut -d' ' -f1)"
           }
@@ -285,9 +287,53 @@ jobs:
           binary="$tool_dir/gitleaks"
           if ! "$binary" version > "$RUNNER_TEMP/gitleaks-version.txt" 2>&1; then incomplete gitleaks_binary_unusable; exit 0; fi
 
-          # Scan an exact committed-tree snapshot, excluding .git metadata and
-          # CI-generated files. Only the reviewed Mycelix direct submodule is admitted.
-          if ! git archive --format=tar "$SUBJECT_SHA" | tar -xf - -C "$source_dir"; then incomplete git_archive_failed; exit 0; fi
+          # Prove the tracked-file snapshot is not affected by repository
+          # export-ignore rules. git archive is intentionally not used below:
+          # .gitattributes is controlled by the subject and can hide tracked files.
+          fixture="$RUNNER_TEMP/gitleaks-export-ignore-fixture"
+          fixture_snapshot="$RUNNER_TEMP/gitleaks-export-ignore-snapshot"
+          fixture_paths="$RUNNER_TEMP/gitleaks-export-ignore-paths.nul"
+          rm -rf -- "$fixture" "$fixture_snapshot"
+          mkdir -p "$fixture" "$fixture_snapshot"
+          if ! git init -q "$fixture" \
+            || ! git -C "$fixture" config user.name "Security Audit Fixture" \
+            || ! git -C "$fixture" config user.email "security-audit-fixture@invalid.example"; then
+            incomplete tracked_snapshot_fixture_setup_failed; exit 0
+          fi
+          printf '%s\n' 'secret-fixture.txt export-ignore' > "$fixture/.gitattributes"
+          printf '%s\n' 'TRACKED_FILE_MUST_REMAIN_SCANNABLE' > "$fixture/secret-fixture.txt"
+          if ! git -C "$fixture" add .gitattributes secret-fixture.txt \
+            || ! git -C "$fixture" commit -qm "tracked snapshot fixture" \
+            || ! git -C "$fixture" ls-files -z --cached > "$fixture_paths"; then
+            incomplete tracked_snapshot_fixture_setup_failed; exit 0
+          fi
+          if ! (cd "$fixture" && tar --null --no-recursion --files-from="$fixture_paths" -cf -) \
+            | tar -xf - -C "$fixture_snapshot"; then
+            incomplete tracked_snapshot_fixture_copy_failed; exit 0
+          fi
+          if [[ ! -f "$fixture_snapshot/secret-fixture.txt" ]]; then
+            incomplete tracked_snapshot_export_ignore_bypass; exit 0
+          fi
+
+          # Snapshot tracked worktree paths from the checked-out exact subject.
+          # Exclude only the allow-listed gitlink directory; its files are added
+          # from a separately verified checkout below. NUL delimiters preserve
+          # unusual path names and --no-recursion prevents following directories.
+          root_paths="$RUNNER_TEMP/gitleaks-root-paths.nul"
+          if ! git ls-files -z --cached > "$root_paths"; then incomplete tracked_source_inventory_failed; exit 0; fi
+          if ! python3 - "$root_paths" <<'PY'
+          import sys
+          from pathlib import Path
+          path = Path(sys.argv[1])
+          entries = [item for item in path.read_bytes().split(b"\\0") if item and item != b"mycelix-health"]
+          entries.sort()
+          path.write_bytes(b"".join(item + b"\\0" for item in entries))
+          PY
+          then
+            incomplete tracked_source_inventory_failed; exit 0
+          fi
+          if ! (tar --null --no-recursion --files-from="$root_paths" -cf -) \
+            | tar -xf - -C "$source_dir"; then incomplete tracked_source_snapshot_failed; exit 0; fi
           root_links="$(git ls-files --stage | awk '$1 == "160000" {n++} END {print n+0}')"
           if [[ -f .gitmodules ]]; then
             urls="$(git config -f .gitmodules --get-regexp '^submodule[.].*[.]url$' || true)"
@@ -301,8 +347,29 @@ jobs:
             nested="$(git -C mycelix-health ls-files --stage | awk '$1 == "160000" {n++} END {print n+0}')"
             if [[ "$nested" -gt 0 || -f mycelix-health/.gitmodules ]]; then incomplete nested_submodule_not_audited; exit 0; fi
             mkdir -p "$source_dir/mycelix-health"
-            if ! git -C mycelix-health archive --format=tar "$expected" | tar -xf - -C "$source_dir/mycelix-health"; then incomplete submodule_archive_failed; exit 0; fi
+            submodule_paths="$RUNNER_TEMP/gitleaks-submodule-paths.nul"
+            if ! git -C mycelix-health ls-files -z --cached > "$submodule_paths"; then incomplete submodule_source_inventory_failed; exit 0; fi
+            if ! (cd mycelix-health && tar --null --no-recursion --files-from="$submodule_paths" -cf -) \
+              | tar -xf - -C "$source_dir/mycelix-health"; then incomplete submodule_tracked_snapshot_failed; exit 0; fi
           elif [[ "$root_links" -ne 0 ]]; then incomplete gitlink_without_gitmodules; exit 0; fi
+
+          source_inventory="$RUNNER_TEMP/gitleaks-source-inventory.nul"
+          if ! (cd "$source_dir" && find . -mindepth 1 \\( -type f -o -type l \\) -printf '%P\\0' | LC_ALL=C sort -z) > "$source_inventory"; then
+            incomplete source_inventory_generation_failed; exit 0
+          fi
+          source_file_count="$(python3 - "$source_inventory" <<'PY'
+          import sys
+          from pathlib import Path
+          raw = Path(sys.argv[1]).read_bytes()
+          print(sum(1 for item in raw.split(b"\\0") if item))
+          PY
+          )"
+          source_inventory_sha="$(sha256sum "$source_inventory" | cut -d' ' -f1)"
+          if [[ ! "$source_file_count" =~ ^[0-9]+$ || ! "$source_inventory_sha" =~ ^[0-9a-f]{64}$ || "$source_file_count" -eq 0 ]]; then
+            incomplete source_inventory_invalid; exit 0
+          fi
+          set_field secret_source_file_count "$source_file_count"
+          set_field secret_source_inventory_sha256 "$source_inventory_sha"
 
           rc=0
           if env -i PATH="$PATH" HOME="$home_dir" "$binary" dir "$source_dir" --config "$config" --gitleaks-ignore-path "$empty_ignore" --redact=100 --no-banner --log-level error --report-format json --report-path "$raw_report" --timeout 1800 > /dev/null 2> "$RUNNER_TEMP/gitleaks-scanner.log"; then rc=0; else rc=$?; fi
@@ -312,13 +379,15 @@ jobs:
           finding_count="$(jq -er 'length' "$raw_report" 2>/dev/null || echo unknown)"
           if [[ ! "$finding_count" =~ ^[0-9]+$ ]]; then incomplete gitleaks_report_count_invalid; exit 0; fi
           if [[ "$finding_count" -gt 0 ]]; then scan_status=FAIL; scan_reason=secret_findings_detected; elif [[ "$rc" -ne 0 ]]; then scan_status=INCOMPLETE; scan_reason=gitleaks_nonzero_without_findings; else scan_status=PASS; scan_reason=none; fi
-          if ! jq --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config "$config_sha" --arg status "$scan_status" --arg reason "$scan_reason" --argjson count "$finding_count" '{schema:"luminous.security-audit.gitleaks-summary.v1",repository:$repository,subject_sha:$subject,scanner_version:"v8.30.1",config_sha256:$config,status:$status,reason:$reason,finding_count:$count,findings:map({rule_id:.RuleID,file:.File,start_line:.StartLine,end_line:.EndLine})}' "$raw_report" > "$safe_report"; then incomplete gitleaks_sanitization_failed; exit 0; fi
+          if ! jq --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config "$config_sha" --arg source_inventory "$source_inventory_sha" --argjson source_file_count "$source_file_count" --arg status "$scan_status" --arg reason "$scan_reason" --argjson count "$finding_count" '{schema:"luminous.security-audit.gitleaks-summary.v1",repository:$repository,subject_sha:$subject,scanner_version:"v8.30.1",config_sha256:$config,source_file_count:$source_file_count,source_inventory_sha256:$source_inventory,status:$status,reason:$reason,finding_count:$count,findings:map({rule_id:.RuleID,file:.File,start_line:.StartLine,end_line:.EndLine})}' "$raw_report" > "$safe_report"; then incomplete gitleaks_sanitization_failed; exit 0; fi
           set_field secret_scan_status "$scan_status"
           set_field secret_scan_reason "$scan_reason"
           set_field secret_scanner_version v8.30.1
           set_field secret_scan_exit_code "$rc"
           set_field secret_config_sha256 "$config_sha"
           set_field secret_raw_report_sha256 "$raw_sha"
+          set_field secret_source_file_count "$source_file_count"
+          set_field secret_source_inventory_sha256 "$source_inventory_sha"
           set_field secret_finding_count "$finding_count"
           set_field secret_report_sha256 "$(sha256sum "$safe_report" | cut -d' ' -f1)"
 
