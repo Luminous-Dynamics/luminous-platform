@@ -94,6 +94,7 @@ jobs:
           binary="$tool_dir/actionlint"
           mapfile -d '' -t audit_workflows < <(
             find .github/workflows -maxdepth 1 -type f \( -name 'security-audit.yml' -o -name 'security-audit-self.yml' \) -print0 | sort -z
+          )
           if [[ "${#audit_workflows[@]}" -eq 0 ]]; then
             echo "FAIL: no tracked security audit workflow files found" >> "$report"
             exit 2
