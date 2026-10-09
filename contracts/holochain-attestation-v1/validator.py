@@ -36,7 +36,7 @@ def validate_share_package(instance: object) -> list[str]:
     """
     validator = Draft202012Validator(load_schema(), format_checker=FormatChecker())
     schema_errors = [
-        f"schema {_instance_path(error.absolute_path)}: {error.message}"
+        f"schema {_instance_path(error.absolute_path)}: failed {error.validator}"
         for error in validator.iter_errors(instance)
     ]
     semantic_errors: list[str] = []
@@ -61,7 +61,7 @@ def validate_share_package(instance: object) -> list[str]:
                     continue
                 if ref in seen:
                     semantic_errors.append(
-                        f"semantic /evidenceManifest/{index}/manifestRef: duplicate manifestRef {ref!r}"
+                        f"semantic /evidenceManifest/{index}/manifestRef: duplicate manifestRef"
                     )
                 else:
                     seen.add(ref)
