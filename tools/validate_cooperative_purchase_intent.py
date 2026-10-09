@@ -267,13 +267,21 @@ def validate_intent(
     if created and created > current:
         _add(errors, "metadata.created_at", "must not be in the future")
 
-    expected_consent_scope_digest = consent_scope_sha256(document)
-    if document["sharing"]["consent"]["scope_sha256"].lower() != expected_consent_scope_digest:
+    try:
+        expected_consent_scope_digest = consent_scope_sha256(document)
+    except (ValueError, UnicodeError, OverflowError):
         _add(
             errors,
             "sharing.consent.scope_sha256",
-            "does not match the RFC 8785 canonical consent scope; changing recipients, purpose, fields, buyer entity, or any approved field value requires fresh consent",
+            "consent scope contains a value that cannot be represented by RFC 8785 JCS; no digest or authorization may be accepted",
         )
+    else:
+        if document["sharing"]["consent"]["scope_sha256"].lower() != expected_consent_scope_digest:
+            _add(
+                errors,
+                "sharing.consent.scope_sha256",
+                "does not match the RFC 8785 canonical consent scope; changing recipients, purpose, fields, buyer entity, or any approved field value requires fresh consent",
+            )
 
     consent_granted = timestamps.get("sharing.consent.granted_at")
     consent_expires = timestamps.get("sharing.consent.expires_at")
@@ -334,9 +342,17 @@ def validate_intent(
             _add(errors, "authorization.action", "only place_order is valid for a binding purchase intent")
         if not authorization["single_use"]:
             _add(errors, "authorization.single_use", "purchase authorization must be single-use")
-        expected_scope_digest = purchase_scope_sha256(document)
-        if authorization["scope_sha256"].lower() != expected_scope_digest:
-            _add(errors, "authorization.scope_sha256", "does not match the canonical purchase-scope projection; a changed quantity, unit, destination, buyer, offer revision, accepted total, intent revision, or idempotency key requires fresh authorization")
+        try:
+            expected_scope_digest = purchase_scope_sha256(document)
+        except (ValueError, UnicodeError, OverflowError):
+            _add(
+                errors,
+                "authorization.scope_sha256",
+                "purchase scope contains a value that cannot be represented by RFC 8785 JCS; no purchase authorization may be accepted",
+            )
+        else:
+            if authorization["scope_sha256"].lower() != expected_scope_digest:
+                _add(errors, "authorization.scope_sha256", "does not match the canonical purchase-scope projection; a changed quantity, unit, destination, buyer, consent scope, offer revision, accepted total, intent revision, or idempotency key requires fresh authorization")
         if accepted_at and consent_granted and accepted_at < consent_granted:
             warnings.append("order acceptance predates the current sharing-consent grant; verify which data was disclosed under which consent")
 
