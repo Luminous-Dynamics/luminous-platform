@@ -443,7 +443,7 @@ jobs:
           failures = [entry for entry in entries if entry["status"] != "PASS"]
           report = {
               "schema": "luminous.security-audit.manifest-coverage.v1",
-              "repository": "${sys.argv[1]}",
+              "repository": str(repo),
               "manifest_count": len(entries),
               "tracked_lockfile_count": len(discovered_lockfiles),
               "scanned_lockfile_count": len(scanned_lockfiles),
