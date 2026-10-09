@@ -169,6 +169,20 @@ class TrustAnchorPolicyTests(unittest.TestCase):
             with self.assertRaises(module.VerificationError):
                 module.verify_verdict_artifact("Luminous-Dynamics/mycelix", module.POLICY["Luminous-Dynamics/mycelix"], run, "token")
 
+    def test_artifact_zip_path_traversal_is_rejected(self):
+        payload, run = self.make_verdict()
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("../verdict.json", json.dumps(payload))
+        archive_bytes = buffer.getvalue()
+        artifact = {"id": 77, "name": f"security-audit-mycelix-{run['head_sha']}-verdict",
+                    "expired": False, "digest": "sha256:" + hashlib.sha256(archive_bytes).hexdigest(),
+                    "workflow_run": {"id": run["id"], "head_sha": run["head_sha"]}}
+        with patch.object(module, "api", return_value={"artifacts": [artifact]}), \
+             patch.object(module, "download_artifact_zip", return_value=archive_bytes):
+            with self.assertRaises(module.VerificationError):
+                module.verify_verdict_artifact("Luminous-Dynamics/mycelix", module.POLICY["Luminous-Dynamics/mycelix"], run, "token")
+
     def test_api_rejects_bad_json(self):
         class Response:
             def __enter__(self): return self
