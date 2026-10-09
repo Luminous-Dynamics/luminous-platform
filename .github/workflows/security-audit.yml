@@ -967,6 +967,39 @@ jobs:
             stderr="$result_root/lockfiles/${report_id}_$path_hash.stderr"
             lock_abs="$workspace/$lockfile"
 
+            # npm prefers npm-shrinkwrap.json over package-lock.json in the
+            # same package root. A report for the ignored package-lock must not
+            # be misrepresented as an audit of the effective dependency graph.
+            if [[ "$lockfile" == "package-lock.json" || "$lockfile" == */package-lock.json ]]; then
+              shrinkwrap="${lockfile%package-lock.json}npm-shrinkwrap.json"
+              if git -C "$workspace" ls-files --error-unmatch -- "$shrinkwrap" >/dev/null 2>&1 && [[ -f "$workspace/$shrinkwrap" ]]; then
+                lock_sha="$(sha256sum "$lock_abs" | cut -d' ' -f1)"
+                shrinkwrap_sha="$(sha256sum "$workspace/$shrinkwrap" | cut -d' ' -f1)"
+                python3 - "$report" "$lockfile" "$lock_sha" "$shrinkwrap" "$shrinkwrap_sha" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          report, lockfile, lock_sha, authoritative, authoritative_sha = sys.argv[1:]
+          Path(report).write_text(json.dumps({
+              "status": "SKIPPED_NOT_AUTHORITATIVE",
+              "reason": "npm-shrinkwrap.json takes precedence over package-lock.json",
+              "lockfile": lockfile,
+              "lockfile_sha256": lock_sha,
+              "authoritative_lockfile": authoritative,
+              "authoritative_lockfile_sha256": authoritative_sha
+          }, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+          PY
+                : > "$stderr"
+                report_sha="$(sha256sum "$report" | cut -d' ' -f1)"
+                stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1)"
+                printf 'lockfile=%s lockfile_sha256=%s outcome=SKIPPED_NOT_AUTHORITATIVE authoritative_lockfile=%s authoritative_lockfile_sha256=%s report_sha256=%s stderr_sha256=%s\\n' \
+                  "$lockfile" "$lock_sha" "$shrinkwrap" "$shrinkwrap_sha" "$report_sha" "$stderr_sha" \
+                  >> "$result_root/summary.txt"
+                continue
+              fi
+            fi
+
             if ! git -C "$workspace" ls-files --error-unmatch -- "$manifest" >/dev/null 2>&1 || [[ ! -f "$workspace/$manifest" ]]; then
               echo '{"error":"lockfile_has_no_tracked_sibling_package_json"}' > "$report"
               echo "lockfile=$lockfile manifest=$manifest outcome=FAIL reason=package_manifest_missing" >> "$result_root/summary.txt"
