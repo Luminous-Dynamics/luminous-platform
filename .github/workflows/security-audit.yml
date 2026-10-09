@@ -290,111 +290,171 @@ jobs:
           repo = Path(sys.argv[1]).resolve()
           output = Path(sys.argv[2])
 
-          def tracked(patterns):
-              args = ["git", "ls-files", "-z", "--", *patterns]
-              raw = subprocess.check_output(args, cwd=repo)
-              return sorted(set(x.decode() for x in raw.split(bytes([0])) if x))
+          def git_output(root, *args):
+              return subprocess.check_output(["git", *args], cwd=root)
 
-          manifests = tracked(["Cargo.toml", "**/Cargo.toml"])
-          lockfiles = set(tracked(["Cargo.lock", "**/Cargo.lock"]))
-          stage = subprocess.check_output(["git", "ls-files", "--stage", "-z"], cwd=repo)
-          submodules = []
-          for record in stage.split(bytes([0])):
-              if not record:
-                  continue
-              metadata, path_bytes = record.split(bytes([9]), 1)
-              if metadata.split(b" ", 1)[0] == b"160000":
-                  submodules.append(path_bytes.decode())
-          parsed = {}
-          parse_errors = {}
+          def tracked(root, patterns):
+              raw = git_output(root, "ls-files", "-z", "--", *patterns)
+              return sorted(set(item.decode() for item in raw.split(bytes([0])) if item))
 
-          for rel in manifests:
-              path = repo / rel
+          def gitlinks(root):
+              raw = git_output(root, "ls-files", "--stage", "-z")
+              found = []
+              for record in raw.split(bytes([0])):
+                  if not record:
+                      continue
+                  metadata, path_bytes = record.split(bytes([9]), 1)
+                  fields = metadata.split()
+                  if fields and fields[0] == b"160000":
+                      found.append((path_bytes.decode(), fields[1].decode()))
+              return found
+
+          def declared_submodule_paths(root):
+              if not (root / ".gitmodules").is_file():
+                  return []
               try:
-                  with path.open("rb") as fh:
-                      parsed[rel] = tomllib.load(fh)
-              except Exception as exc:
-                  parse_errors[rel] = f"{type(exc).__name__}: {exc}"
+                  raw = git_output(root, "config", "-f", ".gitmodules", "--get-regexp", "^submodule[.].*[.]path$")
+              except subprocess.CalledProcessError:
+                  return []
+              paths = []
+              for line in raw.decode().splitlines():
+                  fields = line.split(None, 1)
+                  if len(fields) == 2:
+                      paths.append(fields[1])
+              return sorted(set(paths))
 
-          def workspace_root_for(rel):
-              manifest = repo / rel
-              data = parsed.get(rel, {})
-              if "workspace" in data:
-                  return manifest.parent
-              explicit = data.get("package", {}).get("workspace")
-              if explicit:
-                  return (manifest.parent / explicit).resolve()
-              parent = manifest.parent.parent
-              while parent == repo or repo in parent.parents:
-                  parent_manifest = parent / "Cargo.toml"
-                  parent_rel = parent_manifest.relative_to(repo).as_posix()
-                  if parent_rel in parsed and "workspace" in parsed[parent_rel]:
-                      return parent
-                  if parent == repo:
-                      break
-                  parent = parent.parent
-              return manifest.parent
+          def prefixed(prefix, relative):
+              return f"{prefix}/{relative}" if prefix else relative
+
+          # Root plus direct, allow-listed, initialized submodules. Nested
+          # submodules are reported as unaudited instead of being fetched.
+          root_links = dict(gitlinks(repo))
+          declared_paths = declared_submodule_paths(repo)
+          roots = [("", repo)]
+          unaudited_submodules = []
+          for path in declared_paths:
+              expected = root_links.get(path)
+              if not expected:
+                  unaudited_submodules.append(f"{path}:declared_path_without_gitlink")
+                  continue
+              module_root = (repo / path).resolve()
+              if not module_root.is_dir():
+                  unaudited_submodules.append(f"{path}:not_initialized")
+                  continue
+              try:
+                  actual_root = Path(git_output(module_root, "rev-parse", "--show-toplevel").decode().strip()).resolve()
+                  actual_sha = git_output(module_root, "rev-parse", "HEAD").decode().strip()
+              except subprocess.CalledProcessError:
+                  unaudited_submodules.append(f"{path}:not_a_git_checkout")
+                  continue
+              if actual_root != module_root or actual_sha != expected:
+                  unaudited_submodules.append(f"{path}:checkout_does_not_match_gitlink")
+                  continue
+              roots.append((path, module_root))
+          for path, _sha in root_links.items():
+              if path not in declared_paths:
+                  unaudited_submodules.append(f"{path}:gitlink_without_gitmodules_entry")
 
           entries = []
-          for rel in manifests:
-              if rel in parse_errors:
-                  entries.append({
-                      "manifest": rel, "status": "INCOMPLETE",
-                      "reason": "manifest_parse_error", "detail": parse_errors[rel]
-                  })
-                  continue
-              root = workspace_root_for(rel)
-              try:
-                  root_rel = root.relative_to(repo).as_posix()
-              except ValueError:
-                  entries.append({
-                      "manifest": rel, "status": "FAIL",
-                      "reason": "workspace_outside_checkout"
-                  })
-                  continue
-              lock_rel = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
-              tracked_lock = lock_rel in lockfiles
-              exists = (repo / lock_rel).is_file()
-              entries.append({
-                  "manifest": rel,
-                  "workspace_root": root_rel,
-                  "expected_lockfile": lock_rel,
-                  "lockfile_tracked": tracked_lock,
-                  "lockfile_exists": exists,
-                  "status": "PASS" if tracked_lock and exists else "FAIL",
-                  "reason": None if tracked_lock and exists else "workspace_lockfile_missing_or_untracked"
-              })
+          all_lockfiles = set()
+          for prefix, checkout in roots:
+              local_manifests = tracked(checkout, ["Cargo.toml", "**/Cargo.toml"])
+              local_lockfiles = set(tracked(checkout, ["Cargo.lock", "**/Cargo.lock"]))
+              all_lockfiles.update(prefixed(prefix, path) for path in local_lockfiles)
+              parsed = {}
+              parse_errors = {}
+              for rel in local_manifests:
+                  try:
+                      with (checkout / rel).open("rb") as fh:
+                          parsed[rel] = tomllib.load(fh)
+                  except Exception as exc:
+                      parse_errors[rel] = f"{type(exc).__name__}: {exc}"
 
-          failures = [e for e in entries if e["status"] != "PASS"]
+              def workspace_root_for(rel):
+                  manifest = checkout / rel
+                  data = parsed.get(rel, {})
+                  if "workspace" in data:
+                      return manifest.parent
+                  explicit = data.get("package", {}).get("workspace")
+                  if explicit:
+                      return (manifest.parent / explicit).resolve()
+                  parent = manifest.parent.parent
+                  while parent == checkout or checkout in parent.parents:
+                      parent_manifest = parent / "Cargo.toml"
+                      parent_rel = parent_manifest.relative_to(checkout).as_posix()
+                      if parent_rel in parsed and "workspace" in parsed[parent_rel]:
+                          return parent
+                      if parent == checkout:
+                          break
+                      parent = parent.parent
+                  return manifest.parent
+
+              for rel in local_manifests:
+                  display_manifest = prefixed(prefix, rel)
+                  if rel in parse_errors:
+                      entries.append({
+                          "manifest": display_manifest, "status": "INCOMPLETE",
+                          "reason": "manifest_parse_error", "detail": parse_errors[rel]
+                      })
+                      continue
+                  root = workspace_root_for(rel)
+                  try:
+                      root_rel = root.relative_to(checkout).as_posix()
+                  except ValueError:
+                      entries.append({
+                          "manifest": display_manifest, "status": "FAIL",
+                          "reason": "workspace_outside_checkout"
+                      })
+                      continue
+                  local_lock = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
+                  lock_tracked = local_lock in local_lockfiles
+                  lock_exists = (checkout / local_lock).is_file()
+                  display_lock = prefixed(prefix, local_lock)
+                  entries.append({
+                      "manifest": display_manifest,
+                      "workspace_root": prefixed(prefix, root_rel),
+                      "expected_lockfile": display_lock,
+                      "lockfile_tracked": lock_tracked,
+                      "lockfile_exists": lock_exists,
+                      "status": "PASS" if lock_tracked and lock_exists else "FAIL",
+                      "reason": None if lock_tracked and lock_exists else "workspace_lockfile_missing_or_untracked"
+                  })
+
+              if prefix:
+                  for nested_path, _nested_sha in gitlinks(checkout):
+                      unaudited_submodules.append(f"{prefix}/{nested_path}:nested_submodule_not_initialized")
+
+          failures = [entry for entry in entries if entry["status"] != "PASS"]
           report = {
               "schema": "luminous.security-audit.manifest-coverage.v1",
               "repository_path": ".",
-              "manifest_count": len(manifests),
-              "tracked_lockfile_count": len(lockfiles),
-              "mapped_manifest_count": sum(e["status"] == "PASS" for e in entries),
+              "manifest_count": len(entries),
+              "tracked_lockfile_count": len(all_lockfiles),
+              "mapped_manifest_count": sum(entry["status"] == "PASS" for entry in entries),
               "entry_failure_count": len(failures),
-              "submodule_count": len(submodules),
-              "unaudited_submodules": submodules,
-              "failure_count": len(failures) + len(submodules),
-              "status": "PASS" if manifests and not failures and not submodules else "FAIL",
+              "initialized_direct_submodule_count": max(0, len(roots) - 1),
+              "unaudited_submodules": sorted(set(unaudited_submodules)),
+              "failure_count": len(failures) + len(set(unaudited_submodules)),
+              "status": "PASS" if entries and not failures and not unaudited_submodules else "FAIL",
               "limitations": [
-                  "Only Cargo.toml and Cargo.lock files tracked by the audited Git checkout are included.",
-                  "Any Git submodule must be separately initialized and audited before total dependency coverage can pass."
+                  "Tracked Cargo manifests and lockfiles are inventoried in the root repository and verified direct submodules.",
+                  "Cargo package resolution is not fully reconstructed; nested submodules are not fetched and force a coverage failure.",
+                  "Non-Rust dependency systems are outside this RustSec coverage report."
               ],
+              "lockfiles_to_audit": sorted(all_lockfiles),
               "entries": entries
           }
           output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
           print(f"Manifest coverage: {report['status']} "
                 f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
                 f"{report['tracked_lockfile_count']} tracked lockfiles; "
-                f"{report['submodule_count']} submodules)")
+                f"{report['initialized_direct_submodule_count']} direct submodules)")
           for entry in failures:
               print(f"UNCOVERED: {entry}")
-          for submodule in submodules:
+          for submodule in report["unaudited_submodules"]:
               print(f"SUBMODULE_UNAUDITED: {submodule}")
           if report["status"] != "PASS":
-              sys.exit(1)
-          PY
+              sys.exit(1)          PY
           then
             coverage_status="PASS"
           else
