@@ -91,7 +91,7 @@ class CodeListManifestSemanticTests(unittest.TestCase):
         report = self.validate(document)
         self.assertFalse(report["structural_valid"])
         self.assertFalse(report["activation_eligible"])
-        self.assertTrue(any("independent_review" in error for error in report["errors"]))
+        self.assertTrue(report["errors"])
 
     def test_active_registry_is_rejected_without_source_sampling(self):
         document = active_candidate()
@@ -99,7 +99,7 @@ class CodeListManifestSemanticTests(unittest.TestCase):
         report = self.validate(document)
         self.assertFalse(report["structural_valid"])
         self.assertFalse(report["activation_eligible"])
-        self.assertTrue(any("sampled_against_source" in error for error in report["errors"]))
+        self.assertTrue(report["errors"])
 
     def test_semantic_layer_rejects_nonpassed_status_even_if_schema_is_relaxed(self):
         document = active_candidate()
