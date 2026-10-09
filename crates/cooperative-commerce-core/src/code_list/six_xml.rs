@@ -154,8 +154,8 @@ impl<'a> XmlTokenizer<'a> {
         let rest = &self.input[start..];
         let end = rest.find("-->").ok_or_else(|| fail("unterminated XML comment"))?;
         let body = &rest[..end];
-        if body.contains("--") {
-            return Err(fail("XML comments must not contain '--'"));
+        if body.contains("--") || body.ends_with('-') {
+            return Err(fail("XML comments must not contain '--' or end with '-'"));
         }
         if !body.chars().all(is_xml_char) {
             return Err(fail("invalid XML character in comment"));
@@ -545,7 +545,13 @@ mod tests {
         assert!(parse_six_list_one_xml(&malformed_comment)
             .unwrap_err()
             .to_string()
-            .contains("comments must not contain '--'"));
+            .contains("comments must not contain '--' or end with '-'"));
+
+        let trailing_hyphen = XML.replace("<CcyTbl>", "<CcyTbl><!-- invalid --->");
+        assert!(parse_six_list_one_xml(&trailing_hyphen)
+            .unwrap_err()
+            .to_string()
+            .contains("comments must not contain '--' or end with '-'"));
     }
 
     #[test]
