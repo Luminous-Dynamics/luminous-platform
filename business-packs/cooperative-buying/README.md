@@ -12,7 +12,7 @@ Provide the first concrete path toward a globally portable, member-oriented whol
 - [Synthetic ZAR offer](fixtures/example-offer-zar.json) — South African-shaped example; not a real supplier or quote.
 - [Synthetic EUR cross-border offer](fixtures/example-offer-eur.json) — Germany/Netherlands-shaped example; no legal, tax, payment, or delivery capability is implied.
 - [Semantic validator](../../tools/validate_cooperative_offer.py) — deterministic cross-field checks; it never authorizes a transaction.
-- [Purchase-intent schema](../../schemas/cooperative-purchase-intent-v1.schema.json) — separates non-binding interest/quote requests from binding order declarations that require an offer, single-use authorization, and idempotency key.
+- [Purchase-intent schema](../../schemas/cooperative-purchase-intent-v1.schema.json) — separates non-binding interest/quote requests from binding order declarations that require an offer, single-use authorization, and idempotency key. Sharing consent binds to explicit recipient IDs and an RFC 8785 digest of the approved data scope.
 - [Synthetic non-binding interest](fixtures/example-nonbinding-interest.json) — consent-scoped demand fixture; no purchase obligation or real buyer is represented.
 - [Purchase-intent validator](../../tools/validate_cooperative_purchase_intent.py) — checks time bounds, authorized maximums, legal-entity binding, and a canonical digest over the exact order scope.
 - [Purchase-intent schema tests](../../tests/test_cooperative_purchase_intent_schema.py) and [semantic tests](../../tests/test_cooperative_purchase_intent_semantics.py).
