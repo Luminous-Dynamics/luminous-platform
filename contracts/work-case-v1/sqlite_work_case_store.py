@@ -31,13 +31,15 @@ class SQLiteWorkCaseStore:
 
     def __init__(self, database_path: str | Path) -> None:
         self.path = str(database_path)
-        with closing(self._connect()) as db:
+        with closing(self._connect(require_wal=False)) as db:
             # Validate the existing database before changing its journal mode. WAL
             # mode persists in the database file, so a rejected legacy/future schema
             # must not be mutated merely by opening this reference store.
             version = int(db.execute("PRAGMA user_version").fetchone()[0])
             self._validate_schema_state(db, version)
-            db.execute("PRAGMA journal_mode=WAL")
+            journal_mode = str(db.execute("PRAGMA journal_mode=WAL").fetchone()[0]).lower()
+            if journal_mode != "wal":
+                raise RuntimeError(f"SQLite WAL mode is required; observed journal mode {journal_mode!r}")
             db.execute("BEGIN IMMEDIATE")
             try:
                 # Recheck under the write transaction in case another initializer
@@ -154,13 +156,17 @@ class SQLiteWorkCaseStore:
                 + ", ".join(sorted(missing_indexes))
             )
 
-    def _connect(self) -> sqlite3.Connection:
+    def _connect(self, *, require_wal: bool = True) -> sqlite3.Connection:
         db = sqlite3.connect(self.path, timeout=10, isolation_level=None)
         db.row_factory = sqlite3.Row
         db.execute("PRAGMA foreign_keys=ON")
         db.execute("PRAGMA busy_timeout=10000")
-        # WAL mode is persistent and is configured only after schema preflight.
         db.execute("PRAGMA synchronous=FULL")
+        if require_wal:
+            journal_mode = str(db.execute("PRAGMA journal_mode").fetchone()[0]).lower()
+            if journal_mode != "wal":
+                db.close()
+                raise RuntimeError(f"SQLite WAL mode is required; observed journal mode {journal_mode!r}")
         return db
 
     @staticmethod
