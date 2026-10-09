@@ -61,6 +61,39 @@ class SQLiteWorkCaseStoreTests(unittest.TestCase):
         self.assertEqual(list(validator.iter_errors(fixture)), [])
         self.assertEqual(list(validator.iter_errors(self.store.get_case(self.tech, "case-1").to_dict())), [])
 
+    def test_schema_version_is_idempotent_and_future_versions_fail_closed(self):
+        with closing(sqlite3.connect(self.db)) as db:
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 1)
+        SQLiteWorkCaseStore(self.db)
+        self.assertEqual(self.store.get_case(self.tech, "case-1"), self.case)
+        future_db = Path(self.tmp.name) / "future.sqlite3"
+        with closing(sqlite3.connect(future_db)) as db:
+            db.execute("PRAGMA user_version = 999")
+            db.commit()
+        with self.assertRaises(RuntimeError):
+            SQLiteWorkCaseStore(future_db)
+
+    def test_same_state_assignment_is_a_noop_not_a_fake_revision(self):
+        counts = self.store.counts()
+        history = self.store.history(self.tech, "case-1")
+        unchanged = self.store.assign(
+            self.tech, "case-1", assignee_id=None, expected_revision=1,
+            reason="already unassigned", idempotency_key="noop-assign",
+            command_id="noop-assign", occurred_at=T1,
+        )
+        self.assertEqual(unchanged, self.case)
+        after = self.store.counts()
+        self.assertEqual(after["case_activity"], counts["case_activity"])
+        self.assertEqual(after["case_outbox"], counts["case_outbox"])
+        self.assertEqual(self.store.history(self.tech, "case-1"), history)
+
+    def test_rolled_back_command_can_retry_with_the_same_idempotency_key(self):
+        with self.assertRaises(RuntimeError):
+            self.transition("in_progress", key="retry-after-rollback", fail_at="before_commit")
+        recovered = self.transition("in_progress", key="retry-after-rollback")
+        self.assertEqual(recovered.revision, 2)
+        self.assertEqual(self.store.counts()["case_outbox"], 2)
+
     def test_restart_preserves_state_history_idempotency_and_outbox(self):
         changed = self.transition("in_progress")
         history = self.store.history(self.tech, "case-1")

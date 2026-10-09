@@ -19,6 +19,8 @@ python3 -m venv /tmp/work-case-v1-venv
 PYTHONDONTWRITEBYTECODE=1 /tmp/work-case-v1-venv/bin/python -m unittest discover -s contracts/work-case-v1/tests -p 'test_*.py' -v
 ~~~
 
+See [Work-Case Storage and Tenant-Isolation Decision](../../docs/WORK_CASE_STORAGE_AND_TENANCY_DECISION.md) for the proposed SQLite-versus-PostgreSQL deployment boundary and production RLS requirements.
+
 ## Persistence and event semantics
 
 The SQLite reference commits case snapshot, revision, append-only activity row, idempotency response, external mapping (when present), and a minimal outbox event in one local transaction. Fault-injection tests target selected write boundaries. Each mutation opens a fresh connection; tests reconstruct the store against the same database file and run duplicate calls through separate store objects.
