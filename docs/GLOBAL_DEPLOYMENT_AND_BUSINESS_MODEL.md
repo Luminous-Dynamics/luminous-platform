@@ -28,6 +28,20 @@ The commercial objective is to sell repeatable operational outcomes—safer chan
 
 All integrations should use explicit, versioned contracts. A component may attest to a fact it owns; a coordinator may aggregate those claims but must not silently strengthen them.
 
+## Market position and integration strategy
+
+Do not rebuild existing infrastructure automation merely to own every layer. The adjacent ecosystem already provides useful primitives: [Colmena](https://github.com/nix-community/colmena) is a stateless NixOS deployment tool with parallel deployment, while [OpenTofu](https://opentofu.org/docs/v1.7/intro/) offers declarative infrastructure changes, plans, approval before modification, and a broad provider model.
+
+The opportunity for Luminous is the layer that coordinates **authority and evidence across systems**:
+
+- keep existing tools responsible for the mechanical changes they already execute well;
+- make plans, approvals, targets, dispatch attempts, observed outcomes, and rollback evidence refer to the same typed operation;
+- normalize what an adapter can prove without pretending all adapters provide equivalent guarantees;
+- show an operator exactly which facts are missing before a consequential action can be authorized;
+- support local recovery and evidence export without requiring a proprietary central service.
+
+This is a product hypothesis to validate, not proof that no competing product already offers every feature. Maintain a feature comparison as releases and competitors change. Do not win by accumulating more integrations; win by making cross-system changes safer, more explainable, and recoverable.
+
 ## Operating and authority model
 
 Use a predictable lifecycle for consequential operations:
