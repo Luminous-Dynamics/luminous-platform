@@ -83,7 +83,7 @@ jobs:
           if [[ -f "$report" ]]; then
             cp "$report" "$destination"
             report_sha256="$(sha256sum "$destination" | cut -d' ' -f1)"
-            if [[ "$${ZIZMOR_OUTCOME:-unknown}" == "success" ]]; then
+            if [[ "${ZIZMOR_OUTCOME:-unknown}" == "success" ]]; then
               sed -i 's/^zizmor_status=.*/zizmor_status=PASS/' security-audit-results/workflows/summary.txt
             else
               sed -i 's/^zizmor_status=.*/zizmor_status=FAIL/' security-audit-results/workflows/summary.txt
