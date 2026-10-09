@@ -258,6 +258,7 @@ A first, intentionally data-only Scene Pack v1 contract is now included in this 
 - [JSON Schema](../../contracts/ambient-scene-pack-v1.schema.json)
 - [First Germination fixture](../../contracts/examples/first-germination.scene.json)
 - [Scene Pack semantics and loader validation contract](AMBIENT_SCENE_PACK_V1.md)
+- [First Germination animated SVG concept](concepts/first-germination-concept.svg) — a reviewable visual target, not a production runtime asset.
 
 The fixture is procedural-only (`assets: []`) so it does not accidentally pull artwork of unclear origin into the product. It includes explicit boot, desktop, idle, locked-background and static-fallback variants, safe regions for desktop UI, a fixed simulation seed, resource ceilings, and opt-in-only inputs. The schema rejects unknown fields. The accompanying semantic contract adds checks JSON Schema cannot express by itself, including canonicalized asset path containment, checksum verification, safe-region bounds and cross-field fallback/resource invariants.
 
