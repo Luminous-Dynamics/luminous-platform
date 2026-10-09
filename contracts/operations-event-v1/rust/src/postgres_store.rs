@@ -307,25 +307,6 @@ impl PostgresOperationsStore {
             return Ok(IngestOutcome::Quarantined { reason_code: "TRUSTED_CONTEXT_BINDING_MISMATCH".to_owned() });
         }
 
-        // Validate the configured revision token even for the initial
-        // observation. Otherwise a malformed first revision could become the
-        // baseline and make every future revision unorderable.
-        if !revision_token_is_valid(&policy, revision) {
-            quarantine(
-                &mut tx,
-                authenticated,
-                source_uri,
-                event_id,
-                &event_digest,
-                "REVISION_TOKEN_INVALID",
-            )
-            .await?;
-            tx.commit().await?;
-            return Ok(IngestOutcome::Quarantined {
-                reason_code: "REVISION_TOKEN_INVALID".to_owned(),
-            });
-        }
-
         // Serialize a business idempotency key before checking the durable
         // fence. Advisory-lock hash collisions only add contention; the unique
         // key remains the final integrity constraint. This check precedes
@@ -375,6 +356,25 @@ impl PostgresOperationsStore {
             .await?;
             tx.commit().await?;
             return Ok(IngestOutcome::DuplicateEffect);
+        }
+
+        // Validate the configured revision token even for the initial
+        // observation. Otherwise a malformed first revision could become the
+        // baseline and make every future revision unorderable.
+        if !revision_token_is_valid(&policy, revision) {
+            quarantine(
+                &mut tx,
+                authenticated,
+                source_uri,
+                event_id,
+                &event_digest,
+                "REVISION_TOKEN_INVALID",
+            )
+            .await?;
+            tx.commit().await?;
+            return Ok(IngestOutcome::Quarantined {
+                reason_code: "REVISION_TOKEN_INVALID".to_owned(),
+            });
         }
 
         // The incident head is the serialization point for revision comparison

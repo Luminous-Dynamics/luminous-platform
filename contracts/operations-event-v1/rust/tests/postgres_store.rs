@@ -216,6 +216,21 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     );
     assert_eq!(row_count_snapshot(&pool).await, [2, 1, 1, 1, 1]);
 
+    // A key reused with different semantics remains an idempotency conflict,
+    // even when the competing event also carries a malformed revision token.
+    let malformed_revision_key_conflict = revised_event(
+        "opaque-token",
+        "event-ci-invalid-revision-key-conflict",
+        "connectwise-psa:company-42:ticket-7301:snapshot-v1",
+        "Changed semantics with a malformed revision token",
+    );
+    assert!(matches!(
+        store.ingest_event(&auth, &malformed_revision_key_conflict).await,
+        Err(StoreError::IdempotencyConflict)
+    ));
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 2);
+    assert_eq!(row_count_snapshot(&pool).await, [3, 1, 1, 1, 1]);
+
     // observedat is receiver-local and excluded from replay identity.
     let mut replay = initial.clone();
     replay["observedat"] = json!("2026-10-09T08:00:09Z");
@@ -223,7 +238,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         store.ingest_event(&auth, &replay).await.unwrap(),
         IngestOutcome::DuplicateEvent
     );
-    assert_eq!(row_count_snapshot(&pool).await, [2, 1, 1, 1, 1]);
+    assert_eq!(row_count_snapshot(&pool).await, [3, 1, 1, 1, 1]);
 
     // Reusing an accepted source+id with different content is a conflict. Keep
     // the original inbox result unchanged; retain only a digest-only receipt.
@@ -234,8 +249,8 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         store.ingest_event(&auth, &conflicting_event_identity).await,
         Err(StoreError::EventIdentityConflict)
     ));
-    assert_eq!(row_count_snapshot(&pool).await, [2, 1, 1, 1, 1]);
-    assert_eq!(scalar_count(&pool, "quarantined_events").await, 3);
+    assert_eq!(row_count_snapshot(&pool).await, [3, 1, 1, 1, 1]);
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 4);
     let original_outcome: String = sqlx::query(
         "SELECT outcome FROM ops.inbox_events \
          WHERE tenant_id = $1 AND connection_id = $2 AND source_uri = $3 AND event_id = $4",
@@ -254,7 +269,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         store.ingest_event(&auth, &conflicting_event_identity).await,
         Err(StoreError::EventIdentityConflict)
     ));
-    assert_eq!(scalar_count(&pool, "quarantined_events").await, 3);
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 4);
 
     // Same business effect delivered with a different CloudEvents ID is
     // deduplicated by its idempotency key, not merely by source+event ID.
@@ -264,7 +279,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         store.ingest_event(&auth, &alternate_delivery).await.unwrap(),
         IngestOutcome::DuplicateEffect
     );
-    assert_eq!(row_count_snapshot(&pool).await, [3, 1, 1, 1, 1]);
+    assert_eq!(row_count_snapshot(&pool).await, [4, 1, 1, 1, 1]);
 
     let revision_two = revised_event(
         "revision-2",
@@ -366,7 +381,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     );
     let conflict = store.ingest_event(&auth, &conflicting_idempotency).await;
     assert!(matches!(conflict, Err(StoreError::IdempotencyConflict)));
-    assert_eq!(scalar_count(&pool, "quarantined_events").await, 7);
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 8);
     assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
 
     // Independent pooled connections race on one event identity. One state
