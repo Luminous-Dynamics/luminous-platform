@@ -162,6 +162,8 @@ Use [One Luminous Platform, Many Business Packs](PLATFORM_AND_REPOSITORY_STRATEG
 
 To make the business repeatable for people who are not platform developers, use [Start a Luminous Business](START_A_LUMINOUS_BUSINESS.md) and the [MSP Incident-to-Evidence starter pack](../business-packs/msp-incident-to-evidence/README.md). It provides a manual-first first offer and templates; it does not pretend that live integrations or unqualified platform capabilities exist.
 
+The separate [Global Cooperative Commerce architecture](GLOBAL_COOPERATIVE_COMMERCE.md) explores the free business capability floor, globally portable commerce contracts, locally activated jurisdiction packs, and a staged buying network/wholesale strategy. It is proposed work, not an implemented commerce product.
+
 ## Business model
 
 ### Sell outcomes, not lock-in
