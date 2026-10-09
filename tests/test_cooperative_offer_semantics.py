@@ -80,10 +80,11 @@ class CooperativeOfferSemanticTests(unittest.TestCase):
     def test_published_offer_without_retained_source_digest_is_rejected(self):
         document = self.make_publishable_candidate()
         del document["evidence"]["content_sha256"]
-        # Missing required field is a structural error and therefore cannot reach semantic pass.
+        # The digest is optional in draft structure, but mandatory for publication.
         report = self.validate(document)
+        self.assertTrue(report["structural_valid"])
         self.assertFalse(report["semantic_valid"])
-        self.assertFalse(report["structural_valid"])
+        self.assertTrue(any("SHA-256 digest" in error for error in report["errors"]))
 
     def test_published_offer_with_unknown_tax_treatment_is_rejected(self):
         document = self.make_publishable_candidate()
