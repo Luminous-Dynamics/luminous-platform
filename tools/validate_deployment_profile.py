@@ -251,11 +251,15 @@ def validate_profile_data(
                 errors=result["errors"],
                 path="/services/remote_control/authentication_authority",
             )
-        if remote.get("network_exposure") == "disabled":
+        if remote.get("network_exposure") not in (
+            "loopback_only",
+            "private_network",
+            "public_network",
+        ):
             _error(
-                "remote control cannot be enabled when network_exposure is disabled",
+                "enabled remote control requires an explicit active network_exposure",
                 errors=result["errors"],
-                path="/services/remote_control",
+                path="/services/remote_control/network_exposure",
             )
     elif remote.get("network_exposure") not in (None, "disabled"):
         _error(
