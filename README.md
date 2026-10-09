@@ -4,7 +4,15 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 
 See [Global Deployment and Business Model](docs/GLOBAL_DEPLOYMENT_AND_BUSINESS_MODEL.md) for the proposed product boundaries, deployment profiles, business model, and qualification roadmap. That document is a roadmap, not a claim of production readiness or universal compliance.
 
-For a machine-readable draft, see the [Deployment Profile Contract](docs/DEPLOYMENT_PROFILE_CONTRACT.md), [proposed JSON Schema](schemas/deployment-profile-v1.schema.json), and [local NixOS pilot example](profiles/examples/local-nixos-pilot.yaml). These are proposed contracts and fixtures; runtime conformance is not yet implemented.
+For a machine-readable draft, see the [Deployment Profile Contract](docs/DEPLOYMENT_PROFILE_CONTRACT.md), [JSON Schema](schemas/deployment-profile-v1.schema.json), and [local NixOS pilot example](profiles/examples/local-nixos-pilot.yaml). A first declaration-only validator is available at `tools/validate_deployment_profile.py`; it has a regression corpus in `tests/test_deployment_profile_validator.py` and a pinned dependency file.
+
+```bash
+python -m pip install --requirement requirements-profile-validator.txt
+python -m unittest discover -s tests -p 'test_deployment_profile_validator.py' -v
+python tools/validate_deployment_profile.py profiles/examples/local-nixos-pilot.yaml
+```
+
+The validator checks syntax and declaration consistency only. Its `VALID_DECLARATION` result does not mean that a target was tested or is production-ready; any profile that claims runtime qualification remains blocked pending adapter-specific evidence evaluation.
 
 ## Architecture
 
