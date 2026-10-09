@@ -1,0 +1,65 @@
+name: Manual Work Case Contract V1
+
+# Deprecated as an automatic workflow: the primary Operations Event workflow
+# already executes both contract suites together. Keep this workflow for a
+# deliberate standalone qualification after it is available from the default branch.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work-case-v1-manual
+  cancel-in-progress: false
+
+jobs:
+  validate-work-case:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Checkout explicitly selected revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Set up pinned Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.12"
+
+      - name: Create isolated Python environment
+        run: python3 -m venv "$RUNNER_TEMP/work-case-v1-venv"
+
+      - name: Install pinned JSON Schema validator
+        run: >-
+          "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m pip install
+          --disable-pip-version-check --no-input --no-cache-dir
+          -r contracts/operations-event-v1/requirements.txt
+
+      - name: Self-test fail-closed runner
+        run: >-
+          "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m unittest discover
+          -s scripts/tests -p 'test_run_unittest_suite.py' -v
+
+      - name: Validate Work Case V1
+        run: >-
+          "$RUNNER_TEMP/work-case-v1-venv/bin/python" scripts/run_unittest_suite.py
+          contracts/work-case-v1/tests --minimum-tests 34
+
+      - name: Publish bounded qualification summary
+        if: success()
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          {
+            echo "## Manual Work Case Contract V1"
+            echo "- Tested source revision: $SOURCE_SHA"
+            echo "- Requires at least 34 discovered Work Case test cases and executes the full discovered suite."
+            echo "- Does not qualify production database isolation/durability, tenant authorization, live provider behavior, evidence truth, or remote execution."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ensure validation did not modify checkout
+        run: git diff --exit-code && test -z "$(git status --porcelain)"

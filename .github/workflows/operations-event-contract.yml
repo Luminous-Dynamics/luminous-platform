@@ -1,10 +1,13 @@
-name: Operations Event and Holochain Attestation Contracts
+name: Operations Event, Work Case, and Holochain Attestation Contracts
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - "contracts/operations-event-v1/**"
+      - "contracts/work-case-v1/**"
+      - "docs/WORK_CASE_STORAGE_AND_TENANCY_DECISION.md"
+      - ".github/workflows/work-case-v1.yml"
       - "contracts/holochain-attestation-v1/**"
       - "README.md"
       - "scripts/run_unittest_suite.py"
@@ -14,6 +17,9 @@ on:
     branches: ["**"]
     paths:
       - "contracts/operations-event-v1/**"
+      - "contracts/work-case-v1/**"
+      - "docs/WORK_CASE_STORAGE_AND_TENANCY_DECISION.md"
+      - ".github/workflows/work-case-v1.yml"
       - "contracts/holochain-attestation-v1/**"
       - "scripts/run_unittest_suite.py"
       - "scripts/tests/**"
@@ -23,7 +29,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: operations-event-contract-${{ github.event.pull_request.number || github.ref }}
+  # Push and pull_request events for the same branch share one concurrency slot.
+  group: operations-event-contract-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -81,6 +88,21 @@ jobs:
           fi
           echo "test_count=$count" >> "$GITHUB_OUTPUT"
 
+      - name: Validate Native Work Case Contract V1
+        id: work_case
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/work-case-tests.log"
+          python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
+          "$python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 34 2>&1 | tee "$log"
+          count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
+          if [[ -z "$count" || "$count" -lt 31 ]]; then
+            echo "::error::Work Case Contract V1 must execute at least 34 tests; observed $count."
+            exit 1
+          fi
+          echo "test_count=$count" >> "$GITHUB_OUTPUT"
+
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.96.0 --profile minimal
 
@@ -110,6 +132,7 @@ jobs:
           SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           RUNNER_TESTS: ${{ steps.runner_selftest.outputs.test_count }}
           OPERATIONS_TESTS: ${{ steps.operations_event.outputs.test_count }}
+          WORK_CASE_TESTS: ${{ steps.work_case.outputs.test_count }}
           HOLOCHAIN_TESTS: ${{ steps.holochain_attestation.outputs.test_count }}
         run: |
           {
@@ -117,7 +140,8 @@ jobs:
             echo "- Tested source revision: $SOURCE_SHA"
             echo "- Fail-closed runner regression tests executed: $RUNNER_TESTS"
             echo "- Operations Event Contract V1 tests executed: $OPERATIONS_TESTS"
+            echo "- Work Case Contract V1 tests executed: $WORK_CASE_TESTS"
             echo "- Rust Holochain Attestation Share Package V1 tests executed: $HOLOCHAIN_TESTS"
-            echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Holochain share-package validator and its contract tests are Rust-native."
+            echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Work Case suite requires at least 34 tests. The Holochain share-package validator and its contract tests are Rust-native."
             echo "- This workflow does not qualify the production PostgreSQL repository, provider authentication, Holochain integrity zome or multi-agent DHT behavior, identity/membership binding, cryptographic evidence verification, or remote execution."
           } >> "$GITHUB_STEP_SUMMARY"
