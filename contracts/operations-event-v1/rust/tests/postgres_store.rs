@@ -594,7 +594,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert!(store.claim_next_outbox(TENANT, "worker-e", 30).await.unwrap().is_none(),
         "the failed event must not be immediately claimable during backoff");
     let retry_is_delayed: bool = sqlx::query(
-        "SELECT available_at > clock_timestamp() + interval '1 second' AS delayed \\
+        "SELECT available_at > clock_timestamp() + interval '1 second' AS delayed \
          FROM ops.outbox_events WHERE tenant_id = $1 AND outbox_id = $2",
     )
     .bind(TENANT)
@@ -609,7 +609,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     // Fast-forward only the disposable test database instead of sleeping for
     // the production retry delay.
     sqlx::query(
-        "UPDATE ops.outbox_events SET available_at = clock_timestamp() - interval '1 second' \\
+        "UPDATE ops.outbox_events SET available_at = clock_timestamp() - interval '1 second' \
          WHERE tenant_id = $1 AND outbox_id = $2",
     )
     .bind(TENANT)
