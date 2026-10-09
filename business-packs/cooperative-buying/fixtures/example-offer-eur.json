@@ -22,7 +22,10 @@
       "units_per_pack": "10",
       "each_unit_code": "tote",
       "each_quantity": "1",
-      "each_quantity_unit_code": "tote"
+      "each_quantity_unit_code": "tote",
+      "order_unit_code_system": "urn:fixture:unit-system:order-unit:v1",
+      "each_unit_code_system": "urn:fixture:unit-system:each-unit:v1",
+      "each_quantity_unit_code_system": "urn:fixture:unit-system:each-unit:v1"
     },
     "substitution_policy": "none_without_consent"
   },
@@ -31,7 +34,8 @@
       "amount": "42.50",
       "currency": "EUR",
       "per_quantity": "1",
-      "per_unit_code": "case"
+      "per_unit_code": "case",
+      "per_unit_code_system": "urn:fixture:unit-system:order-unit:v1"
     },
     "price_breaks": [],
     "minimum_order_quantity": "5",
