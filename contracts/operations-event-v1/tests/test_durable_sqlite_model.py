@@ -140,6 +140,17 @@ class DurableSQLiteInboxTests(unittest.TestCase):
         self.assertFalse(self.store.acknowledge_outbox(first["outbox_id"],"worker-a",now=111))
         self.assertTrue(self.store.acknowledge_outbox(second["outbox_id"],"worker-b",now=112))
 
+    def test_outbox_preserves_order_for_each_incident(self):
+        self.store.accept(self.make_event(revision="revision-1",status="new"),now=100)
+        self.store.accept(self.make_event(revision="revision-2",status="open",summary="second update"),now=101)
+        first=self.store.claim_outbox("worker-a",now=102,lease_seconds=20)
+        self.assertEqual(json.loads(first["payload_json"])["revision"],"revision-1")
+        # The second update is blocked until the first lease is acknowledged.
+        self.assertIsNone(self.store.claim_outbox("worker-b",now=103,lease_seconds=20))
+        self.assertTrue(self.store.acknowledge_outbox(first["outbox_id"],"worker-a",now=104))
+        second=self.store.claim_outbox("worker-b",now=105,lease_seconds=20)
+        self.assertEqual(json.loads(second["payload_json"])["revision"],"revision-2")
+
     def test_outbox_ack_requires_current_owner_and_live_lease(self):
         self.store.accept(self.event,now=100)
         claim=self.store.claim_outbox("worker",now=101,lease_seconds=5)

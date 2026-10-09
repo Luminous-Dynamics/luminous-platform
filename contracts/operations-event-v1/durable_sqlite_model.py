@@ -250,9 +250,16 @@ class SQLiteInbox:
         db = self._connection()
         try:
             db.execute("BEGIN IMMEDIATE")
-            row = db.execute("""SELECT * FROM outbox_events WHERE status='PENDING'
-              OR (status='LEASED' AND lease_until<=?) ORDER BY created_at,outbox_id LIMIT 1""",
-              (int(now),)).fetchone()
+            row = db.execute("""SELECT o.* FROM outbox_events AS o
+              WHERE (o.status='PENDING' OR (o.status='LEASED' AND o.lease_until<=?))
+                AND NOT EXISTS (
+                  SELECT 1 FROM outbox_events AS prior
+                  WHERE prior.tenant_id=o.tenant_id AND prior.incident_id=o.incident_id
+                    AND prior.status!='DELIVERED'
+                    AND (prior.created_at<o.created_at OR
+                      (prior.created_at=o.created_at AND prior.outbox_id<o.outbox_id))
+                )
+              ORDER BY o.created_at,o.outbox_id LIMIT 1""", (int(now),)).fetchone()
             if row is None:
                 db.commit()
                 return None

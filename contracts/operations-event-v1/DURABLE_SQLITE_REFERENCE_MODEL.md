@@ -12,7 +12,7 @@
 - Explicit source/company/tenant/ticket/local-incident bindings are checked before mutation. A binding conflict is quarantined using only an event digest, a reason code, and a timestamp; raw payload content is not copied into the quarantine table.
 - Local inbox, idempotency record, incident snapshot state, and outgoing outbox row commit in the same SQLite transaction. Test-only injected exceptions before commit must roll all those writes back.
 - Revision handling is conservative. Older revisions do not replace newer state; conflicting state for the same revision fails. When revisions cannot be compared under an explicitly configured adapter policy, the observation is quarantined rather than sorted lexically or accepted by arrival time.
-- Outbox dispatch uses retryable leases. Lease expiry can cause the same message to be delivered again; this is **at-least-once**, not exactly-once network delivery. A late or wrong owner cannot acknowledge an expired/reassigned lease.
+- Outbox dispatch uses retryable leases and preserves per-incident ordering: a later unacknowledged message for the same incident cannot be claimed while an earlier one remains pending or leased. Lease expiry can cause the same message to be delivered again; this is **at-least-once**, not exactly-once network delivery. A late or wrong owner cannot acknowledge an expired/reassigned lease.
 
 The test suite includes restarts against the same SQLite file, duplicate concurrent submissions, transaction fault injection, tenant/resource mapping negatives, opaque revision ordering, and outbox lease expiry/acknowledgement cases.
 

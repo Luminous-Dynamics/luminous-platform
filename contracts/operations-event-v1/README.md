@@ -8,7 +8,7 @@ This folder defines the first portable cross-repository event contract for the p
 - `payloads/incident-snapshot-v1.schema.json` — first vendor-neutral normalized incident payload schema.
 - `examples/incident.snapshot.json` — synthetic, non-production CloudEvent example.
 - `adapter_model.py` — deterministic normalization and in-memory inbox model for synthetic PSA records; not a live API client or durable storage.
-- `durable_sqlite_model.py` — a separate SQLite-backed reference harness for transactional local state, deduplication, revision handling, and outbox leases; not production service code.
+- `durable_sqlite_model.py` — a separate SQLite-backed reference harness for transactional local state, deduplication, revision handling, per-incident ordered outbox leases, and fault injection; not production service code.
 - `tests/test_contract.py` — envelope and incident-payload schema tests.
 - `tests/test_adapter_model.py` — deterministic normalization, trusted tenant/source binding, duplicate-delivery and idempotency-conflict tests.
 - `tests/test_durable_sqlite_model.py` — restart/replay, conflict, transaction fault-injection, concurrency, quarantine, stale-revision, and outbox lease tests.
