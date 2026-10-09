@@ -1158,6 +1158,32 @@ mod tests {
     }
 
     #[test]
+    fn same_supplier_invoice_can_support_basket_line_and_itemized_freight() {
+        let mut candidate = input();
+        candidate.actual_costs[0].evidence.kind = EvidenceKind::SupplierInvoice;
+        let report = calculate_savings(&candidate).unwrap();
+        assert_eq!(report.net_difference, "120");
+    }
+
+    #[test]
+    fn coverage_summary_document_does_not_change_baseline_price_claim_class() {
+        let mut candidate = input();
+        candidate.baseline_coverage.evidence.kind = EvidenceKind::CostCoverageStatement;
+        let report = calculate_savings(&candidate).unwrap();
+        assert_eq!(report.claim_class, ClaimClass::InvoiceVsAlternativeQuote);
+    }
+
+    #[test]
+    fn coverage_statement_can_document_a_historical_invoice_baseline() {
+        let mut candidate = input();
+        candidate.baseline_lines[0].evidence.kind = EvidenceKind::AlternativeInvoice;
+        candidate.baseline_costs[0].evidence.kind = EvidenceKind::AlternativeInvoice;
+        candidate.baseline_coverage.evidence.kind = EvidenceKind::CostCoverageStatement;
+        let report = calculate_savings(&candidate).unwrap();
+        assert_eq!(report.claim_class, ClaimClass::HistoricalInvoiceComparison);
+    }
+
+    #[test]
     fn mixed_invoice_and_quote_baseline_is_never_labeled_as_a_pure_quote_comparison() {
         let mut candidate = input();
         candidate.baseline_lines[0].evidence.kind = EvidenceKind::AlternativeInvoice;
