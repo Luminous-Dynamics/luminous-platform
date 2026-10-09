@@ -307,6 +307,9 @@ jobs:
             || ! git -C "$fixture" ls-files -z --cached > "$fixture_paths"; then
             incomplete tracked_snapshot_fixture_setup_failed; exit 0
           fi
+          if git -C "$fixture" archive HEAD | tar -tf - | grep -Fxq "secret-fixture.txt"; then
+            incomplete tracked_snapshot_fixture_not_exercising_export_ignore; exit 0
+          fi
           if ! (cd "$fixture" && tar --null --verbatim-files-from --no-recursion --files-from="$fixture_paths" -cf -) \
             | tar -xf - -C "$fixture_snapshot"; then
             incomplete tracked_snapshot_fixture_copy_failed; exit 0
