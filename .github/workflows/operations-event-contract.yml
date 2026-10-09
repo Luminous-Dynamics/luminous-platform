@@ -11,6 +11,7 @@ on:
     branches: ["main"]
     paths:
       - "contracts/operations-event-v1/**"
+      - "contracts/holochain-attestation-v1/**"
       - ".github/workflows/operations-event-contract.yml"
 
 permissions:
