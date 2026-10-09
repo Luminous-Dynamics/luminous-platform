@@ -73,6 +73,10 @@ class SQLiteWorkCaseStoreTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             SQLiteWorkCaseStore(future_db)
 
+    def test_in_memory_database_fails_closed_when_wal_mode_is_unavailable(self):
+        with self.assertRaisesRegex(RuntimeError, "WAL mode is required; observed journal mode 'memory'"):
+            SQLiteWorkCaseStore(":memory:")
+
     def test_unversioned_database_with_existing_tables_fails_closed_before_wal_mutation(self):
         legacy_db = Path(self.tmp.name) / "legacy-unversioned.sqlite3"
         with closing(sqlite3.connect(legacy_db)) as db:
