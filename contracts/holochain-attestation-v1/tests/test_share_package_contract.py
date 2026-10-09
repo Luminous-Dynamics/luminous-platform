@@ -88,6 +88,14 @@ class HolochainSharePackageContractTests(unittest.TestCase):
         event["targetShareId"] = "d7a5cf2a-7598-4c5c-b65e-f19f4a765901"
         self.assertEqual([], self.errors(event))
 
+    def test_target_reference_is_only_allowed_for_dispute_or_supersession(self) -> None:
+        event = copy.deepcopy(self.fixture)
+        event["targetShareId"] = "d7a5cf2a-7598-4c5c-b65e-f19f4a765901"
+        errors = self.errors(event)
+        self.assertTrue(
+            any("only valid for dispute/supersession" in error for error in errors)
+        )
+
     def test_evidence_attestation_requires_at_least_one_manifest(self) -> None:
         event = copy.deepcopy(self.fixture)
         del event["evidenceManifest"]
