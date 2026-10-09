@@ -45,8 +45,12 @@
       "expires_at": "2026-12-31T23:59:59Z",
       "revocable": true,
       "evidence_reference": "fixture:consent-evidence:001",
-      "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-    }
+      "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "scope_sha256": "cfc92424fc6cca06218d6d5cb7d14a4993dd502cf4ad101f4bc3a36d6b2a6d30"
+    },
+    "recipients": [
+      "fixture:cooperative-operator:001"
+    ]
   },
   "limitations": [
     "Synthetic non-binding demand fixture; no supplier quote or order is created.",
