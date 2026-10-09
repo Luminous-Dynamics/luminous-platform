@@ -131,6 +131,21 @@ def normalize_incident_snapshot(
     if snapshot.occurred_at is not None:
         _validate_timestamp(snapshot.occurred_at, "occurred_at")
 
+    # Python annotations do not validate decoded/runtime values. Reject malformed
+    # adapter records explicitly before mapping lookups or string operations.
+    for label, value in (
+        ("company_id", snapshot.company_id),
+        ("ticket_id", snapshot.ticket_id),
+        ("revision", snapshot.revision),
+        ("status", snapshot.status),
+    ):
+        if not isinstance(value, str) or not value:
+            raise NormalizationError(f"{label} must be a non-empty string")
+    if snapshot.status not in VALID_STATUSES:
+        raise NormalizationError("status has no approved normalized mapping")
+    if not isinstance(snapshot.redacted_summary, str):
+        raise NormalizationError("redacted summary must be a string")
+
     if not connection.connection_id or not connection.source_uri:
         raise NormalizationError("trusted connection identity is incomplete")
     if snapshot.company_id not in connection.company_tenant_map:
@@ -145,10 +160,6 @@ def normalize_incident_snapshot(
     if not local_incident_id:
         raise NormalizationError("ticket has no explicit local incident mapping")
 
-    if not snapshot.ticket_id or not snapshot.revision:
-        raise NormalizationError("ticket ID and stable source revision are required")
-    if snapshot.status not in VALID_STATUSES:
-        raise NormalizationError("status has no approved normalized mapping")
     summary = snapshot.redacted_summary.strip()
     if not summary or len(summary) > 300:
         raise NormalizationError("redacted summary must contain 1..300 characters")
