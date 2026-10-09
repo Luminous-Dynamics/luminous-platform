@@ -20,7 +20,8 @@ Provide the first concrete path toward a globally portable, member-oriented whol
 - [Global architecture and staged plan](../../docs/GLOBAL_COOPERATIVE_COMMERCE.md).
 - [Dependency-free Rust savings kernel](../../crates/cooperative-commerce-core/README.md) — exact-decimal arithmetic, exact-basket comparability, symmetric cost coverage, delivery-line binding, explicit credits, and negative-result preservation.
 - [Savings Receipt schema](../../schemas/cooperative-savings-receipt-v1.schema.json) plus [illustrative receipt fixture](fixtures/example-savings-receipt.json) — portable inputs, calculations, evidence references, and limitations; the fixture is synthetic and cannot be promoted to a computed receipt.
-- [Code-list snapshot manifest](../../schemas/code-list-snapshot-manifest-v1.schema.json) plus [illustrative SIX ISO 4217 manifest](fixtures/example-code-list-manifest.json) — defines how an active registry must pin source bytes, normalized payload digest, parser/build identity, review report, duplicate-code checks, effective dates, and review deadline. This example explicitly says the official payload has not been retrieved and cannot be activated.
+- [Code-list snapshot manifest](../../schemas/code-list-snapshot-manifest-v1.schema.json), [illustrative SIX ISO 4217 manifest](fixtures/example-code-list-manifest.json), and [semantic validator](../../tools/validate_code_list_manifest.py) — define active-registry requirements for source retrieval/authority review, immutable version label, retained source and normalized payload digests, parser/build identity, duplicate-code checks, effectivity, review report, and review deadline. The example is explicitly not retrieved/not run and cannot be activated.
+- [Code-list manifest tests](../../tests/test_code_list_manifest_schema.py) and [semantic tests](../../tests/test_code_list_manifest_semantics.py).
 
 ## Schema contract and limits
 
