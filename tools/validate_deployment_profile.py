@@ -146,9 +146,8 @@ def profile_digest(data: Any) -> str:
 def _load_schema(schema_path: Path) -> dict[str, Any]:
     try:
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
-        Draft202012Validator.check_schema(schema)
-    except (OSError, json.JSONDecodeError, SchemaError, TypeError, ValueError) as exc:
-        raise ProfileInputError(f"cannot load a valid JSON Schema: {exc}") from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ProfileInputError(f"cannot load JSON Schema: {exc}") from exc
     if not isinstance(schema, dict):
         raise ProfileInputError("profile schema root must be a JSON object")
     try:
