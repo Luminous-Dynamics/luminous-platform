@@ -1177,7 +1177,14 @@ jobs:
             rc=0
             if npm --prefix "$project_dir" audit \
               --package-lock-only \
+              --audit=true \
               --audit-level=high \
+              --include=prod \
+              --include=dev \
+              --include=optional \
+              --include=peer \
+              --ignore-scripts=true \
+              --offline=false \
               --registry=https://registry.npmjs.org/ \
               --strict-ssl=true \
               --cache="$RUNNER_TEMP/npm-audit-cache" \
