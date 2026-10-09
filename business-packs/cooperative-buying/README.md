@@ -17,7 +17,7 @@ Provide the first concrete path toward a globally portable, member-oriented whol
 
 ## Schema contract and limits
 
-The schema preserves explicit currency, supplier and seller country, pack and unit, tax treatment, known/unknown charges, fulfillment scope, profile references, offer validity, and evidence provenance. It accepts extensible currency and country-code shapes rather than hard-coding only the first pilot market.
+The schema preserves explicit currency, supplier and seller country, packaging and unit code systems, tax treatment, known/unknown charges, fulfillment scope, profile references, offer validity, and evidence provenance. It accepts extensible currency and country-code shapes rather than hard-coding only the first pilot market. A unit label without its code-system identity is not sufficient for a global price comparison; the semantic validator requires inventory and unit-price scheme bindings to match the order unit unless an explicit reviewed conversion exists.
 
 Structural validity is not proof of:
 - a real supplier, current stock, truthful price, or authorized quotation;
