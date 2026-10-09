@@ -137,10 +137,18 @@ jobs:
           def tracked(patterns):
               args = ["git", "ls-files", "-z", "--", *patterns]
               raw = subprocess.check_output(args, cwd=repo)
-              return sorted(set(x.decode() for x in raw.split(b"\\0") if x))
+              return sorted(set(x.decode() for x in raw.split(bytes([0])) if x))
 
           manifests = tracked(["Cargo.toml", "**/Cargo.toml"])
           lockfiles = set(tracked(["Cargo.lock", "**/Cargo.lock"]))
+          stage = subprocess.check_output(["git", "ls-files", "--stage", "-z"], cwd=repo)
+          submodules = []
+          for record in stage.split(bytes([0])):
+              if not record:
+                  continue
+              metadata, path_bytes = record.split(b"\\t", 1)
+              if metadata.split(b" ", 1)[0] == b"160000":
+                  submodules.append(path_bytes.decode())
           parsed = {}
           parse_errors = {}
 
@@ -208,20 +216,26 @@ jobs:
               "manifest_count": len(manifests),
               "tracked_lockfile_count": len(lockfiles),
               "mapped_manifest_count": sum(e["status"] == "PASS" for e in entries),
-              "failure_count": len(failures),
-              "status": "PASS" if manifests and not failures else "FAIL",
+              "entry_failure_count": len(failures),
+              "submodule_count": len(submodules),
+              "unaudited_submodules": submodules,
+              "failure_count": len(failures) + len(submodules),
+              "status": "PASS" if manifests and not failures and not submodules else "FAIL",
               "limitations": [
                   "Only Cargo.toml and Cargo.lock files tracked by the audited Git checkout are included.",
-                  "Git submodule contents require a separate submodule-aware audit."
+                  "Any Git submodule must be separately initialized and audited before total dependency coverage can pass."
               ],
               "entries": entries
           }
           output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n")
           print(f"Manifest coverage: {report['status']} "
                 f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
-                f"{report['tracked_lockfile_count']} tracked lockfiles)")
+                f"{report['tracked_lockfile_count']} tracked lockfiles; "
+                f"{report['submodule_count']} submodules)")
           for entry in failures:
               print(f"UNCOVERED: {entry}")
+          for submodule in submodules:
+              print(f"SUBMODULE_UNAUDITED: {submodule}")
           if report["status"] != "PASS":
               sys.exit(1)
           PY
