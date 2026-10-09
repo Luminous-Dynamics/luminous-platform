@@ -105,6 +105,10 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         .connect(&database_url)
         .await
         .expect("connect to PostgreSQL CI service");
+    sqlx::raw_sql(include_str!("../deploy/postgres/00-operations-app-role.sql"))
+        .execute(&pool)
+        .await
+        .expect("provision the non-login application role as the CI cluster administrator");
     PostgresOperationsStore::migrate(&pool)
         .await
         .expect("apply versioned SQLx migrations");

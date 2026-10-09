@@ -20,6 +20,8 @@ This folder defines the first portable cross-repository event contract for the p
 - `rust/` — canonical Rust-native envelope/payload validator, trusted connector-binding checks, PostgreSQL transactional receiver, versioned PostgreSQL migrations, and adversarial/integration tests.
 - `requirements.txt` — Python validator pinned for research-only reference-model tests; not a production dependency.
 
+Deployment order matters: a cluster administrator provisions the non-login RLS application role from `rust/deploy/postgres/00-operations-app-role.sql`; the separate schema-migration identity applies the SQLx migration; then a runtime login role is explicitly granted membership in `luminous_ops_app`. Do not run application traffic as a superuser or table owner.
+
 Primary contract qualification (Rust + PostgreSQL 18.6): start an isolated PostgreSQL instance and set `DATABASE_URL` to it, then run:
 
 ```sh
