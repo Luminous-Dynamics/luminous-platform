@@ -115,7 +115,8 @@
           }
         }
       },
-      "description": "References to separately stored, access-controlled evidence manifests. No raw files, URLs, credentials, screen/audio, or diagnostic content."
+      "description": "References to separately stored, access-controlled evidence manifests. No raw files, URLs, credentials, screen/audio, or diagnostic content.",
+      "uniqueItems": true
     },
     "privacyReview": {
       "type": "object",
