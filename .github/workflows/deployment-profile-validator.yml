@@ -6,7 +6,6 @@ on:
       - "schemas/**"
       - "business-packs/cooperative-buying/**"
       - "crates/cooperative-commerce-core/**"
-      - "crates/cooperative-commerce-core/**"
       - "profiles/**"
       - "tools/**"
       - "tests/**"
@@ -17,6 +16,7 @@ on:
     paths:
       - "schemas/**"
       - "business-packs/cooperative-buying/**"
+      - "crates/cooperative-commerce-core/**"
       - "profiles/**"
       - "tools/**"
       - "tests/**"
