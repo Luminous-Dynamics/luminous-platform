@@ -251,3 +251,10 @@ This is a strategic architecture decision, not a claim that the platform is alre
 - [CISA #StopRansomware Guide](https://www.cisa.gov/stopransomware/ransomware-guide): authorized RMM, logging, and network segmentation recommendations.
 - [OWASP API Security Top 10 — Broken Object Level Authorization](https://api-security.owasp.org/editions/2023/en/0xa1-broken-object-level-authorization/): resource-level authorization requirements.
 - [Xenia Peer](https://github.com/Luminous-Dynamics/xenia-peer), [Xenia Wire](https://github.com/Luminous-Dynamics/xenia-wire), [Sovereign Ops](https://github.com/Luminous-Dynamics/sovereign-ops), [Nixward](https://github.com/Luminous-Dynamics/nixward), and [Luminous Platform](https://github.com/Luminous-Dynamics/luminous-platform).
+
+
+## Production implementation language and trust boundary
+
+The production operations runtime is Rust-first: typed work-case and event models, authorization checks, connector workers, state transitions, persistence adapters, contract validation, evidence handling, and privileged operation boundaries belong in Rust. Python reference models under `contracts/` and one-off research tools are non-production aids only; they must not become runtime dependencies or authorities. Keep the production service's correctness and authorization decisions independent of Python availability.
+
+The Holochain share-package validator is implemented in Rust, embeds the reviewed JSON Schema, explicitly enables format assertions, refuses network schema-reference retrieval, and returns deterministic diagnostics without echoing untrusted values. This is local contract validation only; publication authority remains in an authenticated adapter, and remote execution authority remains outside the Holochain payload.
