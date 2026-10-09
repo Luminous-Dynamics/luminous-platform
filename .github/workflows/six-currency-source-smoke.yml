@@ -73,6 +73,9 @@ jobs:
             and (.records | map(.alpha_code) | length == (unique | length))
             and (.records | any(.[]; .alpha_code == "EUR" and .numeric_code == "978"))
             and (.records | any(.[]; .alpha_code == "ALL" and .numeric_code == "008"))
+            # SIX states BGN is historical from 2026-01-01 and EUR is current for Bulgaria.
+            and (.records | all(.[]; .alpha_code != "BGN"))
+            and (.records | any(.[]; .alpha_code == "EUR" and (.entities | index("BULGARIA") != null)))
             and (.records | any(.[]; .minor_units == "N.A."))
             and (.records | all(.[]; (.alpha_code | test("^[A-Z]{3}$"))
               and (.numeric_code | test("^[0-9]{3}$"))
