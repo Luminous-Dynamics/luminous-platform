@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "schemas/**"
+      - "business-packs/cooperative-buying/**"
       - "profiles/**"
       - "tools/**"
       - "tests/**"
@@ -52,6 +53,13 @@ jobs:
       - name: Run validator regression corpus
         run: python -m unittest discover -s tests -p 'test_*.py' -v
 
+      - name: Validate cooperative offer fixtures
+        run: |
+          python tools/validate_cooperative_offer.py business-packs/cooperative-buying/fixtures/example-offer-zar.json > cooperative-offer-zar-validation.json
+          python tools/validate_cooperative_offer.py business-packs/cooperative-buying/fixtures/example-offer-eur.json > cooperative-offer-eur-validation.json
+          cat cooperative-offer-zar-validation.json
+          cat cooperative-offer-eur-validation.json
+
       - name: Check resolved dependency compatibility
         run: python -m pip check
 
@@ -64,7 +72,10 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: deployment-profile-validation-${{ github.sha }}
-          path: profile-validation.json
+          path: |
+            profile-validation.json
+            cooperative-offer-zar-validation.json
+            cooperative-offer-eur-validation.json
           if-no-files-found: error
           retention-days: 30
 
