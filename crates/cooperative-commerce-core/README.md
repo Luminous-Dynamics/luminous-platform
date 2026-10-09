@@ -12,10 +12,11 @@ The arithmetic and comparability rules belong in a reusable Rust library rather 
 - Uses checked i128 arithmetic and a bounded decimal scale. Overflow or unsupported precision returns an error rather than rounding silently.
 - Requires the baseline and actual basket to contain the exact same product identifier, specification digest, unit code, unit-code system, and quantity. It does not infer substitutions or perform unit conversions.
 - Requires explicit, referenced SHA-256-shaped evidence records for each line and cost. The crate checks their structure, not their content or signer.
-- Requires both parties' landed-cost coverage to be declared complete and rejects unresolved material costs.
+- Requires the same declared landed-cost category set for baseline and actual purchases, explicitly accounts for category credits/rebates, and rejects unresolved material costs.
 - Includes baseline costs, actual delivery/other costs, and participation fees in the net result.
 - Refuses mixed currencies. FX conversion needs a separately reviewed rate record with source, timestamp, purpose, and rounding rules; no implicit conversion occurs.
 - Preserves negative net differences rather than clipping them to zero.
+- Binds delivery receipts to the exact product identities, unit systems, and quantities being compared; a partial or mismatched delivery blocks the full-basket comparison.
 - Distinguishes an estimate, an invoice-vs-quote comparison, a historical-invoice comparison, and a calculation without delivery evidence.
 - Returns evidence_authenticated_by_calculator=false unconditionally. It does not validate code-list membership, authenticity, legal compliance, or transaction authority.
 
