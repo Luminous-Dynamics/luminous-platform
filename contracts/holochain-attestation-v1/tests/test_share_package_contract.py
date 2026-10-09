@@ -120,7 +120,7 @@ class HolochainSharePackageContractTests(unittest.TestCase):
             self.schema["properties"]["issuerRoleClaim"]["description"].lower(),
         )
         self.assertIn(
-            "authorization",
+            "permission",
             self.schema["description"].lower(),
         )
 
