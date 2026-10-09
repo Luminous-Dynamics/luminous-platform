@@ -71,6 +71,20 @@ class CooperativePurchaseIntentSchemaTests(unittest.TestCase):
         self.assertNotIn("accepted_offer", FIXTURE)
         self.assertNotIn("authorization", FIXTURE)
 
+    def test_revisions_outside_jcs_safe_integer_range_are_rejected(self):
+        document = copy.deepcopy(FIXTURE)
+        document["metadata"]["revision"] = 9007199254740992
+        errors = self.errors(document)
+        self.assertTrue(errors)
+        self.assertTrue(any("revision" in error.message for error in errors))
+
+    def test_offer_revision_outside_jcs_safe_integer_range_is_rejected(self):
+        document = binding_order_candidate()
+        document["accepted_offer"]["revision"] = 9007199254740992
+        errors = self.errors(document)
+        self.assertTrue(errors)
+        self.assertTrue(any("revision" in error.message for error in errors))
+
     def test_binding_order_requires_product_specification_digest(self):
         document = binding_order_candidate()
         del document["demand"]["product_reference"]["offer_specification_sha256"]
