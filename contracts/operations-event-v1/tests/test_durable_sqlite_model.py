@@ -142,7 +142,7 @@ class DurableSQLiteInboxTests(unittest.TestCase):
 
     def test_outbox_preserves_order_for_each_incident(self):
         self.store.accept(self.make_event(revision="revision-1",status="new"),now=100)
-        self.store.accept(self.make_event(revision="revision-2",status="open",summary="second update"),now=101)
+        self.store.accept(self.make_event(revision="revision-2",status="open",summary="second update"),now=100)
         first=self.store.claim_outbox("worker-a",now=102,lease_seconds=20)
         self.assertEqual(json.loads(first["payload_json"])["revision"],"revision-1")
         # The second update is blocked until the first lease is acknowledged.
