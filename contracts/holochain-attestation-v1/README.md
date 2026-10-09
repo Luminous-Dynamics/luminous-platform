@@ -7,13 +7,13 @@ This package is the deliberately narrow public payload for the first proposed My
 ## Files
 
 - `share-package.schema.json`: JSON Schema Draft 2020-12 for the share package.
-- `validator.py`: reusable schema plus semantic validator for unique manifest references, record-type-scoped target references, and non-self-referential dispute/supersession targets.
+- `rust/`: Rust-native schema and semantic validator, compiled with JSON Schema format assertions enabled and network reference retrieval disabled.
 - `examples/evidence-attestation.synthetic.json`: deterministic synthetic fixture with opaque references.
-- `tests/test_share_package_contract.py`: positive and adversarial schema/semantic tests.
+- `rust/tests/contract.rs`: Rust positive and adversarial tests for schema and semantic invariants.
 
 ## Privacy and trust boundary
 
-The payload intentionally excludes free-form text, ticket titles, customer names, hostnames, external provider IDs, credentials, raw diagnostics, screen/audio, and raw evidence. Use `validator.py` for application-side schema and cross-field checks; bare JSON Schema validation alone cannot enforce uniqueness of `manifestRef` across objects that differ in other fields. The semantic layer normalizes UUIDs before rejecting self-referential disputes/supersessions, and error messages report a failing rule/path without echoing untrusted values. The local PostgreSQL service must resolve opaque references only under authenticated tenant/connection context.
+The payload intentionally excludes free-form text, ticket titles, customer names, hostnames, external provider IDs, credentials, raw diagnostics, screen/audio, and raw evidence. Use the Rust crate under `rust/` for application-side schema and cross-field checks; bare JSON Schema validation alone cannot enforce uniqueness of `manifestRef` across objects that differ in other fields. The semantic layer normalizes UUIDs before rejecting self-referential disputes/supersessions, and diagnostics expose only a stable rule code and JSON Pointer—not rejected values. The local PostgreSQL service must resolve opaque references only under authenticated tenant/connection context.
 
 The `issuerRoleClaim`, `issuedAt`, `assessmentClaim`, `approvedForDht`, and `policyRef` fields are claims or references—not proof that a participant is entitled to publish a record. The publishing adapter must enforce actual authenticated identity, tenant/customer sharing policy, and the approval requirement before invoking Holochain. The integrity zome should validate structural/domain invariants and any deterministic trust dependencies available within the DNA.
 
@@ -37,9 +37,9 @@ Do not attempt a distributed transaction between PostgreSQL and Holochain. Retri
 From the repository root:
 
 ```sh
-python3 -m venv /tmp/holochain-attestation-contract-venv
-/tmp/holochain-attestation-contract-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir -r contracts/operations-event-v1/requirements.txt
-PYTHONDONTWRITEBYTECODE=1 /tmp/holochain-attestation-contract-venv/bin/python scripts/run_unittest_suite.py contracts/holochain-attestation-v1/tests --minimum-tests 20
+cargo +1.96.0 test --manifest-path contracts/holochain-attestation-v1/rust/Cargo.toml --all-targets
 ```
 
-The test suite defines 20 positive/adversarial test functions covering schema shape, conditional record semantics, case-insensitive UUID self-reference, duplicate manifest IDs, malformed input, and error-value redaction. Prefer the shared fail-closed runner command above: it verifies discovery is non-empty, imports load correctly, the minimum count is met, and the executed count matches the discovered count. It does **not** test Holochain zome validation, multi-agent DHT propagation, identity/membership binding, privacy of network metadata, PostgreSQL/outbox recovery, or production readiness. Those require a selected hApp and a compatible pinned conductor/toolchain.
+The Rust contract suite defines 20 positive/adversarial test cases covering schema shape, conditional record semantics, case-insensitive UUID self-reference, duplicate manifest IDs, malformed input, and error-value redaction. CI fails closed if fewer than 20 Rust tests execute. It does **not** test Holochain zome validation, multi-agent DHT propagation, identity/membership binding, privacy of network metadata, PostgreSQL/outbox recovery, or production readiness. Those require a selected hApp and a compatible pinned conductor/toolchain.
+
+Python remains in the separate Operations Event synthetic/reference-model tests only; the Holochain share-package runtime validator and its contract tests are Rust. No Python interpreter or Python package is required to consume this Rust crate.
