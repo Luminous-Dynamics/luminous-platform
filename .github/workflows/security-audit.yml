@@ -640,6 +640,15 @@ jobs:
               echo "secret_raw_report_sha256=missing"
               echo "secret_report_sha256=missing"
               echo "secret_finding_count=unknown"
+              echo "secret_history_scan_status=INCOMPLETE"
+              echo "secret_history_scan_reason=checkout_or_receipt_initialization_failed"
+              echo "secret_history_exit_code=NOT_RUN"
+              echo "secret_history_raw_report_sha256=missing"
+              echo "secret_history_report_sha256=missing"
+              echo "secret_history_inventory_sha256=missing"
+              echo "secret_history_root_commit_count=unknown"
+              echo "secret_history_submodule_commit_count=unknown"
+              echo "secret_history_finding_count=unknown"
               echo "incomplete_reason=checkout_or_receipt_initialization_failed"
             } > "$summary"
           fi
@@ -655,6 +664,32 @@ jobs:
             echo "secret_report_sha256=$safe_digest" >> "$summary"
           else
             echo "receipt_error=duplicate_secret_report_digest_fields" >> "$summary"
+          fi
+          history_safe="security-audit-results/workflows/gitleaks-history-sanitized.json"
+          history_inventory="security-audit-results/workflows/gitleaks-history-inventory.json"
+          if [[ ! -f "$history_safe" ]]; then
+            jq -n --arg repository "$GITHUB_REPOSITORY" --arg subject "${SUBJECT_SHA:-unknown}" '{schema:"luminous.security-audit.gitleaks-history-summary.v1",repository:$repository,subject_sha:$subject,scanner_version:"v8.30.1",status:"INCOMPLETE",reason:"history_scan_step_not_completed",history_tip:"unknown",history_commit_count:null,submodule_tip:"unknown",submodule_commit_count:null,history_inventory_sha256:"missing",config_sha256:"missing",raw_report_sha256:"missing",finding_count:null,findings:[]}' > "$history_safe"
+          fi
+          if [[ ! -f "$history_inventory" ]]; then
+            jq -n --arg subject "${SUBJECT_SHA:-unknown}" '{schema:"luminous.security-audit.gitleaks-history-inventory.v1",subject_sha:$subject,status:"INCOMPLETE",reason:"history_scan_step_not_completed",root:{head:"unknown",commit_count:null,is_shallow:null},submodule:{path:"unknown",head:"unknown",commit_count:null,is_shallow:null}}' > "$history_inventory"
+          fi
+          history_safe_digest="$(sha256sum "$history_safe" | cut -d' ' -f1)"
+          history_inventory_digest="$(sha256sum "$history_inventory" | cut -d' ' -f1)"
+          history_safe_fields="$(grep -c '^secret_history_report_sha256=' "$summary" || true)"
+          history_inventory_fields="$(grep -c '^secret_history_inventory_sha256=' "$summary" || true)"
+          if [[ "$history_safe_fields" -eq 1 ]]; then
+            sed -i "s#^secret_history_report_sha256=.*#secret_history_report_sha256=$history_safe_digest#" "$summary"
+          elif [[ "$history_safe_fields" -eq 0 ]]; then
+            echo "secret_history_report_sha256=$history_safe_digest" >> "$summary"
+          else
+            echo "receipt_error=duplicate_secret_history_report_digest_fields" >> "$summary"
+          fi
+          if [[ "$history_inventory_fields" -eq 1 ]]; then
+            sed -i "s#^secret_history_inventory_sha256=.*#secret_history_inventory_sha256=$history_inventory_digest#" "$summary"
+          elif [[ "$history_inventory_fields" -eq 0 ]]; then
+            echo "secret_history_inventory_sha256=$history_inventory_digest" >> "$summary"
+          else
+            echo "receipt_error=duplicate_secret_history_inventory_digest_fields" >> "$summary"
           fi
           report="$RUNNER_TEMP/zizmor"
           destination="security-audit-results/workflows/zizmor.txt"
@@ -700,7 +735,7 @@ jobs:
         run: |
           set -euo pipefail
           summary="security-audit-results/workflows/summary.txt"
-          for key in engine_identity_status zizmor_status actionlint_status secret_scan_status; do
+          for key in engine_identity_status zizmor_status actionlint_status secret_scan_status secret_history_scan_status; do
             value="$(awk -F= -v key="$key" '$1 == key { n++; value=substr($0, index($0,"=")+1) } END { if (n == 1) print value; else exit 2 }' "$summary")"
             if [[ "$value" != "PASS" ]]; then echo "FAIL: $key=$value" >&2; exit 1; fi
           done
