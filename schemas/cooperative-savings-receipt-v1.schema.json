@@ -220,7 +220,8 @@
             "Estimate",
             "InvoiceVsAlternativeQuote",
             "HistoricalInvoiceComparison",
-            "ProvisionalWithoutDeliveryEvidence"
+            "ProvisionalWithoutDeliveryEvidence",
+            "MixedBaselineEvidence"
           ]
         },
         "evidence_authenticated_by_calculator": {
