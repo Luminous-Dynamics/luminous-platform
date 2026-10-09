@@ -156,6 +156,10 @@ def purchase_scope_payload(document: dict[str, Any]) -> dict[str, Any]:
             "value": product["value"],
             "offer_specification_sha256": product.get("offer_specification_sha256"),
         },
+        "sharing_consent": {
+            "consent_id": document["sharing"]["consent"]["consent_id"],
+            "scope_sha256": document["sharing"]["consent"]["scope_sha256"].lower(),
+        },
         "requested_quantity": demand["requested_quantity"],
         "requested_unit_code": demand["requested_unit_code"],
         "requested_unit_code_system": demand["requested_unit_code_system"],
