@@ -199,7 +199,7 @@ fn name_continue(byte: u8) -> bool {
 fn skip_ws(input: &str, offset: &mut usize) {
     // XML 1.0 S is exactly space, tab, carriage return, or line feed.
     while *offset < input.len()
-        && matches!(input.as_bytes()[*offset], b' ' | b'\\t' | b'\\r' | b'\\n')
+        && matches!(input.as_bytes()[*offset], b' ' | b'\t' | b'\r' | b'\n')
     {
         *offset += 1;
     }
@@ -538,7 +538,7 @@ mod tests {
 
     #[test]
     fn rejects_non_xml_whitespace_and_malformed_comments() {
-        let vertical_tab = XML.replace("<ISO_4217 Pblshd=", "<ISO_4217\\u{000B}Pblshd=");
+        let vertical_tab = XML.replace("<ISO_4217 Pblshd=", "<ISO_4217\u{000B}Pblshd=");
         assert!(parse_six_list_one_xml(&vertical_tab).is_err());
 
         let malformed_comment = XML.replace("<CcyTbl>", "<CcyTbl><!-- invalid -- comment -->");
