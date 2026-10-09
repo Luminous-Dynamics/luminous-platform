@@ -1,6 +1,8 @@
 # Luminous Platform
 
-The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, fail-open, consciousness-aware runtime for NixOS hosts.
+The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, boot-safe runtime with bounded authority and evidence-producing operations for NixOS hosts.
+
+See [Global Deployment and Business Model](docs/GLOBAL_DEPLOYMENT_AND_BUSINESS_MODEL.md) for the proposed product boundaries, deployment profiles, business model, and qualification roadmap. That document is a roadmap, not a claim of production readiness or universal compliance.
 
 ## Architecture
 
@@ -49,6 +51,8 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 Every platform component follows the same core safety rule:
 
 > **Platform components may observe host state; they must never be required for host boot.**
+
+Boot availability and authorization are separate concerns: optional platform services should not prevent local boot or recovery, but an unknown, stale, or unverifiable authority must never grant privileged actuation.
 
 - `sovereign-boot` — disabled by default; QEMU-gated before any host enable
 - `nixward` — read-only diagnosis by default; actuation requires explicit operator receipt
