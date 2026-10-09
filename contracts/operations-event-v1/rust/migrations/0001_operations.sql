@@ -211,13 +211,41 @@ $rls$;
 
 GRANT USAGE ON SCHEMA ops TO luminous_ops_app;
 GRANT EXECUTE ON FUNCTION ops.current_tenant_id() TO luminous_ops_app;
+
+-- Read access is tenant-filtered by RLS. Mutation privileges are column-scoped
+-- so runtime code cannot rewrite identity/digest/payload fields after insertion.
 GRANT SELECT ON ops.tenants, ops.connector_connections, ops.resource_mappings,
   ops.incident_heads, ops.inbox_events, ops.business_effects, ops.incident_activity,
   ops.outbox_events, ops.quarantined_events TO luminous_ops_app;
-GRANT INSERT ON ops.inbox_events, ops.business_effects, ops.incident_heads,
-  ops.incident_activity, ops.outbox_events, ops.quarantined_events TO luminous_ops_app;
-GRANT UPDATE ON ops.incident_heads, ops.inbox_events, ops.outbox_events
-  TO luminous_ops_app;
+
+GRANT INSERT (tenant_id, connection_id, source_uri, event_id, content_digest, outcome)
+  ON ops.inbox_events TO luminous_ops_app;
+GRANT UPDATE (outcome) ON ops.inbox_events TO luminous_ops_app;
+
+GRANT INSERT (tenant_id, connection_id, idempotency_key, semantic_digest, source_uri, event_id)
+  ON ops.business_effects TO luminous_ops_app;
+
+-- An incident head must first be inserted as an empty placeholder. The store
+-- then updates mutable state only after locking the row and proving mappings.
+GRANT INSERT (tenant_id, incident_id) ON ops.incident_heads TO luminous_ops_app;
+GRANT UPDATE (
+  source_connection_id, source_company_id, source_resource_type, source_resource_id,
+  current_revision, state_digest, state_payload, outbox_sequence, updated_at
+) ON ops.incident_heads TO luminous_ops_app;
+
+GRANT INSERT (
+  tenant_id, activity_id, incident_id, connection_id, source_uri, event_id, revision, state_digest
+) ON ops.incident_activity TO luminous_ops_app;
+
+GRANT INSERT (
+  tenant_id, outbox_id, incident_id, connection_id, sequence_no, source_uri, source_event_id, payload
+) ON ops.outbox_events TO luminous_ops_app;
+GRANT UPDATE (status, attempts, lease_owner, lease_until, available_at, delivered_at)
+  ON ops.outbox_events TO luminous_ops_app;
+
+GRANT INSERT (
+  tenant_id, connection_id, source_uri, event_id, event_digest, reason_code
+) ON ops.quarantined_events TO luminous_ops_app;
 GRANT USAGE, SELECT ON SEQUENCE ops.quarantined_events_quarantine_id_seq TO luminous_ops_app;
 
 COMMENT ON SCHEMA ops IS 'Sovereign Operations PostgreSQL state; tenant-scoped and row-level security protected.';

@@ -114,6 +114,27 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         .expect("apply versioned SQLx migrations");
     reset_and_seed(&pool).await;
 
+    // Verify the runtime role can mutate only fields the store needs to mutate.
+    // This prevents later refactors from quietly widening the persistence role.
+    let privileges = sqlx::query(
+        "SELECT \
+           has_column_privilege('luminous_ops_app', 'ops.incident_heads', 'tenant_id', 'INSERT') AS head_insert_key, \
+           has_column_privilege('luminous_ops_app', 'ops.incident_heads', 'state_payload', 'INSERT') AS head_insert_state, \
+           has_column_privilege('luminous_ops_app', 'ops.inbox_events', 'outcome', 'UPDATE') AS inbox_update_outcome, \
+           has_column_privilege('luminous_ops_app', 'ops.inbox_events', 'content_digest', 'UPDATE') AS inbox_update_digest, \
+           has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'lease_owner', 'UPDATE') AS outbox_update_lease, \
+           has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'payload', 'UPDATE') AS outbox_update_payload"
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("query column-level role privileges");
+    assert!(privileges.try_get::<bool, _>("head_insert_key").unwrap());
+    assert!(!privileges.try_get::<bool, _>("head_insert_state").unwrap());
+    assert!(privileges.try_get::<bool, _>("inbox_update_outcome").unwrap());
+    assert!(!privileges.try_get::<bool, _>("inbox_update_digest").unwrap());
+    assert!(privileges.try_get::<bool, _>("outbox_update_lease").unwrap());
+    assert!(!privileges.try_get::<bool, _>("outbox_update_payload").unwrap());
+
     // The database must reject state claiming an external resource that is not
     // explicitly mapped to the canonical local resource, even if application
     // code accidentally bypasses the Rust mapping check.
