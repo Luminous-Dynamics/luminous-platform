@@ -14,9 +14,9 @@ A Scene Pack describes a Luminous visual world and its surface-specific variants
 - JSON Schema Draft 2020-12 validation with unknown fields rejected.
 - Deterministic simulation identity: `sceneId`, `sceneVersion`, engine ID/version, seed, and fixed-step frequency are explicit.
 - Surface behavior is distinct: boot, desktop, idle, locked background, static fallback.
-- Every conforming pack declares a static fallback and reduced-motion behavior.
+- Every conforming pack declares a static fallback and reduced-motion behavior. A `gradient-only` fallback is a deterministic linear gradient from `palette.canvas` at the upper-left to `palette.substrate` at the lower-right; it needs no external asset or animation.
 - The manifest carries an explicit resource ceiling and pause expectations.
-- Optional inputs are limited to local time, pointer position, and audio level. The pack cannot turn them on by default; user consent is required at runtime.
+- Optional inputs are limited to local time, pointer position, and audio level. The pack cannot turn them on by default; user consent is required at runtime. `audio-level` means locally available system playback/output level only—not microphone capture.
 - Asset paths are relative package paths and each file is pinned by SHA-256 and an SPDX license identifier.
 - No field allows arbitrary shell commands, shared-library paths, dynamic executable code, credentials, or system mutation.
 - The locked-background variant is purely visual. It does not authenticate, lock, unlock, or receive credentials.
