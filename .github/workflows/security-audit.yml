@@ -244,7 +244,7 @@ jobs:
             echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
           else
             sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
-            sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
+            sed -i '/^incomplete_reason=setup_or_audit_not_completed$/d' "$result_root/summary.txt"
           fi
           {
             echo "rustc=$(rustc +1.96.0 --version)"
