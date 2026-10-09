@@ -8,7 +8,7 @@ For the partner/operator on-ramp, start with [Start a Luminous Business](docs/ST
 
 See [One Luminous Platform, Many Business Packs](docs/PLATFORM_AND_REPOSITORY_STRATEGY.md) for the product/repository strategy. The goal is one coherent platform with independently qualified vertical packs—not a separate platform for every industry.
 
-For the proposed globally portable, member-oriented buying network and free business capability floor, see [Global Cooperative Commerce](docs/GLOBAL_COOPERATIVE_COMMERCE.md). This is a design proposal, not a live purchasing service or universal-compliance claim.
+For the proposed globally portable, member-oriented buying network and free business capability floor, see [Global Cooperative Commerce](docs/GLOBAL_COOPERATIVE_COMMERCE.md). The first structural prototype is the [Cooperative Offer schema](schemas/cooperative-offer-v1.schema.json), with synthetic fixtures and regression tests in the [Cooperative Buying pack](business-packs/cooperative-buying/README.md). These are proposed structures, not a live purchasing service or universal-compliance claim.
 
 For a machine-readable draft, see the [Deployment Profile Contract](docs/DEPLOYMENT_PROFILE_CONTRACT.md), [JSON Schema](schemas/deployment-profile-v1.schema.json), and [local NixOS pilot example](profiles/examples/local-nixos-pilot.yaml). A first declaration-only validator is available at `tools/validate_deployment_profile.py`; it has a regression corpus in `tests/test_deployment_profile_validator.py` and a pinned dependency file.
 
