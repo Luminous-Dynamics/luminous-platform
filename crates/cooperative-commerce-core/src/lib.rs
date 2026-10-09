@@ -260,9 +260,12 @@ pub struct CostCoverage {
     /// Operator-declared statement that all material landed-cost categories were considered.
     /// This is not independently proven by this crate.
     pub declared_complete: bool,
-    /// Categories considered on this side, including categories explicitly confirmed as zero.
+    /// Every material non-merchandise cost category considered on this side.
     /// Baseline and actual category sets must match for comparability.
     pub considered_categories: Vec<String>,
+    /// Categories with no cost line, explicitly checked and confirmed as zero.
+    /// Coverage evidence is the source record supporting these assertions.
+    pub zero_confirmed_categories: Vec<String>,
     pub unresolved_costs: Vec<String>,
     pub evidence: EvidenceRef,
 }
@@ -655,6 +658,15 @@ fn validate_coverage(coverage: &CostCoverage, baseline: bool) -> Result<(), Comm
             return Err(CommerceError::IncompleteCostCoverage);
         }
     }
+    let mut seen_zero_categories = BTreeSet::new();
+    for category in &coverage.zero_confirmed_categories {
+        if category.trim().is_empty()
+            || !seen_zero_categories.insert(category)
+            || !seen_categories.contains(category)
+        {
+            return Err(CommerceError::IncompleteCostCoverage);
+        }
+    }
     let valid_kind = if baseline {
         matches!(coverage.evidence.kind, EvidenceKind::AlternativeInvoice | EvidenceKind::AlternativeQuote | EvidenceKind::PublicListPriceEstimate)
     } else {
@@ -708,12 +720,25 @@ fn validate_delivery_lines(
 fn validate_cost_category_coverage(input: &SavingsInput) -> Result<(), CommerceError> {
     let baseline: BTreeSet<&str> = input.baseline_coverage.considered_categories.iter().map(String::as_str).collect();
     let actual: BTreeSet<&str> = input.actual_coverage.considered_categories.iter().map(String::as_str).collect();
-    if baseline != actual {
+    let baseline_zero: BTreeSet<&str> = input.baseline_coverage.zero_confirmed_categories.iter().map(String::as_str).collect();
+    let actual_zero: BTreeSet<&str> = input.actual_coverage.zero_confirmed_categories.iter().map(String::as_str).collect();
+    let baseline_lines: BTreeSet<&str> = input.baseline_costs.iter().map(|cost| cost.category.as_str()).collect();
+    let actual_lines: BTreeSet<&str> = input.actual_costs.iter().map(|cost| cost.category.as_str()).collect();
+
+    if baseline.is_empty() || baseline != actual {
         return Err(CommerceError::IncompleteCostCoverage);
     }
-    if input.baseline_costs.iter().any(|cost| !baseline.contains(cost.category.as_str()))
-        || input.actual_costs.iter().any(|cost| !actual.contains(cost.category.as_str()))
+    if baseline_lines.iter().any(|category| !baseline.contains(category))
+        || actual_lines.iter().any(|category| !actual.contains(category))
+        || baseline_zero.iter().any(|category| baseline_lines.contains(category))
+        || actual_zero.iter().any(|category| actual_lines.contains(category))
     {
+        return Err(CommerceError::IncompleteCostCoverage);
+    }
+
+    let baseline_accounted: BTreeSet<&str> = baseline_lines.union(&baseline_zero).copied().collect();
+    let actual_accounted: BTreeSet<&str> = actual_lines.union(&actual_zero).copied().collect();
+    if baseline_accounted != baseline || actual_accounted != actual {
         return Err(CommerceError::IncompleteCostCoverage);
     }
     Ok(())
@@ -876,6 +901,7 @@ mod tests {
             baseline_coverage: CostCoverage {
                 declared_complete: true,
                 considered_categories: vec!["freight".into()],
+                zero_confirmed_categories: vec![],
                 unresolved_costs: vec![],
                 evidence: evidence("baseline-coverage", EvidenceKind::AlternativeQuote),
             },
@@ -1004,6 +1030,7 @@ mod tests {
     fn documented_credit_note_reduces_actual_costs_without_hidden_rebate_math() {
         let mut candidate = input();
         candidate.baseline_coverage.considered_categories.push("supplier-credit".into());
+        candidate.baseline_coverage.zero_confirmed_categories.push("supplier-credit".into());
         candidate.actual_coverage.considered_categories.push("supplier-credit".into());
         candidate.actual_costs.push(cost("supplier-credit", "30.00", EvidenceKind::CreditNote));
         let report = calculate_savings(&candidate).unwrap();
@@ -1022,6 +1049,21 @@ mod tests {
     fn mismatched_cost_coverage_categories_block_comparison() {
         let mut candidate = input();
         candidate.actual_coverage.considered_categories = vec!["tax".into(), "freight".into()];
+        assert_eq!(calculate_savings(&candidate), Err(CommerceError::IncompleteCostCoverage));
+    }
+
+    #[test]
+    fn considered_category_requires_a_cost_line_or_explicit_zero_confirmation_on_both_sides() {
+        let mut candidate = input();
+        candidate.baseline_coverage.considered_categories.push("duty".into());
+        candidate.actual_coverage.considered_categories.push("duty".into());
+        assert_eq!(calculate_savings(&candidate), Err(CommerceError::IncompleteCostCoverage));
+    }
+
+    #[test]
+    fn category_cannot_be_both_charged_and_confirmed_zero() {
+        let mut candidate = input();
+        candidate.actual_coverage.zero_confirmed_categories.push("freight".into());
         assert_eq!(calculate_savings(&candidate), Err(CommerceError::IncompleteCostCoverage));
     }
 
