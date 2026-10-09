@@ -443,6 +443,16 @@
                     "contains": {
                       "const": "source_authority_checked"
                     }
+                  },
+                  {
+                    "contains": {
+                      "const": "sampled_against_source"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "independent_review"
+                    }
                   }
                 ]
               }
