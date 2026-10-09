@@ -39,6 +39,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.subject_sha }}
+          fetch-depth: 0 # Required: a shallow history can silently omit previously committed secrets.
           persist-credentials: false
       - name: Assert exact checkout identity
         id: subject
@@ -71,9 +72,21 @@ jobs:
             echo "secret_raw_report_sha256=missing"
             echo "secret_report_sha256=missing"
             echo "secret_finding_count=unknown"
+            echo "secret_history_scan_status=INCOMPLETE"
+            echo "secret_history_scan_reason=not_started"
+            echo "secret_history_exit_code=NOT_RUN"
+            echo "secret_history_raw_report_sha256=missing"
+            echo "secret_history_report_sha256=missing"
+            echo "secret_history_inventory_sha256=missing"
+            echo "secret_history_root_commit_count=unknown"
+            echo "secret_history_submodule_commit_count=unknown"
+            echo "secret_history_finding_count=unknown"
           } > security-audit-results/workflows/summary.txt
           cat > security-audit-results/workflows/gitleaks-sanitized.json <<'JSON'
           {"schema":"luminous.security-audit.gitleaks-summary.v1","repository":"unknown","subject_sha":"unknown","scanner_version":"v8.30.1","config_sha256":"missing","status":"INCOMPLETE","reason":"not_started","finding_count":null,"findings":[]}
+          JSON
+          cat > security-audit-results/workflows/gitleaks-history-sanitized.json <<'JSON'
+          {"schema":"luminous.security-audit.gitleaks-history-summary.v1","repository":"unknown","subject_sha":"unknown","scanner_version":"v8.30.1","status":"INCOMPLETE","reason":"not_started","history_tip":"unknown","history_commit_count":null,"submodule_tip":"not_required","submodule_commit_count":0,"history_inventory_sha256":"missing","config_sha256":"missing","raw_report_sha256":"missing","finding_count":null,"findings":[]}
           JSON
           echo "engine_identity_status=INCOMPLETE" >> security-audit-results/workflows/summary.txt
           if [[ ! "$AUDIT_ENGINE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
