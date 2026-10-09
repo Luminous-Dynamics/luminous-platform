@@ -562,7 +562,7 @@ jobs:
                 rc=$?
                 rustsec_failed=1
               fi
-              if python3 - "$report" <<'PY'
+              if report_stats="$(python3 - "$report" <<'PY'
           import copy
           import json
           import sys
@@ -644,16 +644,26 @@ jobs:
           if not valid_report(payload):
               print("cargo-audit report does not match the expected JSON schema/invariants", file=sys.stderr)
               raise SystemExit(1)
-          print("cargo-audit JSON schema and consistency checks passed")
+          print("{}\\t{}".format(payload["vulnerabilities"]["count"], sum(len(items) for items in payload["warnings"].values())))
           PY
-              then
+              )"; then
                 report_parse_status="PASS"
+              IFS=
+              else
+                report_parse_status="FAIL"
+                rustsec_failed=1
+              fi\t' read -r report_vulns report_warnings <<< "$report_stats"
               else
                 report_parse_status="FAIL"
                 rustsec_failed=1
               fi
-              printf 'report_parse_status=%s lockfile=%s\n' "$report_parse_status" "$lockfile" >> "$result_root/summary.txt"
-              if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" ]]; then outcome="PASS"; else outcome="FAIL"; fi
+              printf 'report_parse_status=%s lockfile=%s vulnerability_count=%s warning_count=%s\n' "$report_parse_status" "$lockfile" "$report_vulns" "$report_warnings" >> "$result_root/summary.txt"
+              if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" && "$report_vulns" -eq 0 ]]; then
+                if [[ "$report_warnings" -eq 0 ]]; then outcome="PASS"; else outcome="PASS_WITH_WARNINGS"; fi
+              else
+                outcome="FAIL"
+                rustsec_failed=1
+              fi
               if [[ -f "$report" ]]; then
                 report_sha256="$(sha256sum "$report" | cut -d' ' -f1)"
               else
@@ -1166,7 +1176,7 @@ jobs:
               rc=$?
               npm_failed=1
             fi
-            if python3 - "$report" <<'PY'
+            if report_stats="$(python3 - "$report" <<'PY'
           import copy
           import json
           import sys
@@ -1235,16 +1245,26 @@ jobs:
           if not valid_report(payload):
               print("npm audit report does not match the expected JSON schema/invariants", file=sys.stderr)
               raise SystemExit(1)
-          print("npm audit JSON schema and consistency checks passed")
+          print("{}\\t{}\\t{}\\t{}\\t{}\\t{}".format(payload["metadata"]["vulnerabilities"]["total"], *(payload["metadata"]["vulnerabilities"][key] for key in SEVERITIES)))
           PY
-            then
+            )"; then
               report_parse_status="PASS"
+            IFS=
+            else
+              report_parse_status="FAIL"
+              npm_failed=1
+            fi\t' read -r npm_findings_total npm_info npm_low npm_moderate npm_high npm_critical <<< "$report_stats"
             else
               report_parse_status="FAIL"
               npm_failed=1
             fi
-            printf 'report_parse_status=%s lockfile=%s\n' "$report_parse_status" "$lockfile" >> "$result_root/summary.txt"
-            if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" ]]; then outcome="PASS"; else outcome="FAIL"; fi
+            printf 'report_parse_status=%s lockfile=%s findings_total=%s info=%s low=%s moderate=%s high=%s critical=%s\n' "$report_parse_status" "$lockfile" "$npm_findings_total" "$npm_info" "$npm_low" "$npm_moderate" "$npm_high" "$npm_critical" >> "$result_root/summary.txt"
+            if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" && "$npm_high" -eq 0 && "$npm_critical" -eq 0 ]]; then
+              if [[ "$npm_findings_total" -eq 0 ]]; then outcome="PASS"; else outcome="PASS_BELOW_BLOCKING_THRESHOLD_WITH_FINDINGS"; fi
+            else
+              outcome="FAIL"
+              npm_failed=1
+            fi
             if [[ -f "$report" ]]; then report_sha="$(sha256sum "$report" | cut -d' ' -f1); else report_sha="missing"; npm_failed=1; fi
             if [[ -f "$stderr" ]]; then stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1); else stderr_sha="missing"; npm_failed=1; fi
             printf 'lockfile=%s lockfile_sha256=%s manifest=%s manifest_sha256=%s exit_code=%s outcome=%s report_sha256=%s stderr_sha256=%s\n' \
