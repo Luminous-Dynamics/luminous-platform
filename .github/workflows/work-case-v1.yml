@@ -49,13 +49,16 @@ jobs:
         run: python3 -m venv "$RUNNER_TEMP/work-case-v1-venv"
 
       - name: Install pinned JSON Schema validator
-        run: "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
+        run: >-
+          "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
 
       - name: Self-test fail-closed test runner
-        run: "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m unittest discover -s scripts/tests -p 'test_run_unittest_suite.py' -v
+        run: >-
+          "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m unittest discover -s scripts/tests -p 'test_run_unittest_suite.py' -v
 
       - name: Validate work-case model and SQLite persistence reference
-        run: "$RUNNER_TEMP/work-case-v1-venv/bin/python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 28
+        run: >-
+          "$RUNNER_TEMP/work-case-v1-venv/bin/python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 28
 
       - name: Publish bounded qualification summary
         if: success()
