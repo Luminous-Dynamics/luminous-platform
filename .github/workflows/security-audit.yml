@@ -59,13 +59,91 @@ jobs:
             echo "zizmor_status=INCOMPLETE"
             echo "actionlint_status=INCOMPLETE"
           } > security-audit-results/workflows/summary.txt
+          echo "engine_identity_status=INCOMPLETE" >> security-audit-results/workflows/summary.txt
           if [[ ! "$AUDIT_ENGINE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             sed -i 's/^zizmor_status=.*/zizmor_status=FAIL/' security-audit-results/workflows/summary.txt
             echo "incomplete_reason=invalid_audit_engine_sha" >> security-audit-results/workflows/summary.txt
             exit 2
           fi
+
+      - name: Verify declared audit engine identity
+        id: engine_identity
+        shell: bash
+        env:
+          AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
+          EVENT_SHA: ${{ github.sha }}
+          AUDITED_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          engine = os.environ["AUDIT_ENGINE_SHA"]
+          subject = os.environ["SUBJECT_SHA"]
+          event_sha = os.environ["EVENT_SHA"]
+          repository = os.environ["AUDITED_REPOSITORY"]
+          summary = Path("security-audit-results/workflows/summary.txt")
+
+          def fail(reason):
+              with summary.open("a", encoding="utf-8") as receipt:
+                  receipt.write("engine_identity_status=FAIL\\n")
+                  receipt.write(f"engine_identity_reason={reason}\\n")
+              print(f"FAIL: {reason}", file=sys.stderr)
+              raise SystemExit(1)
+
+          if not re.fullmatch(r"[0-9a-f]{40}", engine):
+              fail("invalid_engine_sha")
+          if not re.fullmatch(r"[0-9a-f]{40}", subject):
+              fail("invalid_subject_sha")
+
+          if repository == "Luminous-Dynamics/luminous-platform":
+              # The platform audits its local reusable workflow from the
+              # event commit (including the PR merge ref), while it scans the
+              # PR head separately as subject_sha.
+              caller = Path(".github/workflows/security-audit-self.yml")
+              if not caller.is_file():
+                  fail("platform_self_workflow_missing")
+              text = caller.read_text(encoding="utf-8")
+              local_uses = re.findall(
+                  r"^\\s*uses:\\s*\\./\\.github/workflows/security-audit\\.yml\\s*$",
+                  text, re.MULTILINE
+              )
+              if len(local_uses) != 1:
+                  fail("platform_local_engine_reference_missing_or_ambiguous")
+              if engine != event_sha:
+                  fail("platform_local_engine_sha_does_not_match_event_sha")
+          else:
+              caller = Path(".github/workflows/security-audit.yml")
+              if not caller.is_file():
+                  fail("caller_security_workflow_missing")
+              text = caller.read_text(encoding="utf-8")
+              refs = re.findall(
+                  r"^\\s*uses:\\s*Luminous-Dynamics/luminous-platform/\\.github/workflows/security-audit\\.yml@([0-9a-f]{40})\\s*$",
+                  text, re.MULTILINE
+              )
+              declared = re.findall(
+                  r"^\\s*audit_engine_sha:\\s*([0-9a-f]{40})\\s*$",
+                  text, re.MULTILINE
+              )
+              if len(refs) != 1:
+                  fail("immutable_shared_workflow_reference_missing_or_ambiguous")
+              if len(declared) != 1:
+                  fail("declared_engine_sha_missing_or_ambiguous")
+              if refs[0] != engine or declared[0] != engine:
+                  fail("caller_reference_and_engine_sha_mismatch")
+
+          with summary.open("a", encoding="utf-8") as receipt:
+              receipt.write("engine_identity_status=PASS\\n")
+              receipt.write(f"engine_identity_checked_sha={engine}\\n")
+          print("PASS: declared audit engine identity matches the caller reference")
+          PY
       - name: Audit workflow definitions
         id: zizmor
+        if: always() && steps.checkout.outcome == 'success' && steps.subject.outcome == 'success'
         uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
         with:
           inputs: .github/
@@ -212,12 +290,86 @@ jobs:
             echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "rustsec_status=INCOMPLETE"
             echo "incomplete_reason=setup_or_audit_not_completed"
+            echo "engine_identity_status=INCOMPLETE"
           } > security-audit-results/summary.txt
           if [[ ! "$AUDIT_ENGINE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' security-audit-results/summary.txt
             echo "incomplete_reason=invalid_audit_engine_sha" >> security-audit-results/summary.txt
             exit 2
           fi
+
+      - name: Verify declared audit engine identity
+        id: engine_identity
+        shell: bash
+        env:
+          AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
+          EVENT_SHA: ${{ github.sha }}
+          AUDITED_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          engine = os.environ["AUDIT_ENGINE_SHA"]
+          subject = os.environ["SUBJECT_SHA"]
+          event_sha = os.environ["EVENT_SHA"]
+          repository = os.environ["AUDITED_REPOSITORY"]
+          summary = Path("security-audit-results/summary.txt")
+
+          def fail(reason):
+              with summary.open("a", encoding="utf-8") as receipt:
+                  receipt.write("engine_identity_status=FAIL\\n")
+                  receipt.write(f"engine_identity_reason={reason}\\n")
+              print(f"FAIL: {reason}", file=sys.stderr)
+              raise SystemExit(1)
+
+          if not re.fullmatch(r"[0-9a-f]{40}", engine):
+              fail("invalid_engine_sha")
+          if not re.fullmatch(r"[0-9a-f]{40}", subject):
+              fail("invalid_subject_sha")
+
+          if repository == "Luminous-Dynamics/luminous-platform":
+              caller = Path(".github/workflows/security-audit-self.yml")
+              if not caller.is_file():
+                  fail("platform_self_workflow_missing")
+              text = caller.read_text(encoding="utf-8")
+              local_uses = re.findall(
+                  r"^\\s*uses:\\s*\\./\\.github/workflows/security-audit\\.yml\\s*$",
+                  text, re.MULTILINE
+              )
+              if len(local_uses) != 1:
+                  fail("platform_local_engine_reference_missing_or_ambiguous")
+              if engine != event_sha:
+                  fail("platform_local_engine_sha_does_not_match_event_sha")
+          else:
+              caller = Path(".github/workflows/security-audit.yml")
+              if not caller.is_file():
+                  fail("caller_security_workflow_missing")
+              text = caller.read_text(encoding="utf-8")
+              refs = re.findall(
+                  r"^\\s*uses:\\s*Luminous-Dynamics/luminous-platform/\\.github/workflows/security-audit\\.yml@([0-9a-f]{40})\\s*$",
+                  text, re.MULTILINE
+              )
+              declared = re.findall(
+                  r"^\\s*audit_engine_sha:\\s*([0-9a-f]{40})\\s*$",
+                  text, re.MULTILINE
+              )
+              if len(refs) != 1:
+                  fail("immutable_shared_workflow_reference_missing_or_ambiguous")
+              if len(declared) != 1:
+                  fail("declared_engine_sha_missing_or_ambiguous")
+              if refs[0] != engine or declared[0] != engine:
+                  fail("caller_reference_and_engine_sha_mismatch")
+
+          with summary.open("a", encoding="utf-8") as receipt:
+              receipt.write("engine_identity_status=PASS\\n")
+              receipt.write(f"engine_identity_checked_sha={engine}\\n")
+          print("PASS: declared audit engine identity matches the caller reference")
+          PY
       - name: Initialize allow-listed direct submodules
         shell: bash
         env:
