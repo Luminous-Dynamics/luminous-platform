@@ -16,7 +16,7 @@ The platform self-check runs the workflow audit on pushes to `main`, pull reques
 ## What a result means
 
 - **PASS** means the configured scanner completed for the covered inputs and returned exit status zero.
-- **FAIL** means a scanner returned nonzero, a tracked Cargo manifest has no mapped tracked workspace lockfile, the checkout has an unaudited Git submodule, the workflow could not establish its subject, or no tracked Rust lockfile was available when Rust auditing was requested.
+- **FAIL** means a scanner returned nonzero, a tracked Cargo manifest has no mapped tracked workspace lockfile, a submodule is missing/unverified/not allow-listed or a nested submodule remains unaudited, the workflow could not establish its subject, or no tracked Rust lockfile was available when Rust auditing was requested.
 - **INCOMPLETE** applies at the program level when the repository contains relevant assets outside the scanner's declared scope, when results are missing, or when an independent verifier has not validated the receipt.
 
 A workflow being queued, starting, or finishing successfully is not by itself a security pass. A pass from this initial workflow only covers its declared checks. It does not prove absence of unknown vulnerabilities, correctness of application logic, security of the GitHub organization settings, or resilience against a determined attacker.
@@ -39,7 +39,7 @@ The platform's host-availability contract and its security decision contract mus
 - Checkout credentials are not persisted. No audit step receives deployment, publishing, or signing secrets.
 - The `zizmor` job produces findings/annotations for review. Its finding state is not converted into a green security certification by this workflow.
 - Receipts carry `declared_audit_engine_sha` separately from `caller_workflow_sha`. The declared engine SHA is caller-supplied metadata, not self-authenticating proof; an external verifier must compare it with the immutable `uses: Luminous-Dynamics/luminous-platform/.github/workflows/security-audit.yml@<sha>` reference in the exact audited caller commit.
-- The RustSec job scans committed lockfiles against one cloned and recorded RustSec advisory-database commit per run, and maps tracked `Cargo.toml` files to the nearest workspace lockfile. This is a conservative static inventory rather than Cargo's own complete package-resolution model; it does not yet audit non-Rust ecosystems. Any Git submodule is explicitly reported as unaudited and forces the coverage gate to fail.
+- The RustSec job scans committed lockfiles against one cloned and recorded RustSec advisory-database commit per run, and maps tracked `Cargo.toml` files to the nearest workspace lockfile. Direct submodules are initialized only when their HTTPS URL is allow-listed to the same GitHub owner; their checked-out `HEAD` must match the exact parent gitlink SHA, and their tracked lockfiles/manifests are included. Unknown URLs, missing/mismatched submodule checkouts, untracked manifest-lock mappings, and nested submodules force the coverage gate to fail. This remains a conservative static inventory rather than Cargo's complete resolved package model and does not yet audit non-Rust ecosystems.
 
 **Important limitation:** a repository-defined workflow is not, by itself, an independent trust anchor. A pull request can alter local workflow definitions. Before treating its result as a merge-authorizing control, configure a ruleset/required workflow that cannot be satisfied by a PR replacing or skipping the intended auditor. Verify the workflow identity, immutable reusable-workflow revision, subject SHA, run attempt, and artifact digest from outside the audited source repository.
 
@@ -84,7 +84,7 @@ The first rollout is complete only when all of the following are evidenced:
 - The audited commit SHA equals the requested subject SHA.
 - The workflow-analysis job ran against the committed `.github/` tree.
 - Every tracked `Cargo.lock` discovered by the scanner has one JSON result and a recorded exit code, all evaluated against one recorded RustSec advisory-database commit.
-- Every tracked `Cargo.toml` maps to its expected tracked workspace lockfile, and no Git submodule remains outside the scanned tree.
+- Every tracked `Cargo.toml` in the root repository and each verified direct submodule maps to its expected tracked workspace lockfile; no nested or unverified submodule remains outside the scanned tree.
 - The workflow and RustSec jobs preserve distinct evidence artifacts; a missing workflow-analysis report is recorded as incomplete.
 - Any nonzero RustSec exit remains a failure; all lockfiles are still attempted so one finding does not hide the remaining inventory.
 - Artifact upload succeeds when evidence files exist.
