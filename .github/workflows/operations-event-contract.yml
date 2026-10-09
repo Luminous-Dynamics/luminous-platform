@@ -1,0 +1,44 @@
+name: Operations Event Contract
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "contracts/operations-event-v1/**"
+      - ".github/workflows/operations-event-contract.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "contracts/operations-event-v1/**"
+      - ".github/workflows/operations-event-contract.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operations-event-contract-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Create isolated Python environment
+        run: python3 -m venv "$RUNNER_TEMP/operations-event-contract-venv"
+
+      - name: Install pinned schema validator
+        run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
+
+      - name: Validate schemas, fixtures, and adversarial adapter-model cases
+        run: "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m unittest discover -s contracts/operations-event-v1/tests -p 'test_*.py' -v
+
+      - name: Confirm checkout stayed unchanged
+        run: git diff --exit-code && test -z "$(git status --porcelain)"
