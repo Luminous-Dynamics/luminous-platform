@@ -8,7 +8,7 @@ This repository hosts the reusable workflow used to audit the public Luminous-Dy
 
 1. GitHub Actions workflow analysis with `zizmor` v1.30.1, using the auditor persona and online audits; both the action commit and scanner release are pinned.
 2. RustSec dependency-advisory checks for every *tracked* `Cargo.lock` file when the caller opts into Rust auditing, plus deterministic coverage mapping from each tracked `Cargo.toml` to its nearest workspace and tracked lockfile.
-3. Machine-readable `cargo-audit --json` output, scanner stderr, a JSON manifest-coverage report, lockfile and coverage-report SHA-256 values, the exact RustSec advisory-database commit used for every lockfile in that run, exact checked-out commit, caller workflow identity, run identity, tool versions, and an overall pass/fail record. Workflow-analysis output is preserved as a separate artifact from RustSec output.
+3. Machine-readable `cargo-audit --json` output, scanner stderr, a JSON manifest-coverage report, lockfile-inventory and coverage-report SHA-256 values, and per-lockfile SHA-256 digests for both raw JSON and stderr output. Each result records the lockfile digest and exit code; the exact RustSec advisory-database commit, exact checked-out commit, caller workflow identity, run identity, tool versions, and overall pass/fail status are also recorded. Workflow-analysis output is preserved as a separate artifact from RustSec output.
 4. Read-only token permissions, immutable action references, an exact-subject checkout assertion, no repository secrets, and no write-capable token permissions.
 
 The platform self-check runs the workflow audit on pushes to `main`, pull requests, a weekly schedule, and manual dispatch. Callers with Rust dependency graphs set `audit_rust: true`.
