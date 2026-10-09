@@ -532,7 +532,28 @@ jobs:
                 rc=$?
                 rustsec_failed=1
               fi
-              if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
+              if python3 - "$report" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          try:
+              payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          except Exception as exc:
+              print(f"invalid cargo-audit JSON: {type(exc).__name__}: {exc}", file=sys.stderr)
+              raise SystemExit(1)
+          if not isinstance(payload, dict) or not ("vulnerabilities" in payload or "error" in payload):
+              print("cargo-audit JSON missing expected object/vulnerabilities field", file=sys.stderr)
+              raise SystemExit(1)
+          PY
+              then
+                report_parse_status="PASS"
+              else
+                report_parse_status="FAIL"
+                rustsec_failed=1
+              fi
+              printf 'report_parse_status=%s lockfile=%s\\n' "$report_parse_status" "$lockfile" >> "$result_root/summary.txt"
+              if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" ]]; then outcome="PASS"; else outcome="FAIL"; fi
               if [[ -f "$report" ]]; then
                 report_sha256="$(sha256sum "$report" | cut -d' ' -f1)"
               else
@@ -1024,7 +1045,28 @@ jobs:
               rc=$?
               npm_failed=1
             fi
-            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
+            if python3 - "$report" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          try:
+              payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          except Exception as exc:
+              print(f"invalid npm audit JSON: {type(exc).__name__}: {exc}", file=sys.stderr)
+              raise SystemExit(1)
+          if not isinstance(payload, dict) or not ("metadata" in payload or "error" in payload):
+              print("npm audit JSON missing expected object/metadata field", file=sys.stderr)
+              raise SystemExit(1)
+          PY
+            then
+              report_parse_status="PASS"
+            else
+              report_parse_status="FAIL"
+              npm_failed=1
+            fi
+            printf 'report_parse_status=%s lockfile=%s\\n' "$report_parse_status" "$lockfile" >> "$result_root/summary.txt"
+            if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" ]]; then outcome="PASS"; else outcome="FAIL"; fi
             if [[ -f "$report" ]]; then report_sha="$(sha256sum "$report" | cut -d' ' -f1); else report_sha="missing"; npm_failed=1; fi
             if [[ -f "$stderr" ]]; then stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1); else stderr_sha="missing"; npm_failed=1; fi
             printf 'lockfile=%s lockfile_sha256=%s manifest=%s manifest_sha256=%s exit_code=%s outcome=%s report_sha256=%s stderr_sha256=%s\n' \
