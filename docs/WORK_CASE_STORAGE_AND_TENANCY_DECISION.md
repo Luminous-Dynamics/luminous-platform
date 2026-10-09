@@ -1,56 +1,71 @@
 # Work-Case Storage and Tenant-Isolation Decision
 
-**Status:** proposed architecture decision; approval and implementation qualification remain open.  
-**Scope:** native work-case service, local/self-hosted and hosted Luminous deployments.  
+**Status:** proposed architecture decision; driver choice recorded, implementation and production qualification remain open.  
+**Scope:** native work-case service, local/reference conformance and hosted Luminous deployments.  
 **Decision date:** 2026-10-09.
 
 ## Decision
 
-Use one versioned domain and repository contract, with persistence choices constrained by deployment profile:
+Use one versioned domain and repository contract, with a deliberately narrow production persistence choice:
 
-- **SQLite:** local, single-host, single-organization deployments and deterministic reference/conformance tests. The database stays on a local filesystem alongside its WAL/SHM files. Do not place a WAL database on a network filesystem or let separate hosts concurrently access the same file.
-- **PostgreSQL:** default candidate for managed/multi-tenant, multi-worker, hybrid, and other deployments requiring concurrent independent application processes, centralized backups, and an explicit server-side tenant boundary. The production adapter must be qualified before this becomes a supported deployment claim.
-- **Do not make the product depend on the database vendor.** The service contract, lifecycle state machine, idempotency semantics, mapping scope, and evidence model stay vendor-neutral. SQL migrations and concurrency tests are backend-specific.
+- **PostgreSQL 18.x is the authoritative database for the first shared, multi-user production service.** Pin the exact server image/package to a reviewed immutable release artifact in deployment and CI. This is the target architecture, not a statement that an adapter or deployment has passed qualification.
+- **Use Rust + SQLx 0.9.x as the initial PostgreSQL client/toolkit baseline.** Keep SQL explicit rather than introducing an ORM or a generic multi-database layer. Use SQLx's PostgreSQL driver, bounded async pool, migrations, and compile-time checked `query!` / `query_as!` macros for static application queries where practical. Review and pin the exact crate version and feature set in the Rust crate manifest; check in the application's lockfile where appropriate. SQLx 0.9 documents Rust 1.94 as its minimum supported version, compatible with this repository's Rust 1.96 contract toolchain.
+- **SQLite remains a Python reference/conformance harness in this work.** It is not the production service or the production repository. A Rust SQLite profile may be considered separately later, but must have its own bounded deployment definition and backup, upgrade, restore, concurrency, and recovery qualification. Do not keep two production databases in parity just because SQLx supports both.
+- **Do not launch with multiple production database backends.** Define a narrow repository/service boundary around the domain, but qualify PostgreSQL first. Domain lifecycle, expected-revision, idempotency, mapping scope, evidence classification, and outbox semantics remain independent of SQLx and PostgreSQL.
+- **Production domain logic, repository implementations, API handlers, tenant authorization, and outbox delivery must be Rust.** The checked-in Python model and SQLite store remain non-production reference/conformance harnesses; they must not become production services or privileged execution components.
+- **Treat the outbox as at-least-once.** A downstream send may succeed while its acknowledgement is lost. Retry with a stable outbox identity and require idempotent consumers; do not claim exactly-once external side effects.
 
-This is an architecture decision, not a claim that either backend has passed production qualification. The current SQLite implementation is a local reference model only. Production domain logic, repository implementations, API handlers, tenant authorization, and outbox delivery must be implemented in Rust. The checked-in Python model and SQLite store are reference/conformance harnesses only and must not become production services or privileged execution components. The SQLite reference initializer accepts only an empty schema-version-0 database for initialization; it rejects pre-existing unversioned tables and schema-version-1 databases missing required tables, columns, indexes, expected primary keys, required unique constraints, or tenant-scoped foreign keys. It does not silently recreate missing structures. WAL mode is configured only after successful schema preflight, and the selected mode is checked rather than assumed; a backend that cannot sustain WAL mode is rejected. The conformance suite includes adversarial regressions for a removed composite primary key, missing activity uniqueness, and a missing tenant-scoped foreign key. These tests are authored but must not be considered passed until visible exact-head CI executes them. This is a compatibility guard, not a substitute for released migrations, which must be added explicitly for future schema versions.
+This distinction matters: PostgreSQL is the database; SQL is the query language; SQLx is the Rust client/toolkit. There is no separate "Rust SQL" database to switch to.
 
-## Why
+## Why PostgreSQL + SQLx
 
-SQLite's official WAL documentation says readers can proceed alongside a writer, but there is still only one writer at a time; the WAL index relies on shared memory and does not work over a network filesystem. SQLite's own deployment guidance recommends a client/server database such as PostgreSQL when many different machines need simultaneous reads and writes.
+PostgreSQL supplies server-side transactional integrity, concurrent multi-worker access, centralized recovery/backup operations, and row-level security (RLS). SQLx fits this Rust-first service because it is asynchronous, provides a PostgreSQL driver and connection pool, supports versioned migrations, and can check static SQL against database metadata. We prefer ordinary, reviewed SQL over an opaque ORM layer for tenant-critical joins, idempotency claims, revision checks, and outbox ordering.
+
+Compile-time query checking is a useful defect barrier, **not** an authorization proof: it cannot establish tenant isolation, correct transaction boundaries, the absence of confused-deputy behavior, or safe recovery. CI must check query metadata against the migration schema (with a PostgreSQL test database or correctly refreshed SQLx offline metadata) and run behavior tests against a real PostgreSQL server. Do not select SQLx's runtime-generic `Any` driver or abstract away PostgreSQL-specific semantics for a second backend that is not being shipped.
 
 Sources:
-- [SQLite Write-Ahead Logging](https://www.sqlite.org/wal.html)
-- [SQLite Over a Network: Caveats and Considerations](https://www.sqlite.org/useovernet.html)
-
-PostgreSQL provides row-level security policies that can constrain which rows a database role may read or mutate. When RLS is enabled with no applicable policy, access defaults to deny; table owners normally bypass RLS unless FORCE ROW LEVEL SECURITY is used, and superuser or BYPASSRLS roles always bypass it. Therefore RLS is useful defense in depth but is not a magic tenant boundary if the application connects as an over-privileged role.
-
-Source:
-- [PostgreSQL 18 — Row Security Policies](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
+- [SQLx project and feature documentation](https://github.com/transact-rs/sqlx)
+- [SQLx 0.9.0 release notes and MSRV policy](https://github.com/transact-rs/sqlx/blob/main/CHANGELOG.md)
+- [SQLx checked query macro requirements](https://docs.rs/sqlx/latest/sqlx/macro.query.html)
+- [PostgreSQL 18 — Row Security Policies](https://www.postgresql.org/docs/18/ddl-rowsecurity.html)
 
 ## Required hosted PostgreSQL design
 
-1. **Trusted tenant context.** The API authenticates a principal and resolves the tenant on the server. A request-body tenant_id, case ID, provider label, or integration ID is not authority.
-2. **RLS as a second barrier.** Enable and force RLS on tenant-owned tables where appropriate. Use a least-privilege application role that is not table owner, superuser, or BYPASSRLS; ensure schema migrations run under a distinct privileged role.
-3. **Transaction-local context.** Bind verified tenant context to the database transaction, not to a pooled session that may later serve a different tenant. Clear/reset any session state before releasing connections. Test missing tenant context and connection-pool reuse.
-4. **Composite tenant keys.** Include tenant scope in primary/unique keys and foreign-key relationships for cases, activity, mapping, idempotency, evidence links, and outbox records. Verify every join preserves tenant scope.
-5. **Mutation boundary.** Use typed commands, expected revisions, database-enforced uniqueness, durable idempotency, and a transaction covering case state + activity + idempotency outcome + outbox row. A transaction does not provide exactly-once network effects; consumers must be idempotent.
-6. **External mappings.** Enforce uniqueness on (tenant_id, connection_id, provider, external_id). A connection ID must be resolved from the authenticated connector registry; callers cannot choose another connection simply by submitting its identifier.
-7. **Outbox.** A production dispatcher needs a documented lease/claim/ack protocol, bounded retry, operator-visible dead-letter state, per-case ordering where required, reconciliation, and replay-safe consumers. Dispatch only redacted, allowlisted event payloads.
-8. **Evidence and retention.** Keep evidence payloads in their appropriate access-controlled store; work-case records carry classified references and integrity digests, not session keys or raw screen/audio. Define retention, export, legal hold, backup and verified deletion semantics before production.
-9. **Migration and recovery.** Publish versioned migrations, backup/restore tests, process-kill/crash-window tests, disk-full behavior, recovery drills, and an explicit rollback plan. Never treat an in-memory test or schema-valid fixture as database qualification.
+1. **Trusted tenant context.** The API authenticates a principal and resolves the tenant on the server. A request-body `tenant_id`, case ID, provider label, or integration ID is not authority.
+2. **RLS as a second barrier.** Enable and force RLS on tenant-owned tables where appropriate. Use a least-privilege application role that is not table owner, superuser, or `BYPASSRLS`; schema migrations run under a distinct privileged role.
+3. **Transaction-local context.** Start a transaction, bind the verified tenant to that transaction (for example with parameterized `set_config('app.tenant_id', $1, true)`), then perform all reads/writes through the same transaction handle. Do not use pooled session-global `SET` state. Test missing context, rollback, connection-pool reuse, and concurrent tenants.
+4. **Explicit query scoping.** Every repository query still binds the trusted tenant ID, and every join preserves tenant scope. RLS is defense in depth, not a replacement for explicit authorization or tenant predicates. Policies must default-deny when context is absent.
+5. **Composite tenant keys.** Include tenant scope in primary/unique keys and foreign-key relationships for cases, activity, mappings, idempotency, evidence links, and outbox records.
+6. **Mutation boundary.** Use typed Rust commands, expected revisions, database-enforced uniqueness, durable idempotency, and one transaction spanning case state + activity + idempotency outcome + outbox row. Handle unique-constraint races and serialization/deadlock errors explicitly; retry only transactions whose effects are known to be safe to retry.
+7. **External mappings.** Enforce uniqueness on `(tenant_id, connection_id, provider, external_id)`. Resolve `connection_id` from authenticated connector configuration; a caller cannot choose another connection by submitting its identifier.
+8. **Outbox.** Implement a production dispatcher with a documented lease/claim/ack protocol, bounded retry, operator-visible dead-letter state, per-case ordering where required, reconciliation, and replay-safe consumers. Dispatch only redacted, allowlisted event payloads. A local database transaction cannot make a remote network effect exactly-once.
+9. **Evidence and retention.** Keep evidence payloads in their appropriate access-controlled store; work-case records carry classified references and integrity digests, not session keys or raw screen/audio. Define retention, export, legal hold, backup and verified deletion semantics before production.
+10. **Migrations and recovery.** Publish versioned SQL migrations with forward-upgrade expectations. Test fresh install, every supported upgrade path, interrupted migration recovery, backup/restore, process kill, disk full, and an explicit rollback/export plan. Never treat in-memory tests or schema-valid fixtures as database qualification.
 
-## Qualification matrix
+## Implementation sequence
 
-| Claim | Current SQLite reference | Required before production claim |
+1. Preserve the Work Case V1 contract and its Python reference tests as the domain/conformance oracle. Their test counts are not PostgreSQL evidence.
+2. Add a focused Rust crate for the production service/repository with SQLx 0.9.x, pinned feature selection, checked static queries, and versioned PostgreSQL migrations. Avoid creating a generic database framework.
+3. Provision a pinned PostgreSQL 18.x service in CI and run integration tests using separate migration and least-privilege application roles. Check the SQLx query metadata and execute all migration and repository tests against that server.
+4. Exercise actual database behavior: competing revision updates, concurrent duplicate idempotency claims from separate connections, transaction rollback at write boundaries, cross-tenant negative tests, missing RLS context, pooled-connection reuse, and concurrent outbox leases/ordering.
+5. Keep the PR draft and all production-readiness claims blocked until exact-head CI executes every required step and publishes the tested SHA, PostgreSQL version, migration version, test count and result. A queued or skipped job is not a pass.
+
+## Current qualification boundary
+
+The current SQLite implementation is a local Python reference model only. It atomically commits the case snapshot/history/idempotency/external mapping/outbox in its own local transaction and has fail-closed schema-shape checks. Those properties describe that reference implementation, not the future Rust/PostgreSQL service.
+
+The reference schema initializer only initializes an empty schema-version-0 database; it rejects pre-existing unversioned tables, unsupported/future versions and schema-version-1 stores missing required tables, columns, indexes, primary keys, unique constraints or tenant-scoped foreign keys. WAL mode is checked rather than assumed. These regression tests are authored but must not be considered passed until visible exact-head CI executes them.
+
+| Claim | Current Python/SQLite reference | Required before production claim |
 |---|---|---|
-| Domain transitions and expected revision | Model-level tests are authored | Exact-head visible CI and an independent state-machine oracle |
-| Atomic local state/history/idempotency/outbox | Transaction reference plus fault-injection tests are authored | Run tests; process-kill, restore, disk-full and migration tests |
-| Concurrent duplicate submission | Same-host multi-store test is authored | Exact tests pass; production database contention and retry behavior qualified |
-| Tenant isolation | The API is not implemented | API negatives across list/search/read/write/attachments/evidence/export/subscriptions plus RLS/database-role tests |
-| Cross-machine concurrency | Not provided by this model | PostgreSQL-backed integration and load/failure tests |
-| Live ConnectWise interoperability | Not implemented | Product-specific authentication, least-privilege sandbox account, rate-limit/pagination/revision tests |
-| Operational recovery | Not qualified | Documented backup, restore, upgrade, rollback and data export exercises |
+| Domain transitions and expected revision | Reference tests authored | Exact-head CI and independent state-machine oracle |
+| Atomic state/history/idempotency/outbox | Local transaction and fault-injection tests authored | Run reference tests; PostgreSQL rollback and process-kill qualification |
+| Concurrent duplicate submission | Same-host multi-store test authored | Concurrent PostgreSQL contention/race tests over independent connections |
+| Tenant isolation | Production API is not implemented | Rust API negatives plus application-role RLS and pool-reuse tests |
+| Cross-machine concurrency | Not provided by reference | PostgreSQL-backed integration and load/failure tests |
+| Live provider interoperability | Not implemented | Product-specific auth, rate-limit, pagination and revision tests |
+| Operational recovery | Not qualified | Versioned migrations, backup/restore, disk-full and recovery exercises |
 
-## Avoid premature abstraction
+## Avoid premature breadth
 
-Do not implement a generic database framework or multiple full storage backends before a consumer requires them. First define the repository/service interface and qualify one production backend. Keep the SQLite reference small and deterministic. Add SQLite as a supported customer deployment profile only after backup, upgrade, restore, and concurrency requirements are explicitly bounded; otherwise label it as a local development/conformance mode.
+Start with one PostgreSQL production backend. Do not add a Rust SQLite adapter, ORM, generic database switch, multi-region writes, sharding or distributed transactions until a demonstrated deployment requirement justifies it. Keep the service and database operations understandable for sovereign deployments: installation, TLS trust, secret rotation, health checks, migrations, backups, restore rehearsal, export and recovery documentation are part of the product.
