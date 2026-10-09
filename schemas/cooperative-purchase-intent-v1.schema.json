@@ -471,6 +471,16 @@
             "required": [
               "idempotency_key"
             ]
+          },
+          "demand": {
+            "properties": {
+              "product_reference": {
+                "required": [
+                  "offer_specification_sha256"
+                ],
+                "description": "A binding order must pin the immutable product specification digest; non-binding interest may omit it while the buyer is still exploring products."
+              }
+            }
           }
         }
       }
