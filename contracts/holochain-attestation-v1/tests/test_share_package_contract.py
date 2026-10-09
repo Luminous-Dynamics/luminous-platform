@@ -108,6 +108,11 @@ class HolochainSharePackageContractTests(unittest.TestCase):
         event["issuedAt"] = "yesterday"
         self.assertTrue(self.errors(event))
 
+    def test_rejects_duplicate_manifest_references(self) -> None:
+        event = copy.deepcopy(self.fixture)
+        event["evidenceManifest"].append(copy.deepcopy(event["evidenceManifest"][0]))
+        self.assertTrue(self.errors(event))
+
     def test_limits_evidence_manifest_references(self) -> None:
         event = copy.deepcopy(self.fixture)
         event["evidenceManifest"] = event["evidenceManifest"] * 17
