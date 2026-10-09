@@ -51,6 +51,7 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 - [Durable SQLite Reference Model](contracts/operations-event-v1/DURABLE_SQLITE_REFERENCE_MODEL.md) — local conformance harness for event idempotency, atomic inbox/state/outbox writes, conservative revision handling, fault injection, and retryable outbox leases.
 - [ADR 0001 — Production Operational State Store](docs/adr/0001-production-operational-state-store.md) — proposed PostgreSQL system of record and production qualification gates.
 - [ADR 0002 — Holochain Trust and Coordination Boundary](docs/adr/0002-holochain-decentralized-trust-boundary.md) — selective use of Holochain for multi-party attestations and shared provenance, without replacing PostgreSQL or execution-boundary authorization.
+- [Holochain Attestation Share Package V1](contracts/holochain-attestation-v1/README.md) — minimized share-package schema, synthetic fixture, adversarial tests, and explicit privacy/authority limits.
 
 ## Safety Contracts
 
