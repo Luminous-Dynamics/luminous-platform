@@ -131,17 +131,87 @@ class SQLiteWorkCaseStore:
                 "payload_json", "status", "attempts", "lease_owner", "lease_until", "created_at", "delivered_at",
             },
         }
+        required_primary_keys = {
+            "work_cases": ("tenant_id", "case_id"),
+            "case_activity": ("tenant_id", "case_id", "sequence"),
+            "command_idempotency": ("tenant_id", "idempotency_key"),
+            "external_case_mappings": ("tenant_id", "connection_id", "provider", "external_id"),
+            "case_outbox": ("outbox_seq",),
+        }
+        required_unique_keys = {
+            "case_activity": {("tenant_id", "activity_id")},
+            "case_outbox": {("outbox_id",)},
+        }
+        required_foreign_keys = {
+            "case_activity": {
+                ("work_cases", (("tenant_id", "tenant_id"), ("case_id", "case_id"))),
+            },
+            "external_case_mappings": {
+                ("work_cases", (("tenant_id", "tenant_id"), ("case_id", "case_id"))),
+            },
+            "case_outbox": {
+                ("work_cases", (("tenant_id", "tenant_id"), ("case_id", "case_id"))),
+            },
+        }
+
         existing_tables = self._application_tables(db)
         for table, required in required_columns.items():
             if table not in existing_tables:
                 raise RuntimeError(f"versioned database schema is incomplete: missing table {table}")
-            actual = {
-                str(row[1]) for row in db.execute(f"PRAGMA table_info({table})").fetchall()
-            }
+            info = db.execute(f"PRAGMA table_info({table})").fetchall()
+            actual = {str(row[1]) for row in info}
             missing = required - actual
             if missing:
                 names = ", ".join(sorted(missing))
                 raise RuntimeError(f"versioned database schema is incomplete: {table} missing columns {names}")
+
+            primary_key = tuple(
+                str(row[1])
+                for row in sorted(
+                    (row for row in info if int(row[5]) > 0),
+                    key=lambda row: int(row[5]),
+                )
+            )
+            if primary_key != required_primary_keys[table]:
+                raise RuntimeError(
+                    f"versioned database schema is incomplete: {table} primary key mismatch"
+                )
+
+        for table, required in required_unique_keys.items():
+            actual_unique_keys: set[tuple[str, ...]] = set()
+            for index in db.execute(f'PRAGMA index_list("{table}")').fetchall():
+                if int(index[2]) != 1:
+                    continue
+                index_name = str(index[1]).replace('"', '""')
+                columns = db.execute(f'PRAGMA index_info("{index_name}")').fetchall()
+                actual_unique_keys.add(tuple(
+                    str(column[2])
+                    for column in sorted(columns, key=lambda column: int(column[0]))
+                ))
+            missing = required - actual_unique_keys
+            if missing:
+                raise RuntimeError(
+                    f"versioned database schema is incomplete: {table} missing required unique keys"
+                )
+
+        for table, required in required_foreign_keys.items():
+            grouped: dict[int, list[sqlite3.Row]] = {}
+            for row in db.execute(f'PRAGMA foreign_key_list("{table}")').fetchall():
+                grouped.setdefault(int(row[0]), []).append(row)
+            actual_foreign_keys = {
+                (
+                    str(rows[0][2]),
+                    tuple(
+                        (str(row[3]), str(row[4]))
+                        for row in sorted(rows, key=lambda row: int(row[1]))
+                    ),
+                )
+                for rows in grouped.values()
+            }
+            if not required.issubset(actual_foreign_keys):
+                raise RuntimeError(
+                    f"versioned database schema is incomplete: {table} tenant-scoped foreign key mismatch"
+                )
 
         required_indexes = {"case_outbox_ready_idx", "case_activity_timeline_idx"}
         existing_indexes = {
