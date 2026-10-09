@@ -238,6 +238,14 @@ pub struct CostLine {
     pub evidence: EvidenceRef,
 }
 
+/// A receipt line that asserts the exact product/unit/quantity was delivered.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeliveredLine {
+    pub product: ProductIdentity,
+    pub quantity: Decimal,
+    pub evidence: EvidenceRef,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CostCoverage {
     /// Operator-declared statement that all material landed-cost categories were considered.
@@ -257,7 +265,7 @@ pub struct SavingsInput {
     pub participation_costs: Vec<CostLine>,
     pub baseline_coverage: CostCoverage,
     pub actual_coverage: CostCoverage,
-    pub delivery_evidence: Vec<EvidenceRef>,
+    pub delivery_lines: Vec<DeliveredLine>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -376,7 +384,7 @@ fn collect_evidence_references(input: &SavingsInput) -> Result<Vec<String>, Comm
         .chain(input.participation_costs.iter().map(|line| &line.evidence))
         .chain(std::iter::once(&input.baseline_coverage.evidence))
         .chain(std::iter::once(&input.actual_coverage.evidence))
-        .chain(input.delivery_evidence.iter());
+        .chain(input.delivery_lines.iter().map(|line| &line.evidence));
 
     for reference in evidence {
         if let Some(existing) = by_id.get(&reference.id) {
@@ -487,6 +495,42 @@ fn validate_coverage(coverage: &CostCoverage, baseline: bool) -> Result<(), Comm
     Ok(())
 }
 
+fn validate_delivery_lines(
+    actual: &[BasketLine],
+    delivered: &[DeliveredLine],
+) -> Result<(), CommerceError> {
+    if delivered.is_empty() {
+        return Ok(());
+    }
+    let mut delivered_identities = BTreeSet::new();
+    for line in delivered {
+        validate_product(&line.product)?;
+        if !delivered_identities.insert(line.product.clone()) {
+            return Err(CommerceError::DuplicateProductLine);
+        }
+        if line.quantity.checked_cmp(Decimal::ZERO)? != Ordering::Greater {
+            return Err(CommerceError::NegativeQuantityOrCost);
+        }
+        validate_evidence(&line.evidence)?;
+        if line.evidence.kind != EvidenceKind::DeliveryReceipt {
+            return Err(CommerceError::UnexpectedEvidenceKind);
+        }
+    }
+    if delivered.len() != actual.len() {
+        return Err(CommerceError::BasketMismatch);
+    }
+    for actual_line in actual {
+        let delivered_line = delivered
+            .iter()
+            .find(|candidate| candidate.product == actual_line.product)
+            .ok_or(CommerceError::BasketMismatch)?;
+        if delivered_line.quantity != actual_line.quantity {
+            return Err(CommerceError::BasketMismatch);
+        }
+    }
+    Ok(())
+}
+
 fn validate_basket_equivalence(baseline: &[BasketLine], actual: &[BasketLine]) -> Result<(), CommerceError> {
     if baseline.len() != actual.len() {
         return Err(CommerceError::BasketMismatch);
@@ -525,12 +569,7 @@ pub fn calculate_savings(input: &SavingsInput) -> Result<SavingsReport, Commerce
     validate_coverage(&input.baseline_coverage, true)?;
     validate_coverage(&input.actual_coverage, false)?;
 
-    for evidence in &input.delivery_evidence {
-        validate_evidence(evidence)?;
-        if evidence.kind != EvidenceKind::DeliveryReceipt {
-            return Err(CommerceError::UnexpectedEvidenceKind);
-        }
-    }
+    validate_delivery_lines(&input.actual_lines, &input.delivery_lines)?;
 
     let baseline_merchandise = sum_amounts(input.baseline_lines.iter().map(|line| &line.line_total))?;
     let baseline_other = sum_amounts(input.baseline_costs.iter().map(|line| &line.amount))?;
@@ -547,7 +586,7 @@ pub fn calculate_savings(input: &SavingsInput) -> Result<SavingsReport, Commerce
         || input.baseline_costs.iter().any(|line| line.evidence.kind == EvidenceKind::PublicListPriceEstimate);
     let claim_class = if baseline_has_estimate {
         ClaimClass::Estimate
-    } else if input.delivery_evidence.is_empty() {
+    } else if input.delivery_lines.is_empty() {
         ClaimClass::ProvisionalWithoutDeliveryEvidence
     } else if baseline_kinds.len() == 1 && baseline_kinds.contains(&EvidenceKind::AlternativeInvoice)
         && input.baseline_coverage.evidence.kind == EvidenceKind::AlternativeInvoice
@@ -651,7 +690,11 @@ mod tests {
                 unresolved_costs: vec![],
                 evidence: evidence("actual-coverage", EvidenceKind::SupplierInvoice),
             },
-            delivery_evidence: vec![evidence("delivery-receipt", EvidenceKind::DeliveryReceipt)],
+            delivery_lines: vec![DeliveredLine {
+                product: product(),
+                quantity: Decimal::parse("10").unwrap(),
+                evidence: evidence("delivery-receipt-line", EvidenceKind::DeliveryReceipt),
+            }],
         }
     }
 
@@ -755,9 +798,23 @@ mod tests {
     }
 
     #[test]
+    fn partial_delivery_cannot_support_full_basket_savings_claim() {
+        let mut candidate = input();
+        candidate.delivery_lines[0].quantity = Decimal::parse("9").unwrap();
+        assert_eq!(calculate_savings(&candidate), Err(CommerceError::BasketMismatch));
+    }
+
+    #[test]
+    fn delivery_receipt_must_bind_exact_product_and_unit() {
+        let mut candidate = input();
+        candidate.delivery_lines[0].product.unit_code_system = "urn:other:unit-system:v1".into();
+        assert_eq!(calculate_savings(&candidate), Err(CommerceError::BasketMismatch));
+    }
+
+    #[test]
     fn missing_delivery_evidence_is_not_called_realized_savings() {
         let mut candidate = input();
-        candidate.delivery_evidence.clear();
+        candidate.delivery_lines.clear();
         let report = calculate_savings(&candidate).unwrap();
         assert_eq!(report.claim_class, ClaimClass::ProvisionalWithoutDeliveryEvidence);
     }
