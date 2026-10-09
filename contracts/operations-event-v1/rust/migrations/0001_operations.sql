@@ -254,7 +254,7 @@ CREATE OR REPLACE FUNCTION ops.schedule_outbox_retry(
 RETURNS boolean
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = pg_catalog, ops
+SET search_path = pg_catalog, ops, pg_temp
 AS $retry$
 BEGIN
   UPDATE ops.outbox_events
