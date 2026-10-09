@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://luminousdynamics.io/schemas/deployment-profile-v1.schema.json",
+  "$id": "urn:luminous:deployment-profile:v1",
   "title": "Luminous Deployment Profile v1",
   "description": "Proposed deployment-profile declaration. Schema validation does not qualify a runtime or prove a security claim.",
   "type": "object",
