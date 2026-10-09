@@ -290,6 +290,25 @@ impl PostgresOperationsStore {
             return Ok(IngestOutcome::Quarantined { reason_code: "TRUSTED_CONTEXT_BINDING_MISMATCH".to_owned() });
         }
 
+        // Validate the configured revision token even for the initial
+        // observation. Otherwise a malformed first revision could become the
+        // baseline and make every future revision unorderable.
+        if !revision_token_is_valid(&policy, revision) {
+            quarantine(
+                &mut tx,
+                authenticated,
+                source_uri,
+                event_id,
+                &event_digest,
+                "REVISION_TOKEN_INVALID",
+            )
+            .await?;
+            tx.commit().await?;
+            return Ok(IngestOutcome::Quarantined {
+                reason_code: "REVISION_TOKEN_INVALID".to_owned(),
+            });
+        }
+
         // Serialize a business idempotency key before checking the durable
         // fence. Advisory-lock hash collisions only add contention; the unique
         // key remains the final integrity constraint. This check precedes
@@ -696,6 +715,26 @@ fn business_effect_digest(event: &Value) -> Result<String, StoreError> {
     digest_json("luminous.operations.business-effect.v1", &Value::Object(semantic))
 }
 
+fn numeric_revision(policy: &ConnectionPolicy, value: &str) -> Option<u64> {
+    let prefix = policy.revision_prefix.as_deref()?;
+    let suffix = value.strip_prefix(prefix)?;
+    if suffix.is_empty() || !suffix.bytes().all(|byte| byte.is_ascii_digit()) {
+        return None;
+    }
+    suffix.parse::<u64>().ok()
+}
+
+fn revision_token_is_valid(policy: &ConnectionPolicy, value: &str) -> bool {
+    if value.trim().is_empty() {
+        return false;
+    }
+    match policy.revision_mode.as_str() {
+        "opaque" => true,
+        "numeric_suffix" => numeric_revision(policy, value).is_some(),
+        _ => false,
+    }
+}
+
 fn compare_revision(
     policy: &ConnectionPolicy,
     incoming: &str,
@@ -710,9 +749,10 @@ fn compare_revision(
     if policy.revision_mode != "numeric_suffix" {
         return Err(StoreError::InvalidRevisionPolicy);
     }
-    let prefix = policy.revision_prefix.as_deref().ok_or(StoreError::InvalidRevisionPolicy)?;
-    let parse = |value: &str| value.strip_prefix(prefix).and_then(|suffix| suffix.parse::<u64>().ok());
-    match (parse(incoming), parse(current)) {
+    match (
+        numeric_revision(policy, incoming),
+        numeric_revision(policy, current),
+    ) {
         (Some(incoming), Some(current)) if incoming < current => Ok(RevisionOrder::Older),
         (Some(incoming), Some(current)) if incoming > current => Ok(RevisionOrder::Newer),
         (Some(_), Some(_)) => Ok(RevisionOrder::Equal),
