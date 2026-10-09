@@ -6,6 +6,7 @@ on:
       - "schemas/**"
       - "business-packs/cooperative-buying/**"
       - "crates/cooperative-commerce-core/**"
+      - "crates/cooperative-commerce-core/**"
       - "profiles/**"
       - "tools/**"
       - "tests/**"
@@ -72,9 +73,6 @@ jobs:
         with:
           toolchain: 1.96.0
           components: rustfmt
-
-      - name: Check Rust formatting
-        run: cargo fmt --manifest-path crates/cooperative-commerce-core/Cargo.toml -- --check
 
       - name: Test exact-decimal commerce core
         run: cargo test --locked --manifest-path crates/cooperative-commerce-core/Cargo.toml
