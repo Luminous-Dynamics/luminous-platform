@@ -1,10 +1,10 @@
-pub mod six_xml;
-
 //! Effective-dated lookup over already-normalized code-list records.
 //!
 //! This module checks record semantics only. It does not import publisher files,
 //! hash or authenticate retained source bytes, verify signatures, or prove that
 //! the supplied records came from an authoritative publisher.
+
+pub mod six_xml;
 
 use std::collections::BTreeMap;
 use std::fmt;
