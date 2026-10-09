@@ -4,7 +4,7 @@ use luminous_operations_event_contract::{
     AuthenticatedConnector, IngestOutcome, PostgresOperationsStore, StoreError,
 };
 use serde_json::{Value, json};
-use sqlx::{PgPool, Row, postgres::PgPoolOptions};
+use sqlx::{PgPool, Row, postgres::PgPoolOptions, types::Json};
 
 const TENANT: &str = "tenant-demo-001";
 const CONNECTION: &str = "connectwise-connection-demo";
@@ -113,6 +113,29 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         .await
         .expect("apply versioned SQLx migrations");
     reset_and_seed(&pool).await;
+
+    // The database must reject state claiming an external resource that is not
+    // explicitly mapped to the canonical local resource, even if application
+    // code accidentally bypasses the Rust mapping check.
+    let unmapped_head = sqlx::query(
+        "INSERT INTO ops.incident_heads \
+         (tenant_id, incident_id, source_connection_id, source_company_id, \
+          source_resource_type, source_resource_id, current_revision, state_digest, \
+          state_payload, outbox_sequence) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 1)",
+    )
+    .bind(TENANT)
+    .bind("incident-unmapped-head")
+    .bind(CONNECTION)
+    .bind("company-42")
+    .bind("service_ticket")
+    .bind("ticket-does-not-exist")
+    .bind("revision-1")
+    .bind("a".repeat(64))
+    .bind(Json(json!({"synthetic": true})))
+    .execute(&pool)
+    .await;
+    assert!(unmapped_head.is_err(), "the relational mapping foreign key must reject an unmapped provider resource");
 
     let store = PostgresOperationsStore::from_pool(pool.clone());
     let auth = authenticated();

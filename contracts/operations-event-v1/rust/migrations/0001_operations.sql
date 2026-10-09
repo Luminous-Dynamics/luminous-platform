@@ -68,6 +68,15 @@ CREATE TABLE ops.incident_heads (
     (current_revision IS NOT NULL AND state_digest IS NOT NULL AND state_payload IS NOT NULL
       AND source_connection_id IS NOT NULL AND source_company_id IS NOT NULL
       AND source_resource_type IS NOT NULL AND source_resource_id IS NOT NULL)
+  ),
+  FOREIGN KEY (source_connection_id, tenant_id)
+    REFERENCES ops.connector_connections(connection_id, tenant_id),
+  FOREIGN KEY (
+    tenant_id, source_connection_id, source_company_id,
+    source_resource_type, source_resource_id
+  ) REFERENCES ops.resource_mappings (
+    tenant_id, connection_id, external_company_id,
+    external_resource_type, external_resource_id
   )
 );
 
