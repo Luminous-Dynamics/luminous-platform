@@ -115,6 +115,10 @@ def purchase_scope_payload(document: dict[str, Any]) -> dict[str, Any]:
             "amount": accepted_total["amount"],
             "currency": accepted_total["currency"],
         },
+        "authorized_maximum_total": {
+            "amount": document["authorization"]["maximum_total"]["amount"],
+            "currency": document["authorization"]["maximum_total"]["currency"],
+        },
     }
 
 
