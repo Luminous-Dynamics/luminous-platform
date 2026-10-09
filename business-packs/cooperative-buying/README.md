@@ -20,7 +20,7 @@ Provide the first concrete path toward a globally portable, member-oriented whol
 - [Global architecture and staged plan](../../docs/GLOBAL_COOPERATIVE_COMMERCE.md).
 - [Dependency-free Rust savings kernel](../../crates/cooperative-commerce-core/README.md) — exact-decimal arithmetic, exact-basket comparability, symmetric cost coverage, delivery-line binding, explicit credits, and negative-result preservation.
 - [Savings Receipt schema](../../schemas/cooperative-savings-receipt-v1.schema.json) plus [illustrative receipt fixture](fixtures/example-savings-receipt.json) — portable inputs, calculations, evidence references, and limitations; the fixture is synthetic and cannot be promoted to a computed receipt.
-- [Code-list snapshot manifest](../../schemas/code-list-snapshot-manifest-v1.schema.json), [illustrative SIX ISO 4217 manifest](fixtures/example-code-list-manifest.json), and [semantic validator](../../tools/validate_code_list_manifest.py) — define active-registry requirements for source retrieval/authority review, immutable version label, retained source and normalized payload digests, parser/build identity, duplicate-code checks, effectivity, review report, and review deadline. The example is explicitly not retrieved/not run and cannot be activated.
+- [Code-list snapshot manifest](../../schemas/code-list-snapshot-manifest-v1.schema.json), [illustrative SIX ISO 4217 manifest](fixtures/example-code-list-manifest.json), and [semantic validator](../../tools/validate_code_list_manifest.py) — define active-registry requirements for source retrieval/authority review, immutable version label, retained source and normalized payload digests, parser/build identity, duplicate-code checks, effective dates, source-sample reconciliation, independent review, review report, and review deadline. The example is explicitly not retrieved/not run and cannot be activated.
 - [Code-list manifest tests](../../tests/test_code_list_manifest_schema.py) and [semantic tests](../../tests/test_code_list_manifest_semantics.py).
 
 ## Schema contract and limits
@@ -35,7 +35,7 @@ Structural validity is not proof of:
 - quote freshness at the time of purchase;
 - savings, supplier performance, or transaction completion.
 
-The first implementation must add semantic checks for effective date ordering, code-list membership, unit conversions, consistent price-break currency, explicit landed-cost uncertainty, jurisdiction-pack status, and authorization before binding orders.
+The prototype now checks declared code-list metadata and requires source sampling plus an independent review for active registry declarations. It still does not download a registry, check actual payload hashes against the source, run duplicate/effectivity checks on real records, verify reviewer signatures, or perform transaction-time membership lookup. Those are requirements for the later registry importer and runtime—not claims already satisfied by the fixture manifest.
 
 ## Manual-first pilot path
 
