@@ -33,10 +33,12 @@ Do not attempt a distributed transaction between PostgreSQL and Holochain. Retri
 
 ## Test
 
-From the repository root, after installing the pinned dependency in `contracts/operations-event-v1/requirements.txt`:
+From the repository root:
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover -s contracts/holochain-attestation-v1/tests -p 'test_*.py' -v
+python3 -m venv /tmp/holochain-attestation-contract-venv
+/tmp/holochain-attestation-contract-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir -r contracts/operations-event-v1/requirements.txt
+PYTHONDONTWRITEBYTECODE=1 /tmp/holochain-attestation-contract-venv/bin/python -m unittest discover -s contracts/holochain-attestation-v1/tests -p 'test_*.py' -v
 ```
 
 The test suite validates contract shape, conditional record semantics, and deliberate rejection of extra fields. It does **not** test Holochain zome validation, multi-agent DHT propagation, identity/membership binding, privacy of network metadata, PostgreSQL/outbox recovery, or production readiness. Those require a selected hApp and a compatible pinned conductor/toolchain.
