@@ -1785,7 +1785,7 @@ jobs:
           verify_workflow_report_digests() {
             local receipt="$1" root expected actual file key
             root="$(dirname "$receipt")"
-            for spec in "zizmor.txt:zizmor_report_sha256" "actionlint.txt:actionlint_report_sha256"; do
+            for spec in "zizmor.txt:zizmor_report_sha256" "actionlint.txt:actionlint_report_sha256" "gitleaks-sanitized.json:secret_report_sha256"; do
               file="${spec%%:*}"
               key="${spec#*:}"
               if ! expected="$(field "$receipt" "$key")" || [[ ! "$expected" =~ ^[0-9a-f]{64}$ ]] || [[ ! -f "$root/$file" ]]; then
@@ -1856,6 +1856,39 @@ jobs:
             return 0
           }
 
+          verify_gitleaks_report() {
+            local receipt="$1" root report expected actual config_sha raw_sha
+            root="$(dirname "$receipt")"
+            report="$root/gitleaks-sanitized.json"
+            if ! field_equals "$receipt" secret_scan_status PASS; then return 1; fi
+            if ! expected="$(field "$receipt" secret_report_sha256)" || [[ ! "$expected" =~ ^[0-9a-f]{64}$ ]] || [[ ! -f "$report" ]]; then
+              failure_reasons+=("gitleaks_sanitized_report_missing_or_uncommitted")
+              return 1
+            fi
+            actual="$(sha256sum "$report" | cut -d' ' -f1)"
+            if [[ "$actual" != "$expected" ]]; then
+              failure_reasons+=("gitleaks_sanitized_report_digest_mismatch")
+              return 1
+            fi
+            config_sha="$(field "$receipt" secret_config_sha256 2>/dev/null || true)"
+            raw_sha="$(field "$receipt" secret_raw_report_sha256 2>/dev/null || true)"
+            if [[ ! "$config_sha" =~ ^[0-9a-f]{64}$ || ! "$raw_sha" =~ ^[0-9a-f]{64}$ ]] || [[ "$(field "$receipt" secret_scan_exit_code 2>/dev/null || true)" != "0" ]] || [[ "$(field "$receipt" secret_finding_count 2>/dev/null || true)" != "0" ]]; then
+              failure_reasons+=("gitleaks_receipt_counts_or_digests_invalid")
+              return 1
+            fi
+            if ! jq -e --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config_sha "$config_sha" '
+              .schema == "luminous.security-audit.gitleaks-summary.v1" and
+              .repository == $repository and .subject_sha == $subject and
+              .scanner_version == "v8.30.1" and .config_sha256 == $config_sha and
+              .status == "PASS" and .reason == "none" and .finding_count == 0 and
+              (.findings | type == "array" and length == 0)
+            ' "$report" >/dev/null; then
+              failure_reasons+=("gitleaks_sanitized_report_policy_mismatch")
+              return 1
+            fi
+            return 0
+          }
+
           workflow_receipt=""
           if [[ "$WORKFLOW_JOB_RESULT" == "failure" ]]; then
             workflow_status=FAIL
@@ -1867,7 +1900,9 @@ jobs:
             if check_common_receipt "$workflow_receipt" \
               && field_equals "$workflow_receipt" zizmor_status PASS \
               && field_equals "$workflow_receipt" actionlint_status PASS \
-              && verify_workflow_report_digests "$workflow_receipt"; then
+              && field_equals "$workflow_receipt" secret_scan_status PASS \
+              && verify_workflow_report_digests "$workflow_receipt" \
+              && verify_gitleaks_report "$workflow_receipt"; then
               workflow_status=PASS
             else
               workflow_status=FAIL
