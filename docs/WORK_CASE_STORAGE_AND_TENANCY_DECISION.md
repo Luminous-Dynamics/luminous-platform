@@ -42,6 +42,12 @@ Sources:
 9. **Evidence and retention.** Keep evidence payloads in their appropriate access-controlled store; work-case records carry classified references and integrity digests, not session keys or raw screen/audio. Define retention, export, legal hold, backup and verified deletion semantics before production.
 10. **Migrations and recovery.** Publish versioned SQL migrations with forward-upgrade expectations. Test fresh install, every supported upgrade path, interrupted migration recovery, backup/restore, process kill, disk full, and an explicit rollback/export plan. Never treat in-memory tests or schema-valid fixtures as database qualification.
 
+## Current implementation status — 2026-10-09
+
+The first Rust/PostgreSQL adapter slice now exists at [services/work-case-postgres](../services/work-case-postgres/README.md). It implements case creation, idempotent replay/conflict detection, tenant-scoped reads, one append-only creation activity, and one minimal outbox event inside a transaction. Its migration declares tenant-scoped composite keys, foreign keys, default-deny RLS policies on all tenant-owned tables, and transaction-local tenant context. PostgreSQL tests are wired to use a separate non-owner runtime role.
+
+**Qualification is pending.** The authored repository tests have not yet been shown to pass in CI. The workflow must execute the tests against the actual disposable PostgreSQL image and exact source SHA. This slice does not yet implement lifecycle transitions, an authenticated API, provider intake, or a dispatcher. The direct dependencies are exact-pinned, but no reviewed Cargo.lock has been committed yet, so transitive dependency resolution is not yet reproducibly locked.
+
 ## Implementation sequence
 
 1. Preserve the Work Case V1 contract and its Python reference tests as the domain/conformance oracle. Their test counts are not PostgreSQL evidence.

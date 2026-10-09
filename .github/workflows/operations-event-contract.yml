@@ -6,6 +6,7 @@ on:
     paths:
       - "contracts/operations-event-v1/**"
       - "contracts/work-case-v1/**"
+      - "services/work-case-postgres/**"
       - "docs/WORK_CASE_STORAGE_AND_TENANCY_DECISION.md"
       - ".github/workflows/work-case-v1.yml"
       - "contracts/holochain-attestation-v1/**"
@@ -18,6 +19,7 @@ on:
     paths:
       - "contracts/operations-event-v1/**"
       - "contracts/work-case-v1/**"
+      - "services/work-case-postgres/**"
       - "docs/WORK_CASE_STORAGE_AND_TENANCY_DECISION.md"
       - ".github/workflows/work-case-v1.yml"
       - "contracts/holochain-attestation-v1/**"
@@ -36,8 +38,24 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18.6-bookworm
+        env:
+          POSTGRES_DB: work_case_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d work_case_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/work_case_test?sslmode=disable
+      APP_DATABASE_URL: postgres://work_case_app:work_case_test_password@localhost:5432/work_case_test?sslmode=disable
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - name: Checkout exact source revision
@@ -97,7 +115,7 @@ jobs:
           python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
           "$python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 34 2>&1 | tee "$log"
           count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
-          if [[ -z "$count" || "$count" -lt 31 ]]; then
+          if [[ -z "$count" || "$count" -lt 34 ]]; then
             echo "::error::Work Case Contract V1 must execute at least 34 tests; observed $count."
             exit 1
           fi
@@ -106,6 +124,38 @@ jobs:
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.96.0 --profile minimal
 
+      - name: Ensure PostgreSQL client is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+
+      - name: Install pinned SQLx CLI
+        run: cargo +1.96.0 install sqlx-cli --version 0.9.0 --no-default-features --features rustls,postgres
+
+      - name: Apply versioned Work Case PostgreSQL migration
+        run: cargo +1.96.0 sqlx migrate run --source services/work-case-postgres/migrations
+
+      - name: Create least-privilege test role
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f services/work-case-postgres/tests/bootstrap_app_role.sql
+
+      - name: Validate Rust Work Case repository against PostgreSQL
+        id: postgres_work_case
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/work-case-postgres-tests.log"
+          cp -a services/work-case-postgres "$RUNNER_TEMP/work-case-postgres"
+          cargo +1.96.0 test --manifest-path "$RUNNER_TEMP/work-case-postgres/Cargo.toml" --all-targets 2>&1 | tee "$log"
+          count="$(awk '/^test result:/ { for (i = 1; i <= NF; i++) if ($i == "passed;") total += $(i - 1) } END { print total + 0 }' "$log")"
+          if [[ -z "$count" || "$count" -lt 3 ]]; then
+            echo "::error::PostgreSQL Work Case suite must execute at least 3 tests; observed $count."
+            exit 1
+          fi
+          echo "test_count=$count" >> "$GITHUB_OUTPUT"
       - name: Validate Holochain Attestation Share Package V1 (Rust)
         id: holochain_attestation
         shell: bash
@@ -134,14 +184,16 @@ jobs:
           OPERATIONS_TESTS: ${{ steps.operations_event.outputs.test_count }}
           WORK_CASE_TESTS: ${{ steps.work_case.outputs.test_count }}
           HOLOCHAIN_TESTS: ${{ steps.holochain_attestation.outputs.test_count }}
+          POSTGRES_TESTS: ${{ steps.postgres_work_case.outputs.test_count }}
         run: |
           {
-            echo "## Operations Event and Holochain Attestation Contracts"
+            echo "## Operations Event, Work Case, Holochain, and PostgreSQL Repository Contracts"
             echo "- Tested source revision: $SOURCE_SHA"
             echo "- Fail-closed runner regression tests executed: $RUNNER_TESTS"
             echo "- Operations Event Contract V1 tests executed: $OPERATIONS_TESTS"
             echo "- Work Case Contract V1 tests executed: $WORK_CASE_TESTS"
             echo "- Rust Holochain Attestation Share Package V1 tests executed: $HOLOCHAIN_TESTS"
+            echo "- Rust/PostgreSQL Work Case repository tests executed against PostgreSQL 18.6-bookworm and a non-owner application role: $POSTGRES_TESTS"
             echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Work Case suite requires at least 34 tests. The Holochain share-package validator and its contract tests are Rust-native."
-            echo "- This workflow does not qualify the production PostgreSQL repository, provider authentication, Holochain integrity zome or multi-agent DHT behavior, identity/membership binding, cryptographic evidence verification, or remote execution."
+            echo "- This workflow qualifies only the tested Rust repository slice and migration on the stated disposable PostgreSQL test image. It does not qualify API authentication, lifecycle transitions, provider integration, outbox dispatch/recovery, backups/restores, the Holochain integrity zome or multi-agent DHT behavior, cryptographic evidence verification, or remote execution."
           } >> "$GITHUB_STEP_SUMMARY"
