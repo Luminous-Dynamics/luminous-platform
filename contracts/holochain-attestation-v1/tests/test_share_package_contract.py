@@ -128,6 +128,23 @@ class HolochainSharePackageContractTests(unittest.TestCase):
         event["evidenceManifest"] = event["evidenceManifest"] * 17
         self.assertTrue(self.errors(event))
 
+    def test_validation_errors_do_not_echo_untrusted_values(self) -> None:
+        event = copy.deepcopy(self.fixture)
+        secret_like_value = "synthetic-sensitive-issuer-value"
+        event["issuerRoleClaim"] = secret_like_value
+        errors = self.errors(event)
+        self.assertTrue(errors)
+        self.assertFalse(any(secret_like_value in error for error in errors))
+
+        event = copy.deepcopy(self.fixture)
+        manifest_ref = event["evidenceManifest"][0]["manifestRef"]
+        duplicate = copy.deepcopy(event["evidenceManifest"][0])
+        duplicate["assessmentClaim"] = "signature-check-reported"
+        event["evidenceManifest"].append(duplicate)
+        duplicate_errors = self.errors(event)
+        self.assertTrue(duplicate_errors)
+        self.assertFalse(any(manifest_ref in error for error in duplicate_errors))
+
     def test_schema_never_promotes_issuer_role_claim_to_authority(self) -> None:
         self.assertEqual("none", self.fixture["authorityEffect"])
         self.assertIn(
