@@ -240,7 +240,7 @@ GRANT INSERT (
 GRANT INSERT (
   tenant_id, outbox_id, incident_id, connection_id, sequence_no, source_uri, source_event_id, payload
 ) ON ops.outbox_events TO luminous_ops_app;
-GRANT UPDATE (status, attempts, lease_owner, lease_until, available_at, delivered_at)
+GRANT UPDATE (status, attempts, lease_owner, lease_until, delivered_at)
   ON ops.outbox_events TO luminous_ops_app;
 
 GRANT INSERT (

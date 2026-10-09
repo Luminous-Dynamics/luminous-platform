@@ -123,6 +123,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
            has_column_privilege('luminous_ops_app', 'ops.inbox_events', 'outcome', 'UPDATE') AS inbox_update_outcome, \
            has_column_privilege('luminous_ops_app', 'ops.inbox_events', 'content_digest', 'UPDATE') AS inbox_update_digest, \
            has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'lease_owner', 'UPDATE') AS outbox_update_lease, \
+           has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'available_at', 'UPDATE') AS outbox_update_schedule, \
            has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'payload', 'UPDATE') AS outbox_update_payload"
     )
     .fetch_one(&pool)
@@ -133,6 +134,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert!(privileges.try_get::<bool, _>("inbox_update_outcome").unwrap());
     assert!(!privileges.try_get::<bool, _>("inbox_update_digest").unwrap());
     assert!(privileges.try_get::<bool, _>("outbox_update_lease").unwrap());
+    assert!(!privileges.try_get::<bool, _>("outbox_update_schedule").unwrap());
     assert!(!privileges.try_get::<bool, _>("outbox_update_payload").unwrap());
 
     // The database must reject state claiming an external resource that is not
