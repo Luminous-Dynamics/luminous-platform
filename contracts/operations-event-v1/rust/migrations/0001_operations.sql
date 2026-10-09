@@ -209,8 +209,8 @@ BEGIN
 END
 $rls$;
 
-GRANT USAGE ON SCHEMA ops TO luminous_ops_app;
-GRANT EXECUTE ON FUNCTION ops.current_tenant_id() TO luminous_ops_app;
+GRANT USAGE ON SCHEMA ops TO luminous_ops_app, luminous_ops_retry_owner;
+GRANT EXECUTE ON FUNCTION ops.current_tenant_id() TO luminous_ops_app, luminous_ops_retry_owner;
 
 -- Read access is tenant-filtered by RLS. Mutation privileges are column-scoped
 -- so runtime code cannot rewrite identity/digest/payload fields after insertion.
@@ -242,6 +242,13 @@ GRANT INSERT (
 ) ON ops.outbox_events TO luminous_ops_app;
 GRANT UPDATE (status, attempts, lease_owner, lease_until, delivered_at)
   ON ops.outbox_events TO luminous_ops_app;
+
+-- The SECURITY DEFINER owner is a separate NOLOGIN/NOBYPASSRLS role, not the
+-- cluster administrator that commonly applies migrations. Keep its direct
+-- table rights scoped to the exact update the retry function performs.
+GRANT SELECT ON ops.outbox_events TO luminous_ops_retry_owner;
+GRANT UPDATE (status, available_at, lease_owner, lease_until)
+  ON ops.outbox_events TO luminous_ops_retry_owner;
 
 -- Runtime cannot directly mutate available_at. This narrowly granted function
 -- only reschedules the current tenant's still-live lease held by the named
@@ -283,6 +290,14 @@ $retry$;
 
 REVOKE ALL ON FUNCTION ops.schedule_outbox_retry(text, text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION ops.schedule_outbox_retry(text, text, text) TO luminous_ops_app;
+
+-- Never leave this SECURITY DEFINER routine owned by the privileged migration
+-- connection. The deploy/migration principal must be permitted to SET ROLE to
+-- luminous_ops_retry_owner (or be a cluster administrator) for this ownership
+-- transfer. CREATE is temporary for the ownership change and then removed.
+GRANT CREATE ON SCHEMA ops TO luminous_ops_retry_owner;
+ALTER FUNCTION ops.schedule_outbox_retry(text, text, text) OWNER TO luminous_ops_retry_owner;
+REVOKE CREATE ON SCHEMA ops FROM luminous_ops_retry_owner;
 
 GRANT INSERT (
   tenant_id, connection_id, source_uri, event_id, event_digest, reason_code

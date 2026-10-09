@@ -182,6 +182,32 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert!(privileges.try_get::<bool, _>("outbox_retry_function").unwrap());
     assert!(!privileges.try_get::<bool, _>("outbox_update_payload").unwrap());
 
+    let retry_owner = sqlx::query(
+        "SELECT r.rolname, r.rolsuper, r.rolbypassrls, r.rolcanlogin, \\
+                has_table_privilege(r.rolname, 'ops.outbox_events', 'SELECT') AS can_select_outbox, \\
+                has_column_privilege(r.rolname, 'ops.outbox_events', 'available_at', 'UPDATE') AS can_schedule, \\
+                has_column_privilege(r.rolname, 'ops.outbox_events', 'payload', 'UPDATE') AS can_rewrite_payload \\
+         FROM pg_proc AS p JOIN pg_roles AS r ON r.oid = p.proowner \\
+         WHERE p.oid = 'ops.schedule_outbox_retry(text,text,text)'::regprocedure"
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("inspect exact SECURITY DEFINER owner");
+    assert_eq!(retry_owner.try_get::<String, _>("rolname").unwrap(), "luminous_ops_retry_owner");
+    assert!(!retry_owner.try_get::<bool, _>("rolsuper").unwrap());
+    assert!(!retry_owner.try_get::<bool, _>("rolbypassrls").unwrap());
+    assert!(!retry_owner.try_get::<bool, _>("rolcanlogin").unwrap());
+    assert!(retry_owner.try_get::<bool, _>("can_select_outbox").unwrap());
+    assert!(retry_owner.try_get::<bool, _>("can_schedule").unwrap());
+    assert!(!retry_owner.try_get::<bool, _>("can_rewrite_payload").unwrap());
+    let runtime_can_assume_retry_owner: bool = sqlx::query_scalar(
+        "SELECT pg_has_role('luminous_ops_runtime_test', 'luminous_ops_retry_owner', 'MEMBER')"
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert!(!runtime_can_assume_retry_owner, "runtime login cannot SET ROLE to the definer owner");
+
     // The database must reject state claiming an external resource that is not
     // explicitly mapped to the canonical local resource, even if application
     // code accidentally bypasses the Rust mapping check.
@@ -587,6 +613,31 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
 
     let lease_three = store.claim_next_outbox(TENANT, "worker-d", 30).await.unwrap().unwrap();
     assert_eq!(lease_three.sequence_no, 3);
+
+    // Even an otherwise valid worker cannot reschedule a row by presenting a
+    // tenant parameter that differs from this transaction's RLS context.
+    let mut mismatched_tenant = scope_pool.begin().await.unwrap();
+    sqlx::raw_sql("SET LOCAL ROLE luminous_ops_app")
+        .execute(&mut *mismatched_tenant)
+        .await
+        .unwrap();
+    sqlx::query("SELECT set_config('app.tenant_id', $1, true)")
+        .bind(TENANT)
+        .execute(&mut *mismatched_tenant)
+        .await
+        .unwrap();
+    let mismatched_tenant_rescheduled: bool = sqlx::query_scalar(
+        "SELECT ops.schedule_outbox_retry($1, $2, $3)"
+    )
+    .bind("tenant-other-001")
+    .bind(&lease_three.outbox_id)
+    .bind("worker-d")
+    .fetch_one(&mut *mismatched_tenant)
+    .await
+    .unwrap();
+    assert!(!mismatched_tenant_rescheduled, "function must bind parameter tenant to RLS tenant context");
+    mismatched_tenant.commit().await.unwrap();
+
     assert!(!store.retry_outbox_after_failure(TENANT, &lease_three.outbox_id, "worker-not-owner").await.unwrap(),
         "a different worker must not reschedule the live lease");
     assert!(store.retry_outbox_after_failure(TENANT, &lease_three.outbox_id, "worker-d").await.unwrap(),
@@ -623,9 +674,6 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert!(store.acknowledge_outbox(TENANT, &lease_three_retry.outbox_id, "worker-e").await.unwrap());
     assert!(store.claim_next_outbox(TENANT, "worker-f", 30).await.unwrap().is_none());
 
-    // Kill a separate receiver process after ingest_event has committed but
-    // before the caller can acknowledge the source event. Redelivery after the
-    // process death must return DuplicateEvent without another local effect.
     // Race two distinct deliveries that reuse one idempotency key with
     // different semantics. The per-key advisory lock must make the loser an
     // idempotency conflict, not a stale/equal-revision outcome, regardless of
@@ -684,6 +732,9 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert!(store.acknowledge_outbox(TENANT, &race_lease.outbox_id, "worker-idem-race").await.unwrap());
     assert!(store.claim_next_outbox(TENANT, "worker-idem-race", 30).await.unwrap().is_none());
 
+    // Kill a separate receiver process after ingest_event has committed but
+    // before the caller can acknowledge the source event. Redelivery after the
+    // process death must return DuplicateEvent without another local effect.
     let before_crash = row_count_snapshot(&pool).await;
     let probe = Command::new(env::current_exe().expect("current test executable"))
         .args([
