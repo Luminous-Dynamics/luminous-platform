@@ -291,6 +291,8 @@ pub enum ClaimClass {
     InvoiceVsAlternativeQuote,
     /// Actual supplier invoice compared with an earlier alternative invoice and delivery evidence.
     HistoricalInvoiceComparison,
+    /// The baseline mixes alternative quotes and historical invoices.
+    MixedBaselineEvidence,
     /// Arithmetic is available but delivery evidence is missing.
     ProvisionalWithoutDeliveryEvidence,
 }
@@ -801,11 +803,16 @@ pub fn calculate_savings(input: &SavingsInput) -> Result<SavingsReport, Commerce
     let baseline_has_estimate = baseline_kinds.contains(&EvidenceKind::PublicListPriceEstimate)
         || input.baseline_coverage.evidence.kind == EvidenceKind::PublicListPriceEstimate
         || input.baseline_costs.iter().any(|line| line.evidence.kind == EvidenceKind::PublicListPriceEstimate);
+    let has_alternative_invoice = baseline_kinds.contains(&EvidenceKind::AlternativeInvoice);
+    let has_alternative_quote = baseline_kinds.contains(&EvidenceKind::AlternativeQuote);
     let claim_class = if baseline_has_estimate {
         ClaimClass::Estimate
     } else if input.delivery_lines.is_empty() {
         ClaimClass::ProvisionalWithoutDeliveryEvidence
-    } else if baseline_kinds.len() == 1 && baseline_kinds.contains(&EvidenceKind::AlternativeInvoice)
+    } else if has_alternative_invoice && has_alternative_quote {
+        ClaimClass::MixedBaselineEvidence
+    } else if baseline_kinds.len() == 1
+        && has_alternative_invoice
         && input.baseline_coverage.evidence.kind == EvidenceKind::AlternativeInvoice
     {
         ClaimClass::HistoricalInvoiceComparison
@@ -1136,6 +1143,16 @@ mod tests {
         let mut candidate = input();
         candidate.actual_lines[0].evidence.sha256 = "not-a-digest".into();
         assert_eq!(calculate_savings(&candidate), Err(CommerceError::InvalidEvidence));
+    }
+
+    #[test]
+    fn mixed_invoice_and_quote_baseline_is_never_labeled_as_a_pure_quote_comparison() {
+        let mut candidate = input();
+        candidate.baseline_lines[0].evidence.kind = EvidenceKind::AlternativeInvoice;
+        candidate.baseline_coverage.evidence.kind = EvidenceKind::AlternativeInvoice;
+        candidate.baseline_costs[0].evidence.kind = EvidenceKind::AlternativeQuote;
+        let report = calculate_savings(&candidate).unwrap();
+        assert_eq!(report.claim_class, ClaimClass::MixedBaselineEvidence);
     }
 
     #[test]
