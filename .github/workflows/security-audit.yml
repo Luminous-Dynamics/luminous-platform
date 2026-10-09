@@ -354,7 +354,7 @@ jobs:
           elif [[ "$root_links" -ne 0 ]]; then incomplete gitlink_without_gitmodules; exit 0; fi
 
           source_inventory="$RUNNER_TEMP/gitleaks-source-inventory.nul"
-          if ! (cd "$source_dir" && find . -mindepth 1 \\( -type f -o -type l \\) -printf '%P\0' | LC_ALL=C sort -z) > "$source_inventory"; then
+          if ! (cd "$source_dir" && find . -mindepth 1 \( -type f -o -type l \) -printf '%P\0' | LC_ALL=C sort -z) > "$source_inventory"; then
             incomplete source_inventory_generation_failed; exit 0
           fi
           source_file_count="$(python3 - "$source_inventory" <<'PY'
