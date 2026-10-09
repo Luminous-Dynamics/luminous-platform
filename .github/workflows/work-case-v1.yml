@@ -47,7 +47,7 @@ jobs:
       - name: Validate Work Case V1
         run: >-
           "$RUNNER_TEMP/work-case-v1-venv/bin/python" scripts/run_unittest_suite.py
-          contracts/work-case-v1/tests --minimum-tests 31
+          contracts/work-case-v1/tests --minimum-tests 32
 
       - name: Publish bounded qualification summary
         if: success()
@@ -57,7 +57,7 @@ jobs:
           {
             echo "## Manual Work Case Contract V1"
             echo "- Tested source revision: $SOURCE_SHA"
-            echo "- Requires at least 31 discovered Work Case test cases and executes the full discovered suite."
+            echo "- Requires at least 32 discovered Work Case test cases and executes the full discovered suite."
             echo "- Does not qualify production database isolation/durability, tenant authorization, live provider behavior, evidence truth, or remote execution."
           } >> "$GITHUB_STEP_SUMMARY"
 
