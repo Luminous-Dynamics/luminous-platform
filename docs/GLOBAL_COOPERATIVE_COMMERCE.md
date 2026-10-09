@@ -272,12 +272,13 @@ A missing pack must not silently inherit another country's rules. It should stil
 ## 11. What to implement next
 
 1. Keep this document as a proposed architecture, linked from the global deployment model.
-2. Define and review a versioned offer/demand/quote/order/fulfillment/savings-receipt schema with fixtures before writing a transactional engine.
-3. Build a no-purchase prototype that imports supplier catalog CSVs, normalizes units, compares landed-cost quotes, and exports a calculation receipt.
-4. Create a manual-first buying-pilot pack with buyer consent, supplier RFQ, quote comparison, order mandate, delivery checklist, and dispute record.
-5. Test non-binding versus binding states, stale quotations, pack mismatch, currency conversion, taxes, unit conversion, duplicate retries, unauthorized orders, partial deliveries, substitutions, refunds, and negative savings.
-6. Complete a local legal review before real multi-business pooled buying or financial flow.
-7. Run one category in one region, report positive and negative outcomes, and add jurisdictions only as their local packs and providers are maintained.
+2. Review and extend the proposed [cooperative-offer schema](../schemas/cooperative-offer-v1.schema.json) and synthetic fixtures; schema validity alone does not validate official code-list membership or transaction semantics.
+3. Add a separate semantic validator for quote time ordering, unit conversion, price-break consistency, jurisdiction-pack status, and explicit landed-cost uncertainty.
+4. Build a no-purchase prototype that imports supplier catalog CSVs, normalizes units, compares landed-cost quotes, and exports a calculation receipt.
+5. Extend the manual-first buying pack with buyer consent, supplier RFQ, quote comparison, order mandate, delivery checklist, and dispute record.
+6. Test non-binding versus binding states, stale quotations, pack mismatch, currency conversion, taxes, unit conversion, duplicate retries, unauthorized orders, partial deliveries, substitutions, refunds, and negative savings.
+7. Complete a local legal review before real multi-business pooled buying or financial flow.
+8. Run one category in one region, report positive and negative outcomes, and add jurisdictions only as their local packs and providers are maintained.
 
 Do not start with a token, a proprietary payment rail, a warehouse, a global corporation structure, or an AI buyer that commits other people's money. Those are optional future choices, not prerequisites for proving the economics.
 
