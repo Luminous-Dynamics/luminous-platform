@@ -787,7 +787,7 @@ jobs:
           path: security-audit-results/
           if-no-files-found: error
           retention-days: 14
-npmsec:
+  npmsec:
     name: npm dependency audit
     if: inputs.audit_node
     runs-on: ubuntu-24.04
