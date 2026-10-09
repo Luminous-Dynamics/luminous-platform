@@ -163,9 +163,11 @@ CREATE TABLE ops.quarantined_events (
   event_digest text NOT NULL CHECK (event_digest ~ '^[0-9a-f]{64}$'),
   reason_code text NOT NULL CHECK (reason_code ~ '^[A-Z][A-Z0-9_]{1,79}$'),
   recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
-  UNIQUE (tenant_id, connection_id, source_uri, event_id, reason_code),
+  UNIQUE (tenant_id, connection_id, source_uri, event_id, event_digest, reason_code),
   FOREIGN KEY (connection_id, tenant_id)
-    REFERENCES ops.connector_connections(connection_id, tenant_id)
+    REFERENCES ops.connector_connections(connection_id, tenant_id),
+  FOREIGN KEY (tenant_id, connection_id, source_uri, event_id)
+    REFERENCES ops.inbox_events(tenant_id, connection_id, source_uri, event_id)
 );
 
 CREATE INDEX outbox_claimable_idx

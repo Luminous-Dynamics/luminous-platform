@@ -51,6 +51,10 @@ The Rust crate embeds the checked-in Draft 2020-12 schemas, enables format asser
 
 The CI workflow qualifies the Rust contract separately from the Python reference-model research job. Passing the latter does not qualify the Rust crate or any production system.
 
+## Conflict and quarantine replay behavior
+
+Conflicting content under an already accepted event identity records a digest-only quarantine receipt without changing the original inbox outcome. Reusing a business idempotency key with different semantics keeps the new inbox event quarantined and returns an explicit conflict. Re-delivery of that quarantined event returns the stored quarantine reason instead of a generic duplicate result. Quarantine uniqueness includes the rejected-content digest, so identical repeated attempts collapse to one receipt while distinct conflicting contents remain distinguishable without storing raw payloads.
+
 ## Important limits
 
 Schema-valid does **not** mean trusted, authorized, current, correctly sequenced, or safe to execute. The envelope schema validates metadata shape; `dataschema` identifies a specific domain payload schema. Neither schema is a policy engine, identity provider, proof verifier, or cross-tenant authorization mechanism.

@@ -46,6 +46,8 @@ pub enum StoreError {
     InvalidEvent,
     #[error("revision policy is malformed")]
     InvalidRevisionPolicy,
+    #[error("inbox row has an unexpected nonterminal state")]
+    IncompleteEventState,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -63,7 +65,7 @@ pub enum IngestOutcome {
     DuplicateEffect,
     DuplicateRevision,
     StaleRevision,
-    Quarantined { reason_code: &'static str },
+    Quarantined { reason_code: String },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -192,7 +194,7 @@ impl PostgresOperationsStore {
 
         if inserted.is_none() {
             let prior = sqlx::query(
-                "SELECT content_digest FROM ops.inbox_events \
+                "SELECT content_digest, outcome FROM ops.inbox_events \
                  WHERE tenant_id = $1 AND connection_id = $2 AND source_uri = $3 AND event_id = $4",
             )
             .bind(&authenticated.tenant_id)
@@ -203,12 +205,48 @@ impl PostgresOperationsStore {
             .await?
             .ok_or(StoreError::ConnectorUnavailable)?;
             let old_digest: String = prior.try_get("content_digest")?;
+            let old_outcome: String = prior.try_get("outcome")?;
+
             if old_digest != event_digest {
-                tx.rollback().await?;
+                // Keep the original inbox result unchanged; record only a digest
+                // for the conflicting content and return an explicit conflict.
+                record_quarantine(
+                    &mut tx,
+                    authenticated,
+                    source_uri,
+                    event_id,
+                    &event_digest,
+                    "EVENT_IDENTITY_CONTENT_CONFLICT",
+                )
+                .await?;
+                tx.commit().await?;
                 return Err(StoreError::EventIdentityConflict);
             }
-            tx.commit().await?;
-            return Ok(IngestOutcome::DuplicateEvent);
+
+            let replay_outcome = match old_outcome.as_str() {
+                "QUARANTINED" => {
+                    let reason_code = latest_quarantine_reason(
+                        &mut tx,
+                        authenticated,
+                        source_uri,
+                        event_id,
+                    )
+                    .await?
+                    .unwrap_or_else(|| "QUARANTINED_WITHOUT_REASON".to_owned());
+                    Some(IngestOutcome::Quarantined { reason_code })
+                }
+                "STALE_REVISION" => Some(IngestOutcome::StaleRevision),
+                "DUPLICATE_EFFECT" => Some(IngestOutcome::DuplicateEffect),
+                "DUPLICATE_REVISION" => Some(IngestOutcome::DuplicateRevision),
+                "ACCEPTED" | "DUPLICATE_EVENT" => Some(IngestOutcome::DuplicateEvent),
+                _ => None,
+            };
+            if let Some(outcome) = replay_outcome {
+                tx.commit().await?;
+                return Ok(outcome);
+            }
+            tx.rollback().await?;
+            return Err(StoreError::IncompleteEventState);
         }
 
         let mapping = sqlx::query(
@@ -228,7 +266,7 @@ impl PostgresOperationsStore {
         let Some(mapping) = mapping else {
             quarantine(&mut tx, authenticated, source_uri, event_id, &event_digest, "UNMAPPED_SOURCE_RESOURCE").await?;
             tx.commit().await?;
-            return Ok(IngestOutcome::Quarantined { reason_code: "UNMAPPED_SOURCE_RESOURCE" });
+            return Ok(IngestOutcome::Quarantined { reason_code: "UNMAPPED_SOURCE_RESOURCE".to_owned() });
         };
         let incident_id: String = mapping.try_get("local_incident_id")?;
 
@@ -249,7 +287,7 @@ impl PostgresOperationsStore {
         if validate_event_for_connection(event, &trusted).is_err() {
             quarantine(&mut tx, authenticated, source_uri, event_id, &event_digest, "TRUSTED_CONTEXT_BINDING_MISMATCH").await?;
             tx.commit().await?;
-            return Ok(IngestOutcome::Quarantined { reason_code: "TRUSTED_CONTEXT_BINDING_MISMATCH" });
+            return Ok(IngestOutcome::Quarantined { reason_code: "TRUSTED_CONTEXT_BINDING_MISMATCH".to_owned() });
         }
 
         // Serialize a business idempotency key before checking the durable
@@ -279,7 +317,16 @@ impl PostgresOperationsStore {
         if let Some(existing_effect) = existing_effect {
             let existing_digest: String = existing_effect.try_get("semantic_digest")?;
             if existing_digest != semantic_digest {
-                tx.rollback().await?;
+                quarantine(
+                    &mut tx,
+                    authenticated,
+                    source_uri,
+                    event_id,
+                    &event_digest,
+                    "IDEMPOTENCY_KEY_CONTENT_CONFLICT",
+                )
+                .await?;
+                tx.commit().await?;
                 return Err(StoreError::IdempotencyConflict);
             }
             set_inbox_outcome(
@@ -331,7 +378,7 @@ impl PostgresOperationsStore {
         {
             quarantine(&mut tx, authenticated, source_uri, event_id, &event_digest, "REVISION_SOURCE_CHANGED").await?;
             tx.commit().await?;
-            return Ok(IngestOutcome::Quarantined { reason_code: "REVISION_SOURCE_CHANGED" });
+            return Ok(IngestOutcome::Quarantined { reason_code: "REVISION_SOURCE_CHANGED".to_owned() });
         }
 
         if let Some(current_revision) = current_revision.as_deref() {
@@ -344,7 +391,7 @@ impl PostgresOperationsStore {
                     }
                     quarantine(&mut tx, authenticated, source_uri, event_id, &event_digest, "REVISION_CONTENT_CONFLICT").await?;
                     tx.commit().await?;
-                    return Ok(IngestOutcome::Quarantined { reason_code: "REVISION_CONTENT_CONFLICT" });
+                    return Ok(IngestOutcome::Quarantined { reason_code: "REVISION_CONTENT_CONFLICT".to_owned() });
                 }
                 RevisionOrder::Older => {
                     set_inbox_outcome(&mut tx, authenticated, source_uri, event_id, "STALE_REVISION").await?;
@@ -354,7 +401,7 @@ impl PostgresOperationsStore {
                 RevisionOrder::Unproven => {
                     quarantine(&mut tx, authenticated, source_uri, event_id, &event_digest, "REVISION_ORDER_UNPROVEN").await?;
                     tx.commit().await?;
-                    return Ok(IngestOutcome::Quarantined { reason_code: "REVISION_ORDER_UNPROVEN" });
+                    return Ok(IngestOutcome::Quarantined { reason_code: "REVISION_ORDER_UNPROVEN".to_owned() });
                 }
                 RevisionOrder::Newer => {}
             }
@@ -388,7 +435,16 @@ impl PostgresOperationsStore {
             .ok_or(StoreError::ConnectorUnavailable)?;
             let prior_digest: String = prior.try_get("semantic_digest")?;
             if prior_digest != semantic_digest {
-                tx.rollback().await?;
+                quarantine(
+                    &mut tx,
+                    authenticated,
+                    source_uri,
+                    event_id,
+                    &event_digest,
+                    "IDEMPOTENCY_KEY_CONTENT_CONFLICT",
+                )
+                .await?;
+                tx.commit().await?;
                 return Err(StoreError::IdempotencyConflict);
             }
             set_inbox_outcome(&mut tx, authenticated, source_uri, event_id, "DUPLICATE_EFFECT").await?;
@@ -685,7 +741,7 @@ async fn set_inbox_outcome(
     Ok(())
 }
 
-async fn quarantine(
+async fn record_quarantine(
     tx: &mut Transaction<'_, Postgres>,
     authenticated: &AuthenticatedConnector,
     source_uri: &str,
@@ -706,5 +762,46 @@ async fn quarantine(
     .bind(reason_code)
     .execute(&mut **tx)
     .await?;
+    Ok(())
+}
+
+async fn quarantine(
+    tx: &mut Transaction<'_, Postgres>,
+    authenticated: &AuthenticatedConnector,
+    source_uri: &str,
+    event_id: &str,
+    event_digest: &str,
+    reason_code: &'static str,
+) -> Result<(), StoreError> {
+    record_quarantine(
+        tx,
+        authenticated,
+        source_uri,
+        event_id,
+        event_digest,
+        reason_code,
+    )
+    .await?;
     set_inbox_outcome(tx, authenticated, source_uri, event_id, "QUARANTINED").await
+}
+
+async fn latest_quarantine_reason(
+    tx: &mut Transaction<'_, Postgres>,
+    authenticated: &AuthenticatedConnector,
+    source_uri: &str,
+    event_id: &str,
+) -> Result<Option<String>, StoreError> {
+    let row = sqlx::query(
+        "SELECT reason_code FROM ops.quarantined_events \
+         WHERE tenant_id = $1 AND connection_id = $2 AND source_uri = $3 AND event_id = $4 \
+         ORDER BY recorded_at DESC, quarantine_id DESC LIMIT 1",
+    )
+    .bind(&authenticated.tenant_id)
+    .bind(&authenticated.connection_id)
+    .bind(source_uri)
+    .bind(event_id)
+    .fetch_optional(&mut **tx)
+    .await?;
+    row.map(|value| value.try_get("reason_code").map_err(StoreError::from))
+        .transpose()
 }
