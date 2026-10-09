@@ -1,18 +1,21 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use sqlx::{postgres::PgPoolOptions, types::Json, PgPool, Postgres, Transaction};
 use std::collections::HashSet;
 use uuid::Uuid;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum CaseKind { Incident, Request, Problem, Change }
 impl CaseKind {
     fn as_db_str(self) -> &'static str {
         match self { Self::Incident => "incident", Self::Request => "request", Self::Problem => "problem", Self::Change => "change" }
     }
 }
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum CaseState { Open, InProgress, Waiting, Resolved, Closed, Cancelled }
 impl CaseState {
     fn as_db_str(self) -> &'static str {
@@ -34,7 +37,7 @@ impl ActorRole {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerifiedPrincipal { tenant_id: String, actor_id: String, role: ActorRole }
 impl VerifiedPrincipal {
-    pub fn from_verified_authentication(
+    pub(crate) fn from_verified_authentication(
         tenant_id: &str, actor_id: &str, role: ActorRole
     ) -> Result<Self, RepositoryError> {
         let tenant_id = clean_nonempty(tenant_id, 128)?;
@@ -57,17 +60,18 @@ pub struct CreateWorkCase {
     pub priority: i16,
     pub assignee_id: Option<String>,
 }
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct ExternalReference {
     pub provider: String, pub connection_id: String, pub external_id: String, pub linked_at: DateTime<Utc>,
 }
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct EvidenceReference {
     pub evidence_id: String, pub digest_sha256: String, pub classification: String,
     pub evidence_kind: String, pub issuer: String, pub created_at: DateTime<Utc>,
 }
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct WorkCase {
+    pub schema_version: String,
     pub tenant_id: String, pub case_id: String, pub kind: CaseKind, pub title: String,
     pub summary: String, pub customer_id: String, pub site_id: Option<String>,
     pub asset_ids: Vec<String>, pub priority: i16, pub state: CaseState, pub revision: i64,
@@ -81,6 +85,9 @@ pub enum RepositoryError {
     #[error("principal is not permitted to perform this operation")] Forbidden,
     #[error("invalid work-case input")] InvalidInput,
     #[error("persisted work-case/idempotency state is inconsistent")] InconsistentState,
+    #[error("case was changed by a competing command or expected revision is stale")] RevisionConflict,
+    #[error("requested lifecycle transition is not allowed")] InvalidTransition,
+    #[error("work case was not found in this tenant")] NotFound,
     #[error("failed to encode canonical command material")] Encoding(#[from] serde_json::Error),
 }
 #[derive(Clone)]
@@ -91,7 +98,7 @@ struct WorkCaseRow {
     state: String, revision: i64, assignee_id: Option<String>,
     created_at: DateTime<Utc>, updated_at: DateTime<Utc>,
 }
-struct IdempotencyRow { command_digest: String, result_case_id: String }
+struct IdempotencyRow { command_digest: String, result_case_id: String, result_payload: Json<Value> }
 struct ExternalReferenceRow { provider: String, connection_id: String, external_id: String, linked_at: DateTime<Utc> }
 struct EvidenceReferenceRow {
     evidence_id: String, digest_sha256: String, classification: String, evidence_kind: String,
@@ -140,10 +147,9 @@ impl WorkCaseRepository {
 
         if let Some(prior) = find_idempotency(&mut tx, &principal.tenant_id, &key).await? {
             if prior.command_digest != digest { return Err(RepositoryError::IdempotencyConflict); }
-            let existing = fetch_case(&mut tx, &principal.tenant_id, &prior.result_case_id).await?
-                .ok_or(RepositoryError::InconsistentState)?;
+            let original: WorkCase = serde_json::from_value(prior.result_payload.0)?;
             tx.commit().await?;
-            return Ok(existing);
+            return Ok(original);
         }
 
         // Unique-key insert serializes concurrent attempts; the FK is deferred so
@@ -159,10 +165,9 @@ impl WorkCaseRepository {
             let prior = find_idempotency(&mut tx, &principal.tenant_id, &key).await?
                 .ok_or(RepositoryError::InconsistentState)?;
             if prior.command_digest != digest { return Err(RepositoryError::IdempotencyConflict); }
-            let existing = fetch_case(&mut tx, &principal.tenant_id, &prior.result_case_id).await?
-                .ok_or(RepositoryError::InconsistentState)?;
+            let original: WorkCase = serde_json::from_value(prior.result_payload.0)?;
             tx.commit().await?;
-            return Ok(existing);
+            return Ok(original);
         }
 
         let row = sqlx::query_as!(
@@ -196,8 +201,14 @@ impl WorkCaseRepository {
             occurred_at
         ).execute(&mut *tx).await?;
 
+        let created = WorkCase::from((row, Vec::new(), Vec::new()));
+        let result_payload = Json(serde_json::to_value(&created)?);
+        sqlx::query!(
+            "UPDATE command_idempotency SET result_payload = $3 WHERE tenant_id = $1 AND idempotency_key = $2",
+            principal.tenant_id, key, result_payload
+        ).execute(&mut *tx).await?;
         tx.commit().await?;
-        Ok(WorkCase::from((row, Vec::new(), Vec::new())))
+        Ok(created)
     }
 
     pub async fn get_case(&self, principal: &VerifiedPrincipal, case_id: &str) -> Result<Option<WorkCase>, RepositoryError> {
@@ -208,6 +219,94 @@ impl WorkCaseRepository {
         tx.commit().await?;
         Ok(row)
     }
+    /// Apply a lifecycle transition using optimistic revision checks and durable idempotency.
+    pub async fn transition_case(
+        &self, principal: &VerifiedPrincipal, case_id: &str, target: CaseState,
+        expected_revision: i64, reason: &str, idempotency_key: &str,
+        command_id: &str, occurred_at: &str,
+    ) -> Result<WorkCase, RepositoryError> {
+        if principal.role == ActorRole::Requester { return Err(RepositoryError::Forbidden); }
+        let case_id = clean_case_id(case_id)?;
+        let reason = clean_nonempty(reason, 1000)?;
+        let command_id = clean_nonempty(command_id, 128)?;
+        let key = clean_nonempty(idempotency_key, 200)?;
+        let occurred_at = parse_timestamp(occurred_at)?;
+        if expected_revision < 1 { return Err(RepositoryError::InvalidInput); }
+        let payload = json!({ "case_id": case_id, "target_state": target.as_db_str(),
+            "expected_revision": expected_revision, "reason": reason });
+        let digest = command_digest(principal, "case.transition", &payload)?;
+
+        let mut tx = self.pool.begin().await?;
+        set_tenant(&mut tx, &principal.tenant_id).await?;
+        if let Some(prior) = find_idempotency(&mut tx, &principal.tenant_id, &key).await? {
+            if prior.command_digest != digest { return Err(RepositoryError::IdempotencyConflict); }
+            let original: WorkCase = serde_json::from_value(prior.result_payload.0)?;
+            tx.commit().await?;
+            return Ok(original);
+        }
+        let current = fetch_case(&mut tx, &principal.tenant_id, &case_id).await?
+            .ok_or(RepositoryError::NotFound)?;
+        if current.revision != expected_revision { return Err(RepositoryError::RevisionConflict); }
+        if !transition_allowed(current.state, target) { return Err(RepositoryError::InvalidTransition); }
+
+        let claim = sqlx::query!(
+            r#"INSERT INTO command_idempotency (tenant_id, idempotency_key, command_digest, result_case_id)
+               VALUES ($1, $2, $3, $4)
+               ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+               RETURNING idempotency_key"#,
+            principal.tenant_id, key, digest, case_id
+        ).fetch_optional(&mut *tx).await?;
+        if claim.is_none() {
+            let prior = find_idempotency(&mut tx, &principal.tenant_id, &key).await?
+                .ok_or(RepositoryError::InconsistentState)?;
+            if prior.command_digest != digest { return Err(RepositoryError::IdempotencyConflict); }
+            let original: WorkCase = serde_json::from_value(prior.result_payload.0)?;
+            tx.commit().await?;
+            return Ok(original);
+        }
+
+        let row = sqlx::query_as!(
+            WorkCaseRow,
+            r#"UPDATE work_cases SET state = $4, revision = revision + 1, updated_at = $5
+               WHERE tenant_id = $1 AND case_id = $2 AND revision = $3
+               RETURNING tenant_id, case_id, kind, title, summary, customer_id, site_id,
+                         asset_ids, priority, state, revision, assignee_id, created_at, updated_at"#,
+            principal.tenant_id, case_id, expected_revision, target.as_db_str(), occurred_at
+        ).fetch_optional(&mut *tx).await?;
+        let row = row.ok_or(RepositoryError::RevisionConflict)?;
+        let sequence = sqlx::query_scalar!(
+            "SELECT COALESCE(MAX(sequence), 0) + 1 AS \"next!\" FROM case_activity WHERE tenant_id = $1 AND case_id = $2",
+            principal.tenant_id, case_id
+        ).fetch_one(&mut *tx).await?;
+        let activity_id = Uuid::new_v4().to_string();
+        sqlx::query!(
+            r#"INSERT INTO case_activity
+               (tenant_id, case_id, sequence, activity_id, command_id, actor_id, actor_role,
+                activity_type, occurred_at, reason, prior_revision, new_revision, details)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,'case.state_changed',$8,$9,$10,$11,$12)"#,
+            principal.tenant_id, case_id, sequence, activity_id, command_id, principal.actor_id,
+            principal.role.as_db_str(), occurred_at, reason, expected_revision, expected_revision + 1,
+            Json(json!({"from": current.state.as_db_str(), "to": target.as_db_str()}))
+        ).execute(&mut *tx).await?;
+        sqlx::query!(
+            r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload, status, attempts, created_at)
+               VALUES ($1,$2,$3,$4,'io.luminousdynamics.workcase.state_changed',$5,'PENDING',0,$6)"#,
+            principal.tenant_id, Uuid::new_v4(), case_id, expected_revision + 1,
+            Json(json!({"tenant_id": principal.tenant_id, "case_id": case_id,
+                "revision": expected_revision + 1, "activity_id": activity_id,
+                "from": current.state.as_db_str(), "to": target.as_db_str()})), occurred_at
+        ).execute(&mut *tx).await?;
+
+        let updated = WorkCase::from((row, current.external_refs, current.evidence_refs));
+        let result_payload = Json(serde_json::to_value(&updated)?);
+        sqlx::query!(
+            "UPDATE command_idempotency SET result_payload = $3 WHERE tenant_id = $1 AND idempotency_key = $2",
+            principal.tenant_id, key, result_payload
+        ).execute(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(updated)
+    }
+
     #[cfg(test)]
     fn pool(&self) -> &PgPool { &self.pool }
 }
@@ -224,7 +323,7 @@ impl From<(WorkCaseRow, Vec<ExternalReference>, Vec<EvidenceReference>)> for Wor
             "resolved" => CaseState::Resolved, "closed" => CaseState::Closed, "cancelled" => CaseState::Cancelled,
             _ => unreachable!("database CHECK constraint restricts case state"),
         };
-        Self { tenant_id: row.tenant_id, case_id: row.case_id, kind, title: row.title,
+        Self { schema_version: "work-case-v1".to_owned(), tenant_id: row.tenant_id, case_id: row.case_id, kind, title: row.title,
             summary: row.summary, customer_id: row.customer_id, site_id: row.site_id,
             asset_ids: row.asset_ids, priority: row.priority, state, revision: row.revision,
             assignee_id: row.assignee_id, created_at: row.created_at, updated_at: row.updated_at,
@@ -256,6 +355,13 @@ fn command_digest(p: &VerifiedPrincipal, operation: &str, payload: &Value) -> Re
         "actor_role": p.role.as_db_str(), "operation": operation, "payload": payload});
     Ok(format!("{:x}", Sha256::digest(serde_json::to_vec(&material)?)))
 }
+fn transition_allowed(from: CaseState, to: CaseState) -> bool {
+    matches!((from, to),
+        (CaseState::Open, CaseState::InProgress | CaseState::Waiting | CaseState::Cancelled)
+        | (CaseState::InProgress, CaseState::Waiting | CaseState::Resolved | CaseState::Cancelled)
+        | (CaseState::Waiting, CaseState::InProgress | CaseState::Resolved | CaseState::Cancelled)
+        | (CaseState::Resolved, CaseState::Open | CaseState::Closed))
+}
 async fn set_tenant(tx: &mut Transaction<'_, Postgres>, tenant_id: &str) -> Result<(), sqlx::Error> {
     let _: String = sqlx::query_scalar("SELECT set_config('app.tenant_id', $1, true)")
         .bind(tenant_id).fetch_one(&mut **tx).await?;
@@ -264,7 +370,8 @@ async fn set_tenant(tx: &mut Transaction<'_, Postgres>, tenant_id: &str) -> Resu
 async fn find_idempotency(tx: &mut Transaction<'_, Postgres>, tenant_id: &str, key: &str)
     -> Result<Option<IdempotencyRow>, sqlx::Error> {
     sqlx::query_as!(IdempotencyRow,
-        "SELECT command_digest, result_case_id FROM command_idempotency WHERE tenant_id = $1 AND idempotency_key = $2",
+        r#"SELECT command_digest, result_case_id, result_payload AS "result_payload: Json<Value>"
+           FROM command_idempotency WHERE tenant_id = $1 AND idempotency_key = $2"#,
         tenant_id, key
     ).fetch_optional(&mut **tx).await
 }
@@ -321,6 +428,21 @@ mod tests {
             asset_ids: vec!["asset-synthetic-01".into()], priority: 2, assignee_id: None,
         }
     }
+    async fn side_effect_counts(pool: &PgPool, p: &VerifiedPrincipal, case_id: &str) -> Result<(i64, i64), sqlx::Error> {
+        let mut tx = pool.begin().await?;
+        set_tenant(&mut tx, &p.tenant_id).await?;
+        let activity = sqlx::query_scalar!(
+            r#"SELECT count(*)::BIGINT AS "count!" FROM case_activity WHERE tenant_id = $1 AND case_id = $2"#,
+            p.tenant_id, case_id
+        ).fetch_one(&mut *tx).await?;
+        let outbox = sqlx::query_scalar!(
+            r#"SELECT count(*)::BIGINT AS \"count!\" FROM case_outbox WHERE tenant_id = $1 AND case_id = $2"#,
+            p.tenant_id, case_id
+        ).fetch_one(&mut *tx).await?;
+        tx.commit().await?;
+        Ok((activity, outbox))
+    }
+
     async fn unscoped_rls_count(pool: &PgPool, p: &VerifiedPrincipal) -> Result<i64, sqlx::Error> {
         let mut tx = pool.begin().await?;
         set_tenant(&mut tx, &p.tenant_id).await?;
@@ -343,16 +465,31 @@ mod tests {
         assert_eq!(first, replay);
         assert!(matches!(repo.create_case(&p, command("ticket/retry-key-001", "case-synthetic-001", "Different command"))
             .await, Err(RepositoryError::IdempotencyConflict)));
-        let activity = sqlx::query_scalar!(
-            r#"SELECT count(*)::BIGINT AS "count!" FROM case_activity WHERE tenant_id = $1 AND case_id = $2"#,
-            p.tenant_id, first.case_id
-        ).fetch_one(&pool).await.expect("activity count");
-        let outbox = sqlx::query_scalar!(
-            r#"SELECT count(*)::BIGINT AS "count!" FROM case_outbox WHERE tenant_id = $1 AND case_id = $2"#,
-            p.tenant_id, first.case_id
-        ).fetch_one(&pool).await.expect("outbox count");
+        let (activity, outbox) = side_effect_counts(&pool, &p, &first.case_id).await.expect("side-effect counts");
         assert_eq!(activity, 1);
         assert_eq!(outbox, 1);
+    }
+
+    #[tokio::test]
+    async fn incomplete_idempotency_snapshot_cannot_commit() {
+        let pool = pool(1).await;
+        let repo = WorkCaseRepository { pool: pool.clone() };
+        let p = principal();
+        let created = repo.create_case(&p, command(
+            "incomplete-seed-key-001", "case-incomplete-seed-001", "Idempotency trigger seed"
+        )).await.expect("create FK target");
+
+        let key = format!("incomplete-{}", Uuid::new_v4());
+        let mut tx = pool.begin().await.expect("begin incomplete claim transaction");
+        set_tenant(&mut tx, &p.tenant_id).await.expect("set trusted tenant context");
+        sqlx::query!(
+            r#"INSERT INTO command_idempotency
+               (tenant_id, idempotency_key, command_digest, result_case_id)
+               VALUES ($1, $2, $3, $4)"#,
+            p.tenant_id, key, "0".repeat(64), created.case_id
+        ).execute(&mut *tx).await.expect("insert staged claim");
+        let commit = tx.commit().await;
+        assert!(commit.is_err(), "database must reject an incomplete idempotency result snapshot");
     }
 
     #[tokio::test]
@@ -377,6 +514,40 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn transition_is_revision_checked_and_replay_returns_original_snapshot() {
+        let pool = pool(3).await;
+        let repo = WorkCaseRepository { pool: pool.clone() };
+        let p = principal();
+        let created = repo.create_case(&p, command("transition-create-key-001", "case-transition-001", "Lifecycle test case"))
+            .await.expect("create case");
+        let changed = repo.transition_case(&p, &created.case_id, CaseState::InProgress, 1,
+            "Technician started work", "transition-key-001", "transition-command-001", "2026-10-09T12:30:00Z")
+            .await.expect("transition open to in_progress");
+        assert_eq!(changed.state, CaseState::InProgress);
+        assert_eq!(changed.revision, 2);
+        let replay = repo.transition_case(&p, &created.case_id, CaseState::InProgress, 1,
+            "Technician started work", "transition-key-001", "transition-command-001", "2026-10-09T12:30:00Z")
+            .await.expect("transition replay");
+        assert_eq!(replay, changed);
+        let current = repo.get_case(&p, &created.case_id).await.expect("read current").expect("case exists");
+        assert_eq!(current.revision, 2);
+        assert_eq!(current.state, CaseState::InProgress);
+        let create_replay = repo.create_case(&p, command(
+            "transition-create-key-001", "case-transition-001", "Lifecycle test case"
+        )).await.expect("creation retry after later transition");
+        assert_eq!(create_replay, created, "a creation retry must return its original response snapshot");
+        assert!(matches!(repo.transition_case(&p, &created.case_id, CaseState::Resolved, 1,
+            "Stale attempt", "transition-stale-key-001", "transition-command-002", "2026-10-09T12:31:00Z").await,
+            Err(RepositoryError::RevisionConflict)));
+        assert!(matches!(repo.transition_case(&p, &created.case_id, CaseState::Closed, 2,
+            "Illegal direct close", "transition-illegal-key-001", "transition-command-003", "2026-10-09T12:32:00Z").await,
+            Err(RepositoryError::InvalidTransition)));
+        let (activity, outbox) = side_effect_counts(&pool, &p, &created.case_id).await.expect("side-effect counts");
+        assert_eq!(activity, 2, "one creation and one accepted transition activity");
+        assert_eq!(outbox, 2, "one creation and one transition outbox event");
+    }
+
+    #[tokio::test]
     async fn concurrent_duplicate_claim_commits_one_case_and_outbox() {
         let pool = pool(4).await;
         let repo = WorkCaseRepository { pool };
@@ -386,10 +557,7 @@ mod tests {
         let a = a.expect("first command");
         let b = b.expect("duplicate command");
         assert_eq!(a.case_id, b.case_id);
-        let n = sqlx::query_scalar!(
-            r#"SELECT count(*)::BIGINT AS "count!" FROM case_outbox WHERE tenant_id = $1 AND case_id = $2"#,
-            p.tenant_id, a.case_id
-        ).fetch_one(repo.pool()).await.expect("count outbox");
+        let (_, n) = side_effect_counts(repo.pool(), &p, &a.case_id).await.expect("side-effect counts");
         assert_eq!(n, 1);
     }
 }

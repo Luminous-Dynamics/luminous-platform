@@ -2,7 +2,7 @@
 
 **Status:** initial PostgreSQL adapter slice; not yet production-qualified.
 
-This Rust crate implements a contract-shaped Work Case V1 create/read path using exact-pinned SQLx 0.9.0, explicit SQL and compile-time-checked query macros. It uses opaque string identifiers and idempotency keys compatible with the reference model, typed case fields, RFC 3339 timestamps, append-only creation activity, a minimal outbox event, and normalized external/evidence reference tables. State transitions, provider intake, an authenticated API, and an outbox dispatcher remain unimplemented.
+This Rust crate implements a contract-shaped Work Case V1 create/read path plus revision-checked lifecycle transitions using exact-pinned SQLx 0.9.0, explicit SQL and compile-time-checked query macros. It uses opaque string identifiers and idempotency keys compatible with the reference model, typed case fields, RFC 3339 timestamps, append-only activity, a minimal outbox event, and normalized external/evidence reference tables. Provider intake, an authenticated API, assignment/evidence mutation endpoints, and an outbox dispatcher remain unimplemented.
 
 ## Trust boundary
 
@@ -27,7 +27,7 @@ The bootstrap SQL and its password are for disposable test databases only. Produ
 
 ## Test scope
 
-The PostgreSQL suite covers contract-compatible opaque keys/IDs, same-semantics replay, conflicting idempotency reuse, one activity and outbox event per creation, concurrent duplicate claims, tenant RLS isolation, and transaction-local context on a reused connection. Missing DATABASE_URL or APP_DATABASE_URL is a hard failure, not a skipped test.
+The five-test PostgreSQL suite covers contract-compatible opaque keys/IDs, same-semantics replay, conflicting idempotency reuse, one activity and outbox event per creation, concurrent duplicate claims, tenant RLS isolation, missing-context default denial, transaction-local context on a reused connection, valid lifecycle transitions, invalid transitions, stale-revision conflicts, and original-response replay after the case has changed. Idempotency rows store the original response snapshot; a database trigger permits that snapshot to be finalized once and a deferred constraint trigger rejects committing an incomplete record. Missing DATABASE_URL or APP_DATABASE_URL is a hard failure, not a skipped test.
 
 These tests do not qualify authentication, lifecycle transitions, provider interoperability, dispatch/retry/dead-letter recovery, backup/restore, upgrades from historical schemas, or production operations. SQLx compile-time checking does not prove authorization correctness.
 
