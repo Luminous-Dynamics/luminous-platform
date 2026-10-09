@@ -123,6 +123,15 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
         self.assertFalse(report["semantic_valid"])
         self.assertTrue(any("canonical purchase-scope projection" in error for error in report["errors"]))
 
+    def test_unpaired_surrogate_fails_closed_before_consent_hashing(self):
+        document = copy.deepcopy(FIXTURE)
+        document["buyer"]["buyer_party_id"] = "\\ud800"
+        report = self.validate(document)
+        self.assertTrue(report["structural_valid"])
+        self.assertFalse(report["semantic_valid"])
+        self.assertFalse(report["transaction_authorized"])
+        self.assertTrue(any("cannot be represented by RFC 8785 JCS" in error for error in report["errors"]))
+
     def test_out_of_range_revision_fails_closed_before_jcs_hashing(self):
         document = binding_order_candidate()
         document["metadata"]["revision"] = 9007199254740992
