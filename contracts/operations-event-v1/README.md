@@ -6,6 +6,8 @@
 
 This folder defines the first portable cross-repository event contract for the proposed Xenia Operations Fabric. The envelope uses the **CloudEvents 1.0 structured JSON format** instead of introducing a proprietary envelope.
 
+Automatic CI runs on relevant pull-request changes and relevant pushes to `main`; `workflow_dispatch` remains available for a standalone branch. This avoids executing identical Rust/PostgreSQL suites twice on every commit to a branch that already has a PR.
+
 ## Files
 
 - `schema.json` — JSON Schema Draft 2020-12 for the strict Luminous CloudEvents profile.

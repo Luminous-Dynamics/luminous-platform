@@ -9,8 +9,11 @@ on:
       - "scripts/run_unittest_suite.py"
       - "scripts/tests/**"
       - ".github/workflows/operations-event-contract.yml"
+  # PR updates are tested by pull_request. Limit automatic push validation
+  # to main to avoid running the same expensive suites twice for each PR commit.
+  # Branches without a PR can use workflow_dispatch.
   push:
-    branches: ["**"]
+    branches: ["main"]
     paths:
       - "contracts/operations-event-v1/**"
       - "contracts/holochain-attestation-v1/**"
