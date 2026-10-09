@@ -1581,7 +1581,7 @@ jobs:
           RUSTSEC_JOB_RESULT: ${{ needs.rustsec.result }}
           NPM_JOB_RESULT: ${{ needs.npmsec.result }}
         run: |
-          set -uo pipefail
+          set -o pipefail
           mkdir -p audit-evidence
           verdict_status=PASS
           workflow_status=INCOMPLETE
@@ -1694,11 +1694,18 @@ jobs:
             fi
           fi
 
-          if ((${#failure_reasons[@]} > 0)); then
+          if [[ "$workflow_status" == "FAIL" || ( "$AUDIT_RUST" == "true" && "$rustsec_status" == "FAIL" ) || ( "$AUDIT_NODE" == "true" && "$npm_status" == "FAIL" ) ]]; then
             verdict_status=FAIL
-            for reason in "${failure_reasons[@]}"; do echo "AUDIT_BLOCK: $reason" >&2; done
+          elif [[ "$workflow_status" == "INCOMPLETE" || ( "$AUDIT_RUST" == "true" && "$rustsec_status" == "INCOMPLETE" ) || ( "$AUDIT_NODE" == "true" && "$npm_status" == "INCOMPLETE" ) ]]; then
+            verdict_status=INCOMPLETE
           elif [[ "$findings_below_block_threshold" == "true" ]]; then
             verdict_status=PASS_WITH_FINDINGS
+          fi
+          for reason in "${failure_reasons[@]}"; do echo "AUDIT_BLOCK: $reason" >&2; done
+
+          failure_reasons_json='[]'
+          if ((${#failure_reasons[@]} > 0)); then
+            failure_reasons_json="$(printf '%s\n' "${failure_reasons[@]}" | jq -Rsc 'split("\n") | map(select(length>0))')"
           fi
 
           files_json='[]'
@@ -1725,7 +1732,7 @@ jobs:
             --argjson audit_rust "$AUDIT_RUST" \
             --argjson audit_node "$AUDIT_NODE" \
             --argjson findings_below_block_threshold "$findings_below_block_threshold" \
-            --argjson failure_reasons "$(printf '%s\n' "${failure_reasons[@]}" | jq -Rsc 'split("\n") | map(select(length>0))')" \
+            --argjson failure_reasons "$failure_reasons_json" \
             --argjson evidence_files "$files_json" \
             '{schema:$schema, repository:$repository, subject_sha:$subject_sha, audit_engine_sha:$audit_engine_sha, run_id:$run_id, run_attempt:$run_attempt, workflow_job_result:$workflow_job_result, rustsec_job_result:$rustsec_job_result, npm_job_result:$npm_job_result, required_lanes:{workflow_security:$workflow_security_status, rustsec:(if $audit_rust then $rustsec_status else "SKIPPED_NOT_REQUESTED" end), npm:(if $audit_node then $npm_status else "SKIPPED_NOT_REQUESTED" end)}, findings_below_block_threshold:$findings_below_block_threshold, status:$status, failure_reasons:$failure_reasons, evidence_files:$evidence_files}' > audit-evidence/verdict.json
 
@@ -1742,7 +1749,7 @@ jobs:
             echo
             echo 'The aggregate verdict checks job outcomes and receipt identity/completeness. It is not an independent trust anchor; an external verifier must still validate the actual workflow reference and artifact provenance.'
           } >> "$GITHUB_STEP_SUMMARY"
-          if [[ "$verdict_status" == "FAIL" ]]; then exit 1; fi
+          if [[ "$verdict_status" == "FAIL" || "$verdict_status" == "INCOMPLETE" ]]; then exit 1; fi
 
       - name: Upload aggregate verdict and evidence manifest
         if: always()
