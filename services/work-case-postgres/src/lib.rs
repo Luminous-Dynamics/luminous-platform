@@ -630,4 +630,41 @@ mod tests {
         assert!(!privileges.activity_update, "activity is append-only");
     }
 
+    #[tokio::test]
+    async fn failed_create_rolls_back_idempotency_claim_and_side_effects() {
+        let pool = pool(3).await;
+        let repo = WorkCaseRepository { pool: pool.clone() };
+        let p = principal();
+
+        let existing = repo.create_case(
+            &p,
+            command("rollback-original-key-001", "case-rollback-existing-001", "Existing case"),
+        ).await.expect("create existing case");
+
+        // This request claims its idempotency key, then fails on the duplicate case primary key.
+        // The claim and all later side effects must roll back with the failed transaction.
+        assert!(
+            repo.create_case(
+                &p,
+                command("rollback-attempt-key-001", &existing.case_id, "Intentional collision"),
+            ).await.is_err(),
+            "a duplicate tenant/case key must fail"
+        );
+
+        // Reusing that key with corrected command semantics must succeed. If the failed
+        // transaction left an idempotency record behind, this call would conflict.
+        let recovered = repo.create_case(
+            &p,
+            command("rollback-attempt-key-001", "case-rollback-recovered-001", "Recovered create"),
+        ).await.expect("retry after transaction rollback");
+        assert_eq!(recovered.case_id, "case-rollback-recovered-001");
+
+        let existing_counts = side_effect_counts(&pool, &p, &existing.case_id)
+            .await.expect("existing case side-effect counts");
+        let recovered_counts = side_effect_counts(&pool, &p, &recovered.case_id)
+            .await.expect("recovered case side-effect counts");
+        assert_eq!(existing_counts, (1, 1), "failed create must not add history or outbox effects to the existing case");
+        assert_eq!(recovered_counts, (1, 1), "corrected retry commits exactly one activity and outbox event");
+    }
+
 }
