@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SCHEMA_PATH = ROOT / "schemas" / "code-list-snapshot-manifest-v1.schema.json"
 REQUIRED_ACTIVE_CHECKS = {
     "source_digest_checked",
+    "source_authority_checked",
     "schema_validated",
     "duplicate_codes_checked",
     "effective_dates_checked",
