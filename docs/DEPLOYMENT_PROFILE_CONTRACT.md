@@ -143,6 +143,9 @@ If the target, action, parameters, policy, or expiry changes, prior authorizatio
 ### Dispatch and reconciliation
 
 - The intent and authorized operation remain immutable after authorization.
+- Bind approval to the exact plan digest, target identity, relevant observed-state revision, policy revision, and parameters—not merely to a branch, configuration name, or generic "approved" flag.
+- Immediately before dispatch, compare the current target state and resulting plan with the frozen approved operation. If either changed materially, invalidate the authorization and require re-planning and re-authorization; never silently apply a stale plan.
+- A saved plan file is executable authority in some infrastructure tools, so its possession alone must not substitute for Luminous' separate actor/operation authorization and freshness checks. See [OpenTofu plan](https://opentofu.org/docs/v1.13/cli/commands/plan/) and [apply](https://opentofu.org/docs/v1.13/cli/commands/apply/) semantics.
 - Retries use explicit attempt identity and idempotency semantics; a retry is not silently a second action.
 - A timeout is an unknown result until reconciled against the target system.
 - Concurrency-sensitive dispatch uses fencing or an equivalent owner-enforced mechanism.
