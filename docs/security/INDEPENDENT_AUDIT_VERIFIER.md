@@ -45,3 +45,8 @@ This follows GitHub's warning that privileged `workflow_run` workflows must not 
 - An audit/verifier outage must not prevent host boot or recovery, but missing or invalid audit evidence must not authorize a merge, privileged mutation, or release qualification.
 
 The artifact digest is taken from GitHub's artifact metadata and independently recomputed over the downloaded archive before parsing. GitHub documents artifact SHA-256 digest support in its [artifact validation guidance](https://docs.github.com/en/actions/tutorials/store-and-share-data).
+
+
+## Enforcement verification snapshot (2026-10-09)
+
+The repository-level rulesets API returned an empty list for this repository during implementation. Reading branch-protection settings was denied to the connected integration, so that result does **not** prove that no organization-level ruleset or branch protection applies. Before claiming merge enforcement, a repository administrator must verify in GitHub that the exact commit status `Security Audit / Independent Verifier` and the verifier job check are required, bypasses are controlled, and the policy applies to the default branch.
