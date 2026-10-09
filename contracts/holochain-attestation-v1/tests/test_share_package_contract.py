@@ -73,6 +73,20 @@ class HolochainSharePackageContractTests(unittest.TestCase):
         event["targetShareId"] = self.fixture["shareId"]
         self.assertEqual([], self.errors(event))
 
+    def test_evidence_attestation_requires_at_least_one_manifest(self) -> None:
+        event = copy.deepcopy(self.fixture)
+        del event["evidenceManifest"]
+        self.assertTrue(self.errors(event), "evidence attestation without a manifest must fail")
+        event["evidenceManifest"] = []
+        self.assertTrue(self.errors(event), "empty evidence manifest must fail")
+
+    def test_incident_acknowledgement_may_omit_evidence_manifest(self) -> None:
+        event = copy.deepcopy(self.fixture)
+        event["recordType"] = "incident-acknowledgement"
+        event["statementCode"] = "received"
+        del event["evidenceManifest"]
+        self.assertEqual([], self.errors(event))
+
     def test_record_type_and_statement_code_cannot_disagree(self) -> None:
         event = copy.deepcopy(self.fixture)
         event["recordType"] = "incident-acknowledgement"
