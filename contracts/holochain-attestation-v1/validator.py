@@ -55,9 +55,14 @@ def validate_share_package(instance: object) -> list[str]:
         share_id = instance.get("shareId")
         target_id = instance.get("targetShareId")
         record_type = instance.get("recordType")
-        if isinstance(record_type, str) and record_type in {"dispute", "supersession"} and _same_uuid(target_id, share_id):
+        if isinstance(record_type, str) and record_type in {"dispute", "supersession"}:
+            if _same_uuid(target_id, share_id):
+                semantic_errors.append(
+                    "semantic /targetShareId: dispute/supersession cannot target its own shareId"
+                )
+        elif "targetShareId" in instance:
             semantic_errors.append(
-                "semantic /targetShareId: dispute/supersession cannot target its own shareId"
+                "semantic /targetShareId: targetShareId is only valid for dispute/supersession records"
             )
 
         manifests = instance.get("evidenceManifest", [])
