@@ -39,7 +39,7 @@ From the repository root:
 ```sh
 python3 -m venv /tmp/holochain-attestation-contract-venv
 /tmp/holochain-attestation-contract-venv/bin/python -m pip install --disable-pip-version-check --no-cache-dir -r contracts/operations-event-v1/requirements.txt
-PYTHONDONTWRITEBYTECODE=1 /tmp/holochain-attestation-contract-venv/bin/python -m unittest discover -s contracts/holochain-attestation-v1/tests -p 'test_*.py' -v
+PYTHONDONTWRITEBYTECODE=1 /tmp/holochain-attestation-contract-venv/bin/python scripts/run_unittest_suite.py contracts/holochain-attestation-v1/tests --minimum-tests 20
 ```
 
-The test suite defines 20 positive/adversarial test functions covering schema shape, conditional record semantics, case-insensitive UUID self-reference, duplicate manifest IDs, malformed input, and error-value redaction. It does **not** test Holochain zome validation, multi-agent DHT propagation, identity/membership binding, privacy of network metadata, PostgreSQL/outbox recovery, or production readiness. Those require a selected hApp and a compatible pinned conductor/toolchain.
+The test suite defines 20 positive/adversarial test functions covering schema shape, conditional record semantics, case-insensitive UUID self-reference, duplicate manifest IDs, malformed input, and error-value redaction. Prefer the shared fail-closed runner command above: it verifies discovery is non-empty, imports load correctly, the minimum count is met, and the executed count matches the discovered count. It does **not** test Holochain zome validation, multi-agent DHT propagation, identity/membership binding, privacy of network metadata, PostgreSQL/outbox recovery, or production readiness. Those require a selected hApp and a compatible pinned conductor/toolchain.
