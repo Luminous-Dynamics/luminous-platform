@@ -1,0 +1,142 @@
+name: Reusable Security Audit
+
+on:
+  workflow_call:
+    inputs:
+      subject_sha:
+        description: Exact commit SHA of the caller repository to audit.
+        required: true
+        type: string
+      audit_rust:
+        description: Audit every tracked Cargo.lock in the caller repository.
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  workflow-security:
+    name: GitHub Actions workflow security (zizmor)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out exact audit subject
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.subject_sha }}
+          persist-credentials: false
+
+      - name: Assert exact checkout identity
+        env:
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
+        run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
+
+      - name: Audit workflow definitions
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          inputs: .github/
+          advanced-security: false
+          annotations: true
+          online-audits: true
+          persona: auditor
+
+  rustsec:
+    name: RustSec dependency audit
+    if: inputs.audit_rust
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact audit subject
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.subject_sha }}
+          persist-credentials: false
+
+      - name: Assert exact checkout identity
+        env:
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
+        run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
+
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
+        with:
+          toolchain: 1.96.0
+
+      - name: Install pinned cargo-audit
+        run: cargo install --locked cargo-audit --version 0.22.2
+
+      - name: Audit every tracked Cargo.lock and emit evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p security-audit-results/lockfiles
+          subject_sha="$(git rev-parse HEAD)"
+          mapfile -t lockfiles < <(git ls-files -- 'Cargo.lock' '**/Cargo.lock' | LC_ALL=C sort -u)
+
+          if [[ "${#lockfiles[@]}" -eq 0 ]]; then
+            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent." | tee security-audit-results/summary.txt
+            exit 2
+          fi
+
+          {
+            echo "schema=luminous.security-audit.receipt.v1"
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "subject_sha=${subject_sha}"
+            echo "caller_workflow_ref=${GITHUB_WORKFLOW_REF}"
+            echo "caller_workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "event=${GITHUB_EVENT_NAME}"
+            echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "rustc=$(rustc +1.96.0 --version)"
+            echo "cargo=$(cargo +1.96.0 --version)"
+            echo "cargo_audit=$(cargo audit --version)"
+            echo "lockfile_count=${#lockfiles[@]}"
+          } > security-audit-results/summary.txt
+
+          failed=0
+          for lockfile in "${lockfiles[@]}"; do
+            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
+            report="security-audit-results/lockfiles/${report_id}.json"
+            stderr="security-audit-results/lockfiles/${report_id}.stderr"
+            lock_sha256="$(sha256sum "$lockfile" | cut -d' ' -f1)"
+            echo "Auditing $lockfile (sha256=$lock_sha256)"
+
+            rc=0
+            if cargo audit --file "$lockfile" --json > "$report" 2> "$stderr"; then
+              rc=0
+            else
+              rc=$?
+              failed=1
+            fi
+
+            if [[ "$rc" -eq 0 ]]; then
+              outcome="PASS"
+            else
+              outcome="FAIL"
+            fi
+            printf 'lockfile=%s sha256=%s exit_code=%s outcome=%s\n' \
+              "$lockfile" "$lock_sha256" "$rc" "$outcome" \
+              | tee -a security-audit-results/summary.txt
+          done
+
+          echo "overall_status=$([[ "$failed" -eq 0 ]] && echo PASS || echo FAIL)" \
+            | tee -a security-audit-results/summary.txt
+          cat security-audit-results/summary.txt
+          exit "$failed"
+
+      - name: Upload dependency audit evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}
+          path: security-audit-results/
+          if-no-files-found: error
+          retention-days: 14
