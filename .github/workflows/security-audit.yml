@@ -75,13 +75,12 @@ jobs:
           if [[ -f "$report" ]]; then
             cp "$report" "$destination"
             report_sha256="$(sha256sum "$destination" | cut -d' ' -f1)"
-            printf 'zizmor_action_outcome=%s\\nzizmor_report_sha256=%s\\n' \\
-              "${ZIZMOR_OUTCOME:-unknown}" "$report_sha256" \\
-              >> security-audit-results/workflows/summary.txt
+            echo "zizmor_action_outcome=${ZIZMOR_OUTCOME:-unknown}" >> security-audit-results/workflows/summary.txt
+            echo "zizmor_report_sha256=$report_sha256" >> security-audit-results/workflows/summary.txt
           else
-            printf 'zizmor_action_outcome=%s\\nzizmor_status=INCOMPLETE\\nreport_missing=true\\n' \\
-              "${ZIZMOR_OUTCOME:-unknown}" \\
-              >> security-audit-results/workflows/summary.txt
+            echo "zizmor_action_outcome=${ZIZMOR_OUTCOME:-unknown}" >> security-audit-results/workflows/summary.txt
+            echo "zizmor_status=INCOMPLETE" >> security-audit-results/workflows/summary.txt
+            echo "report_missing=true" >> security-audit-results/workflows/summary.txt
           fi
 
       - name: Upload workflow audit evidence
