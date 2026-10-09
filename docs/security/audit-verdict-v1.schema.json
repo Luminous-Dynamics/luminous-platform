@@ -15,6 +15,8 @@
     "workflow_job_result",
     "rustsec_job_result",
     "npm_job_result",
+    "audit_rust",
+    "audit_node",
     "required_lanes",
     "findings_below_block_threshold",
     "status",
@@ -116,7 +118,7 @@
     },
     "failure_reasons": {
       "type": "array",
-      "uniqueItems": true,
+      "uniqueItems": false,
       "items": {
         "type": "string",
         "minLength": 1
@@ -143,6 +145,118 @@
           }
         }
       }
+    },
+    "audit_rust": {
+      "type": "boolean"
+    },
+    "audit_node": {
+      "type": "boolean"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PASS"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "findings_below_block_threshold": {
+            "const": false
+          },
+          "failure_reasons": {
+            "maxItems": 0
+          },
+          "required_lanes": {
+            "properties": {
+              "workflow_security": {
+                "const": "PASS"
+              },
+              "rustsec": {
+                "enum": [
+                  "PASS",
+                  "SKIPPED_NOT_REQUESTED"
+                ]
+              },
+              "npm": {
+                "enum": [
+                  "PASS",
+                  "SKIPPED_NOT_REQUESTED"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PASS_WITH_FINDINGS"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "findings_below_block_threshold": {
+            "const": true
+          },
+          "failure_reasons": {
+            "maxItems": 0
+          },
+          "required_lanes": {
+            "properties": {
+              "workflow_security": {
+                "const": "PASS"
+              },
+              "rustsec": {
+                "enum": [
+                  "PASS",
+                  "SKIPPED_NOT_REQUESTED"
+                ]
+              },
+              "npm": {
+                "const": "PASS"
+              }
+            }
+          },
+          "audit_node": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "FAIL",
+              "INCOMPLETE"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "failure_reasons": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
 }
