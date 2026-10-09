@@ -1,4 +1,5 @@
 use std::env;
+use std::process::Command;
 
 use luminous_operations_event_contract::{
     AuthenticatedConnector, IngestOutcome, PostgresOperationsStore, StoreError,
@@ -498,4 +499,84 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert_eq!(lease_three.sequence_no, 3);
     assert!(store.acknowledge_outbox(TENANT, &lease_three.outbox_id, "worker-d").await.unwrap());
     assert!(store.claim_next_outbox(TENANT, "worker-e", 30).await.unwrap().is_none());
+
+    // Kill a separate receiver process after ingest_event has committed but
+    // before the caller can acknowledge the source event. Redelivery after the
+    // process death must return DuplicateEvent without another local effect.
+    let before_crash = row_count_snapshot(&pool).await;
+    let probe = Command::new(env::current_exe().expect("current test executable"))
+        .args([
+            "--exact",
+            "crash_probe_after_commit_before_ack",
+            "--ignored",
+            "--nocapture",
+        ])
+        .env("LUMINOUS_OPS_CRASH_PROBE", "1")
+        .status()
+        .expect("spawn crash-probe child process");
+    assert_eq!(
+        probe.code(),
+        Some(73),
+        "child must terminate with the deliberate post-commit exit code"
+    );
+    let after_crash = row_count_snapshot(&pool).await;
+    assert_eq!(
+        after_crash,
+        [
+            before_crash[0] + 1,
+            before_crash[1] + 1,
+            before_crash[2],
+            before_crash[3] + 1,
+            before_crash[4] + 1,
+        ],
+        "the child transaction must be durable despite process termination"
+    );
+
+    let crash_event = revised_event(
+        "revision-4",
+        "event-ci-crash-before-ack",
+        "idem-ci-crash-before-ack",
+        "Synthetic post-commit crash/replay scenario",
+    );
+    assert_eq!(
+        store.ingest_event(&auth, &crash_event).await.unwrap(),
+        IngestOutcome::DuplicateEvent
+    );
+    assert_eq!(row_count_snapshot(&pool).await, after_crash);
+    let recovered_lease = store.claim_next_outbox(TENANT, "worker-after-crash", 30).await.unwrap().unwrap();
+    assert_eq!(recovered_lease.sequence_no, 4);
+    assert!(store.acknowledge_outbox(TENANT, &recovered_lease.outbox_id, "worker-after-crash").await.unwrap());
+    assert!(store.claim_next_outbox(TENANT, "worker-after-crash", 30).await.unwrap().is_none());
+}
+
+#[tokio::test]
+#[ignore = "child process probe invoked by the PostgreSQL recovery integration scenario"]
+async fn crash_probe_after_commit_before_ack() {
+    assert_eq!(
+        env::var("LUMINOUS_OPS_CRASH_PROBE").as_deref(),
+        Ok("1"),
+        "this test is only expected to run in the parent test's child process"
+    );
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL must point at the isolated PostgreSQL CI service");
+    let store = PostgresOperationsStore::connect(&database_url, 2)
+        .await
+        .expect("connect from isolated crash-probe process");
+    let outcome = store
+        .ingest_event(
+            &authenticated(),
+            &revised_event(
+                "revision-4",
+                "event-ci-crash-before-ack",
+                "idem-ci-crash-before-ack",
+                "Synthetic post-commit crash/replay scenario",
+            ),
+        )
+        .await
+        .expect("commit durable local effect before simulated process death");
+    assert_eq!(outcome, IngestOutcome::Accepted { outbox_sequence: 4 });
+
+    // Calling process exit deliberately skips destructors, approximating abrupt
+    // process loss immediately after the database commit has returned.
+    std::process::exit(73);
 }
