@@ -32,11 +32,18 @@ class SQLiteWorkCaseStore:
     def __init__(self, database_path: str | Path) -> None:
         self.path = str(database_path)
         with closing(self._connect()) as db:
+            # Validate the existing database before changing its journal mode. WAL
+            # mode persists in the database file, so a rejected legacy/future schema
+            # must not be mutated merely by opening this reference store.
+            version = int(db.execute("PRAGMA user_version").fetchone()[0])
+            self._validate_schema_state(db, version)
+            db.execute("PRAGMA journal_mode=WAL")
             db.execute("BEGIN IMMEDIATE")
             try:
+                # Recheck under the write transaction in case another initializer
+                # created the schema between preflight and lock acquisition.
                 version = int(db.execute("PRAGMA user_version").fetchone()[0])
-                if version > self.SCHEMA_VERSION:
-                    raise RuntimeError("database schema is newer than this reference model")
+                self._validate_schema_state(db, version)
                 statements = (
                     """CREATE TABLE IF NOT EXISTS work_cases (
                         tenant_id TEXT NOT NULL, case_id TEXT NOT NULL,
@@ -70,9 +77,9 @@ class SQLiteWorkCaseStore:
                     """CREATE INDEX IF NOT EXISTS case_outbox_ready_idx ON case_outbox(status,lease_until,outbox_seq)""",
                     """CREATE INDEX IF NOT EXISTS case_activity_timeline_idx ON case_activity(tenant_id,case_id,sequence)""",
                 )
-                for statement in statements:
-                    db.execute(statement)
                 if version == 0:
+                    for statement in statements:
+                        db.execute(statement)
                     db.execute(f"PRAGMA user_version = {self.SCHEMA_VERSION}")
                 db.commit()
             except Exception:
@@ -80,12 +87,79 @@ class SQLiteWorkCaseStore:
                     db.rollback()
                 raise
 
+    @staticmethod
+    def _application_tables(db: sqlite3.Connection) -> set[str]:
+        return {
+            str(row[0])
+            for row in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+            ).fetchall()
+        }
+
+    def _validate_schema_state(self, db: sqlite3.Connection, version: int) -> None:
+        if version > self.SCHEMA_VERSION:
+            raise RuntimeError("database schema is newer than this reference model")
+        if version == 0:
+            existing = self._application_tables(db)
+            if existing:
+                raise RuntimeError(
+                    "unversioned database contains pre-existing tables; refusing implicit schema adoption"
+                )
+            return
+        if version != self.SCHEMA_VERSION:
+            raise RuntimeError(
+                f"no migration path from database schema version {version} to {self.SCHEMA_VERSION}"
+            )
+
+        required_columns = {
+            "work_cases": {"tenant_id", "case_id", "revision", "payload_json"},
+            "case_activity": {
+                "tenant_id", "case_id", "sequence", "activity_id", "command_id",
+                "actor_id", "actor_role", "activity_type", "occurred_at", "reason",
+                "prior_revision", "new_revision", "details_json",
+            },
+            "command_idempotency": {
+                "tenant_id", "idempotency_key", "command_digest", "result_json", "recorded_at",
+            },
+            "external_case_mappings": {
+                "tenant_id", "connection_id", "provider", "external_id", "case_id", "linked_at",
+            },
+            "case_outbox": {
+                "outbox_seq", "outbox_id", "tenant_id", "case_id", "revision", "event_type",
+                "payload_json", "status", "attempts", "lease_owner", "lease_until", "created_at", "delivered_at",
+            },
+        }
+        existing_tables = self._application_tables(db)
+        for table, required in required_columns.items():
+            if table not in existing_tables:
+                raise RuntimeError(f"versioned database schema is incomplete: missing table {table}")
+            actual = {
+                str(row[1]) for row in db.execute(f"PRAGMA table_info({table})").fetchall()
+            }
+            missing = required - actual
+            if missing:
+                names = ", ".join(sorted(missing))
+                raise RuntimeError(f"versioned database schema is incomplete: {table} missing columns {names}")
+
+        required_indexes = {"case_outbox_ready_idx", "case_activity_timeline_idx"}
+        existing_indexes = {
+            str(row[0]) for row in db.execute(
+                "SELECT name FROM sqlite_master WHERE type='index'"
+            ).fetchall()
+        }
+        missing_indexes = required_indexes - existing_indexes
+        if missing_indexes:
+            raise RuntimeError(
+                "versioned database schema is incomplete: missing indexes "
+                + ", ".join(sorted(missing_indexes))
+            )
+
     def _connect(self) -> sqlite3.Connection:
         db = sqlite3.connect(self.path, timeout=10, isolation_level=None)
         db.row_factory = sqlite3.Row
         db.execute("PRAGMA foreign_keys=ON")
         db.execute("PRAGMA busy_timeout=10000")
-        db.execute("PRAGMA journal_mode=WAL")
+        # WAL mode is persistent and is configured only after schema preflight.
         db.execute("PRAGMA synchronous=FULL")
         return db
 
