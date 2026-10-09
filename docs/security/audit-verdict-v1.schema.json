@@ -268,7 +268,10 @@
                 ]
               },
               "npm": {
-                "const": "PASS"
+                "enum": [
+                  "PASS",
+                  "SKIPPED_NOT_REQUESTED"
+                ]
               }
             }
           },
