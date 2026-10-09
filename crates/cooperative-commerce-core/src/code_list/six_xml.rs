@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn requires_publisher_release_identity() {
-        let without_publication_date = XML.replace(' Pblshd="2026-08-14"', "");
+        let without_publication_date = XML.replace(" Pblshd=\"2026-08-14\"", "");
         assert!(parse_six_list_one_xml(&without_publication_date).unwrap_err().to_string().contains("missing required Pblshd"));
     }
 
