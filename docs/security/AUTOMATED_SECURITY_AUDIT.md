@@ -13,6 +13,8 @@ This repository hosts the reusable workflow used to audit the public Luminous-Dy
 
 The platform self-check runs the workflow audit on pushes to `main`, pull requests, a weekly schedule, and manual dispatch. Callers with Rust dependency graphs set `audit_rust: true`.
 
+The self-check and consumer entrypoints include `github.run_id` in their concurrency groups. That is deliberate: a newer push may supersede ordinary build CI, but it should not replace a pending audit receipt for an older exact commit before the audit can start. Every audited subject remains separately identifiable by its SHA and run ID/attempt.
+
 ## What a result means
 
 - **PASS** means the configured scanner completed for the covered inputs and returned exit status zero.
