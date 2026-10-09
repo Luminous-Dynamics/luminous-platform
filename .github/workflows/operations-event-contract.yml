@@ -6,6 +6,7 @@ on:
     paths:
       - "contracts/operations-event-v1/**"
       - "contracts/work-case-v1/**"
+      - "docs/WORK_CASE_STORAGE_AND_TENANCY_DECISION.md"
       - "scripts/run_unittest_suite.py"
       - "scripts/tests/**"
       - ".github/workflows/operations-event-contract.yml"
@@ -15,6 +16,7 @@ on:
     paths:
       - "contracts/operations-event-v1/**"
       - "contracts/work-case-v1/**"
+      - "docs/WORK_CASE_STORAGE_AND_TENANCY_DECISION.md"
       - "scripts/run_unittest_suite.py"
       - "scripts/tests/**"
       - ".github/workflows/operations-event-contract.yml"
