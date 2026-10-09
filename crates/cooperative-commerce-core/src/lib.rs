@@ -514,7 +514,7 @@ fn has_explicit_timestamp_zone(value: &str) -> bool {
 }
 
 fn digits(bytes: &[u8]) -> u32 {
-    bytes.iter().fold(0, |value, byte| value * 10 + u32::from(byte - b'0'))
+    bytes.iter().fold(0, |value, byte| value * 10 + u32::from(*byte - b'0'))
 }
 
 fn validate_evidence(evidence: &EvidenceRef) -> Result<(), CommerceError> {
