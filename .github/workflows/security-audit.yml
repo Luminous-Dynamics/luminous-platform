@@ -307,7 +307,7 @@ jobs:
             || ! git -C "$fixture" ls-files -z --cached > "$fixture_paths"; then
             incomplete tracked_snapshot_fixture_setup_failed; exit 0
           fi
-          if ! (cd "$fixture" && tar --null --no-recursion --files-from="$fixture_paths" -cf -) \
+          if ! (cd "$fixture" && tar --null --verbatim-files-from --no-recursion --files-from="$fixture_paths" -cf -) \
             | tar -xf - -C "$fixture_snapshot"; then
             incomplete tracked_snapshot_fixture_copy_failed; exit 0
           fi
@@ -325,14 +325,14 @@ jobs:
           import sys
           from pathlib import Path
           path = Path(sys.argv[1])
-          entries = [item for item in path.read_bytes().split(b"\\0") if item and item != b"mycelix-health"]
+          entries = [item for item in path.read_bytes().split(bytes([0])) if item and item != b"mycelix-health"]
           entries.sort()
-          path.write_bytes(b"".join(item + b"\\0" for item in entries))
+          path.write_bytes(bytes([0]).join(entries) + (bytes([0]) if entries else b""))
           PY
           then
             incomplete tracked_source_inventory_failed; exit 0
           fi
-          if ! (tar --null --no-recursion --files-from="$root_paths" -cf -) \
+          if ! (tar --null --verbatim-files-from --no-recursion --files-from="$root_paths" -cf -) \
             | tar -xf - -C "$source_dir"; then incomplete tracked_source_snapshot_failed; exit 0; fi
           root_links="$(git ls-files --stage | awk '$1 == "160000" {n++} END {print n+0}')"
           if [[ -f .gitmodules ]]; then
@@ -349,19 +349,19 @@ jobs:
             mkdir -p "$source_dir/mycelix-health"
             submodule_paths="$RUNNER_TEMP/gitleaks-submodule-paths.nul"
             if ! git -C mycelix-health ls-files -z --cached > "$submodule_paths"; then incomplete submodule_source_inventory_failed; exit 0; fi
-            if ! (cd mycelix-health && tar --null --no-recursion --files-from="$submodule_paths" -cf -) \
+            if ! (cd mycelix-health && tar --null --verbatim-files-from --no-recursion --files-from="$submodule_paths" -cf -) \
               | tar -xf - -C "$source_dir/mycelix-health"; then incomplete submodule_tracked_snapshot_failed; exit 0; fi
           elif [[ "$root_links" -ne 0 ]]; then incomplete gitlink_without_gitmodules; exit 0; fi
 
           source_inventory="$RUNNER_TEMP/gitleaks-source-inventory.nul"
-          if ! (cd "$source_dir" && find . -mindepth 1 \\( -type f -o -type l \\) -printf '%P\\0' | LC_ALL=C sort -z) > "$source_inventory"; then
+          if ! (cd "$source_dir" && find . -mindepth 1 \\( -type f -o -type l \\) -printf '%P\0' | LC_ALL=C sort -z) > "$source_inventory"; then
             incomplete source_inventory_generation_failed; exit 0
           fi
           source_file_count="$(python3 - "$source_inventory" <<'PY'
           import sys
           from pathlib import Path
           raw = Path(sys.argv[1]).read_bytes()
-          print(sum(1 for item in raw.split(b"\\0") if item))
+          print(sum(1 for item in raw.split(bytes([0])) if item))
           PY
           )"
           source_inventory_sha="$(sha256sum "$source_inventory" | cut -d' ' -f1)"
@@ -1932,7 +1932,7 @@ jobs:
           }
 
           verify_gitleaks_report() {
-            local receipt="$1" root report expected actual config_sha raw_sha
+            local receipt="$1" root report expected actual config_sha raw_sha source_count source_inventory
             root="$(dirname "$receipt")"
             report="$root/gitleaks-sanitized.json"
             if ! field_equals "$receipt" secret_scan_status PASS; then return 1; fi
@@ -1947,14 +1947,21 @@ jobs:
             fi
             config_sha="$(field "$receipt" secret_config_sha256 2>/dev/null || true)"
             raw_sha="$(field "$receipt" secret_raw_report_sha256 2>/dev/null || true)"
+            source_count="$(field "$receipt" secret_source_file_count 2>/dev/null || true)"
+            source_inventory="$(field "$receipt" secret_source_inventory_sha256 2>/dev/null || true)"
+            if [[ ! "$source_count" =~ ^[0-9]+$ || "$source_count" -le 0 || ! "$source_inventory" =~ ^[0-9a-f]{64}$ ]]; then
+              failure_reasons+=("gitleaks_source_inventory_invalid")
+              return 1
+            fi
             if [[ ! "$config_sha" =~ ^[0-9a-f]{64}$ || ! "$raw_sha" =~ ^[0-9a-f]{64}$ ]] || [[ "$(field "$receipt" secret_scan_exit_code 2>/dev/null || true)" != "0" ]] || [[ "$(field "$receipt" secret_finding_count 2>/dev/null || true)" != "0" ]]; then
               failure_reasons+=("gitleaks_receipt_counts_or_digests_invalid")
               return 1
             fi
-            if ! jq -e --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config_sha "$config_sha" '
+            if ! jq -e --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config_sha "$config_sha" --arg source_inventory "$source_inventory" --arg source_count "$source_count" '
               .schema == "luminous.security-audit.gitleaks-summary.v1" and
               .repository == $repository and .subject_sha == $subject and
               .scanner_version == "v8.30.1" and .config_sha256 == $config_sha and
+              .source_file_count == ($source_count | tonumber) and .source_inventory_sha256 == $source_inventory and
               .status == "PASS" and .reason == "none" and .finding_count == 0 and
               (.findings | type == "array" and length == 0)
             ' "$report" >/dev/null; then
