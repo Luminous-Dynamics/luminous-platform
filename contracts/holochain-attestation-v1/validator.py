@@ -45,7 +45,7 @@ def validate_share_package(instance: object) -> list[str]:
         share_id = instance.get("shareId")
         target_id = instance.get("targetShareId")
         record_type = instance.get("recordType")
-        if record_type in {"dispute", "supersession"} and target_id == share_id:
+        if isinstance(record_type, str) and record_type in {"dispute", "supersession"} and target_id == share_id:
             semantic_errors.append(
                 "semantic /targetShareId: dispute/supersession cannot target its own shareId"
             )
