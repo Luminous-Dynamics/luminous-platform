@@ -55,6 +55,8 @@ Build one deliberately narrow **cross-organization incident acknowledgement and 
 
 The first pilot should be read/attest-only: no live ticket writes back to the provider, no remote execution, and no billing or settlement.
 
+The initial machine-readable package boundary now lives in [Holochain Attestation Share Package V1](../../contracts/holochain-attestation-v1/README.md), with its [JSON Schema](../../contracts/holochain-attestation-v1/share-package.schema.json), synthetic fixture, and adversarial tests. It is a payload contract only; it does not implement the Holochain adapter or integrity zome and has not yet been qualified against multi-agent DHT behavior.
+
 ## Integration protocol and correctness
 
 - Treat the PostgreSQL outbox as the durable source for dispatch requests to Holochain. Give every publication a stable idempotency key derived from the local operation's durable identity; record publication attempts and resulting DHT action/entry references.
