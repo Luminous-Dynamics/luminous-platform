@@ -111,6 +111,32 @@ class PsaAdapterModelTests(unittest.TestCase):
                 snapshot, self.connection, observed_at="2026-10-09T08:00:02Z"
             )
 
+    def test_malformed_runtime_company_id_fails_closed(self) -> None:
+        malformed = PsaIncidentSnapshot(
+            company_id=[],
+            ticket_id="7301",
+            revision="revision-1",
+            status="new",
+            redacted_summary="synthetic",
+        )
+        with self.assertRaises(NormalizationError):
+            normalize_incident_snapshot(
+                malformed, self.connection, observed_at="2026-10-09T08:00:02Z"
+            )
+
+    def test_non_string_summary_fails_closed(self) -> None:
+        malformed = PsaIncidentSnapshot(
+            company_id="company-42",
+            ticket_id="7301",
+            revision="revision-1",
+            status="new",
+            redacted_summary=None,
+        )
+        with self.assertRaises(NormalizationError):
+            normalize_incident_snapshot(
+                malformed, self.connection, observed_at="2026-10-09T08:00:02Z"
+            )
+
     def test_invalid_normalized_status_fails_closed(self) -> None:
         snapshot = copy.copy(self.snapshot)
         snapshot = PsaIncidentSnapshot(
