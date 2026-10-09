@@ -15,6 +15,8 @@ import argparse
 import hashlib
 import json
 import sys
+
+import rfc8785
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -124,13 +126,9 @@ def purchase_scope_payload(document: dict[str, Any]) -> dict[str, Any]:
 
 def purchase_scope_sha256(document: dict[str, Any]) -> str:
     """Hash the canonical JSON projection used by the v1 single-use mandate."""
-    canonical = json.dumps(
-        purchase_scope_payload(document),
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-        allow_nan=False,
-    ).encode("utf-8")
+    # RFC 8785 JCS defines cross-language key ordering and string/primitive encoding.
+    # Monetary amounts and quantities remain decimal strings, never JSON floats.
+    canonical = rfc8785.dumps(purchase_scope_payload(document))
     return hashlib.sha256(canonical).hexdigest()
 
 
