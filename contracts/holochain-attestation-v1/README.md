@@ -7,12 +7,13 @@ This package is the deliberately narrow public payload for the first proposed My
 ## Files
 
 - `share-package.schema.json`: JSON Schema Draft 2020-12 for the share package.
+- `validator.py`: reusable schema plus semantic validator for unique manifest references and non-self-referential dispute/supersession targets.
 - `examples/evidence-attestation.synthetic.json`: deterministic synthetic fixture with opaque references.
-- `tests/test_share_package_contract.py`: positive and adversarial schema tests.
+- `tests/test_share_package_contract.py`: positive and adversarial schema/semantic tests.
 
 ## Privacy and trust boundary
 
-The payload intentionally excludes free-form text, ticket titles, customer names, hostnames, external provider IDs, credentials, raw diagnostics, screen/audio, and raw evidence. The local PostgreSQL service must resolve opaque references only under authenticated tenant/connection context.
+The payload intentionally excludes free-form text, ticket titles, customer names, hostnames, external provider IDs, credentials, raw diagnostics, screen/audio, and raw evidence. Use `validator.py` for application-side schema and cross-field checks; bare JSON Schema validation alone cannot enforce uniqueness of `manifestRef` across objects that differ in other fields. The local PostgreSQL service must resolve opaque references only under authenticated tenant/connection context.
 
 The `issuerRoleClaim`, `issuedAt`, `assessmentClaim`, `approvedForDht`, and `policyRef` fields are claims or references—not proof that a participant is entitled to publish a record. The publishing adapter must enforce actual authenticated identity, tenant/customer sharing policy, and the approval requirement before invoking Holochain. The integrity zome should validate structural/domain invariants and any deterministic trust dependencies available within the DNA.
 
