@@ -189,6 +189,14 @@ For the first pilot, the lowest-complexity operating hypothesis is: the network 
 
 Do not take title to inventory, operate escrow, extend credit, underwrite buyers, or act as merchant of record until the intended model, capital, tax treatment, consumer obligations, licensing, liability, and disputes have been reviewed for the relevant jurisdictions.
 
+### Separate non-binding demand from binding authority
+
+Use the [purchase-intent schema](../schemas/cooperative-purchase-intent-v1.schema.json) and [declaration/semantic validator](../tools/validate_cooperative_purchase_intent.py) as the proposed v1 boundary. The schema distinguishes `non_binding_interest`, `quote_request`, and `binding_order`. Non-binding states cannot carry an accepted offer or order authorization. A binding-order declaration requires an exact offer ID/revision/digest, a one-time idempotency key, and a single-use authorization scoped to the buyer legal entity and a spending ceiling.
+
+The semantic validator computes SHA-256 over a canonical JSON projection of the exact purchase scope: intent ID/revision/idempotency key; buyer party/legal entity/site/cooperative; offer ID/revision/digest; product reference/specification digest; requested quantity/unit/code-system; destination and delivery window; substitution policy; accepted total; and authorized maximum total. The canonical serialization is UTF-8 JSON with recursively sorted keys, no insignificant whitespace, no floating-point values, and explicit nulls for absent optional fields. A material change invalidates the old digest and requires fresh authorization. The scope digest detects changes; it is **not** proof that a key-holder genuinely authorized the transaction.
+
+The validator always reports `transaction_authorized: false`. Before any real order, a separate execution boundary must verify the mandate signature and issuer/revocation state, resolve the exact supplier offer and digest, check authorization freshness against the current clock, confirm funds/payment arrangement and jurisdiction rules, reserve or reconfirm availability, and atomically claim the idempotency key in durable storage. If any check is missing, stale, ambiguous, or unavailable, submission must stop. Retrying the same intent must not create a second purchase.
+
 ### Competition and fairness safeguards
 
 Pooling purchasing can improve buyer leverage, but a multi-business network also creates risks around competitively sensitive information. Before operating a buyer group, obtain jurisdiction-specific competition-law review. Design for data minimization:
