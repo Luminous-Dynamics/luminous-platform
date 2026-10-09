@@ -141,6 +141,13 @@ class CooperativeOfferSemanticTests(unittest.TestCase):
         self.assertFalse(report["semantic_valid"])
         self.assertTrue(any("must match product.pack.order_unit_code" in error for error in report["errors"]))
 
+    def test_price_unit_code_system_must_match_order_unit_system(self):
+        document = self.make_publishable_candidate()
+        document["terms"]["unit_price"]["per_unit_code_system"] = "urn:other:unit-system:v1"
+        report = self.validate(document)
+        self.assertFalse(report["semantic_valid"])
+        self.assertTrue(any("terms.unit_price.per_unit_code_system" in error for error in report["errors"]))
+
     def test_same_unit_code_with_different_code_system_is_rejected(self):
         document = self.make_publishable_candidate()
         document["availability"]["quantity_unit_code_system"] = "urn:other:unit-system:v1"
