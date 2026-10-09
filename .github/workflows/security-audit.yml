@@ -90,8 +90,8 @@ jobs:
 
           def fail(reason):
               with summary.open("a", encoding="utf-8") as receipt:
-                  receipt.write("engine_identity_status=FAIL\\n")
-                  receipt.write(f"engine_identity_reason={reason}\\n")
+                  receipt.write("engine_identity_status=FAIL\n")
+                  receipt.write(f"engine_identity_reason={reason}\n")
               print(f"FAIL: {reason}", file=sys.stderr)
               raise SystemExit(1)
 
@@ -109,7 +109,7 @@ jobs:
                   fail("platform_self_workflow_missing")
               text = caller.read_text(encoding="utf-8")
               local_uses = re.findall(
-                  r"^\\s*uses:\\s*\\./\\.github/workflows/security-audit\\.yml\\s*$",
+                  r"^\s*uses:\s*\./\.github/workflows/security-audit\.yml\s*$",
                   text, re.MULTILINE
               )
               if len(local_uses) != 1:
@@ -122,11 +122,11 @@ jobs:
                   fail("caller_security_workflow_missing")
               text = caller.read_text(encoding="utf-8")
               refs = re.findall(
-                  r"^\\s*uses:\\s*Luminous-Dynamics/luminous-platform/\\.github/workflows/security-audit\\.yml@([0-9a-f]{40})\\s*$",
+                  r"^\s*uses:\s*Luminous-Dynamics/luminous-platform/\.github/workflows/security-audit\.yml@([0-9a-f]{40})\s*$",
                   text, re.MULTILINE
               )
               declared = re.findall(
-                  r"^\\s*audit_engine_sha:\\s*([0-9a-f]{40})\\s*$",
+                  r"^\s*audit_engine_sha:\s*([0-9a-f]{40})\s*$",
                   text, re.MULTILINE
               )
               if len(refs) != 1:
@@ -137,8 +137,8 @@ jobs:
                   fail("caller_reference_and_engine_sha_mismatch")
 
           with summary.open("a", encoding="utf-8") as receipt:
-              receipt.write("engine_identity_status=PASS\\n")
-              receipt.write(f"engine_identity_checked_sha={engine}\\n")
+              receipt.write("engine_identity_status=PASS\n")
+              receipt.write(f"engine_identity_checked_sha={engine}\n")
           print("PASS: declared audit engine identity matches the caller reference")
           PY
       - name: Audit workflow definitions
@@ -322,8 +322,8 @@ jobs:
 
           def fail(reason):
               with summary.open("a", encoding="utf-8") as receipt:
-                  receipt.write("engine_identity_status=FAIL\\n")
-                  receipt.write(f"engine_identity_reason={reason}\\n")
+                  receipt.write("engine_identity_status=FAIL\n")
+                  receipt.write(f"engine_identity_reason={reason}\n")
               print(f"FAIL: {reason}", file=sys.stderr)
               raise SystemExit(1)
 
@@ -338,7 +338,7 @@ jobs:
                   fail("platform_self_workflow_missing")
               text = caller.read_text(encoding="utf-8")
               local_uses = re.findall(
-                  r"^\\s*uses:\\s*\\./\\.github/workflows/security-audit\\.yml\\s*$",
+                  r"^\s*uses:\s*\./\.github/workflows/security-audit\.yml\s*$",
                   text, re.MULTILINE
               )
               if len(local_uses) != 1:
@@ -351,11 +351,11 @@ jobs:
                   fail("caller_security_workflow_missing")
               text = caller.read_text(encoding="utf-8")
               refs = re.findall(
-                  r"^\\s*uses:\\s*Luminous-Dynamics/luminous-platform/\\.github/workflows/security-audit\\.yml@([0-9a-f]{40})\\s*$",
+                  r"^\s*uses:\s*Luminous-Dynamics/luminous-platform/\.github/workflows/security-audit\.yml@([0-9a-f]{40})\s*$",
                   text, re.MULTILINE
               )
               declared = re.findall(
-                  r"^\\s*audit_engine_sha:\\s*([0-9a-f]{40})\\s*$",
+                  r"^\s*audit_engine_sha:\s*([0-9a-f]{40})\s*$",
                   text, re.MULTILINE
               )
               if len(refs) != 1:
@@ -366,8 +366,8 @@ jobs:
                   fail("caller_reference_and_engine_sha_mismatch")
 
           with summary.open("a", encoding="utf-8") as receipt:
-              receipt.write("engine_identity_status=PASS\\n")
-              receipt.write(f"engine_identity_checked_sha={engine}\\n")
+              receipt.write("engine_identity_status=PASS\n")
+              receipt.write(f"engine_identity_checked_sha={engine}\n")
           print("PASS: declared audit engine identity matches the caller reference")
           PY
       - name: Initialize allow-listed direct submodules
