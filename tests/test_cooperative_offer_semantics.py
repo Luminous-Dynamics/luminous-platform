@@ -51,6 +51,7 @@ class CooperativeOfferSemanticTests(unittest.TestCase):
             "status": "in_stock",
             "quantity": "100",
             "quantity_unit_code": "case",
+            "quantity_unit_code_system": "urn:fixture:unit-system:order-unit:v1",
             "observed_at": "2026-10-09T00:00:00Z",
         })
         return document
@@ -139,6 +140,13 @@ class CooperativeOfferSemanticTests(unittest.TestCase):
         report = self.validate(document)
         self.assertFalse(report["semantic_valid"])
         self.assertTrue(any("must match product.pack.order_unit_code" in error for error in report["errors"]))
+
+    def test_same_unit_code_with_different_code_system_is_rejected(self):
+        document = self.make_publishable_candidate()
+        document["availability"]["quantity_unit_code_system"] = "urn:other:unit-system:v1"
+        report = self.validate(document)
+        self.assertFalse(report["semantic_valid"])
+        self.assertTrue(any("must match product.pack.order_unit_code_system" in error for error in report["errors"]))
 
     def test_price_break_thresholds_must_increase_and_respect_minimum_order(self):
         document = copy.deepcopy(ZAR)
