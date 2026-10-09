@@ -1830,6 +1830,41 @@ jobs:
             --argjson evidence_files "$files_json" \
             '{schema:$schema, repository:$repository, subject_sha:$subject_sha, audit_engine_sha:$audit_engine_sha, workflow_ref:$workflow_ref, workflow_sha:$workflow_sha, workflow_run_url:$workflow_run_url, generated_at_utc:$generated_at_utc, aggregate_artifact_retention_days:$aggregate_artifact_retention_days, run_id:$run_id, run_attempt:$run_attempt, workflow_job_result:$workflow_job_result, rustsec_job_result:$rustsec_job_result, npm_job_result:$npm_job_result, audit_rust:$audit_rust, audit_node:$audit_node, required_lanes:{workflow_security:$workflow_security_status, rustsec:(if $audit_rust then $rustsec_status else "SKIPPED_NOT_REQUESTED" end), npm:(if $audit_node then $npm_status else "SKIPPED_NOT_REQUESTED" end)}, non_blocking_findings_present:$non_blocking_findings_present, non_blocking_finding_sources:$non_blocking_finding_sources, status:$status, failure_reasons:$failure_reasons, evidence_files:$evidence_files}' > audit-evidence/verdict.json
 
+          if ! jq -e '
+            .schema == "luminous.security-audit.verdict.v1" and
+            (.repository | type == "string" and test("^[^/]+/[^/]+$")) and
+            (.subject_sha | type == "string" and test("^[0-9a-f]{40}$")) and
+            (.audit_engine_sha | type == "string" and test("^[0-9a-f]{40}$")) and
+            (.workflow_ref | type == "string" and length > 0) and
+            (.workflow_sha == "unknown" or (.workflow_sha | test("^[0-9a-f]{40}$"))) and
+            (.workflow_run_url | type == "string" and startswith("https://")) and
+            (.generated_at_utc | type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")) and
+            .aggregate_artifact_retention_days == 30 and
+            (.audit_rust | type == "boolean") and (.audit_node | type == "boolean") and
+            (.non_blocking_findings_present == ((.non_blocking_finding_sources | length) > 0)) and
+            all(.non_blocking_finding_sources[]; . == "rustsec_warnings" or . == "npm_below_threshold") and
+            (if .status == "PASS" then
+              (.failure_reasons | length) == 0 and
+              .non_blocking_findings_present == false and
+              .required_lanes.workflow_security == "PASS" and
+              .required_lanes.rustsec == (if .audit_rust then "PASS" else "SKIPPED_NOT_REQUESTED" end) and
+              .required_lanes.npm == (if .audit_node then "PASS" else "SKIPPED_NOT_REQUESTED" end)
+             elif .status == "PASS_WITH_FINDINGS" then
+              (.failure_reasons | length) == 0 and
+              .non_blocking_findings_present == true and
+              .required_lanes.workflow_security == "PASS" and
+              .required_lanes.rustsec == (if .audit_rust then "PASS" else "SKIPPED_NOT_REQUESTED" end) and
+              .required_lanes.npm == (if .audit_node then "PASS" else "SKIPPED_NOT_REQUESTED" end) and
+              ((.non_blocking_finding_sources | index("rustsec_warnings")) == null or (.audit_rust and .required_lanes.rustsec == "PASS")) and
+              ((.non_blocking_finding_sources | index("npm_below_threshold")) == null or (.audit_node and .required_lanes.npm == "PASS"))
+             elif .status == "FAIL" or .status == "INCOMPLETE" then
+              (.failure_reasons | length) > 0
+             else false end)
+          ' audit-evidence/verdict.json >/dev/null; then
+            echo "FAIL: generated aggregate verdict violated the v1 cross-field contract." >&2
+            exit 1
+          fi
+
           cat audit-evidence/verdict.json
           {
             echo '### Security audit verdict'
