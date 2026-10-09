@@ -30,6 +30,7 @@ def active_candidate() -> dict:
     document = copy.deepcopy(FIXTURE)
     document["metadata"]["status"] = "active"
     document["metadata"]["fixture_only"] = False
+    document["code_list"]["version_label"] = "fixture-immutable-snapshot-v1"
     document["source"].update({
         "retrieval_status": "verified_against_authority",
         "retrieved_at": "2026-10-09T00:00:00Z",
