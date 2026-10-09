@@ -1,6 +1,11 @@
 name: six-currency-source-smoke
 
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/six-currency-source-smoke.yml"
+      - "crates/cooperative-commerce-core/**"
+      - "tools/fetch_six_list_one.sh"
   workflow_dispatch:
   schedule:
     - cron: "17 5 * * 1"
