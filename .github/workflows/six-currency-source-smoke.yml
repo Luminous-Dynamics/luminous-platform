@@ -91,11 +91,28 @@ jobs:
           publisher_date="$(jq -r '.publication_date' evidence/list-one.normalized.json)"
           source_entries="$(jq -r '.source_entry_count' evidence/list-one.normalized.json)"
           record_count="$(jq -r '.record_count' evidence/list-one.normalized.json)"
+          importer_source_manifest_sha256="$(
+            sha256sum \
+              crates/cooperative-commerce-core/Cargo.toml \
+              crates/cooperative-commerce-core/Cargo.lock \
+              crates/cooperative-commerce-core/src/lib.rs \
+              crates/cooperative-commerce-core/src/code_list.rs \
+              crates/cooperative-commerce-core/src/code_list/six_xml.rs \
+              crates/cooperative-commerce-core/src/bin/six_iso4217_import.rs \
+              | LC_ALL=C sort | sha256sum | cut -d ' ' -f 1
+          )"
+          capture_script_sha256="$(sha256sum tools/fetch_six_list_one.sh | cut -d ' ' -f 1)"
+          cargo_version="$(cargo --version)"
+          rustc_version="$(rustc --version)"
           jq -n \
             --arg source_url "$SOURCE_URL" \
             --arg fetched_at "$fetched_at" \
             --arg source_sha256 "$source_sha256" \
             --arg normalized_sha256 "$normalized_sha256" \
+            --arg importer_source_manifest_sha256 "$importer_source_manifest_sha256" \
+            --arg capture_script_sha256 "$capture_script_sha256" \
+            --arg cargo_version "$cargo_version" \
+            --arg rustc_version "$rustc_version" \
             --slurpfile normalized evidence/list-one.normalized.json \
             '{
               schema: "luminous.code-list-source-smoke-report/v1",
@@ -105,6 +122,10 @@ jobs:
               source_payload_sha256: $source_sha256,
               normalized_payload_sha256: $normalized_sha256,
               importer_id: $normalized[0].importer_id,
+              importer_source_manifest_sha256: $importer_source_manifest_sha256,
+              capture_script_sha256: $capture_script_sha256,
+              cargo_version: $cargo_version,
+              rustc_version: $rustc_version,
               source_entry_count: $normalized[0].source_entry_count,
               normalized_record_count: $normalized[0].record_count,
               structural_checks: "passed",
