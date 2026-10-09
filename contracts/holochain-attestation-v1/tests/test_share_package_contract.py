@@ -5,12 +5,15 @@ import copy
 import json
 import unittest
 from pathlib import Path
+import sys
 
-from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema import Draft202012Validator
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / "share-package.schema.json"
 FIXTURE_PATH = ROOT / "examples" / "evidence-attestation.synthetic.json"
+sys.path.insert(0, str(ROOT))
+from validator import validate_share_package
 
 
 def load_json(path: Path) -> object:
@@ -24,12 +27,8 @@ class HolochainSharePackageContractTests(unittest.TestCase):
         cls.schema = load_json(SCHEMA_PATH)
         cls.fixture = load_json(FIXTURE_PATH)
         Draft202012Validator.check_schema(cls.schema)
-        cls.validator = Draft202012Validator(
-            cls.schema, format_checker=FormatChecker()
-        )
-
-    def errors(self, instance: object) -> list:
-        return list(self.validator.iter_errors(instance))
+    def errors(self, instance: object) -> list[str]:
+        return validate_share_package(instance)
 
     def test_schema_is_valid_draft_2020_12(self) -> None:
         Draft202012Validator.check_schema(self.schema)
@@ -63,6 +62,8 @@ class HolochainSharePackageContractTests(unittest.TestCase):
         event["statementCode"] = "disputed"
         self.assertTrue(self.errors(event), "dispute without target must fail")
         event["targetShareId"] = self.fixture["shareId"]
+        self.assertTrue(self.errors(event), "a dispute cannot target itself")
+        event["targetShareId"] = "d7a5cf2a-7598-4c5c-b65e-f19f4a765901"
         self.assertEqual([], self.errors(event))
 
     def test_supersession_requires_target_record_and_matching_statement(self) -> None:
@@ -71,6 +72,8 @@ class HolochainSharePackageContractTests(unittest.TestCase):
         event["statementCode"] = "supersedes"
         self.assertTrue(self.errors(event), "supersession without target must fail")
         event["targetShareId"] = self.fixture["shareId"]
+        self.assertTrue(self.errors(event), "a supersession cannot target itself")
+        event["targetShareId"] = "d7a5cf2a-7598-4c5c-b65e-f19f4a765901"
         self.assertEqual([], self.errors(event))
 
     def test_evidence_attestation_requires_at_least_one_manifest(self) -> None:
@@ -110,7 +113,9 @@ class HolochainSharePackageContractTests(unittest.TestCase):
 
     def test_rejects_duplicate_manifest_references(self) -> None:
         event = copy.deepcopy(self.fixture)
-        event["evidenceManifest"].append(copy.deepcopy(event["evidenceManifest"][0]))
+        duplicate = copy.deepcopy(event["evidenceManifest"][0])
+        duplicate["assessmentClaim"] = "signature-check-reported"
+        event["evidenceManifest"].append(duplicate)
         self.assertTrue(self.errors(event))
 
     def test_limits_evidence_manifest_references(self) -> None:
