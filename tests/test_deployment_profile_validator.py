@@ -1,3 +1,6 @@
+# Copyright (C) 2026 Luminous Dynamics
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """Regression suite for the deployment profile declaration validator."""
 from __future__ import annotations
 
@@ -36,6 +39,9 @@ class DeploymentProfileValidatorTests(unittest.TestCase):
         self.assertEqual(report["result"], "VALID_DECLARATION")
         self.assertFalse(report["qualification_evaluated"])
         self.assertTrue(report["profile_digest_sha256"].startswith("sha256:"))
+        self.assertTrue(report["schema_digest_sha256"].startswith("sha256:"))
+        self.assertEqual(report["profile_schema_id"], SCHEMA["$id"])
+        self.assertEqual(report["profile_schema_version"], "luminous.deployment-profile/v1")
         self.assertIn("does not run an adapter", report["notice"])
 
     def test_unknown_schema_version_is_invalid(self):
