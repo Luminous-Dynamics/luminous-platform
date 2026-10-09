@@ -233,7 +233,9 @@ Do not market the difference between a web list price and a negotiated quote as 
 
 For a comparable basket:
 
-**Net realized savings = counterfactual baseline total − actual landed total − incremental participation costs.**
+**Net cost difference = baseline merchandise + baseline other costs − actual merchandise − actual other costs − participation costs.**
+
+The [Rust calculation kernel](../crates/cooperative-commerce-core/README.md) implements this arithmetic for exact, specification-matched baskets, and the [Savings Receipt schema](../schemas/cooperative-savings-receipt-v1.schema.json) defines the portable record. Until a separate verifier validates source bytes/signatures and recomputes the receipt from its retained input snapshot, report this as a computed difference—not independently verified or causally attributed savings.
 
 The baseline and actual totals must use equivalent specification, quantity, pack, tax treatment, delivery destination, payment terms, timing, and quality. Include all membership, handling, freight, FX, storage, financing, spoilage, and substitution costs that materially differ. If the baseline is an estimate rather than a buyer's real alternative quote or invoice, label it as estimated. Keep FX conversions tied to a disclosed source and timestamp. Show both absolute savings and percentage savings, as well as missing data.
 
