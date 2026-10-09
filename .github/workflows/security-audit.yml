@@ -88,9 +88,18 @@ jobs:
           repository = os.environ["AUDITED_REPOSITORY"]
           summary = Path("security-audit-results/workflows/summary.txt")
 
+          def set_receipt_value(key, value):
+              lines = summary.read_text(encoding="utf-8").splitlines()
+              prefix = f"{key}="
+              matches = [i for i, line in enumerate(lines) if line.startswith(prefix)]
+              if len(matches) != 1:
+                  raise SystemExit(f"receipt field {key} has {len(matches)} entries")
+              lines[matches[0]] = f"{key}={value}"
+              summary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
           def fail(reason):
+              set_receipt_value("engine_identity_status", "FAIL")
               with summary.open("a", encoding="utf-8") as receipt:
-                  receipt.write("engine_identity_status=FAIL\n")
                   receipt.write(f"engine_identity_reason={reason}\n")
               print(f"FAIL: {reason}", file=sys.stderr)
               raise SystemExit(1)
@@ -136,8 +145,8 @@ jobs:
               if refs[0] != engine or declared[0] != engine:
                   fail("caller_reference_and_engine_sha_mismatch")
 
+          set_receipt_value("engine_identity_status", "PASS")
           with summary.open("a", encoding="utf-8") as receipt:
-              receipt.write("engine_identity_status=PASS\n")
               receipt.write(f"engine_identity_checked_sha={engine}\n")
           print("PASS: declared audit engine identity matches the caller reference")
           PY
@@ -320,9 +329,18 @@ jobs:
           repository = os.environ["AUDITED_REPOSITORY"]
           summary = Path("security-audit-results/summary.txt")
 
+          def set_receipt_value(key, value):
+              lines = summary.read_text(encoding="utf-8").splitlines()
+              prefix = f"{key}="
+              matches = [i for i, line in enumerate(lines) if line.startswith(prefix)]
+              if len(matches) != 1:
+                  raise SystemExit(f"receipt field {key} has {len(matches)} entries")
+              lines[matches[0]] = f"{key}={value}"
+              summary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
           def fail(reason):
+              set_receipt_value("engine_identity_status", "FAIL")
               with summary.open("a", encoding="utf-8") as receipt:
-                  receipt.write("engine_identity_status=FAIL\n")
                   receipt.write(f"engine_identity_reason={reason}\n")
               print(f"FAIL: {reason}", file=sys.stderr)
               raise SystemExit(1)
@@ -365,8 +383,8 @@ jobs:
               if refs[0] != engine or declared[0] != engine:
                   fail("caller_reference_and_engine_sha_mismatch")
 
+          set_receipt_value("engine_identity_status", "PASS")
           with summary.open("a", encoding="utf-8") as receipt:
-              receipt.write("engine_identity_status=PASS\n")
               receipt.write(f"engine_identity_checked_sha={engine}\n")
           print("PASS: declared audit engine identity matches the caller reference")
           PY
