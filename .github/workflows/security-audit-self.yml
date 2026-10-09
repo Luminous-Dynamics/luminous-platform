@@ -1,0 +1,27 @@
+name: Security Audit — Platform Self-Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: security-audit-platform-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || 'auto' }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Audit platform workflow definitions
+    uses: ./.github/workflows/security-audit.yml
+    with:
+      subject_sha: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      audit_rust: false
