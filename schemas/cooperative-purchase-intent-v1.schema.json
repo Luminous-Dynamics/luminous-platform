@@ -238,7 +238,8 @@
             "granted_at",
             "expires_at",
             "revocable",
-            "evidence_reference"
+            "evidence_reference",
+            "evidence_sha256"
           ],
           "properties": {
             "consent_id": {
@@ -344,7 +345,8 @@
         "expires_at",
         "evidence_reference",
         "evidence_sha256",
-        "signature_reference"
+        "signature_reference",
+        "single_use"
       ],
       "properties": {
         "authority_id": {
