@@ -65,6 +65,25 @@ jobs:
           SUBJECT_SHA: ${{ inputs.subject_sha }}
         run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
 
+      - name: Initialize RustSec evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p security-audit-results/lockfiles
+          {
+            echo "schema=luminous.security-audit.receipt.v1"
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "subject_sha=$(git rev-parse HEAD)"
+            echo "caller_workflow_ref=${GITHUB_WORKFLOW_REF}"
+            echo "caller_workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "event=${GITHUB_EVENT_NAME}"
+            echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "rustsec_status=INCOMPLETE"
+            echo "incomplete_reason=setup_or_audit_not_completed"
+          } > security-audit-results/summary.txt
+
       - name: Install pinned Rust toolchain
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
         with:
@@ -80,30 +99,24 @@ jobs:
           set -euo pipefail
           workspace="$GITHUB_WORKSPACE"
           result_root="$workspace/security-audit-results"
-          mkdir -p "$result_root/lockfiles"
           subject_sha="$(git rev-parse HEAD)"
           mapfile -t lockfiles < <(git ls-files -- 'Cargo.lock' '**/Cargo.lock' | LC_ALL=C sort -u)
 
           if [[ "${#lockfiles[@]}" -eq 0 ]]; then
-            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent." | tee "$result_root/summary.txt"
+            sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' "$result_root/summary.txt"
+            echo "incomplete_reason=no_tracked_Cargo.lock_files" >> "$result_root/summary.txt"
+            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
             exit 2
           fi
 
+          sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
+          sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
           {
-            echo "schema=luminous.security-audit.receipt.v1"
-            echo "repository=${GITHUB_REPOSITORY}"
-            echo "subject_sha=${subject_sha}"
-            echo "caller_workflow_ref=${GITHUB_WORKFLOW_REF}"
-            echo "caller_workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}"
-            echo "run_id=${GITHUB_RUN_ID}"
-            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
-            echo "event=${GITHUB_EVENT_NAME}"
-            echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo "rustc=$(rustc +1.96.0 --version)"
             echo "cargo=$(cargo +1.96.0 --version)"
             echo "cargo_audit=$(cargo audit --version)"
             echo "lockfile_count=${#lockfiles[@]}"
-          } > "$result_root/summary.txt"
+          } >> "$result_root/summary.txt"
 
           # RustSec explicitly recommends reading untrusted lockfiles from
           # outside the checked-out project directory so project-local Cargo
@@ -134,6 +147,7 @@ jobs:
           done
 
           if [[ "$failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
+          sed -i "s/^rustsec_status=.*/rustsec_status=$overall/" "$result_root/summary.txt"
           echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
           cat "$result_root/summary.txt"
           exit "$failed"
