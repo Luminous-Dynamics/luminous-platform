@@ -252,7 +252,7 @@ fn decode_entities(input: &str) -> Result<String, SixXmlError> {
                 let n = entity[1..].parse::<u32>().map_err(|_| fail("invalid decimal XML character reference"))?;
                 char::from_u32(n).filter(|c| is_xml_char(*c)).ok_or_else(|| fail("invalid XML character reference"))?
             },
-            _ => return Err(fail(format!("unknown XML entity &{entity};; user-defined entities are forbidden"))),
+            _ => return Err(fail(format!("unknown XML entity &{entity}; user-defined entities are forbidden"))),
         };
         out.push(decoded);
         rest = &after[end + 1..];
@@ -357,6 +357,7 @@ pub fn parse_six_list_one_xml(input: &str) -> Result<SixListOneImport, SixXmlErr
     if !stack.is_empty() { return Err(fail(format!("unclosed XML element {:?}", stack.last().expect("nonempty")))); }
     if !root_seen || !root_closed { return Err(fail("no complete ISO_4217 root element")); }
     if entry.is_some() || active_field.is_some() { return Err(fail("incomplete currency entry at end of document")); }
+    if publication_date.is_none() { return Err(fail("missing required Pblshd publication date")); }
     if !table_seen { return Err(fail("missing CcyTbl currency table")); }
     if records.is_empty() { return Err(fail("no usable currency records found")); }
 
@@ -500,6 +501,12 @@ mod tests {
         let xml = format!("\u{feff}{}", XML.replace("Small Island &amp; Coast", "Small Island &#38; Coast"));
         let parsed = parse_six_list_one_xml(&xml).unwrap();
         assert_eq!(parsed.records[1].entities[0], "Small Island & Coast");
+    }
+
+    #[test]
+    fn requires_publisher_release_identity() {
+        let without_publication_date = XML.replace(' Pblshd="2026-08-14"', "");
+        assert!(parse_six_list_one_xml(&without_publication_date).unwrap_err().to_string().contains("missing required Pblshd"));
     }
 
     #[test]

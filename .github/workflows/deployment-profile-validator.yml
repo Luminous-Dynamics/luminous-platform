@@ -70,6 +70,9 @@ jobs:
       - name: Check resolved dependency compatibility
         run: python -m pip check
 
+      - name: Check SIX acquisition script syntax
+        run: bash -n tools/fetch_six_list_one.sh
+
       - name: Set up pinned Rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
         with:
