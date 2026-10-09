@@ -10,6 +10,11 @@
     "repository",
     "subject_sha",
     "audit_engine_sha",
+    "workflow_ref",
+    "workflow_sha",
+    "workflow_run_url",
+    "generated_at_utc",
+    "aggregate_artifact_retention_days",
     "run_id",
     "run_attempt",
     "workflow_job_result",
@@ -151,6 +156,32 @@
     },
     "audit_node": {
       "type": "boolean"
+    },
+    "workflow_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workflow_sha": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        {
+          "const": "unknown"
+        }
+      ]
+    },
+    "workflow_run_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "generated_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "aggregate_artifact_retention_days": {
+      "const": 30
     }
   },
   "allOf": [
