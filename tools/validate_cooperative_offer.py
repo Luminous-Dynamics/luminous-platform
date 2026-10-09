@@ -167,6 +167,8 @@ def validate_offer(
         _error(errors, "terms.unit_price.amount", "amount must be a finite non-negative decimal string")
     if price["per_unit_code"] != pack["order_unit_code"]:
         _error(errors, "terms.unit_price.per_unit_code", "must match product.pack.order_unit_code unless a separately reviewed conversion is defined")
+    if price["per_unit_code_system"] != pack["order_unit_code_system"]:
+        _error(errors, "terms.unit_price.per_unit_code_system", "must match product.pack.order_unit_code_system unless a separately reviewed conversion is defined")
 
     base_currency = price["currency"]
     previous_break_quantity: Decimal | None = None
@@ -209,6 +211,10 @@ def validate_offer(
             _error(errors, "availability.quantity_unit_code", "in_stock/limited offers require an explicit quantity unit")
         elif available_unit != order_unit:
             _error(errors, "availability.quantity_unit_code", "must match product.pack.order_unit_code unless a separately reviewed unit conversion is applied")
+        if not availability.get("quantity_unit_code_system"):
+            _error(errors, "availability.quantity_unit_code_system", "in_stock/limited offers require an explicit unit code-system identifier")
+        elif availability["quantity_unit_code_system"] != pack["order_unit_code_system"]:
+            _error(errors, "availability.quantity_unit_code_system", "must match product.pack.order_unit_code_system unless a separately reviewed unit conversion is applied")
         if quantity is not None and quantity > 0 and minimum_order is not None and available_unit == order_unit and quantity < minimum_order:
             _error(errors, "availability.quantity", "known available quantity is below the minimum order quantity")
 
