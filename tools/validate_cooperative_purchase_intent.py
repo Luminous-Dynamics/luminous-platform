@@ -116,8 +116,6 @@ def consent_scope_payload(document: dict[str, Any]) -> dict[str, Any]:
         "granted_at": consent["granted_at"],
         "expires_at": consent["expires_at"],
         "revocable": consent["revocable"],
-        "evidence_reference": consent["evidence_reference"],
-        "evidence_sha256": consent["evidence_sha256"].lower(),
         "buyer_party_id": buyer["buyer_party_id"],
         "buyer_legal_entity_id": buyer["buyer_legal_entity_id"],
         "purpose": sharing["purpose"],
@@ -161,6 +159,8 @@ def purchase_scope_payload(document: dict[str, Any]) -> dict[str, Any]:
         "sharing_consent": {
             "consent_id": document["sharing"]["consent"]["consent_id"],
             "scope_sha256": document["sharing"]["consent"]["scope_sha256"].lower(),
+            "evidence_reference": document["sharing"]["consent"]["evidence_reference"],
+            "evidence_sha256": document["sharing"]["consent"]["evidence_sha256"].lower(),
         },
         "requested_quantity": demand["requested_quantity"],
         "requested_unit_code": demand["requested_unit_code"],
