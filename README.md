@@ -4,6 +4,10 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 
 See [Global Deployment and Business Model](docs/GLOBAL_DEPLOYMENT_AND_BUSINESS_MODEL.md) for the proposed product boundaries, deployment profiles, business model, and qualification roadmap. That document is a roadmap, not a claim of production readiness or universal compliance.
 
+For the partner/operator on-ramp, start with [Start a Luminous Business](docs/START_A_LUMINOUS_BUSINESS.md) and the [MSP Incident-to-Evidence starter pack](business-packs/msp-incident-to-evidence/README.md). The pack includes a service manifest and reusable intake, scope, and delivery-report templates. Its first delivery mode is manual-first; it does not claim a qualified live PSA connector.
+
+See [One Luminous Platform, Many Business Packs](docs/PLATFORM_AND_REPOSITORY_STRATEGY.md) for the product/repository strategy. The goal is one coherent platform with independently qualified vertical packs—not a separate platform for every industry.
+
 For a machine-readable draft, see the [Deployment Profile Contract](docs/DEPLOYMENT_PROFILE_CONTRACT.md), [JSON Schema](schemas/deployment-profile-v1.schema.json), and [local NixOS pilot example](profiles/examples/local-nixos-pilot.yaml). A first declaration-only validator is available at `tools/validate_deployment_profile.py`; it has a regression corpus in `tests/test_deployment_profile_validator.py` and a pinned dependency file.
 
 ```bash
