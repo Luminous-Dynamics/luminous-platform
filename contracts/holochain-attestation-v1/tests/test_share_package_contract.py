@@ -66,8 +66,11 @@ class HolochainSharePackageContractTests(unittest.TestCase):
         event["recordType"] = "dispute"
         event["statementCode"] = "disputed"
         self.assertTrue(self.errors(event), "dispute without target must fail")
-        event["targetShareId"] = self.fixture["shareId"]
-        self.assertTrue(self.errors(event), "a dispute cannot target itself")
+        event["targetShareId"] = self.fixture["shareId"].upper()
+        self.assertTrue(
+            any("cannot target its own shareId" in error for error in self.errors(event)),
+            "UUID case normalization must not allow a dispute to target itself",
+        )
         event["targetShareId"] = "d7a5cf2a-7598-4c5c-b65e-f19f4a765901"
         self.assertEqual([], self.errors(event))
 
@@ -76,8 +79,11 @@ class HolochainSharePackageContractTests(unittest.TestCase):
         event["recordType"] = "supersession"
         event["statementCode"] = "supersedes"
         self.assertTrue(self.errors(event), "supersession without target must fail")
-        event["targetShareId"] = self.fixture["shareId"]
-        self.assertTrue(self.errors(event), "a supersession cannot target itself")
+        event["targetShareId"] = self.fixture["shareId"].upper()
+        self.assertTrue(
+            any("cannot target its own shareId" in error for error in self.errors(event)),
+            "UUID case normalization must not allow a supersession to target itself",
+        )
         event["targetShareId"] = "d7a5cf2a-7598-4c5c-b65e-f19f4a765901"
         self.assertEqual([], self.errors(event))
 
