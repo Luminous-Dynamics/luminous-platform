@@ -12,6 +12,10 @@ Provide the first concrete path toward a globally portable, member-oriented whol
 - [Synthetic ZAR offer](fixtures/example-offer-zar.json) — South African-shaped example; not a real supplier or quote.
 - [Synthetic EUR cross-border offer](fixtures/example-offer-eur.json) — Germany/Netherlands-shaped example; no legal, tax, payment, or delivery capability is implied.
 - [Semantic validator](../../tools/validate_cooperative_offer.py) — deterministic cross-field checks; it never authorizes a transaction.
+- [Purchase-intent schema](../../schemas/cooperative-purchase-intent-v1.schema.json) — separates non-binding interest/quote requests from binding order declarations that require an offer, single-use authorization, and idempotency key.
+- [Synthetic non-binding interest](fixtures/example-nonbinding-interest.json) — consent-scoped demand fixture; no purchase obligation or real buyer is represented.
+- [Purchase-intent validator](../../tools/validate_cooperative_purchase_intent.py) — checks time bounds, authorized maximums, legal-entity binding, and a canonical digest over the exact order scope.
+- [Purchase-intent schema tests](../../tests/test_cooperative_purchase_intent_schema.py) and [semantic tests](../../tests/test_cooperative_purchase_intent_semantics.py).
 - [Semantic regression tests](../../tests/test_cooperative_offer_semantics.py) — dates, publication evidence, offer expiry/freshness, quantity relationships, price-break ordering, and cross-border constraints.
 - [Global architecture and staged plan](../../docs/GLOBAL_COOPERATIVE_COMMERCE.md).
 
@@ -66,3 +70,5 @@ python -m unittest discover -s tests -p 'test_cooperative_offer_*.py' -v
 ```
 
 A report of `DECLARATION_VALID_NO_TRANSACTION_AUTHORIZED` means only that the declaration passed the implemented schema and cross-field checks. It is **not** an authorization, verified supplier claim, official currency/country code-list check, tax or competition-law assessment, live inventory confirmation, or realized-savings proof. Published offers must have current validity/availability observations, retained evidence references and digests, non-unknown tax treatment, and a non-synthetic declaration; these are necessary gates, not sufficient proof of transaction safety.
+
+Purchase intents use separate states: non-binding interest and quote requests cannot carry a binding accepted offer or purchase authorization. A binding-order declaration must carry a specific offer revision/digest, a single-use authorization, an idempotency key, and a scope digest. The validator recomputes the canonical scope digest and checks the accepted amount against the explicit maximum and currency. Even this does not verify the signer, source evidence, or durable replay ledger; the tool always returns `transaction_authorized: false`.
