@@ -4,11 +4,17 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.96"
 publish = false
-description = "Rust-native validation for the minimized Operations Event V1 contract"
+description = "Rust-native Operations Event V1 contract and PostgreSQL transactional receiver"
 
 [dependencies]
 jsonschema = { version = "=0.58.6", default-features = false }
 serde_json = "=1.0.151"
+sha2 = "=0.11.0"
+sqlx = { version = "=0.9.0", default-features = false, features = ["runtime-tokio", "tls-rustls-ring-webpki", "postgres", "migrate", "macros", "json"] }
+thiserror = "=2.0.21"
+
+[dev-dependencies]
+tokio = { version = "=1.53.2", features = ["macros", "rt-multi-thread"] }
 
 [lints.rust]
 unsafe_code = "forbid"

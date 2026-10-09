@@ -83,6 +83,16 @@ Initially avoid multi-region writes, database sharding, and a generic multi-data
 - [Luminous Platform issue #5](https://github.com/Luminous-Dynamics/luminous-platform/issues/5): tenant-scoped durable inbox/outbox qualification.
 - [Luminous Platform issue #7](https://github.com/Luminous-Dynamics/luminous-platform/issues/7): native work-case contract and lifecycle acceptance criteria.
 
+## Rust/PostgreSQL prototype increment (2026-10-09)
+
+The Operations Event V1 Rust crate now has an initial PostgreSQL receiver prototype and a versioned migration under `contracts/operations-event-v1/rust/`. Its intended transaction applies a source event only after schema validation, an authenticated-connector binding supplied by the service boundary, an explicit external-resource mapping, and a configured revision comparator are resolved. It uses database unique keys for event identity and business-effect idempotency; a locked per-incident head serializes revision decisions and local outbox sequence allocation. Inbox identity, effect key, incident state, append-only activity, and outbox row are intended to commit or roll back together.
+
+The migration creates a non-login `luminous_ops_app` role with no superuser or RLS-bypass attribute, explicit table grants, and forced tenant RLS policies. Runtime login roles must be provisioned separately and granted membership in that role; migrations must run with a separate owner/migration identity. The tenant context is transaction-local. RLS is a defense-in-depth barrier against scope mistakes, not protection against compromise of an application role that can set arbitrary tenant context.
+
+The prototype deliberately quarantines revisions it cannot order and supports a numeric-suffix comparator only when explicitly configured for a provider whose contract guarantees that ordering. It stores digests and stable reason codes for quarantine rather than raw rejected events. Outbox claims use row locks and block later events for an incident while an earlier event remains undelivered; sends are at-least-once, and lease acknowledgements require the current owner and an unexpired lease.
+
+**Qualification boundary:** this prototype is not production-qualified. The PostgreSQL integration suite is authored to test replay/idempotency, concurrency, revision ordering, database-trigger fault rollback, RLS default deny, and lease recovery. It must compile and pass on the exact PR head against the pinned PostgreSQL CI image before any of those checks count as observed evidence. No live ConnectWise authentication, production principal resolver, migrations-from-prior-version test, process-kill/restart test, power-loss test, backup/restore rehearsal, or independent-process multi-instance deployment qualification is implied by the initial suite.
+
 ## Related limitations
 
 This ADR chooses a target for the first shared production service. It does not itself implement migrations, the PostgreSQL repository, RLS policies, authenticated provider intake, a hosted ConnectWise adapter, or a qualified service. The existing SQLite model remains useful evidence only for the behavior that its own tests execute.

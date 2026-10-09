@@ -227,3 +227,10 @@ pub fn validate_event_for_connection(
         Err(issues)
     }
 }
+
+
+mod postgres_store;
+
+pub use postgres_store::{
+    AuthenticatedConnector, IngestOutcome, OutboxLease, PostgresOperationsStore, StoreError,
+};

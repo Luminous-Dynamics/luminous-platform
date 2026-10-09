@@ -17,15 +17,17 @@ This folder defines the first portable cross-repository event contract for the p
 - `tests/test_adapter_model.py` — deterministic normalization, trusted tenant/source binding, duplicate-delivery and idempotency-conflict tests.
 - `tests/test_durable_sqlite_model.py` — restart/replay, conflict, transaction fault-injection, concurrency, quarantine, stale-revision, and outbox lease tests.
 - `DURABLE_SQLITE_REFERENCE_MODEL.md` — scope, semantics, limitations, and production continuation gates.
-- `rust/` — canonical Rust-native envelope/payload validator, trusted connector-binding checks, and adversarial contract tests.
+- `rust/` — canonical Rust-native envelope/payload validator, trusted connector-binding checks, PostgreSQL transactional receiver, versioned PostgreSQL migrations, and adversarial/integration tests.
 - `requirements.txt` — Python validator pinned for research-only reference-model tests; not a production dependency.
 
-Primary contract qualification (Rust):
+Primary contract qualification (Rust + PostgreSQL 18.6): start an isolated PostgreSQL instance and set `DATABASE_URL` to it, then run:
 
 ```sh
 rustup toolchain install 1.96.0 --profile minimal
 cargo +1.96.0 test --manifest-path contracts/operations-event-v1/rust/Cargo.toml --all-targets
 ```
+
+The PostgreSQL integration test exercises unique event identity, replay with a different receiver-local observation timestamp, business-effect idempotency conflicts, numeric revision ordering, fail-closed opaque revisions, concurrent duplicate submissions, all-or-nothing rollback on a database trigger failure, default-deny tenant RLS, transaction-local tenant context, outbox predecessor ordering, lease expiration, and acknowledgement ownership. The CI service uses the PostgreSQL 18.6 multi-platform image manifest digest `sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650`.
 
 Optional reference-model research tests (Python; never a production runtime):
 
