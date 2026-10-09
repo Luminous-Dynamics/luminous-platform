@@ -283,14 +283,16 @@ A missing pack must not silently inherit another country's rules. It should stil
 
 ## 11. What to implement next
 
-1. Keep this document as a proposed architecture, linked from the global deployment model.
-2. Review and extend the proposed [cooperative-offer schema](../schemas/cooperative-offer-v1.schema.json) and synthetic fixtures; schema validity alone does not validate official code-list membership or transaction semantics.
-3. Add a separate semantic validator for quote time ordering, unit conversion, price-break consistency, jurisdiction-pack status, and explicit landed-cost uncertainty.
-4. Build a no-purchase prototype that imports supplier catalog CSVs, normalizes units, compares landed-cost quotes, and exports a calculation receipt.
-5. Extend the manual-first buying pack with buyer consent, supplier RFQ, quote comparison, order mandate, delivery checklist, and dispute record.
-6. Test non-binding versus binding states, stale quotations, pack mismatch, currency conversion, taxes, unit conversion, duplicate retries, unauthorized orders, partial deliveries, substitutions, refunds, and negative savings.
-7. Complete a local legal review before real multi-business pooled buying or financial flow.
-8. Run one category in one region, report positive and negative outcomes, and add jurisdictions only as their local packs and providers are maintained.
+The following items remain open. The existing schemas, Python reference/CI validators, synthetic fixtures, and Rust calculator are proposed prototypes; they do not make this a live commerce system.
+
+1. **Official code-list bundle:** introduce versioned, digest-pinned currency, country, unit, and packaging registries with source, effective dates, stale-data policy, and reproducible update workflow. Use current maintained sources such as SIX for ISO 4217 and UNECE Recommendations 20/21 for appropriate trade units; syntax alone is not membership validation.
+2. **Rust receipt verifier and serializer:** map the offer, purchase-intent, and savings-receipt schemas into Rust types; use RFC 8785 JCS conformance vectors; recompute receipt totals from source snapshots; compare currencies, categories, delivered quantities, and digests; and emit a receipt only when all required invariants pass. Do not turn the Python reference validators into a production service.
+3. **Evidence and authority adapters:** verify source bytes against digests, verify signatures and issuer/revocation state, bind consent to exact sharing scope, and enforce single-use idempotency in durable storage. Unknown or unavailable authority must block a binding order.
+4. **No-purchase UI prototype:** import supplier CSVs, normalize product/pack/unit data, show unmatched products and unknown charges explicitly, compare landed cost with exact decimal arithmetic, and export the receipt and input snapshot.
+5. **Reviewed conversions:** add explicit unit conversion rules and FX conversion records with source, timestamp, effective period, precision/rounding rule, and verifier. Until the relevant rule/record is supported, refuse cross-unit or cross-currency comparisons.
+6. **Manual-first buying pack:** add buyer consent, supplier RFQ, quote comparison, order mandate, delivery checklist, and dispute record. Test stale quotations, duplicate retries, unauthorized orders, partial deliveries, substitutions, refunds, credits, and negative net outcomes.
+7. **Jurisdiction qualification:** complete local legal review for the exact buyer/cooperative/supplier roles before real multi-business pooled buying or financial flows.
+8. **Evidence-based pilot:** run one product category in one region, report positive and negative outcomes, and activate further jurisdictions only while their rule packs, providers, and reviews remain current.
 
 Do not start with a token, a proprietary payment rail, a warehouse, a global corporation structure, or an AI buyer that commits other people's money. Those are optional future choices, not prerequisites for proving the economics.
 
@@ -308,6 +310,7 @@ Do not start with a token, a proprietary payment rail, a warehouse, a global cor
 - [OECD — International VAT/GST Guidelines](https://www.oecd.org/en/publications/international-vat-gst-guidelines_9789264271401-en.html)
 - [OECD — The Role of Digital Platforms in the Collection of VAT/GST on Online Sales](https://www.oecd.org/en/publications/the-role-of-digital-platforms-in-the-collection-of-vat-gst-on-online-sales_e0e2dd2d-en.html)
 - [OpenAPI Specification](https://spec.openapis.org/oas/)
+- [RFC 8785 — JSON Canonicalization Scheme](https://www.rfc-editor.org/rfc/rfc8785) — portable canonical bytes for signatures and hashes across implementations.
 - [Unicode CLDR — Number and Currency Formatting](https://unicode.org/reports/tr35/tr35-numbers.html)
 - [Open Food Facts — Data Sources and Licenses](https://www.myfoodfacts.org/en/data-sources) (review source-specific license requirements before importing any dataset)
 
