@@ -81,7 +81,7 @@ jobs:
         env:
           ZIZMOR_OUTCOME: ${{ steps.zizmor.outcome }}
         run: |
-          set -u
+          set -euo pipefail
           report="$RUNNER_TEMP/zizmor"
           destination="security-audit-results/workflows/zizmor.txt"
           if [[ -f "$report" ]]; then
@@ -339,7 +339,13 @@ jobs:
             coverage_failed=1
           fi
           echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
-          echo "manifest_coverage_sha256=$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)" | tee -a "$result_root/summary.txt"
+          if [[ -f "$result_root/manifest-coverage.json" ]]; then
+            coverage_sha256="$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)"
+          else
+            coverage_sha256="missing"
+            coverage_failed=1
+          fi
+          echo "manifest_coverage_sha256=$coverage_sha256" | tee -a "$result_root/summary.txt"
 
           # RustSec explicitly recommends reading untrusted lockfiles from
           # outside the checked-out project directory so project-local Cargo
