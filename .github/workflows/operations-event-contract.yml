@@ -6,6 +6,7 @@ on:
     paths:
       - "contracts/operations-event-v1/**"
       - "contracts/holochain-attestation-v1/**"
+      - "README.md"
       - "scripts/run_unittest_suite.py"
       - "scripts/tests/**"
       - ".github/workflows/operations-event-contract.yml"
