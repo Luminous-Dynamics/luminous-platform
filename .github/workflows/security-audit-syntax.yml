@@ -36,17 +36,55 @@ jobs:
           tool_dir="$RUNNER_TEMP/actionlint_1.7.12"
           shellcheck_archive="$RUNNER_TEMP/shellcheck-v0.11.0.linux.x86_64.tar.xz"
           shellcheck_dir="$RUNNER_TEMP/shellcheck-v0.11.0"
-          mkdir -p "$tool_dir"
-          curl -fsSL --retry 3 -o "$archive" \
-            "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
-          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $archive" | sha256sum -c -
-          tar -xzf "$archive" -C "$tool_dir" actionlint
-          curl -fsSL --retry 3 -o "$shellcheck_archive" \
-            "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz"
-          echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  $shellcheck_archive" | sha256sum -c -
-          tar -xJf "$shellcheck_archive" -C "$RUNNER_TEMP" shellcheck-v0.11.0/shellcheck
-          "$tool_dir/actionlint" -version
-          "$shellcheck_dir/shellcheck" --version
+          mkdir -p "$tool_dir" security-audit-syntax-results
+          setup_report="security-audit-syntax-results/tool-setup.txt"
+          {
+            echo "schema=luminous.security-audit.syntax-setup.v1"
+            echo "subject_sha=${GITHUB_SHA}"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "actionlint_version_expected=v1.7.12"
+            echo "actionlint_archive_sha256_expected=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+            echo "shellcheck_version_expected=v0.11.0"
+            echo "shellcheck_archive_sha256_expected=8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
+            echo "tool_setup_status=INCOMPLETE"
+          } > "$setup_report"
+          if ! curl -fsSL --retry 3 -o "$archive" \
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"; then
+            echo "tool_setup_status=FAIL reason=actionlint_download_failed" >> "$setup_report"
+            exit 1
+          fi
+          if ! echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $archive" | sha256sum -c -; then
+            echo "tool_setup_status=FAIL reason=actionlint_checksum_mismatch" >> "$setup_report"
+            exit 1
+          fi
+          if ! tar -xzf "$archive" -C "$tool_dir" actionlint; then
+            echo "tool_setup_status=FAIL reason=actionlint_extract_failed" >> "$setup_report"
+            exit 1
+          fi
+          if ! curl -fsSL --retry 3 -o "$shellcheck_archive" \
+            "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz"; then
+            echo "tool_setup_status=FAIL reason=shellcheck_download_failed" >> "$setup_report"
+            exit 1
+          fi
+          if ! echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  $shellcheck_archive" | sha256sum -c -; then
+            echo "tool_setup_status=FAIL reason=shellcheck_checksum_mismatch" >> "$setup_report"
+            exit 1
+          fi
+          if ! tar -xJf "$shellcheck_archive" -C "$RUNNER_TEMP" shellcheck-v0.11.0/shellcheck; then
+            echo "tool_setup_status=FAIL reason=shellcheck_extract_failed" >> "$setup_report"
+            exit 1
+          fi
+          if ! "$tool_dir/actionlint" -version > "$RUNNER_TEMP/actionlint-version.txt" 2>&1; then
+            echo "tool_setup_status=FAIL reason=actionlint_unusable" >> "$setup_report"
+            exit 1
+          fi
+          if ! "$shellcheck_dir/shellcheck" --version > "$RUNNER_TEMP/shellcheck-version.txt" 2>&1; then
+            echo "tool_setup_status=FAIL reason=shellcheck_unusable" >> "$setup_report"
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/actionlint-version.txt" "$RUNNER_TEMP/shellcheck-version.txt" >> "$setup_report"
+          echo "tool_setup_status=PASS" >> "$setup_report"
 
       - name: Lint workflow YAML and GitHub Actions expressions
         shell: bash
@@ -62,7 +100,7 @@ jobs:
             echo "FAIL: no workflow files found" | tee "$report"
             exit 2
           fi
-          shellcheck="$RUNNER_TEMP/shellcheck-v0.11.0/shellcheck" 
+          shellcheck="$RUNNER_TEMP/shellcheck-v0.11.0/shellcheck"
           if "$binary" -shellcheck="$shellcheck" "${workflows[@]}" > "$report" 2>&1; then
             echo "status=PASS" >> "$report"
             cat "$report"
