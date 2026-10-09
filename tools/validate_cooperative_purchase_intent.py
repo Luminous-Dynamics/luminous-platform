@@ -12,6 +12,7 @@ or authorizes/dispatches an order.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from datetime import datetime, timezone
@@ -75,6 +76,58 @@ def _amount(value: Any) -> Decimal | None:
 
 def _add(errors: list[str], path: str, message: str) -> None:
     errors.append(f"{path}: {message}")
+
+
+def purchase_scope_payload(document: dict[str, Any]) -> dict[str, Any]:
+    """Return the fixed v1 projection that a single-use mandate must bind."""
+    metadata = document["metadata"]
+    buyer = document["buyer"]
+    demand = document["demand"]
+    product = demand["product_reference"]
+    offer = document["accepted_offer"]
+    accepted_total = offer["accepted_total"]
+    return {
+        "schema": "luminous.purchase-scope/v1",
+        "intent_id": metadata["intent_id"],
+        "intent_revision": metadata["revision"],
+        "idempotency_key": metadata["idempotency_key"],
+        "buyer_party_id": buyer["buyer_party_id"],
+        "buyer_legal_entity_id": buyer["buyer_legal_entity_id"],
+        "buyer_site_id": buyer.get("buyer_site_id"),
+        "local_cooperative_id": buyer.get("local_cooperative_id"),
+        "offer_id": offer["offer_id"],
+        "offer_revision": offer["revision"],
+        "offer_sha256": offer["offer_sha256"].lower(),
+        "product_reference": {
+            "scheme": product["scheme"],
+            "value": product["value"],
+            "offer_specification_sha256": product.get("offer_specification_sha256"),
+        },
+        "requested_quantity": demand["requested_quantity"],
+        "requested_unit_code": demand["requested_unit_code"],
+        "requested_unit_code_system": demand["requested_unit_code_system"],
+        "destination_country_code": demand["destination_country_code"],
+        "destination_region": demand.get("destination_region"),
+        "delivery_window_start": demand.get("delivery_window_start"),
+        "delivery_window_end": demand.get("delivery_window_end"),
+        "substitution_policy": demand["substitution_policy"],
+        "accepted_total": {
+            "amount": accepted_total["amount"],
+            "currency": accepted_total["currency"],
+        },
+    }
+
+
+def purchase_scope_sha256(document: dict[str, Any]) -> str:
+    """Hash the canonical JSON projection used by the v1 single-use mandate."""
+    canonical = json.dumps(
+        purchase_scope_payload(document),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
 
 
 def validate_intent(
@@ -216,6 +269,9 @@ def validate_intent(
             _add(errors, "authorization.action", "only place_order is valid for a binding purchase intent")
         if not authorization["single_use"]:
             _add(errors, "authorization.single_use", "purchase authorization must be single-use")
+        expected_scope_digest = purchase_scope_sha256(document)
+        if authorization["scope_sha256"].lower() != expected_scope_digest:
+            _add(errors, "authorization.scope_sha256", "does not match the canonical purchase-scope projection; a changed quantity, unit, destination, buyer, offer revision, accepted total, intent revision, or idempotency key requires fresh authorization")
         if accepted_at and consent_granted and accepted_at < consent_granted:
             warnings.append("order acceptance predates the current sharing-consent grant; verify which data was disclosed under which consent")
 
