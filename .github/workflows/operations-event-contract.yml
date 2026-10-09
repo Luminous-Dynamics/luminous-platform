@@ -29,7 +29,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: operations-event-contract-${{ github.event.pull_request.number || github.ref }}
+  # Push and pull_request events for the same branch share one concurrency slot.
+  group: operations-event-contract-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
