@@ -10,7 +10,7 @@ on:
       - "scripts/tests/**"
       - ".github/workflows/operations-event-contract.yml"
   push:
-    branches: ["**"]
+    branches: ["main", "feat/native-work-case-core-v1"]
     paths:
       - "contracts/operations-event-v1/**"
       - "contracts/work-case-v1/**"
