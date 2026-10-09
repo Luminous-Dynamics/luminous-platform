@@ -4,15 +4,15 @@ on:
   workflow_call:
     inputs:
       subject_sha:
-        description: Exact commit SHA of the caller repository to audit.
+        description: Exact caller repository commit to audit.
         required: true
         type: string
       audit_engine_sha:
-        description: Declared exact revision of the reusable audit workflow; an external verifier must cross-check it against the caller's uses reference.
+        description: Caller-declared audit workflow revision; external verifier must cross-check the actual uses reference.
         required: true
         type: string
       audit_rust:
-        description: Audit every tracked Cargo.lock in the caller repository.
+        description: Audit Rust lockfiles and map manifests to workspace lockfiles.
         required: false
         default: false
         type: boolean
@@ -34,13 +34,11 @@ jobs:
         with:
           ref: ${{ inputs.subject_sha }}
           persist-credentials: false
-
       - name: Assert exact checkout identity
         env:
           SUBJECT_SHA: ${{ inputs.subject_sha }}
         run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
-
-      - name: Initialize workflow audit evidence
+      - name: Initialize workflow evidence
         shell: bash
         env:
           AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
@@ -63,7 +61,6 @@ jobs:
             echo "incomplete_reason=invalid_audit_engine_sha" >> security-audit-results/workflows/summary.txt
             exit 2
           fi
-
       - name: Audit workflow definitions
         id: zizmor
         uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
@@ -74,7 +71,6 @@ jobs:
           online-audits: true
           persona: auditor
           version: v1.30.1
-
       - name: Preserve workflow audit output
         if: always()
         shell: bash
@@ -87,7 +83,7 @@ jobs:
           if [[ -f "$report" ]]; then
             cp "$report" "$destination"
             report_sha256="$(sha256sum "$destination" | cut -d' ' -f1)"
-            if [[ "${ZIZMOR_OUTCOME:-unknown}" == "success" ]]; then
+            if [[ "$${ZIZMOR_OUTCOME:-unknown}" == "success" ]]; then
               sed -i 's/^zizmor_status=.*/zizmor_status=PASS/' security-audit-results/workflows/summary.txt
             else
               sed -i 's/^zizmor_status=.*/zizmor_status=FAIL/' security-audit-results/workflows/summary.txt
@@ -99,7 +95,6 @@ jobs:
             echo "zizmor_action_outcome=${ZIZMOR_OUTCOME:-unknown}" >> security-audit-results/workflows/summary.txt
             echo "report_missing=true" >> security-audit-results/workflows/summary.txt
           fi
-
       - name: Upload workflow audit evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -110,10 +105,10 @@ jobs:
           retention-days: 14
 
   rustsec:
-    name: RustSec dependency audit
+    name: RustSec dependency audit and coverage
     if: inputs.audit_rust
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:
@@ -122,13 +117,11 @@ jobs:
         with:
           ref: ${{ inputs.subject_sha }}
           persist-credentials: false
-
       - name: Assert exact checkout identity
         env:
           SUBJECT_SHA: ${{ inputs.subject_sha }}
         run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
-
-      - name: Initialize RustSec evidence
+      - name: Initialize RustSec receipt
         shell: bash
         env:
           AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
@@ -154,62 +147,66 @@ jobs:
             echo "incomplete_reason=invalid_audit_engine_sha" >> security-audit-results/summary.txt
             exit 2
           fi
-
       - name: Initialize allow-listed direct submodules
         shell: bash
         env:
           REPOSITORY_OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
-          if [[ ! -f .gitmodules ]]; then
-            echo "submodule_audit_status=NOT_REQUIRED" | tee -a security-audit-results/summary.txt
-            exit 0
+          verified_file="$RUNNER_TEMP/verified-submodules.txt"
+          : > "$verified_file"
+          submodule_status="NOT_REQUIRED"
+          submodule_reason=""
+          if [[ -f .gitmodules ]]; then
+            submodule_status="PASS"
+            while IFS= read -r line; do
+              url="${line#* }"
+              if [[ ! "$url" =~ ^https://github[.]com/${REPOSITORY_OWNER}/[A-Za-z0-9._-]+([.]git)?$ ]]; then
+                submodule_status="FAIL"
+                submodule_reason="submodule_url_not_allowlisted"
+                break
+              fi
+            done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]url$')
+            if [[ "$submodule_status" == "PASS" ]]; then
+              while IFS= read -r line; do
+                path="${line#* }"
+                if [[ ! "$path" =~ ^[A-Za-z0-9_./-]+$ || "$path" == /* || "$path" == *".."* || "$path" == "." || "$path" == ./* || "$path" == */./* || "$path" == */. ]]; then
+                  submodule_status="FAIL"
+                  submodule_reason="submodule_path_invalid"
+                  break
+                fi
+              done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$')
+            fi
+            if [[ "$submodule_status" == "PASS" ]]; then
+              if ! git submodule update --init; then
+                submodule_status="INCOMPLETE"
+                submodule_reason="submodule_checkout_failed"
+              fi
+            fi
+            if [[ "$submodule_status" == "PASS" ]]; then
+              while IFS= read -r line; do
+                path="${line#* }"
+                expected="$(git ls-files --stage -- "$path" | awk '$1 == "160000" {print $2}')"
+                if [[ -z "$expected" || ! -d "$path" ]]; then
+                  submodule_status="FAIL"
+                  submodule_reason="submodule_gitlink_missing"
+                  break
+                fi
+                actual="$(git -C "$path" rev-parse HEAD)"
+                if [[ "$actual" != "$expected" ]]; then
+                  submodule_status="FAIL"
+                  submodule_reason="submodule_head_mismatch"
+                  break
+                fi
+                printf '%s\n' "$path" >> "$verified_file"
+              done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$')
+            fi
           fi
-
-          # Only initialize direct submodules hosted in the caller's GitHub owner.
-          # This prevents a PR from redirecting the runner to arbitrary Git hosts.
-          while IFS= read -r line; do
-            url="${line#* }"
-            if [[ ! "$url" =~ ^https://github[.]com/${REPOSITORY_OWNER}/[A-Za-z0-9._-]+([.]git)?$ ]]; then
-              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
-              echo "incomplete_reason=submodule_url_not_allowlisted" | tee -a security-audit-results/summary.txt
-              exit 0
-            fi
-          done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]url$')
-
-          while IFS= read -r line; do
-            path="${line#* }"
-            if [[ ! "$path" =~ ^[A-Za-z0-9_./-]+$ || "$path" == /* || "$path" == *".."* || "$path" == "." || "$path" == ./* || "$path" == */./* || "$path" == */. ]]; then
-              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
-              echo "incomplete_reason=submodule_path_invalid" | tee -a security-audit-results/summary.txt
-              exit 0
-            fi
-          done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$')
-
-          if ! git submodule update --init; then
-            echo "submodule_audit_status=INCOMPLETE" | tee -a security-audit-results/summary.txt
-            echo "incomplete_reason=submodule_checkout_failed" | tee -a security-audit-results/summary.txt
-            exit 0
-          fi
-
-          while IFS= read -r line; do
-            path="${line#* }"
-            expected="$(git ls-files --stage -- "$path" | awk '$1 == "160000" {print $2}')"
-            if [[ -z "$expected" || ! -d "$path" ]]; then
-              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
-              echo "incomplete_reason=submodule_gitlink_missing" | tee -a security-audit-results/summary.txt
-              exit 0
-            fi
-            actual="$(git -C "$path" rev-parse HEAD)"
-            if [[ "$actual" != "$expected" ]]; then
-              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
-              echo "incomplete_reason=submodule_head_mismatch" | tee -a security-audit-results/summary.txt
-              exit 0
-            fi
-          done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$')
-
-          echo "submodule_audit_status=PASS" | tee -a security-audit-results/summary.txt
-
+          {
+            echo "submodule_audit_status=$submodule_status"
+            echo "submodule_audit_reason=${submodule_reason:-none}"
+            echo "verified_direct_submodule_count=$(wc -l < "$verified_file" | tr -d ' ')"
+          } | tee -a security-audit-results/summary.txt
       - name: Install pinned Rust toolchain
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
         with:
@@ -217,70 +214,83 @@ jobs:
       - name: Install pinned cargo-audit
         working-directory: ${{ runner.temp }}
         run: cargo install --locked cargo-audit --version 0.22.2
-
-      - name: Audit every tracked Cargo.lock and emit evidence
+      - name: Audit dependencies and verify manifest coverage
         shell: bash
         run: |
           set -euo pipefail
           workspace="$GITHUB_WORKSPACE"
           result_root="$workspace/security-audit-results"
-          subject_sha="$(git rev-parse HEAD)"
+          verified_file="$RUNNER_TEMP/verified-submodules.txt"
+          inventory_file="$RUNNER_TEMP/audit-lockfiles.txt"
           mapfile -t lockfiles < <(
             {
               git ls-files -- 'Cargo.lock' '**/Cargo.lock'
-              if [[ -f .gitmodules ]]; then
-                while IFS= read -r line; do
-                  module_path="${line#* }"
-                  if [[ -d "$workspace/$module_path" ]]; then
-                    git -C "$workspace/$module_path" ls-files -- 'Cargo.lock' '**/Cargo.lock' | sed "s#^#${module_path}/#"
-                  fi
-                done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path
+              while IFS= read -r module_path; do
+                [[ -n "$module_path" && -d "$workspace/$module_path" ]] || continue
+                git -C "$workspace/$module_path" ls-files -- 'Cargo.lock' '**/Cargo.lock' | sed "s#^#${module_path}/#"
+              done < "$verified_file"
+            } | LC_ALL=C sort -u
+          )
+          printf '%s\n' "${lockfiles[@]}" > "$inventory_file"
 
-          lockfile_missing=0
+          rustsec_failed=0
+          coverage_failed=0
           if [[ "${#lockfiles[@]}" -eq 0 ]]; then
-            lockfile_missing=1
+            rustsec_failed=1
             sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' "$result_root/summary.txt"
             echo "incomplete_reason=no_tracked_Cargo.lock_files" >> "$result_root/summary.txt"
-            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
           else
             sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
             sed -i '/^incomplete_reason=setup_or_audit_not_completed$/d' "$result_root/summary.txt"
           fi
-          {
-            echo "rustc=$(rustc +1.96.0 --version)"
-            echo "cargo=$(cargo +1.96.0 --version)"
-            echo "cargo_audit=$(cargo audit --version)"
-            echo "lockfile_count=${#lockfiles[@]}"
-          } >> "$result_root/summary.txt"
+          echo "lockfile_count=${#lockfiles[@]}" >> "$result_root/summary.txt"
+          echo "rustc=$(rustc +1.96.0 --version)" >> "$result_root/summary.txt"
+          echo "cargo=$(cargo +1.96.0 --version)" >> "$result_root/summary.txt"
+          echo "cargo_audit=$(cargo audit --version)" >> "$result_root/summary.txt"
 
-          coverage_failed=0
-          rustsec_failed="$lockfile_missing"
-
-          # Freeze one RustSec advisory database snapshot for the entire run.
-          # Every lockfile is evaluated against the same recorded database
-          # revision, avoiding different findings as the upstream DB advances.
           advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
-          if ! git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_clone_failed" | tee -a "$result_root/summary.txt"
-            exit 2
+          if git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
+            advisory_db_commit="$(git -C "$advisory_db" rev-parse HEAD)"
+            if [[ "$advisory_db_commit" =~ ^[0-9a-f]{40}$ ]]; then
+              {
+                echo "advisory_db_status=PASS"
+                echo "advisory_db_commit=$advisory_db_commit"
+                echo "advisory_db_url=https://github.com/RustSec/advisory-db"
+              } >> "$result_root/summary.txt"
+            else
+              echo "advisory_db_status=FAIL" >> "$result_root/summary.txt"
+              echo "incomplete_reason=advisory_database_revision_invalid" >> "$result_root/summary.txt"
+              rustsec_failed=1
+              advisory_db=""
+            fi
+          else
+            echo "advisory_db_status=FAIL" >> "$result_root/summary.txt"
+            echo "incomplete_reason=advisory_database_clone_failed" >> "$result_root/summary.txt"
+            rustsec_failed=1
+            advisory_db=""
           fi
-          advisory_db_commit="$(git -C "$advisory_db" rev-parse HEAD)"
-          if [[ ! "$advisory_db_commit" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_revision_invalid" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          {
-            echo "advisory_db_status=PASS"
-            echo "advisory_db_commit=$advisory_db_commit"
-            echo "advisory_db_url=https://github.com/RustSec/advisory-db"
-          } | tee -a "$result_root/summary.txt"
 
-          # Prove tracked Cargo manifests map to tracked workspace lockfiles.
-          # This is intentionally separate from cargo-audit: scanner coverage
-          # must be evidenced, not inferred from finding some lockfiles.
-          if python3 - "$workspace" "$result_root/manifest-coverage.json" <<'PY'
+          if [[ -n "$advisory_db" ]]; then
+            cd "$RUNNER_TEMP"
+            for lockfile in "${lockfiles[@]}"; do
+              report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
+              path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
+              report="$result_root/lockfiles/${report_id}_$path_hash.json"
+              stderr="$result_root/lockfiles/${report_id}_$path_hash.stderr"
+              lockfile_abs="$workspace/$lockfile"
+              lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
+              if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
+                rc=0
+              else
+                rc=$?
+                rustsec_failed=1
+              fi
+              if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
+              echo "lockfile=$lockfile sha256=$lock_sha256 exit_code=$rc outcome=$outcome" >> "$result_root/summary.txt"
+            done
+          fi
+
+          if python3 - "$workspace" "$result_root/manifest-coverage.json" "$verified_file" "$inventory_file" <<'PY'
           import json
           import subprocess
           import sys
@@ -289,6 +299,8 @@ jobs:
 
           repo = Path(sys.argv[1]).resolve()
           output = Path(sys.argv[2])
+          verified_file = Path(sys.argv[3])
+          inventory_file = Path(sys.argv[4])
 
           def git_output(root, *args):
               return subprocess.check_output(["git", *args], cwd=root)
@@ -316,46 +328,45 @@ jobs:
                   raw = git_output(root, "config", "-f", ".gitmodules", "--get-regexp", "^submodule[.].*[.]path$")
               except subprocess.CalledProcessError:
                   return []
-              paths = []
+              result = []
               for line in raw.decode().splitlines():
-                  fields = line.split(None, 1)
-                  if len(fields) == 2:
-                      paths.append(fields[1])
-              return sorted(set(paths))
+                  parts = line.split(None, 1)
+                  if len(parts) == 2:
+                      result.append(parts[1])
+              return sorted(set(result))
 
-          def prefixed(prefix, relative):
-              return f"{prefix}/{relative}" if prefix else relative
+          def prefixed(prefix, path):
+              return f"{prefix}/{path}" if prefix else path
 
-          # Root plus direct, allow-listed, initialized submodules. Nested
-          # submodules are reported as unaudited instead of being fetched.
+          roots = [("", repo)]
           root_links = dict(gitlinks(repo))
           declared_paths = declared_submodule_paths(repo)
-          roots = [("", repo)]
+          verified_paths = [line.strip() for line in verified_file.read_text().splitlines() if line.strip()]
+          scanned_lockfiles = set(line.strip() for line in inventory_file.read_text().splitlines() if line.strip())
           unaudited_submodules = []
-          summary_path = output.parent / "summary.txt"
-          summary_text = summary_path.read_text() if summary_path.exists() else ""
-          submodule_status = next(
-              (line.split("=", 1)[1] for line in summary_text.splitlines()
-               if line.startswith("submodule_audit_status=")),
-              "INCOMPLETE"
-          )
+
+          summary = (output.parent / "summary.txt").read_text()
+          submodule_status = next((line.split("=", 1)[1] for line in summary.splitlines() if line.startswith("submodule_audit_status=")), "INCOMPLETE")
           if submodule_status not in ("PASS", "NOT_REQUIRED"):
-              unaudited_submodules.append(f"submodule_initialization:{submodule_status}")
+              reason = next((line.split("=", 1)[1] for line in summary.splitlines() if line.startswith("submodule_audit_reason=")), "unknown")
+              unaudited_submodules.append(f"submodule_initialization:{submodule_status}:{reason}")
+
           for path in declared_paths:
-              expected = root_links.get(path)
-              if not expected:
+              if path not in root_links:
                   unaudited_submodules.append(f"{path}:declared_path_without_gitlink")
+          for path in root_links:
+              if path not in declared_paths:
+                  unaudited_submodules.append(f"{path}:gitlink_without_gitmodules_entry")
+
+          for path in verified_paths:
+              expected_sha = root_links.get(path)
+              relative = Path(path)
+              if expected_sha is None or relative.is_absolute() or ".." in relative.parts or "." in relative.parts:
+                  unaudited_submodules.append(f"{path}:invalid_or_untracked_gitlink")
                   continue
-              relative_path = Path(path)
-              if relative_path.is_absolute() or ".." in relative_path.parts or "." in relative_path.parts:
-                  unaudited_submodules.append(f"{path}:invalid_declared_path")
-                  continue
-              module_root = (repo / relative_path).resolve()
-              if repo not in module_root.parents:
-                  unaudited_submodules.append(f"{path}:path_outside_checkout")
-                  continue
-              if not module_root.is_dir():
-                  unaudited_submodules.append(f"{path}:not_initialized")
+              module_root = (repo / relative).resolve()
+              if repo not in module_root.parents or not module_root.is_dir():
+                  unaudited_submodules.append(f"{path}:outside_checkout_or_missing")
                   continue
               try:
                   actual_root = Path(git_output(module_root, "rev-parse", "--show-toplevel").decode().strip()).resolve()
@@ -363,30 +374,27 @@ jobs:
               except subprocess.CalledProcessError:
                   unaudited_submodules.append(f"{path}:not_a_git_checkout")
                   continue
-              if actual_root != module_root or actual_sha != expected:
+              if actual_root != module_root or actual_sha != expected_sha:
                   unaudited_submodules.append(f"{path}:checkout_does_not_match_gitlink")
                   continue
               roots.append((path, module_root))
-          for path, _sha in root_links.items():
-              if path not in declared_paths:
-                  unaudited_submodules.append(f"{path}:gitlink_without_gitmodules_entry")
 
           entries = []
-          all_lockfiles = set()
+          discovered_lockfiles = set()
           for prefix, checkout in roots:
-              local_manifests = tracked(checkout, ["Cargo.toml", "**/Cargo.toml"])
+              manifests = tracked(checkout, ["Cargo.toml", "**/Cargo.toml"])
               local_lockfiles = set(tracked(checkout, ["Cargo.lock", "**/Cargo.lock"]))
-              all_lockfiles.update(prefixed(prefix, path) for path in local_lockfiles)
+              discovered_lockfiles.update(prefixed(prefix, path) for path in local_lockfiles)
               parsed = {}
               parse_errors = {}
-              for rel in local_manifests:
+              for rel in manifests:
                   try:
                       with (checkout / rel).open("rb") as fh:
                           parsed[rel] = tomllib.load(fh)
                   except Exception as exc:
                       parse_errors[rel] = f"{type(exc).__name__}: {exc}"
 
-              def workspace_root_for(rel):
+              def workspace_root(rel):
                   manifest = checkout / rel
                   data = parsed.get(rel, {})
                   if "workspace" in data:
@@ -396,8 +404,7 @@ jobs:
                       return (manifest.parent / explicit).resolve()
                   parent = manifest.parent.parent
                   while parent == checkout or checkout in parent.parents:
-                      parent_manifest = parent / "Cargo.toml"
-                      parent_rel = parent_manifest.relative_to(checkout).as_posix()
+                      parent_rel = (parent / "Cargo.toml").relative_to(checkout).as_posix()
                       if parent_rel in parsed and "workspace" in parsed[parent_rel]:
                           return parent
                       if parent == checkout:
@@ -405,313 +412,63 @@ jobs:
                       parent = parent.parent
                   return manifest.parent
 
-              for rel in local_manifests:
-                  display_manifest = prefixed(prefix, rel)
+              for rel in manifests:
+                  name = prefixed(prefix, rel)
                   if rel in parse_errors:
-                      entries.append({
-                          "manifest": display_manifest, "status": "INCOMPLETE",
-                          "reason": "manifest_parse_error", "detail": parse_errors[rel]
-                      })
+                      entries.append({"manifest": name, "status": "INCOMPLETE", "reason": parse_errors[rel]})
                       continue
-                  root = workspace_root_for(rel)
                   try:
+                      root = workspace_root(rel)
                       root_rel = root.relative_to(checkout).as_posix()
-                  except ValueError:
-                      entries.append({
-                          "manifest": display_manifest, "status": "FAIL",
-                          "reason": "workspace_outside_checkout"
-                      })
+                  except (ValueError, OSError):
+                      entries.append({"manifest": name, "status": "FAIL", "reason": "workspace_outside_checkout"})
                       continue
-                  local_lock = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
-                  lock_tracked = local_lock in local_lockfiles
-                  lock_exists = (checkout / local_lock).is_file()
-                  display_lock = prefixed(prefix, local_lock)
+                  lock = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
+                  exists = lock in local_lockfiles and (checkout / lock).is_file()
                   entries.append({
-                      "manifest": display_manifest,
+                      "manifest": name,
                       "workspace_root": prefixed(prefix, root_rel),
-                      "expected_lockfile": display_lock,
-                      "lockfile_tracked": lock_tracked,
-                      "lockfile_exists": lock_exists,
-                      "status": "PASS" if lock_tracked and lock_exists else "FAIL",
-                      "reason": None if lock_tracked and lock_exists else "workspace_lockfile_missing_or_untracked"
+                      "expected_lockfile": prefixed(prefix, lock),
+                      "lockfile_tracked": exists,
+                      "status": "PASS" if exists else "FAIL",
+                      "reason": None if exists else "workspace_lockfile_missing_or_untracked"
                   })
 
               if prefix:
-                  for nested_path, _nested_sha in gitlinks(checkout):
+                  for nested_path, _sha in gitlinks(checkout):
                       unaudited_submodules.append(f"{prefix}/{nested_path}:nested_submodule_not_initialized")
 
+          mismatch = sorted(discovered_lockfiles.symmetric_difference(scanned_lockfiles))
+          unaudited_submodules.extend(f"lockfile_inventory_mismatch:{path}" for path in mismatch)
           failures = [entry for entry in entries if entry["status"] != "PASS"]
           report = {
               "schema": "luminous.security-audit.manifest-coverage.v1",
-              "repository_path": ".",
+              "repository": "${sys.argv[1]}",
               "manifest_count": len(entries),
-              "tracked_lockfile_count": len(all_lockfiles),
+              "tracked_lockfile_count": len(discovered_lockfiles),
+              "scanned_lockfile_count": len(scanned_lockfiles),
               "mapped_manifest_count": sum(entry["status"] == "PASS" for entry in entries),
-              "entry_failure_count": len(failures),
-              "initialized_direct_submodule_count": max(0, len(roots) - 1),
+              "manifest_failure_count": len(failures),
+              "verified_direct_submodule_count": len(roots) - 1,
               "unaudited_submodules": sorted(set(unaudited_submodules)),
+              "lockfile_inventory_mismatch": mismatch,
               "failure_count": len(failures) + len(set(unaudited_submodules)),
-              "status": "PASS" if entries and not failures and not unaudited_submodules else "FAIL",
+              "status": "PASS" if entries and not failures and not unaudited_submodules and discovered_lockfiles == scanned_lockfiles else "FAIL",
               "limitations": [
-                  "Tracked Cargo manifests and lockfiles are inventoried in the root repository and verified direct submodules.",
-                  "Cargo package resolution is not fully reconstructed; nested submodules are not fetched and force a coverage failure.",
+                  "Tracked Cargo manifests and lockfiles in the root repository and verified direct submodules are inventoried.",
+                  "Cargo package resolution is not completely reconstructed; nested submodules fail closed.",
                   "Non-Rust dependency systems are outside this RustSec coverage report."
               ],
-              "lockfiles_to_audit": sorted(all_lockfiles),
+              "lockfiles_to_audit": sorted(scanned_lockfiles),
               "entries": entries
           }
           output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
-          print(f"Manifest coverage: {report['status']} "
-                f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
-                f"{report['tracked_lockfile_count']} tracked lockfiles; "
-                f"{report['initialized_direct_submodule_count']} direct submodules)")
+          print(f"Manifest coverage: {report['status']} ({report['mapped_manifest_count']}/{report['manifest_count']} mapped manifests; {report['scanned_lockfile_count']} scanned lockfiles; {report['verified_direct_submodule_count']} direct submodules)")
           for entry in failures:
               print(f"UNCOVERED: {entry}")
           for submodule in report["unaudited_submodules"]:
               print(f"SUBMODULE_UNAUDITED: {submodule}")
           if report["status"] != "PASS":
-              sys.exit(1)          PY
-          then
-            coverage_status="PASS"
-          else
-            coverage_status="FAIL"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
-          if [[ -f "$result_root/manifest-coverage.json" ]]; then
-            coverage_sha256="$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)"
-          else
-            coverage_sha256="missing"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_sha256=$coverage_sha256" | tee -a "$result_root/summary.txt"
-
-          # RustSec explicitly recommends reading untrusted lockfiles from
-          # outside the checked-out project directory so project-local Cargo
-          # configuration cannot influence the audit invocation.
-          cd "$RUNNER_TEMP"
-          for lockfile in "${lockfiles[@]}"; do
-            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
-            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
-            report="$result_root/lockfiles/${report_id}_${path_hash}.json"
-            stderr="$result_root/lockfiles/${report_id}_${path_hash}.stderr"
-            lockfile_abs="$workspace/$lockfile"
-            lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-            echo "Auditing $lockfile (sha256=$lock_sha256)"
-
-            rc=0
-            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
-              rc=0
-            else
-              rc=$?
-              rustsec_failed=1
-            fi
-
-            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
-            printf 'lockfile=%s sha256=%s exit_code=%s outcome=%s\n' \
-              "$lockfile" "$lock_sha256" "$rc" "$outcome" \
-              | tee -a "$result_root/summary.txt"
-          done
-
-          if [[ "$rustsec_failed" -eq 0 ]]; then rustsec_status="PASS"; else rustsec_status="FAIL"; fi
-          sed -i "s/^rustsec_status=.*/rustsec_status=$rustsec_status/" "$result_root/summary.txt"
-          if [[ "$rustsec_failed" -eq 0 && "$coverage_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
-          echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
-          cat "$result_root/summary.txt"
-          if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
-
-      - name: Upload dependency audit evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-rustsec
-          path: security-audit-results/
-          if-no-files-found: error
-          retention-days: 14
-)
-
-          while IFS= read -r line; do
-            path="${line#* }"
-            if [[ ! "$path" =~ ^[A-Za-z0-9_./-]+$ || "$path" == /* || "$path" == *".."* ]]; then
-              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
-              echo "incomplete_reason=submodule_path_invalid" | tee -a security-audit-results/summary.txt
-              exit 2
-            fi
-          done < <(git config -f .gitmodules --get-regexp '^submodule\\..*\\.path
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
-        with:
-          toolchain: 1.96.0
-
-      - name: Install pinned cargo-audit
-        working-directory: ${{ runner.temp }}
-        run: cargo install --locked cargo-audit --version 0.22.2
-
-      - name: Audit every tracked Cargo.lock and emit evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          workspace="$GITHUB_WORKSPACE"
-          result_root="$workspace/security-audit-results"
-          subject_sha="$(git rev-parse HEAD)"
-          mapfile -t lockfiles < <(git ls-files -- 'Cargo.lock' '**/Cargo.lock' | LC_ALL=C sort -u)
-
-          lockfile_missing=0
-          if [[ "${#lockfiles[@]}" -eq 0 ]]; then
-            lockfile_missing=1
-            sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' "$result_root/summary.txt"
-            echo "incomplete_reason=no_tracked_Cargo.lock_files" >> "$result_root/summary.txt"
-            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
-          else
-            sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
-            sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
-          fi
-          {
-            echo "rustc=$(rustc +1.96.0 --version)"
-            echo "cargo=$(cargo +1.96.0 --version)"
-            echo "cargo_audit=$(cargo audit --version)"
-            echo "lockfile_count=${#lockfiles[@]}"
-          } >> "$result_root/summary.txt"
-
-          coverage_failed=0
-          rustsec_failed="$lockfile_missing"
-
-          # Freeze one RustSec advisory database snapshot for the entire run.
-          # Every lockfile is evaluated against the same recorded database
-          # revision, avoiding different findings as the upstream DB advances.
-          advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
-          if ! git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_clone_failed" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          advisory_db_commit="$(git -C "$advisory_db" rev-parse HEAD)"
-          if [[ ! "$advisory_db_commit" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_revision_invalid" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          {
-            echo "advisory_db_status=PASS"
-            echo "advisory_db_commit=$advisory_db_commit"
-            echo "advisory_db_url=https://github.com/RustSec/advisory-db"
-          } | tee -a "$result_root/summary.txt"
-
-          # Prove tracked Cargo manifests map to tracked workspace lockfiles.
-          # This is intentionally separate from cargo-audit: scanner coverage
-          # must be evidenced, not inferred from finding some lockfiles.
-          if python3 - "$workspace" "$result_root/manifest-coverage.json" <<'PY'
-          import json
-          import subprocess
-          import sys
-          import tomllib
-          from pathlib import Path
-
-          repo = Path(sys.argv[1]).resolve()
-          output = Path(sys.argv[2])
-
-          def tracked(patterns):
-              args = ["git", "ls-files", "-z", "--", *patterns]
-              raw = subprocess.check_output(args, cwd=repo)
-              return sorted(set(x.decode() for x in raw.split(bytes([0])) if x))
-
-          manifests = tracked(["Cargo.toml", "**/Cargo.toml"])
-          lockfiles = set(tracked(["Cargo.lock", "**/Cargo.lock"]))
-          stage = subprocess.check_output(["git", "ls-files", "--stage", "-z"], cwd=repo)
-          submodules = []
-          for record in stage.split(bytes([0])):
-              if not record:
-                  continue
-              metadata, path_bytes = record.split(bytes([9]), 1)
-              if metadata.split(b" ", 1)[0] == b"160000":
-                  submodules.append(path_bytes.decode())
-          parsed = {}
-          parse_errors = {}
-
-          for rel in manifests:
-              path = repo / rel
-              try:
-                  with path.open("rb") as fh:
-                      parsed[rel] = tomllib.load(fh)
-              except Exception as exc:
-                  parse_errors[rel] = f"{type(exc).__name__}: {exc}"
-
-          def workspace_root_for(rel):
-              manifest = repo / rel
-              data = parsed.get(rel, {})
-              if "workspace" in data:
-                  return manifest.parent
-              explicit = data.get("package", {}).get("workspace")
-              if explicit:
-                  return (manifest.parent / explicit).resolve()
-              parent = manifest.parent.parent
-              while parent == repo or repo in parent.parents:
-                  parent_manifest = parent / "Cargo.toml"
-                  parent_rel = parent_manifest.relative_to(repo).as_posix()
-                  if parent_rel in parsed and "workspace" in parsed[parent_rel]:
-                      return parent
-                  if parent == repo:
-                      break
-                  parent = parent.parent
-              return manifest.parent
-
-          entries = []
-          for rel in manifests:
-              if rel in parse_errors:
-                  entries.append({
-                      "manifest": rel, "status": "INCOMPLETE",
-                      "reason": "manifest_parse_error", "detail": parse_errors[rel]
-                  })
-                  continue
-              root = workspace_root_for(rel)
-              try:
-                  root_rel = root.relative_to(repo).as_posix()
-              except ValueError:
-                  entries.append({
-                      "manifest": rel, "status": "FAIL",
-                      "reason": "workspace_outside_checkout"
-                  })
-                  continue
-              lock_rel = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
-              tracked_lock = lock_rel in lockfiles
-              exists = (repo / lock_rel).is_file()
-              entries.append({
-                  "manifest": rel,
-                  "workspace_root": root_rel,
-                  "expected_lockfile": lock_rel,
-                  "lockfile_tracked": tracked_lock,
-                  "lockfile_exists": exists,
-                  "status": "PASS" if tracked_lock and exists else "FAIL",
-                  "reason": None if tracked_lock and exists else "workspace_lockfile_missing_or_untracked"
-              })
-
-          failures = [e for e in entries if e["status"] != "PASS"]
-          report = {
-              "schema": "luminous.security-audit.manifest-coverage.v1",
-              "repository_path": ".",
-              "manifest_count": len(manifests),
-              "tracked_lockfile_count": len(lockfiles),
-              "mapped_manifest_count": sum(e["status"] == "PASS" for e in entries),
-              "entry_failure_count": len(failures),
-              "submodule_count": len(submodules),
-              "unaudited_submodules": submodules,
-              "failure_count": len(failures) + len(submodules),
-              "status": "PASS" if manifests and not failures and not submodules else "FAIL",
-              "limitations": [
-                  "Only Cargo.toml and Cargo.lock files tracked by the audited Git checkout are included.",
-                  "Any Git submodule must be separately initialized and audited before total dependency coverage can pass."
-              ],
-              "entries": entries
-          }
-          output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
-          print(f"Manifest coverage: {report['status']} "
-                f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
-                f"{report['tracked_lockfile_count']} tracked lockfiles; "
-                f"{report['submodule_count']} submodules)")
-          for entry in failures:
-              print(f"UNCOVERED: {entry}")
-          for submodule in submodules:
-              print(f"SUBMODULE_UNAUDITED: {submodule}")
-          if report["status"] != "PASS":
               sys.exit(1)
           PY
           then
@@ -729,1493 +486,13 @@ jobs:
           fi
           echo "manifest_coverage_sha256=$coverage_sha256" | tee -a "$result_root/summary.txt"
 
-          # RustSec explicitly recommends reading untrusted lockfiles from
-          # outside the checked-out project directory so project-local Cargo
-          # configuration cannot influence the audit invocation.
-          cd "$RUNNER_TEMP"
-          for lockfile in "${lockfiles[@]}"; do
-            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
-            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
-            report="$result_root/lockfiles/${report_id}_${path_hash}.json"
-            stderr="$result_root/lockfiles/${report_id}_${path_hash}.stderr"
-            lockfile_abs="$workspace/$lockfile"
-            lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-            echo "Auditing $lockfile (sha256=$lock_sha256)"
-
-            rc=0
-            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
-              rc=0
-            else
-              rc=$?
-              rustsec_failed=1
-            fi
-
-            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
-            printf 'lockfile=%s sha256=%s exit_code=%s outcome=%s\n' \
-              "$lockfile" "$lock_sha256" "$rc" "$outcome" \
-              | tee -a "$result_root/summary.txt"
-          done
-
           if [[ "$rustsec_failed" -eq 0 ]]; then rustsec_status="PASS"; else rustsec_status="FAIL"; fi
           sed -i "s/^rustsec_status=.*/rustsec_status=$rustsec_status/" "$result_root/summary.txt"
           if [[ "$rustsec_failed" -eq 0 && "$coverage_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
           echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
           cat "$result_root/summary.txt"
           if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
-
-      - name: Upload dependency audit evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-rustsec
-          path: security-audit-results/
-          if-no-files-found: error
-          retention-days: 14
-)
-
-          if ! git submodule update --init; then
-            echo "submodule_audit_status=INCOMPLETE" | tee -a security-audit-results/summary.txt
-            echo "incomplete_reason=submodule_checkout_failed" | tee -a security-audit-results/summary.txt
-            exit 2
-          fi
-
-          while IFS= read -r line; do
-            path="${line#* }"
-            expected="$(git ls-files --stage -- "$path" | awk '$1 == "160000" {print $2}')"
-            if [[ -z "$expected" || ! -d "$path" ]]; then
-              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
-              echo "incomplete_reason=submodule_gitlink_missing" | tee -a security-audit-results/summary.txt
-              exit 2
-            fi
-            actual="$(git -C "$path" rev-parse HEAD)"
-            if [[ "$actual" != "$expected" ]]; then
-              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
-              echo "incomplete_reason=submodule_head_mismatch" | tee -a security-audit-results/summary.txt
-              exit 2
-            fi
-          done < <(git config -f .gitmodules --get-regexp '^submodule\\..*\\.path
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
-        with:
-          toolchain: 1.96.0
-
-      - name: Install pinned cargo-audit
-        working-directory: ${{ runner.temp }}
-        run: cargo install --locked cargo-audit --version 0.22.2
-
-      - name: Audit every tracked Cargo.lock and emit evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          workspace="$GITHUB_WORKSPACE"
-          result_root="$workspace/security-audit-results"
-          subject_sha="$(git rev-parse HEAD)"
-          mapfile -t lockfiles < <(git ls-files -- 'Cargo.lock' '**/Cargo.lock' | LC_ALL=C sort -u)
-
-          lockfile_missing=0
-          if [[ "${#lockfiles[@]}" -eq 0 ]]; then
-            lockfile_missing=1
-            sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' "$result_root/summary.txt"
-            echo "incomplete_reason=no_tracked_Cargo.lock_files" >> "$result_root/summary.txt"
-            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
-          else
-            sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
-            sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
-          fi
-          {
-            echo "rustc=$(rustc +1.96.0 --version)"
-            echo "cargo=$(cargo +1.96.0 --version)"
-            echo "cargo_audit=$(cargo audit --version)"
-            echo "lockfile_count=${#lockfiles[@]}"
-          } >> "$result_root/summary.txt"
-
-          coverage_failed=0
-          rustsec_failed="$lockfile_missing"
-
-          # Freeze one RustSec advisory database snapshot for the entire run.
-          # Every lockfile is evaluated against the same recorded database
-          # revision, avoiding different findings as the upstream DB advances.
-          advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
-          if ! git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_clone_failed" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          advisory_db_commit="$(git -C "$advisory_db" rev-parse HEAD)"
-          if [[ ! "$advisory_db_commit" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_revision_invalid" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          {
-            echo "advisory_db_status=PASS"
-            echo "advisory_db_commit=$advisory_db_commit"
-            echo "advisory_db_url=https://github.com/RustSec/advisory-db"
-          } | tee -a "$result_root/summary.txt"
-
-          # Prove tracked Cargo manifests map to tracked workspace lockfiles.
-          # This is intentionally separate from cargo-audit: scanner coverage
-          # must be evidenced, not inferred from finding some lockfiles.
-          if python3 - "$workspace" "$result_root/manifest-coverage.json" <<'PY'
-          import json
-          import subprocess
-          import sys
-          import tomllib
-          from pathlib import Path
-
-          repo = Path(sys.argv[1]).resolve()
-          output = Path(sys.argv[2])
-
-          def tracked(patterns):
-              args = ["git", "ls-files", "-z", "--", *patterns]
-              raw = subprocess.check_output(args, cwd=repo)
-              return sorted(set(x.decode() for x in raw.split(bytes([0])) if x))
-
-          manifests = tracked(["Cargo.toml", "**/Cargo.toml"])
-          lockfiles = set(tracked(["Cargo.lock", "**/Cargo.lock"]))
-          stage = subprocess.check_output(["git", "ls-files", "--stage", "-z"], cwd=repo)
-          submodules = []
-          for record in stage.split(bytes([0])):
-              if not record:
-                  continue
-              metadata, path_bytes = record.split(bytes([9]), 1)
-              if metadata.split(b" ", 1)[0] == b"160000":
-                  submodules.append(path_bytes.decode())
-          parsed = {}
-          parse_errors = {}
-
-          for rel in manifests:
-              path = repo / rel
-              try:
-                  with path.open("rb") as fh:
-                      parsed[rel] = tomllib.load(fh)
-              except Exception as exc:
-                  parse_errors[rel] = f"{type(exc).__name__}: {exc}"
-
-          def workspace_root_for(rel):
-              manifest = repo / rel
-              data = parsed.get(rel, {})
-              if "workspace" in data:
-                  return manifest.parent
-              explicit = data.get("package", {}).get("workspace")
-              if explicit:
-                  return (manifest.parent / explicit).resolve()
-              parent = manifest.parent.parent
-              while parent == repo or repo in parent.parents:
-                  parent_manifest = parent / "Cargo.toml"
-                  parent_rel = parent_manifest.relative_to(repo).as_posix()
-                  if parent_rel in parsed and "workspace" in parsed[parent_rel]:
-                      return parent
-                  if parent == repo:
-                      break
-                  parent = parent.parent
-              return manifest.parent
-
-          entries = []
-          for rel in manifests:
-              if rel in parse_errors:
-                  entries.append({
-                      "manifest": rel, "status": "INCOMPLETE",
-                      "reason": "manifest_parse_error", "detail": parse_errors[rel]
-                  })
-                  continue
-              root = workspace_root_for(rel)
-              try:
-                  root_rel = root.relative_to(repo).as_posix()
-              except ValueError:
-                  entries.append({
-                      "manifest": rel, "status": "FAIL",
-                      "reason": "workspace_outside_checkout"
-                  })
-                  continue
-              lock_rel = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
-              tracked_lock = lock_rel in lockfiles
-              exists = (repo / lock_rel).is_file()
-              entries.append({
-                  "manifest": rel,
-                  "workspace_root": root_rel,
-                  "expected_lockfile": lock_rel,
-                  "lockfile_tracked": tracked_lock,
-                  "lockfile_exists": exists,
-                  "status": "PASS" if tracked_lock and exists else "FAIL",
-                  "reason": None if tracked_lock and exists else "workspace_lockfile_missing_or_untracked"
-              })
-
-          failures = [e for e in entries if e["status"] != "PASS"]
-          report = {
-              "schema": "luminous.security-audit.manifest-coverage.v1",
-              "repository_path": ".",
-              "manifest_count": len(manifests),
-              "tracked_lockfile_count": len(lockfiles),
-              "mapped_manifest_count": sum(e["status"] == "PASS" for e in entries),
-              "entry_failure_count": len(failures),
-              "submodule_count": len(submodules),
-              "unaudited_submodules": submodules,
-              "failure_count": len(failures) + len(submodules),
-              "status": "PASS" if manifests and not failures and not submodules else "FAIL",
-              "limitations": [
-                  "Only Cargo.toml and Cargo.lock files tracked by the audited Git checkout are included.",
-                  "Any Git submodule must be separately initialized and audited before total dependency coverage can pass."
-              ],
-              "entries": entries
-          }
-          output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
-          print(f"Manifest coverage: {report['status']} "
-                f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
-                f"{report['tracked_lockfile_count']} tracked lockfiles; "
-                f"{report['submodule_count']} submodules)")
-          for entry in failures:
-              print(f"UNCOVERED: {entry}")
-          for submodule in submodules:
-              print(f"SUBMODULE_UNAUDITED: {submodule}")
-          if report["status"] != "PASS":
-              sys.exit(1)
-          PY
-          then
-            coverage_status="PASS"
-          else
-            coverage_status="FAIL"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
-          if [[ -f "$result_root/manifest-coverage.json" ]]; then
-            coverage_sha256="$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)"
-          else
-            coverage_sha256="missing"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_sha256=$coverage_sha256" | tee -a "$result_root/summary.txt"
-
-          # RustSec explicitly recommends reading untrusted lockfiles from
-          # outside the checked-out project directory so project-local Cargo
-          # configuration cannot influence the audit invocation.
-          cd "$RUNNER_TEMP"
-          for lockfile in "${lockfiles[@]}"; do
-            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
-            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
-            report="$result_root/lockfiles/${report_id}_${path_hash}.json"
-            stderr="$result_root/lockfiles/${report_id}_${path_hash}.stderr"
-            lockfile_abs="$workspace/$lockfile"
-            lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-            echo "Auditing $lockfile (sha256=$lock_sha256)"
-
-            rc=0
-            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
-              rc=0
-            else
-              rc=$?
-              rustsec_failed=1
-            fi
-
-            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
-            printf 'lockfile=%s sha256=%s exit_code=%s outcome=%s\n' \
-              "$lockfile" "$lock_sha256" "$rc" "$outcome" \
-              | tee -a "$result_root/summary.txt"
-          done
-
-          if [[ "$rustsec_failed" -eq 0 ]]; then rustsec_status="PASS"; else rustsec_status="FAIL"; fi
-          sed -i "s/^rustsec_status=.*/rustsec_status=$rustsec_status/" "$result_root/summary.txt"
-          if [[ "$rustsec_failed" -eq 0 && "$coverage_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
-          echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
-          cat "$result_root/summary.txt"
-          if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
-
-      - name: Upload dependency audit evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-rustsec
-          path: security-audit-results/
-          if-no-files-found: error
-          retention-days: 14
-)
-
-          echo "submodule_audit_status=PASS" | tee -a security-audit-results/summary.txt
-
-      - name: Install pinned Rust toolchain
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
-        with:
-          toolchain: 1.96.0
-
-      - name: Install pinned cargo-audit
-        working-directory: ${{ runner.temp }}
-        run: cargo install --locked cargo-audit --version 0.22.2
-
-      - name: Audit every tracked Cargo.lock and emit evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          workspace="$GITHUB_WORKSPACE"
-          result_root="$workspace/security-audit-results"
-          subject_sha="$(git rev-parse HEAD)"
-          mapfile -t lockfiles < <(git ls-files -- 'Cargo.lock' '**/Cargo.lock' | LC_ALL=C sort -u)
-
-          lockfile_missing=0
-          if [[ "${#lockfiles[@]}" -eq 0 ]]; then
-            lockfile_missing=1
-            sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' "$result_root/summary.txt"
-            echo "incomplete_reason=no_tracked_Cargo.lock_files" >> "$result_root/summary.txt"
-            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
-          else
-            sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
-            sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
-          fi
-          {
-            echo "rustc=$(rustc +1.96.0 --version)"
-            echo "cargo=$(cargo +1.96.0 --version)"
-            echo "cargo_audit=$(cargo audit --version)"
-            echo "lockfile_count=${#lockfiles[@]}"
-          } >> "$result_root/summary.txt"
-
-          coverage_failed=0
-          rustsec_failed="$lockfile_missing"
-
-          # Freeze one RustSec advisory database snapshot for the entire run.
-          # Every lockfile is evaluated against the same recorded database
-          # revision, avoiding different findings as the upstream DB advances.
-          advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
-          if ! git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_clone_failed" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          advisory_db_commit="$(git -C "$advisory_db" rev-parse HEAD)"
-          if [[ ! "$advisory_db_commit" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_revision_invalid" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          {
-            echo "advisory_db_status=PASS"
-            echo "advisory_db_commit=$advisory_db_commit"
-            echo "advisory_db_url=https://github.com/RustSec/advisory-db"
-          } | tee -a "$result_root/summary.txt"
-
-          # Prove tracked Cargo manifests map to tracked workspace lockfiles.
-          # This is intentionally separate from cargo-audit: scanner coverage
-          # must be evidenced, not inferred from finding some lockfiles.
-          if python3 - "$workspace" "$result_root/manifest-coverage.json" <<'PY'
-          import json
-          import subprocess
-          import sys
-          import tomllib
-          from pathlib import Path
-
-          repo = Path(sys.argv[1]).resolve()
-          output = Path(sys.argv[2])
-
-          def tracked(patterns):
-              args = ["git", "ls-files", "-z", "--", *patterns]
-              raw = subprocess.check_output(args, cwd=repo)
-              return sorted(set(x.decode() for x in raw.split(bytes([0])) if x))
-
-          manifests = tracked(["Cargo.toml", "**/Cargo.toml"])
-          lockfiles = set(tracked(["Cargo.lock", "**/Cargo.lock"]))
-          stage = subprocess.check_output(["git", "ls-files", "--stage", "-z"], cwd=repo)
-          submodules = []
-          for record in stage.split(bytes([0])):
-              if not record:
-                  continue
-              metadata, path_bytes = record.split(bytes([9]), 1)
-              if metadata.split(b" ", 1)[0] == b"160000":
-                  submodules.append(path_bytes.decode())
-          parsed = {}
-          parse_errors = {}
-
-          for rel in manifests:
-              path = repo / rel
-              try:
-                  with path.open("rb") as fh:
-                      parsed[rel] = tomllib.load(fh)
-              except Exception as exc:
-                  parse_errors[rel] = f"{type(exc).__name__}: {exc}"
-
-          def workspace_root_for(rel):
-              manifest = repo / rel
-              data = parsed.get(rel, {})
-              if "workspace" in data:
-                  return manifest.parent
-              explicit = data.get("package", {}).get("workspace")
-              if explicit:
-                  return (manifest.parent / explicit).resolve()
-              parent = manifest.parent.parent
-              while parent == repo or repo in parent.parents:
-                  parent_manifest = parent / "Cargo.toml"
-                  parent_rel = parent_manifest.relative_to(repo).as_posix()
-                  if parent_rel in parsed and "workspace" in parsed[parent_rel]:
-                      return parent
-                  if parent == repo:
-                      break
-                  parent = parent.parent
-              return manifest.parent
-
-          entries = []
-          for rel in manifests:
-              if rel in parse_errors:
-                  entries.append({
-                      "manifest": rel, "status": "INCOMPLETE",
-                      "reason": "manifest_parse_error", "detail": parse_errors[rel]
-                  })
-                  continue
-              root = workspace_root_for(rel)
-              try:
-                  root_rel = root.relative_to(repo).as_posix()
-              except ValueError:
-                  entries.append({
-                      "manifest": rel, "status": "FAIL",
-                      "reason": "workspace_outside_checkout"
-                  })
-                  continue
-              lock_rel = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
-              tracked_lock = lock_rel in lockfiles
-              exists = (repo / lock_rel).is_file()
-              entries.append({
-                  "manifest": rel,
-                  "workspace_root": root_rel,
-                  "expected_lockfile": lock_rel,
-                  "lockfile_tracked": tracked_lock,
-                  "lockfile_exists": exists,
-                  "status": "PASS" if tracked_lock and exists else "FAIL",
-                  "reason": None if tracked_lock and exists else "workspace_lockfile_missing_or_untracked"
-              })
-
-          failures = [e for e in entries if e["status"] != "PASS"]
-          report = {
-              "schema": "luminous.security-audit.manifest-coverage.v1",
-              "repository_path": ".",
-              "manifest_count": len(manifests),
-              "tracked_lockfile_count": len(lockfiles),
-              "mapped_manifest_count": sum(e["status"] == "PASS" for e in entries),
-              "entry_failure_count": len(failures),
-              "submodule_count": len(submodules),
-              "unaudited_submodules": submodules,
-              "failure_count": len(failures) + len(submodules),
-              "status": "PASS" if manifests and not failures and not submodules else "FAIL",
-              "limitations": [
-                  "Only Cargo.toml and Cargo.lock files tracked by the audited Git checkout are included.",
-                  "Any Git submodule must be separately initialized and audited before total dependency coverage can pass."
-              ],
-              "entries": entries
-          }
-          output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
-          print(f"Manifest coverage: {report['status']} "
-                f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
-                f"{report['tracked_lockfile_count']} tracked lockfiles; "
-                f"{report['submodule_count']} submodules)")
-          for entry in failures:
-              print(f"UNCOVERED: {entry}")
-          for submodule in submodules:
-              print(f"SUBMODULE_UNAUDITED: {submodule}")
-          if report["status"] != "PASS":
-              sys.exit(1)
-          PY
-          then
-            coverage_status="PASS"
-          else
-            coverage_status="FAIL"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
-          if [[ -f "$result_root/manifest-coverage.json" ]]; then
-            coverage_sha256="$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)"
-          else
-            coverage_sha256="missing"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_sha256=$coverage_sha256" | tee -a "$result_root/summary.txt"
-
-          # RustSec explicitly recommends reading untrusted lockfiles from
-          # outside the checked-out project directory so project-local Cargo
-          # configuration cannot influence the audit invocation.
-          cd "$RUNNER_TEMP"
-          for lockfile in "${lockfiles[@]}"; do
-            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
-            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
-            report="$result_root/lockfiles/${report_id}_${path_hash}.json"
-            stderr="$result_root/lockfiles/${report_id}_${path_hash}.stderr"
-            lockfile_abs="$workspace/$lockfile"
-            lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-            echo "Auditing $lockfile (sha256=$lock_sha256)"
-
-            rc=0
-            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
-              rc=0
-            else
-              rc=$?
-              rustsec_failed=1
-            fi
-
-            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
-            printf 'lockfile=%s sha256=%s exit_code=%s outcome=%s\n' \
-              "$lockfile" "$lock_sha256" "$rc" "$outcome" \
-              | tee -a "$result_root/summary.txt"
-          done
-
-          if [[ "$rustsec_failed" -eq 0 ]]; then rustsec_status="PASS"; else rustsec_status="FAIL"; fi
-          sed -i "s/^rustsec_status=.*/rustsec_status=$rustsec_status/" "$result_root/summary.txt"
-          if [[ "$rustsec_failed" -eq 0 && "$coverage_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
-          echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
-          cat "$result_root/summary.txt"
-          if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
-
-      - name: Upload dependency audit evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-rustsec
-          path: security-audit-results/
-          if-no-files-found: error
-          retention-days: 14
-)
-              fi
-            } | LC_ALL=C sort -u
-          )
-
-          lockfile_missing=0
-          if [[ "${#lockfiles[@]}" -eq 0 ]]; then
-            lockfile_missing=1
-            sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' "$result_root/summary.txt"
-            echo "incomplete_reason=no_tracked_Cargo.lock_files" >> "$result_root/summary.txt"
-            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
-          else
-            sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
-            sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
-          fi
-          {
-            echo "rustc=$(rustc +1.96.0 --version)"
-            echo "cargo=$(cargo +1.96.0 --version)"
-            echo "cargo_audit=$(cargo audit --version)"
-            echo "lockfile_count=${#lockfiles[@]}"
-          } >> "$result_root/summary.txt"
-
-          coverage_failed=0
-          rustsec_failed="$lockfile_missing"
-
-          # Freeze one RustSec advisory database snapshot for the entire run.
-          # Every lockfile is evaluated against the same recorded database
-          # revision, avoiding different findings as the upstream DB advances.
-          advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
-          if ! git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_clone_failed" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          advisory_db_commit="$(git -C "$advisory_db" rev-parse HEAD)"
-          if [[ ! "$advisory_db_commit" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_revision_invalid" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          {
-            echo "advisory_db_status=PASS"
-            echo "advisory_db_commit=$advisory_db_commit"
-            echo "advisory_db_url=https://github.com/RustSec/advisory-db"
-          } | tee -a "$result_root/summary.txt"
-
-          # Prove tracked Cargo manifests map to tracked workspace lockfiles.
-          # This is intentionally separate from cargo-audit: scanner coverage
-          # must be evidenced, not inferred from finding some lockfiles.
-          if python3 - "$workspace" "$result_root/manifest-coverage.json" <<'PY'
-          import json
-          import subprocess
-          import sys
-          import tomllib
-          from pathlib import Path
-
-          repo = Path(sys.argv[1]).resolve()
-          output = Path(sys.argv[2])
-
-          def tracked(patterns):
-              args = ["git", "ls-files", "-z", "--", *patterns]
-              raw = subprocess.check_output(args, cwd=repo)
-              return sorted(set(x.decode() for x in raw.split(bytes([0])) if x))
-
-          manifests = tracked(["Cargo.toml", "**/Cargo.toml"])
-          lockfiles = set(tracked(["Cargo.lock", "**/Cargo.lock"]))
-          stage = subprocess.check_output(["git", "ls-files", "--stage", "-z"], cwd=repo)
-          submodules = []
-          for record in stage.split(bytes([0])):
-              if not record:
-                  continue
-              metadata, path_bytes = record.split(bytes([9]), 1)
-              if metadata.split(b" ", 1)[0] == b"160000":
-                  submodules.append(path_bytes.decode())
-          parsed = {}
-          parse_errors = {}
-
-          for rel in manifests:
-              path = repo / rel
-              try:
-                  with path.open("rb") as fh:
-                      parsed[rel] = tomllib.load(fh)
-              except Exception as exc:
-                  parse_errors[rel] = f"{type(exc).__name__}: {exc}"
-
-          def workspace_root_for(rel):
-              manifest = repo / rel
-              data = parsed.get(rel, {})
-              if "workspace" in data:
-                  return manifest.parent
-              explicit = data.get("package", {}).get("workspace")
-              if explicit:
-                  return (manifest.parent / explicit).resolve()
-              parent = manifest.parent.parent
-              while parent == repo or repo in parent.parents:
-                  parent_manifest = parent / "Cargo.toml"
-                  parent_rel = parent_manifest.relative_to(repo).as_posix()
-                  if parent_rel in parsed and "workspace" in parsed[parent_rel]:
-                      return parent
-                  if parent == repo:
-                      break
-                  parent = parent.parent
-              return manifest.parent
-
-          entries = []
-          for rel in manifests:
-              if rel in parse_errors:
-                  entries.append({
-                      "manifest": rel, "status": "INCOMPLETE",
-                      "reason": "manifest_parse_error", "detail": parse_errors[rel]
-                  })
-                  continue
-              root = workspace_root_for(rel)
-              try:
-                  root_rel = root.relative_to(repo).as_posix()
-              except ValueError:
-                  entries.append({
-                      "manifest": rel, "status": "FAIL",
-                      "reason": "workspace_outside_checkout"
-                  })
-                  continue
-              lock_rel = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
-              tracked_lock = lock_rel in lockfiles
-              exists = (repo / lock_rel).is_file()
-              entries.append({
-                  "manifest": rel,
-                  "workspace_root": root_rel,
-                  "expected_lockfile": lock_rel,
-                  "lockfile_tracked": tracked_lock,
-                  "lockfile_exists": exists,
-                  "status": "PASS" if tracked_lock and exists else "FAIL",
-                  "reason": None if tracked_lock and exists else "workspace_lockfile_missing_or_untracked"
-              })
-
-          failures = [e for e in entries if e["status"] != "PASS"]
-          report = {
-              "schema": "luminous.security-audit.manifest-coverage.v1",
-              "repository_path": ".",
-              "manifest_count": len(manifests),
-              "tracked_lockfile_count": len(lockfiles),
-              "mapped_manifest_count": sum(e["status"] == "PASS" for e in entries),
-              "entry_failure_count": len(failures),
-              "submodule_count": len(submodules),
-              "unaudited_submodules": submodules,
-              "failure_count": len(failures) + len(submodules),
-              "status": "PASS" if manifests and not failures and not submodules else "FAIL",
-              "limitations": [
-                  "Only Cargo.toml and Cargo.lock files tracked by the audited Git checkout are included.",
-                  "Any Git submodule must be separately initialized and audited before total dependency coverage can pass."
-              ],
-              "entries": entries
-          }
-          output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
-          print(f"Manifest coverage: {report['status']} "
-                f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
-                f"{report['tracked_lockfile_count']} tracked lockfiles; "
-                f"{report['submodule_count']} submodules)")
-          for entry in failures:
-              print(f"UNCOVERED: {entry}")
-          for submodule in submodules:
-              print(f"SUBMODULE_UNAUDITED: {submodule}")
-          if report["status"] != "PASS":
-              sys.exit(1)
-          PY
-          then
-            coverage_status="PASS"
-          else
-            coverage_status="FAIL"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
-          if [[ -f "$result_root/manifest-coverage.json" ]]; then
-            coverage_sha256="$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)"
-          else
-            coverage_sha256="missing"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_sha256=$coverage_sha256" | tee -a "$result_root/summary.txt"
-
-          # RustSec explicitly recommends reading untrusted lockfiles from
-          # outside the checked-out project directory so project-local Cargo
-          # configuration cannot influence the audit invocation.
-          cd "$RUNNER_TEMP"
-          for lockfile in "${lockfiles[@]}"; do
-            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
-            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
-            report="$result_root/lockfiles/${report_id}_${path_hash}.json"
-            stderr="$result_root/lockfiles/${report_id}_${path_hash}.stderr"
-            lockfile_abs="$workspace/$lockfile"
-            lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-            echo "Auditing $lockfile (sha256=$lock_sha256)"
-
-            rc=0
-            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
-              rc=0
-            else
-              rc=$?
-              rustsec_failed=1
-            fi
-
-            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
-            printf 'lockfile=%s sha256=%s exit_code=%s outcome=%s\n' \
-              "$lockfile" "$lock_sha256" "$rc" "$outcome" \
-              | tee -a "$result_root/summary.txt"
-          done
-
-          if [[ "$rustsec_failed" -eq 0 ]]; then rustsec_status="PASS"; else rustsec_status="FAIL"; fi
-          sed -i "s/^rustsec_status=.*/rustsec_status=$rustsec_status/" "$result_root/summary.txt"
-          if [[ "$rustsec_failed" -eq 0 && "$coverage_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
-          echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
-          cat "$result_root/summary.txt"
-          if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
-
-      - name: Upload dependency audit evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-rustsec
-          path: security-audit-results/
-          if-no-files-found: error
-          retention-days: 14
-)
-
-          while IFS= read -r line; do
-            path="${line#* }"
-            if [[ ! "$path" =~ ^[A-Za-z0-9_./-]+$ || "$path" == /* || "$path" == *".."* ]]; then
-              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
-              echo "incomplete_reason=submodule_path_invalid" | tee -a security-audit-results/summary.txt
-              exit 2
-            fi
-          done < <(git config -f .gitmodules --get-regexp '^submodule\\..*\\.path
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
-        with:
-          toolchain: 1.96.0
-
-      - name: Install pinned cargo-audit
-        working-directory: ${{ runner.temp }}
-        run: cargo install --locked cargo-audit --version 0.22.2
-
-      - name: Audit every tracked Cargo.lock and emit evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          workspace="$GITHUB_WORKSPACE"
-          result_root="$workspace/security-audit-results"
-          subject_sha="$(git rev-parse HEAD)"
-          mapfile -t lockfiles < <(git ls-files -- 'Cargo.lock' '**/Cargo.lock' | LC_ALL=C sort -u)
-
-          lockfile_missing=0
-          if [[ "${#lockfiles[@]}" -eq 0 ]]; then
-            lockfile_missing=1
-            sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' "$result_root/summary.txt"
-            echo "incomplete_reason=no_tracked_Cargo.lock_files" >> "$result_root/summary.txt"
-            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
-          else
-            sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
-            sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
-          fi
-          {
-            echo "rustc=$(rustc +1.96.0 --version)"
-            echo "cargo=$(cargo +1.96.0 --version)"
-            echo "cargo_audit=$(cargo audit --version)"
-            echo "lockfile_count=${#lockfiles[@]}"
-          } >> "$result_root/summary.txt"
-
-          coverage_failed=0
-          rustsec_failed="$lockfile_missing"
-
-          # Freeze one RustSec advisory database snapshot for the entire run.
-          # Every lockfile is evaluated against the same recorded database
-          # revision, avoiding different findings as the upstream DB advances.
-          advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
-          if ! git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_clone_failed" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          advisory_db_commit="$(git -C "$advisory_db" rev-parse HEAD)"
-          if [[ ! "$advisory_db_commit" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_revision_invalid" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          {
-            echo "advisory_db_status=PASS"
-            echo "advisory_db_commit=$advisory_db_commit"
-            echo "advisory_db_url=https://github.com/RustSec/advisory-db"
-          } | tee -a "$result_root/summary.txt"
-
-          # Prove tracked Cargo manifests map to tracked workspace lockfiles.
-          # This is intentionally separate from cargo-audit: scanner coverage
-          # must be evidenced, not inferred from finding some lockfiles.
-          if python3 - "$workspace" "$result_root/manifest-coverage.json" <<'PY'
-          import json
-          import subprocess
-          import sys
-          import tomllib
-          from pathlib import Path
-
-          repo = Path(sys.argv[1]).resolve()
-          output = Path(sys.argv[2])
-
-          def tracked(patterns):
-              args = ["git", "ls-files", "-z", "--", *patterns]
-              raw = subprocess.check_output(args, cwd=repo)
-              return sorted(set(x.decode() for x in raw.split(bytes([0])) if x))
-
-          manifests = tracked(["Cargo.toml", "**/Cargo.toml"])
-          lockfiles = set(tracked(["Cargo.lock", "**/Cargo.lock"]))
-          stage = subprocess.check_output(["git", "ls-files", "--stage", "-z"], cwd=repo)
-          submodules = []
-          for record in stage.split(bytes([0])):
-              if not record:
-                  continue
-              metadata, path_bytes = record.split(bytes([9]), 1)
-              if metadata.split(b" ", 1)[0] == b"160000":
-                  submodules.append(path_bytes.decode())
-          parsed = {}
-          parse_errors = {}
-
-          for rel in manifests:
-              path = repo / rel
-              try:
-                  with path.open("rb") as fh:
-                      parsed[rel] = tomllib.load(fh)
-              except Exception as exc:
-                  parse_errors[rel] = f"{type(exc).__name__}: {exc}"
-
-          def workspace_root_for(rel):
-              manifest = repo / rel
-              data = parsed.get(rel, {})
-              if "workspace" in data:
-                  return manifest.parent
-              explicit = data.get("package", {}).get("workspace")
-              if explicit:
-                  return (manifest.parent / explicit).resolve()
-              parent = manifest.parent.parent
-              while parent == repo or repo in parent.parents:
-                  parent_manifest = parent / "Cargo.toml"
-                  parent_rel = parent_manifest.relative_to(repo).as_posix()
-                  if parent_rel in parsed and "workspace" in parsed[parent_rel]:
-                      return parent
-                  if parent == repo:
-                      break
-                  parent = parent.parent
-              return manifest.parent
-
-          entries = []
-          for rel in manifests:
-              if rel in parse_errors:
-                  entries.append({
-                      "manifest": rel, "status": "INCOMPLETE",
-                      "reason": "manifest_parse_error", "detail": parse_errors[rel]
-                  })
-                  continue
-              root = workspace_root_for(rel)
-              try:
-                  root_rel = root.relative_to(repo).as_posix()
-              except ValueError:
-                  entries.append({
-                      "manifest": rel, "status": "FAIL",
-                      "reason": "workspace_outside_checkout"
-                  })
-                  continue
-              lock_rel = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
-              tracked_lock = lock_rel in lockfiles
-              exists = (repo / lock_rel).is_file()
-              entries.append({
-                  "manifest": rel,
-                  "workspace_root": root_rel,
-                  "expected_lockfile": lock_rel,
-                  "lockfile_tracked": tracked_lock,
-                  "lockfile_exists": exists,
-                  "status": "PASS" if tracked_lock and exists else "FAIL",
-                  "reason": None if tracked_lock and exists else "workspace_lockfile_missing_or_untracked"
-              })
-
-          failures = [e for e in entries if e["status"] != "PASS"]
-          report = {
-              "schema": "luminous.security-audit.manifest-coverage.v1",
-              "repository_path": ".",
-              "manifest_count": len(manifests),
-              "tracked_lockfile_count": len(lockfiles),
-              "mapped_manifest_count": sum(e["status"] == "PASS" for e in entries),
-              "entry_failure_count": len(failures),
-              "submodule_count": len(submodules),
-              "unaudited_submodules": submodules,
-              "failure_count": len(failures) + len(submodules),
-              "status": "PASS" if manifests and not failures and not submodules else "FAIL",
-              "limitations": [
-                  "Only Cargo.toml and Cargo.lock files tracked by the audited Git checkout are included.",
-                  "Any Git submodule must be separately initialized and audited before total dependency coverage can pass."
-              ],
-              "entries": entries
-          }
-          output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
-          print(f"Manifest coverage: {report['status']} "
-                f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
-                f"{report['tracked_lockfile_count']} tracked lockfiles; "
-                f"{report['submodule_count']} submodules)")
-          for entry in failures:
-              print(f"UNCOVERED: {entry}")
-          for submodule in submodules:
-              print(f"SUBMODULE_UNAUDITED: {submodule}")
-          if report["status"] != "PASS":
-              sys.exit(1)
-          PY
-          then
-            coverage_status="PASS"
-          else
-            coverage_status="FAIL"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
-          if [[ -f "$result_root/manifest-coverage.json" ]]; then
-            coverage_sha256="$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)"
-          else
-            coverage_sha256="missing"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_sha256=$coverage_sha256" | tee -a "$result_root/summary.txt"
-
-          # RustSec explicitly recommends reading untrusted lockfiles from
-          # outside the checked-out project directory so project-local Cargo
-          # configuration cannot influence the audit invocation.
-          cd "$RUNNER_TEMP"
-          for lockfile in "${lockfiles[@]}"; do
-            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
-            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
-            report="$result_root/lockfiles/${report_id}_${path_hash}.json"
-            stderr="$result_root/lockfiles/${report_id}_${path_hash}.stderr"
-            lockfile_abs="$workspace/$lockfile"
-            lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-            echo "Auditing $lockfile (sha256=$lock_sha256)"
-
-            rc=0
-            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
-              rc=0
-            else
-              rc=$?
-              rustsec_failed=1
-            fi
-
-            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
-            printf 'lockfile=%s sha256=%s exit_code=%s outcome=%s\n' \
-              "$lockfile" "$lock_sha256" "$rc" "$outcome" \
-              | tee -a "$result_root/summary.txt"
-          done
-
-          if [[ "$rustsec_failed" -eq 0 ]]; then rustsec_status="PASS"; else rustsec_status="FAIL"; fi
-          sed -i "s/^rustsec_status=.*/rustsec_status=$rustsec_status/" "$result_root/summary.txt"
-          if [[ "$rustsec_failed" -eq 0 && "$coverage_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
-          echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
-          cat "$result_root/summary.txt"
-          if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
-
-      - name: Upload dependency audit evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-rustsec
-          path: security-audit-results/
-          if-no-files-found: error
-          retention-days: 14
-)
-
-          if ! git submodule update --init; then
-            echo "submodule_audit_status=INCOMPLETE" | tee -a security-audit-results/summary.txt
-            echo "incomplete_reason=submodule_checkout_failed" | tee -a security-audit-results/summary.txt
-            exit 2
-          fi
-
-          while IFS= read -r line; do
-            path="${line#* }"
-            expected="$(git ls-files --stage -- "$path" | awk '$1 == "160000" {print $2}')"
-            if [[ -z "$expected" || ! -d "$path" ]]; then
-              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
-              echo "incomplete_reason=submodule_gitlink_missing" | tee -a security-audit-results/summary.txt
-              exit 2
-            fi
-            actual="$(git -C "$path" rev-parse HEAD)"
-            if [[ "$actual" != "$expected" ]]; then
-              echo "submodule_audit_status=FAIL" | tee -a security-audit-results/summary.txt
-              echo "incomplete_reason=submodule_head_mismatch" | tee -a security-audit-results/summary.txt
-              exit 2
-            fi
-          done < <(git config -f .gitmodules --get-regexp '^submodule\\..*\\.path
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
-        with:
-          toolchain: 1.96.0
-
-      - name: Install pinned cargo-audit
-        working-directory: ${{ runner.temp }}
-        run: cargo install --locked cargo-audit --version 0.22.2
-
-      - name: Audit every tracked Cargo.lock and emit evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          workspace="$GITHUB_WORKSPACE"
-          result_root="$workspace/security-audit-results"
-          subject_sha="$(git rev-parse HEAD)"
-          mapfile -t lockfiles < <(git ls-files -- 'Cargo.lock' '**/Cargo.lock' | LC_ALL=C sort -u)
-
-          lockfile_missing=0
-          if [[ "${#lockfiles[@]}" -eq 0 ]]; then
-            lockfile_missing=1
-            sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' "$result_root/summary.txt"
-            echo "incomplete_reason=no_tracked_Cargo.lock_files" >> "$result_root/summary.txt"
-            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
-          else
-            sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
-            sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
-          fi
-          {
-            echo "rustc=$(rustc +1.96.0 --version)"
-            echo "cargo=$(cargo +1.96.0 --version)"
-            echo "cargo_audit=$(cargo audit --version)"
-            echo "lockfile_count=${#lockfiles[@]}"
-          } >> "$result_root/summary.txt"
-
-          coverage_failed=0
-          rustsec_failed="$lockfile_missing"
-
-          # Freeze one RustSec advisory database snapshot for the entire run.
-          # Every lockfile is evaluated against the same recorded database
-          # revision, avoiding different findings as the upstream DB advances.
-          advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
-          if ! git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_clone_failed" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          advisory_db_commit="$(git -C "$advisory_db" rev-parse HEAD)"
-          if [[ ! "$advisory_db_commit" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_revision_invalid" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          {
-            echo "advisory_db_status=PASS"
-            echo "advisory_db_commit=$advisory_db_commit"
-            echo "advisory_db_url=https://github.com/RustSec/advisory-db"
-          } | tee -a "$result_root/summary.txt"
-
-          # Prove tracked Cargo manifests map to tracked workspace lockfiles.
-          # This is intentionally separate from cargo-audit: scanner coverage
-          # must be evidenced, not inferred from finding some lockfiles.
-          if python3 - "$workspace" "$result_root/manifest-coverage.json" <<'PY'
-          import json
-          import subprocess
-          import sys
-          import tomllib
-          from pathlib import Path
-
-          repo = Path(sys.argv[1]).resolve()
-          output = Path(sys.argv[2])
-
-          def tracked(patterns):
-              args = ["git", "ls-files", "-z", "--", *patterns]
-              raw = subprocess.check_output(args, cwd=repo)
-              return sorted(set(x.decode() for x in raw.split(bytes([0])) if x))
-
-          manifests = tracked(["Cargo.toml", "**/Cargo.toml"])
-          lockfiles = set(tracked(["Cargo.lock", "**/Cargo.lock"]))
-          stage = subprocess.check_output(["git", "ls-files", "--stage", "-z"], cwd=repo)
-          submodules = []
-          for record in stage.split(bytes([0])):
-              if not record:
-                  continue
-              metadata, path_bytes = record.split(bytes([9]), 1)
-              if metadata.split(b" ", 1)[0] == b"160000":
-                  submodules.append(path_bytes.decode())
-          parsed = {}
-          parse_errors = {}
-
-          for rel in manifests:
-              path = repo / rel
-              try:
-                  with path.open("rb") as fh:
-                      parsed[rel] = tomllib.load(fh)
-              except Exception as exc:
-                  parse_errors[rel] = f"{type(exc).__name__}: {exc}"
-
-          def workspace_root_for(rel):
-              manifest = repo / rel
-              data = parsed.get(rel, {})
-              if "workspace" in data:
-                  return manifest.parent
-              explicit = data.get("package", {}).get("workspace")
-              if explicit:
-                  return (manifest.parent / explicit).resolve()
-              parent = manifest.parent.parent
-              while parent == repo or repo in parent.parents:
-                  parent_manifest = parent / "Cargo.toml"
-                  parent_rel = parent_manifest.relative_to(repo).as_posix()
-                  if parent_rel in parsed and "workspace" in parsed[parent_rel]:
-                      return parent
-                  if parent == repo:
-                      break
-                  parent = parent.parent
-              return manifest.parent
-
-          entries = []
-          for rel in manifests:
-              if rel in parse_errors:
-                  entries.append({
-                      "manifest": rel, "status": "INCOMPLETE",
-                      "reason": "manifest_parse_error", "detail": parse_errors[rel]
-                  })
-                  continue
-              root = workspace_root_for(rel)
-              try:
-                  root_rel = root.relative_to(repo).as_posix()
-              except ValueError:
-                  entries.append({
-                      "manifest": rel, "status": "FAIL",
-                      "reason": "workspace_outside_checkout"
-                  })
-                  continue
-              lock_rel = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
-              tracked_lock = lock_rel in lockfiles
-              exists = (repo / lock_rel).is_file()
-              entries.append({
-                  "manifest": rel,
-                  "workspace_root": root_rel,
-                  "expected_lockfile": lock_rel,
-                  "lockfile_tracked": tracked_lock,
-                  "lockfile_exists": exists,
-                  "status": "PASS" if tracked_lock and exists else "FAIL",
-                  "reason": None if tracked_lock and exists else "workspace_lockfile_missing_or_untracked"
-              })
-
-          failures = [e for e in entries if e["status"] != "PASS"]
-          report = {
-              "schema": "luminous.security-audit.manifest-coverage.v1",
-              "repository_path": ".",
-              "manifest_count": len(manifests),
-              "tracked_lockfile_count": len(lockfiles),
-              "mapped_manifest_count": sum(e["status"] == "PASS" for e in entries),
-              "entry_failure_count": len(failures),
-              "submodule_count": len(submodules),
-              "unaudited_submodules": submodules,
-              "failure_count": len(failures) + len(submodules),
-              "status": "PASS" if manifests and not failures and not submodules else "FAIL",
-              "limitations": [
-                  "Only Cargo.toml and Cargo.lock files tracked by the audited Git checkout are included.",
-                  "Any Git submodule must be separately initialized and audited before total dependency coverage can pass."
-              ],
-              "entries": entries
-          }
-          output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
-          print(f"Manifest coverage: {report['status']} "
-                f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
-                f"{report['tracked_lockfile_count']} tracked lockfiles; "
-                f"{report['submodule_count']} submodules)")
-          for entry in failures:
-              print(f"UNCOVERED: {entry}")
-          for submodule in submodules:
-              print(f"SUBMODULE_UNAUDITED: {submodule}")
-          if report["status"] != "PASS":
-              sys.exit(1)
-          PY
-          then
-            coverage_status="PASS"
-          else
-            coverage_status="FAIL"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
-          if [[ -f "$result_root/manifest-coverage.json" ]]; then
-            coverage_sha256="$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)"
-          else
-            coverage_sha256="missing"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_sha256=$coverage_sha256" | tee -a "$result_root/summary.txt"
-
-          # RustSec explicitly recommends reading untrusted lockfiles from
-          # outside the checked-out project directory so project-local Cargo
-          # configuration cannot influence the audit invocation.
-          cd "$RUNNER_TEMP"
-          for lockfile in "${lockfiles[@]}"; do
-            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
-            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
-            report="$result_root/lockfiles/${report_id}_${path_hash}.json"
-            stderr="$result_root/lockfiles/${report_id}_${path_hash}.stderr"
-            lockfile_abs="$workspace/$lockfile"
-            lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-            echo "Auditing $lockfile (sha256=$lock_sha256)"
-
-            rc=0
-            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
-              rc=0
-            else
-              rc=$?
-              rustsec_failed=1
-            fi
-
-            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
-            printf 'lockfile=%s sha256=%s exit_code=%s outcome=%s\n' \
-              "$lockfile" "$lock_sha256" "$rc" "$outcome" \
-              | tee -a "$result_root/summary.txt"
-          done
-
-          if [[ "$rustsec_failed" -eq 0 ]]; then rustsec_status="PASS"; else rustsec_status="FAIL"; fi
-          sed -i "s/^rustsec_status=.*/rustsec_status=$rustsec_status/" "$result_root/summary.txt"
-          if [[ "$rustsec_failed" -eq 0 && "$coverage_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
-          echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
-          cat "$result_root/summary.txt"
-          if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
-
-      - name: Upload dependency audit evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-rustsec
-          path: security-audit-results/
-          if-no-files-found: error
-          retention-days: 14
-)
-
-          echo "submodule_audit_status=PASS" | tee -a security-audit-results/summary.txt
-
-      - name: Install pinned Rust toolchain
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
-        with:
-          toolchain: 1.96.0
-
-      - name: Install pinned cargo-audit
-        working-directory: ${{ runner.temp }}
-        run: cargo install --locked cargo-audit --version 0.22.2
-
-      - name: Audit every tracked Cargo.lock and emit evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          workspace="$GITHUB_WORKSPACE"
-          result_root="$workspace/security-audit-results"
-          subject_sha="$(git rev-parse HEAD)"
-          mapfile -t lockfiles < <(git ls-files -- 'Cargo.lock' '**/Cargo.lock' | LC_ALL=C sort -u)
-
-          lockfile_missing=0
-          if [[ "${#lockfiles[@]}" -eq 0 ]]; then
-            lockfile_missing=1
-            sed -i 's/^rustsec_status=.*/rustsec_status=FAIL/' "$result_root/summary.txt"
-            echo "incomplete_reason=no_tracked_Cargo.lock_files" >> "$result_root/summary.txt"
-            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent."
-          else
-            sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
-            sed -i '/^incomplete_reason=/d' "$result_root/summary.txt"
-          fi
-          {
-            echo "rustc=$(rustc +1.96.0 --version)"
-            echo "cargo=$(cargo +1.96.0 --version)"
-            echo "cargo_audit=$(cargo audit --version)"
-            echo "lockfile_count=${#lockfiles[@]}"
-          } >> "$result_root/summary.txt"
-
-          coverage_failed=0
-          rustsec_failed="$lockfile_missing"
-
-          # Freeze one RustSec advisory database snapshot for the entire run.
-          # Every lockfile is evaluated against the same recorded database
-          # revision, avoiding different findings as the upstream DB advances.
-          advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
-          if ! git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_clone_failed" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          advisory_db_commit="$(git -C "$advisory_db" rev-parse HEAD)"
-          if [[ ! "$advisory_db_commit" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "advisory_db_status=FAIL" | tee -a "$result_root/summary.txt"
-            echo "incomplete_reason=advisory_database_revision_invalid" | tee -a "$result_root/summary.txt"
-            exit 2
-          fi
-          {
-            echo "advisory_db_status=PASS"
-            echo "advisory_db_commit=$advisory_db_commit"
-            echo "advisory_db_url=https://github.com/RustSec/advisory-db"
-          } | tee -a "$result_root/summary.txt"
-
-          # Prove tracked Cargo manifests map to tracked workspace lockfiles.
-          # This is intentionally separate from cargo-audit: scanner coverage
-          # must be evidenced, not inferred from finding some lockfiles.
-          if python3 - "$workspace" "$result_root/manifest-coverage.json" <<'PY'
-          import json
-          import subprocess
-          import sys
-          import tomllib
-          from pathlib import Path
-
-          repo = Path(sys.argv[1]).resolve()
-          output = Path(sys.argv[2])
-
-          def tracked(patterns):
-              args = ["git", "ls-files", "-z", "--", *patterns]
-              raw = subprocess.check_output(args, cwd=repo)
-              return sorted(set(x.decode() for x in raw.split(bytes([0])) if x))
-
-          manifests = tracked(["Cargo.toml", "**/Cargo.toml"])
-          lockfiles = set(tracked(["Cargo.lock", "**/Cargo.lock"]))
-          stage = subprocess.check_output(["git", "ls-files", "--stage", "-z"], cwd=repo)
-          submodules = []
-          for record in stage.split(bytes([0])):
-              if not record:
-                  continue
-              metadata, path_bytes = record.split(bytes([9]), 1)
-              if metadata.split(b" ", 1)[0] == b"160000":
-                  submodules.append(path_bytes.decode())
-          parsed = {}
-          parse_errors = {}
-
-          for rel in manifests:
-              path = repo / rel
-              try:
-                  with path.open("rb") as fh:
-                      parsed[rel] = tomllib.load(fh)
-              except Exception as exc:
-                  parse_errors[rel] = f"{type(exc).__name__}: {exc}"
-
-          def workspace_root_for(rel):
-              manifest = repo / rel
-              data = parsed.get(rel, {})
-              if "workspace" in data:
-                  return manifest.parent
-              explicit = data.get("package", {}).get("workspace")
-              if explicit:
-                  return (manifest.parent / explicit).resolve()
-              parent = manifest.parent.parent
-              while parent == repo or repo in parent.parents:
-                  parent_manifest = parent / "Cargo.toml"
-                  parent_rel = parent_manifest.relative_to(repo).as_posix()
-                  if parent_rel in parsed and "workspace" in parsed[parent_rel]:
-                      return parent
-                  if parent == repo:
-                      break
-                  parent = parent.parent
-              return manifest.parent
-
-          entries = []
-          for rel in manifests:
-              if rel in parse_errors:
-                  entries.append({
-                      "manifest": rel, "status": "INCOMPLETE",
-                      "reason": "manifest_parse_error", "detail": parse_errors[rel]
-                  })
-                  continue
-              root = workspace_root_for(rel)
-              try:
-                  root_rel = root.relative_to(repo).as_posix()
-              except ValueError:
-                  entries.append({
-                      "manifest": rel, "status": "FAIL",
-                      "reason": "workspace_outside_checkout"
-                  })
-                  continue
-              lock_rel = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
-              tracked_lock = lock_rel in lockfiles
-              exists = (repo / lock_rel).is_file()
-              entries.append({
-                  "manifest": rel,
-                  "workspace_root": root_rel,
-                  "expected_lockfile": lock_rel,
-                  "lockfile_tracked": tracked_lock,
-                  "lockfile_exists": exists,
-                  "status": "PASS" if tracked_lock and exists else "FAIL",
-                  "reason": None if tracked_lock and exists else "workspace_lockfile_missing_or_untracked"
-              })
-
-          failures = [e for e in entries if e["status"] != "PASS"]
-          report = {
-              "schema": "luminous.security-audit.manifest-coverage.v1",
-              "repository_path": ".",
-              "manifest_count": len(manifests),
-              "tracked_lockfile_count": len(lockfiles),
-              "mapped_manifest_count": sum(e["status"] == "PASS" for e in entries),
-              "entry_failure_count": len(failures),
-              "submodule_count": len(submodules),
-              "unaudited_submodules": submodules,
-              "failure_count": len(failures) + len(submodules),
-              "status": "PASS" if manifests and not failures and not submodules else "FAIL",
-              "limitations": [
-                  "Only Cargo.toml and Cargo.lock files tracked by the audited Git checkout are included.",
-                  "Any Git submodule must be separately initialized and audited before total dependency coverage can pass."
-              ],
-              "entries": entries
-          }
-          output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
-          print(f"Manifest coverage: {report['status']} "
-                f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
-                f"{report['tracked_lockfile_count']} tracked lockfiles; "
-                f"{report['submodule_count']} submodules)")
-          for entry in failures:
-              print(f"UNCOVERED: {entry}")
-          for submodule in submodules:
-              print(f"SUBMODULE_UNAUDITED: {submodule}")
-          if report["status"] != "PASS":
-              sys.exit(1)
-          PY
-          then
-            coverage_status="PASS"
-          else
-            coverage_status="FAIL"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
-          if [[ -f "$result_root/manifest-coverage.json" ]]; then
-            coverage_sha256="$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)"
-          else
-            coverage_sha256="missing"
-            coverage_failed=1
-          fi
-          echo "manifest_coverage_sha256=$coverage_sha256" | tee -a "$result_root/summary.txt"
-
-          # RustSec explicitly recommends reading untrusted lockfiles from
-          # outside the checked-out project directory so project-local Cargo
-          # configuration cannot influence the audit invocation.
-          cd "$RUNNER_TEMP"
-          for lockfile in "${lockfiles[@]}"; do
-            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
-            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
-            report="$result_root/lockfiles/${report_id}_${path_hash}.json"
-            stderr="$result_root/lockfiles/${report_id}_${path_hash}.stderr"
-            lockfile_abs="$workspace/$lockfile"
-            lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-            echo "Auditing $lockfile (sha256=$lock_sha256)"
-
-            rc=0
-            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
-              rc=0
-            else
-              rc=$?
-              rustsec_failed=1
-            fi
-
-            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
-            printf 'lockfile=%s sha256=%s exit_code=%s outcome=%s\n' \
-              "$lockfile" "$lock_sha256" "$rc" "$outcome" \
-              | tee -a "$result_root/summary.txt"
-          done
-
-          if [[ "$rustsec_failed" -eq 0 ]]; then rustsec_status="PASS"; else rustsec_status="FAIL"; fi
-          sed -i "s/^rustsec_status=.*/rustsec_status=$rustsec_status/" "$result_root/summary.txt"
-          if [[ "$rustsec_failed" -eq 0 && "$coverage_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
-          echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
-          cat "$result_root/summary.txt"
-          if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
-
-      - name: Upload dependency audit evidence
+      - name: Upload RustSec audit evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
