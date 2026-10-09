@@ -209,9 +209,6 @@
       },
       "then": {
         "properties": {
-          "findings_below_block_threshold": {
-            "const": false
-          },
           "failure_reasons": {
             "maxItems": 0
           },
@@ -256,9 +253,6 @@
       },
       "then": {
         "properties": {
-          "findings_below_block_threshold": {
-            "const": true
-          },
           "failure_reasons": {
             "maxItems": 0
           },
