@@ -305,6 +305,16 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     );
     assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
 
+    sqlx::query(
+        "UPDATE ops.connector_connections SET revision_mode = 'opaque', revision_prefix = NULL \
+         WHERE tenant_id = $1 AND connection_id = $2",
+    )
+    .bind(TENANT)
+    .bind(CONNECTION)
+    .execute(&pool)
+    .await
+    .expect("switch to the explicitly opaque provider revision policy");
+
     let unordered = revised_event(
         "opaque-token",
         "event-ci-unordered",
@@ -317,6 +327,16 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     );
     assert_eq!(scalar_count(&pool, "quarantined_events").await, 5);
     assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
+
+    sqlx::query(
+        "UPDATE ops.connector_connections SET revision_mode = 'numeric_suffix', revision_prefix = 'revision-' \
+         WHERE tenant_id = $1 AND connection_id = $2",
+    )
+    .bind(TENANT)
+    .bind(CONNECTION)
+    .execute(&pool)
+    .await
+    .expect("restore the documented numeric-suffix revision policy");
 
     let conflicting_idempotency = revised_event(
         "revision-3",
