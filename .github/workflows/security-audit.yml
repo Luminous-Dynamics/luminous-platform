@@ -404,42 +404,49 @@ jobs:
           if [[ -f .gitmodules ]]; then
             submodule_status="PASS"
             mapfile -t submodule_urls < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]url$' || true)
-mapfile -t submodule_paths < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
-if [[ "${#submodule_urls[@]}" -eq 0 || "${#submodule_urls[@]}" -ne "${#submodule_paths[@]}" ]]; then
-  submodule_status="FAIL"
-  submodule_reason="submodule_url_path_inventory_empty_or_mismatched"
-fi
-for line in "${submodule_urls[@]}"; do
-  key="${line%% *}"
-  module_name="${key#submodule.}"
-  module_name="${module_name%.url}"
-  url="${line#* }"
-  case "$module_name:$url" in
-    mycelix-health:https://github.com/Luminous-Dynamics/mycelix-health|mycelix-health:https://github.com/Luminous-Dynamics/mycelix-health.git) ;;
-    *)
-      submodule_status="FAIL"
-      submodule_reason="submodule_name_or_url_not_exactly_allowlisted"
-      break
-      ;;
-  esac
-done
-if [[ "$submodule_status" == "PASS" ]]; then
-  for line in "${submodule_paths[@]}"; do
-    key="${line%% *}"
-    module_name="${key#submodule.}"
-    module_name="${module_name%.path}"
-    path="${line#* }"
-    if [[ "$module_name:$path" != "mycelix-health:mycelix-health" ]]; then
-      submodule_status="FAIL"
-      submodule_reason="submodule_name_or_path_not_exactly_allowlisted"
-      break
-    fi
-  done
-fi
-if [[ "$submodule_status" == "PASS" ]]; then
-  while IFS= read -r line; do
-    path="${line#* }"
-          if [[ ! "$path" =~ ^[A-Za-z0-9_./-]+$ || "$path" == /* || "$path" == *".."* || "$path" == "." || "$path" == ./* || "$path" == */./* || "$path" == */. ]]; then
+            mapfile -t submodule_paths < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
+            if [[ "${#submodule_urls[@]}" -eq 0 || "${#submodule_urls[@]}" -ne "${#submodule_paths[@]}" ]]; then
+              submodule_status="FAIL"
+              submodule_reason="submodule_url_path_inventory_empty_or_mismatched"
+            fi
+            declare -A url_seen=()
+            for line in "${submodule_urls[@]}"; do
+              key="${line%% *}"
+              module_name="${key#submodule.}"
+              module_name="${module_name%.url}"
+              url="${line#* }"
+              if [[ -n "${url_seen[$module_name]+x}" ]]; then
+                submodule_status="FAIL"
+                submodule_reason="duplicate_submodule_url_key"
+                break
+              fi
+              url_seen["$module_name"]=1
+              case "$module_name:$url" in
+                mycelix-health:https://github.com/Luminous-Dynamics/mycelix-health|mycelix-health:https://github.com/Luminous-Dynamics/mycelix-health.git) ;;
+                *)
+                  submodule_status="FAIL"
+                  submodule_reason="submodule_name_or_url_not_exactly_allowlisted"
+                  break
+                  ;;
+              esac
+            done
+            if [[ "$submodule_status" == "PASS" ]]; then
+              for line in "${submodule_paths[@]}"; do
+                key="${line%% *}"
+                module_name="${key#submodule.}"
+                module_name="${module_name%.path}"
+                path="${line#* }"
+                if [[ "$module_name:$path" != "mycelix-health:mycelix-health" ]]; then
+                  submodule_status="FAIL"
+                  submodule_reason="submodule_name_or_path_not_exactly_allowlisted"
+                  break
+                fi
+              done
+            fi
+            if [[ "$submodule_status" == "PASS" ]]; then
+              while IFS= read -r line; do
+                path="${line#* }"
+                if [[ ! "$path" =~ ^[A-Za-z0-9_./-]+$ || "$path" == /* || "$path" == *".."* || "$path" == "." || "$path" == ./* || "$path" == */./* || "$path" == */. ]]; then
                   submodule_status="FAIL"
                   submodule_reason="submodule_path_invalid"
                   break
