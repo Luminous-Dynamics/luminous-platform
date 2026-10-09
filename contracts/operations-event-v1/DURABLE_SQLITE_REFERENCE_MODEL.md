@@ -14,7 +14,7 @@
 - Revision handling is conservative. Older revisions do not replace newer state; conflicting state for the same revision fails. When revisions cannot be compared under an explicitly configured adapter policy, the observation is quarantined rather than sorted lexically or accepted by arrival time.
 - Outbox dispatch uses retryable leases and preserves per-incident ordering: a later unacknowledged message for the same incident cannot be claimed while an earlier one remains pending or leased. Lease expiry can cause the same message to be delivered again; this is **at-least-once**, not exactly-once network delivery. A late or wrong owner cannot acknowledge an expired/reassigned lease.
 
-The test suite includes restarts against the same SQLite file, duplicate concurrent submissions, transaction fault injection, tenant/resource mapping negatives, opaque revision ordering, and outbox lease expiry/acknowledgement cases.
+The test suite includes restarts against the same SQLite file, duplicate concurrent submissions, transaction fault injection, tenant/resource mapping negatives, opaque revision ordering, equal-timestamp outbox ordering, and outbox lease expiry/acknowledgement cases. Because the model has no dead-letter transition yet, a permanently failing earlier message intentionally blocks later messages for that incident rather than letting the timeline silently reorder.
 
 ## Reproduce
 
@@ -41,6 +41,7 @@ The test revision comparator only recognizes numeric tokens such as `revision-2`
 3. Implement authenticated provider parsing and enforce tenant/resource authorization independently of adapter-supplied labels.
 4. Add stale-revision reconciliation against the provider's documented revision/conditional-update mechanism, without guessing from timestamps.
 5. Test tenant isolation across reads, search, attachments, exports, event subscriptions, and writes using independently created tenant identities.
-6. Keep outbox consumers idempotent and document that external side effects can repeat when a send succeeds but its acknowledgement is lost.
+6. Add an explicit dead-letter/quarantine transition, bounded retry/backoff, operator alerting, and reviewed replay semantics; while an earlier incident event is unresolved, do not silently release later events out of order.
+7. Keep outbox consumers idempotent and document that external side effects can repeat when a send succeeds but its acknowledgement is lost.
 
 Passing this harness can qualify only these test cases on the exact revision. It cannot be summarized as production-ready, exactly-once, or database isolation proven.
