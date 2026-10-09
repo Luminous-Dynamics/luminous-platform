@@ -70,18 +70,21 @@ jobs:
           toolchain: 1.96.0
 
       - name: Install pinned cargo-audit
+        working-directory: ${{ runner.temp }}
         run: cargo install --locked cargo-audit --version 0.22.2
 
       - name: Audit every tracked Cargo.lock and emit evidence
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p security-audit-results/lockfiles
+          workspace="$GITHUB_WORKSPACE"
+          result_root="$workspace/security-audit-results"
+          mkdir -p "$result_root/lockfiles"
           subject_sha="$(git rev-parse HEAD)"
           mapfile -t lockfiles < <(git ls-files -- 'Cargo.lock' '**/Cargo.lock' | LC_ALL=C sort -u)
 
           if [[ "${#lockfiles[@]}" -eq 0 ]]; then
-            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent." | tee security-audit-results/summary.txt
+            echo "FAIL: no tracked Cargo.lock files; Rust dependency audit coverage is absent." | tee "$result_root/summary.txt"
             exit 2
           fi
 
@@ -99,37 +102,39 @@ jobs:
             echo "cargo=$(cargo +1.96.0 --version)"
             echo "cargo_audit=$(cargo audit --version)"
             echo "lockfile_count=${#lockfiles[@]}"
-          } > security-audit-results/summary.txt
+          } > "$result_root/summary.txt"
 
+          # RustSec explicitly recommends reading untrusted lockfiles from
+          # outside the checked-out project directory so project-local Cargo
+          # configuration cannot influence the audit invocation.
+          cd "$RUNNER_TEMP"
           failed=0
           for lockfile in "${lockfiles[@]}"; do
             report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
-            report="security-audit-results/lockfiles/${report_id}.json"
-            stderr="security-audit-results/lockfiles/${report_id}.stderr"
-            lock_sha256="$(sha256sum "$lockfile" | cut -d' ' -f1)"
+            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
+            report="$result_root/lockfiles/${report_id}_${path_hash}.json"
+            stderr="$result_root/lockfiles/${report_id}_${path_hash}.stderr"
+            lockfile_abs="$workspace/$lockfile"
+            lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
             echo "Auditing $lockfile (sha256=$lock_sha256)"
 
             rc=0
-            if cargo audit --file "$lockfile" --json > "$report" 2> "$stderr"; then
+            if cargo audit --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
               rc=0
             else
               rc=$?
               failed=1
             fi
 
-            if [[ "$rc" -eq 0 ]]; then
-              outcome="PASS"
-            else
-              outcome="FAIL"
-            fi
+            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
             printf 'lockfile=%s sha256=%s exit_code=%s outcome=%s\n' \
               "$lockfile" "$lock_sha256" "$rc" "$outcome" \
-              | tee -a security-audit-results/summary.txt
+              | tee -a "$result_root/summary.txt"
           done
 
-          echo "overall_status=$([[ "$failed" -eq 0 ]] && echo PASS || echo FAIL)" \
-            | tee -a security-audit-results/summary.txt
-          cat security-audit-results/summary.txt
+          if [[ "$failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
+          echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
+          cat "$result_root/summary.txt"
           exit "$failed"
 
       - name: Upload dependency audit evidence
