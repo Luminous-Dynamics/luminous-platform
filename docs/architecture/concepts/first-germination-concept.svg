@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">First Germination — Luminous Ambient concept</title>
+  <desc id="desc">A calm, dark evergreen field with an organic network of fine mint filaments and sparse solar-gold nodes growing in from the right, leaving generous space on the left for desktop icons.</desc>
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#080E0C"/><stop offset="0.52" stop-color="#0A100E"/><stop offset="1" stop-color="#101F18"/>
+    </linearGradient>
+    <radialGradient id="fieldGlow" cx="78%" cy="52%" r="68%">
+      <stop offset="0" stop-color="#235440" stop-opacity="0.40"/><stop offset="0.46" stop-color="#122A20" stop-opacity="0.19"/><stop offset="1" stop-color="#09120E" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nodeLight">
+      <stop offset="0" stop-color="#F4D878" stop-opacity="0.95"/><stop offset="0.26" stop-color="#E8C547" stop-opacity="0.72"/><stop offset="1" stop-color="#E8C547" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="filament" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#426E52" stop-opacity="0.35"/><stop offset="0.46" stop-color="#7EC8A0" stop-opacity="0.9"/><stop offset="1" stop-color="#A6F1D4" stop-opacity="0.62"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="nodeGlow" x="-250%" y="-250%" width="600%" height="600%"><feGaussianBlur stdDeviation="9"/></filter>
+    <style>
+      .thread{fill:none;stroke:url(#filament);stroke-linecap:round;stroke-linejoin:round}
+      .thread-main{stroke-width:2.15}.thread-fine{stroke-width:1.15;opacity:.72}
+      .quiet-line{fill:none;stroke:#54866C;stroke-width:1;opacity:.07}
+      .living{transform-box:fill-box;transform-origin:center;animation:breathe 8s ease-in-out infinite}
+      .living.delay-a{animation-delay:-2.2s}.living.delay-b{animation-delay:-5.1s}
+      .pulse{animation:pulse 6.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+      .pulse.delay-a{animation-delay:-1.6s}.pulse.delay-b{animation-delay:-4.1s}
+      .signal{fill:none;stroke:#B8F2D5;stroke-width:1.05;stroke-dasharray:2 31;stroke-dashoffset:0;opacity:.58;stroke-linecap:round;animation:flow 13s linear infinite}
+      .signal.delay-a{animation-delay:-4.5s}.signal.delay-b{animation-delay:-8s}
+      .drift-a{transform-box:fill-box;transform-origin:center;animation:drift 19s ease-in-out infinite}
+      .drift-b{transform-box:fill-box;transform-origin:center;animation:drift 24s ease-in-out -11s infinite}
+      @keyframes flow{to{stroke-dashoffset:-264}}
+      @keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(-8px,-6px)}}
+      @keyframes breathe{0%,100%{opacity:.78}50%{opacity:1}}
+      @keyframes pulse{0%,100%{opacity:.54;transform:scale(.86)}48%{opacity:.95;transform:scale(1.08)}}
+      @media(prefers-reduced-motion:reduce){.living,.pulse,.signal,.drift-a,.drift-b{animation:none!important}}
+    </style>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#ground)"/><rect width="1920" height="1080" fill="url(#fieldGlow)"/>
+  <g class="quiet-line">
+    <path d="M-120 246 C160 110 420 125 624 246 S970 384 1155 283 S1514 94 2040 194"/>
+    <path d="M-140 282 C158 150 414 165 608 279 S958 418 1142 319 S1512 130 2050 230"/>
+    <path d="M-140 318 C154 190 403 202 589 313 S943 452 1127 354 S1507 166 2050 266"/>
+    <path d="M-160 858 C184 736 400 762 618 871 S1016 1014 1240 886 S1640 720 2070 818"/>
+    <path d="M-160 894 C184 772 400 798 618 907 S1016 1050 1240 922 S1640 756 2070 854"/>
+  </g>
+  <g fill="none" stroke="#65C894" stroke-linecap="round" stroke-linejoin="round" opacity=".20" filter="url(#softGlow)">
+    <path d="M1716 1114 C1658 987 1593 914 1601 816 C1609 725 1513 679 1505 589 C1496 481 1581 438 1550 346 C1526 273 1451 236 1400 154" stroke-width="8"/>
+    <path d="M1601 816 C1516 792 1438 818 1374 767 C1306 713 1334 642 1261 605 C1199 574 1138 604 1060 558" stroke-width="6"/>
+    <path d="M1505 589 C1608 552 1689 504 1723 423 C1757 343 1709 264 1742 179" stroke-width="5"/>
+    <path d="M1550 346 C1463 355 1404 315 1347 262 C1291 211 1234 202 1169 220" stroke-width="4"/>
+  </g>
+  <g class="living" stroke="url(#filament)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path class="thread thread-main" d="M1746 1115 C1690 1004 1616 921 1623 826 C1630 738 1535 678 1522 591 C1508 500 1587 431 1558 349 C1534 282 1465 235 1411 147"/>
+    <path class="thread thread-main" d="M1623 826 C1552 798 1490 801 1439 776 C1380 747 1380 695 1323 663 C1261 629 1204 649 1138 608 C1083 574 1075 520 1018 486"/>
+    <path class="thread thread-main" d="M1522 591 C1582 560 1648 534 1696 480 C1744 425 1751 374 1731 319 C1716 277 1725 223 1765 169"/>
+    <path class="thread thread-main" d="M1558 349 C1481 367 1427 342 1366 291 C1312 246 1262 224 1209 230 C1155 236 1125 268 1082 285"/>
+    <path class="thread thread-main" d="M1411 147 C1372 207 1359 263 1380 316 C1400 366 1462 411 1460 465 C1457 517 1399 550 1351 540"/>
+    <path class="thread thread-main" d="M1323 663 C1300 727 1244 769 1170 776 C1103 783 1060 751 1002 777 C949 802 942 855 901 890"/>
+    <path class="thread thread-main" d="M1138 608 C1102 665 1065 700 1008 703 C955 706 918 677 869 686 C824 694 798 729 776 769"/>
+    <path class="thread thread-fine" d="M1439 776 C1421 835 1372 876 1326 894 C1281 913 1247 907 1205 938"/>
+    <path class="thread thread-fine" d="M1323 663 C1383 630 1430 600 1438 548 C1446 504 1416 475 1391 448"/>
+    <path class="thread thread-fine" d="M1696 480 C1652 449 1599 445 1559 466 C1519 488 1499 527 1489 568"/>
+    <path class="thread thread-fine" d="M1731 319 C1679 324 1639 302 1612 268 C1587 235 1590 204 1600 174"/>
+    <path class="thread thread-fine" d="M1366 291 C1345 345 1297 373 1249 363 C1204 354 1183 322 1143 324 C1101 326 1085 352 1054 374"/>
+    <path class="thread thread-fine" d="M1209 230 C1184 189 1148 167 1108 177 C1075 186 1056 215 1027 222"/>
+    <path class="thread thread-fine" d="M1351 540 C1310 508 1284 469 1299 424 C1310 390 1342 372 1366 347"/>
+    <path class="thread thread-fine" d="M1008 703 C992 650 947 623 901 632 C860 639 837 671 801 681"/>
+    <path class="thread thread-fine" d="M1002 777 C1034 832 1011 871 975 905 C944 934 901 943 876 980"/>
+    <path class="thread thread-fine" d="M901 890 C842 881 793 900 760 943 C738 973 731 1004 704 1031"/>
+    <path class="thread thread-fine" d="M1558 349 C1619 370 1660 398 1672 439"/>
+    <path class="thread thread-fine" d="M1623 826 C1662 853 1693 889 1700 934"/>
+  </g>
+  <g class="living delay-a" fill="none" stroke="#7EC8A0" stroke-width="1.1" stroke-linecap="round" opacity=".56">
+    <path d="M1750 1110 C1795 1016 1818 973 1811 906 C1805 853 1838 818 1880 787"/>
+    <path d="M1522 591 C1477 586 1437 593 1409 619 C1386 640 1382 662 1375 684"/>
+    <path d="M1411 147 C1467 122 1517 87 1544 33"/><path d="M1138 608 C1114 563 1080 540 1034 544 C997 547 972 567 941 562"/>
+    <path d="M1002 777 C946 758 906 767 874 800 C849 826 839 855 811 871"/>
+  </g>
+  <g class="signal" stroke-linecap="round">
+    <path d="M1746 1115 C1690 1004 1616 921 1623 826 C1630 738 1535 678 1522 591 C1508 500 1587 431 1558 349 C1534 282 1465 235 1411 147"/>
+    <path class="delay-a" d="M1623 826 C1552 798 1490 801 1439 776 C1380 747 1380 695 1323 663 C1261 629 1204 649 1138 608 C1083 574 1075 520 1018 486"/>
+    <path class="delay-b" d="M1522 591 C1582 560 1648 534 1696 480 C1744 425 1751 374 1731 319 C1716 277 1725 223 1765 169"/>
+    <path class="delay-a" d="M1558 349 C1481 367 1427 342 1366 291 C1312 246 1262 224 1209 230 C1155 236 1125 268 1082 285"/>
+    <path class="delay-b" d="M1323 663 C1300 727 1244 769 1170 776 C1103 783 1060 751 1002 777 C949 802 942 855 901 890"/>
+  </g>
+  <g filter="url(#nodeGlow)" fill="#E8C547" opacity=".30">
+    <circle cx="1623" cy="826" r="13"/><circle cx="1522" cy="591" r="12"/><circle cx="1558" cy="349" r="10"/>
+    <circle cx="1323" cy="663" r="9"/><circle cx="1138" cy="608" r="8"/><circle cx="1002" cy="777" r="7"/>
+  </g>
+  <g class="pulse" fill="url(#nodeLight)">
+    <circle cx="1623" cy="826" r="27"/><circle cx="1522" cy="591" r="24"/><circle cx="1558" cy="349" r="22"/>
+    <circle cx="1323" cy="663" r="20"/><circle cx="1138" cy="608" r="18"/><circle cx="1002" cy="777" r="16"/>
+  </g>
+  <g fill="#E8C547">
+    <circle cx="1623" cy="826" r="2.7"/><circle cx="1522" cy="591" r="2.5"/><circle cx="1558" cy="349" r="2.3"/>
+    <circle cx="1323" cy="663" r="2.1"/><circle cx="1138" cy="608" r="1.8"/><circle cx="1002" cy="777" r="1.8"/>
+  </g>
+  <g fill="#8EDAB0" opacity=".86">
+    <circle cx="1411" cy="147" r="2"/><circle cx="1696" cy="480" r="2"/><circle cx="1439" cy="776" r="1.8"/>
+    <circle cx="1209" cy="230" r="1.6"/><circle cx="901" cy="890" r="1.5"/><circle cx="776" cy="769" r="1.4"/>
+  </g>
+  <g class="drift-a" fill="#A5D9B7">
+    <circle cx="1218" cy="469" r="1.2" opacity=".28"/><circle cx="1453" cy="719" r="1.1" opacity=".26"/>
+    <circle cx="1689" cy="660" r="1.4" opacity=".34"/><circle cx="1781" cy="533" r="1.1" opacity=".23"/>
+    <circle cx="1308" cy="151" r="1.2" opacity=".22"/><circle cx="1089" cy="847" r="1.1" opacity=".2"/>
+    <circle cx="1858" cy="302" r="1.2" opacity=".25"/><circle cx="1512" cy="966" r="1.1" opacity=".24"/>
+    <circle cx="926" cy="434" r="1" opacity=".18"/><circle cx="1177" cy="936" r="1.2" opacity=".23"/>
+  </g>
+  <g class="drift-b" fill="#A5D9B7" opacity=".74">
+    <circle cx="1073" cy="294" r="1.1"/><circle cx="1533" cy="822" r="1.1"/><circle cx="1740" cy="736" r="1.2"/><circle cx="1269" cy="981" r="1"/>
+  </g>
+  <defs><radialGradient id="vignette"><stop offset=".42" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#030806" stop-opacity=".42"/></radialGradient></defs>
+  <rect width="1920" height="1080" fill="url(#vignette)"/>
+</svg>
