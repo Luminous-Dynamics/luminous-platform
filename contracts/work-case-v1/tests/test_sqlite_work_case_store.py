@@ -96,6 +96,27 @@ class SQLiteWorkCaseStoreTests(unittest.TestCase):
             }
         self.assertEqual(tables, {"work_cases"})
 
+    def test_versioned_database_with_weakened_primary_key_fails_closed(self):
+        damaged_db = Path(self.tmp.name) / "damaged-primary-key.sqlite3"
+        SQLiteWorkCaseStore(damaged_db)
+        with closing(sqlite3.connect(damaged_db)) as db:
+            db.execute("PRAGMA foreign_keys=OFF")
+            db.execute("DROP TABLE work_cases")
+            db.execute(
+                "CREATE TABLE work_cases ("
+                "tenant_id TEXT NOT NULL, case_id TEXT NOT NULL, "
+                "revision INTEGER NOT NULL CHECK(revision >= 1), payload_json TEXT NOT NULL)"
+            )
+            db.commit()
+
+        with self.assertRaisesRegex(RuntimeError, "work_cases primary key mismatch"):
+            SQLiteWorkCaseStore(damaged_db)
+
+        with closing(sqlite3.connect(damaged_db)) as db:
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 1)
+            info = db.execute("PRAGMA table_info(work_cases)").fetchall()
+            self.assertEqual([row[5] for row in info], [0, 0, 0, 0])
+
     def test_versioned_database_missing_history_table_fails_closed_without_recreating_it(self):
         damaged_db = Path(self.tmp.name) / "damaged-versioned.sqlite3"
         SQLiteWorkCaseStore(damaged_db)
