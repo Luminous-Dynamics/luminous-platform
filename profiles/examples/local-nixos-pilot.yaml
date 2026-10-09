@@ -88,6 +88,7 @@ qualification:
     - unauthorized-action-refusal
     - stale-authorization-refusal
     - evidence-export-and-independent-parse
+  qualified_capabilities: []
   unqualified_capabilities:
     - production-host-actuation
     - destructive-recovery
