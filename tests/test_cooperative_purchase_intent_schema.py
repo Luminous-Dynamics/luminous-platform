@@ -65,7 +65,7 @@ class CooperativePurchaseIntentSchemaTests(unittest.TestCase):
 
     def test_synthetic_nonbinding_interest_fixture_is_valid(self):
         errors = self.errors(FIXTURE)
-        self.assertEqual(errors, [ ] if not errors else errors)
+        self.assertEqual(errors, [], [error.message for error in errors])
         self.assertEqual(FIXTURE["metadata"]["state"], "non_binding_interest")
         self.assertNotIn("accepted_offer", FIXTURE)
         self.assertNotIn("authorization", FIXTURE)
