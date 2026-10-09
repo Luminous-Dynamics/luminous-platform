@@ -225,7 +225,7 @@ Keep a small dependency-light corpus that every adapter can run, plus platform-s
 | Partition | Remote coordinator unavailable | Preserve local safety/recovery; deny unapproved privileged work |
 | Export/exit | Customer cannot retrieve configuration/evidence without provider access | Conformance failure for sovereignty profile |
 
-This suite should be machine-readable when implemented. The table alone is specification, not evidence that tests already exist or pass.
+The first executable declaration validator and regression corpus are now drafted in `tools/validate_deployment_profile.py` and `tests/test_deployment_profile_validator.py`. They cover declaration/schema rejection and deliberately never evaluate runtime qualification. The table above remains a broader target conformance suite; the existence of source/tests is not evidence that hosted CI passed or a runtime capability is qualified.
 
 ## Standards alignment and limits
 
@@ -241,13 +241,14 @@ A profile may report a crosswalk to selected framework outcomes. It must not say
 
 ## Implementation order
 
-1. Freeze the minimal profile schema and semantics before building a profile-management UI.
-2. Add a strict validator and a small deterministic fixture corpus.
-3. Qualify one local NixOS virtual-machine profile in observe/shadow mode.
-4. Bind the results to exact source/build/adapter identities.
-5. Exercise local boot and recovery with optional coordination unavailable.
-6. Add bounded actuation only after the authority and reconciliation tests pass.
-7. Add self-hosted multi-node, offline, and federated profiles as independently qualified targets.
-8. Publish a compatibility matrix with each release and remove unsupported claims from marketing/docs.
+1. Review and freeze the profile schema and semantic invariants; schema evolution must be versioned.
+2. Qualify the declaration validator itself in hosted CI, including strict-parser, malformed-schema, and negative-fixture tests.
+3. Extend the validator with a separately reviewed qualification-report contract; do not infer qualified status from strings or existence of evidence references.
+4. Qualify one local NixOS virtual-machine profile in observe/shadow mode.
+5. Bind runtime results to exact source/build/adapter identities and independently verify the resulting evidence.
+6. Exercise local boot and recovery with optional coordination unavailable.
+7. Add bounded actuation only after authority, stale-plan, reconciliation, and rollback tests pass.
+8. Add self-hosted multi-node, offline, and federated profiles as independently qualified targets.
+9. Publish a compatibility matrix with each release and remove unsupported claims from marketing/docs.
 
 The standard of success is not how many profiles exist; it is whether an operator can determine exactly what a profile permits, what it proves, what it does not prove, and how to recover when its assumptions fail.
