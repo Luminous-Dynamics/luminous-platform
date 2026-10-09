@@ -52,10 +52,21 @@ jobs:
       - name: Run validator regression corpus
         run: python -m unittest discover -s tests -p 'test_deployment_profile_validator.py' -v
 
+      - name: Check resolved dependency compatibility
+        run: python -m pip check
+
       - name: Validate local NixOS pilot declaration
         run: |
           python tools/validate_deployment_profile.py profiles/examples/local-nixos-pilot.yaml > profile-validation.json
           cat profile-validation.json
+
+      - name: Upload declaration validation report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: deployment-profile-validation-${{ github.sha }}
+          path: profile-validation.json
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Record resolved Python dependencies
         run: python -m pip freeze
