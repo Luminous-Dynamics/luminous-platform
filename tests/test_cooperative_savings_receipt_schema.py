@@ -43,6 +43,7 @@ class CooperativeSavingsReceiptTests(unittest.TestCase):
 
     def test_mixed_baseline_claim_class_is_supported_explicitly(self):
         self.assertIn("MixedBaselineEvidence", SCHEMA["properties"]["claim"]["properties"]["class"]["enum"])
+        self.assertIn("CostCoverageStatement", SCHEMA["$defs"]["evidence"]["properties"]["kind"]["enum"])
 
     def test_receipt_arithmetic_is_exact_and_self_consistent(self):
         calculation = FIXTURE["calculation"]
