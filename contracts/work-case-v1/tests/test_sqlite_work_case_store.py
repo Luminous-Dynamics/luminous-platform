@@ -73,6 +73,43 @@ class SQLiteWorkCaseStoreTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             SQLiteWorkCaseStore(future_db)
 
+    def test_unversioned_database_with_existing_tables_fails_closed_before_wal_mutation(self):
+        legacy_db = Path(self.tmp.name) / "legacy-unversioned.sqlite3"
+        with closing(sqlite3.connect(legacy_db)) as db:
+            db.execute("CREATE TABLE work_cases (legacy_payload TEXT)")
+            db.commit()
+
+        with self.assertRaisesRegex(RuntimeError, "unversioned database contains pre-existing tables"):
+            SQLiteWorkCaseStore(legacy_db)
+
+        with closing(sqlite3.connect(legacy_db)) as db:
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 0)
+            self.assertEqual(db.execute("PRAGMA journal_mode").fetchone()[0].lower(), "delete")
+            tables = {
+                row[0] for row in db.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+                )
+            }
+        self.assertEqual(tables, {"work_cases"})
+
+    def test_versioned_database_missing_history_table_fails_closed_without_recreating_it(self):
+        damaged_db = Path(self.tmp.name) / "damaged-versioned.sqlite3"
+        SQLiteWorkCaseStore(damaged_db)
+        with closing(sqlite3.connect(damaged_db)) as db:
+            db.execute("DROP TABLE case_activity")
+            db.commit()
+
+        with self.assertRaisesRegex(RuntimeError, "schema is incomplete: missing table case_activity"):
+            SQLiteWorkCaseStore(damaged_db)
+
+        with closing(sqlite3.connect(damaged_db)) as db:
+            self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0], 1)
+            self.assertIsNone(
+                db.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='case_activity'"
+                ).fetchone()
+            )
+
     def test_same_state_assignment_is_a_noop_not_a_fake_revision(self):
         counts = self.store.counts()
         history = self.store.history(self.tech, "case-1")
