@@ -20,6 +20,7 @@ Provide the first concrete path toward a globally portable, member-oriented whol
 - [Global architecture and staged plan](../../docs/GLOBAL_COOPERATIVE_COMMERCE.md).
 - [Dependency-free Rust savings kernel](../../crates/cooperative-commerce-core/README.md) — exact-decimal arithmetic, exact-basket comparability, symmetric cost coverage, delivery-line binding, explicit credits, and negative-result preservation.
 - [Savings Receipt schema](../../schemas/cooperative-savings-receipt-v1.schema.json) plus [illustrative receipt fixture](fixtures/example-savings-receipt.json) — portable inputs, calculations, evidence references, and limitations; the fixture is synthetic and cannot be promoted to a computed receipt.
+- [Code-list snapshot manifest](../../schemas/code-list-snapshot-manifest-v1.schema.json) plus [illustrative SIX ISO 4217 manifest](fixtures/example-code-list-manifest.json) — defines how an active registry must pin source bytes, normalized payload digest, parser/build identity, review report, duplicate-code checks, effective dates, and review deadline. This example explicitly says the official payload has not been retrieved and cannot be activated.
 
 ## Schema contract and limits
 
