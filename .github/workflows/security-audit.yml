@@ -16,6 +16,11 @@ on:
         required: false
         default: false
         type: boolean
+      audit_node:
+        description: Audit all tracked npm package-lock and shrinkwrap lockfiles.
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -782,3 +787,165 @@ jobs:
           path: security-audit-results/
           if-no-files-found: error
           retention-days: 14
+npmsec:
+    name: npm dependency audit
+    if: inputs.audit_node
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact audit subject
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: \${{ inputs.subject_sha }}
+          persist-credentials: false
+      - name: Assert exact checkout identity
+        id: subject
+        env:
+          SUBJECT_SHA: \${{ inputs.subject_sha }}
+        run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
+      - name: Initialize npm audit receipt
+        shell: bash
+        env:
+          AUDIT_ENGINE_SHA: \${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: \${{ inputs.subject_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p security-audit-results/npm/lockfiles
+          {
+            echo "schema=luminous.security-audit.npm-receipt.v1"
+            echo "repository=\${GITHUB_REPOSITORY}"
+            echo "subject_sha=$(git rev-parse HEAD)"
+            echo "caller_workflow_ref=\${GITHUB_WORKFLOW_REF}"
+            echo "caller_workflow_sha=\${GITHUB_WORKFLOW_SHA:-unknown}"
+            echo "declared_audit_engine_sha=$AUDIT_ENGINE_SHA"
+            echo "run_id=\${GITHUB_RUN_ID}"
+            echo "run_attempt=\${GITHUB_RUN_ATTEMPT}"
+            echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "npm_status=INCOMPLETE"
+            echo "incomplete_reason=setup_or_audit_not_completed"
+          } > security-audit-results/npm/summary.txt
+          if [[ ! "$AUDIT_ENGINE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            sed -i 's/^npm_status=.*/npm_status=FAIL/' security-audit-results/npm/summary.txt
+            echo "incomplete_reason=invalid_audit_engine_sha" >> security-audit-results/npm/summary.txt
+            exit 2
+          fi
+      - name: Install pinned Node.js LTS runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Audit tracked npm lockfiles without installing project code
+        shell: bash
+        run: |
+          set -euo pipefail
+          workspace="$GITHUB_WORKSPACE"
+          result_root="$workspace/security-audit-results/npm"
+          mapfile -t lockfiles < <(
+            {
+              git ls-files -- 'package-lock.json' '**/package-lock.json'
+              git ls-files -- 'npm-shrinkwrap.json' '**/npm-shrinkwrap.json'
+            } | LC_ALL=C sort -u
+          )
+          echo "node=$(node --version)" >> "$result_root/summary.txt"
+          echo "npm=$(npm --version)" >> "$result_root/summary.txt"
+          echo "lockfile_count=\${#lockfiles[@]}" >> "$result_root/summary.txt"
+          npm_failed=0
+
+          if [[ "\${#lockfiles[@]}" -eq 0 ]]; then
+            npm_failed=1
+            sed -i 's/^npm_status=.*/npm_status=FAIL/' "$result_root/summary.txt"
+            echo "incomplete_reason=no_tracked_npm_lockfiles" >> "$result_root/summary.txt"
+            echo "FAIL: audit_node=true but no tracked package-lock.json or npm-shrinkwrap.json was found."
+          else
+            sed -i 's/^npm_status=.*/npm_status=RUNNING/' "$result_root/summary.txt"
+            sed -i '/^incomplete_reason=setup_or_audit_not_completed$/d' "$result_root/summary.txt"
+          fi
+
+          cd "$RUNNER_TEMP"
+          : > "$RUNNER_TEMP/npm-audit-userconfig"
+          : > "$RUNNER_TEMP/npm-audit-globalconfig"
+          for lockfile in "\${lockfiles[@]}"; do
+            lock_dir="$(dirname -- "$lockfile")"
+            if [[ "$lock_dir" == "." ]]; then
+              manifest="package.json"
+              project_dir="$workspace"
+            else
+              manifest="$lock_dir/package.json"
+              project_dir="$workspace/$lock_dir"
+            fi
+            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
+            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
+            report="$result_root/lockfiles/\${report_id}_$path_hash.json"
+            stderr="$result_root/lockfiles/\${report_id}_$path_hash.stderr"
+            lock_abs="$workspace/$lockfile"
+
+            if ! git -C "$workspace" ls-files --error-unmatch -- "$manifest" >/dev/null 2>&1 || [[ ! -f "$workspace/$manifest" ]]; then
+              echo '{"error":"lockfile_has_no_tracked_sibling_package_json"}' > "$report"
+              echo "lockfile=$lockfile manifest=$manifest outcome=FAIL reason=package_manifest_missing" >> "$result_root/summary.txt"
+              npm_failed=1
+              continue
+            fi
+
+            lock_sha="$(sha256sum "$lock_abs" | cut -d' ' -f1)"
+            manifest_sha="$(sha256sum "$workspace/$manifest" | cut -d' ' -f1)"
+            rc=0
+            if npm --prefix "$project_dir" audit \
+              --package-lock-only \
+              --audit-level=high \
+              --registry=https://registry.npmjs.org/ \
+              --userconfig="$RUNNER_TEMP/npm-audit-userconfig" \
+              --globalconfig="$RUNNER_TEMP/npm-audit-globalconfig" \
+              --json > "$report" 2> "$stderr"; then
+              rc=0
+            else
+              rc=$?
+              npm_failed=1
+            fi
+            if [[ "$rc" -eq 0 ]]; then outcome="PASS"; else outcome="FAIL"; fi
+            if [[ -f "$report" ]]; then report_sha="$(sha256sum "$report" | cut -d' ' -f1); else report_sha="missing"; npm_failed=1; fi
+            if [[ -f "$stderr" ]]; then stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1); else stderr_sha="missing"; npm_failed=1; fi
+            printf 'lockfile=%s lockfile_sha256=%s manifest=%s manifest_sha256=%s exit_code=%s outcome=%s report_sha256=%s stderr_sha256=%s\n' \
+              "$lockfile" "$lock_sha" "$manifest" "$manifest_sha" "$rc" "$outcome" "$report_sha" "$stderr_sha" \
+              >> "$result_root/summary.txt"
+          done
+
+          if [[ "$npm_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
+          sed -i "s/^npm_status=.*/npm_status=$overall/" "$result_root/summary.txt"
+          echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
+          cat "$result_root/summary.txt"
+          [[ "$overall" == "PASS" ]]
+      - name: Ensure npm evidence receipt exists
+        if: always()
+        shell: bash
+        env:
+          AUDIT_ENGINE_SHA: \${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: \${{ inputs.subject_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p security-audit-results/npm/lockfiles
+          summary="security-audit-results/npm/summary.txt"
+          if [[ ! -f "$summary" ]]; then
+            {
+              echo "schema=luminous.security-audit.npm-receipt.v1"
+              echo "repository=\${GITHUB_REPOSITORY}"
+              echo "subject_sha=$SUBJECT_SHA"
+              echo "caller_workflow_ref=\${GITHUB_WORKFLOW_REF}"
+              echo "caller_workflow_sha=\${GITHUB_WORKFLOW_SHA:-unknown}"
+              echo "declared_audit_engine_sha=$AUDIT_ENGINE_SHA"
+              echo "run_id=\${GITHUB_RUN_ID}"
+              echo "run_attempt=\${GITHUB_RUN_ATTEMPT}"
+              echo "npm_status=INCOMPLETE"
+              echo "incomplete_reason=checkout_or_receipt_initialization_failed"
+            } > "$summary"
+          fi
+      - name: Upload npm audit evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: security-audit-\${{ github.event.repository.name }}-\${{ inputs.subject_sha }}-npm
+          path: security-audit-results/npm/
+          if-no-files-found: error
+          retention-days: 14
+
