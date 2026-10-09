@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/security-audit/verdict-v1.schema.json",
+  "title": "Luminous Security Audit Aggregate Verdict v1",
+  "description": "Producer-side aggregate result for one exact GitHub Actions audit run. This schema does not authenticate the workflow or establish an independent trust root.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "repository",
+    "subject_sha",
+    "audit_engine_sha",
+    "run_id",
+    "run_attempt",
+    "workflow_job_result",
+    "rustsec_job_result",
+    "npm_job_result",
+    "required_lanes",
+    "findings_below_block_threshold",
+    "status",
+    "failure_reasons",
+    "evidence_files"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous.security-audit.verdict.v1"
+    },
+    "repository": {
+      "type": "string",
+      "pattern": "^[^/]+/[^/]+$"
+    },
+    "subject_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "audit_engine_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    },
+    "run_attempt": {
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    },
+    "workflow_job_result": {
+      "enum": [
+        "success",
+        "failure",
+        "cancelled",
+        "skipped"
+      ]
+    },
+    "rustsec_job_result": {
+      "enum": [
+        "success",
+        "failure",
+        "cancelled",
+        "skipped"
+      ]
+    },
+    "npm_job_result": {
+      "enum": [
+        "success",
+        "failure",
+        "cancelled",
+        "skipped"
+      ]
+    },
+    "required_lanes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workflow_security",
+        "rustsec",
+        "npm"
+      ],
+      "properties": {
+        "workflow_security": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "INCOMPLETE"
+          ]
+        },
+        "rustsec": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "INCOMPLETE",
+            "SKIPPED_NOT_REQUESTED"
+          ]
+        },
+        "npm": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "INCOMPLETE",
+            "SKIPPED_NOT_REQUESTED"
+          ]
+        }
+      }
+    },
+    "findings_below_block_threshold": {
+      "type": "boolean"
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "PASS_WITH_FINDINGS",
+        "FAIL",
+        "INCOMPLETE"
+      ]
+    },
+    "failure_reasons": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence_files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    }
+  }
+}
