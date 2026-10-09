@@ -13,7 +13,7 @@ This package is the deliberately narrow public payload for the first proposed My
 
 ## Privacy and trust boundary
 
-The payload intentionally excludes free-form text, ticket titles, customer names, hostnames, external provider IDs, credentials, raw diagnostics, screen/audio, and raw evidence. Use `validator.py` for application-side schema and cross-field checks; bare JSON Schema validation alone cannot enforce uniqueness of `manifestRef` across objects that differ in other fields. The local PostgreSQL service must resolve opaque references only under authenticated tenant/connection context.
+The payload intentionally excludes free-form text, ticket titles, customer names, hostnames, external provider IDs, credentials, raw diagnostics, screen/audio, and raw evidence. Use `validator.py` for application-side schema and cross-field checks; bare JSON Schema validation alone cannot enforce uniqueness of `manifestRef` across objects that differ in other fields. The semantic layer normalizes UUIDs before rejecting self-referential disputes/supersessions, and error messages report a failing rule/path without echoing untrusted values. The local PostgreSQL service must resolve opaque references only under authenticated tenant/connection context.
 
 The `issuerRoleClaim`, `issuedAt`, `assessmentClaim`, `approvedForDht`, and `policyRef` fields are claims or references—not proof that a participant is entitled to publish a record. The publishing adapter must enforce actual authenticated identity, tenant/customer sharing policy, and the approval requirement before invoking Holochain. The integrity zome should validate structural/domain invariants and any deterministic trust dependencies available within the DNA.
 
@@ -42,4 +42,4 @@ python3 -m venv /tmp/holochain-attestation-contract-venv
 PYTHONDONTWRITEBYTECODE=1 /tmp/holochain-attestation-contract-venv/bin/python -m unittest discover -s contracts/holochain-attestation-v1/tests -p 'test_*.py' -v
 ```
 
-The test suite validates contract shape, conditional record semantics, and deliberate rejection of extra fields. It does **not** test Holochain zome validation, multi-agent DHT propagation, identity/membership binding, privacy of network metadata, PostgreSQL/outbox recovery, or production readiness. Those require a selected hApp and a compatible pinned conductor/toolchain.
+The test suite defines 19 positive/adversarial test functions covering schema shape, conditional record semantics, case-insensitive UUID self-reference, duplicate manifest IDs, malformed input, and error-value redaction. It does **not** test Holochain zome validation, multi-agent DHT propagation, identity/membership binding, privacy of network metadata, PostgreSQL/outbox recovery, or production readiness. Those require a selected hApp and a compatible pinned conductor/toolchain.
