@@ -51,7 +51,9 @@ def active_candidate() -> dict:
 "source_authority_checked",
             "schema_validated",
             "duplicate_codes_checked",
-            "effective_dates_checked"
+            "effective_dates_checked",
+            "sampled_against_source",
+            "independent_review"
         ],
         "reviewed_at": "2026-10-09T00:10:00Z",
         "reviewer_id": "fixture:reviewer",
@@ -82,6 +84,36 @@ class CodeListManifestSemanticTests(unittest.TestCase):
         self.assertTrue(report["semantic_valid"], report["errors"])
         self.assertTrue(report["activation_eligible"])
         self.assertEqual(report["result"], "ACTIVE_DECLARATION_ELIGIBLE_FOR_RUNTIME_VERIFICATION")
+
+    def test_active_registry_is_rejected_without_independent_review(self):
+        document = active_candidate()
+        document["validation"]["checks"].remove("independent_review")
+        report = self.validate(document)
+        self.assertFalse(report["structural_valid"])
+        self.assertFalse(report["activation_eligible"])
+        self.assertTrue(any("independent_review" in error for error in report["errors"]))
+
+    def test_active_registry_is_rejected_without_source_sampling(self):
+        document = active_candidate()
+        document["validation"]["checks"].remove("sampled_against_source")
+        report = self.validate(document)
+        self.assertFalse(report["structural_valid"])
+        self.assertFalse(report["activation_eligible"])
+        self.assertTrue(any("sampled_against_source" in error for error in report["errors"]))
+
+    def test_semantic_layer_rejects_nonpassed_status_even_if_schema_is_relaxed(self):
+        document = active_candidate()
+        document["validation"]["status"] = "stale"
+        relaxed_schema = copy.deepcopy(SCHEMA)
+        active = next(
+            condition for condition in relaxed_schema["allOf"]
+            if condition.get("if", {}).get("properties", {}).get("metadata", {}).get("properties", {}).get("status", {}).get("const") == "active"
+        )
+        del active["then"]["properties"]["validation"]["properties"]["status"]["const"]
+        report = validate_manifest(document, schema=relaxed_schema, now=NOW)
+        self.assertFalse(report["semantic_valid"])
+        self.assertFalse(report["activation_eligible"])
+        self.assertTrue(any("require a passed validation report" in error for error in report["errors"]))
 
     def test_active_manifest_past_review_deadline_is_rejected(self):
         document = active_candidate()
