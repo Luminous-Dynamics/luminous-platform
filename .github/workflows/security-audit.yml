@@ -118,6 +118,119 @@ jobs:
             echo "lockfile_count=${#lockfiles[@]}"
           } >> "$result_root/summary.txt"
 
+          failed=0
+          # Prove tracked Cargo manifests map to tracked workspace lockfiles.
+          # This is intentionally separate from cargo-audit: scanner coverage
+          # must be evidenced, not inferred from finding some lockfiles.
+          if python3 - "$workspace" "$result_root/manifest-coverage.json" <<'PY'
+          import json
+          import subprocess
+          import sys
+          import tomllib
+          from pathlib import Path
+
+          repo = Path(sys.argv[1]).resolve()
+          output = Path(sys.argv[2])
+
+          def tracked(patterns):
+              args = ["git", "ls-files", "-z", "--", *patterns]
+              raw = subprocess.check_output(args, cwd=repo)
+              return sorted(set(x.decode() for x in raw.split(b"\\0") if x))
+
+          manifests = tracked(["Cargo.toml", "**/Cargo.toml"])
+          lockfiles = set(tracked(["Cargo.lock", "**/Cargo.lock"]))
+          parsed = {}
+          parse_errors = {}
+
+          for rel in manifests:
+              path = repo / rel
+              try:
+                  with path.open("rb") as fh:
+                      parsed[rel] = tomllib.load(fh)
+              except Exception as exc:
+                  parse_errors[rel] = f"{type(exc).__name__}: {exc}"
+
+          def workspace_root_for(rel):
+              manifest = repo / rel
+              data = parsed.get(rel, {})
+              if "workspace" in data:
+                  return manifest.parent
+              explicit = data.get("package", {}).get("workspace")
+              if explicit:
+                  return (manifest.parent / explicit).resolve()
+              parent = manifest.parent.parent
+              while parent == repo or repo in parent.parents:
+                  parent_manifest = parent / "Cargo.toml"
+                  parent_rel = parent_manifest.relative_to(repo).as_posix()
+                  if parent_rel in parsed and "workspace" in parsed[parent_rel]:
+                      return parent
+                  if parent == repo:
+                      break
+                  parent = parent.parent
+              return manifest.parent
+
+          entries = []
+          for rel in manifests:
+              if rel in parse_errors:
+                  entries.append({
+                      "manifest": rel, "status": "INCOMPLETE",
+                      "reason": "manifest_parse_error", "detail": parse_errors[rel]
+                  })
+                  continue
+              root = workspace_root_for(rel)
+              try:
+                  root_rel = root.relative_to(repo).as_posix()
+              except ValueError:
+                  entries.append({
+                      "manifest": rel, "status": "FAIL",
+                      "reason": "workspace_outside_checkout"
+                  })
+                  continue
+              lock_rel = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
+              tracked_lock = lock_rel in lockfiles
+              exists = (repo / lock_rel).is_file()
+              entries.append({
+                  "manifest": rel,
+                  "workspace_root": root_rel,
+                  "expected_lockfile": lock_rel,
+                  "lockfile_tracked": tracked_lock,
+                  "lockfile_exists": exists,
+                  "status": "PASS" if tracked_lock and exists else "FAIL",
+                  "reason": None if tracked_lock and exists else "workspace_lockfile_missing_or_untracked"
+              })
+
+          failures = [e for e in entries if e["status"] != "PASS"]
+          report = {
+              "schema": "luminous.security-audit.manifest-coverage.v1",
+              "repository_path": ".",
+              "manifest_count": len(manifests),
+              "tracked_lockfile_count": len(lockfiles),
+              "mapped_manifest_count": sum(e["status"] == "PASS" for e in entries),
+              "failure_count": len(failures),
+              "status": "PASS" if manifests and not failures else "FAIL",
+              "limitations": [
+                  "Only Cargo.toml and Cargo.lock files tracked by the audited Git checkout are included.",
+                  "Git submodule contents require a separate submodule-aware audit."
+              ],
+              "entries": entries
+          }
+          output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n")
+          print(f"Manifest coverage: {report['status']} "
+                f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
+                f"{report['tracked_lockfile_count']} tracked lockfiles)")
+          for entry in failures:
+              print(f"UNCOVERED: {entry}")
+          if report["status"] != "PASS":
+              sys.exit(1)
+          PY
+          then
+            coverage_status="PASS"
+          else
+            coverage_status="FAIL"
+            failed=1
+          fi
+          echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
+
           # RustSec explicitly recommends reading untrusted lockfiles from
           # outside the checked-out project directory so project-local Cargo
           # configuration cannot influence the audit invocation.
