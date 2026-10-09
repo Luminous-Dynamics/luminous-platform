@@ -53,6 +53,7 @@ Consumers MUST additionally:
 - same business effect received under a different delivery ID;
 - tenant/source/actor binding failures;
 - source-system and resource-type mismatch;
+- malformed runtime source and summary values rejected before mapping/string operations;
 - forged tenant/resource pairings and unmapped source-company rejection; and
 - idempotency-key scope separation across tenants.
 
