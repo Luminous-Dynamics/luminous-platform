@@ -135,8 +135,10 @@
           "additionalProperties": false,
           "required": [
             "order_unit_code",
+            "order_unit_code_system",
             "units_per_pack",
-            "each_unit_code"
+            "each_unit_code",
+            "each_unit_code_system"
           ],
           "properties": {
             "order_unit_code": {
@@ -160,12 +162,56 @@
               "minLength": 1,
               "maxLength": 80
             },
-            "unit_code_system": {
+            "order_unit_code_system": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 120
+              "maxLength": 500,
+              "format": "uri",
+              "description": "URI identifying the unit/package code system; use a stable public code-list URI or a controlled supplier namespace URI."
+            },
+            "each_unit_code_system": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "format": "uri",
+              "description": "URI identifying the unit code system for the contents of a pack."
+            },
+            "each_quantity_unit_code_system": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "format": "uri",
+              "description": "Required with each_quantity_unit_code when each_quantity is supplied."
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "each_quantity_unit_code"
+                ]
+              },
+              "then": {
+                "required": [
+                  "each_quantity_unit_code_system",
+                  "each_quantity"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "each_quantity"
+                ]
+              },
+              "then": {
+                "required": [
+                  "each_quantity_unit_code",
+                  "each_quantity_unit_code_system"
+                ]
+              }
+            }
+          ]
         },
         "substitution_policy": {
           "enum": [
@@ -193,7 +239,8 @@
             "amount",
             "currency",
             "per_quantity",
-            "per_unit_code"
+            "per_unit_code",
+            "per_unit_code_system"
           ],
           "properties": {
             "amount": {
@@ -209,6 +256,13 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 80
+            },
+            "per_unit_code_system": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "format": "uri",
+              "description": "Code system for per_unit_code; must match the product order unit code system unless an explicit reviewed conversion exists."
             }
           }
         },
@@ -381,6 +435,13 @@
             "days",
             "weeks"
           ]
+        },
+        "quantity_unit_code_system": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "format": "uri",
+          "description": "Code system for quantity_unit_code."
         }
       }
     },
