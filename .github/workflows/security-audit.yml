@@ -1208,7 +1208,7 @@ jobs:
               return type(value) is int and value >= 0
 
           def valid_report(payload):
-              if not isinstance(payload, dict) or not nonnegative_int(payload.get("auditReportVersion")):
+              if not isinstance(payload, dict) or type(payload.get("auditReportVersion")) is not int or payload.get("auditReportVersion") != 2:
                   return False
               vulnerabilities = payload.get("vulnerabilities")
               metadata = payload.get("metadata")
