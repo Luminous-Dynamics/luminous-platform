@@ -323,6 +323,7 @@ jobs:
           history_fixture="$RUNNER_TEMP/gitleaks-history-fixture"
           history_fixture_current="$RUNNER_TEMP/gitleaks-history-fixture-current"
           history_fixture_config="$RUNNER_TEMP/gitleaks-history-fixture.toml"
+          history_fixture_paths="$RUNNER_TEMP/gitleaks-history-fixture-paths.nul"
           history_fixture_tree_report="$RUNNER_TEMP/gitleaks-history-fixture-tree.json"
           history_fixture_git_report="$RUNNER_TEMP/gitleaks-history-fixture-git.json"
           rm -rf -- "$history_fixture" "$history_fixture_current"
@@ -342,8 +343,9 @@ jobs:
           regex = '''LUMINOUS_HISTORY_SECRET_FIXTURE_[A-F0-9]{32}'''
           keywords = ["LUMINOUS_HISTORY_SECRET_FIXTURE_"]
           TOML
+          printf '%s\n' 'Tracked clean file.' > "$history_fixture/clean.txt"
           printf '%s\n' 'LUMINOUS_HISTORY_SECRET_FIXTURE_0123456789ABCDEF0123456789ABCDEF' > "$history_fixture/retired.txt"
-          if ! git -C "$history_fixture" add retired.txt \
+          if ! git -C "$history_fixture" add clean.txt retired.txt \
             || ! git -C "$history_fixture" commit -qm "add synthetic history-only canary"; then
             incomplete gitleaks_history_fixture_commit_failed; exit 0
           fi
@@ -352,7 +354,14 @@ jobs:
             || ! git -C "$history_fixture" commit -qm "remove synthetic history-only canary"; then
             incomplete gitleaks_history_fixture_delete_commit_failed; exit 0
           fi
-          printf '%s\n' 'No secret remains in this current-tree fixture.' > "$history_fixture_current/clean.txt"
+          if ! git -C "$history_fixture" ls-files -z --cached > "$history_fixture_paths" \
+            || ! (cd "$history_fixture" && tar --null --verbatim-files-from --no-recursion --files-from="$history_fixture_paths" -cf -) \
+              | tar -xf - -C "$history_fixture_current"; then
+            incomplete gitleaks_history_fixture_current_snapshot_failed; exit 0
+          fi
+          if [[ -f "$history_fixture_current/retired.txt" || ! -f "$history_fixture_current/clean.txt" ]]; then
+            incomplete gitleaks_history_fixture_current_snapshot_invalid; exit 0
+          fi
           if ! env -i PATH="$PATH" HOME="$home_dir" GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null "$binary" dir "$history_fixture_current" --config "$history_fixture_config" --gitleaks-ignore-path "$empty_ignore" --redact=100 --no-banner --log-level error --report-format json --report-path "$history_fixture_tree_report" --timeout 120 > /dev/null 2> "$RUNNER_TEMP/gitleaks-history-fixture-tree.log"; then
             incomplete gitleaks_history_fixture_tree_scan_failed; exit 0
           fi
