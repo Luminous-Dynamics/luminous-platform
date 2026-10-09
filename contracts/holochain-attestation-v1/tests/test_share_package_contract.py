@@ -36,6 +36,11 @@ class HolochainSharePackageContractTests(unittest.TestCase):
     def test_synthetic_fixture_is_valid(self) -> None:
         self.assertEqual([], self.errors(self.fixture))
 
+    def test_malformed_record_type_is_rejected_without_validator_crash(self) -> None:
+        event = copy.deepcopy(self.fixture)
+        event["recordType"] = ["dispute"]
+        self.assertTrue(self.errors(event))
+
     def test_rejects_unrecognized_free_text_or_ticket_fields(self) -> None:
         event = copy.deepcopy(self.fixture)
         event["ticketDescription"] = "synthetic customer details"
