@@ -800,6 +800,8 @@ mod tests {
     #[test]
     fn documented_credit_note_reduces_actual_costs_without_hidden_rebate_math() {
         let mut candidate = input();
+        candidate.baseline_coverage.considered_categories.push("supplier-credit".into());
+        candidate.actual_coverage.considered_categories.push("supplier-credit".into());
         candidate.actual_costs.push(cost("supplier-credit", "30.00", EvidenceKind::CreditNote));
         let report = calculate_savings(&candidate).unwrap();
         assert_eq!(report.actual_total, "1100");
