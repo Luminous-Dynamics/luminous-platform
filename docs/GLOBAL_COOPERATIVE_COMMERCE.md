@@ -98,8 +98,10 @@ Use recognized product identifiers such as GTIN where available, while allowing 
 A product identity must be distinct from a supplier's offer. Keep at least:
 - product and variant identity;
 - brand, model, grade, and specification where relevant;
-- pack count and contents;
-- unit of measure and permissible conversions;
+- pack count and contents, keeping commercial packaging units distinct from physical measurement units;
+- an explicit code-system URI for every order unit, content unit, price unit, and observed-stock unit;
+- unit of measure and permissible conversions, with conversions defined and reviewed rather than inferred from matching labels;
+- use UN/CEFACT Recommendation 20 for suitable measurement units and Recommendation 21 for packaging types where their code lists fit; retain vendor-defined units only under an explicit, issuer-scoped code-system URI;
 - origin/manufacturer claims where supported;
 - identifiers and their issuers;
 - source, license, observation time, and confidence for catalog attributes.
@@ -291,6 +293,8 @@ Do not start with a token, a proprietary payment rail, a warehouse, a global cor
 - [OpenPeppol — BIS Billing 3.0](https://docs.peppol.eu/poacc/billing/3.0/bis/)
 - [GS1 — Global Traceability Standard](https://www.gs1.org/standards/gs1-global-traceability-standard/current-standard)
 - [GS1 — EPCIS and Core Business Vocabulary](https://www.gs1.org/standards/epcis)
+- [SIX — ISO 4217 currency-code maintenance and current/historical lists](https://www.six-group.com/en/products-services/financial-information/market-reference-data/data-standards.html) — code-list source, not a settlement provider.
+- [UNECE — Code-list Recommendations, including Recommendations 20 and 21](https://unece.org/code-list-recommendations) — measurement and package-type vocabularies for trade.
 - [OECD — International VAT/GST Guidelines](https://www.oecd.org/en/publications/international-vat-gst-guidelines_9789264271401-en.html)
 - [OECD — The Role of Digital Platforms in the Collection of VAT/GST on Online Sales](https://www.oecd.org/en/publications/the-role-of-digital-platforms-in-the-collection-of-vat-gst-on-online-sales_e0e2dd2d-en.html)
 - [OpenAPI Specification](https://spec.openapis.org/oas/)
