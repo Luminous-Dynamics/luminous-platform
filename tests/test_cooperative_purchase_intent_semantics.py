@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import rfc8785  # noqa: E402
 
 from validate_cooperative_purchase_intent import (  # noqa: E402
+    consent_scope_sha256,
     purchase_scope_payload,
     purchase_scope_sha256,
     validate_intent,
@@ -37,6 +38,7 @@ def binding_order_candidate() -> dict:
     document = copy.deepcopy(FIXTURE)
     document["metadata"]["state"] = "binding_order"
     document["metadata"]["idempotency_key"] = "fixture-once-only-key-000001"
+    document["demand"]["product_reference"]["offer_specification_sha256"] = "e" * 64
     document["accepted_offer"] = {
         "offer_id": "fixture:offer:001",
         "revision": 1,
@@ -112,6 +114,21 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
         self.assertEqual(rfc8785.dumps(payload), rfc8785.dumps(reordered_payload))
         self.assertEqual(rfc8785.dumps({"b": 2, "a": 1}), b'{"a":1,"b":2}')
         self.assertEqual(purchase_scope_sha256(document), hashlib.sha256(rfc8785.dumps(payload)).hexdigest())
+
+    def test_changed_consent_scope_invalidates_purchase_authorization(self):
+        document = binding_order_candidate()
+        document["sharing"]["shareable_fields"].append("destination_region")
+        document["sharing"]["consent"]["scope_sha256"] = consent_scope_sha256(document)
+        report = self.validate(document)
+        self.assertFalse(report["semantic_valid"])
+        self.assertTrue(any("canonical purchase-scope projection" in error for error in report["errors"]))
+
+    def test_binding_order_product_specification_digest_is_pinned(self):
+        document = binding_order_candidate()
+        del document["demand"]["product_reference"]["offer_specification_sha256"]
+        report = self.validate(document)
+        self.assertFalse(report["structural_valid"])
+        self.assertTrue(any("offer_specification_sha256" in error for error in report["errors"]))
 
     def test_changed_quantity_invalidates_previously_authorized_scope_digest(self):
         document = binding_order_candidate()
