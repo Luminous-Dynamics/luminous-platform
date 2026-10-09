@@ -562,7 +562,7 @@ jobs:
                 rc=$?
                 rustsec_failed=1
               fi
-              if report_stats="$(python3 - "$report" <<'PY'
+              if python3 - "$report" <<'PY'
           import copy
           import json
           import sys
@@ -644,28 +644,607 @@ jobs:
           if not valid_report(payload):
               print("cargo-audit report does not match the expected JSON schema/invariants", file=sys.stderr)
               raise SystemExit(1)
-          print("{}\t{}".format(payload["vulnerabilities"]["count"], sum(len(items) for items in payload["warnings"].values())))
+          print("cargo-audit JSON schema and consistency checks passed")
           PY
-              )"; then
-              report_parse_status="PASS"
-              IFS=$'\t' read -r npm_findings_total npm_info npm_low npm_moderate npm_high npm_critical <<< "$report_stats"
+              then
+                report_parse_status="PASS"
+              else
+                report_parse_status="FAIL"
+                rustsec_failed=1
+              fi
+              printf 'report_parse_status=%s lockfile=%s\n' "$report_parse_status" "$lockfile" >> "$result_root/summary.txt"
+              if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" ]]; then outcome="PASS"; else outcome="FAIL"; fi
+              if [[ -f "$report" ]]; then
+                report_sha256="$(sha256sum "$report" | cut -d' ' -f1)"
+              else
+                report_sha256="missing"
+                rustsec_failed=1
+              fi
+              if [[ -f "$stderr" ]]; then
+                stderr_sha256="$(sha256sum "$stderr" | cut -d' ' -f1)"
+              else
+                stderr_sha256="missing"
+                rustsec_failed=1
+              fi
+              printf 'lockfile=%s lockfile_sha256=%s exit_code=%s outcome=%s report_sha256=%s stderr_sha256=%s\n' \
+                "$lockfile" "$lock_sha256" "$rc" "$outcome" "$report_sha256" "$stderr_sha256" \
+                >> "$result_root/summary.txt"
+            done
+          fi
+
+          if python3 - "$workspace" "$result_root/manifest-coverage.json" "$verified_file" "$inventory_file" <<'PY'
+          import json
+          import subprocess
+          import sys
+          import tomllib
+          from pathlib import Path
+
+          repo = Path(sys.argv[1]).resolve()
+          output = Path(sys.argv[2])
+          verified_file = Path(sys.argv[3])
+          inventory_file = Path(sys.argv[4])
+
+          def git_output(root, *args):
+              return subprocess.check_output(["git", *args], cwd=root)
+
+          def tracked(root, patterns):
+              raw = git_output(root, "ls-files", "-z", "--", *patterns)
+              return sorted(set(item.decode() for item in raw.split(bytes([0])) if item))
+
+          def gitlinks(root):
+              raw = git_output(root, "ls-files", "--stage", "-z")
+              found = []
+              for record in raw.split(bytes([0])):
+                  if not record:
+                      continue
+                  metadata, path_bytes = record.split(bytes([9]), 1)
+                  fields = metadata.split()
+                  if fields and fields[0] == b"160000":
+                      found.append((path_bytes.decode(), fields[1].decode()))
+              return found
+
+          def declared_submodule_paths(root):
+              if not (root / ".gitmodules").is_file():
+                  return []
+              try:
+                  raw = git_output(root, "config", "-f", ".gitmodules", "--get-regexp", "^submodule[.].*[.]path$")
+              except subprocess.CalledProcessError:
+                  return []
+              result = []
+              for line in raw.decode().splitlines():
+                  parts = line.split(None, 1)
+                  if len(parts) == 2:
+                      result.append(parts[1])
+              return sorted(set(result))
+
+          def prefixed(prefix, path):
+              return f"{prefix}/{path}" if prefix else path
+
+          roots = [("", repo)]
+          root_links = dict(gitlinks(repo))
+          declared_paths = declared_submodule_paths(repo)
+          verified_paths = [line.strip() for line in verified_file.read_text().splitlines() if line.strip()]
+          scanned_lockfiles = set(line.strip() for line in inventory_file.read_text().splitlines() if line.strip())
+          unaudited_submodules = []
+
+          summary = (output.parent / "summary.txt").read_text()
+          submodule_status = next((line.split("=", 1)[1] for line in summary.splitlines() if line.startswith("submodule_audit_status=")), "INCOMPLETE")
+          if submodule_status not in ("PASS", "NOT_REQUIRED"):
+              reason = next((line.split("=", 1)[1] for line in summary.splitlines() if line.startswith("submodule_audit_reason=")), "unknown")
+              unaudited_submodules.append(f"submodule_initialization:{submodule_status}:{reason}")
+
+          for path in declared_paths:
+              if path not in root_links:
+                  unaudited_submodules.append(f"{path}:declared_path_without_gitlink")
+          for path in root_links:
+              if path not in declared_paths:
+                  unaudited_submodules.append(f"{path}:gitlink_without_gitmodules_entry")
+
+          for path in verified_paths:
+              expected_sha = root_links.get(path)
+              relative = Path(path)
+              if expected_sha is None or relative.is_absolute() or ".." in relative.parts or "." in relative.parts:
+                  unaudited_submodules.append(f"{path}:invalid_or_untracked_gitlink")
+                  continue
+              module_root = (repo / relative).resolve()
+              if repo not in module_root.parents or not module_root.is_dir():
+                  unaudited_submodules.append(f"{path}:outside_checkout_or_missing")
+                  continue
+              try:
+                  actual_root = Path(git_output(module_root, "rev-parse", "--show-toplevel").decode().strip()).resolve()
+                  actual_sha = git_output(module_root, "rev-parse", "HEAD").decode().strip()
+              except subprocess.CalledProcessError:
+                  unaudited_submodules.append(f"{path}:not_a_git_checkout")
+                  continue
+              if actual_root != module_root or actual_sha != expected_sha:
+                  unaudited_submodules.append(f"{path}:checkout_does_not_match_gitlink")
+                  continue
+              roots.append((path, module_root))
+
+          entries = []
+          discovered_lockfiles = set()
+          for prefix, checkout in roots:
+              manifests = tracked(checkout, ["Cargo.toml", "**/Cargo.toml"])
+              local_lockfiles = set(tracked(checkout, ["Cargo.lock", "**/Cargo.lock"]))
+              discovered_lockfiles.update(prefixed(prefix, path) for path in local_lockfiles)
+              parsed = {}
+              parse_errors = {}
+              for rel in manifests:
+                  try:
+                      with (checkout / rel).open("rb") as fh:
+                          parsed[rel] = tomllib.load(fh)
+                  except Exception as exc:
+                      parse_errors[rel] = f"{type(exc).__name__}: {exc}"
+
+              def workspace_root(rel):
+                  manifest = checkout / rel
+                  data = parsed.get(rel, {})
+                  if "workspace" in data:
+                      return manifest.parent
+                  explicit = data.get("package", {}).get("workspace")
+                  if explicit:
+                      return (manifest.parent / explicit).resolve()
+                  parent = manifest.parent.parent
+                  while parent == checkout or checkout in parent.parents:
+                      parent_rel = (parent / "Cargo.toml").relative_to(checkout).as_posix()
+                      if parent_rel in parsed and "workspace" in parsed[parent_rel]:
+                          return parent
+                      if parent == checkout:
+                          break
+                      parent = parent.parent
+                  return manifest.parent
+
+              for rel in manifests:
+                  name = prefixed(prefix, rel)
+                  if rel in parse_errors:
+                      entries.append({"manifest": name, "status": "INCOMPLETE", "reason": parse_errors[rel]})
+                      continue
+                  try:
+                      root = workspace_root(rel)
+                      root_rel = root.relative_to(checkout).as_posix()
+                  except (ValueError, OSError):
+                      entries.append({"manifest": name, "status": "FAIL", "reason": "workspace_outside_checkout"})
+                      continue
+                  lock = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
+                  exists = lock in local_lockfiles and (checkout / lock).is_file()
+                  entries.append({
+                      "manifest": name,
+                      "workspace_root": prefixed(prefix, root_rel),
+                      "expected_lockfile": prefixed(prefix, lock),
+                      "lockfile_tracked": exists,
+                      "status": "PASS" if exists else "FAIL",
+                      "reason": None if exists else "workspace_lockfile_missing_or_untracked"
+                  })
+
+              if prefix:
+                  for nested_path, _sha in gitlinks(checkout):
+                      unaudited_submodules.append(f"{prefix}/{nested_path}:nested_submodule_not_initialized")
+
+          mismatch = sorted(discovered_lockfiles.symmetric_difference(scanned_lockfiles))
+          unaudited_submodules.extend(f"lockfile_inventory_mismatch:{path}" for path in mismatch)
+          failures = [entry for entry in entries if entry["status"] != "PASS"]
+          report = {
+              "schema": "luminous.security-audit.manifest-coverage.v1",
+              "repository": str(repo),
+              "manifest_count": len(entries),
+              "tracked_lockfile_count": len(discovered_lockfiles),
+              "scanned_lockfile_count": len(scanned_lockfiles),
+              "mapped_manifest_count": sum(entry["status"] == "PASS" for entry in entries),
+              "manifest_failure_count": len(failures),
+              "verified_direct_submodule_count": len(roots) - 1,
+              "unaudited_submodules": sorted(set(unaudited_submodules)),
+              "lockfile_inventory_mismatch": mismatch,
+              "failure_count": len(failures) + len(set(unaudited_submodules)),
+              "status": "PASS" if entries and not failures and not unaudited_submodules and discovered_lockfiles == scanned_lockfiles else "FAIL",
+              "limitations": [
+                  "Tracked Cargo manifests and lockfiles in the root repository and verified direct submodules are inventoried.",
+                  "Cargo package resolution is not completely reconstructed; nested submodules fail closed.",
+                  "Non-Rust dependency systems are outside this RustSec coverage report."
+              ],
+              "lockfiles_to_audit": sorted(scanned_lockfiles),
+              "entries": entries
+          }
+          output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
+          print(f"Manifest coverage: {report['status']} ({report['mapped_manifest_count']}/{report['manifest_count']} mapped manifests; {report['scanned_lockfile_count']} scanned lockfiles; {report['verified_direct_submodule_count']} direct submodules)")
+          for entry in failures:
+              print(f"UNCOVERED: {entry}")
+          for submodule in report["unaudited_submodules"]:
+              print(f"SUBMODULE_UNAUDITED: {submodule}")
+          if report["status"] != "PASS":
+              sys.exit(1)
+          PY
+          then
+            coverage_status="PASS"
+          else
+            coverage_status="FAIL"
+            coverage_failed=1
+          fi
+          echo "manifest_coverage_status=$coverage_status" | tee -a "$result_root/summary.txt"
+          if [[ -f "$result_root/manifest-coverage.json" ]]; then
+            coverage_sha256="$(sha256sum "$result_root/manifest-coverage.json" | cut -d' ' -f1)"
+          else
+            coverage_sha256="missing"
+            coverage_failed=1
+          fi
+          echo "manifest_coverage_sha256=$coverage_sha256" | tee -a "$result_root/summary.txt"
+
+          if [[ "$rustsec_failed" -eq 0 ]]; then rustsec_status="PASS"; else rustsec_status="FAIL"; fi
+          sed -i "s/^rustsec_status=.*/rustsec_status=$rustsec_status/" "$result_root/summary.txt"
+          if [[ "$rustsec_failed" -eq 0 && "$coverage_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
+          echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
+          cat "$result_root/summary.txt"
+          if [[ "$overall" == "PASS" ]]; then exit 0; else exit 1; fi
+      - name: Ensure RustSec evidence receipt exists
+        if: always()
+        shell: bash
+        env:
+          AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p security-audit-results/lockfiles
+          summary="security-audit-results/summary.txt"
+          if [[ ! -f "$summary" ]]; then
+            {
+              echo "schema=luminous.security-audit.receipt.v1"
+              echo "repository=${GITHUB_REPOSITORY}"
+              echo "subject_sha=$SUBJECT_SHA"
+              echo "caller_workflow_ref=${GITHUB_WORKFLOW_REF}"
+              echo "caller_workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}"
+              echo "declared_audit_engine_sha=$AUDIT_ENGINE_SHA"
+              echo "run_id=${GITHUB_RUN_ID}"
+              echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+              echo "event=${GITHUB_EVENT_NAME}"
+              echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              echo "rustsec_status=INCOMPLETE"
+              echo "incomplete_reason=checkout_or_receipt_initialization_failed"
+            } > "$summary"
+          fi
+      - name: Upload RustSec audit evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: security-audit-${{ github.event.repository.name }}-${{ inputs.subject_sha }}-rustsec
+          path: security-audit-results/
+          if-no-files-found: error
+          retention-days: 14
+
+  npmsec:
+    name: npm dependency audit
+    if: inputs.audit_node
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact audit subject
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.subject_sha }}
+          persist-credentials: false
+      - name: Assert exact checkout identity
+        id: subject
+        env:
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
+        run: test "$(git rev-parse HEAD)" = "$SUBJECT_SHA"
+      - name: Initialize npm audit receipt
+        shell: bash
+        env:
+          AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p security-audit-results/npm/lockfiles
+          {
+            echo "schema=luminous.security-audit.npm-receipt.v1"
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "subject_sha=$(git rev-parse HEAD)"
+            echo "caller_workflow_ref=${GITHUB_WORKFLOW_REF}"
+            echo "caller_workflow_sha=${GITHUB_WORKFLOW_SHA:-unknown}"
+            echo "declared_audit_engine_sha=$AUDIT_ENGINE_SHA"
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "observed_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "npm_status=INCOMPLETE"
+            echo "engine_identity_status=INCOMPLETE"
+            echo "incomplete_reason=setup_or_audit_not_completed"
+          } > security-audit-results/npm/summary.txt
+          if [[ ! "$AUDIT_ENGINE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            sed -i 's/^npm_status=.*/npm_status=FAIL/' security-audit-results/npm/summary.txt
+            echo "incomplete_reason=invalid_audit_engine_sha" >> security-audit-results/npm/summary.txt
+            exit 2
+          fi
+      - name: Verify declared audit engine identity
+        id: engine_identity
+        shell: bash
+        env:
+          AUDIT_ENGINE_SHA: ${{ inputs.audit_engine_sha }}
+          SUBJECT_SHA: ${{ inputs.subject_sha }}
+          EVENT_SHA: ${{ github.sha }}
+          AUDITED_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          engine = os.environ["AUDIT_ENGINE_SHA"]
+          subject = os.environ["SUBJECT_SHA"]
+          event_sha = os.environ["EVENT_SHA"]
+          repository = os.environ["AUDITED_REPOSITORY"]
+          summary = Path("security-audit-results/npm/summary.txt")
+
+          def set_receipt_value(key, value):
+              lines = summary.read_text(encoding="utf-8").splitlines()
+              prefix = f"{key}="
+              matches = [i for i, line in enumerate(lines) if line.startswith(prefix)]
+              if len(matches) != 1:
+                  raise SystemExit(f"receipt field {key} has {len(matches)} entries")
+              lines[matches[0]] = f"{key}={value}"
+              summary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+          def fail(reason):
+              set_receipt_value("engine_identity_status", "FAIL")
+              with summary.open("a", encoding="utf-8") as receipt:
+                  receipt.write(f"engine_identity_reason={reason}\n")
+              print(f"FAIL: {reason}", file=sys.stderr)
+              raise SystemExit(1)
+
+          if not re.fullmatch(r"[0-9a-f]{40}", engine):
+              fail("invalid_engine_sha")
+          if not re.fullmatch(r"[0-9a-f]{40}", subject):
+              fail("invalid_subject_sha")
+
+          if repository == "Luminous-Dynamics/luminous-platform":
+              # The platform audits its local reusable workflow from the
+              # event commit (including the PR merge ref), while it scans the
+              # PR head separately as subject_sha.
+              caller = Path(".github/workflows/security-audit-self.yml")
+              if not caller.is_file():
+                  fail("platform_self_workflow_missing")
+              text = caller.read_text(encoding="utf-8")
+              local_uses = re.findall(
+                  r"^\s*uses:\s*\./\.github/workflows/security-audit\.yml\s*$",
+                  text, re.MULTILINE
+              )
+              if len(local_uses) != 1:
+                  fail("platform_local_engine_reference_missing_or_ambiguous")
+              if engine != event_sha:
+                  fail("platform_local_engine_sha_does_not_match_event_sha")
+          else:
+              caller = Path(".github/workflows/security-audit.yml")
+              if not caller.is_file():
+                  fail("caller_security_workflow_missing")
+              text = caller.read_text(encoding="utf-8")
+              refs = re.findall(
+                  r"^\s*uses:\s*Luminous-Dynamics/luminous-platform/\.github/workflows/security-audit\.yml@([0-9a-f]{40})\s*$",
+                  text, re.MULTILINE
+              )
+              declared = re.findall(
+                  r"^\s*audit_engine_sha:\s*([0-9a-f]{40})\s*$",
+                  text, re.MULTILINE
+              )
+              if len(refs) != 1:
+                  fail("immutable_shared_workflow_reference_missing_or_ambiguous")
+              if len(declared) != 1:
+                  fail("declared_engine_sha_missing_or_ambiguous")
+              if refs[0] != engine or declared[0] != engine:
+                  fail("caller_reference_and_engine_sha_mismatch")
+
+          set_receipt_value("engine_identity_status", "PASS")
+          with summary.open("a", encoding="utf-8") as receipt:
+              receipt.write(f"engine_identity_checked_sha={engine}\n")
+          print("PASS: declared audit engine identity matches the caller reference")
+          PY
+      - name: Install pinned Node.js LTS runtime
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Audit tracked npm lockfiles without installing project code
+        shell: bash
+        run: |
+          set -euo pipefail
+          workspace="$GITHUB_WORKSPACE"
+          result_root="$workspace/security-audit-results/npm"
+          mapfile -t lockfiles < <(
+            {
+              git ls-files -- 'package-lock.json' '**/package-lock.json'
+              git ls-files -- 'npm-shrinkwrap.json' '**/npm-shrinkwrap.json'
+            } | LC_ALL=C sort -u
+          )
+          echo "node=$(node --version)" >> "$result_root/summary.txt"
+          echo "npm=$(npm --version)" >> "$result_root/summary.txt"
+          echo "lockfile_count=${#lockfiles[@]}" >> "$result_root/summary.txt"
+          npm_failed=0
+
+          if [[ "${#lockfiles[@]}" -eq 0 ]]; then
+            npm_failed=1
+            sed -i 's/^npm_status=.*/npm_status=FAIL/' "$result_root/summary.txt"
+            echo "incomplete_reason=no_tracked_npm_lockfiles" >> "$result_root/summary.txt"
+            echo "FAIL: audit_node=true but no tracked package-lock.json or npm-shrinkwrap.json was found."
+          else
+            sed -i 's/^npm_status=.*/npm_status=RUNNING/' "$result_root/summary.txt"
+            sed -i '/^incomplete_reason=setup_or_audit_not_completed$/d' "$result_root/summary.txt"
+          fi
+
+          cd "$RUNNER_TEMP"
+          : > "$RUNNER_TEMP/npm-audit-userconfig"
+          : > "$RUNNER_TEMP/npm-audit-globalconfig"
+          for lockfile in "${lockfiles[@]}"; do
+            lock_dir="$(dirname -- "$lockfile")"
+            if [[ "$lock_dir" == "." ]]; then
+              manifest="package.json"
+              project_dir="$workspace"
             else
-              report_parse_status="FAIL"
-              npm_findings_total=-1
-              npm_info=-1
-              npm_low=-1
-              npm_moderate=-1
-              npm_high=-1
-              npm_critical=-1
+              manifest="$lock_dir/package.json"
+              project_dir="$workspace/$lock_dir"
+            fi
+            report_id="$(printf '%s' "$lockfile" | sed 's#[^A-Za-z0-9._-]#_#g')"
+            path_hash="$(printf '%s' "$lockfile" | sha256sum | cut -c1-12)"
+            report="$result_root/lockfiles/${report_id}_$path_hash.json"
+            stderr="$result_root/lockfiles/${report_id}_$path_hash.stderr"
+            lock_abs="$workspace/$lockfile"
+
+            # npm prefers npm-shrinkwrap.json over package-lock.json in the
+            # same package root. A report for the ignored package-lock must not
+            # be misrepresented as an audit of the effective dependency graph.
+            if [[ "$lockfile" == "package-lock.json" || "$lockfile" == */package-lock.json ]]; then
+              shrinkwrap="${lockfile%package-lock.json}npm-shrinkwrap.json"
+              if git -C "$workspace" ls-files --error-unmatch -- "$shrinkwrap" >/dev/null 2>&1 && [[ -f "$workspace/$shrinkwrap" ]]; then
+                lock_sha="$(sha256sum "$lock_abs" | cut -d' ' -f1)"
+                shrinkwrap_sha="$(sha256sum "$workspace/$shrinkwrap" | cut -d' ' -f1)"
+                python3 - "$report" "$lockfile" "$lock_sha" "$shrinkwrap" "$shrinkwrap_sha" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          report, lockfile, lock_sha, authoritative, authoritative_sha = sys.argv[1:]
+          Path(report).write_text(json.dumps({
+              "status": "SKIPPED_NOT_AUTHORITATIVE",
+              "reason": "npm-shrinkwrap.json takes precedence over package-lock.json",
+              "lockfile": lockfile,
+              "lockfile_sha256": lock_sha,
+              "authoritative_lockfile": authoritative,
+              "authoritative_lockfile_sha256": authoritative_sha
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+                : > "$stderr"
+                report_sha="$(sha256sum "$report" | cut -d' ' -f1)"
+                stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1)"
+                printf 'lockfile=%s lockfile_sha256=%s outcome=SKIPPED_NOT_AUTHORITATIVE authoritative_lockfile=%s authoritative_lockfile_sha256=%s report_sha256=%s stderr_sha256=%s\n' \
+                  "$lockfile" "$lock_sha" "$shrinkwrap" "$shrinkwrap_sha" "$report_sha" "$stderr_sha" \
+                  >> "$result_root/summary.txt"
+                continue
+              fi
+            fi
+
+            if ! git -C "$workspace" ls-files --error-unmatch -- "$manifest" >/dev/null 2>&1 || [[ ! -f "$workspace/$manifest" ]]; then
+              lock_sha="$(sha256sum "$lock_abs" | cut -d' ' -f1)"
+              python3 - "$report" "$lockfile" "$lock_sha" "$manifest" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          report, lockfile, lock_sha, manifest = sys.argv[1:]
+          Path(report).write_text(json.dumps({
+              "schema": "luminous.security-audit.npm-lockfile-result.v1",
+              "status": "FAIL",
+              "scanner_invoked": False,
+              "reason": "tracked_sibling_package_json_missing",
+              "lockfile": lockfile,
+              "lockfile_sha256": lock_sha,
+              "expected_manifest": manifest
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+              printf '%s\n' "npm audit was not invoked because the tracked sibling package.json is missing." > "$stderr"
+              report_sha="$(sha256sum "$report" | cut -d' ' -f1)"
+              stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1)"
+              printf 'lockfile=%s lockfile_sha256=%s manifest=%s exit_code=NOT_RUN report_parse_status=NOT_APPLICABLE outcome=FAIL report_sha256=%s stderr_sha256=%s reason=package_manifest_missing\n' \\
+                "$lockfile" "$lock_sha" "$manifest" "$report_sha" "$stderr_sha" \\
+                >> "$result_root/summary.txt"
               npm_failed=1
-fi
-            printf 'report_parse_status=%s lockfile=%s findings_total=%s info=%s low=%s moderate=%s high=%s critical=%s\n' "$report_parse_status" "$lockfile" "$npm_findings_total" "$npm_info" "$npm_low" "$npm_moderate" "$npm_high" "$npm_critical" >> "$result_root/summary.txt"
-            if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" && "$npm_high" -eq 0 && "$npm_critical" -eq 0 ]]; then
-              if [[ "$npm_findings_total" -eq 0 ]]; then outcome="PASS"; else outcome="PASS_BELOW_BLOCKING_THRESHOLD_WITH_FINDINGS"; fi
+              continue
+            fi
+
+            lock_sha="$(sha256sum "$lock_abs" | cut -d' ' -f1)"
+            manifest_sha="$(sha256sum "$workspace/$manifest" | cut -d' ' -f1)"
+            rc=0
+            if npm --prefix "$project_dir" audit \
+              --package-lock-only \
+              --audit-level=high \
+              --registry=https://registry.npmjs.org/ \
+              --strict-ssl=true \
+              --cache="$RUNNER_TEMP/npm-audit-cache" \
+              --userconfig="$RUNNER_TEMP/npm-audit-userconfig" \
+              --globalconfig="$RUNNER_TEMP/npm-audit-globalconfig" \
+              --json > "$report" 2> "$stderr"; then
+              rc=0
             else
-              outcome="FAIL"
+              rc=$?
               npm_failed=1
             fi
+            if python3 - "$report" <<'PY'
+          import copy
+          import json
+          import sys
+          from pathlib import Path
+
+          SEVERITIES = ("info", "low", "moderate", "high", "critical")
+
+          def nonnegative_int(value):
+              return type(value) is int and value >= 0
+
+          def valid_report(payload):
+              if not isinstance(payload, dict) or not nonnegative_int(payload.get("auditReportVersion")):
+                  return False
+              vulnerabilities = payload.get("vulnerabilities")
+              metadata = payload.get("metadata")
+              if not isinstance(vulnerabilities, dict) or not isinstance(metadata, dict):
+                  return False
+              metadata_vulns = metadata.get("vulnerabilities")
+              dependencies = metadata.get("dependencies")
+              if not isinstance(metadata_vulns, dict) or not isinstance(dependencies, dict):
+                  return False
+              if not all(nonnegative_int(metadata_vulns.get(key)) for key in (*SEVERITIES, "total")):
+                  return False
+              if sum(metadata_vulns[key] for key in SEVERITIES) != metadata_vulns["total"]:
+                  return False
+              if not nonnegative_int(dependencies.get("total")):
+                  return False
+              if not all(nonnegative_int(dependencies.get(key)) for key in ("prod", "dev", "optional", "peer", "peerOptional")):
+                  return False
+              observed = {severity: 0 for severity in SEVERITIES}
+              for name, item in vulnerabilities.items():
+                  if not isinstance(name, str) or not isinstance(item, dict):
+                      return False
+                  if item.get("severity") not in SEVERITIES or not isinstance(item.get("via"), list):
+                      return False
+                  observed[item["severity"]] += 1
+              if len(vulnerabilities) != metadata_vulns["total"]:
+                  return False
+              return all(observed[severity] == metadata_vulns[severity] for severity in SEVERITIES)
+
+          valid_fixture = {
+              "auditReportVersion": 2,
+              "vulnerabilities": {},
+              "metadata": {
+                  "vulnerabilities": {"info": 0, "low": 0, "moderate": 0, "high": 0, "critical": 0, "total": 0},
+                  "dependencies": {"prod": 0, "dev": 0, "optional": 0, "peer": 0, "peerOptional": 0, "total": 0}
+              }
+          }
+          assert valid_report(valid_fixture), "validator rejects a valid npm audit fixture"
+          for mutate in (
+              lambda x: x.pop("metadata"),
+              lambda x: x["metadata"]["vulnerabilities"].update({"high": "0"}),
+              lambda x: x["metadata"]["vulnerabilities"].update({"total": 1}),
+              lambda x: x["vulnerabilities"].update({"bad-package": {"severity": "high", "via": []}}),
+              lambda x: x["metadata"]["dependencies"].update({"total": False}),
+          ):
+              invalid = copy.deepcopy(valid_fixture)
+              mutate(invalid)
+              assert not valid_report(invalid), "validator accepted a malformed npm audit fixture"
+
+          try:
+              payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          except Exception as exc:
+              print(f"invalid npm audit JSON: {type(exc).__name__}: {exc}", file=sys.stderr)
+              raise SystemExit(1)
+          if not valid_report(payload):
+              print("npm audit report does not match the expected JSON schema/invariants", file=sys.stderr)
+              raise SystemExit(1)
+          print("npm audit JSON schema and consistency checks passed")
+          PY
+            then
+              report_parse_status="PASS"
+            else
+              report_parse_status="FAIL"
+              npm_failed=1
+            fi
+            printf 'report_parse_status=%s lockfile=%s\n' "$report_parse_status" "$lockfile" >> "$result_root/summary.txt"
+            if [[ "$rc" -eq 0 && "$report_parse_status" == "PASS" ]]; then outcome="PASS"; else outcome="FAIL"; fi
             if [[ -f "$report" ]]; then report_sha="$(sha256sum "$report" | cut -d' ' -f1); else report_sha="missing"; npm_failed=1; fi
             if [[ -f "$stderr" ]]; then stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1); else stderr_sha="missing"; npm_failed=1; fi
             printf 'lockfile=%s lockfile_sha256=%s manifest=%s manifest_sha256=%s exit_code=%s outcome=%s report_sha256=%s stderr_sha256=%s\n' \
