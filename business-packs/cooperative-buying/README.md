@@ -18,6 +18,7 @@ Provide the first concrete path toward a globally portable, member-oriented whol
 - [Purchase-intent schema tests](../../tests/test_cooperative_purchase_intent_schema.py) and [semantic tests](../../tests/test_cooperative_purchase_intent_semantics.py).
 - [Semantic regression tests](../../tests/test_cooperative_offer_semantics.py) — dates, publication evidence, offer expiry/freshness, quantity relationships, price-break ordering, and cross-border constraints.
 - [Global architecture and staged plan](../../docs/GLOBAL_COOPERATIVE_COMMERCE.md).
+- [Dependency-free Rust savings kernel](../../crates/cooperative-commerce-core/README.md) — exact-decimal arithmetic, exact-basket comparability, cost coverage, delivery-line binding, explicit credits, and negative-result preservation.
 
 ## Schema contract and limits
 
