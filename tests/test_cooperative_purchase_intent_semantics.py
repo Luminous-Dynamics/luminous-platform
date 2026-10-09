@@ -15,7 +15,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from validate_cooperative_purchase_intent import purchase_scope_sha256, validate_intent  # noqa: E402
+import rfc8785  # noqa: E402
+
+from validate_cooperative_purchase_intent import (  # noqa: E402
+    purchase_scope_payload,
+    purchase_scope_sha256,
+    validate_intent,
+)
 
 SCHEMA = json.loads(
     (ROOT / "schemas" / "cooperative-purchase-intent-v1.schema.json").read_text(encoding="utf-8")
@@ -72,6 +78,13 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
         report = self.validate(binding_order_candidate())
         self.assertTrue(report["semantic_valid"], report["errors"])
         self.assertFalse(report["transaction_authorized"])
+
+    def test_purchase_scope_uses_rfc8785_canonicalization(self):
+        document = binding_order_candidate()
+        payload = purchase_scope_payload(document)
+        reordered_payload = dict(reversed(list(payload.items())))
+        self.assertEqual(rfc8785.dumps(payload), rfc8785.dumps(reordered_payload))
+        self.assertEqual(purchase_scope_sha256(document), purchase_scope_sha256(document))
 
     def test_changed_quantity_invalidates_previously_authorized_scope_digest(self):
         document = binding_order_candidate()
