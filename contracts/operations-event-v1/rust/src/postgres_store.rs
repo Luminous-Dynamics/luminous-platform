@@ -252,6 +252,48 @@ impl PostgresOperationsStore {
             return Ok(IngestOutcome::Quarantined { reason_code: "TRUSTED_CONTEXT_BINDING_MISMATCH" });
         }
 
+        // Serialize a business idempotency key before checking the durable
+        // fence. Advisory-lock hash collisions only add contention; the unique
+        // key remains the final integrity constraint. This check precedes
+        // revision rejection so a stale replay cannot hide key reuse conflicts.
+        let idempotency_lock = advisory_lock_id(
+            &authenticated.tenant_id,
+            &authenticated.connection_id,
+            idempotency_key,
+        );
+        sqlx::query("SELECT pg_advisory_xact_lock($1)")
+            .bind(idempotency_lock)
+            .execute(&mut *tx)
+            .await?;
+
+        let existing_effect = sqlx::query(
+            "SELECT semantic_digest FROM ops.business_effects \
+             WHERE tenant_id = $1 AND connection_id = $2 AND idempotency_key = $3",
+        )
+        .bind(&authenticated.tenant_id)
+        .bind(&authenticated.connection_id)
+        .bind(idempotency_key)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        if let Some(existing_effect) = existing_effect {
+            let existing_digest: String = existing_effect.try_get("semantic_digest")?;
+            if existing_digest != semantic_digest {
+                tx.rollback().await?;
+                return Err(StoreError::IdempotencyConflict);
+            }
+            set_inbox_outcome(
+                &mut tx,
+                authenticated,
+                source_uri,
+                event_id,
+                "DUPLICATE_EFFECT",
+            )
+            .await?;
+            tx.commit().await?;
+            return Ok(IngestOutcome::DuplicateEffect);
+        }
+
         // The incident head is the serialization point for revision comparison
         // and outbox sequence allocation. A failed transaction rolls back an
         // initial placeholder head.
@@ -562,6 +604,15 @@ fn digest_parts(domain: &str, parts: &[&str]) -> String {
         hasher.update(bytes);
     }
     hex_digest(&hasher.finalize())
+}
+
+fn advisory_lock_id(tenant_id: &str, connection_id: &str, idempotency_key: &str) -> i64 {
+    let digest = digest_parts(
+        "luminous.operations.idempotency-lock.v1",
+        &[tenant_id, connection_id, idempotency_key],
+    );
+    let high_bits = u64::from_str_radix(&digest[..16], 16).unwrap_or_default();
+    high_bits as i64
 }
 
 fn event_content_digest(event: &Value) -> Result<String, StoreError> {

@@ -133,6 +133,16 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     );
     assert_eq!(row_count_snapshot(&pool).await, [1, 1, 1, 1, 1]);
 
+    // Same business effect delivered with a different CloudEvents ID is
+    // deduplicated by its idempotency key, not merely by source+event ID.
+    let mut alternate_delivery = initial.clone();
+    alternate_delivery["id"] = json!("event-ci-same-effect-alternate-delivery");
+    assert_eq!(
+        store.ingest_event(&auth, &alternate_delivery).await.unwrap(),
+        IngestOutcome::DuplicateEffect
+    );
+    assert_eq!(row_count_snapshot(&pool).await, [2, 1, 1, 1, 1]);
+
     let revision_two = revised_event(
         "revision-2",
         "event-ci-revision-2",
@@ -143,6 +153,20 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         store.ingest_event(&auth, &revision_two).await.unwrap(),
         IngestOutcome::Accepted { outbox_sequence: 2 }
     );
+
+    // Check idempotency before stale-revision handling: changed semantics under
+    // an existing key must not be misreported as merely stale.
+    let stale_key_conflict = revised_event(
+        "revision-1",
+        "event-ci-stale-key-conflict",
+        "idem-ci-revision-2",
+        "Changed semantics under an existing idempotency key",
+    );
+    assert!(matches!(
+        store.ingest_event(&auth, &stale_key_conflict).await,
+        Err(StoreError::IdempotencyConflict)
+    ));
+    assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
 
     let stale = revised_event(
         "revision-1",
