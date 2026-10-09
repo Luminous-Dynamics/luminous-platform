@@ -214,8 +214,8 @@ GRANT EXECUTE ON FUNCTION ops.current_tenant_id() TO luminous_ops_app;
 GRANT SELECT ON ops.tenants, ops.connector_connections, ops.resource_mappings,
   ops.incident_heads, ops.inbox_events, ops.business_effects, ops.incident_activity,
   ops.outbox_events, ops.quarantined_events TO luminous_ops_app;
-GRANT INSERT ON ops.inbox_events, ops.business_effects, ops.incident_activity,
-  ops.outbox_events, ops.quarantined_events TO luminous_ops_app;
+GRANT INSERT ON ops.inbox_events, ops.business_effects, ops.incident_heads,
+  ops.incident_activity, ops.outbox_events, ops.quarantined_events TO luminous_ops_app;
 GRANT UPDATE ON ops.incident_heads, ops.inbox_events, ops.outbox_events
   TO luminous_ops_app;
 GRANT USAGE, SELECT ON SEQUENCE ops.quarantined_events_quarantine_id_seq TO luminous_ops_app;
