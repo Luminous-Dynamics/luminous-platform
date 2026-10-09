@@ -151,8 +151,8 @@ jobs:
           cp -a services/work-case-postgres "$RUNNER_TEMP/work-case-postgres"
           cargo +1.96.0 test --manifest-path "$RUNNER_TEMP/work-case-postgres/Cargo.toml" --all-targets 2>&1 | tee "$log"
           count="$(awk '/^test result:/ { for (i = 1; i <= NF; i++) if ($i == "passed;") total += $(i - 1) } END { print total + 0 }' "$log")"
-          if [[ -z "$count" || "$count" -lt 7 ]]; then
-            echo "::error::PostgreSQL Work Case suite must execute at least 7 tests; observed $count."
+          if [[ -z "$count" || "$count" -lt 8 ]]; then
+            echo "::error::PostgreSQL Work Case suite must execute at least 8 tests; observed $count."
             exit 1
           fi
           echo "test_count=$count" >> "$GITHUB_OUTPUT"
@@ -194,6 +194,6 @@ jobs:
             echo "- Work Case Contract V1 tests executed: $WORK_CASE_TESTS"
             echo "- Rust Holochain Attestation Share Package V1 tests executed: $HOLOCHAIN_TESTS"
             echo "- Rust/PostgreSQL Work Case repository tests executed against PostgreSQL 18.6-bookworm and a non-owner application role: $POSTGRES_TESTS"
-            echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Work Case suite requires at least 34 tests. The Holochain share-package validator and its contract tests are Rust-native."
+            echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Work Case suite requires at least 34 tests; the PostgreSQL repository suite requires at least 8 tests. The Holochain share-package validator and its contract tests are Rust-native."
             echo "- This workflow qualifies only the tested Rust repository slice and migration on the stated disposable PostgreSQL test image. It does not qualify API authentication, lifecycle transitions, provider integration, outbox dispatch/recovery, backups/restores, the Holochain integrity zome or multi-agent DHT behavior, cryptographic evidence verification, or remote execution."
           } >> "$GITHUB_STEP_SUMMARY"
