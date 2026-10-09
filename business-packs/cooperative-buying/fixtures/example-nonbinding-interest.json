@@ -1,0 +1,55 @@
+{
+  "schema": "luminous.cooperative-purchase-intent/v1",
+  "metadata": {
+    "intent_id": "fixture:za:interest:001",
+    "revision": 1,
+    "state": "non_binding_interest",
+    "created_at": "2026-10-09T00:00:00Z",
+    "updated_at": "2026-10-09T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z",
+    "request_correlation_id": "fixture:correlation:001"
+  },
+  "buyer": {
+    "buyer_party_id": "fixture:buyer:001",
+    "buyer_legal_entity_id": "fixture:buyer-entity:001",
+    "buyer_country_code": "ZA",
+    "local_cooperative_id": "fixture:cooperative:za"
+  },
+  "demand": {
+    "product_reference": {
+      "scheme": "urn:fixture:product-id:v1",
+      "value": "fixture:product:carton-case"
+    },
+    "requested_quantity": "10",
+    "requested_unit_code": "case",
+    "requested_unit_code_system": "urn:fixture:unit-system:order-unit:v1",
+    "destination_country_code": "ZA",
+    "destination_region": "fixture:region:withheld",
+    "delivery_window_start": "2026-10-15T00:00:00Z",
+    "delivery_window_end": "2026-10-22T00:00:00Z",
+    "substitution_policy": "buyer_must_approve",
+    "buyer_notes": "Synthetic example only; not a real buying commitment."
+  },
+  "sharing": {
+    "purpose": "cooperative_demand_aggregation",
+    "recipient_scope": "named_cooperative_operators",
+    "shareable_fields": [
+      "product_reference",
+      "aggregate_quantity",
+      "destination_country"
+    ],
+    "consent": {
+      "consent_id": "fixture:consent:001",
+      "granted_by": "fixture:buyer-actor:001",
+      "granted_at": "2026-10-09T00:00:00Z",
+      "expires_at": "2026-12-31T23:59:59Z",
+      "revocable": true,
+      "evidence_reference": "fixture:consent-evidence:001",
+      "evidence_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  "limitations": [
+    "Synthetic non-binding demand fixture; no supplier quote or order is created.",
+    "Schema validity is not proof of legal identity, consent authenticity, source truth, or permission to purchase."
+  ]
+}
