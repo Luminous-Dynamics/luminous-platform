@@ -579,8 +579,33 @@ jobs:
               report="$result_root/lockfiles/${report_id}_$path_hash.json"
               stderr="$result_root/lockfiles/${report_id}_$path_hash.stderr"
               lockfile_abs="$workspace/$lockfile"
+              if [[ ! -f "$lockfile_abs" || -L "$lockfile_abs" ]]; then
+                lock_reference="non-regular-or-missing"
+                if [[ -L "$lockfile_abs" ]]; then lock_reference="$(readlink -- "$lockfile_abs")"; fi
+                lock_reference_sha="$(printf '%s' "$lock_reference" | sha256sum | cut -d' ' -f1)"
+                python3 - "$report" "$lockfile" "$lock_reference_sha" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          report, lockfile, target_sha = sys.argv[1:]
+          Path(report).write_text(json.dumps({
+              "schema": "luminous.security-audit.rust-lockfile-result.v1",
+              "status": "FAIL",
+              "scanner_invoked": False,
+              "reason": "lockfile_not_regular_file",
+              "lockfile": lockfile,
+              "lock_reference_sha256": target_sha
+          }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+                printf '%s\n' "cargo-audit was not invoked because the tracked lockfile is missing, not regular, or a symlink." > "$stderr"
+                report_sha256="$(sha256sum "$report" | cut -d' ' -f1)"
+                stderr_sha256="$(sha256sum "$stderr" | cut -d' ' -f1)"
+                printf 'lockfile=%s exit_code=NOT_RUN outcome=FAIL report_sha256=%s stderr_sha256=%s reason=lockfile_not_regular_file\n' "$lockfile" "$report_sha256" "$stderr_sha256" >> "$result_root/summary.txt"
+                rustsec_failed=1
+                continue
+              fi
               lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-              if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
+                            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
                 rc=0
               else
                 rc=$?
