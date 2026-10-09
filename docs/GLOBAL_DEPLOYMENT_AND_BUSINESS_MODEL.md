@@ -156,6 +156,12 @@ Recommended **internal** maturity labels (not an external certification scheme):
 
 Do not collapse these dimensions into one green status. A product can be qualified for one action class and unproven for another.
 
+## Product and repository strategy
+
+Use [One Luminous Platform, Many Business Packs](PLATFORM_AND_REPOSITORY_STRATEGY.md) as the governing product-structure proposal. The customer-facing model should be one Luminous Platform and one shared operations kernel, with independently qualified service packs. Keep technical repositories separate only where authority, release lifecycle, or external consumers justify the boundary; do not create a new platform per vertical.
+
+To make the business repeatable for people who are not platform developers, use [Start a Luminous Business](START_A_LUMINOUS_BUSINESS.md) and the [MSP Incident-to-Evidence starter pack](../business-packs/msp-incident-to-evidence/README.md). It provides a manual-first first offer and templates; it does not pretend that live integrations or unqualified platform capabilities exist.
+
 ## Business model
 
 ### Sell outcomes, not lock-in
