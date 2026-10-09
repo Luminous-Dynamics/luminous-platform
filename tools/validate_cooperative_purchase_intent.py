@@ -116,6 +116,8 @@ def consent_scope_payload(document: dict[str, Any]) -> dict[str, Any]:
         "granted_at": consent["granted_at"],
         "expires_at": consent["expires_at"],
         "revocable": consent["revocable"],
+        "evidence_reference": consent["evidence_reference"],
+        "evidence_sha256": consent["evidence_sha256"].lower(),
         "buyer_party_id": buyer["buyer_party_id"],
         "buyer_legal_entity_id": buyer["buyer_legal_entity_id"],
         "purpose": sharing["purpose"],
