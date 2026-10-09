@@ -4,6 +4,8 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 
 See [Global Deployment and Business Model](docs/GLOBAL_DEPLOYMENT_AND_BUSINESS_MODEL.md) for the proposed product boundaries, deployment profiles, business model, and qualification roadmap. That document is a roadmap, not a claim of production readiness or universal compliance.
 
+For a machine-readable draft, see the [Deployment Profile Contract](docs/DEPLOYMENT_PROFILE_CONTRACT.md), [proposed JSON Schema](schemas/deployment-profile-v1.schema.json), and [local NixOS pilot example](profiles/examples/local-nixos-pilot.yaml). These are proposed contracts and fixtures; runtime conformance is not yet implemented.
+
 ## Architecture
 
 ```
