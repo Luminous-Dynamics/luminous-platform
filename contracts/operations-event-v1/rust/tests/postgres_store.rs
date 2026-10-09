@@ -113,7 +113,47 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     PostgresOperationsStore::migrate(&pool)
         .await
         .expect("apply versioned SQLx migrations");
+    // Create a restricted runtime login for the actual store pool. It must
+    // explicitly SET ROLE into the NOLOGIN application role for each transaction.
+    // The test database is ephemeral; this password is test-only.
+    sqlx::raw_sql(
+        "DO $role$ BEGIN \
+           IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'luminous_ops_runtime_test') THEN \
+             EXECUTE 'CREATE ROLE luminous_ops_runtime_test LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD ''runtime-test-password'''; \
+           END IF; \
+         END $role$; \
+         ALTER ROLE luminous_ops_runtime_test LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD 'runtime-test-password'; \
+         GRANT luminous_ops_app TO luminous_ops_runtime_test;",
+    )
+    .execute(&pool)
+    .await
+    .expect("provision restricted non-superuser runtime login");
+
     reset_and_seed(&pool).await;
+
+    let app_database_url = env::var("APP_DATABASE_URL")
+        .expect("APP_DATABASE_URL must use the restricted runtime login");
+    let app_pool = PgPoolOptions::new()
+        .max_connections(10)
+        .connect(&app_database_url)
+        .await
+        .expect("connect as restricted non-superuser runtime login");
+    // The NOINHERIT runtime login must not use application-table privileges
+    // unless it explicitly assumes luminous_ops_app inside a transaction.
+    assert!(
+        sqlx::query("SELECT COUNT(*) FROM ops.tenants")
+            .fetch_one(&app_pool)
+            .await
+            .is_err(),
+        "runtime login must not inherit application-table privileges"
+    );
+    // A one-connection pool deliberately reuses the same backend connection for
+    // the tenant-context leak/default-deny test below.
+    let scope_pool = PgPoolOptions::new()
+        .max_connections(1)
+        .connect(&app_database_url)
+        .await
+        .expect("connect scope probe as restricted runtime login");
 
     // Verify the runtime role can mutate only fields the store needs to mutate.
     // This prevents later refactors from quietly widening the persistence role.
@@ -163,7 +203,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     .await;
     assert!(unmapped_head.is_err(), "the relational mapping foreign key must reject an unmapped provider resource");
 
-    let store = PostgresOperationsStore::from_pool(pool.clone());
+    let store = PostgresOperationsStore::from_pool(app_pool.clone());
     let auth = authenticated();
 
     // A bad first provider revision cannot become the baseline for an incident.
@@ -462,11 +502,25 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
 
     // RLS defaults to no visible tenant rows if context is absent and correctly
     // isolates a configured tenant. Both role and tenant scope are transaction-local.
-    let mut scoped = pool.begin().await.unwrap();
+    let mut scoped = scope_pool.begin().await.unwrap();
     sqlx::raw_sql("SET LOCAL ROLE luminous_ops_app")
         .execute(&mut *scoped)
         .await
         .unwrap();
+    let identity = sqlx::query(
+        "SELECT session_user::text AS session_user, current_user::text AS current_user",
+    )
+    .fetch_one(&mut *scoped)
+    .await
+    .unwrap();
+    assert_eq!(
+        identity.try_get::<String, _>("session_user").unwrap(),
+        "luminous_ops_runtime_test"
+    );
+    assert_eq!(
+        identity.try_get::<String, _>("current_user").unwrap(),
+        "luminous_ops_app"
+    );
     sqlx::query("SELECT set_config('app.tenant_id', $1, true)")
         .bind(TENANT)
         .execute(&mut *scoped)
@@ -490,7 +544,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert_eq!(foreign_visible, 0);
     scoped.commit().await.unwrap();
 
-    let mut no_tenant = pool.begin().await.unwrap();
+    let mut no_tenant = scope_pool.begin().await.unwrap();
     sqlx::raw_sql("SET LOCAL ROLE luminous_ops_app")
         .execute(&mut *no_tenant)
         .await
@@ -649,8 +703,8 @@ async fn crash_probe_after_commit_before_ack() {
         Ok("1"),
         "this test is only expected to run in the parent test's child process"
     );
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must point at the isolated PostgreSQL CI service");
+    let database_url = env::var("APP_DATABASE_URL")
+        .expect("APP_DATABASE_URL must use the restricted runtime login");
     let store = PostgresOperationsStore::connect(&database_url, 2)
         .await
         .expect("connect from isolated crash-probe process");

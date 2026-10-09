@@ -32,6 +32,7 @@ jobs:
     timeout-minutes: 20
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/luminous_ops_test
+      APP_DATABASE_URL: postgres://luminous_ops_runtime_test:runtime-test-password@localhost:5432/luminous_ops_test
       CARGO_TERM_COLOR: never
     services:
       postgres:
