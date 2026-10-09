@@ -84,6 +84,31 @@ jobs:
       - name: Test exact-decimal commerce core
         run: cargo test --locked --manifest-path crates/cooperative-commerce-core/Cargo.toml
 
+      - name: Test SIX importer CLI on synthetic source
+        run: |
+          set -euo pipefail
+          cargo run --locked --quiet \
+            --manifest-path crates/cooperative-commerce-core/Cargo.toml \
+            --bin six-iso4217-import -- crates/cooperative-commerce-core/fixtures/six-list-one-minimal.xml \
+            > six-list-one-synthetic-normalized.json
+          jq -e '
+            .schema == "luminous.six-iso4217-normalized/v1"
+            and .publisher == "SIX ISO 4217 List One"
+            and .publication_date == "2026-10-01"
+            and .source_entry_count == 4
+            and .entries_without_currency_code == 1
+            and .record_count == 2
+            and (.records | any(.[]; .alpha_code == "EUR" and .numeric_code == "978"
+              and .entities == ["COUNTRY A", "COUNTRY B"]))
+            and (.records | any(.[]; .alpha_code == "TST" and .numeric_code == "001"
+              and .minor_units == "N.A."))
+          ' six-list-one-synthetic-normalized.json > /dev/null
+          cargo run --locked --quiet \
+            --manifest-path crates/cooperative-commerce-core/Cargo.toml \
+            --bin six-iso4217-import -- crates/cooperative-commerce-core/fixtures/six-list-one-minimal.xml \
+            > six-list-one-synthetic-normalized-second.json
+          cmp six-list-one-synthetic-normalized.json six-list-one-synthetic-normalized-second.json
+
       - name: Validate local NixOS pilot declaration
         run: |
           python tools/validate_deployment_profile.py profiles/examples/local-nixos-pilot.yaml > profile-validation.json
@@ -99,6 +124,7 @@ jobs:
             cooperative-offer-eur-validation.json
             cooperative-purchase-intent-validation.json
             code-list-snapshot-manifest-validation.json
+            six-list-one-synthetic-normalized.json
           if-no-files-found: error
           retention-days: 30
 
