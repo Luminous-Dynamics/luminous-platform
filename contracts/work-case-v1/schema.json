@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.luminousdynamics.io/work-case-v1/snapshot.schema.json",
+  "title": "Luminous Work Case Snapshot V1",
+  "description": "Portable case snapshot. Schema validity is not tenant authorization, proof of truth, permission, or production qualification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "case_id", "tenant_id", "kind", "title", "summary", "customer_id", "site_id", "asset_ids", "priority", "state", "revision", "assignee_id", "created_at", "updated_at", "external_refs", "evidence_refs"],
+  "properties": {
+    "schema_version": { "const": "work-case-v1" },
+    "case_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+    "tenant_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "kind": { "enum": ["incident", "request", "problem", "change"] },
+    "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 4000, "description": "Must be redacted/minimized before crossing the API boundary." },
+    "customer_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "site_id": { "type": ["string", "null"], "maxLength": 128 },
+    "asset_ids": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "uniqueItems": true },
+    "priority": { "type": "integer", "minimum": 1, "maximum": 5, "description": "1 is highest; 5 is lowest. Interpret through tenant policy." },
+    "state": { "enum": ["open", "in_progress", "waiting", "resolved", "closed", "cancelled"] },
+    "revision": { "type": "integer", "minimum": 1 },
+    "assignee_id": { "type": ["string", "null"], "maxLength": 128 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "external_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "external_id", "linked_at"],
+        "properties": {
+          "provider": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]{0,63}$" },
+          "external_id": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "linked_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["evidence_id", "digest_sha256", "classification", "evidence_kind", "issuer", "created_at"],
+        "properties": {
+          "evidence_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "digest_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "classification": { "enum": ["public", "internal", "confidential", "restricted"] },
+          "evidence_kind": { "enum": ["observation", "customer_assertion", "simulation", "interpretation", "unverified"] },
+          "issuer": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

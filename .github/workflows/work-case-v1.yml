@@ -1,0 +1,59 @@
+name: Native Work Case Contract V1
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "contracts/work-case-v1/**"
+      - "contracts/operations-event-v1/requirements.txt"
+      - ".github/workflows/work-case-v1.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "contracts/work-case-v1/**"
+      - "contracts/operations-event-v1/requirements.txt"
+      - ".github/workflows/work-case-v1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work-case-v1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-work-case:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Create isolated Python environment
+        run: python3 -m venv "$RUNNER_TEMP/work-case-v1-venv"
+
+      - name: Install pinned JSON Schema validator
+        run: "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
+
+      - name: Validate state machine, adversarial cases, fixture, and schema
+        run: "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m unittest discover -s contracts/work-case-v1/tests -p 'test_*.py' -v
+
+      - name: Publish bounded qualification summary
+        if: success()
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          {
+            echo "## Native Work Case Contract V1"
+            echo "- Tested source revision: $SOURCE_SHA"
+            echo "- Covers the in-memory state-machine reference model, JSON Schema, synthetic fixture, revision/idempotency behavior, and same-process concurrency tests."
+            echo "- Does not qualify persistence, production tenant isolation, live ConnectWise API behavior, SLA/billing semantics, evidence truth, or remote execution."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ensure validation did not modify checkout
+        run: git diff --exit-code && test -z "$(git status --porcelain)"
