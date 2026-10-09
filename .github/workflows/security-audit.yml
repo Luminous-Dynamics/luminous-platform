@@ -316,6 +316,59 @@ jobs:
           binary="$tool_dir/gitleaks"
           if ! "$binary" version > "$RUNNER_TEMP/gitleaks-version.txt" 2>&1; then incomplete gitleaks_binary_unusable; exit 0; fi
 
+          # Regression fixture: the present-day directory is clean, but a
+          # synthetic high-entropy canary was committed and then deleted.
+          # Gitleaks dir must see zero findings while Gitleaks git must find
+          # the historical patch. The canary is fabricated and not a credential.
+          history_fixture="$RUNNER_TEMP/gitleaks-history-fixture"
+          history_fixture_current="$RUNNER_TEMP/gitleaks-history-fixture-current"
+          history_fixture_config="$RUNNER_TEMP/gitleaks-history-fixture.toml"
+          history_fixture_tree_report="$RUNNER_TEMP/gitleaks-history-fixture-tree.json"
+          history_fixture_git_report="$RUNNER_TEMP/gitleaks-history-fixture-git.json"
+          rm -rf -- "$history_fixture" "$history_fixture_current"
+          mkdir -p "$history_fixture" "$history_fixture_current"
+          if ! git init -q "$history_fixture" \
+            || ! git -C "$history_fixture" config user.name "Security Audit Fixture" \
+            || ! git -C "$history_fixture" config user.email "security-audit-fixture@invalid.example"; then
+            incomplete gitleaks_history_fixture_setup_failed; exit 0
+          fi
+          cat > "$history_fixture_config" <<'TOML'
+          title = "Luminous Gitleaks history regression fixture"
+          [extend]
+          useDefault = true
+          [[rules]]
+          id = "luminous-history-fixture"
+          description = "Synthetic canary used only to test history scanning"
+          regex = '''LUMINOUS_HISTORY_SECRET_FIXTURE_[A-F0-9]{32}'''
+          keywords = ["LUMINOUS_HISTORY_SECRET_FIXTURE_"]
+          TOML
+          printf '%s\n' 'LUMINOUS_HISTORY_SECRET_FIXTURE_0123456789ABCDEF0123456789ABCDEF' > "$history_fixture/retired.txt"
+          if ! git -C "$history_fixture" add retired.txt \
+            || ! git -C "$history_fixture" commit -qm "add synthetic history-only canary"; then
+            incomplete gitleaks_history_fixture_commit_failed; exit 0
+          fi
+          rm "$history_fixture/retired.txt"
+          if ! git -C "$history_fixture" add -u \
+            || ! git -C "$history_fixture" commit -qm "remove synthetic history-only canary"; then
+            incomplete gitleaks_history_fixture_delete_commit_failed; exit 0
+          fi
+          printf '%s\n' 'No secret remains in this current-tree fixture.' > "$history_fixture_current/clean.txt"
+          if ! env -i PATH="$PATH" HOME="$home_dir" GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null "$binary" dir "$history_fixture_current" --config "$history_fixture_config" --gitleaks-ignore-path "$empty_ignore" --redact=100 --no-banner --log-level error --report-format json --report-path "$history_fixture_tree_report" --timeout 120 > /dev/null 2> "$RUNNER_TEMP/gitleaks-history-fixture-tree.log"; then
+            incomplete gitleaks_history_fixture_tree_scan_failed; exit 0
+          fi
+          if ! jq -e 'type == "array" and length == 0' "$history_fixture_tree_report" >/dev/null 2>&1; then
+            incomplete gitleaks_history_fixture_current_tree_not_clean; exit 0
+          fi
+          history_fixture_git_rc=0
+          if env -i PATH="$PATH" HOME="$home_dir" GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null "$binary" git "$history_fixture" --log-opts=HEAD --config "$history_fixture_config" --gitleaks-ignore-path "$empty_ignore" --redact=100 --no-banner --log-level error --report-format json --report-path "$history_fixture_git_report" --timeout 120 > /dev/null 2> "$RUNNER_TEMP/gitleaks-history-fixture-git.log"; then
+            history_fixture_git_rc=0
+          else
+            history_fixture_git_rc=$?
+          fi
+          if [[ "$history_fixture_git_rc" -ne 1 ]] || ! jq -e 'type == "array" and length > 0 and all(.[]; .RuleID == "luminous-history-fixture" and (.Commit | type == "string" and test("^[0-9a-f]{40}$")))' "$history_fixture_git_report" >/dev/null 2>&1; then
+            incomplete gitleaks_history_fixture_failed_to_detect_deleted_canary; exit 0
+          fi
+
           # Prove the tracked-file snapshot is not affected by repository
           # export-ignore rules. git archive is intentionally not used below:
           # .gitattributes is controlled by the subject and can hide tracked files.
