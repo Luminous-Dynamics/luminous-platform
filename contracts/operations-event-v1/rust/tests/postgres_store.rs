@@ -747,7 +747,7 @@ async fn crash_probe_after_commit_before_ack() {
         .ingest_event(
             &authenticated(),
             &revised_event(
-                "revision-4",
+                "revision-5",
                 "event-ci-crash-before-ack",
                 "idem-ci-crash-before-ack",
                 "Synthetic post-commit crash/replay scenario",
