@@ -7,8 +7,8 @@
 This repository hosts the reusable workflow used to audit the public Luminous-Dynamics repositories. It separates scanner execution from the repository being scanned and makes the requested source commit explicit. The first implementation covers:
 
 1. GitHub Actions workflow analysis with `zizmor` v1.30.1, using the auditor persona and online audits; both the action commit and scanner release are pinned.
-2. RustSec dependency-advisory checks for every *tracked* `Cargo.lock` file when the caller opts into Rust auditing.
-3. Machine-readable `cargo-audit --json` output, scanner stderr, lockfile SHA-256 values, exact checked-out commit, caller workflow identity, run identity, tool versions, and an overall pass/fail record.
+2. RustSec dependency-advisory checks for every *tracked* `Cargo.lock` file when the caller opts into Rust auditing, plus deterministic coverage mapping from each tracked `Cargo.toml` to its nearest workspace and tracked lockfile.
+3. Machine-readable `cargo-audit --json` output, scanner stderr, a JSON manifest-coverage report, lockfile and coverage-report SHA-256 values, exact checked-out commit, caller workflow identity, run identity, tool versions, and an overall pass/fail record. Workflow-analysis output is preserved as a separate artifact from RustSec output.
 4. Read-only token permissions, immutable action references, an exact-subject checkout assertion, no repository secrets, and no write-capable token permissions.
 
 The platform self-check runs the workflow audit on pushes to `main`, pull requests, a weekly schedule, and manual dispatch. Callers with Rust dependency graphs set `audit_rust: true`.
@@ -16,7 +16,7 @@ The platform self-check runs the workflow audit on pushes to `main`, pull reques
 ## What a result means
 
 - **PASS** means the configured scanner completed for the covered inputs and returned exit status zero.
-- **FAIL** means a scanner returned nonzero, the workflow could not establish its subject, or no tracked Rust lockfile was available when Rust auditing was requested.
+- **FAIL** means a scanner returned nonzero, a tracked Cargo manifest has no mapped tracked workspace lockfile, the checkout has an unaudited Git submodule, the workflow could not establish its subject, or no tracked Rust lockfile was available when Rust auditing was requested.
 - **INCOMPLETE** applies at the program level when the repository contains relevant assets outside the scanner's declared scope, when results are missing, or when an independent verifier has not validated the receipt.
 
 A workflow being queued, starting, or finishing successfully is not by itself a security pass. A pass from this initial workflow only covers its declared checks. It does not prove absence of unknown vulnerabilities, correctness of application logic, security of the GitHub organization settings, or resilience against a determined attacker.
@@ -38,7 +38,7 @@ The platform's host-availability contract and its security decision contract mus
 - `contents: read` and `actions: read` are the maximum token permissions used; dependency scanning has only `contents: read`.
 - Checkout credentials are not persisted. No audit step receives deployment, publishing, or signing secrets.
 - The `zizmor` job produces findings/annotations for review. Its finding state is not converted into a green security certification by this workflow.
-- The RustSec job scans committed lockfiles, not every possible dependency-resolution graph. It does **not** yet assert that every application manifest has an associated lockfile, and it does not audit non-Rust ecosystems.
+- The RustSec job scans committed lockfiles and now maps tracked `Cargo.toml` files to the nearest workspace lockfile. This is a conservative static inventory rather than Cargo's own complete package-resolution model; it does not yet audit non-Rust ecosystems. Any Git submodule is explicitly reported as unaudited and forces the coverage gate to fail.
 
 **Important limitation:** a repository-defined workflow is not, by itself, an independent trust anchor. A pull request can alter local workflow definitions. Before treating its result as a merge-authorizing control, configure a ruleset/required workflow that cannot be satisfied by a PR replacing or skipping the intended auditor. Verify the workflow identity, immutable reusable-workflow revision, subject SHA, run attempt, and artifact digest from outside the audited source repository.
 
@@ -83,6 +83,8 @@ The first rollout is complete only when all of the following are evidenced:
 - The audited commit SHA equals the requested subject SHA.
 - The workflow-analysis job ran against the committed `.github/` tree.
 - Every tracked `Cargo.lock` discovered by the scanner has one JSON result and a recorded exit code.
+- Every tracked `Cargo.toml` maps to its expected tracked workspace lockfile, and no Git submodule remains outside the scanned tree.
+- The workflow and RustSec jobs preserve distinct evidence artifacts; a missing workflow-analysis report is recorded as incomplete.
 - Any nonzero RustSec exit remains a failure; all lockfiles are still attempted so one finding does not hide the remaining inventory.
 - Artifact upload succeeds when evidence files exist.
 - The final verdict preserves limitations and is independently interpretable; it is not represented as a human penetration test or a complete audit.
