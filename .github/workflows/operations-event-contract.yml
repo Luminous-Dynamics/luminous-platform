@@ -151,8 +151,8 @@ jobs:
           cp -a services/work-case-postgres "$RUNNER_TEMP/work-case-postgres"
           cargo +1.96.0 test --manifest-path "$RUNNER_TEMP/work-case-postgres/Cargo.toml" --all-targets 2>&1 | tee "$log"
           count="$(awk '/^test result:/ { for (i = 1; i <= NF; i++) if ($i == "passed;") total += $(i - 1) } END { print total + 0 }' "$log")"
-          if [[ -z "$count" || "$count" -lt 5 ]]; then
-            echo "::error::PostgreSQL Work Case suite must execute at least 5 tests; observed $count."
+          if [[ -z "$count" || "$count" -lt 6 ]]; then
+            echo "::error::PostgreSQL Work Case suite must execute at least 6 tests; observed $count."
             exit 1
           fi
           echo "test_count=$count" >> "$GITHUB_OUTPUT"

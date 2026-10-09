@@ -548,6 +548,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn concurrent_stale_transitions_allow_exactly_one_winner() {
+        let pool = pool(4).await;
+        let repo = WorkCaseRepository { pool: pool.clone() };
+        let p = principal();
+        let created = repo.create_case(&p, command(
+            "race-create-key-001", "case-transition-race-001", "Concurrent transition case"
+        )).await.expect("create case");
+
+        let left = repo.transition_case(&p, &created.case_id, CaseState::InProgress, 1,
+            "Concurrent winner A", "race-transition-key-a", "race-transition-command-a", "2026-10-09T12:40:00Z");
+        let right = repo.transition_case(&p, &created.case_id, CaseState::Waiting, 1,
+            "Concurrent winner B", "race-transition-key-b", "race-transition-command-b", "2026-10-09T12:40:01Z");
+        let (left, right) = tokio::join!(left, right);
+        match (left, right) {
+            (Ok(_), Err(RepositoryError::RevisionConflict))
+            | (Err(RepositoryError::RevisionConflict), Ok(_)) => {}
+            other => panic!("exactly one competing expected-revision command must win: {other:?}"),
+        }
+
+        let current = repo.get_case(&p, &created.case_id).await.expect("read raced case").expect("case exists");
+        assert_eq!(current.revision, 2);
+        assert!(matches!(current.state, CaseState::InProgress | CaseState::Waiting));
+        let (activity, outbox) = side_effect_counts(&pool, &p, &created.case_id).await.expect("side-effect counts");
+        assert_eq!(activity, 2, "one creation plus exactly one winning transition");
+        assert_eq!(outbox, 2, "one creation plus exactly one winning outbox event");
+    }
+
+    #[tokio::test]
     async fn concurrent_duplicate_claim_commits_one_case_and_outbox() {
         let pool = pool(4).await;
         let repo = WorkCaseRepository { pool };
