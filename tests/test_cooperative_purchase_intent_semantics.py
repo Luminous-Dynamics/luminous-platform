@@ -15,7 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from validate_cooperative_purchase_intent import validate_intent  # noqa: E402
+from validate_cooperative_purchase_intent import purchase_scope_sha256, validate_intent  # noqa: E402
 
 SCHEMA = json.loads(
     (ROOT / "schemas" / "cooperative-purchase-intent-v1.schema.json").read_text(encoding="utf-8")
@@ -53,6 +53,7 @@ def binding_order_candidate() -> dict:
         "signature_reference": "fixture:signature:001",
         "single_use": True
     }
+    document["authorization"]["scope_sha256"] = purchase_scope_sha256(document)
     return document
 
 
