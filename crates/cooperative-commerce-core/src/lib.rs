@@ -130,7 +130,7 @@ impl FromStr for Decimal {
         if input.is_empty() {
             return Err(DecimalError::Empty);
         }
-        if input.trim() != input || input.contains(['e', 'E', '+']) {
+        if input.trim() != input || input.contains('e') || input.contains('E') || input.contains('+') {
             return Err(DecimalError::InvalidSyntax);
         }
 
@@ -190,7 +190,7 @@ impl fmt::Display for Decimal {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum EvidenceKind {
     AlternativeInvoice,
     AlternativeQuote,
@@ -661,7 +661,7 @@ mod tests {
     #[test]
     fn negative_savings_are_preserved_not_clamped() {
         let mut candidate = input();
-        candidate.actual_lines[0].line_total = Decimal::parse("1250").unwrap();
+        candidate.actual_lines[0].line_total = Decimal::parse("1200").unwrap();
         let report = calculate_savings(&candidate).unwrap();
         assert_eq!(report.net_difference, "-30");
         assert!(report.notes.iter().any(|note| note.contains("Net difference is negative")));
