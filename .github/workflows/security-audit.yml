@@ -75,11 +75,16 @@ jobs:
           if [[ -f "$report" ]]; then
             cp "$report" "$destination"
             report_sha256="$(sha256sum "$destination" | cut -d' ' -f1)"
+            if [[ "${ZIZMOR_OUTCOME:-unknown}" == "success" ]]; then
+              sed -i 's/^zizmor_status=.*/zizmor_status=PASS/' security-audit-results/workflows/summary.txt
+            else
+              sed -i 's/^zizmor_status=.*/zizmor_status=FAIL/' security-audit-results/workflows/summary.txt
+            fi
             echo "zizmor_action_outcome=${ZIZMOR_OUTCOME:-unknown}" >> security-audit-results/workflows/summary.txt
             echo "zizmor_report_sha256=$report_sha256" >> security-audit-results/workflows/summary.txt
           else
+            sed -i 's/^zizmor_status=.*/zizmor_status=INCOMPLETE/' security-audit-results/workflows/summary.txt
             echo "zizmor_action_outcome=${ZIZMOR_OUTCOME:-unknown}" >> security-audit-results/workflows/summary.txt
-            echo "zizmor_status=INCOMPLETE" >> security-audit-results/workflows/summary.txt
             echo "report_missing=true" >> security-audit-results/workflows/summary.txt
           fi
 
