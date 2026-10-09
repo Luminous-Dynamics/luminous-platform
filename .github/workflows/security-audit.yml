@@ -239,7 +239,7 @@ jobs:
           for record in stage.split(bytes([0])):
               if not record:
                   continue
-              metadata, path_bytes = record.split(b"\\t", 1)
+              metadata, path_bytes = record.split(bytes([9]), 1)
               if metadata.split(b" ", 1)[0] == b"160000":
                   submodules.append(path_bytes.decode())
           parsed = {}
@@ -320,7 +320,7 @@ jobs:
               ],
               "entries": entries
           }
-          output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n")
+          output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
           print(f"Manifest coverage: {report['status']} "
                 f"({report['mapped_manifest_count']}/{report['manifest_count']} manifests; "
                 f"{report['tracked_lockfile_count']} tracked lockfiles; "
