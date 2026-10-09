@@ -1,31 +1,17 @@
-name: Native Work Case Contract V1
+name: Manual Work Case Contract V1
 
+# Deprecated as an automatic workflow: the primary Operations Event workflow
+# already executes both contract suites together. Keep this workflow for a
+# deliberate standalone qualification after it is available from the default branch.
 on:
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "contracts/work-case-v1/**"
-      - "contracts/operations-event-v1/requirements.txt"
-      - "scripts/run_unittest_suite.py"
-      - "scripts/tests/**"
-      - ".github/workflows/operations-event-contract.yml"
-      - ".github/workflows/work-case-v1.yml"
-  push:
-    branches: ["**"]
-    paths:
-      - "contracts/work-case-v1/**"
-      - "contracts/operations-event-v1/requirements.txt"
-      - "scripts/run_unittest_suite.py"
-      - "scripts/tests/**"
-      - ".github/workflows/operations-event-contract.yml"
-      - ".github/workflows/work-case-v1.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: work-case-v1-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: work-case-v1-manual
+  cancel-in-progress: false
 
 jobs:
   validate-work-case:
@@ -34,10 +20,9 @@ jobs:
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
-      - name: Checkout exact source revision
+      - name: Checkout explicitly selected revision
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
       - name: Set up pinned Python
@@ -50,27 +35,30 @@ jobs:
 
       - name: Install pinned JSON Schema validator
         run: >-
-          "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
+          "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m pip install
+          --disable-pip-version-check --no-input --no-cache-dir
+          -r contracts/operations-event-v1/requirements.txt
 
-      - name: Self-test fail-closed test runner
+      - name: Self-test fail-closed runner
         run: >-
-          "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m unittest discover -s scripts/tests -p 'test_run_unittest_suite.py' -v
+          "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m unittest discover
+          -s scripts/tests -p 'test_run_unittest_suite.py' -v
 
-      - name: Validate work-case model and SQLite persistence reference
+      - name: Validate Work Case V1
         run: >-
-          "$RUNNER_TEMP/work-case-v1-venv/bin/python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 28
+          "$RUNNER_TEMP/work-case-v1-venv/bin/python" scripts/run_unittest_suite.py
+          contracts/work-case-v1/tests --minimum-tests 28
 
       - name: Publish bounded qualification summary
         if: success()
         env:
-          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SOURCE_SHA: ${{ github.sha }}
         run: |
           {
-            echo "## Native Work Case Contract V1"
+            echo "## Manual Work Case Contract V1"
             echo "- Tested source revision: $SOURCE_SHA"
-            echo "- Requires at least 28 discovered test cases and executes the entire discovered set; zero tests, import errors, failed tests, or count mismatches are failures."
-            echo "- Covers schema, synthetic fixture, lifecycle model, local SQLite transactions/restart/idempotency and fault injection."
-            echo "- Does not qualify power-loss guarantees, a production database, API tenant isolation, live ConnectWise behavior, SLA/billing, evidence truth, or remote execution."
+            echo "- Requires at least 28 discovered Work Case test cases and executes the full discovered suite."
+            echo "- Does not qualify production database isolation/durability, tenant authorization, live provider behavior, evidence truth, or remote execution."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Ensure validation did not modify checkout
