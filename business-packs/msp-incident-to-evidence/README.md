@@ -10,6 +10,9 @@ This pack gives a small MSP a repeatable first service. It is designed to work m
 - [Customer intake template](templates/customer-intake.md) — clarify authority, target, data boundary, and acceptance.
 - [Statement-of-work template](templates/statement-of-work.md) — record scope, exclusions, responsibilities, data handling, and fees.
 - [Delivery report template](templates/delivery-report.md) — separate observed facts, assertions, simulations, test results, and unknowns.
+- [Discovery call guide](templates/discovery-call.md) — learn the buyer's real problem without overselling.
+- [One-page offer](templates/one-page-offer.md) — explain the scope, outcomes, and exclusions.
+- [Pricing worksheet](templates/pricing-worksheet.md) — estimate a viable local price floor from actual delivery costs.
 
 The templates are drafting aids. Adapt contracts, tax, insurance, privacy and retention terms to the relevant jurisdiction with a qualified adviser.
 
