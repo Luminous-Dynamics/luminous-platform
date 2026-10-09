@@ -26,6 +26,8 @@ REQUIRED_ACTIVE_CHECKS = {
     "schema_validated",
     "duplicate_codes_checked",
     "effective_dates_checked",
+    "sampled_against_source",
+    "independent_review",
 }
 
 
@@ -146,6 +148,10 @@ def validate_manifest(
     if effective_from and effective_until and effective_until <= effective_from:
         errors.append("snapshot.effective_until: must be after effective_from")
     if status == "active":
+        if metadata["fixture_only"]:
+            errors.append("metadata.fixture_only: an illustrative fixture must never be active")
+        if validation["status"] != "passed":
+            errors.append("validation.status: active registries require a passed validation report")
         if code_list["version_label"].strip().lower() in {"", "not-retrieved", "unknown", "unversioned"}:
             errors.append("code_list.version_label: active registries require a publisher version or an explicitly assigned immutable snapshot label")
         if review_due and current >= review_due:
