@@ -175,14 +175,37 @@ jobs:
           report="security-audit-results/workflows/actionlint.txt"
           archive="$RUNNER_TEMP/actionlint_1.7.12_linux_amd64.tar.gz"
           tool_dir="$RUNNER_TEMP/actionlint_1.7.12"
-          mkdir -p security-audit-results/workflows "$tool_dir"
+          shellcheck_archive="$RUNNER_TEMP/shellcheck-v0.11.0.linux.x86_64.tar.xz"
+          shellcheck_dir="$RUNNER_TEMP/shellcheck-v0.11.0"
+          mkdir -p security-audit-results/workflows "$tool_dir" "$shellcheck_dir"
           echo "version=v1.7.12" > "$report"
           echo "expected_archive_sha256=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8" >> "$report"
+          echo "shellcheck_version_expected=v0.11.0" >> "$report"
+          echo "shellcheck_archive_sha256_expected=8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198" >> "$report"
           curl -fsSL --retry 3 \
             -o "$archive" \
             "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
           echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $archive" | sha256sum -c -
           tar -xzf "$archive" -C "$tool_dir" actionlint
+          if ! curl -fsSL --retry 3 -o "$shellcheck_archive" \
+            "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.xz"; then
+            echo "shellcheck_setup_status=FAIL reason=download_failed" >> "$report"
+            exit 1
+          fi
+          if ! echo "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198  $shellcheck_archive" | sha256sum -c -; then
+            echo "shellcheck_setup_status=FAIL reason=checksum_mismatch" >> "$report"
+            exit 1
+          fi
+          if ! tar -xJf "$shellcheck_archive" -C "$RUNNER_TEMP" shellcheck-v0.11.0/shellcheck; then
+            echo "shellcheck_setup_status=FAIL reason=extract_failed" >> "$report"
+            exit 1
+          fi
+          shellcheck="$RUNNER_TEMP/shellcheck-v0.11.0/shellcheck"
+          if ! "$shellcheck" --version >> "$report" 2>&1; then
+            echo "shellcheck_setup_status=FAIL reason=unusable_binary" >> "$report"
+            exit 1
+          fi
+          echo "shellcheck_setup_status=PASS" >> "$report"
           binary="$tool_dir/actionlint"
           mapfile -d '' -t audit_workflows < <(
             git ls-files -z -- '.github/workflows/*.yml' '.github/workflows/*.yaml' | LC_ALL=C sort -z
@@ -193,7 +216,7 @@ jobs:
           fi
           echo "workflow_file_count=${#audit_workflows[@]}" >> "$report"
           "$binary" -version >> "$report" 2>&1
-          if "$binary" "${audit_workflows[@]}" >> "$report" 2>&1; then
+          if "$binary" -shellcheck="$shellcheck" "${audit_workflows[@]}" >> "$report" 2>&1; then
             rc=0
           else
             rc=$?
