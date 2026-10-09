@@ -360,9 +360,15 @@ jobs:
           secret_safe="security-audit-results/workflows/gitleaks-sanitized.json"
           if [[ ! -f "$secret_safe" ]]; then
             jq -n --arg repository "$GITHUB_REPOSITORY" --arg subject "${SUBJECT_SHA:-unknown}" '{schema:"luminous.security-audit.gitleaks-summary.v1", repository:$repository, subject_sha:$subject, scanner_version:"v8.30.1", config_sha256:"missing", status:"INCOMPLETE", reason:"secret_scan_step_not_completed", finding_count:null, findings:[]}' > "$secret_safe"
-            echo "secret_scan_status=INCOMPLETE" >> "$summary"
-            echo "secret_scan_reason=secret_scan_step_not_completed" >> "$summary"
-            echo "secret_report_sha256=$(sha256sum "$secret_safe" | cut -d' ' -f1)" >> "$summary"
+          fi
+          safe_digest="$(sha256sum "$secret_safe" | cut -d' ' -f1)"
+          safe_digest_fields="$(grep -c '^secret_report_sha256=' "$summary" || true)"
+          if [[ "$safe_digest_fields" -eq 1 ]]; then
+            sed -i "s#^secret_report_sha256=.*#secret_report_sha256=$safe_digest#" "$summary"
+          elif [[ "$safe_digest_fields" -eq 0 ]]; then
+            echo "secret_report_sha256=$safe_digest" >> "$summary"
+          else
+            echo "receipt_error=duplicate_secret_report_digest_fields" >> "$summary"
           fi
           report="$RUNNER_TEMP/zizmor"
           destination="security-audit-results/workflows/zizmor.txt"
