@@ -86,7 +86,7 @@ CREATE TABLE ops.inbox_events (
   source_uri text NOT NULL CHECK (length(source_uri) BETWEEN 1 AND 512),
   event_id text NOT NULL CHECK (length(event_id) BETWEEN 1 AND 200),
   content_digest text NOT NULL CHECK (content_digest ~ '^[0-9a-f]{64}$'),
-  outcome text NOT NULL CHECK (outcome IN (
+  outcome text NOT NULL DEFAULT 'PROCESSING' CHECK (outcome IN (
     'PROCESSING', 'ACCEPTED', 'DUPLICATE_EVENT', 'DUPLICATE_EFFECT',
     'DUPLICATE_REVISION', 'STALE_REVISION', 'QUARANTINED'
   )),
@@ -218,7 +218,7 @@ GRANT SELECT ON ops.tenants, ops.connector_connections, ops.resource_mappings,
   ops.incident_heads, ops.inbox_events, ops.business_effects, ops.incident_activity,
   ops.outbox_events, ops.quarantined_events TO luminous_ops_app;
 
-GRANT INSERT (tenant_id, connection_id, source_uri, event_id, content_digest, outcome)
+GRANT INSERT (tenant_id, connection_id, source_uri, event_id, content_digest)
   ON ops.inbox_events TO luminous_ops_app;
 GRANT UPDATE (outcome) ON ops.inbox_events TO luminous_ops_app;
 

@@ -180,8 +180,8 @@ impl PostgresOperationsStore {
         // resolves to this row after the first transaction commits.
         let inserted = sqlx::query(
             "INSERT INTO ops.inbox_events \
-             (tenant_id, connection_id, source_uri, event_id, content_digest, outcome) \
-             VALUES ($1, $2, $3, $4, $5, 'PROCESSING') \
+             (tenant_id, connection_id, source_uri, event_id, content_digest) \
+             VALUES ($1, $2, $3, $4, $5) \
              ON CONFLICT DO NOTHING RETURNING event_id",
         )
         .bind(&authenticated.tenant_id)
