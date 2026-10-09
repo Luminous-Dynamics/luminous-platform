@@ -228,7 +228,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         store.ingest_event(&auth, &malformed_revision_key_conflict).await,
         Err(StoreError::IdempotencyConflict)
     ));
-    assert_eq!(scalar_count(&pool, "quarantined_events").await, 2);
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 3);
     assert_eq!(row_count_snapshot(&pool).await, [3, 1, 1, 1, 1]);
 
     // observedat is receiver-local and excluded from replay identity.
@@ -305,7 +305,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         Err(StoreError::IdempotencyConflict)
     ));
     assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
-    assert_eq!(scalar_count(&pool, "quarantined_events").await, 4);
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 5);
     assert!(matches!(
         store.ingest_event(&auth, &stale_key_conflict).await.unwrap(),
         IngestOutcome::Quarantined { reason_code } if reason_code == "IDEMPOTENCY_KEY_CONTENT_CONFLICT"
@@ -337,7 +337,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         store.ingest_event(&auth, &stale_key_reuse).await,
         Err(StoreError::IdempotencyConflict)
     ));
-    assert_eq!(scalar_count(&pool, "quarantined_events").await, 5);
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 6);
     assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
 
     sqlx::query(
@@ -360,7 +360,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         store.ingest_event(&auth, &unordered).await.unwrap(),
         IngestOutcome::Quarantined { reason_code: "REVISION_ORDER_UNPROVEN".to_owned() }
     );
-    assert_eq!(scalar_count(&pool, "quarantined_events").await, 6);
+    assert_eq!(scalar_count(&pool, "quarantined_events").await, 7);
     assert_eq!(scalar_count(&pool, "outbox_events").await, 2);
 
     sqlx::query(
