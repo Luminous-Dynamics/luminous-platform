@@ -6,9 +6,9 @@ This Rust crate implements a contract-shaped Work Case V1 create/read path plus 
 
 ## Trust boundary
 
-The auth/session layer must construct VerifiedPrincipal only after authenticating the actor and resolving tenant membership from trusted server-side state. Do not populate it from request-body tenant_id, actor_id, or role fields. The type documents a service-layer contract; it is not a cryptographic capability.
+The auth/session layer must construct VerifiedPrincipal only after authenticating the actor and resolving tenant membership from trusted server-side state. Do not populate it from request-body tenant_id, actor_id, or role fields. The repository constructor is crate-private so a caller outside this crate cannot fabricate a VerifiedPrincipal directly; an authenticated service boundary still has to be implemented before production use.
 
-Every repository operation sets app.tenant_id transaction-locally and uses explicit tenant predicates; PostgreSQL RLS is a second barrier. A test-only query deliberately omits the tenant predicate to test RLS itself. The runtime role is not the migration/table owner and has no UPDATE/DELETE permission on case_activity or command_idempotency.
+Every repository operation sets app.tenant_id transaction-locally and uses explicit tenant predicates; PostgreSQL RLS is a second barrier. The custom GUC is settable by the database role and is **not an identity proof**. These policies protect against omitted tenant predicates and accidental query widening; they do not protect against arbitrary SQL issued by a compromised application role. Server-side membership validation, parameterized SQL and prevention of arbitrary SQL remain mandatory. A test-only query deliberately omits the tenant predicate to test RLS itself. The runtime role is not the migration/table owner; it cannot update/delete activity, and its only idempotency update privilege is the one-time result-payload finalization guarded by database triggers.
 
 ## Local qualification prerequisites
 
