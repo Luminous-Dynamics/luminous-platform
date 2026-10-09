@@ -6,6 +6,7 @@ on:
     paths:
       - "contracts/work-case-v1/**"
       - "contracts/operations-event-v1/requirements.txt"
+      - "scripts/run_unittest_suite.py"
       - ".github/workflows/operations-event-contract.yml"
       - ".github/workflows/work-case-v1.yml"
   push:
@@ -13,6 +14,7 @@ on:
     paths:
       - "contracts/work-case-v1/**"
       - "contracts/operations-event-v1/requirements.txt"
+      - "scripts/run_unittest_suite.py"
       - ".github/workflows/operations-event-contract.yml"
       - ".github/workflows/work-case-v1.yml"
 
@@ -48,7 +50,7 @@ jobs:
         run: "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
 
       - name: Validate work-case model and SQLite persistence reference
-        run: "$RUNNER_TEMP/work-case-v1-venv/bin/python" -m unittest discover -s contracts/work-case-v1/tests -p 'test_*.py' -v
+        run: "$RUNNER_TEMP/work-case-v1-venv/bin/python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 28
 
       - name: Publish bounded qualification summary
         if: success()
@@ -58,6 +60,7 @@ jobs:
           {
             echo "## Native Work Case Contract V1"
             echo "- Tested source revision: $SOURCE_SHA"
+            echo "- Requires at least 28 discovered test cases and executes the entire discovered set; zero tests, import errors, failed tests, or count mismatches are failures."
             echo "- Covers schema, synthetic fixture, lifecycle model, local SQLite transactions/restart/idempotency and fault injection."
             echo "- Does not qualify power-loss guarantees, a production database, API tenant isolation, live ConnectWise behavior, SLA/billing, evidence truth, or remote execution."
           } >> "$GITHUB_STEP_SUMMARY"
