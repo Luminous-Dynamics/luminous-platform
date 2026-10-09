@@ -259,6 +259,11 @@ jobs:
           summary="security-audit-results/workflows/summary.txt"
           safe_report="security-audit-results/workflows/gitleaks-sanitized.json"
           raw_report="$RUNNER_TEMP/gitleaks-raw.json"
+          history_safe_report="security-audit-results/workflows/gitleaks-history-sanitized.json"
+          history_raw_report="$RUNNER_TEMP/gitleaks-history-raw.json"
+          history_raw_root="$RUNNER_TEMP/gitleaks-history-root.json"
+          history_raw_submodule="$RUNNER_TEMP/gitleaks-history-submodule.json"
+          history_inventory="security-audit-results/workflows/gitleaks-history-inventory.json"
           archive="$RUNNER_TEMP/gitleaks_8.30.1_linux_x64.tar.gz"
           tool_dir="$RUNNER_TEMP/gitleaks_8.30.1"
           home_dir="$RUNNER_TEMP/gitleaks-home"
@@ -285,6 +290,17 @@ jobs:
             set_field secret_source_inventory_sha256 missing
             set_field secret_finding_count unknown
             set_field secret_report_sha256 "$(sha256sum "$safe_report" | cut -d' ' -f1)"
+            jq -n --arg repository "$GITHUB_REPOSITORY" --arg subject "$SUBJECT_SHA" --arg config "$config_sha" --arg reason "$reason" '{schema:"luminous.security-audit.gitleaks-history-summary.v1",repository:$repository,subject_sha:$subject,scanner_version:"v8.30.1",status:"INCOMPLETE",reason:$reason,history_tip:"unknown",history_commit_count:null,submodule_tip:"not_required",submodule_commit_count:0,history_inventory_sha256:"missing",config_sha256:$config,raw_report_sha256:$raw_sha,finding_count:null,findings:[]}' > "$history_safe_report"
+            jq -n --arg subject "$SUBJECT_SHA" --arg reason "$reason" '{schema:"luminous.security-audit.gitleaks-history-inventory.v1",subject_sha:$subject,status:"INCOMPLETE",reason:$reason,root:{head:"unknown",commit_count:null,is_shallow:null},submodule:{path:"not_required",head:"not_required",commit_count:0,is_shallow:false}}' > "$history_inventory"
+            set_field secret_history_scan_status INCOMPLETE
+            set_field secret_history_scan_reason "$reason"
+            set_field secret_history_exit_code NOT_RUN
+            set_field secret_history_raw_report_sha256 "$raw_sha"
+            set_field secret_history_inventory_sha256 "$(sha256sum "$history_inventory" | cut -d' ' -f1)"
+            set_field secret_history_root_commit_count unknown
+            set_field secret_history_submodule_commit_count unknown
+            set_field secret_history_finding_count unknown
+            set_field secret_history_report_sha256 "$(sha256sum "$history_safe_report" | cut -d' ' -f1)"
           }
           cat > "$config" <<'TOML'
           title = "Luminous trusted Gitleaks defaults"
