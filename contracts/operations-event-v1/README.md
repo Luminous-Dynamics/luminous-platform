@@ -2,9 +2,7 @@
 
 ## Implementation-language boundary
 
-**Production services and domain logic are Rust-first; production Python is not permitted.** The Python files in this directory are explicitly non-production reference models and test harnesses used to explore semantics, not deployable adapters, daemons, API services, authorization boundaries, or durable repositories. They must not be imported or packaged by production binaries or used as the only evidence for production correctness.
-
-The next implementation step is to port the event schema validation and durable inbox/outbox behavior into Rust crates, with typed domain APIs and Rust integration tests against the actual persistence layer. Until that port exists, these Python models are research fixtures only; their passing tests do not qualify a Rust implementation or production deployment. Keep production build/deployment artifacts free of Python runtimes and Python dependencies.
+**Production services and domain logic are Rust-first; production Python is not permitted.** The Rust crate under `rust/` is the canonical Operations Event V1 schema validator and trusted-context binding checker. Python files in this directory remain research-only reference models and test harnesses; they are not deployable adapters, daemons, API services, authorization boundaries, or durable repositories. They must not be imported or packaged by production binaries, and they do not qualify the Rust implementation or production deployment.
 
 This folder defines the first portable cross-repository event contract for the proposed Xenia Operations Fabric. The envelope uses the **CloudEvents 1.0 structured JSON format** instead of introducing a proprietary envelope.
 
@@ -19,14 +17,22 @@ This folder defines the first portable cross-repository event contract for the p
 - `tests/test_adapter_model.py` — deterministic normalization, trusted tenant/source binding, duplicate-delivery and idempotency-conflict tests.
 - `tests/test_durable_sqlite_model.py` — restart/replay, conflict, transaction fault-injection, concurrency, quarantine, stale-revision, and outbox lease tests.
 - `DURABLE_SQLITE_REFERENCE_MODEL.md` — scope, semantics, limitations, and production continuation gates.
-- `requirements.txt` — pinned validator dependency used by local tests and CI.
+- `rust/` — canonical Rust-native envelope/payload validator, trusted connector-binding checks, and adversarial contract tests.
+- `requirements.txt` — Python validator pinned for research-only reference-model tests; not a production dependency.
 
-Run locally:
+Primary contract qualification (Rust):
 
 ```sh
-python3 -m venv /tmp/operations-event-contract-venv
-/tmp/operations-event-contract-venv/bin/python -m pip install --no-cache-dir -r contracts/operations-event-v1/requirements.txt
-PYTHONDONTWRITEBYTECODE=1 /tmp/operations-event-contract-venv/bin/python -m unittest discover -s contracts/operations-event-v1/tests -p 'test_*.py' -v
+rustup toolchain install 1.96.0 --profile minimal
+cargo +1.96.0 test --manifest-path contracts/operations-event-v1/rust/Cargo.toml --all-targets
+```
+
+Optional reference-model research tests (Python; never a production runtime):
+
+```sh
+python3 -m venv /tmp/operations-reference-venv
+/tmp/operations-reference-venv/bin/python -m pip install --no-cache-dir -r contracts/operations-event-v1/requirements.txt
+PYTHONDONTWRITEBYTECODE=1 /tmp/operations-reference-venv/bin/python scripts/run_unittest_suite.py contracts/operations-event-v1/tests --minimum-tests 1
 ```
 
 ## Profile choices
@@ -34,6 +40,12 @@ PYTHONDONTWRITEBYTECODE=1 /tmp/operations-event-contract-venv/bin/python -m unit
 The envelope uses CloudEvents core attributes `specversion`, `id`, `source`, `type`, `subject`, `time`, `datacontenttype`, and `dataschema`, plus a small allowlist of lowercase extension attributes: `tenantid`, `idempotencykey`, `observedat`, `correlationid`, `causationref`, `producersystem`, `producercomponent`, `producerversion`, `actorkind`, `actorid`, and `authorityref`.
 
 The strict local profile rejects unknown extension attributes so the accepted metadata surface is explicit. This is stricter than general CloudEvents extensibility; external events must first be parsed by their adapter and normalized into this profile. Use the `application/cloudevents+json` media type for structured CloudEvents JSON.
+
+## Rust validator boundary
+
+The Rust crate embeds the checked-in Draft 2020-12 schemas, enables format assertions, disables network schema retrieval, and accepts only the exact registered `dataschema` URI. It emits stable rule codes and JSON Pointers without rejected values. `validate_event_for_connection` also compares source URI, producer, actor/connection identity, company-to-tenant mapping, and company/resource-to-local-incident mapping with a caller-supplied trusted context. That context must originate from authenticated connector configuration; this crate does not authenticate connections or itself provide durable idempotency.
+
+The CI workflow qualifies the Rust contract separately from the Python reference-model research job. Passing the latter does not qualify the Rust crate or any production system.
 
 ## Important limits
 

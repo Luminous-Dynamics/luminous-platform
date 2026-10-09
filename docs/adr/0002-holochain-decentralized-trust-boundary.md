@@ -55,7 +55,7 @@ Build one deliberately narrow **cross-organization incident acknowledgement and 
 
 The first pilot should be read/attest-only: no live ticket writes back to the provider, no remote execution, and no billing or settlement.
 
-The initial machine-readable package boundary now lives in [Holochain Attestation Share Package V1](../../contracts/holochain-attestation-v1/README.md), with its [JSON Schema](../../contracts/holochain-attestation-v1/share-package.schema.json), synthetic fixture, and adversarial tests. The companion `validator.py` adds cross-field checks for unique manifest references and self-referential dispute/supersession targets, which JSON Schema alone does not fully express. It is a payload contract only; it does not implement the Holochain adapter or integrity zome and has not yet been qualified against multi-agent DHT behavior.
+The initial machine-readable package boundary now lives in [Holochain Attestation Share Package V1](../../contracts/holochain-attestation-v1/README.md), with its [JSON Schema](../../contracts/holochain-attestation-v1/share-package.schema.json), synthetic fixture, and adversarial tests. The companion Rust crate under `contracts/holochain-attestation-v1/rust/` adds cross-field checks for unique `manifestRef` values and self-referential dispute/supersession targets, which JSON Schema alone does not fully express. It is a payload contract only; it does not implement the Holochain adapter or integrity zome and has not yet been qualified against multi-agent DHT behavior.
 
 ## Integration protocol and correctness
 

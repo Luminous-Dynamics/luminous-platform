@@ -6,7 +6,6 @@ on:
     paths:
       - "contracts/operations-event-v1/**"
       - "contracts/holochain-attestation-v1/**"
-      - "README.md"
       - "scripts/run_unittest_suite.py"
       - "scripts/tests/**"
       - ".github/workflows/operations-event-contract.yml"
@@ -27,11 +26,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
+  rust_contracts:
+    name: Rust contract qualification
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
-    env:
-      PYTHONDONTWRITEBYTECODE: "1"
+    timeout-minutes: 15
     steps:
       - name: Checkout exact source revision
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -39,61 +37,34 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
-      - name: Set up Python for reference-model conformance tests
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12.12"
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.96.0 --profile minimal
 
-      - name: Create isolated Python environment
-        run: python3 -m venv "$RUNNER_TEMP/operations-event-contract-venv"
-
-      - name: Install pinned schema validator
-        run: >-
-          "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
-
-      - name: Self-test fail-closed test runner
-        id: runner_selftest
-        shell: bash
-        run: |
-          set -euo pipefail
-          log="$RUNNER_TEMP/runner-selftest.log"
-          python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
-          "$python" scripts/run_unittest_suite.py scripts/tests --minimum-tests 6 2>&1 | tee "$log"
-          count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
-          if [[ -z "$count" || "$count" -lt 6 ]]; then
-            echo "::error::Test-runner regression suite did not execute its required test count."
-            exit 1
-          fi
-          echo "test_count=$count" >> "$GITHUB_OUTPUT"
-
-      - name: Validate Operations Event Contract V1
+      - name: Validate Operations Event Contract V1 (Rust)
         id: operations_event
         shell: bash
         run: |
           set -euo pipefail
-          log="$RUNNER_TEMP/operations-event-tests.log"
-          python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
-          "$python" scripts/run_unittest_suite.py contracts/operations-event-v1/tests --minimum-tests 1 2>&1 | tee "$log"
-          count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
-          if [[ -z "$count" || "$count" -lt 1 ]]; then
-            echo "::error::Operations Event tests did not execute a nonzero count."
+          package="$RUNNER_TEMP/operations-event-v1"
+          log="$RUNNER_TEMP/operations-event-rust-tests.log"
+          cp -a contracts/operations-event-v1 "$package"
+          cargo +1.96.0 test --manifest-path "$package/rust/Cargo.toml" --all-targets 2>&1 | tee "$log"
+          count="$(awk '/^test result:/ { for (i = 1; i <= NF; i++) if ($i == "passed;") total += $(i - 1) } END { print total + 0 }' "$log")"
+          if [[ -z "$count" || "$count" -lt 30 ]]; then
+            echo "::error::Rust Operations Event contract must execute at least 30 tests; observed $count."
             exit 1
           fi
           echo "test_count=$count" >> "$GITHUB_OUTPUT"
-
-      - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.96.0 --profile minimal
 
       - name: Validate Holochain Attestation Share Package V1 (Rust)
         id: holochain_attestation
         shell: bash
         run: |
           set -euo pipefail
-          log="$RUNNER_TEMP/holochain-attestation-tests.log"
-          # Cargo may create a Cargo.lock; build a disposable copy so validation
-          # never changes the exact source checkout being qualified.
-          cp -a contracts/holochain-attestation-v1 "$RUNNER_TEMP/holochain-attestation-v1"
-          cargo +1.96.0 test --manifest-path "$RUNNER_TEMP/holochain-attestation-v1/rust/Cargo.toml" --all-targets 2>&1 | tee "$log"
+          package="$RUNNER_TEMP/holochain-attestation-v1"
+          log="$RUNNER_TEMP/holochain-attestation-rust-tests.log"
+          cp -a contracts/holochain-attestation-v1 "$package"
+          cargo +1.96.0 test --manifest-path "$package/rust/Cargo.toml" --all-targets 2>&1 | tee "$log"
           count="$(awk '/^test result:/ { for (i = 1; i <= NF; i++) if ($i == "passed;") total += $(i - 1) } END { print total + 0 }' "$log")"
           if [[ -z "$count" || "$count" -lt 20 ]]; then
             echo "::error::Rust Holochain attestation suite must execute at least 20 tests; observed $count."
@@ -104,20 +75,56 @@ jobs:
       - name: Confirm checkout stayed unchanged
         run: git diff --exit-code && test -z "$(git status --porcelain)"
 
-      - name: Write bounded qualification summary
+      - name: Write bounded Rust qualification summary
         if: success()
         env:
           SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          RUNNER_TESTS: ${{ steps.runner_selftest.outputs.test_count }}
           OPERATIONS_TESTS: ${{ steps.operations_event.outputs.test_count }}
           HOLOCHAIN_TESTS: ${{ steps.holochain_attestation.outputs.test_count }}
         run: |
           {
-            echo "## Operations Event and Holochain Attestation Contracts"
+            echo "## Rust contract qualification"
             echo "- Tested source revision: $SOURCE_SHA"
-            echo "- Fail-closed runner regression tests executed: $RUNNER_TESTS"
-            echo "- Operations Event Contract V1 tests executed: $OPERATIONS_TESTS"
-            echo "- Rust Holochain Attestation Share Package V1 tests executed: $HOLOCHAIN_TESTS"
-            echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Holochain share-package validator and its contract tests are Rust-native."
-            echo "- This workflow does not qualify the production PostgreSQL repository, provider authentication, Holochain integrity zome or multi-agent DHT behavior, identity/membership binding, cryptographic evidence verification, or remote execution."
+            echo "- Operations Event Contract V1 Rust tests executed: $OPERATIONS_TESTS"
+            echo "- Holochain Attestation Share Package V1 Rust tests executed: $HOLOCHAIN_TESTS"
+            echo "- This tests schema and trusted-context binding logic only. It does not qualify PostgreSQL isolation, crash recovery, ConnectWise authentication, Holochain integrity-zome/multi-agent DHT behavior, cryptographic evidence verification, or remote execution."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  reference_model_research:
+    name: Non-production Python reference-model research
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Python for reference-model tests only
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.12"
+
+      - name: Create isolated research-test environment
+        run: python3 -m venv "$RUNNER_TEMP/operations-reference-venv"
+
+      - name: Install research-only schema validator
+        run: >-
+          "$RUNNER_TEMP/operations-reference-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
+
+      - name: Run reference-model research tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python="$RUNNER_TEMP/operations-reference-venv/bin/python"
+          "$python" scripts/run_unittest_suite.py scripts/tests --minimum-tests 6
+          "$python" scripts/run_unittest_suite.py contracts/operations-event-v1/tests --minimum-tests 1
+
+      - name: Record research-only boundary
+        if: success()
+        run: |
+          {
+            echo "## Non-production reference-model research"
+            echo "- These Python tests exercise synthetic reference models and a fail-closed test runner; they are not production services, do not authorize any side effect, and do not substitute for the Rust contract qualification job."
           } >> "$GITHUB_STEP_SUMMARY"
