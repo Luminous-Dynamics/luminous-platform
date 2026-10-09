@@ -199,6 +199,7 @@ pub enum EvidenceKind {
     DeliveryReceipt,
     CostInvoice,
     ParticipationFeeInvoice,
+    CreditNote,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -230,9 +231,17 @@ pub struct BasketLine {
     pub evidence: EvidenceRef,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CostDirection {
+    Charge,
+    Credit,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CostLine {
     pub category: String,
+    pub direction: CostDirection,
+    /// Non-negative magnitude. Direction determines whether it adds to or reduces total cost.
     pub amount: Decimal,
     pub currency: String,
     pub evidence: EvidenceRef,
@@ -418,6 +427,19 @@ fn sum_amounts<'a>(values: impl IntoIterator<Item = &'a Decimal>) -> Result<Deci
     values.into_iter().try_fold(Decimal::ZERO, |acc, value| acc.checked_add(*value).map_err(CommerceError::from))
 }
 
+fn signed_cost(cost: &CostLine) -> Result<Decimal, CommerceError> {
+    match cost.direction {
+        CostDirection::Charge => Ok(cost.amount),
+        CostDirection::Credit => Decimal::ZERO.checked_sub(cost.amount).map_err(CommerceError::from),
+    }
+}
+
+fn sum_costs(costs: &[CostLine]) -> Result<Decimal, CommerceError> {
+    costs.iter().try_fold(Decimal::ZERO, |acc, cost| {
+        acc.checked_add(signed_cost(cost)?).map_err(CommerceError::from)
+    })
+}
+
 fn validate_basket_lines(
     lines: &[BasketLine],
     currency: &str,
@@ -467,10 +489,17 @@ fn validate_costs(
             return Err(CommerceError::CurrencyMismatch);
         }
         validate_evidence(&cost.evidence)?;
-        let valid_kind = if baseline {
-            matches!(cost.evidence.kind, EvidenceKind::AlternativeInvoice | EvidenceKind::AlternativeQuote | EvidenceKind::PublicListPriceEstimate)
-        } else {
-            cost.evidence.kind == role
+        let valid_kind = match (baseline, role, cost.direction) {
+            (true, _, CostDirection::Charge) => matches!(
+                cost.evidence.kind,
+                EvidenceKind::AlternativeInvoice | EvidenceKind::AlternativeQuote | EvidenceKind::PublicListPriceEstimate
+            ),
+            (true, _, CostDirection::Credit) => cost.evidence.kind == EvidenceKind::CreditNote,
+            (false, EvidenceKind::CostInvoice, CostDirection::Charge) => cost.evidence.kind == EvidenceKind::CostInvoice,
+            (false, EvidenceKind::CostInvoice, CostDirection::Credit) => cost.evidence.kind == EvidenceKind::CreditNote,
+            (false, EvidenceKind::ParticipationFeeInvoice, CostDirection::Charge) => cost.evidence.kind == EvidenceKind::ParticipationFeeInvoice,
+            (false, EvidenceKind::ParticipationFeeInvoice, CostDirection::Credit) => cost.evidence.kind == EvidenceKind::CreditNote,
+            (false, _, _) => false,
         };
         if !valid_kind {
             return Err(CommerceError::UnexpectedEvidenceKind);
@@ -572,10 +601,10 @@ pub fn calculate_savings(input: &SavingsInput) -> Result<SavingsReport, Commerce
     validate_delivery_lines(&input.actual_lines, &input.delivery_lines)?;
 
     let baseline_merchandise = sum_amounts(input.baseline_lines.iter().map(|line| &line.line_total))?;
-    let baseline_other = sum_amounts(input.baseline_costs.iter().map(|line| &line.amount))?;
+    let baseline_other = sum_costs(&input.baseline_costs)?;
     let actual_merchandise = sum_amounts(input.actual_lines.iter().map(|line| &line.line_total))?;
-    let actual_other = sum_amounts(input.actual_costs.iter().map(|line| &line.amount))?;
-    let participation = sum_amounts(input.participation_costs.iter().map(|line| &line.amount))?;
+    let actual_other = sum_costs(&input.actual_costs)?;
+    let participation = sum_costs(&input.participation_costs)?;
     let baseline_total = baseline_merchandise.checked_add(baseline_other)?;
     let actual_total = actual_merchandise.checked_add(actual_other)?.checked_add(participation)?;
     let net = baseline_total.checked_sub(actual_total)?;
@@ -666,6 +695,7 @@ mod tests {
     fn cost(category: &str, amount: &str, kind: EvidenceKind) -> CostLine {
         CostLine {
             category: category.into(),
+            direction: if kind == EvidenceKind::CreditNote { CostDirection::Credit } else { CostDirection::Charge },
             amount: Decimal::parse(amount).unwrap(),
             currency: "ZAR".into(),
             evidence: evidence(&format!("{category}-{kind:?}"), kind),
@@ -736,6 +766,22 @@ mod tests {
         let report = calculate_savings(&candidate).unwrap();
         assert_eq!(report.net_difference, "-30");
         assert!(report.notes.iter().any(|note| note.contains("Net difference is negative")));
+    }
+
+    #[test]
+    fn documented_credit_note_reduces_actual_costs_without_hidden_rebate_math() {
+        let mut candidate = input();
+        candidate.actual_costs.push(cost("supplier-credit", "30.00", EvidenceKind::CreditNote));
+        let report = calculate_savings(&candidate).unwrap();
+        assert_eq!(report.actual_total, "1100");
+        assert_eq!(report.net_difference, "150");
+    }
+
+    #[test]
+    fn credit_direction_requires_credit_note_evidence() {
+        let mut candidate = input();
+        candidate.actual_costs[0].direction = CostDirection::Credit;
+        assert_eq!(calculate_savings(&candidate), Err(CommerceError::UnexpectedEvidenceKind));
     }
 
     #[test]
