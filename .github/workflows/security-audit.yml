@@ -429,22 +429,15 @@ jobs:
             submodule_status="PASS"
             mapfile -t submodule_urls < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]url$' || true)
             mapfile -t submodule_paths < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
-            if [[ "${#submodule_urls[@]}" -eq 0 || "${#submodule_urls[@]}" -ne "${#submodule_paths[@]}" ]]; then
+            if [[ "${#submodule_urls[@]}" -ne 1 || "${#submodule_paths[@]}" -ne 1 ]]; then
               submodule_status="FAIL"
               submodule_reason="submodule_url_path_inventory_empty_or_mismatched"
             fi
-            declare -A url_seen=()
             for line in "${submodule_urls[@]}"; do
               key="${line%% *}"
               module_name="${key#submodule.}"
               module_name="${module_name%.url}"
               url="${line#* }"
-              if [[ -n "${url_seen[$module_name]+x}" ]]; then
-                submodule_status="FAIL"
-                submodule_reason="duplicate_submodule_url_key"
-                break
-              fi
-              url_seen["$module_name"]=1
               case "$module_name:$url" in
                 mycelix-health:https://github.com/Luminous-Dynamics/mycelix-health|mycelix-health:https://github.com/Luminous-Dynamics/mycelix-health.git) ;;
                 *)
@@ -1130,22 +1123,15 @@ jobs:
             npm_submodule_status="PASS"
             mapfile -t submodule_urls < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]url$' || true)
             mapfile -t submodule_paths < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
-            if [[ "${#submodule_urls[@]}" -eq 0 || "${#submodule_urls[@]}" -ne "${#submodule_paths[@]}" ]]; then
+            if [[ "${#submodule_urls[@]}" -ne 1 || "${#submodule_paths[@]}" -ne 1 ]]; then
               npm_submodule_status="FAIL"
               npm_submodule_reason="submodule_url_path_inventory_empty_or_mismatched"
             fi
-            declare -A npm_url_seen=()
             for line in "${submodule_urls[@]}"; do
               key="${line%% *}"
               module_name="${key#submodule.}"
               module_name="${module_name%.url}"
               url="${line#* }"
-              if [[ -n "${npm_url_seen[$module_name]+x}" ]]; then
-                npm_submodule_status="FAIL"
-                npm_submodule_reason="duplicate_submodule_url_key"
-                break
-              fi
-              npm_url_seen["$module_name"]=1
               case "$module_name:$url" in
                 mycelix-health:https://github.com/Luminous-Dynamics/mycelix-health|mycelix-health:https://github.com/Luminous-Dynamics/mycelix-health.git) ;;
                 *)
