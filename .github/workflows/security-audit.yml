@@ -1797,6 +1797,11 @@ jobs:
             --arg repository "$GITHUB_REPOSITORY" \
             --arg subject_sha "$SUBJECT_SHA" \
             --arg audit_engine_sha "$AUDIT_ENGINE_SHA" \
+            --arg workflow_ref "$GITHUB_WORKFLOW_REF" \
+            --arg workflow_sha "${GITHUB_WORKFLOW_SHA:-unknown}" \
+            --arg workflow_run_url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --arg generated_at_utc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --argjson configured_artifact_retention_days 30 \
             --arg run_id "$GITHUB_RUN_ID" \
             --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
             --arg workflow_job_result "$WORKFLOW_JOB_RESULT" \
@@ -1811,7 +1816,7 @@ jobs:
             --argjson findings_below_block_threshold "$findings_below_block_threshold" \
             --argjson failure_reasons "$failure_reasons_json" \
             --argjson evidence_files "$files_json" \
-            '{schema:$schema, repository:$repository, subject_sha:$subject_sha, audit_engine_sha:$audit_engine_sha, run_id:$run_id, run_attempt:$run_attempt, workflow_job_result:$workflow_job_result, rustsec_job_result:$rustsec_job_result, npm_job_result:$npm_job_result, audit_rust:$audit_rust, audit_node:$audit_node, required_lanes:{workflow_security:$workflow_security_status, rustsec:(if $audit_rust then $rustsec_status else "SKIPPED_NOT_REQUESTED" end), npm:(if $audit_node then $npm_status else "SKIPPED_NOT_REQUESTED" end)}, findings_below_block_threshold:$findings_below_block_threshold, status:$status, failure_reasons:$failure_reasons, evidence_files:$evidence_files}' > audit-evidence/verdict.json
+            '{schema:$schema, repository:$repository, subject_sha:$subject_sha, audit_engine_sha:$audit_engine_sha, workflow_ref:$workflow_ref, workflow_sha:$workflow_sha, workflow_run_url:$workflow_run_url, generated_at_utc:$generated_at_utc, configured_artifact_retention_days:$configured_artifact_retention_days, run_id:$run_id, run_attempt:$run_attempt, workflow_job_result:$workflow_job_result, rustsec_job_result:$rustsec_job_result, npm_job_result:$npm_job_result, audit_rust:$audit_rust, audit_node:$audit_node, required_lanes:{workflow_security:$workflow_security_status, rustsec:(if $audit_rust then $rustsec_status else "SKIPPED_NOT_REQUESTED" end), npm:(if $audit_node then $npm_status else "SKIPPED_NOT_REQUESTED" end)}, findings_below_block_threshold:$findings_below_block_threshold, status:$status, failure_reasons:$failure_reasons, evidence_files:$evidence_files}' > audit-evidence/verdict.json
 
           cat audit-evidence/verdict.json
           {
