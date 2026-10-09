@@ -6,7 +6,6 @@ Schema validity is not runtime qualification, production readiness, or legal com
 from __future__ import annotations
 
 import argparse
-import copy
 import hashlib
 import json
 import re
@@ -17,6 +16,7 @@ from typing import Any
 try:
     import yaml
     from jsonschema import Draft202012Validator, FormatChecker
+    from jsonschema.exceptions import SchemaError
     from yaml.constructor import ConstructorError
     from yaml.nodes import MappingNode, ScalarNode
     from yaml.tokens import AliasToken, AnchorToken, TagToken
@@ -147,10 +147,14 @@ def _load_schema(schema_path: Path) -> dict[str, Any]:
     try:
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(schema)
-    except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+    except (OSError, json.JSONDecodeError, SchemaError, TypeError, ValueError) as exc:
         raise ProfileInputError(f"cannot load a valid JSON Schema: {exc}") from exc
     if not isinstance(schema, dict):
         raise ProfileInputError("profile schema root must be a JSON object")
+    try:
+        Draft202012Validator.check_schema(schema)
+    except SchemaError as exc:
+        raise ProfileInputError(f"cannot load a valid JSON Schema: {exc}") from exc
     return schema
 
 
