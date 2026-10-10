@@ -1,0 +1,455 @@
+{
+  "schema_version": "luminous.vendor-adapter-capability-registry.v1",
+  "as_of": "2026-10-10",
+  "registry_state": "design_baseline_not_implemented",
+  "contract_version": "v1.0",
+  "operation_catalog": [
+    {
+      "operation": "inventory_read",
+      "risk_class": "read_only",
+      "description": "Read asset identity and discovered capabilities without mutation.",
+      "automatic_retry_after_uncertain_outcome": true
+    },
+    {
+      "operation": "health_read",
+      "risk_class": "read_only",
+      "description": "Read health and status facts.",
+      "automatic_retry_after_uncertain_outcome": true
+    },
+    {
+      "operation": "version_read",
+      "risk_class": "read_only",
+      "description": "Read software and firmware versions.",
+      "automatic_retry_after_uncertain_outcome": true
+    },
+    {
+      "operation": "configuration_export",
+      "risk_class": "read_only",
+      "description": "Export configuration through approved secret-safe handling.",
+      "automatic_retry_after_uncertain_outcome": true
+    },
+    {
+      "operation": "configuration_plan",
+      "risk_class": "planning",
+      "description": "Compute a candidate diff without applying changes.",
+      "automatic_retry_after_uncertain_outcome": true
+    },
+    {
+      "operation": "configuration_apply",
+      "risk_class": "configuration_mutation",
+      "description": "Apply a pre-reviewed, explicitly authorized configuration change.",
+      "automatic_retry_after_uncertain_outcome": false
+    },
+    {
+      "operation": "oem_firmware_update",
+      "risk_class": "disruptive_lifecycle",
+      "description": "Update OEM firmware using the vendor-approved lifecycle.",
+      "automatic_retry_after_uncertain_outcome": false
+    },
+    {
+      "operation": "oem_firmware_recovery",
+      "risk_class": "disruptive_lifecycle",
+      "description": "Recover firmware through a documented supported recovery path.",
+      "automatic_retry_after_uncertain_outcome": false
+    },
+    {
+      "operation": "alternative_os_flash",
+      "risk_class": "reflash",
+      "description": "Replace stock firmware or operating system on a specifically approved model/revision.",
+      "automatic_retry_after_uncertain_outcome": false
+    },
+    {
+      "operation": "entitlement_read",
+      "risk_class": "read_only",
+      "description": "Read available licensing, subscription or support-entitlement state.",
+      "automatic_retry_after_uncertain_outcome": true
+    },
+    {
+      "operation": "lifecycle_read",
+      "risk_class": "read_only",
+      "description": "Read relevant vendor lifecycle and support evidence.",
+      "automatic_retry_after_uncertain_outcome": true
+    }
+  ],
+  "adapters": [
+    {
+      "adapter_id": "cisco-ios-xe-nxos",
+      "vendor": "Cisco",
+      "product_families": [
+        "IOS XE",
+        "NX-OS",
+        "IOS (exact platform scope required)"
+      ],
+      "maturity": "A0_DISCOVERED",
+      "implementation_state": "NOT_IMPLEMENTED",
+      "model_scope_state": "family_research_only",
+      "region_scope_state": "not_assessed",
+      "management_methods": [
+        "vendor_api",
+        "vendor_cli",
+        "netconf",
+        "restconf",
+        "snmpv3"
+      ],
+      "source_urls": [
+        "https://developer.cisco.com/docs/ios-xe/",
+        "https://www.cisco.com/c/en/us/support/lifecycle/software.html"
+      ],
+      "operations": [
+        {
+          "operation": "inventory_read",
+          "state": "planned"
+        },
+        {
+          "operation": "health_read",
+          "state": "planned"
+        },
+        {
+          "operation": "version_read",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_export",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_plan",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_apply",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_update",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_recovery",
+          "state": "planned"
+        }
+      ],
+      "known_boundaries": [
+        "IOS, IOS XE and NX-OS are distinct adapter/product families; do not infer feature equivalence.",
+        "Software image access, licensing, support entitlement and lifecycle must be checked for the exact product and release."
+      ]
+    },
+    {
+      "adapter_id": "cisco-meraki-dashboard",
+      "vendor": "Cisco Meraki",
+      "product_families": [
+        "Meraki MX",
+        "Meraki MS",
+        "Meraki MR",
+        "Other Dashboard-managed families after review"
+      ],
+      "maturity": "A0_DISCOVERED",
+      "implementation_state": "NOT_IMPLEMENTED",
+      "model_scope_state": "family_research_only",
+      "region_scope_state": "not_assessed",
+      "management_methods": [
+        "vendor_dashboard",
+        "vendor_api"
+      ],
+      "source_urls": [
+        "https://developer.cisco.com/meraki/api-v1/",
+        "https://developer.cisco.com/meraki/api-v1/rate-limit/",
+        "https://documentation.meraki.com/Platform_Management/Product_Information/Meraki_Licensing/General_Licensing_Information/General_Licensing_FAQs"
+      ],
+      "operations": [
+        {
+          "operation": "inventory_read",
+          "state": "planned"
+        },
+        {
+          "operation": "health_read",
+          "state": "planned"
+        },
+        {
+          "operation": "version_read",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_export",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_plan",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_apply",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_update",
+          "state": "planned"
+        },
+        {
+          "operation": "entitlement_read",
+          "state": "planned"
+        }
+      ],
+      "known_boundaries": [
+        "Dashboard cloud/API availability, organization scope, licensing and rate limits affect supportability.",
+        "Do not infer generic alternative-OS flashing or bypass Meraki licensing/cloud controls."
+      ]
+    },
+    {
+      "adapter_id": "palo-alto-pan-os-panorama",
+      "vendor": "Palo Alto Networks",
+      "product_families": [
+        "PAN-OS NGFW",
+        "Panorama"
+      ],
+      "maturity": "A0_DISCOVERED",
+      "implementation_state": "NOT_IMPLEMENTED",
+      "model_scope_state": "family_research_only",
+      "region_scope_state": "not_assessed",
+      "management_methods": [
+        "vendor_api",
+        "vendor_cli"
+      ],
+      "source_urls": [
+        "https://docs.paloaltonetworks.com/ngfw/api/get-started-with-the-pan-os-rest-api",
+        "https://docs.paloaltonetworks.com/pan-os/11-1/pan-os-panorama-api/get-started-with-the-pan-os-rest-api"
+      ],
+      "operations": [
+        {
+          "operation": "inventory_read",
+          "state": "planned"
+        },
+        {
+          "operation": "health_read",
+          "state": "planned"
+        },
+        {
+          "operation": "version_read",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_export",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_plan",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_apply",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_update",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_recovery",
+          "state": "planned"
+        },
+        {
+          "operation": "entitlement_read",
+          "state": "planned"
+        }
+      ],
+      "known_boundaries": [
+        "PAN-OS REST API covers a subset of functions; some configuration commit workflows require XML API or other documented interfaces.",
+        "Support license, exact PAN-OS version, commit semantics and post-commit verification must be treated as separate gates."
+      ]
+    },
+    {
+      "adapter_id": "netgear-managed-families",
+      "vendor": "NETGEAR",
+      "product_families": [
+        "Consumer/home",
+        "Smart-managed",
+        "Fully-managed/enterprise",
+        "Insight-managed",
+        "AV-line"
+      ],
+      "maturity": "A0_DISCOVERED",
+      "implementation_state": "NOT_IMPLEMENTED",
+      "model_scope_state": "family_research_only",
+      "region_scope_state": "not_assessed",
+      "management_methods": [
+        "vendor_api",
+        "vendor_cli",
+        "vendor_dashboard",
+        "snmpv3",
+        "local_console"
+      ],
+      "source_urls": [
+        "https://kb.netgear.com/000055960/NETGEAR-warranty-and-support-offerings",
+        "https://openwrt.org/toh/hwdata/netgear/start"
+      ],
+      "operations": [
+        {
+          "operation": "inventory_read",
+          "state": "planned"
+        },
+        {
+          "operation": "health_read",
+          "state": "planned"
+        },
+        {
+          "operation": "version_read",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_export",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_plan",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_apply",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_update",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_recovery",
+          "state": "planned"
+        }
+      ],
+      "known_boundaries": [
+        "Product families have different interfaces and support routes; a generic NETGEAR adapter is not a universal capability claim.",
+        "OpenWrt compatibility is exact model/revision-specific and does not prove OEM warranty continuity."
+      ]
+    },
+    {
+      "adapter_id": "openwrt-supported-devices",
+      "vendor": "OpenWrt",
+      "product_families": [
+        "Exact supported router/AP model and hardware revision"
+      ],
+      "maturity": "A0_DISCOVERED",
+      "implementation_state": "NOT_IMPLEMENTED",
+      "model_scope_state": "family_research_only",
+      "region_scope_state": "not_assessed",
+      "management_methods": [
+        "vendor_api",
+        "vendor_cli",
+        "local_console"
+      ],
+      "source_urls": [
+        "https://openwrt.org/toh/start",
+        "https://openwrt.org/docs/guide-quick-start/factory_installation"
+      ],
+      "operations": [
+        {
+          "operation": "inventory_read",
+          "state": "planned"
+        },
+        {
+          "operation": "health_read",
+          "state": "planned"
+        },
+        {
+          "operation": "version_read",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_export",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_plan",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_apply",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_update",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_recovery",
+          "state": "planned"
+        },
+        {
+          "operation": "alternative_os_flash",
+          "state": "planned"
+        }
+      ],
+      "known_boundaries": [
+        "Exact device page, hardware revision, flash layout and documented recovery are mandatory for install/upgrade decisions.",
+        "Wi-Fi firmware blobs, bootloader behavior and region-specific radio constraints require device-level evidence."
+      ]
+    },
+    {
+      "adapter_id": "sonic-supported-switches",
+      "vendor": "SONiC",
+      "product_families": [
+        "Only platforms on a maintained SONiC supported-device list"
+      ],
+      "maturity": "A0_DISCOVERED",
+      "implementation_state": "NOT_IMPLEMENTED",
+      "model_scope_state": "family_research_only",
+      "region_scope_state": "not_assessed",
+      "management_methods": [
+        "vendor_api",
+        "vendor_cli",
+        "gnmi",
+        "snmpv3",
+        "local_console"
+      ],
+      "source_urls": [
+        "https://github.com/sonic-net/SONiC/wiki/FAQ",
+        "https://github.com/sonic-net/SONiC/blob/master/Supported-Devices-and-Platforms.html"
+      ],
+      "operations": [
+        {
+          "operation": "inventory_read",
+          "state": "planned"
+        },
+        {
+          "operation": "health_read",
+          "state": "planned"
+        },
+        {
+          "operation": "version_read",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_export",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_plan",
+          "state": "planned"
+        },
+        {
+          "operation": "configuration_apply",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_update",
+          "state": "planned"
+        },
+        {
+          "operation": "oem_firmware_recovery",
+          "state": "planned"
+        }
+      ],
+      "known_boundaries": [
+        "A supported NOS image, hardware platform, ASIC, port/optic combination and support provider must be selected together.",
+        "Community support does not imply a vendor support SLA or a working conversion/recovery path."
+      ]
+    }
+  ],
+  "explicit_non_claims": [
+    "No listed vendor adapter is implemented, tested, qualified or production-authorized by this registry.",
+    "A vendor or protocol source page does not prove support for a particular model, software revision, region or entitlement.",
+    "Schema validation and mocks do not establish that a physical device behaved as expected.",
+    "Alternative operating-system flashing is not implied by inventory, configuration, API, or vendor-family support.",
+    "Authorization, image provenance, fresh pre-state, recovery evidence and independent verification remain required for privileged operations.",
+    "This registry is not a certification, procurement eligibility determination, vendor endorsement or customer deployment authorization."
+  ]
+}
