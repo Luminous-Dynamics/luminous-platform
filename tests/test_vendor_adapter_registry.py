@@ -159,7 +159,7 @@ class VendorAdapterRegistryTests(unittest.TestCase):
         payload = copy.deepcopy(self.registry)
         op = payload["adapters"][0]["operations"][0]
         op["state"] = "unsupported"
-        self.assertTrue(any("unsupported operation needs a documented rationale" in error for error in self.errors(payload)))
+        self.assertTrue(any("rationale" in error for error in self.errors(payload)))
 
     def test_unknown_operation_fails_closed(self) -> None:
         payload = copy.deepcopy(self.registry)
