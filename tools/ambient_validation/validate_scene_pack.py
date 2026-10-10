@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate Scene Pack v1 schema, cross-field invariants, and packaged assets."""
 from __future__ import annotations
-import argparse, hashlib, json, sys
+import argparse, hashlib, json, re, sys
 from dataclasses import dataclass
 from hmac import compare_digest
 from pathlib import Path, PurePosixPath
@@ -13,6 +13,34 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SCHEMA = ROOT / "contracts/ambient-scene-pack-v1.schema.json"
 DRAFT = "https://json-schema.org/draft/2020-12/schema"
 CAPABILITIES = {"gpu", "dmabuf", "vulkan", "egl", "wayland-layer-shell"}
+
+_FORMAT_CHECKER = FormatChecker()
+
+
+@_FORMAT_CHECKER.checks("uri")
+def _is_valid_absolute_uri(value: Any) -> bool:
+    """Validate an absolute URI without optional jsonschema format dependencies."""
+    if not isinstance(value, str):
+        return True  # JSON Schema's type keywords report non-string values.
+    if not value or any(ord(char) <= 0x20 or ord(char) == 0x7F for char in value):
+        return False
+    if re.search(r"%(?![0-9A-Fa-f]{2})", value):
+        return False
+    try:
+        from urllib.parse import urlsplit
+        parsed = urlsplit(value)
+    except ValueError:
+        return False
+    if not parsed.scheme or not re.fullmatch(r"[A-Za-z][A-Za-z0-9+.-]*", parsed.scheme):
+        return False
+    if parsed.scheme.lower() in {"http", "https"}:
+        if not parsed.netloc or not parsed.hostname:
+            return False
+        try:
+            parsed.port
+        except ValueError:
+            return False
+    return True
 
 
 class DuplicateKeyError(ValueError):
@@ -53,6 +81,25 @@ def _walk(value: Any) -> Iterable[Any]:
     elif isinstance(value, list):
         for child in value:
             yield from _walk(child)
+
+
+def _resolve_asset(package_root: Path, asset_path: str) -> tuple[Path | None, Issue | None]:
+    """Resolve a package-relative asset and reject traversal/symlink escapes."""
+    relative = PurePosixPath(asset_path)
+    if relative.is_absolute() or not relative.parts or any(part in ("", ".", "..") for part in relative.parts):
+        return None, Issue("asset.path_invalid", f"asset path must be package-relative: {asset_path!r}")
+    try:
+        root = package_root.resolve(strict=True)
+        resolved = root.joinpath(*relative.parts).resolve(strict=True)
+    except (OSError, RuntimeError) as exc:
+        return None, Issue("asset.path_unresolvable", f"cannot resolve asset {asset_path!r}: {exc}")
+    try:
+        resolved.relative_to(root)
+    except ValueError:
+        return None, Issue("asset.symlink_escape", f"asset path {asset_path!r} resolves outside the package root")
+    if not resolved.is_file():
+        return None, Issue("asset.not_regular_file", f"asset path {asset_path!r} is not a regular file")
+    return resolved, None
 
 
 @dataclass(frozen=True)
@@ -117,23 +164,26 @@ def check_schema(schema: Any) -> list[Issue]:
         return [Issue("schema.invalid_document", "schema root must be an object")]
     if schema.get("$schema") != DRAFT:
         return [Issue("schema.wrong_dialect", f"$schema must be {DRAFT}")]
+    # Report the unsupported legacy dialect explicitly before meta-schema
+    # validation can collapse it into a generic schema error.
+    for node in _walk(schema):
+        if isinstance(node, dict):
+            for legacy_keyword in ("$recursiveRef", "$recursiveAnchor"):
+                if legacy_keyword in node:
+                    return [Issue(
+                        "schema.unsupported_ref_keyword",
+                        f"{legacy_keyword} is a legacy reference keyword unsupported by the Draft 2020-12 profile",
+                    )]
+
     try:
         Draft202012Validator.check_schema(schema)
     except SchemaError as exc:
         return [Issue("schema.meta_schema", f"invalid Draft 2020-12 schema: {exc.message}")]
 
-    # Draft 2020-12 uses $dynamicRef/$dynamicAnchor. The older
-    # $recursiveRef/$recursiveAnchor keywords are not supported by this tool's
-    # 2020-12 profile; fail closed rather than pretending to validate them.
+    # Draft 2020-12 uses $dynamicRef/$dynamicAnchor; references are local-only.
     for node in _walk(schema):
         if not isinstance(node, dict):
             continue
-        for legacy_keyword in ("$recursiveRef", "$recursiveAnchor"):
-            if legacy_keyword in node:
-                return [Issue(
-                    "schema.unsupported_ref_keyword",
-                    f"{legacy_keyword} is a legacy reference keyword unsupported by the Draft 2020-12 profile",
-                )]
         for keyword in ("$ref", "$dynamicRef"):
             if keyword not in node:
                 continue
@@ -225,7 +275,7 @@ def validate_manifest(schema: Any, manifest: Any, *, package_root: Path | None =
     schema_issues = check_schema(schema)
     if schema_issues:
         return schema_issues
-    validator = Draft202012Validator(schema, format_checker=FormatChecker())
+    validator = Draft202012Validator(schema, format_checker=_FORMAT_CHECKER)
     errors = sorted(validator.iter_errors(manifest),
                     key=lambda e: (tuple(map(str, e.absolute_path)), e.message))
     if errors:

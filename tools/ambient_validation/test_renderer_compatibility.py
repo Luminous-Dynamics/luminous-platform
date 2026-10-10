@@ -211,8 +211,10 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertEqual("source-inspection-only", report.qualification_state)
         self.assertEqual("browser-wasm-demo", report.adapter_id)
         self.assertEqual(
-            ("crates/visual-wasm/src/lib.rs", "98fed90a641d0cf9eb19744a4c701459ec47a656"),
-             ("crates/visual-wasm/www/app.js", "a1bff649baf62a9dc7f6248b39a8f8df11a65a22"),
+            (
+                ("crates/visual-wasm/src/lib.rs", "98fed90a641d0cf9eb19744a4c701459ec47a656"),
+                ("crates/visual-wasm/www/app.js", "a1bff649baf62a9dc7f6248b39a8f8df11a65a22"),
+            ),
             report.adapter_source_files,
         )
 
