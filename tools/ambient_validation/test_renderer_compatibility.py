@@ -29,7 +29,7 @@ class RendererCompatibilityTests(unittest.TestCase):
     def test_pinned_renderer_profile_matches_its_schema(self):
         issues = validate_profile(self.profile_schema, self.profile)
         self.assertEqual([], issues, "\n".join(map(str, issues)))
-        self.assertEqual("795bd095f562ebacc49d7bd68a05bdbc9b7e3e35", self.profile["renderer"]["commit"])
+        self.assertEqual("4622644cd5cc5dc6f8ef2556271429b4727e7cef", self.profile["renderer"]["commit"])
         self.assertEqual("source-inspection-only", self.profile["renderer"]["qualificationState"])
 
     def test_mismatched_engine_id_is_rejected(self):
@@ -44,7 +44,7 @@ class RendererCompatibilityTests(unittest.TestCase):
     def test_current_profile_fails_closed_for_known_scene_pack_gaps(self):
         report = audit_compatibility(self.manifest, self.profile)
         self.assertFalse(report.compatible)
-        self.assertEqual("795bd095f562ebacc49d7bd68a05bdbc9b7e3e35", report.renderer_commit)
+        self.assertEqual("4622644cd5cc5dc6f8ef2556271429b4727e7cef", report.renderer_commit)
         self.assertEqual("source-inspection-only", report.qualification_state)
         codes = {item.code for item in report.issues}
         self.assertTrue({

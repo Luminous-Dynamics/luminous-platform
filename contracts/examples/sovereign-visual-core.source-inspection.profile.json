@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "profileId": "sovereign-visual-core.browser-wasm-api.source-inspection-2026-10-10",
+  "profileId": "sovereign-visual-core.browser-wasm-wit-api.source-inspection-2026-10-10",
   "renderer": {
     "repository": "Luminous-Dynamics/sovereign-boot",
-    "commit": "795bd095f562ebacc49d7bd68a05bdbc9b7e3e35",
+    "commit": "4622644cd5cc5dc6f8ef2556271429b4727e7cef",
     "crate": "sovereign-visual-core",
     "qualificationState": "source-inspection-only"
   },
