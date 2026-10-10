@@ -49,6 +49,18 @@ class ScenePackValidationTests(unittest.TestCase):
                 self.assertTrue(issues, f"negative fixture unexpectedly passed: {fixture['id']}")
                 self.assertIn(fixture["expectedCode"], {issue.code for issue in issues}, str(issues))
 
+    def test_unresolved_local_schema_reference_is_rejected(self):
+        candidate_schema = copy.deepcopy(self.schema)
+        candidate_schema["$defs"]["color"] = {"$ref": "#/$defs/not-present"}
+        issues = validate_manifest(candidate_schema, self.example, package_root=EXAMPLE_PATH.parent)
+        self.assertIn("schema.unresolved_ref", {issue.code for issue in issues})
+
+    def test_invalid_uri_format_is_rejected(self):
+        candidate = copy.deepcopy(self.example)
+        candidate["license"]["sourceUrl"] = "not a uri"
+        issues = validate_manifest(self.schema, candidate, package_root=EXAMPLE_PATH.parent)
+        self.assertIn("schema.invalid", {issue.code for issue in issues})
+
     def test_invalid_schema_meta_schema_is_rejected(self):
         candidate_schema = copy.deepcopy(self.schema)
         candidate_schema["properties"]["schemaVersion"]["type"] = "not-a-json-schema-type"
