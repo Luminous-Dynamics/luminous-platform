@@ -1117,6 +1117,63 @@ jobs:
             advisory_db=""
           fi
 
+          assert_exact_committed_regular_file() {
+            local root="$1" relative="$2" metadata mode object_type object_id actual parent rest component
+            [[ -d "$root" && -n "$relative" && "$relative" != /* ]] || return 1
+            rest="$relative"
+            parent="$root"
+            while [[ "$rest" == */* ]]; do
+              component="${rest%%/*}"
+              rest="${rest#*/}"
+              parent="$parent/$component"
+              [[ -d "$parent" && ! -L "$parent" ]] || return 1
+            done
+            metadata="$(git -C "$root" ls-tree --format='%(mode) %(type) %(objectname)' HEAD -- ":(literal)$relative")" || return 1
+            [[ -n "$metadata" && "$metadata" != *$'\n'* ]] || return 1
+            read -r mode object_type object_id <<< "$metadata"
+            [[ "$mode" == "100644" || "$mode" == "100755" ]] || return 1
+            [[ "$object_type" == "blob" && "$object_id" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || return 1
+            [[ -f "$root/$relative" && ! -L "$root/$relative" ]] || return 1
+            actual="$(git -C "$root" hash-object --no-filters -- "$root/$relative")" || return 1
+            [[ "$actual" == "$object_id" ]]
+          }
+
+          # Regression fixture: a committed lockfile is accepted only while it
+          # remains a regular file with the exact committed bytes. Mutations,
+          # symlink substitution and untracked lookalikes must all be rejected.
+          rustsec_identity_fixture="$RUNNER_TEMP/rustsec-input-identity-fixture"
+          rm -rf -- "$rustsec_identity_fixture"
+          git init -q "$rustsec_identity_fixture"
+          git -C "$rustsec_identity_fixture" config user.name "Audit fixture"
+          git -C "$rustsec_identity_fixture" config user.email "audit-fixture@example.invalid"
+          mkdir -p "$rustsec_identity_fixture/nested"
+          printf 'committed lockfile\n' > "$rustsec_identity_fixture/nested/Cargo.lock"
+          printf 'symlink target\n' > "$rustsec_identity_fixture/nested/target.lock"
+          git -C "$rustsec_identity_fixture" add nested
+          git -C "$rustsec_identity_fixture" commit -qm "fixture: exact committed file identity"
+          if ! assert_exact_committed_regular_file "$rustsec_identity_fixture" "nested/Cargo.lock"; then
+            echo "FAIL: exact-input verifier rejected committed regular-file fixture" >&2
+            exit 1
+          fi
+          printf 'mutated lockfile\n' > "$rustsec_identity_fixture/nested/Cargo.lock"
+          if assert_exact_committed_regular_file "$rustsec_identity_fixture" "nested/Cargo.lock"; then
+            echo "FAIL: exact-input verifier accepted worktree/HEAD content drift" >&2
+            exit 1
+          fi
+          git -C "$rustsec_identity_fixture" checkout -- nested/Cargo.lock
+          rm -- "$rustsec_identity_fixture/nested/Cargo.lock"
+          ln -s target.lock "$rustsec_identity_fixture/nested/Cargo.lock"
+          if assert_exact_committed_regular_file "$rustsec_identity_fixture" "nested/Cargo.lock"; then
+            echo "FAIL: exact-input verifier accepted symlink substitution" >&2
+            exit 1
+          fi
+          git -C "$rustsec_identity_fixture" checkout -- nested/Cargo.lock
+          if assert_exact_committed_regular_file "$rustsec_identity_fixture" "nested/untracked.lock"; then
+            echo "FAIL: exact-input verifier accepted an untracked lookalike" >&2
+            exit 1
+          fi
+          echo "PASS: RustSec inputs are tied to exact committed regular-file blobs"
+
           if [[ -n "$advisory_db" ]]; then
             cd "$RUNNER_TEMP"
             for lockfile in "${lockfiles[@]}"; do
@@ -1125,7 +1182,19 @@ jobs:
               report="$result_root/lockfiles/${report_id}_$path_hash.json"
               stderr="$result_root/lockfiles/${report_id}_$path_hash.stderr"
               lockfile_abs="$workspace/$lockfile"
-              if [[ ! -f "$lockfile_abs" || -L "$lockfile_abs" ]]; then
+              lockfile_repo="$workspace"
+              lockfile_rel="$lockfile"
+              while IFS= read -r module_path; do
+                [[ -n "$module_path" ]] || continue
+                case "$lockfile" in
+                  "$module_path"/*)
+                    lockfile_repo="$workspace/$module_path"
+                    lockfile_rel="${lockfile#${module_path}/}"
+                    break
+                    ;;
+                esac
+              done < "$verified_file"
+              if [[ ! -f "$lockfile_abs" || -L "$lockfile_abs" ]] || ! assert_exact_committed_regular_file "$lockfile_repo" "$lockfile_rel"; then
                 lock_reference="non-regular-or-missing"
                 if [[ -L "$lockfile_abs" ]]; then lock_reference="$(readlink -- "$lockfile_abs")"; fi
                 lock_reference_sha="$(printf '%s' "$lock_reference" | sha256sum | cut -d' ' -f1)"
@@ -1151,7 +1220,7 @@ jobs:
                 continue
               fi
               lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-                            if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
+              if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
                 rc=0
               else
                 rc=$?
@@ -1291,6 +1360,7 @@ jobs:
           fi
 
           if python3 - "$workspace" "$result_root/manifest-coverage.json" "$verified_file" "$inventory_file" <<'PY'
+          import hashlib
           import json
           import subprocess
           import sys
@@ -1305,24 +1375,66 @@ jobs:
           def git_output(root, *args):
               return subprocess.check_output(["git", *args], cwd=root)
 
-          def tracked(root, patterns):
-              # Audit the subject's immutable commit tree, not its mutable index.
-              # Current callers only ask for Cargo.toml and Cargo.lock, so a
-              # basename set is both clearer and independent of Git pathspec
-              # glob dialect/working-directory edge cases.
-              wanted = {Path(pattern).name for pattern in patterns}
-              raw = git_output(root, "ls-tree", "-r", "-z", "--name-only", "HEAD")
-              found = []
-              for item in raw.split(bytes([0])):
-                  if not item:
+          tree_cache = {}
+          object_format_cache = {}
+
+          def tree_entries(root):
+              key = str(root.resolve())
+              if key in tree_cache:
+                  return tree_cache[key]
+              raw = git_output(root, "ls-tree", "-r", "-z", "--full-tree", "HEAD")
+              entries = {}
+              for record in raw.split(bytes([0])):
+                  if not record:
                       continue
-                  path = item.decode("utf-8", "strict")
+                  metadata, path_bytes = record.split(bytes([9]), 1)
+                  fields = metadata.split()
+                  if len(fields) != 3:
+                      raise ValueError("committed_tree_entry_malformed")
+                  mode, kind, oid = (field.decode("ascii") for field in fields)
+                  path = path_bytes.decode("utf-8", "strict")
                   if any(ord(character) < 0x20 or ord(character) == 0x7F for character in path) or "=" in path:
                       raise ValueError(f"tracked path cannot be represented safely in coverage evidence: {path!r}")
-                  if Path(path).name in wanted:
-                      found.append(path)
-              return sorted(set(found))
+                  if path in entries:
+                      raise ValueError(f"duplicate path in committed tree: {path!r}")
+                  entries[path] = (mode, kind, oid)
+              tree_cache[key] = entries
+              return entries
 
+          def tracked(root, patterns):
+              wanted = {Path(pattern).name for pattern in patterns}
+              return sorted(path for path in tree_entries(root) if Path(path).name in wanted)
+
+          def committed_bytes(root, rel):
+              relative = Path(rel)
+              if relative.is_absolute() or any(part in ("", ".", "..") for part in relative.parts):
+                  raise ValueError("manifest_or_lockfile_path_not_canonical")
+              entry = tree_entries(root).get(rel)
+              if entry is None:
+                  raise ValueError("not_present_in_committed_tree")
+              mode, kind, oid = entry
+              if mode not in ("100644", "100755") or kind != "blob":
+                  raise ValueError("not_a_regular_committed_blob")
+              target = root / relative
+              for parent in reversed(target.parents):
+                  if parent == root:
+                      break
+                  if parent.is_symlink() or not parent.is_dir():
+                      raise ValueError("parent_path_not_regular_directory")
+              if target.is_symlink() or not target.is_file():
+                  raise ValueError("worktree_path_not_regular_file")
+              content = target.read_bytes()
+              object_format = object_format_cache.get(str(root.resolve()))
+              if object_format is None:
+                  object_format = git_output(root, "rev-parse", "--show-object-format").decode("ascii").strip()
+                  if object_format not in ("sha1", "sha256"):
+                      raise ValueError("unsupported_git_object_format")
+                  object_format_cache[str(root.resolve())] = object_format
+              header = b"blob " + str(len(content)).encode("ascii") + bytes([0])
+              actual_oid = hashlib.new(object_format, header + content).hexdigest()
+              if actual_oid != oid:
+                  raise ValueError("worktree_bytes_differ_from_committed_blob")
+              return content
           def gitlinks(root):
               # Read gitlinks from the committed subject tree, not the index.
               # ls-tree -z keeps arbitrary path bytes delimited without relying
@@ -1407,6 +1519,7 @@ jobs:
 
           entries = []
           discovered_lockfiles = set()
+          lockfile_identity_failures = []
           # Keep manifest-to-workspace mappings and workspace lockfile
           # contracts separate: a missing root lockfile should be one actionable
           # workspace finding, not dozens of misleading per-member lockfile
@@ -1416,15 +1529,23 @@ jobs:
               manifests = tracked(checkout, ["Cargo.toml", "**/Cargo.toml"])
               local_lockfiles = set(tracked(checkout, ["Cargo.lock", "**/Cargo.lock"]))
               discovered_lockfiles.update(prefixed(prefix, path) for path in local_lockfiles)
+              lockfile_identity_errors = {}
+              for lock_rel in local_lockfiles:
+                  try:
+                      committed_bytes(checkout, lock_rel)
+                  except Exception as exc:
+                      reason = f"{type(exc).__name__}: {exc}"
+                      lockfile_identity_errors[lock_rel] = reason
+                      lockfile_identity_failures.append({
+                          "lockfile": prefixed(prefix, lock_rel),
+                          "reason": reason,
+                      })
               parsed = {}
               parse_errors = {}
               for rel in manifests:
-                  manifest_path = checkout / rel
                   try:
-                      if manifest_path.is_symlink() or not manifest_path.is_file():
-                          raise ValueError("manifest_not_regular_or_is_symlink")
-                      with manifest_path.open("rb") as fh:
-                          parsed[rel] = tomllib.load(fh)
+                      committed_manifest = committed_bytes(checkout, rel)
+                      parsed[rel] = tomllib.loads(committed_manifest.decode("utf-8", "strict"))
                   except Exception as exc:
                       parse_errors[rel] = f"{type(exc).__name__}: {exc}"
 
@@ -1462,10 +1583,12 @@ jobs:
                   lock_tracked = lock in local_lockfiles
                   lock_symlink = lock_path.is_symlink()
                   lock_regular = lock_path.is_file() and not lock_symlink
-                  exists = lock_tracked and lock_regular
+                  lock_identity_valid = lock_tracked and lock not in lockfile_identity_errors
+                  exists = lock_identity_valid and lock_regular
                   lock_reason = (
                       "workspace_lockfile_is_symlink" if lock_tracked and lock_symlink
                       else "workspace_lockfile_not_regular" if lock_tracked and not lock_regular
+                      else "workspace_lockfile_differs_from_committed_blob" if lock_tracked and not lock_identity_valid
                       else "workspace_lockfile_missing_or_untracked" if not exists
                       else None
                   )
@@ -1541,13 +1664,15 @@ jobs:
               "manifest_failure_count": len(failures),
               "workspace_root_count": len(workspace_roots),
               "workspace_lockfile_failure_count": len(workspace_failures),
+              "lockfile_identity_failure_count": len(lockfile_identity_failures),
+              "lockfile_identity_failures": sorted(lockfile_identity_failures, key=lambda item: item["lockfile"]),
               "unclassified_manifest_failure_count": len(unclassified_manifest_failures),
               "workspace_roots": workspace_roots,
               "verified_direct_submodule_count": len(roots) - 1,
               "unaudited_submodules": sorted(set(unaudited_submodules)),
               "lockfile_inventory_mismatch": mismatch,
               "failure_count": len(failures) + len(set(unaudited_submodules)),
-              "status": "PASS" if entries and not workspace_failures and not unclassified_manifest_failures and not unaudited_submodules and discovered_lockfiles == scanned_lockfiles else "FAIL",
+              "status": "PASS" if entries and not workspace_failures and not lockfile_identity_failures and not unclassified_manifest_failures and not unaudited_submodules and discovered_lockfiles == scanned_lockfiles else "FAIL",
               "limitations": [
                   "Tracked Cargo manifests and lockfiles in the root repository and verified direct submodules are inventoried.",
                   "Cargo package resolution is not completely reconstructed; nested submodules fail closed.",
@@ -1884,6 +2009,109 @@ jobs:
             rm -f -- "$tree_file"
           }
 
+          stage_exact_committed_blob() {
+            local root="$1" relative="$2" destination="$3" metadata mode object_type object_id actual staged parent rest component temporary
+            [[ -d "$root" && -n "$relative" && "$relative" != /* ]] || return 1
+            rest="$relative"
+            parent="$root"
+            while [[ "$rest" == */* ]]; do
+              component="${rest%%/*}"
+              rest="${rest#*/}"
+              parent="$parent/$component"
+              [[ -d "$parent" && ! -L "$parent" ]] || return 1
+            done
+            metadata="$(git -C "$root" ls-tree --format='%(mode) %(type) %(objectname)' HEAD -- ":(literal)$relative")" || return 1
+            [[ -n "$metadata" && "$metadata" != *$'\n'* ]] || return 1
+            read -r mode object_type object_id <<< "$metadata"
+            [[ "$mode" == "100644" || "$mode" == "100755" ]] || return 1
+            [[ "$object_type" == "blob" && "$object_id" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || return 1
+            [[ -f "$root/$relative" && ! -L "$root/$relative" ]] || return 1
+            actual="$(git -C "$root" hash-object --no-filters -- "$root/$relative")" || return 1
+            [[ "$actual" == "$object_id" ]] || return 1
+            mkdir -p -- "$(dirname -- "$destination")" || return 1
+            temporary="${destination}.tmp.$$"
+            rm -f -- "$temporary"
+            if ! git -C "$root" cat-file blob "$object_id" > "$temporary"; then
+              rm -f -- "$temporary"
+              return 1
+            fi
+            staged="$(git -C "$root" hash-object --no-filters -- "$temporary")" || { rm -f -- "$temporary"; return 1; }
+            if [[ "$staged" != "$object_id" ]]; then
+              rm -f -- "$temporary"
+              return 1
+            fi
+            mv -f -- "$temporary" "$destination"
+          }
+
+          # Adversarial fixture: prove that recursive discovery includes a
+          # committed nested SDK lock, ignores untracked lookalikes, does not
+          # walk into a gitlink, and stages only exact committed file bytes.
+          npm_discovery_fixture="$RUNNER_TEMP/npm-lock-discovery-fixture"
+          rm -rf -- "$npm_discovery_fixture"
+          git init -q "$npm_discovery_fixture"
+          git -C "$npm_discovery_fixture" config user.name "Audit fixture"
+          git -C "$npm_discovery_fixture" config user.email "audit-fixture@example.invalid"
+          mkdir -p "$npm_discovery_fixture/sdk"
+          printf '{"name":"fixture-sdk"}\n' > "$npm_discovery_fixture/sdk/package.json"
+          printf '{"name":"fixture-sdk","lockfileVersion":3}\n' > "$npm_discovery_fixture/sdk/package-lock.json"
+          printf 'symlink target\n' > "$npm_discovery_fixture/sdk/target.lock"
+          git -C "$npm_discovery_fixture" add sdk
+          git -C "$npm_discovery_fixture" commit -qm "fixture: nested tracked npm lock"
+          if ! stage_exact_committed_blob "$npm_discovery_fixture" "sdk/package-lock.json" "$RUNNER_TEMP/npm-input-fixture/staged-lock.json"; then
+            echo "FAIL: exact-input stager rejected the nested tracked SDK lockfile" >&2
+            exit 1
+          fi
+          if ! cmp -s "$npm_discovery_fixture/sdk/package-lock.json" "$RUNNER_TEMP/npm-input-fixture/staged-lock.json"; then
+            echo "FAIL: staged npm lockfile bytes do not match the committed blob" >&2
+            exit 1
+          fi
+          npm_fixture_inventory="$RUNNER_TEMP/npm-lock-discovery-fixture-inventory.txt"
+          tracked_named_paths "$npm_discovery_fixture" "" "package-lock.json" "npm-shrinkwrap.json" > "$npm_fixture_inventory"
+          if [[ "$(wc -l < "$npm_fixture_inventory" | tr -d ' ')" != "1" ]] || ! grep -Fxq "sdk/package-lock.json" "$npm_fixture_inventory"; then
+            echo "FAIL: recursive npm discovery did not return the exact nested committed lockfile" >&2
+            exit 1
+          fi
+          mkdir -p "$npm_discovery_fixture/untracked"
+          printf '{"name":"untracked"}\n' > "$npm_discovery_fixture/untracked/package-lock.json"
+          tracked_named_paths "$npm_discovery_fixture" "" "package-lock.json" "npm-shrinkwrap.json" > "$npm_fixture_inventory"
+          if [[ "$(wc -l < "$npm_fixture_inventory" | tr -d ' ')" != "1" ]] || grep -Fxq "untracked/package-lock.json" "$npm_fixture_inventory"; then
+            echo "FAIL: recursive npm discovery accepted an untracked lookalike" >&2
+            exit 1
+          fi
+          printf '{"name":"mutated-worktree"}\n' > "$npm_discovery_fixture/sdk/package-lock.json"
+          if stage_exact_committed_blob "$npm_discovery_fixture" "sdk/package-lock.json" "$RUNNER_TEMP/npm-input-fixture/mutated.json"; then
+            echo "FAIL: npm stager accepted worktree/HEAD content drift" >&2
+            exit 1
+          fi
+          git -C "$npm_discovery_fixture" checkout -- sdk/package-lock.json
+          rm -- "$npm_discovery_fixture/sdk/package-lock.json"
+          ln -s target.lock "$npm_discovery_fixture/sdk/package-lock.json"
+          if stage_exact_committed_blob "$npm_discovery_fixture" "sdk/package-lock.json" "$RUNNER_TEMP/npm-input-fixture/symlink.json"; then
+            echo "FAIL: npm stager accepted symlink substitution" >&2
+            exit 1
+          fi
+          git -C "$npm_discovery_fixture" checkout -- sdk/package-lock.json
+          rm -rf -- "$npm_discovery_fixture/untracked"
+          git init -q "$npm_discovery_fixture/opaque-submodule"
+          git -C "$npm_discovery_fixture/opaque-submodule" config user.name "Audit fixture"
+          git -C "$npm_discovery_fixture/opaque-submodule" config user.email "audit-fixture@example.invalid"
+          printf '{"name":"nested-submodule","lockfileVersion":3}\n' > "$npm_discovery_fixture/opaque-submodule/package-lock.json"
+          git -C "$npm_discovery_fixture/opaque-submodule" add package-lock.json
+          git -C "$npm_discovery_fixture/opaque-submodule" commit -qm "fixture: nested submodule lock"
+          npm_fixture_submodule_sha="$(git -C "$npm_discovery_fixture/opaque-submodule" rev-parse HEAD)"
+          git -C "$npm_discovery_fixture" update-index --add --cacheinfo "160000,$npm_fixture_submodule_sha,opaque-submodule"
+          git -C "$npm_discovery_fixture" -c user.name="Audit fixture" -c user.email="audit-fixture@example.invalid" commit -qm "fixture: commit gitlink"
+          tracked_named_paths "$npm_discovery_fixture" "" "package-lock.json" "npm-shrinkwrap.json" > "$npm_fixture_inventory"
+          if [[ "$(wc -l < "$npm_fixture_inventory" | tr -d ' ')" != "1" ]] || ! grep -Fxq "sdk/package-lock.json" "$npm_fixture_inventory"; then
+            echo "FAIL: npm root discovery crossed the committed gitlink boundary" >&2
+            exit 1
+          fi
+          if stage_exact_committed_blob "$npm_discovery_fixture" "opaque-submodule/package-lock.json" "$RUNNER_TEMP/npm-input-fixture/submodule-lock.json"; then
+            echo "FAIL: npm root stager accepted a path inside an unverified gitlink" >&2
+            exit 1
+          fi
+          echo "PASS: nested npm lock discovery, gitlink boundaries and exact-blob staging fixtures"
+
           lock_inventory_raw="$RUNNER_TEMP/npm-lockfiles.raw"
           lock_inventory_file="$RUNNER_TEMP/npm-lockfiles.txt"
           : > "$lock_inventory_raw"
@@ -1947,20 +2175,42 @@ jobs:
           echo "manifest_inventory_discovery_status=$([[ "$manifest_inventory_discovery_failed" -eq 0 ]] && echo PASS || echo FAIL)" >> "$result_root/summary.txt"
           echo "tracked_package_manifest_count=${#manifests[@]}" >> "$result_root/summary.txt"
           for manifest_path in "${manifests[@]}"; do
-            source_path="$workspace/$manifest_path"
-            if [[ ! -f "$source_path" || -L "$source_path" ]]; then
+            source_repo="$workspace"
+            source_rel="$manifest_path"
+            while IFS= read -r module_path; do
+              [[ -n "$module_path" ]] || continue
+              case "$manifest_path" in
+                "$module_path"/*)
+                  source_repo="$workspace/$module_path"
+                  source_rel="${manifest_path#${module_path}/}"
+                  break
+                  ;;
+              esac
+            done < "$verified_npm_submodules"
+            if ! stage_exact_committed_blob "$source_repo" "$source_rel" "$npm_sandbox/$manifest_path"; then
               npm_failed=1
-              echo "npm_sandbox_manifest_status=FAIL path=$manifest_path reason=missing_nonregular_or_symlink" >> "$result_root/summary.txt"
+              echo "npm_sandbox_manifest_status=FAIL path=$manifest_path reason=not_exact_committed_regular_blob" >> "$result_root/summary.txt"
               continue
             fi
-            mkdir -p "$npm_sandbox/$(dirname -- "$manifest_path")"
-            cp -- "$source_path" "$npm_sandbox/$manifest_path"
           done
           for lockfile in "${lockfiles[@]}"; do
-            source_path="$workspace/$lockfile"
-            [[ -f "$source_path" && ! -L "$source_path" ]] || continue
-            mkdir -p "$npm_sandbox/$(dirname -- "$lockfile")"
-            cp -- "$source_path" "$npm_sandbox/$lockfile"
+            source_repo="$workspace"
+            source_rel="$lockfile"
+            while IFS= read -r module_path; do
+              [[ -n "$module_path" ]] || continue
+              case "$lockfile" in
+                "$module_path"/*)
+                  source_repo="$workspace/$module_path"
+                  source_rel="${lockfile#${module_path}/}"
+                  break
+                  ;;
+              esac
+            done < "$verified_npm_submodules"
+            if ! stage_exact_committed_blob "$source_repo" "$source_rel" "$npm_sandbox/$lockfile"; then
+              npm_failed=1
+              echo "npm_sandbox_lockfile_status=FAIL path=$lockfile reason=not_exact_committed_regular_blob" >> "$result_root/summary.txt"
+              continue
+            fi
           done
           echo "npm_audit_environment=sandbox_without_project_npmrc" >> "$result_root/summary.txt"
           echo "npm_audit_registry=https://registry.npmjs.org/" >> "$result_root/summary.txt"
