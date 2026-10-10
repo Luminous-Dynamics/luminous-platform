@@ -2008,6 +2008,8 @@ jobs:
 
           report, lockfile, lock_sha, authoritative, authoritative_sha = sys.argv[1:]
           Path(report).write_text(json.dumps({
+              "schema": "luminous.security-audit.npm-lockfile-result.v1",
+              "scanner_invoked": False,
               "status": "SKIPPED_NOT_AUTHORITATIVE",
               "reason": "npm-shrinkwrap.json takes precedence over package-lock.json",
               "lockfile": lockfile,
