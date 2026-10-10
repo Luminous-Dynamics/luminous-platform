@@ -92,6 +92,7 @@ Luminous Platform is being organized into a product line for secure administrati
 - [Hardware deployment profile schema](schemas/hardware-deployment-profile-v1.schema.json)
 - [Government control evidence matrix v1](docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md)
 - [Machine-readable control evidence baseline](security/control-evidence-matrix-v1.json)
+- [South African procurement and single-site execution track v1](docs/SA_PROCUREMENT_AND_SINGLE_SITE_EXECUTION_TRACK_V1.md)
 - [Control matrix schema](schemas/hardware-control-evidence-matrix-v1.schema.json)
 - [Open-hardware design package plan](docs/OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md)
 
