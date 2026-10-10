@@ -174,7 +174,9 @@ class VendorAdapterRegistryTests(unittest.TestCase):
             "implementation_state": "LAB_TESTED",
             "model_scope_state": "exact_models_tested",
         })
-        self.assertTrue(any("maturity_evidence_refs" in error for error in self.errors(payload)))
+        errors = self.errors(payload)
+        self.assertTrue(any("maturity_evidence_refs" in error for error in errors))
+        self.assertTrue(any("tested read-only operation" in error for error in errors))
 
     def test_a5_requires_region_scope_and_qualified_implementation(self) -> None:
         payload = copy.deepcopy(self.registry)
