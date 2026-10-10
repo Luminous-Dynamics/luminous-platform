@@ -1,0 +1,66 @@
+{
+  "schema_version": "luminous.vendor-operation-effect-receipt.v1",
+  "receipt_id": "fixture:prepared-operation:2026-10-10:0001",
+  "created_at": "2026-10-10T19:20:00+02:00",
+  "operation": "configuration_apply",
+  "adapter_id": "cisco-ios-xe-nxos",
+  "target": {
+    "vendor": "Synthetic Vendor",
+    "model": "synthetic-lab-switch",
+    "hardware_revision": "fixture-r1",
+    "software_version": "mock-os-0.0.1",
+    "region": "test-lab",
+    "identity_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "intent": {
+    "action_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "target_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "prestate_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "desired_state_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "prestate_observed_at": "2026-10-10T19:19:00+02:00",
+    "policy_revision": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "idempotency_key": "fixture-idempotency-key-0001"
+  },
+  "authorization": {
+    "state": "pending",
+    "requested_by_ref": "principal:fixture-requester",
+    "approver_refs": [
+      "principal:fixture-approver"
+    ],
+    "verified_at": null,
+    "expires_at": "2026-10-10T19:30:00+02:00",
+    "authorized_action_digest": null,
+    "authorized_target_digest": null,
+    "authorized_prestate_digest": null,
+    "signature_evidence_refs": []
+  },
+  "state": "PREPARED",
+  "effect_state": "NO_EFFECT",
+  "journal": [
+    {
+      "state": "PREPARED",
+      "occurred_at": "2026-10-10T19:20:00+02:00",
+      "actor_ref": "principal:fixture-requester",
+      "evidence_refs": [
+        "evidence:fixture-preflight"
+      ],
+      "prestate_digest": null
+    }
+  ],
+  "recovery": {
+    "recovery_plan_ref": "evidence:fixture-recovery-plan",
+    "recovery_evidence_refs": [],
+    "known_good_image_ref": null,
+    "rollback_verified": false
+  },
+  "evidence": {
+    "raw_artifact_refs": [],
+    "independent_verifier_ref": null,
+    "verified_state_digest": null
+  },
+  "privacy": {
+    "secrets_included": false,
+    "raw_configuration_in_shared_dht": false,
+    "customer_personal_data_in_shared_dht": false
+  }
+}
