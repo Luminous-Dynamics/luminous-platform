@@ -871,6 +871,34 @@
         "Demonstrate policy enforcement, logging, IPS/DNS filtering if required, VPN performance, failover and security-update response against the actual requirements."
       ],
       "qualification_evidence_refs": []
+    },
+    {
+      "id": "apc-easy-ups-smv1500ai",
+      "name": "APC Easy UPS SMV1500AI 230V/1500VA/1050W",
+      "item_type": "hardware_product_or_board",
+      "category": "rack_power",
+      "source_urls": [
+        "https://www.se.com/za/en/product/SMV1500AI/apc-easy-ups-1-ph-line-interactive-1500va-tower-230v-6-iec-c13-outlets-avr-lcd/",
+        "https://www.se.com/za/en/product/SMV1500AI-GR/apc-easy-ups-1-ph-line-interactive-1500va-tower-230v-4-schuko-cee-7-outlets-avr-lcd/"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "vendor_terms_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": "SMV1500AI or SMV1500AI-GR, 230V; exact outlet/plug SKU must be chosen",
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Schneider Electric South Africa's official listing documents the SMV1500AI as a 230V, 1500VA/1050W line-interactive pure-sine-wave tower UPS with AVR, USB and serial management and replacement battery availability; its page displayed ZAR 8,630 excluding VAT, subject to change. The official SMV1500AI-GR variant has four Schuko outlets and a similar displayed price. This is a manufacturer price signal, not a quote, stock guarantee or runtime calculation.",
+      "open_blockers": [
+        "Choose the exact outlet/plug SKU and obtain written local supplier quote, stock/lead time, warranty and replacement-battery cost.",
+        "Calculate runtime only after measuring the fully populated server/switch/AP load, startup peaks and target shutdown time; do not size from VA rating alone.",
+        "Test UPS USB/serial monitoring with the selected host and NUT/appropriate daemon, including low-battery shutdown ordering.",
+        "Test mains loss, brownout, battery self-test failure, alerting, graceful shutdown and recovery; verify serviceable battery lifecycle."
+      ],
+      "qualification_evidence_refs": []
     }
   ]
 }
