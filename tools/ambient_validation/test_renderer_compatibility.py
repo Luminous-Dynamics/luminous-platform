@@ -29,7 +29,7 @@ class RendererCompatibilityTests(unittest.TestCase):
     def test_pinned_renderer_profile_matches_its_schema(self):
         issues = validate_profile(self.profile_schema, self.profile)
         self.assertEqual([], issues, "\n".join(map(str, issues)))
-        self.assertEqual("c3b7bb9a376af9abd7bff7cdfc13472e2d44e82e", self.profile["renderer"]["commit"])
+        self.assertEqual("795bd095f562ebacc49d7bd68a05bdbc9b7e3e35", self.profile["renderer"]["commit"])
         self.assertEqual("source-inspection-only", self.profile["renderer"]["qualificationState"])
 
     def test_mismatched_engine_id_is_rejected(self):
@@ -44,30 +44,33 @@ class RendererCompatibilityTests(unittest.TestCase):
     def test_current_profile_fails_closed_for_known_scene_pack_gaps(self):
         report = audit_compatibility(self.manifest, self.profile)
         self.assertFalse(report.compatible)
-        self.assertEqual("c3b7bb9a376af9abd7bff7cdfc13472e2d44e82e", report.renderer_commit)
+        self.assertEqual("795bd095f562ebacc49d7bd68a05bdbc9b7e3e35", report.renderer_commit)
         self.assertEqual("source-inspection-only", report.qualification_state)
         codes = {item.code for item in report.issues}
         self.assertTrue({
             "engine.version.unsupported",
-            "seed.encoding.unsupported",
-            "palette.field_unmapped",
-            "simulation.branch_limit.not_configurable",
-            "simulation.max_depth.not_configurable",
-            "simulation.growth_rate.not_configurable",
-            "simulation.fixed_step.not_configurable",
-            "simulation.pulse_period.not_configurable",
-            "simulation.drift_amplitude.not_configurable",
+            "manifest.adapter.not_implemented",
             "budget.memory.not_enforced",
             "presentation.variant.unsupported",
             "presentation.field_unmapped",
             "presentation.static_gradient.unsupported",
             "lifecycle.policy.unsupported",
         }.issubset(codes), f"missing expected blockers: {codes}")
+        self.assertNotIn("seed.encoding.unsupported", codes)
+        self.assertNotIn("palette.field_unmapped", codes)
+        self.assertNotIn("simulation.branch_limit.not_configurable", codes)
+        self.assertNotIn("simulation.max_depth.not_configurable", codes)
+        self.assertNotIn("simulation.growth_rate.not_configurable", codes)
+        self.assertNotIn("simulation.fixed_step.not_configurable", codes)
+        self.assertNotIn("simulation.pulse_period.not_configurable", codes)
+        self.assertNotIn("simulation.drift_amplitude.not_configurable", codes)
+        self.assertNotIn("budget.renderer_estimate.not_enforced", codes)
 
     def test_a_fully_declared_profile_can_pass_compatibility_without_claiming_qualification(self):
         candidate = copy.deepcopy(self.profile)
         candidate["engineVersions"] = ["1.0.0"]
-        candidate["seedEncoding"] = "uint32-domain-separated-blake3-v1"
+        candidate["seedEncodings"] = ["phrase-hash-blake3-utf8", "uint32-domain-separated-blake3-v1"]
+        candidate["manifestAdapterImplemented"] = True
         candidate["palette"] = {
             "configurable": True,
             "supportedFields": ["canvas", "substrate", "filament", "node", "lichen", "glow"],
@@ -81,9 +84,11 @@ class RendererCompatibilityTests(unittest.TestCase):
             "driftAmplitudeConfigurable": True,
             "branchLimitEnforcedBeforeSpawn": True,
             "maxBranchLimit": 8192,
+            "maxDepthCeiling": 24,
         })
         candidate["resources"].update({
             "maxMemoryMiB": 2048,
+            "rendererMemoryEstimateEnforced": True,
             "manifestMemoryBudgetEnforced": True,
         })
         candidate["presentation"] = {

@@ -10,13 +10,14 @@
     "profileId",
     "renderer",
     "engineId",
-    "seedEncoding",
     "palette",
     "simulation",
     "resources",
     "presentation",
     "lifecycle",
-    "engineVersions"
+    "engineVersions",
+    "seedEncodings",
+    "manifestAdapterImplemented"
   ],
   "properties": {
     "schemaVersion": {
@@ -55,12 +56,6 @@
         }
       }
     },
-    "seedEncoding": {
-      "enum": [
-        "phrase-hash-blake3-utf8",
-        "uint32-domain-separated-blake3-v1"
-      ]
-    },
     "palette": {
       "type": "object",
       "additionalProperties": false,
@@ -96,7 +91,7 @@
         "branchLimitEnforcedBeforeSpawn",
         "maxBranchLimit",
         "maxDepthConfigurable",
-        "fixedMaxDepth",
+        "maxDepthCeiling",
         "growthRateConfigurable",
         "fixedStepHzConfigurable",
         "pulsePeriodConfigurable",
@@ -117,11 +112,6 @@
         "maxDepthConfigurable": {
           "type": "boolean"
         },
-        "fixedMaxDepth": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 256
-        },
         "growthRateConfigurable": {
           "type": "boolean"
         },
@@ -133,6 +123,11 @@
         },
         "driftAmplitudeConfigurable": {
           "type": "boolean"
+        },
+        "maxDepthCeiling": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
         }
       }
     },
@@ -143,6 +138,7 @@
         "maxDimension",
         "maxPixels",
         "maxMemoryMiB",
+        "rendererMemoryEstimateEnforced",
         "manifestMemoryBudgetEnforced"
       ],
       "properties": {
@@ -162,6 +158,9 @@
           "minimum": 1
         },
         "manifestMemoryBudgetEnforced": {
+          "type": "boolean"
+        },
+        "rendererMemoryEstimateEnforced": {
           "type": "boolean"
         }
       }
@@ -239,6 +238,20 @@
         "type": "string",
         "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
       }
+    },
+    "seedEncodings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "phrase-hash-blake3-utf8",
+          "uint32-domain-separated-blake3-v1"
+        ]
+      }
+    },
+    "manifestAdapterImplemented": {
+      "type": "boolean"
     }
   }
 }

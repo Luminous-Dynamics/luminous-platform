@@ -81,13 +81,16 @@ def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> Co
         if issue not in issues:
             issues.append(issue)
 
+    if not profile["manifestAdapterImplemented"]:
+        add("manifest.adapter.not_implemented", "/", "there is no implemented strict Scene Pack parser/mapping to the renderer settings API")
+
     simulation = manifest.get("simulation", {})
     if simulation.get("engine") != profile["engineId"]:
         add("engine.unsupported", "/simulation/engine", "profile declares engine {!r}, not {!r}".format(profile["engineId"], simulation.get("engine")))
     if simulation.get("engineVersion") not in profile["engineVersions"]:
         add("engine.version.unsupported", "/simulation/engineVersion",
             "profile does not declare support for Scene Pack engine version {!r}".format(simulation.get("engineVersion")))
-    if profile["seedEncoding"] != "uint32-domain-separated-blake3-v1":
+    if "uint32-domain-separated-blake3-v1" not in profile["seedEncodings"]:
         add("seed.encoding.unsupported", "/simulation/seed", "Scene Pack uint32 seed encoding is not implemented by this renderer profile")
 
     palette = profile["palette"]
@@ -113,13 +116,15 @@ def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> Co
         add("budget.branch_limit.exceeds_resource_budget", "/simulation/parameters/branchLimit",
             "simulation branchLimit exceeds resourceBudget.maxBranches")
     requested_depth = parameters.get("maxDepth")
-    if isinstance(requested_depth, int) and requested_depth > simulation_cfg["fixedMaxDepth"]:
+    if isinstance(requested_depth, int) and requested_depth > simulation_cfg["maxDepthCeiling"]:
         add("simulation.max_depth.exceeds_core_ceiling", "/simulation/parameters/maxDepth",
             f"requested depth {requested_depth} exceeds profile ceiling {simulation_cfg['fixedMaxDepth']}")
 
     resources = profile["resources"]
     budget = manifest.get("resourceBudget", {})
     requested_memory = budget.get("maxMemoryMiB")
+    if not resources["rendererMemoryEstimateEnforced"]:
+        add("budget.renderer_estimate.not_enforced", "/resourceBudget/maxMemoryMiB", "renderer-owned memory estimate is not enforced")
     if not resources["manifestMemoryBudgetEnforced"] or resources["maxMemoryMiB"] is None:
         add("budget.memory.not_enforced", "/resourceBudget/maxMemoryMiB",
             "renderer profile does not enforce the manifest's aggregate memory ceiling")
