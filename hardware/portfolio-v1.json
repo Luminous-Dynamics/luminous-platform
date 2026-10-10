@@ -644,7 +644,9 @@
       "category": "endpoint",
       "source_urls": [
         "https://frame.work/laptop13?tab=linux",
-        "https://wiki.nixos.org/wiki/Hardware/Framework"
+        "https://wiki.nixos.org/wiki/Hardware/Framework",
+        "https://wiki.nixos.org/wiki/Secure_Boot",
+        "https://nix-community.github.io/lanzaboote/"
       ],
       "source_revision": null,
       "source_completeness": "partial_documentation",
@@ -656,12 +658,13 @@
       "deployment_profile": null,
       "named_model_or_revision": "Framework Laptop 13 AMD Ryzen AI 300 Series; exact RAM, wireless module, board revision and firmware not selected",
       "last_checked": "2026-10-10",
-      "observed_evidence": "The official Framework Linux compatibility page lists the Ryzen AI 300 Series model and lists NixOS as community-supported, with Wi-Fi/Bluetooth working out of the box but fingerprint-reader setup required; support differs by generation/configuration. These are vendor compatibility notes, not a Luminous NixOS image or endpoint security qualification.",
+      "observed_evidence": "The official Framework Linux compatibility page lists the Ryzen AI 300 Series model and lists NixOS as community-supported, with Wi-Fi/Bluetooth working out of the box but fingerprint-reader setup required; support differs by generation/configuration. These are vendor compatibility notes, not a Luminous NixOS image or endpoint security qualification. Additional security note: the official NixOS Framework wiki's generic instructions state Secure Boot must be disabled to boot NixOS, while Lanzaboote documents a Framework-specific custom-key enrollment procedure and cautions that behavior varies between notebooks. A signed-boot path is possible to investigate, but the exact board/firmware combination and recovery behavior must be qualified; do not ship an image that depends on Secure Boot being disabled.",
       "open_blockers": [
         "Verify current South African ordering, import, warranty, repair and spare-part support; do not infer local stock from the vendor product page.",
         "Choose exact mainboard generation, RAM, wireless module and firmware baseline and pin the deployable configuration.",
         "Qualify secure boot/TPM, firmware update and rollback, IOMMU, sleep/resume, docking, device enrollment and recovery for the intended NixOS profile.",
-        "Check lifecycle/support terms, firmware/proprietary binary dependencies, hardware revision changes and replacement-unit reproducibility."
+        "Check lifecycle/support terms, firmware/proprietary binary dependencies, hardware revision changes and replacement-unit reproducibility.",
+        "Resolve the observed NixOS Secure Boot path for the exact SKU: demonstrate enrolled keys, signed boot artifacts, vendor firmware update compatibility, dbx handling, rollback, and recovery from a rejected image. Do not treat 'NixOS boots' as evidence that the required boot policy is enforced."
       ],
       "qualification_evidence_refs": []
     },
@@ -721,6 +724,151 @@
         "Prepare commercial support, warranty, SLA, security evidence and local delivery obligations that open-source publication alone does not provide.",
         "Treat tenders whose published closing date has passed as historical only; monitor new calls and verify amendments on the official tender portal.",
         "Verify every deadline, mandatory meeting and eligibility clause in the full live RFQ pack; expired compulsory briefings or prior supplier-panel restrictions can make a listing unusable for a new entrant."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "mnt-station-edge-node",
+      "name": "MNT Station open-hardware edge/homelab computer family",
+      "item_type": "hardware_design_family",
+      "category": "lab_compute",
+      "source_urls": [
+        "https://mntre.com/media/reform_md/2026-08-31-august-update.html",
+        "https://mntre.com/media/reform_md/2026-09-30-september-update.html",
+        "https://mntre.com/sources.html"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "unknown_or_not_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": "MNT Station case + Reform Mainboard 3.0 + RCORE RK3588 module (16 GB RAM suggested by vendor); exact bundle/revision unselected",
+      "last_checked": "2026-10-10",
+      "observed_evidence": "MNT describes Station as a quiet, low-power open-hardware computer for desktop, homelab or wall-mounted edge/router use, with a modular bundle built from its case, Reform Mainboard 3.0 and processor module. The September 2026 vendor update says its campaign ended and production parts were to be organized; it notes that campaign orders could still be placed. This is a promising open hardware lab/edge lead, not evidence of a ready-to-ship bundle, NixOS support, sustained routing throughput or production support.",
+      "open_blockers": [
+        "Verify whether the selected bundle can actually be ordered now, with exact mainboard/module/firmware revision, lead time and spare parts.",
+        "Audit source repository revisions, per-artifact licenses, board/BOM/fabrication completeness and closed firmware dependencies.",
+        "Test Linux/NixOS boot chain, kernel support, device-tree/firmware, signed updates, recovery and target workload on the exact RK3588 module.",
+        "Benchmark firewall/VPN/NAS/container workloads under thermal and sustained load; do not assume ARM compute makes it a supported security appliance.",
+        "Verify cross-border delivery, customs, warranty and repair support for South Africa."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "tp-link-sg2210mp-current-revision",
+      "name": "TP-Link Omada SG2210MP current-revision managed PoE+ switch lead",
+      "item_type": "hardware_product_or_board",
+      "category": "switching",
+      "source_urls": [
+        "https://www.tp-link.com/za/business-networking/managed-switch/tl-sg2210mp/",
+        "https://www.tp-link.com/us/business-networking/omada-switch-access/sg2210mp/v5.60/",
+        "https://www.pricecheck.co.za/offers/199834324/TP-link%2BJetstream%2B10-PORT%2BGigabit%2BSmart%2BSwitch%2BWith%2B8-PORT%2BPoe%2BNET-TL-SG2210MP"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "vendor_terms_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": "SG2210MP v5.26/v5.60 documented by TP-Link US; the exact South African SKU/hardware version still needs a supplier quote",
+      "last_checked": "2026-10-10",
+      "observed_evidence": "TP-Link documents the current SG2210MP v5.26/v5.60 family with eight 1-GbE PoE+ ports, two 1-GbE SFP slots, 150-W PoE budget, VLANs, ACLs and local web/CLI/SNMP management. The older TL-SG2210MP product page is marked End of Life in TP-Link US and a newer SG2210MP naming/revision is available. South African marketplace listings show the older model name without a consistently clear hardware revision, so listed prices cannot identify the model to procure.",
+      "open_blockers": [
+        "Obtain a South African supplier quote naming the exact model string, hardware version, firmware branch, warranty and end-of-support dates; do not order an unspecified TL-SG2210MP listing.",
+        "Verify local firmware/support availability, 802.1X/RADIUS behavior, per-VLAN ACLs, DHCP snooping, management-plane isolation, VLAN trunking, PoE budget and firmware recovery.",
+        "Use a local management/controller mode, disable cloud access unless explicitly authorized, and confirm the device operates correctly without a mandatory third-party cloud dependency.",
+        "Exercise factory reset/default credentials, signed update behavior, backup/restore, power-loss recovery and logging before pilot acceptance."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "tp-link-eap650-indoor-ap",
+      "name": "TP-Link Omada EAP650 indoor Wi-Fi 6 access point lead",
+      "item_type": "hardware_product_or_board",
+      "category": "network_access",
+      "source_urls": [
+        "https://www.tp-link.com/za/business-networking/omada-sdn-access-point/eap650/",
+        "https://www.pricecheck.co.za/offers/218530957/TP-link%2BEAP650%2BAX3000%2BCeiling%2BMount%2BWifi%2B6%2BAccess%2BPoint"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "vendor_terms_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": "EAP650 indoor ceiling-mount; exact hardware revision/region and firmware release not pinned",
+      "last_checked": "2026-10-10",
+      "observed_evidence": "TP-Link's official South African product materials list the EAP650 as an Omada Wi-Fi 6 access point. PriceCheck showed an indicative R1,929–R2,049 range for an indoor EAP650 on 10 October 2026; this is a marketplace snapshot, not a written quote or a guarantee of stock/revision. Product security and support lifetime still need confirmation.",
+      "open_blockers": [
+        "Obtain exact hardware revision and current supported firmware from a South African supplier; confirm warranty and firmware/EOL policy.",
+        "Validate WPA3 configuration, VLAN/SSID mapping, 802.1X/RADIUS, client isolation, rogue-AP handling, roaming and RF settings for the chosen local regulatory domain.",
+        "Run tests with the selected controller in local-only mode and prove Wi-Fi remains available when WAN/cloud control is unavailable.",
+        "Measure coverage, interference, throughput and PoE power on site; do not infer RF performance from marketing PHY rates."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "dell-poweredge-t160",
+      "name": "Dell PowerEdge T160 near-edge/tower server candidate",
+      "item_type": "hardware_product_or_board",
+      "category": "server_compute",
+      "source_urls": [
+        "https://www.dell.com/en-in/work/shop/ipovw/poweredge-t160",
+        "https://www.dell.com/en-us/shop/ipovw/poweredge-t160",
+        "https://www.pricecheck.co.za/offers/251362571/Dell%2BPoweredge%2BT160%2BIntel%2BXeon%2BE%2BE-2414%2BTower%2BServer"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "vendor_terms_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": "PowerEdge T160; target quote to specify CPU, TPM 2.0, 32–64 GB ECC UDIMM, storage, NICs, PSU and support",
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Dell publishes specifications for the T160: ECC UDIMM up to 128 GB, configurable SATA/NVMe storage, TPM 2.0 options, Secure Boot, signed firmware, silicon root of trust, and a dedicated iDRAC port with Redfish/API management. A South African marketplace listing for an E-2414 baseline with 16 GB ECC and 2 TB HDD showed R27,499–R59,799 across sellers on 10 October 2026. That wide variation is not a comparable quote and the baseline is not the recommended security/storage configuration.",
+      "open_blockers": [
+        "Get a supplier quote with exact Dell part number, TPM, memory topology, storage, power supply, warranty and support response time; verify South African service eligibility.",
+        "Require a more suitable configuration than a single spinning-disk baseline: evaluate 32–64 GB ECC and redundant enterprise SSDs/boot media, with a separately protected backup target.",
+        "Verify NixOS/kernel/storage/NIC compatibility, measured boot and TPM behavior, firmware update/recovery, disk encryption, RAID/HBA mode and exact hardware support.",
+        "Place iDRAC on a dedicated isolated management network with unique credentials, MFA where supported, no direct Internet exposure, restricted source IPs and logged access.",
+        "Test restore, disk failure, power loss, firmware rollback/recovery, thermal behavior and workload performance on the exact configured unit."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "production-ngfw-support",
+      "name": "Production next-generation firewall with contract-backed support (SKU not selected)",
+      "item_type": "selection_gap",
+      "category": "branch_gateway",
+      "source_urls": [
+        "https://rfq.sita.co.za/RFQ/RFQInvitations.asp",
+        "https://www.sita.co.za/content/sita-effective-panel-contracts"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "The SITA RFQ feed lists government demand for a next-generation firewall with licenses, maintenance and support for a three-year period. This makes support and lifecycle commercial deliverables part of some government network opportunities; an open-source router plus upstream project is not automatically equivalent to an NGFW support contract.",
+      "open_blockers": [
+        "Review the live tender/specification and verify vendor/product eligibility, support SLA, license duration, local incident response and renewal pricing.",
+        "Select exact firewall hardware/software SKU, supported throughput with required features enabled, HA options, interface count and update policy.",
+        "Assess a vendor-supported product alongside an open-source route; record the operational and lock-in trade-offs without claiming equivalence.",
+        "Demonstrate policy enforcement, logging, IPS/DNS filtering if required, VPN performance, failover and security-update response against the actual requirements."
       ],
       "qualification_evidence_refs": []
     }
