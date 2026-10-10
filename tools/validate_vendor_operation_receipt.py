@@ -359,7 +359,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     failures = receipt_errors(receipt, schema)
-    failures.extend(registry_binding_errors(receipt, registry))
+    # Cross-document binding assumes a schema-valid receipt. Do not allow
+    # malformed or incomplete data to turn a fail-closed rejection into a
+    # KeyError while reading adapter_id/operation/target fields.
+    if not failures:
+        failures.extend(registry_binding_errors(receipt, registry))
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}", file=sys.stderr)
