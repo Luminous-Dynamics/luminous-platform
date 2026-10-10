@@ -199,8 +199,6 @@ def profile_errors(profile: dict[str, Any], schema: dict[str, Any]) -> list[str]
 
     if limits["request_timeout_ms"] < limits["connect_timeout_ms"]:
         errors.append("$.limits.request_timeout_ms must be at least connect_timeout_ms")
-    if limits["request_timeout_ms"] < limits["connect_timeout_ms"]:
-        errors.append("$.limits.request_timeout_ms must be at least connect_timeout_ms")
 
     egress = profile["egress"]
     if egress["proxy_mode"] == "disabled" and egress["proxy_profile_ref"] is not None:
