@@ -104,6 +104,20 @@ class HardwarePortfolioTests(unittest.TestCase):
         gap["maturity"] = "H1_SOURCE_REVIEWED"
         self.assertTrue(any("selection_gap items cannot be promoted" in error for error in self.errors(payload)))
 
+    def test_unknown_top_level_fields_fail_closed(self) -> None:
+        payload = copy.deepcopy(self.catalog)
+        payload["unexpected_authority_override"] = True
+        self.assertTrue(any("Additional properties" in error for error in self.errors(payload)))
+
+    def test_non_finite_json_constants_are_rejected(self) -> None:
+        temporary = ROOT / "hardware/.nonfinite-json-test.tmp.json"
+        try:
+            temporary.write_text('{"value": NaN}', encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "non-standard JSON constant"):
+                load_json(temporary)
+        finally:
+            temporary.unlink(missing_ok=True)
+
     def test_duplicate_json_keys_are_rejected(self) -> None:
         temporary = ROOT / "hardware/.duplicate-key-test.tmp.json"
         try:
