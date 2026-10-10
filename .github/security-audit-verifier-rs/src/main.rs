@@ -667,8 +667,10 @@ fn validate_verdict(verdict: &Value, repo: &str, policy: Policy, run: &Value, ex
     {
         return Err("verdict schema/repository/subject does not match the authoritative run".to_string());
     }
-    if get_field_str(verdict, "run_id") != Some(run_id.to_string().as_str())
-        || get_field_str(verdict, "run_attempt") != Some(attempt.to_string().as_str())
+    let run_id_text = run_id.to_string();
+    let attempt_text = attempt.to_string();
+    if get_field_str(verdict, "run_id") != Some(run_id_text.as_str())
+        || get_field_str(verdict, "run_attempt") != Some(attempt_text.as_str())
         || get_field_str(verdict, "workflow_job_result") != Some("success")
     {
         return Err("verdict run ID/attempt or workflow-security result is inconsistent".to_string());
