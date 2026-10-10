@@ -19,7 +19,8 @@
     "desired_state_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
     "prestate_observed_at": "2026-10-10T19:19:00+02:00",
     "policy_revision": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-    "idempotency_key": "fixture-idempotency-key-0001"
+    "idempotency_key": "fixture-idempotency-key-0001",
+    "profile_digest": "9999999999999999999999999999999999999999999999999999999999999999"
   },
   "authorization": {
     "state": "pending",
@@ -32,7 +33,9 @@
     "authorized_action_digest": null,
     "authorized_target_digest": null,
     "authorized_prestate_digest": null,
-    "signature_evidence_refs": []
+    "signature_evidence_refs": [],
+    "authorized_policy_revision": null,
+    "authorized_profile_digest": null
   },
   "state": "PREPARED",
   "effect_state": "NO_EFFECT",
