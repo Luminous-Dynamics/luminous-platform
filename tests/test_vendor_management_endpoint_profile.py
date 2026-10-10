@@ -98,6 +98,18 @@ class VendorManagementEndpointProfileTests(unittest.TestCase):
         profile["limits"]["max_redirects"] = 1
         self.assertTrue(any("must use https" in error for error in self.errors(profile)))
 
+    def test_allowlisted_redirect_origin_must_be_canonical(self) -> None:
+        profile = copy.deepcopy(self.fixture)
+        profile["redirect_policy"]["mode"] = "allowlisted_origins"
+        profile["redirect_policy"]["allowed_origins"] = ["https://redirect.example.invalid:443"]
+        profile["limits"]["max_redirects"] = 1
+        self.assertTrue(any("canonical origin syntax" in error for error in self.errors(profile)))
+
+    def test_ipv6_address_must_be_canonical(self) -> None:
+        profile = copy.deepcopy(self.fixture)
+        profile["endpoint"]["host"] = "2001:0db8:0:0::1"
+        self.assertTrue(any("canonical textual representation" in error for error in self.errors(profile)))
+
     def test_allowlisted_redirect_cannot_contain_path_or_userinfo(self) -> None:
         profile = copy.deepcopy(self.fixture)
         profile["redirect_policy"]["mode"] = "allowlisted_origins"
