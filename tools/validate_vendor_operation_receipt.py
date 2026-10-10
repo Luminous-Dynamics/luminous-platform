@@ -116,6 +116,10 @@ def receipt_errors(receipt: dict[str, Any], schema: dict[str, Any]) -> list[str]
             errors.append("$.authorization must be verified before APPLY_STARTED or any later effect state")
 
     event_states = [item["state"] for item in journal]
+    if auth["state"] == "verified" and "AUTHORIZATION_VERIFIED" not in event_states:
+        errors.append("$.authorization verified state must have an AUTHORIZATION_VERIFIED journal event")
+    if "AUTHORIZATION_VERIFIED" in event_states and auth["state"] != "verified":
+        errors.append("$.journal AUTHORIZATION_VERIFIED event requires verified authorization")
     if event_states[0] != "PREPARED":
         errors.append("$.journal must begin with PREPARED")
     if event_states[-1] != state:
