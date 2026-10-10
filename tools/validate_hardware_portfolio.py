@@ -27,15 +27,21 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _reject_constant(value: str) -> None:
+    """Reject JavaScript/non-RFC JSON constants such as NaN and Infinity."""
+    raise ValueError(f"non-standard JSON constant: {value}")
+
+
 def load_json(path: Path) -> Any:
-    """Parse strict UTF-8 JSON and reject duplicate object keys."""
+    """Parse strict UTF-8 JSON and reject duplicate keys and non-finite constants."""
+
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as exc:
         raise ValueError(f"cannot read {path}: {exc}") from exc
     try:
-        return json.loads(text, object_pairs_hook=_unique_object)
-    except (json.JSONDecodeError, DuplicateJSONKeyError) as exc:
+        return json.loads(text, object_pairs_hook=_unique_object, parse_constant=_reject_constant)
+    except ValueError as exc:
         raise ValueError(f"invalid JSON in {path}: {exc}") from exc
 
 
