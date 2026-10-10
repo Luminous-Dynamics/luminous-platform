@@ -31,5 +31,6 @@
   "signed_payload_digest": null,
   "signature_evidence_ref": null,
   "reason_code": null,
-  "supersedes_decision_ref": null
+  "supersedes_decision_ref": null,
+  "profile_digest_scheme": "luminous-json-canonical-v1"
 }
