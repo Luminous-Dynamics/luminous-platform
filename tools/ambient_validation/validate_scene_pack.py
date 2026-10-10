@@ -64,36 +64,52 @@ class Issue:
         return f"[{self.code}] {self.message}"
 
 
-def _resolve_local_pointer(document: Any, ref: str) -> tuple[bool, str]:
-    """Resolve a local JSON Pointer URI fragment without fetching remote resources."""
-    if ref == "#":
+def _resolve_local_reference(document: Any, ref: str) -> tuple[bool, str]:
+    """Resolve a document-local JSON Schema URI reference without fetching resources."""
+    from urllib.parse import unquote, urlsplit
+
+    parsed = urlsplit(ref)
+    if parsed.scheme or parsed.netloc or parsed.path or parsed.query:
+        return False, "reference is not a fragment-only URI"
+
+    # URI fragment percent-decoding precedes JSON Pointer/anchor interpretation.
+    fragment = unquote(parsed.fragment)
+    if not fragment:
         return True, ""
-    if not ref.startswith("#/"):
-        return False, "reference is not a local JSON Pointer"
-    from urllib.parse import unquote
-    pointer = unquote(ref[2:])
-    current = document
-    for raw_token in pointer.split("/"):
-        # RFC 6901 escaping permits only ~0 and ~1.
-        i = 0
-        while i < len(raw_token):
-            if raw_token[i] == "~":
-                if i + 1 >= len(raw_token) or raw_token[i + 1] not in "01":
-                    return False, f"invalid JSON Pointer escape in {raw_token!r}"
-                i += 2
+    if fragment.startswith("/"):
+        pointer = fragment[1:]
+        current = document
+        for raw_token in pointer.split("/"):
+            # RFC 6901 escaping permits only ~0 and ~1.
+            i = 0
+            while i < len(raw_token):
+                if raw_token[i] == "~":
+                    if i + 1 >= len(raw_token) or raw_token[i + 1] not in "01":
+                        return False, f"invalid JSON Pointer escape in {raw_token!r}"
+                    i += 2
+                else:
+                    i += 1
+            token = raw_token.replace("~1", "/").replace("~0", "~")
+            if isinstance(current, dict) and token in current:
+                current = current[token]
+            elif isinstance(current, list) and token.isdigit():
+                index = int(token)
+                if index >= len(current) or str(index) != token:
+                    return False, f"array index {token!r} does not exist"
+                current = current[index]
             else:
-                i += 1
-        token = raw_token.replace("~1", "/").replace("~0", "~")
-        if isinstance(current, dict) and token in current:
-            current = current[token]
-        elif isinstance(current, list) and token.isdigit():
-            index = int(token)
-            if index >= len(current) or (str(index) != token):
-                return False, f"array index {token!r} does not exist"
-            current = current[index]
-        else:
-            return False, f"pointer token {token!r} does not exist"
-    return True, ""
+                return False, f"pointer token {token!r} does not exist"
+        return True, ""
+
+    # Draft 2020-12 permits plain-name fragments that target $anchor or
+    # $dynamicAnchor; treating every non-pointer fragment as an external ref
+    # would reject valid schemas even though no resource retrieval is needed.
+    for node in _walk(document):
+        if isinstance(node, dict) and (
+            node.get("$anchor") == fragment or node.get("$dynamicAnchor") == fragment
+        ):
+            return True, ""
+    return False, f"anchor {fragment!r} does not exist"
 
 
 def check_schema(schema: Any) -> list[Issue]:
@@ -101,47 +117,37 @@ def check_schema(schema: Any) -> list[Issue]:
         return [Issue("schema.invalid_document", "schema root must be an object")]
     if schema.get("$schema") != DRAFT:
         return [Issue("schema.wrong_dialect", f"$schema must be {DRAFT}")]
-    # Disallow all remote schema retrieval and validate every supported reference.
-    reference_keywords = ("$ref", "$dynamicRef", "$recursiveRef")
+    try:
+        Draft202012Validator.check_schema(schema)
+    except SchemaError as exc:
+        return [Issue("schema.meta_schema", f"invalid Draft 2020-12 schema: {exc.message}")]
+
+    # Draft 2020-12 uses $dynamicRef/$dynamicAnchor. The older
+    # $recursiveRef/$recursiveAnchor keywords are not supported by this tool's
+    # 2020-12 profile; fail closed rather than pretending to validate them.
     for node in _walk(schema):
         if not isinstance(node, dict):
             continue
-        for keyword in reference_keywords:
+        for legacy_keyword in ("$recursiveRef", "$recursiveAnchor"):
+            if legacy_keyword in node:
+                return [Issue(
+                    "schema.unsupported_ref_keyword",
+                    f"{legacy_keyword} is a legacy reference keyword unsupported by the Draft 2020-12 profile",
+                )]
+        for keyword in ("$ref", "$dynamicRef"):
             if keyword not in node:
                 continue
             ref = node[keyword]
             if not isinstance(ref, str):
                 return [Issue("schema.invalid_ref", f"{keyword} must be a string")]
-            ok, detail = _resolve_local_pointer(schema, ref)
+            ok, detail = _resolve_local_reference(schema, ref)
             if not ok:
-                code = "schema.external_ref" if not (ref == "#" or ref.startswith("#/")) else "schema.unresolved_ref"
+                from urllib.parse import urlsplit
+                parsed = urlsplit(ref)
+                local_only = not (parsed.scheme or parsed.netloc or parsed.path or parsed.query)
+                code = "schema.unresolved_ref" if local_only else "schema.external_ref"
                 return [Issue(code, f"{keyword} {ref!r}: {detail}")]
-    try:
-        Draft202012Validator.check_schema(schema)
-    except SchemaError as exc:
-        return [Issue("schema.meta_schema", f"invalid Draft 2020-12 schema: {exc.message}")]
     return []
-
-
-def _resolve_asset(root: Path, value: str) -> tuple[Path | None, Issue | None]:
-    if "\\" in value or value.startswith("/"):
-        return None, Issue("asset.path_unsafe", f"not a relative POSIX path: {value!r}")
-    parts = value.split("/")
-    if not value or any(part in ("", ".", "..") for part in parts) or PurePosixPath(value).is_absolute():
-        return None, Issue("asset.path_unsafe", f"unsafe path component in {value!r}")
-    try:
-        resolved_root = root.resolve(strict=True)
-        resolved = resolved_root.joinpath(*PurePosixPath(value).parts).resolve(strict=True)
-    except (OSError, RuntimeError) as exc:
-        return None, Issue("asset.not_found", f"cannot resolve {value!r}: {exc}")
-    try:
-        resolved.relative_to(resolved_root)
-    except ValueError:
-        return None, Issue("asset.symlink_escape", f"asset resolves outside package root: {value!r}")
-    if not resolved.is_file():
-        return None, Issue("asset.not_file", f"asset is not a regular file: {value!r}")
-    return resolved, None
-
 
 def validate_semantics(manifest: Any, *, package_root: Path | None = None,
                        supported_capabilities: set[str] | None = None) -> list[Issue]:

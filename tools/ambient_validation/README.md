@@ -11,3 +11,5 @@ Run locally (from the repository root):
 For asset-bearing packs, pass --asset-root with the unpacked package root. Renderer capabilities must be explicitly declared with repeated --supports-capability options; unsupported requirements fail closed.
 
 This validator is not a filesystem sandbox against concurrent mutation and does not qualify rendering, performance, desktop lifecycle, or lockscreen security. It verifies each asset's SHA-256 and per-asset license identifier, but Scene Pack v1 still lacks a separate attribution-manifest schema; full attribution-manifest completeness is therefore not claimed for packs with assets. Package extraction, signatures, and distribution trust are separate concerns.
+
+Schema references are resolved only within the supplied schema document: local JSON Pointers, `$anchor`, and `$dynamicAnchor` references are supported; unresolved references and external/relative resource loading are rejected. Legacy `$recursiveRef` / `$recursiveAnchor` keywords fail closed under the Draft 2020-12 profile.

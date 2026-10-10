@@ -55,6 +55,40 @@ class ScenePackValidationTests(unittest.TestCase):
         issues = validate_manifest(candidate_schema, self.example, package_root=EXAMPLE_PATH.parent)
         self.assertIn("schema.unresolved_ref", {issue.code for issue in issues})
 
+    def test_local_json_schema_anchor_reference_is_accepted(self):
+        candidate_schema = copy.deepcopy(self.schema)
+        candidate_schema["$defs"]["color"]["$anchor"] = "color-profile"
+        candidate_schema["$defs"]["colorAlias"] = {"$ref": "#color-profile"}
+        issues = validate_manifest(candidate_schema, self.example, package_root=EXAMPLE_PATH.parent)
+        self.assertEqual([], issues, "\n".join(map(str, issues)))
+
+    def test_local_dynamic_anchor_reference_is_accepted(self):
+        candidate_schema = copy.deepcopy(self.schema)
+        candidate_schema["$defs"]["color"]["$dynamicAnchor"] = "color-profile"
+        candidate_schema["$defs"]["colorAlias"] = {"$dynamicRef": "#color-profile"}
+        issues = validate_manifest(candidate_schema, self.example, package_root=EXAMPLE_PATH.parent)
+        self.assertEqual([], issues, "\n".join(map(str, issues)))
+
+    def test_unresolved_local_anchor_reference_is_rejected(self):
+        candidate_schema = copy.deepcopy(self.schema)
+        candidate_schema["$defs"]["color"] = {"$ref": "#anchor-that-does-not-exist"}
+        issues = validate_manifest(candidate_schema, self.example, package_root=EXAMPLE_PATH.parent)
+        self.assertIn("schema.unresolved_ref", {issue.code for issue in issues})
+
+    def test_invalid_json_pointer_escape_is_rejected(self):
+        candidate_schema = copy.deepcopy(self.schema)
+        candidate_schema["$defs"]["color"] = {"$ref": "#/$defs/bad~2token"}
+        issues = validate_manifest(candidate_schema, self.example, package_root=EXAMPLE_PATH.parent)
+        self.assertIn("schema.unresolved_ref", {issue.code for issue in issues})
+
+    def test_legacy_recursive_reference_keywords_are_rejected(self):
+        for keyword, value in (("$recursiveRef", "#/$defs/color"), ("$recursiveAnchor", True)):
+            with self.subTest(keyword=keyword):
+                candidate_schema = copy.deepcopy(self.schema)
+                candidate_schema["$defs"]["legacy"] = {keyword: value}
+                issues = validate_manifest(candidate_schema, self.example, package_root=EXAMPLE_PATH.parent)
+                self.assertIn("schema.unsupported_ref_keyword", {issue.code for issue in issues})
+
     def test_invalid_uri_format_is_rejected(self):
         candidate = copy.deepcopy(self.example)
         candidate["license"]["sourceUrl"] = "not a uri"
