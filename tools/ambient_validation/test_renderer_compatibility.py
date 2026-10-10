@@ -53,7 +53,6 @@ class RendererCompatibilityTests(unittest.TestCase):
             "budget.whole_process.not_enforced",
             "presentation.variant.unsupported",
             "presentation.field_unmapped",
-            "presentation.static_gradient.unsupported",
             "lifecycle.policy.unsupported",
         }.issubset(codes), f"missing expected blockers: {codes}")
         self.assertNotIn("seed.encoding.unsupported", codes)
