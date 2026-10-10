@@ -1,0 +1,233 @@
+catalog_version: 1
+research_snapshot: "2026-10-10"
+catalog_status: "initial-research-seed-not-exhaustive"
+tracking_issue: "https://github.com/Luminous-Dynamics/luminous-platform/issues/19"
+status_definitions:
+  discovered: "A public source or product lead has been found; no fit claim."
+  reference_candidate: "Suitable for bounded lab/reference evaluation with stated limitations."
+  prototype: "An exact configuration has been assembled and build inputs are recorded."
+  integration_qualified: "Required functional, negative, security, interoperability, performance, and recovery tests executed and passed for a stated profile."
+  procurement_ready: "Current supply, lifecycle, warranty/support, provenance, and jurisdictional requirements checked."
+  customer_authorized: "Customer authority approves the exact configuration, use, and classification."
+records:
+  - id: HW-001
+    domain: site-edge-router
+    project: OpenWrt One
+    record_type: existing_open_hardware_candidate
+    maturity: reference_candidate
+    current_part_or_revision: "OpenWrt One; exact board revision required per unit"
+    sources:
+      - "https://one.openwrt.org/hardware/"
+      - "https://one.openwrt.org/sources/"
+      - "https://openwrt.org/toh/openwrt/one"
+    hardware_source_state: "KiCad schematic files and PDF schematic/PCB documentation publicly listed"
+    software_source_state: "Official source downloads for shipped OpenWrt software publicly listed"
+    licensing_state: "Review exact hardware and software licenses before redistributing a derivative"
+    availability_state: "OpenWrt device profile indicates available in 2026; validate supplier and lead time before procurement"
+    allowed_initial_use: "Controlled lab or bounded branch-edge evaluation"
+    not_yet_claimed:
+      - "Government-approved secure gateway"
+      - "Validated cryptographic module"
+      - "Production support and supply assurance"
+    required_evidence:
+      - "Exact board revision and supplier record"
+      - "Complete BOM and alternates"
+      - "Firmware/boot/recovery assessment"
+      - "Throughput and WAN-failure tests"
+      - "Update and vulnerability-response lifecycle"
+  - id: HW-002
+    domain: datacenter-networking
+    project: Open Compute Project Networking
+    record_type: design_ecosystem
+    maturity: discovered
+    current_part_or_revision: "Not selected; choose one exact maintained switch design"
+    sources:
+      - "https://www.opencompute.org/projects/networking/"
+    hardware_source_state: "Public project includes multiple design/specification candidates"
+    software_source_state: "NOS/ONIE ecosystem depends on selected hardware and release"
+    licensing_state: "Check design package and all dependencies for the exact candidate"
+    availability_state: "Unknown until exact design, current vendor, SKU and supply source are selected"
+    allowed_initial_use: "Reference research and switch candidate comparison"
+    not_yet_claimed:
+      - "Every OCP switch is completely open"
+      - "Switch ASIC RTL/firmware is open"
+      - "Any one model is procurement ready"
+    required_evidence:
+      - "Exact design package and hardware revision"
+      - "License and complete BOM"
+      - "NOS/ONIE support matrix"
+      - "Optics compatibility, throughput, power and thermal tests"
+      - "Firmware update, security support and lifecycle"
+  - id: HW-003
+    domain: servers-and-racks
+    project: Open Compute Project Server Designs
+    record_type: design_ecosystem
+    maturity: discovered
+    current_part_or_revision: "Not selected; design-specific revision required"
+    sources:
+      - "https://www.opencompute.org/projects/server/"
+      - "https://github.com/opencomputeproject/Project_Olympus"
+    hardware_source_state: "OCP documents server design ecosystem; some public projects expose design collateral"
+    software_source_state: "Depends on selected board, BMC, firmware and operating system"
+    licensing_state: "Review exact project hardware license, third-party IP, and branding separately"
+    availability_state: "Unknown until exact current platform and manufacturer are selected"
+    allowed_initial_use: "Mechanical/electrical reference and server comparison"
+    not_yet_claimed:
+      - "Current production lifecycle for historic designs"
+      - "Complete editable files and BOM for every listed project"
+      - "Qualified secure server"
+    required_evidence:
+      - "Exact board/chassis design and license"
+      - "Editable source files and BOM completeness"
+      - "Current processor, memory, NIC, storage and BMC support"
+      - "Firmware trust/recovery and management isolation"
+      - "Assembly, service, power, thermal and performance tests"
+  - id: HW-004
+    domain: silicon-root-of-trust
+    project: OpenTitan
+    record_type: open_silicon_ip
+    maturity: discovered
+    current_part_or_revision: "No drop-in production part selected"
+    sources:
+      - "https://opentitan.org/"
+      - "https://github.com/lowrisc/opentitan"
+    hardware_source_state: "Open silicon RTL and design collateral; Apache 2.0 except where otherwise noted"
+    software_source_state: "Public hardware/software and verification repository"
+    licensing_state: "Confirm license for each consumed component"
+    availability_state: "Production silicon and integrator path depend on partner/product"
+    allowed_initial_use: "Architecture, RTL and IP integration study"
+    not_yet_claimed:
+      - "A production HSM or drop-in TPM"
+      - "An exact generally purchasable secure module"
+      - "FIPS validation of any selected Luminous configuration"
+    required_evidence:
+      - "Exact silicon and manufacturer supply path"
+      - "Integration and lifecycle owner"
+      - "Independent design and implementation review"
+      - "Applicable module validation and security-policy evidence"
+  - id: HW-005
+    domain: edge-lab-fpga
+    project: BeagleV-Fire
+    record_type: open_development_board
+    maturity: reference_candidate
+    current_part_or_revision: "Exact board revision and available stock to verify"
+    sources:
+      - "https://docs.beagleboard.io/boards/beaglev/fire/03-design.html"
+      - "https://openbeagle.org/beaglev-fire/beaglev-fire"
+    hardware_source_state: "Documentation links to hardware and mechanical design repository"
+    software_source_state: "Depends on specific OS, bootloader, FPGA image, and toolchain"
+    licensing_state: "Verify exact hardware, FPGA, and tool licenses for any derivative"
+    availability_state: "Verify current manufacturer/authorized-seller availability"
+    allowed_initial_use: "Lab fixtures, FPGA experiments, interface prototypes"
+    not_yet_claimed:
+      - "Production secure server or network gateway"
+      - "Qualified firmware/bitstream chain"
+    required_evidence:
+      - "Source revision and source/license review"
+      - "Firmware, bitstream and boot trust assessment"
+      - "Power, thermal, stability and workload tests"
+  - id: HW-006
+    domain: user-endpoint
+    project: MNT Reform family
+    record_type: open_laptop_design_reference
+    maturity: discovered
+    current_part_or_revision: "Exact Reform model/revision not selected"
+    sources:
+      - "https://mntmn.com/sources.html"
+      - "https://source.mnt.re/reform"
+      - "https://github.com/jackhumbert/reform"
+    hardware_source_state: "Manufacturer publishes Reform-related schematics, design files and documentation"
+    software_source_state: "Depends on model, supported firmware, boot stack and selected OS"
+    licensing_state: "Check exact board/document license; trademarks are separately controlled"
+    availability_state: "Verify current production, support and repair availability for the exact model"
+    allowed_initial_use: "Open endpoint design research and repairability study"
+    not_yet_claimed:
+      - "Government endpoint suitability"
+      - "Modern secure boot and hardware identity qualification"
+      - "Enterprise docking, management and support coverage"
+    required_evidence:
+      - "Exact model and firmware support matrix"
+      - "Boot, disk encryption, hardware identity and update tests"
+      - "Driver, wireless, performance and lifecycle review"
+  - id: HW-007
+    domain: community-mesh-router
+    project: LibreRouter
+    record_type: open_hardware_candidate
+    maturity: discovered
+    current_part_or_revision: "Current design and board revision not verified"
+    sources:
+      - "https://gitlab.com/librerouter"
+    hardware_source_state: "Project describes repositories as open hardware for community-network mesh routing"
+    software_source_state: "Exact firmware/current support must be verified"
+    licensing_state: "Review exact design and firmware licenses"
+    availability_state: "Unknown pending component/BOM/supplier review"
+    allowed_initial_use: "Community-network and rural-connectivity research"
+    not_yet_claimed:
+      - "Regulated site-boundary gateway"
+      - "Current production availability or support"
+    required_evidence:
+      - "Exact source revision and BOM"
+      - "Radio regulations and RF/antenna safety"
+      - "Firmware lifecycle, link/performance and failure tests"
+      - "Supplier and spare-part path"
+gaps:
+  - id: GAP-001
+    domain: cryptographic-appliance-hsm
+    status: no_candidate_selected
+    exit_criteria: "Exact required module/certificate, supported firmware/configuration, key lifecycle, recovery, supplier and lifecycle reviewed."
+  - id: GAP-002
+    domain: smart-card-and-security-token
+    status: no_candidate_selected
+    exit_criteria: "Identity standard, validation/certification, reader support, lifecycle, revocation, accessibility and integration specified."
+  - id: GAP-003
+    domain: production-edge-router-firewall
+    status: no_candidate_selected
+    exit_criteria: "Throughput, HA, protocols, approved crypto, update support, management isolation, source/provenance and procurement checked."
+  - id: GAP-004
+    domain: campus-switching
+    status: no_exact_model_selected
+    exit_criteria: "Switch/NOS model matrix, optics, support, telemetry, power, security updates and replacement policy tested."
+  - id: GAP-005
+    domain: wireless-access
+    status: no_exact_model_selected
+    exit_criteria: "Regulatory bands, authentication, management isolation, coverage/roaming, updates and site survey verified."
+  - id: GAP-006
+    domain: production-server
+    status: no_exact_model_selected
+    exit_criteria: "Current SKU/BOM, BMC isolation, firmware recovery, workload benchmark, thermal/power and support life approved."
+  - id: GAP-007
+    domain: storage-backup
+    status: no_exact_model_selected
+    exit_criteria: "Storage workload, encryption/key handling, independent restore and lifecycle tests passed."
+  - id: GAP-008
+    domain: workstation
+    status: no_selected_qualified_endpoint
+    exit_criteria: "Boot/update, full-disk encryption, device identity, support, hardware compatibility and endpoint management tested."
+  - id: GAP-009
+    domain: out-of-band-console
+    status: no_candidate_selected
+    exit_criteria: "Dedicated management fabric, MFA, logging, signed updates, physical controls, recovery and no Internet exposure verified."
+  - id: GAP-010
+    domain: optics-and-cabling
+    status: no_site_bom
+    exit_criteria: "Exact distance/speed/connectors, interoperability, safety certification, diagnostics and spares documented."
+  - id: GAP-011
+    domain: ups-pdu-power
+    status: no_candidate_selected
+    exit_criteria: "Load/runtime calculations, management security, battery lifecycle, shutdown and electrical compliance tested."
+  - id: GAP-012
+    domain: rack-cooling-and-environment
+    status: no_site_bom
+    exit_criteria: "Rack layout, thermal model, sensing/calibration, alarm path and local electrical/fire requirements verified."
+  - id: GAP-013
+    domain: communications-endpoints
+    status: no_qualified_endpoint
+    exit_criteria: "Interoperability, security updates, privacy, accessibility, device management and lifecycle tested."
+  - id: GAP-014
+    domain: wan-radio-satellite
+    status: jurisdiction_review_required
+    exit_criteria: "Licensed/legal operation, coverage, carrier/service, RF hardware, identity, encryption and outage modes validated."
+  - id: GAP-015
+    domain: media-sanitization
+    status: no_standard_kit_or_process
+    exit_criteria: "Sanitization standard, verification evidence, key destruction, chain of custody and disposition process approved."
