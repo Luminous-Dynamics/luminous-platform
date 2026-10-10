@@ -64,17 +64,58 @@ class Issue:
         return f"[{self.code}] {self.message}"
 
 
+def _resolve_local_pointer(document: Any, ref: str) -> tuple[bool, str]:
+    """Resolve a local JSON Pointer URI fragment without fetching remote resources."""
+    if ref == "#":
+        return True, ""
+    if not ref.startswith("#/"):
+        return False, "reference is not a local JSON Pointer"
+    from urllib.parse import unquote
+    pointer = unquote(ref[2:])
+    current = document
+    for raw_token in pointer.split("/"):
+        # RFC 6901 escaping permits only ~0 and ~1.
+        i = 0
+        while i < len(raw_token):
+            if raw_token[i] == "~":
+                if i + 1 >= len(raw_token) or raw_token[i + 1] not in "01":
+                    return False, f"invalid JSON Pointer escape in {raw_token!r}"
+                i += 2
+            else:
+                i += 1
+        token = raw_token.replace("~1", "/").replace("~0", "~")
+        if isinstance(current, dict) and token in current:
+            current = current[token]
+        elif isinstance(current, list) and token.isdigit():
+            index = int(token)
+            if index >= len(current) or (str(index) != token):
+                return False, f"array index {token!r} does not exist"
+            current = current[index]
+        else:
+            return False, f"pointer token {token!r} does not exist"
+    return True, ""
+
+
 def check_schema(schema: Any) -> list[Issue]:
     if not isinstance(schema, dict):
         return [Issue("schema.invalid_document", "schema root must be an object")]
     if schema.get("$schema") != DRAFT:
         return [Issue("schema.wrong_dialect", f"$schema must be {DRAFT}")]
-    # Disallow external retrieval; current contract uses local JSON Pointers only.
+    # Disallow all remote schema retrieval and validate every supported reference.
+    reference_keywords = ("$ref", "$dynamicRef", "$recursiveRef")
     for node in _walk(schema):
-        if isinstance(node, dict) and "$ref" in node:
-            ref = node["$ref"]
-            if not isinstance(ref, str) or not ref.startswith("#/"):
-                return [Issue("schema.external_ref", f"only local JSON Pointer $refs allowed, got {ref!r}")]
+        if not isinstance(node, dict):
+            continue
+        for keyword in reference_keywords:
+            if keyword not in node:
+                continue
+            ref = node[keyword]
+            if not isinstance(ref, str):
+                return [Issue("schema.invalid_ref", f"{keyword} must be a string")]
+            ok, detail = _resolve_local_pointer(schema, ref)
+            if not ok:
+                code = "schema.external_ref" if not (ref == "#" or ref.startswith("#/")) else "schema.unresolved_ref"
+                return [Issue(code, f"{keyword} {ref!r}: {detail}")]
     try:
         Draft202012Validator.check_schema(schema)
     except SchemaError as exc:
