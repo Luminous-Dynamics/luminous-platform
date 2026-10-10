@@ -151,6 +151,31 @@ class VendorManagementEndpointApprovalTests(unittest.TestCase):
         approval["state"] = "rejected"
         self.assertTrue(self.errors(approval=approval))
 
+    def test_rejected_decision_requires_reason_code(self) -> None:
+        approval = copy.deepcopy(self.approval)
+        approval.update({
+            "state": "rejected",
+            "approver_ref": "principal:independent-approver",
+            "signature_scheme_ref": "signature-scheme:fixture-v1",
+            "signing_key_ref": "keyref:fixture-approver-key",
+            "signed_payload_digest": "c" * 64,
+            "signature_evidence_ref": "evidence:synthetic-signature",
+        })
+        self.assertTrue(any("reason_code" in error for error in self.errors(approval=approval)))
+
+    def test_signed_rejection_also_requires_distinct_requester_and_approver(self) -> None:
+        approval = copy.deepcopy(self.approval)
+        approval.update({
+            "state": "rejected",
+            "approver_ref": approval["requested_by_ref"],
+            "signature_scheme_ref": "signature-scheme:fixture-v1",
+            "signing_key_ref": "keyref:fixture-approver-key",
+            "signed_payload_digest": "c" * 64,
+            "signature_evidence_ref": "evidence:synthetic-signature",
+            "reason_code": "policy_denied",
+        })
+        self.assertTrue(any("distinct principals" in error for error in self.errors(approval=approval)))
+
     def test_signature_presence_is_not_claimed_to_be_signature_verification(self) -> None:
         source = (ROOT / "tools/validate_vendor_management_endpoint_approval.py").read_text()
         self.assertIn("does not authenticate a signer", source)
