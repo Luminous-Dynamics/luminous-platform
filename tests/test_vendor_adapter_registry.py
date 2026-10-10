@@ -45,6 +45,16 @@ class VendorAdapterRegistryTests(unittest.TestCase):
         adapter["operations"].append(copy.deepcopy(adapter["operations"][0]))
         self.assertTrue(any("operation duplicates" in error for error in self.errors(payload)))
 
+    def test_every_catalog_operation_must_be_explicitly_declared(self) -> None:
+        payload = copy.deepcopy(self.registry)
+        adapter = payload["adapters"][0]
+        removed = adapter["operations"].pop()
+        errors = self.errors(payload)
+        self.assertTrue(any(
+            "missing explicit declaration" in error and removed["operation"] in error
+            for error in errors
+        ))
+
     def test_mutation_cannot_be_automatically_retried(self) -> None:
         payload = copy.deepcopy(self.registry)
         entry = next(x for x in payload["operation_catalog"] if x["operation"] == "configuration_apply")
