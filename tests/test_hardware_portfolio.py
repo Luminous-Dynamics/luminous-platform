@@ -40,6 +40,18 @@ class HardwarePortfolioTests(unittest.TestCase):
         payload["items"][0]["source_urls"][0] = "http://example.org/hardware"
         self.assertTrue(any("HTTPS URLs" in error for error in self.errors(payload)))
 
+    def test_h1_accepts_reviewed_source_when_revision_and_license_are_present(self) -> None:
+        payload = copy.deepcopy(self.catalog)
+        item = payload["items"][0]
+        item.update({
+            "maturity": "H1_SOURCE_REVIEWED",
+            "source_revision": "0123456789abcdef0123456789abcdef01234567",
+            "source_completeness": "native_design_and_bom_reviewed",
+            "license_status": "compatible_open_license_reviewed",
+            "bill_of_materials_status": "complete_and_reviewed",
+        })
+        self.assertEqual(self.errors(payload), [])
+
     def test_h1_without_revision_fails_closed(self) -> None:
         payload = copy.deepcopy(self.catalog)
         item = payload["items"][0]
