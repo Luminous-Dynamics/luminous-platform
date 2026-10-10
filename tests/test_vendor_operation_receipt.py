@@ -371,6 +371,7 @@ class VendorOperationReceiptTests(unittest.TestCase):
             "authorized_prestate_digest": receipt["intent"]["prestate_digest"],
             "authorized_policy_revision": receipt["intent"]["policy_revision"],
             "authorized_profile_digest": receipt["intent"]["profile_digest"],
+            "authorized_prestate_max_age_seconds": receipt["intent"]["prestate_max_age_seconds"],
             "signature_evidence_refs": ["evidence:signed-approval"],
         })
         receipt["state"] = "AUTHORIZATION_VERIFIED"
