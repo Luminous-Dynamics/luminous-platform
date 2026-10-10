@@ -2,7 +2,8 @@ use std::env;
 use std::process::Command;
 
 use luminous_operations_event_contract::{
-    AuthenticatedConnector, IngestOutcome, PostgresOperationsStore, StoreError,
+    AuthenticatedConnector, IngestOutcome, OutboxFailureCode, OutboxFailureOutcome,
+    PostgresOperationsStore, StoreError,
 };
 use serde_json::{Value, json};
 use sqlx::{PgPool, Row, postgres::PgPoolOptions, types::Json};
@@ -164,9 +165,15 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
            has_column_privilege('luminous_ops_app', 'ops.inbox_events', 'outcome', 'INSERT') AS inbox_insert_outcome, \
            has_column_privilege('luminous_ops_app', 'ops.inbox_events', 'outcome', 'UPDATE') AS inbox_update_outcome, \
            has_column_privilege('luminous_ops_app', 'ops.inbox_events', 'content_digest', 'UPDATE') AS inbox_update_digest, \
+           has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'status', 'UPDATE') AS outbox_update_status, \
+           has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'attempts', 'UPDATE') AS outbox_update_attempts, \
            has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'lease_owner', 'UPDATE') AS outbox_update_lease, \
            has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'available_at', 'UPDATE') AS outbox_update_schedule, \
-           has_function_privilege('luminous_ops_app', 'ops.schedule_outbox_retry(text, text, text)', 'EXECUTE') AS outbox_retry_function, \
+           has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'delivered_at', 'UPDATE') AS outbox_update_delivered_at, \
+           has_function_privilege('luminous_ops_app', 'ops.schedule_outbox_retry(text, text, text)', 'EXECUTE') AS legacy_retry_function, \
+           has_function_privilege('luminous_ops_app', 'ops.claim_next_outbox(text, text, integer)', 'EXECUTE') AS outbox_claim_function, \
+           has_function_privilege('luminous_ops_app', 'ops.acknowledge_outbox(text, text, text)', 'EXECUTE') AS outbox_ack_function, \
+           has_function_privilege('luminous_ops_app', 'ops.record_outbox_failure(text, text, text, text)', 'EXECUTE') AS outbox_failure_function, \
            has_column_privilege('luminous_ops_app', 'ops.outbox_events', 'payload', 'UPDATE') AS outbox_update_payload"
     )
     .fetch_one(&pool)
@@ -177,18 +184,27 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert!(!privileges.try_get::<bool, _>("inbox_insert_outcome").unwrap());
     assert!(privileges.try_get::<bool, _>("inbox_update_outcome").unwrap());
     assert!(!privileges.try_get::<bool, _>("inbox_update_digest").unwrap());
-    assert!(privileges.try_get::<bool, _>("outbox_update_lease").unwrap());
+    assert!(!privileges.try_get::<bool, _>("outbox_update_status").unwrap());
+    assert!(!privileges.try_get::<bool, _>("outbox_update_attempts").unwrap());
+    assert!(!privileges.try_get::<bool, _>("outbox_update_lease").unwrap());
     assert!(!privileges.try_get::<bool, _>("outbox_update_schedule").unwrap());
-    assert!(privileges.try_get::<bool, _>("outbox_retry_function").unwrap());
+    assert!(!privileges.try_get::<bool, _>("outbox_update_delivered_at").unwrap());
+    assert!(!privileges.try_get::<bool, _>("legacy_retry_function").unwrap());
+    assert!(privileges.try_get::<bool, _>("outbox_claim_function").unwrap());
+    assert!(privileges.try_get::<bool, _>("outbox_ack_function").unwrap());
+    assert!(privileges.try_get::<bool, _>("outbox_failure_function").unwrap());
     assert!(!privileges.try_get::<bool, _>("outbox_update_payload").unwrap());
 
     let retry_owner = sqlx::query(
         "SELECT r.rolname::text AS rolname, r.rolsuper, r.rolbypassrls, r.rolcanlogin, \
                 has_table_privilege(r.rolname, 'ops.outbox_events', 'SELECT') AS can_select_outbox, \
+                has_column_privilege(r.rolname, 'ops.outbox_events', 'status', 'UPDATE') AS can_update_status, \
+                has_column_privilege(r.rolname, 'ops.outbox_events', 'attempts', 'UPDATE') AS can_update_attempts, \
                 has_column_privilege(r.rolname, 'ops.outbox_events', 'available_at', 'UPDATE') AS can_schedule, \
+                has_column_privilege(r.rolname, 'ops.outbox_events', 'last_failure_code', 'UPDATE') AS can_record_failure, \
                 has_column_privilege(r.rolname, 'ops.outbox_events', 'payload', 'UPDATE') AS can_rewrite_payload \
          FROM pg_proc AS p JOIN pg_roles AS r ON r.oid = p.proowner \
-         WHERE p.oid = 'ops.schedule_outbox_retry(text,text,text)'::regprocedure"
+         WHERE p.oid = 'ops.record_outbox_failure(text,text,text,text)'::regprocedure"
     )
     .fetch_one(&pool)
     .await
@@ -198,7 +214,10 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert!(!retry_owner.try_get::<bool, _>("rolbypassrls").unwrap());
     assert!(!retry_owner.try_get::<bool, _>("rolcanlogin").unwrap());
     assert!(retry_owner.try_get::<bool, _>("can_select_outbox").unwrap());
+    assert!(retry_owner.try_get::<bool, _>("can_update_status").unwrap());
+    assert!(retry_owner.try_get::<bool, _>("can_update_attempts").unwrap());
     assert!(retry_owner.try_get::<bool, _>("can_schedule").unwrap());
+    assert!(retry_owner.try_get::<bool, _>("can_record_failure").unwrap());
     assert!(!retry_owner.try_get::<bool, _>("can_rewrite_payload").unwrap());
     let runtime_can_assume_retry_owner: bool = sqlx::query_scalar(
         "SELECT pg_has_role('luminous_ops_runtime_test', 'luminous_ops_retry_owner', 'MEMBER')"
@@ -626,22 +645,32 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         .execute(&mut *mismatched_tenant)
         .await
         .unwrap();
-    let mismatched_tenant_rescheduled: bool = sqlx::query_scalar(
-        "SELECT ops.schedule_outbox_retry($1, $2, $3)"
+    let mismatched_tenant_rescheduled: String = sqlx::query_scalar(
+        "SELECT ops.record_outbox_failure($1, $2, $3, $4)"
     )
     .bind("tenant-other-001")
     .bind(&lease_three.outbox_id)
     .bind("worker-d")
+    .bind("TRANSIENT_NETWORK")
     .fetch_one(&mut *mismatched_tenant)
     .await
     .unwrap();
-    assert!(!mismatched_tenant_rescheduled, "function must bind parameter tenant to RLS tenant context");
+    assert_eq!(mismatched_tenant_rescheduled, "STALE_LEASE",
+        "function must bind parameter tenant to RLS tenant context");
     mismatched_tenant.commit().await.unwrap();
 
-    assert!(!store.retry_outbox_after_failure(TENANT, &lease_three.outbox_id, "worker-not-owner").await.unwrap(),
-        "a different worker must not reschedule the live lease");
-    assert!(store.retry_outbox_after_failure(TENANT, &lease_three.outbox_id, "worker-d").await.unwrap(),
-        "the current owner may return a failed delivery to the retry schedule");
+    assert_eq!(
+        store.record_outbox_failure(TENANT, &lease_three.outbox_id, "worker-not-owner",
+            OutboxFailureCode::TransientNetwork).await.unwrap(),
+        OutboxFailureOutcome::StaleLease,
+        "a different worker cannot record failure or release the live lease"
+    );
+    assert_eq!(
+        store.record_outbox_failure(TENANT, &lease_three.outbox_id, "worker-d",
+            OutboxFailureCode::TransientNetwork).await.unwrap(),
+        OutboxFailureOutcome::Rescheduled,
+        "the current owner may return a transient failure to the bounded retry schedule"
+    );
     assert!(store.claim_next_outbox(TENANT, "worker-e", 30).await.unwrap().is_none(),
         "the failed event must not be immediately claimable during backoff");
     let retry_is_delayed: bool = sqlx::query(
@@ -779,6 +808,126 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert_eq!(recovered_lease.sequence_no, 5);
     assert!(store.acknowledge_outbox(TENANT, &recovered_lease.outbox_id, "worker-after-crash").await.unwrap());
     assert!(store.claim_next_outbox(TENANT, "worker-after-crash", 30).await.unwrap().is_none());
+
+    // A permanent failure is dead-lettered immediately, but remains an
+    // undelivered predecessor and therefore blocks the next incident event.
+    sqlx::query(
+        "INSERT INTO ops.resource_mappings \
+         (tenant_id, connection_id, external_company_id, external_resource_type, external_resource_id, local_incident_id) \
+         VALUES ($1, $2, 'company-42', 'service_ticket', '7302', 'incident-dead-letter-order')",
+    )
+    .bind(TENANT)
+    .bind(CONNECTION)
+    .execute(&pool)
+    .await
+    .expect("seed a second explicitly mapped incident");
+    let mut dead_letter_first = revised_event(
+        "revision-1", "event-ci-dead-letter-first", "idem-ci-dead-letter-first",
+        "Synthetic permanent delivery failure",
+    );
+    dead_letter_first["data"]["source_reference"]["resource_id"] = json!("7302");
+    assert_eq!(
+        store.ingest_event(&auth, &dead_letter_first).await.unwrap(),
+        IngestOutcome::Accepted { outbox_sequence: 1 }
+    );
+    let mut dead_letter_successor = revised_event(
+        "revision-2", "event-ci-dead-letter-successor", "idem-ci-dead-letter-successor",
+        "Must remain blocked behind the dead-lettered predecessor",
+    );
+    dead_letter_successor["data"]["source_reference"]["resource_id"] = json!("7302");
+    assert_eq!(
+        store.ingest_event(&auth, &dead_letter_successor).await.unwrap(),
+        IngestOutcome::Accepted { outbox_sequence: 2 }
+    );
+    let dead_letter_lease = store.claim_next_outbox(TENANT, "worker-permanent", 30)
+        .await.unwrap().expect("claim the first event for the isolated incident");
+    assert_eq!(dead_letter_lease.sequence_no, 1);
+    assert_eq!(
+        store.record_outbox_failure(TENANT, &dead_letter_lease.outbox_id, "worker-permanent",
+            OutboxFailureCode::AuthenticationRejected).await.unwrap(),
+        OutboxFailureOutcome::DeadLettered
+    );
+    let dead_letters = store.list_dead_lettered_outbox(TENANT, 100).await.unwrap();
+    assert_eq!(dead_letters.len(), 1);
+    assert_eq!(dead_letters[0].outbox_id, dead_letter_lease.outbox_id);
+    assert_eq!(dead_letters[0].failure_code, "AUTHENTICATION_REJECTED");
+    assert_eq!(dead_letters[0].attempts, 1);
+    assert!(store.claim_next_outbox(TENANT, "worker-blocked", 30).await.unwrap().is_none(),
+        "a dead-lettered predecessor must not be skipped by a later incident event");
+
+    sqlx::query(
+        "INSERT INTO ops.resource_mappings \
+         (tenant_id, connection_id, external_company_id, external_resource_type, external_resource_id, local_incident_id) \
+         VALUES ($1, $2, 'company-42', 'service_ticket', '7303', 'incident-attempt-ceiling')",
+    )
+    .bind(TENANT)
+    .bind(CONNECTION)
+    .execute(&pool)
+    .await
+    .expect("seed an isolated attempt-ceiling incident");
+    let mut exhausted_event = revised_event(
+        "revision-1", "event-ci-attempt-limit", "idem-ci-attempt-limit",
+        "Synthetic attempt ceiling probe",
+    );
+    exhausted_event["data"]["source_reference"]["resource_id"] = json!("7303");
+    assert_eq!(
+        store.ingest_event(&auth, &exhausted_event).await.unwrap(),
+        IngestOutcome::Accepted { outbox_sequence: 1 }
+    );
+    sqlx::query(
+        "UPDATE ops.outbox_events SET attempts = 11 \
+         WHERE tenant_id = $1 AND source_event_id = $2 AND status = 'PENDING'",
+    )
+    .bind(TENANT)
+    .bind("event-ci-attempt-limit")
+    .execute(&pool)
+    .await
+    .expect("position test fixture immediately before the final attempt");
+    let last_attempt = store.claim_next_outbox(TENANT, "worker-attempt-limit", 30)
+        .await.unwrap().expect("claim the final permitted attempt");
+    assert_eq!(last_attempt.attempts, 12);
+    assert_eq!(
+        store.record_outbox_failure(TENANT, &last_attempt.outbox_id, "worker-attempt-limit",
+            OutboxFailureCode::Unclassified).await.unwrap(),
+        OutboxFailureOutcome::DeadLettered
+    );
+
+    sqlx::query(
+        "INSERT INTO ops.resource_mappings \
+         (tenant_id, connection_id, external_company_id, external_resource_type, external_resource_id, local_incident_id) \
+         VALUES ($1, $2, 'company-42', 'service_ticket', '7304', 'incident-expired-attempt-ceiling')",
+    )
+    .bind(TENANT)
+    .bind(CONNECTION)
+    .execute(&pool)
+    .await
+    .expect("seed an isolated expired-lease incident");
+    let mut expired_ceiling_event = revised_event(
+        "revision-1", "event-ci-expired-attempt-limit", "idem-ci-expired-attempt-limit",
+        "Synthetic expired-lease ceiling probe",
+    );
+    expired_ceiling_event["data"]["source_reference"]["resource_id"] = json!("7304");
+    assert_eq!(
+        store.ingest_event(&auth, &expired_ceiling_event).await.unwrap(),
+        IngestOutcome::Accepted { outbox_sequence: 1 }
+    );
+    let final_lease = store.claim_next_outbox(TENANT, "worker-crash-at-limit", 30)
+        .await.unwrap().expect("claim before simulating a final-attempt crash");
+    sqlx::query(
+        "UPDATE ops.outbox_events SET attempts = 12, lease_until = clock_timestamp() - interval '1 second' \
+         WHERE tenant_id = $1 AND outbox_id = $2",
+    )
+    .bind(TENANT)
+    .bind(&final_lease.outbox_id)
+    .execute(&pool)
+    .await
+    .expect("simulate an expired lease at the attempt ceiling");
+    assert!(store.claim_next_outbox(TENANT, "worker-reclaim-at-limit", 30).await.unwrap().is_none(),
+        "an expired final attempt must dead-letter instead of being claimed again");
+    let dead_letters = store.list_dead_lettered_outbox(TENANT, 100).await.unwrap();
+    assert_eq!(dead_letters.len(), 3);
+    assert!(dead_letters.iter().any(|row| row.outbox_id == final_lease.outbox_id
+        && row.failure_code == "ATTEMPT_LIMIT_EXHAUSTED"));
 }
 
 #[tokio::test]

@@ -38,6 +38,10 @@ pub enum StoreError {
     IdempotencyConflict,
     #[error("invalid outbox lease request")]
     InvalidLeaseRequest,
+    #[error("outbox query limit must be between 1 and 100")]
+    InvalidOutboxQuery,
+    #[error("database returned an unknown outbox failure outcome")]
+    UnexpectedOutboxFailureOutcome,
     #[error("database operation failed")]
     Database(#[from] sqlx::Error),
     #[error("database migration failed")]
@@ -76,6 +80,59 @@ pub struct OutboxLease {
     pub sequence_no: i64,
     pub payload: Value,
     pub attempts: i32,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum OutboxFailureCode {
+    TransientNetwork,
+    RemoteRateLimited,
+    RemoteServerError,
+    RemoteAcknowledgementUnknown,
+    AuthenticationRejected,
+    AuthorizationRejected,
+    DestinationMismatch,
+    TlsIdentityRejected,
+    PayloadRejected,
+    RemoteContractMismatch,
+    Unclassified,
+}
+
+impl OutboxFailureCode {
+    fn as_db_code(self) -> &'static str {
+        match self {
+            Self::TransientNetwork => "TRANSIENT_NETWORK",
+            Self::RemoteRateLimited => "REMOTE_RATE_LIMITED",
+            Self::RemoteServerError => "REMOTE_SERVER_ERROR",
+            Self::RemoteAcknowledgementUnknown => "REMOTE_ACK_UNKNOWN",
+            Self::AuthenticationRejected => "AUTHENTICATION_REJECTED",
+            Self::AuthorizationRejected => "AUTHORIZATION_REJECTED",
+            Self::DestinationMismatch => "DESTINATION_MISMATCH",
+            Self::TlsIdentityRejected => "TLS_IDENTITY_REJECTED",
+            Self::PayloadRejected => "PAYLOAD_REJECTED",
+            Self::RemoteContractMismatch => "REMOTE_CONTRACT_MISMATCH",
+            Self::Unclassified => "UNCLASSIFIED",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum OutboxFailureOutcome {
+    Rescheduled,
+    DeadLettered,
+    StaleLease,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DeadLetteredOutbox {
+    pub tenant_id: String,
+    pub outbox_id: String,
+    pub incident_id: String,
+    pub sequence_no: i64,
+    pub attempts: i32,
+    pub failure_code: String,
+    pub last_failure_at: String,
+    pub dead_lettered_at: String,
+    pub created_at: String,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -624,34 +681,26 @@ impl PostgresOperationsStore {
     }
 
     /// Atomically lease the earliest eligible outbox event for one tenant.
-    /// An earlier undelivered event blocks later events for the same incident.
+    ///
+    /// PostgreSQL owns all lifecycle transitions. A dead-lettered predecessor
+    /// remains undelivered and therefore blocks later events for that incident.
     pub async fn claim_next_outbox(
         &self,
         tenant_id: &str,
         worker_id: &str,
         lease_seconds: i32,
     ) -> Result<Option<OutboxLease>, StoreError> {
-        if worker_id.trim().is_empty() || lease_seconds <= 0 {
+        if worker_id.trim().is_empty() || !(1..=3600).contains(&lease_seconds) {
             return Err(StoreError::InvalidLeaseRequest);
         }
         let mut tx = self.tenant_transaction(tenant_id).await?;
         let row = sqlx::query(
-            "SELECT o.outbox_id, o.incident_id, o.sequence_no, o.payload, o.attempts \
-             FROM ops.outbox_events AS o \
-             WHERE o.tenant_id = $1 AND o.available_at <= clock_timestamp() \
-               AND (o.status = 'PENDING' OR \
-                    (o.status = 'LEASED' AND o.lease_until <= clock_timestamp())) \
-               AND NOT EXISTS ( \
-                 SELECT 1 FROM ops.outbox_events AS prior \
-                 WHERE prior.tenant_id = o.tenant_id \
-                   AND prior.incident_id = o.incident_id \
-                   AND prior.sequence_no < o.sequence_no \
-                   AND prior.status <> 'DELIVERED' \
-               ) \
-             ORDER BY o.created_at, o.outbox_id \
-             LIMIT 1 FOR UPDATE OF o SKIP LOCKED",
+            "SELECT outbox_id, incident_id, sequence_no, payload, attempts \
+             FROM ops.claim_next_outbox($1, $2, $3)",
         )
         .bind(tenant_id)
+        .bind(worker_id)
+        .bind(lease_seconds)
         .fetch_optional(&mut *tx)
         .await?;
 
@@ -663,19 +712,7 @@ impl PostgresOperationsStore {
         let incident_id: String = row.try_get("incident_id")?;
         let sequence_no: i64 = row.try_get("sequence_no")?;
         let payload: Json<Value> = row.try_get("payload")?;
-        let prior_attempts: i32 = row.try_get("attempts")?;
-
-        sqlx::query(
-            "UPDATE ops.outbox_events SET status = 'LEASED', attempts = attempts + 1, \
-              lease_owner = $3, lease_until = clock_timestamp() + ($4::int * interval '1 second') \
-             WHERE tenant_id = $1 AND outbox_id = $2",
-        )
-        .bind(tenant_id)
-        .bind(&outbox_id)
-        .bind(worker_id)
-        .bind(lease_seconds)
-        .execute(&mut *tx)
-        .await?;
+        let attempts: i32 = row.try_get("attempts")?;
         tx.commit().await?;
 
         Ok(Some(OutboxLease {
@@ -684,36 +721,83 @@ impl PostgresOperationsStore {
             incident_id,
             sequence_no,
             payload: payload.0,
-            attempts: prior_attempts + 1,
+            attempts,
         }))
     }
 
-    /// Reschedule a known failed delivery using bounded exponential backoff.
-    ///
-    /// The database function clears the lease only when this worker still owns
-    /// an unexpired lease in the current tenant. It returns false for a stale
-    /// lease or owner mismatch. Delays start at 5 seconds and cap at 1 hour.
-    /// A retryable outbox predecessor continues to block later incident events.
-    pub async fn retry_outbox_after_failure(
+    /// Persist a classified delivery failure and either schedule a bounded
+    /// retry or terminalize the row. Raw remote errors and response bodies are
+    /// deliberately not accepted or persisted.
+    pub async fn record_outbox_failure(
         &self,
         tenant_id: &str,
         outbox_id: &str,
         worker_id: &str,
-    ) -> Result<bool, StoreError> {
+        failure_code: OutboxFailureCode,
+    ) -> Result<OutboxFailureOutcome, StoreError> {
         if worker_id.trim().is_empty() {
             return Err(StoreError::InvalidLeaseRequest);
         }
         let mut tx = self.tenant_transaction(tenant_id).await?;
-        let rescheduled: bool = sqlx::query_scalar(
-            "SELECT ops.schedule_outbox_retry($1, $2, $3)",
+        let db_outcome: String = sqlx::query_scalar(
+            "SELECT ops.record_outbox_failure($1, $2, $3, $4)",
         )
         .bind(tenant_id)
         .bind(outbox_id)
         .bind(worker_id)
+        .bind(failure_code.as_db_code())
         .fetch_one(&mut *tx)
         .await?;
+        let outcome = match db_outcome.as_str() {
+            "RESCHEDULED" => OutboxFailureOutcome::Rescheduled,
+            "DEAD_LETTERED" => OutboxFailureOutcome::DeadLettered,
+            "STALE_LEASE" => OutboxFailureOutcome::StaleLease,
+            _ => return Err(StoreError::UnexpectedOutboxFailureOutcome),
+        };
         tx.commit().await?;
-        Ok(rescheduled)
+        Ok(outcome)
+    }
+
+    /// Return bounded, redacted metadata for a tenant's dead-letter queue.
+    /// Payloads and provider response bodies are never included.
+    pub async fn list_dead_lettered_outbox(
+        &self,
+        tenant_id: &str,
+        limit: i64,
+    ) -> Result<Vec<DeadLetteredOutbox>, StoreError> {
+        if !(1..=100).contains(&limit) {
+            return Err(StoreError::InvalidOutboxQuery);
+        }
+        let mut tx = self.tenant_transaction(tenant_id).await?;
+        let rows = sqlx::query(
+            "SELECT tenant_id, outbox_id, incident_id, sequence_no, attempts, \
+                    last_failure_code, last_failure_at::text AS last_failure_at, \
+                    dead_lettered_at::text AS dead_lettered_at, created_at::text AS created_at \
+             FROM ops.outbox_events \
+             WHERE tenant_id = $1 AND status = 'DEAD_LETTERED' \
+             ORDER BY dead_lettered_at ASC, incident_id ASC, sequence_no ASC \
+             LIMIT $2",
+        )
+        .bind(tenant_id)
+        .bind(limit)
+        .fetch_all(&mut *tx)
+        .await?;
+        let mut dead_letters = Vec::with_capacity(rows.len());
+        for row in rows {
+            dead_letters.push(DeadLetteredOutbox {
+                tenant_id: row.try_get("tenant_id")?,
+                outbox_id: row.try_get("outbox_id")?,
+                incident_id: row.try_get("incident_id")?,
+                sequence_no: row.try_get("sequence_no")?,
+                attempts: row.try_get("attempts")?,
+                failure_code: row.try_get("last_failure_code")?,
+                last_failure_at: row.try_get("last_failure_at")?,
+                dead_lettered_at: row.try_get("dead_lettered_at")?,
+                created_at: row.try_get("created_at")?,
+            });
+        }
+        tx.commit().await?;
+        Ok(dead_letters)
     }
 
     /// Acknowledge only the currently owned, unexpired lease.
@@ -727,19 +811,16 @@ impl PostgresOperationsStore {
             return Err(StoreError::InvalidLeaseRequest);
         }
         let mut tx = self.tenant_transaction(tenant_id).await?;
-        let result = sqlx::query(
-            "UPDATE ops.outbox_events SET status = 'DELIVERED', \
-              delivered_at = clock_timestamp(), lease_owner = NULL, lease_until = NULL \
-             WHERE tenant_id = $1 AND outbox_id = $2 AND status = 'LEASED' \
-               AND lease_owner = $3 AND lease_until > clock_timestamp()",
+        let acknowledged: bool = sqlx::query_scalar(
+            "SELECT ops.acknowledge_outbox($1, $2, $3)",
         )
         .bind(tenant_id)
         .bind(outbox_id)
         .bind(worker_id)
-        .execute(&mut *tx)
+        .fetch_one(&mut *tx)
         .await?;
         tx.commit().await?;
-        Ok(result.rows_affected() == 1)
+        Ok(acknowledged)
     }
 }
 
