@@ -96,6 +96,48 @@ The current register links to primary-source leads and captures limitations. Hig
 
 The initial candidate inventory is intentionally incomplete. High-priority not-yet-selected classes include production server/endpoint SKUs; managed switches/APs; validated cryptographic module/HSM and identity tokens; backup/storage; NICs and optics; UPS/PDU/environmental monitoring; independent console/recovery; WAN/cellular hardware; and approved voice/video endpoints. Each needs a model-level sourcing and support decision.
 
+## First executable pilot candidate: South Africa single-site office/lab
+
+The draft machine-readable profile is [`profiles/sa-single-site-office-lab-v1.json`](../profiles/sa-single-site-office-lab-v1.json), with strict contract [`schemas/hardware-deployment-profile-v1.schema.json`](../schemas/hardware-deployment-profile-v1.schema.json). The profile is scoped to a **non-production lab using public or synthetic data**. It contains an intended network segmentation, a 12-component draft BOM, explicit candidate/gap references, source-backed indicative prices, and 12 acceptance gates. All gates are `NOT_RUN` or `BLOCKED`; no purchase or deployment authorization is granted.
+
+### Proposed roles and provisional candidates
+
+| Role | Current direction | Decision state |
+|---|---|---|
+| Lab edge | OpenWrt One 1 | H0 candidate only; evaluate firmware/recovery and real firewall/VPN throughput. It is not an automatically support-backed NGFW. |
+| Managed access switch | TP-Link Omada SG2210MP, current supported hardware revision | H0 candidate only; exact SA SKU, revision, firmware, warranty and lifecycle must be written on the supplier quote. |
+| Wi-Fi | TP-Link Omada EAP650 indoor AP | H0 candidate only; validate VLAN/SSID, WPA3, 802.1X/RADIUS, local controller and regional RF configuration. |
+| Local service node | Dell PowerEdge T160 | H0 candidate only; quote the TPM, ECC memory, SSD topology, PSU and support. Put iDRAC on an isolated management interface. |
+| Endpoint | Framework Laptop 13 AMD Ryzen AI 300 Series | H0 candidate only; test exact NixOS signed-boot path before selecting it for a security policy requiring Secure Boot. |
+| Open compute alternative | MNT Station + Reform Mainboard 3.0 + RCORE RK3588 module | H0 alternative for low-power lab/edge exploration; supply, BOM/licensing, NixOS compatibility and sustained workload remain unverified. |
+| Backup, identity tokens, UPS, physical/OOB recovery, cabling | Explicit unselected entries in the register | Must be resolved before the pilot passes. |
+
+### Security-relevant hardware research corrections
+
+- **Managed switch:** TP-Link's US product page marks the older `TL-SG2210MP` page as End of Life, while its newer `SG2210MP` page lists later revisions such as V5.26/V5.60. South African market listings often omit hardware revision. Do not procure a title-only listing: require an exact model/hardware-version/firmware/warranty quote. Even with a selected version, switch features need device-level testing.
+- **Framework / Secure Boot:** the NixOS Framework hardware page's generic instructions say Secure Boot must be disabled to boot; Lanzaboote documents a Framework-specific custom-key enrolment flow and cautions that behaviour is inconsistent between notebook variants. Secure Boot may be achievable, but the exact model/firmware/key enrolment, dbx handling, firmware updates and recovery need tests. Do not ship with Secure Boot disabled merely because that is the quickest boot path.
+- **Dell PowerEdge T160:** Dell's spec identifies ECC UDIMM support, TPM 2.0 options, Secure Boot, signed firmware, silicon root of trust, and a dedicated iDRAC port. That is useful managed-server capability, not open hardware. iDRAC must remain isolated and its privileges, credentials, firmware and logs must be tested.
+- **MNT Station:** the manufacturer describes an open-hardware, low-power modular computer for homelab/edge/router use and listed a modular case/mainboard/RK3588 bundle. Campaign completion and planned production do not establish that an exact bundle is immediately available or supported by NixOS.
+- **Support vs source openness:** some government firewall opportunities specify three-year licensing, maintenance and support. A community router plus upstream software does not meet that commercial obligation by implication; preserve a separate vendor-supported NGFW selection lane for deployment profiles that require it.
+
+### Indicative South African market snapshot — 10 October 2026
+
+These are price-discovery signals, not quotes or purchase recommendations:
+
+- [TP-Link EAP650 price comparison](https://www.pricecheck.co.za/offers/218530957/TP-link%2BEAP650%2BAX3000%2BCeiling%2BMount%2BWifi%2B6%2BAccess%2BPoint): R1,929–R2,049 in the surfaced listings.
+- [Dell PowerEdge T160 price comparison](https://www.pricecheck.co.za/offers/251362571/Dell%2BPoweredge%2BT160%2BIntel%2BXeon%2BE%2BE-2414%2BTower%2BServer): R27,499–R59,799 across sellers for an E-2414/16 GB ECC/2 TB HDD baseline listing. That baseline is **not** the target build and the spread requires a comparable written quote.
+- Switch pricing is not included in the partial subtotal because listings with ambiguous model revision cannot be matched safely to the current supported model.
+
+The profile's partial priced subtotal is R29,428–R61,848 for one AP and one server listing only. It excludes gateway, switch, endpoint, identity authenticators, backup and offline media, UPS, cabling, spares, support contracts, memory/storage upgrades, shipping, tax and customs. It is not a full system budget.
+
+### Minimum pass conditions before expanding beyond lab use
+
+1. Pin exact hardware, revision, firmware, purchase channel, warranty and support/end-of-life evidence for every component.
+2. Run actual switch/router/AP hardware tests: VLAN trunk/access mapping, inter-VLAN default deny, guest isolation across IPv4 and IPv6, 802.1X where required, recovery after power loss and firmware upgrade/rollback.
+3. Test endpoint/server Secure Boot, TPM, disk encryption and signed update paths on exact units, with a successful offline recovery.
+4. Test loss of WAN/cloud/control plane, encrypted backup restoration, power loss and management-path failure. A simulation alone cannot prove physical switch, RF, thermal or UPS behaviour.
+5. Record exact source revision, test environment, logs, result and any exception for each gate. Queued CI, a marketplace listing, the vendor's general feature page and an operating-system boot are not qualification evidence.
+
 ## South African public-service policy starting points
 
 The [official DPSA standards index](https://www.dpsa.gov.za/policy-updates/e-gov/e_government/standards/) lists several relevant primary-source entries, including Public Service Information Security Directive material (2022), the Public Service ICT Security Assessment Standard and checklist (2018), ICT Security Guidelines and ICT Service Continuity Management sub-guidelines (2017), MIOS v6, and older FOSS and MISS policy materials. This should be treated as a discovery index—not as proof that every linked item remains current, applies to every agency, or governs every procurement. Before a product profile is finalized, retrieve the actual signed documents and circulars, confirm their current status with the relevant agency/contract authority, and map the required controls to explicit acceptance evidence.
