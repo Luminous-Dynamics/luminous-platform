@@ -82,6 +82,7 @@ class VendorOperationReceiptTests(unittest.TestCase):
             "tested_revision": "a" * 40,
             "tested_scope": {
                 "model": self.fixture["target"]["model"],
+                "product_family": self.fixture["target"]["product_family"],
                 "hardware_revision": self.fixture["target"]["hardware_revision"],
                 "software_version": self.fixture["target"]["software_version"],
                 "region": self.fixture["target"]["region"],
@@ -95,6 +96,26 @@ class VendorOperationReceiptTests(unittest.TestCase):
             },
         })
         return registry
+
+    def test_target_vendor_and_family_must_match_adapter_declaration(self) -> None:
+        receipt = copy.deepcopy(self.fixture)
+        receipt["target"]["vendor"] = "Palo Alto Networks"
+        errors = registry_binding_errors(receipt, copy.deepcopy(self.registry))
+        self.assertTrue(any("target.vendor must match" in error for error in errors))
+
+        receipt = copy.deepcopy(self.fixture)
+        receipt["target"]["product_family"] = "NX-OS"
+        errors = registry_binding_errors(receipt, copy.deepcopy(self.registry))
+        self.assertTrue(any("product_family must be explicitly declared" in error for error in errors))
+
+    def test_authorized_receipt_must_match_product_family(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        registry = self._synthetic_test_registry()
+        receipt["adapter_revision"] = "a" * 40
+        receipt["target"]["product_family"] = "NX-OS"
+        errors = registry_binding_errors(receipt, registry)
+        self.assertTrue(any("product_family must be explicitly declared" in error for error in errors))
+        self.assertTrue(any("must exactly match registry tested_scope.product_family" in error for error in errors))
 
     def test_target_digest_must_bind_to_target_identity(self) -> None:
         receipt = copy.deepcopy(self.fixture)
