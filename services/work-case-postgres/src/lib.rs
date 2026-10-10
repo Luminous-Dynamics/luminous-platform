@@ -730,4 +730,41 @@ mod tests {
         owner_pool.close().await;
     }
 
+    #[tokio::test]
+    async fn database_rejects_non_unit_activity_revision_step() {
+        let app_pool = pool(1).await;
+        let repo = WorkCaseRepository { pool: app_pool };
+        let p = principal();
+        let created = repo.create_case(
+            &p,
+            command("activity-revision-key-001", "case-activity-revision-001", "Activity revision constraint"),
+        ).await.expect("create case for activity constraint");
+
+        // Use the migration/test role so this proves a database invariant rather
+        // than relying on the runtime service to avoid malformed SQL.
+        let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must use the migration/test owner role");
+        let owner_pool = PgPoolOptions::new().max_connections(1).connect(&database_url)
+            .await.expect("connect with migration/test owner role");
+        let mut tx = owner_pool.begin().await.expect("begin owner transaction");
+        set_tenant(&mut tx, &p.tenant_id).await.expect("set tenant context");
+
+        let invalid = sqlx::query!(
+            r#"INSERT INTO case_activity
+               (tenant_id, case_id, sequence, activity_id, command_id, actor_id, actor_role,
+                activity_type, occurred_at, reason, prior_revision, new_revision, details)
+               VALUES ($1,$2,2,$3,'malformed-activity-command','synthetic-owner-test','technician',
+                'test.invalid.revision_step','2026-10-10T10:00:00Z','constraint test',1,3,$4)"#,
+            p.tenant_id, created.case_id, Uuid::new_v4().to_string(), Json(json!({"synthetic": true}))
+        ).execute(&mut *tx).await;
+        match invalid {
+            Err(sqlx::Error::Database(error)) => {
+                assert_eq!(error.constraint(), Some("case_activity_revision_step"));
+            }
+            Ok(_) => panic!("database accepted activity whose sequence/new revision skipped a revision"),
+            Err(error) => panic!("unexpected error instead of revision-step violation: {error}"),
+        }
+        tx.rollback().await.expect("roll back rejected activity row");
+        owner_pool.close().await;
+    }
+
 }
