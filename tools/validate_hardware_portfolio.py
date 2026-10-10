@@ -84,15 +84,33 @@ def catalog_errors(payload: dict[str, Any], schema: dict[str, Any]) -> list[str]
                 errors.append(f"{prefix}.source_urls must contain HTTPS URLs: {source!r}")
 
         maturity = item["maturity"]
-        if maturity in {
+        product_maturities = {
             "H1_SOURCE_REVIEWED",
             "H2_BUILDABLE",
             "H3_PLATFORM_INTEGRATED",
             "H4_OPERATIONALLY_QUALIFIED",
             "H5_DEPLOYMENT_AUTHORIZED",
-        }:
-            if not item["source_revision"]:
-                errors.append(f"{prefix}: {maturity} requires an immutable source/model revision")
+        }
+        if maturity in product_maturities:
+            if item["item_type"] in {"standards_programme", "selection_gap"}:
+                errors.append(f"{prefix}: {item['item_type']} entries cannot be promoted to hardware product maturity")
+
+            if item["item_type"] == "hardware_product_or_board" and not item["named_model_or_revision"]:
+                errors.append(f"{prefix}: {maturity} requires an exact product SKU/model and hardware revision")
+            if item["item_type"] == "hardware_design_family":
+                if not item["source_revision"]:
+                    errors.append(f"{prefix}: {maturity} requires an immutable design-source revision")
+                if not item["named_model_or_revision"]:
+                    errors.append(f"{prefix}: {maturity} requires an exact board/design revision")
+            if item["item_type"] == "firmware_project" and not item["source_revision"]:
+                errors.append(f"{prefix}: {maturity} requires an immutable firmware-source revision")
+            if (
+                item["item_type"] == "hardware_product_or_board"
+                and item["source_completeness"] == "native_design_and_bom_reviewed"
+                and not item["source_revision"]
+            ):
+                errors.append(f"{prefix}: reviewed native hardware design requires a pinned source revision")
+
             if item["license_status"] not in {
                 "compatible_open_license_reviewed",
                 "vendor_terms_reviewed",
