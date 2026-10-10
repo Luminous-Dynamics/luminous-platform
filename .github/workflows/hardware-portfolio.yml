@@ -17,6 +17,7 @@ on:
       - "requirements-hardware-portfolio.txt"
       - "docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md"
       - "docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md"
+      - "docs/OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md"
       - "README.md"
       - ".github/workflows/hardware-portfolio.yml"
   push:
@@ -35,6 +36,7 @@ on:
       - "requirements-hardware-portfolio.txt"
       - "docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md"
       - "docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md"
+      - "docs/OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md"
       - "README.md"
       - ".github/workflows/hardware-portfolio.yml"
   workflow_dispatch:
