@@ -254,6 +254,59 @@ class VendorOperationReceiptTests(unittest.TestCase):
         errors = self.errors(receipt)
         self.assertTrue(any("must be independent" in error for error in errors))
 
+    def test_direct_failure_after_possible_apply_cannot_claim_no_effect(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        receipt["state"] = "FAILED"
+        receipt["effect_state"] = "NO_EFFECT"
+        receipt["journal"].append({
+            "state": "FAILED",
+            "occurred_at": "2026-10-10T19:24:00+02:00",
+            "actor_ref": "principal:fixture-executor",
+            "evidence_refs": ["evidence:failure-observation"],
+            "prestate_digest": None,
+        })
+        errors = self.errors(receipt)
+        self.assertTrue(any("must record EFFECT_PARTIAL" in error for error in errors))
+
+    def test_direct_partial_effect_failure_requires_evidence_and_is_explicit(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        receipt["state"] = "FAILED"
+        receipt["effect_state"] = "EFFECT_PARTIAL"
+        receipt["journal"].append({
+            "state": "FAILED",
+            "occurred_at": "2026-10-10T19:24:00+02:00",
+            "actor_ref": "principal:fixture-executor",
+            "evidence_refs": ["evidence:partial-effect", "evidence:remediation-plan"],
+            "prestate_digest": None,
+        })
+        self.assertEqual(self.errors(receipt), [])
+
+    def test_partial_effect_failure_without_evidence_is_rejected(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        receipt["state"] = "FAILED"
+        receipt["effect_state"] = "EFFECT_PARTIAL"
+        receipt["journal"].append({
+            "state": "FAILED",
+            "occurred_at": "2026-10-10T19:24:00+02:00",
+            "actor_ref": "principal:fixture-executor",
+            "evidence_refs": [],
+            "prestate_digest": None,
+        })
+        errors = self.errors(receipt)
+        self.assertTrue(any("requires evidence" in error for error in errors))
+
+    def test_journal_events_cannot_predate_receipt_creation(self) -> None:
+        receipt = copy.deepcopy(self.fixture)
+        receipt["created_at"] = "2026-10-10T19:21:00+02:00"
+        errors = self.errors(receipt)
+        self.assertTrue(any("cannot predate receipt creation" in error for error in errors))
+
+    def test_authorization_timestamp_must_match_authorization_journal_event(self) -> None:
+        receipt = self._authorization_verified_receipt()
+        receipt["authorization"]["verified_at"] = "2026-10-10T19:21:01+02:00"
+        errors = self.errors(receipt)
+        self.assertTrue(any("must match the AUTHORIZATION_VERIFIED journal timestamp" in error for error in errors))
+
     def test_privacy_contract_rejects_secret_or_raw_config_publication(self) -> None:
         receipt = copy.deepcopy(self.fixture)
         receipt["privacy"]["raw_configuration_in_shared_dht"] = True
