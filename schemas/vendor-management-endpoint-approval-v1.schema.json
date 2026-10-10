@@ -216,6 +216,46 @@
       "if": {
         "properties": {
           "state": {
+            "const": "pending"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "approver_ref": {
+            "type": "null"
+          },
+          "allowed_operations": {
+            "maxItems": 0
+          },
+          "signature_scheme_ref": {
+            "type": "null"
+          },
+          "signing_key_ref": {
+            "type": "null"
+          },
+          "signed_payload_digest": {
+            "type": "null"
+          },
+          "signature_evidence_ref": {
+            "type": "null"
+          },
+          "reason_code": {
+            "type": "null"
+          },
+          "supersedes_decision_ref": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
             "const": "approved"
           }
         },
@@ -247,6 +287,12 @@
           "signature_evidence_ref": {
             "type": "string",
             "minLength": 8
+          },
+          "reason_code": {
+            "type": "null"
+          },
+          "supersedes_decision_ref": {
+            "type": "null"
           }
         }
       }
@@ -255,10 +301,7 @@
       "if": {
         "properties": {
           "state": {
-            "enum": [
-              "rejected",
-              "revoked"
-            ]
+            "const": "rejected"
           }
         },
         "required": [
@@ -267,8 +310,80 @@
       },
       "then": {
         "properties": {
+          "approver_ref": {
+            "type": "string",
+            "minLength": 8
+          },
+          "allowed_operations": {
+            "maxItems": 0
+          },
+          "signature_scheme_ref": {
+            "type": "string",
+            "minLength": 8
+          },
+          "signing_key_ref": {
+            "type": "string",
+            "minLength": 8
+          },
+          "signed_payload_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "signature_evidence_ref": {
+            "type": "string",
+            "minLength": 8
+          },
           "reason_code": {
             "type": "string"
+          },
+          "supersedes_decision_ref": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "revoked"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "approver_ref": {
+            "type": "string",
+            "minLength": 8
+          },
+          "allowed_operations": {
+            "maxItems": 0
+          },
+          "signature_scheme_ref": {
+            "type": "string",
+            "minLength": 8
+          },
+          "signing_key_ref": {
+            "type": "string",
+            "minLength": 8
+          },
+          "signed_payload_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "signature_evidence_ref": {
+            "type": "string",
+            "minLength": 8
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "supersedes_decision_ref": {
+            "type": "string",
+            "minLength": 8
           }
         }
       }
