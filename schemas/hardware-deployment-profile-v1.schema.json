@@ -47,11 +47,7 @@
       "const": false
     },
     "deployment_class": {
-      "enum": [
-        "nonproduction_validation_lab",
-        "pilot_not_production",
-        "production_profile"
-      ]
+      "const": "nonproduction_validation_lab"
     },
     "jurisdiction": {
       "type": "string",
@@ -457,9 +453,7 @@
           "status": {
             "enum": [
               "NOT_RUN",
-              "BLOCKED",
-              "PASS",
-              "FAIL"
+              "BLOCKED"
             ]
           },
           "evidence_expected": {
