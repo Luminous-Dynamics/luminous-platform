@@ -1,0 +1,398 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/vendor-operation-effect-receipt-v1.schema.json",
+  "title": "Luminous Vendor Operation Effect Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "created_at",
+    "operation",
+    "adapter_id",
+    "target",
+    "intent",
+    "authorization",
+    "state",
+    "effect_state",
+    "journal",
+    "recovery",
+    "evidence",
+    "privacy"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.vendor-operation-effect-receipt.v1"
+    },
+    "receipt_id": {
+      "type": "string",
+      "minLength": 12,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "operation": {
+      "enum": [
+        "configuration_apply",
+        "oem_firmware_update",
+        "oem_firmware_recovery",
+        "alternative_os_flash"
+      ]
+    },
+    "adapter_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vendor",
+        "model",
+        "hardware_revision",
+        "software_version",
+        "region",
+        "identity_digest"
+      ],
+      "properties": {
+        "vendor": {
+          "type": "string",
+          "minLength": 2
+        },
+        "model": {
+          "type": "string",
+          "minLength": 2
+        },
+        "hardware_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "software_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "region": {
+          "type": "string",
+          "minLength": 2
+        },
+        "identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_digest",
+        "target_digest",
+        "prestate_digest",
+        "desired_state_digest",
+        "prestate_observed_at",
+        "policy_revision",
+        "idempotency_key"
+      ],
+      "properties": {
+        "action_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "target_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "prestate_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "desired_state_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "prestate_observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "policy_revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 256
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "requested_by_ref",
+        "approver_refs",
+        "verified_at",
+        "expires_at",
+        "authorized_action_digest",
+        "authorized_target_digest",
+        "authorized_prestate_digest",
+        "signature_evidence_refs"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "pending",
+            "verified",
+            "rejected",
+            "expired"
+          ]
+        },
+        "requested_by_ref": {
+          "type": "string",
+          "minLength": 3
+        },
+        "approver_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 3
+          }
+        },
+        "verified_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "authorized_action_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "authorized_target_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "authorized_prestate_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "signature_evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 8
+          }
+        }
+      }
+    },
+    "state": {
+      "enum": [
+        "PREPARED",
+        "AUTHORIZATION_VERIFIED",
+        "APPLY_STARTED",
+        "APPLIED_UNVERIFIED",
+        "VERIFIED",
+        "FAILED",
+        "INDETERMINATE",
+        "ABORTED"
+      ]
+    },
+    "effect_state": {
+      "enum": [
+        "NO_EFFECT",
+        "EFFECT_POSSIBLE",
+        "EFFECT_APPLIED",
+        "EFFECT_VERIFIED",
+        "EFFECT_REJECTED",
+        "EFFECT_INDETERMINATE"
+      ]
+    },
+    "journal": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "occurred_at",
+          "actor_ref",
+          "evidence_refs",
+          "prestate_digest"
+        ],
+        "properties": {
+          "state": {
+            "enum": [
+              "PREPARED",
+              "AUTHORIZATION_VERIFIED",
+              "APPLY_STARTED",
+              "APPLIED_UNVERIFIED",
+              "VERIFIED",
+              "FAILED",
+              "INDETERMINATE",
+              "ABORTED"
+            ]
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor_ref": {
+            "type": "string",
+            "minLength": 3
+          },
+          "evidence_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 8
+            }
+          },
+          "prestate_digest": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recovery_plan_ref",
+        "recovery_evidence_refs",
+        "known_good_image_ref",
+        "rollback_verified"
+      ],
+      "properties": {
+        "recovery_plan_ref": {
+          "type": "string",
+          "minLength": 8
+        },
+        "recovery_evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 8
+          }
+        },
+        "known_good_image_ref": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 8
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rollback_verified": {
+          "type": "boolean"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_artifact_refs",
+        "independent_verifier_ref",
+        "verified_state_digest"
+      ],
+      "properties": {
+        "raw_artifact_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 8
+          }
+        },
+        "independent_verifier_ref": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 3
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verified_state_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "secrets_included",
+        "raw_configuration_in_shared_dht",
+        "customer_personal_data_in_shared_dht"
+      ],
+      "properties": {
+        "secrets_included": {
+          "const": false
+        },
+        "raw_configuration_in_shared_dht": {
+          "const": false
+        },
+        "customer_personal_data_in_shared_dht": {
+          "const": false
+        }
+      }
+    }
+  }
+}
