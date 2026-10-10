@@ -680,6 +680,42 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         "function must bind parameter tenant to RLS tenant context");
     mismatched_tenant.commit().await.unwrap();
 
+    // SQL-level callers cannot inject arbitrary or provider-controlled failure
+    // text into the durable failure classification.
+    let mut invalid_failure_code = scope_pool.begin().await.unwrap();
+    sqlx::raw_sql("SET LOCAL ROLE luminous_ops_app")
+        .execute(&mut *invalid_failure_code)
+        .await
+        .unwrap();
+    sqlx::query("SELECT set_config('app.tenant_id', $1, true)")
+        .bind(TENANT)
+        .execute(&mut *invalid_failure_code)
+        .await
+        .unwrap();
+    let invalid_code_result = sqlx::query_scalar::<_, String>(
+        "SELECT ops.record_outbox_failure($1, $2, $3, $4)"
+    )
+    .bind(TENANT)
+    .bind(&lease_three.outbox_id)
+    .bind("worker-d")
+    .bind("raw provider error must never be persisted")
+    .fetch_one(&mut *invalid_failure_code)
+    .await;
+    assert!(invalid_code_result.is_err(), "database function rejects unrecognized failure strings");
+    invalid_failure_code.rollback().await.unwrap();
+    let failure_text_was_not_persisted: bool = sqlx::query(
+        "SELECT last_failure_code IS NULL AS clean FROM ops.outbox_events \
+         WHERE tenant_id = $1 AND outbox_id = $2"
+    )
+    .bind(TENANT)
+    .bind(&lease_three.outbox_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap()
+    .try_get("clean")
+    .unwrap();
+    assert!(failure_text_was_not_persisted, "invalid raw error must leave no failure record");
+
     assert_eq!(
         store.record_outbox_failure(TENANT, &lease_three.outbox_id, "worker-not-owner",
             OutboxFailureCode::TransientNetwork).await.unwrap(),
@@ -694,8 +730,8 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     );
     assert!(store.claim_next_outbox(TENANT, "worker-e", 30).await.unwrap().is_none(),
         "the failed event must not be immediately claimable during backoff");
-    let retry_is_delayed: bool = sqlx::query(
-        "SELECT available_at > clock_timestamp() + interval '1 second' AS delayed \
+    let first_backoff_is_bounded: bool = sqlx::query(
+        "SELECT available_at - last_failure_at BETWEEN interval '4 seconds' AND interval '6 seconds' AS bounded \
          FROM ops.outbox_events WHERE tenant_id = $1 AND outbox_id = $2",
     )
     .bind(TENANT)
@@ -703,9 +739,9 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     .fetch_one(&pool)
     .await
     .unwrap()
-    .try_get("delayed")
+    .try_get("bounded")
     .unwrap();
-    assert!(retry_is_delayed, "retry uses a database-controlled positive backoff");
+    assert!(first_backoff_is_bounded, "first failed attempt schedules approximately five seconds of backoff");
 
     // Fast-forward only the disposable test database instead of sleeping for
     // the production retry delay.
@@ -721,8 +757,38 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     let lease_three_retry = store.claim_next_outbox(TENANT, "worker-e", 30).await.unwrap().unwrap();
     assert_eq!(lease_three_retry.sequence_no, 3);
     assert_eq!(lease_three_retry.attempts, 2);
-    assert!(store.acknowledge_outbox(TENANT, &lease_three_retry.outbox_id, "worker-e").await.unwrap());
-    assert!(store.claim_next_outbox(TENANT, "worker-f", 30).await.unwrap().is_none());
+    assert_eq!(
+        store.record_outbox_failure(TENANT, &lease_three_retry.outbox_id, "worker-e",
+            OutboxFailureCode::RemoteRateLimited).await.unwrap(),
+        OutboxFailureOutcome::Rescheduled
+    );
+    let second_backoff_is_bounded: bool = sqlx::query(
+        "SELECT available_at - last_failure_at BETWEEN interval '9 seconds' AND interval '11 seconds' AS bounded \
+         FROM ops.outbox_events WHERE tenant_id = $1 AND outbox_id = $2",
+    )
+    .bind(TENANT)
+    .bind(&lease_three_retry.outbox_id)
+    .fetch_one(&pool)
+    .await
+    .unwrap()
+    .try_get("bounded")
+    .unwrap();
+    assert!(second_backoff_is_bounded, "second failed attempt doubles the delay to approximately ten seconds");
+
+    sqlx::query(
+        "UPDATE ops.outbox_events SET available_at = clock_timestamp() - interval '1 second' \
+         WHERE tenant_id = $1 AND outbox_id = $2",
+    )
+    .bind(TENANT)
+    .bind(&lease_three_retry.outbox_id)
+    .execute(&pool)
+    .await
+    .expect("make the second scheduled retry eligible in the isolated test database");
+    let lease_three_final = store.claim_next_outbox(TENANT, "worker-f", 30).await.unwrap().unwrap();
+    assert_eq!(lease_three_final.sequence_no, 3);
+    assert_eq!(lease_three_final.attempts, 3);
+    assert!(store.acknowledge_outbox(TENANT, &lease_three_final.outbox_id, "worker-f").await.unwrap());
+    assert!(store.claim_next_outbox(TENANT, "worker-g", 30).await.unwrap().is_none());
 
     // Race two distinct deliveries that reuse one idempotency key with
     // different semantics. The per-key advisory lock must make the loser an
