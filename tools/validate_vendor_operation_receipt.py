@@ -230,6 +230,12 @@ def registry_binding_errors(receipt: dict[str, Any], registry: dict[str, Any]) -
     if adapter_operation is None:
         return [f"$.operation {operation_name!r} is not declared by adapter {adapter_id!r}"]
 
+    target = receipt["target"]
+    if target["vendor"] != adapter["vendor"]:
+        errors.append("$.target.vendor must match the declared adapter vendor")
+    if target["product_family"] not in adapter["product_families"]:
+        errors.append("$.target.product_family must be explicitly declared by the adapter")
+
     if adapter_operation["state"] == "unsupported":
         errors.append("$.operation cannot be prepared or authorized for a registry-declared unsupported capability")
 
@@ -261,6 +267,7 @@ def registry_binding_errors(receipt: dict[str, Any], registry: dict[str, Any]) -
     target = receipt["target"]
     scope_fields = {
         "model": "model",
+        "product_family": "product_family",
         "hardware_revision": "hardware_revision",
         "software_version": "software_version",
         "region": "region",
