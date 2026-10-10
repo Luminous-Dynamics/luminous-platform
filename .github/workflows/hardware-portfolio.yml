@@ -19,6 +19,7 @@ on:
       - "docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md"
       - "docs/OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md"
       - "docs/SA_PROCUREMENT_AND_SINGLE_SITE_EXECUTION_TRACK_V1.md"
+      - "docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md"
       - "README.md"
       - ".github/workflows/hardware-portfolio.yml"
   push:
@@ -39,6 +40,7 @@ on:
       - "docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md"
       - "docs/OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md"
       - "docs/SA_PROCUREMENT_AND_SINGLE_SITE_EXECUTION_TRACK_V1.md"
+      - "docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md"
       - "README.md"
       - ".github/workflows/hardware-portfolio.yml"
   workflow_dispatch:
