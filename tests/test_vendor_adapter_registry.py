@@ -65,6 +65,7 @@ class VendorAdapterRegistryTests(unittest.TestCase):
             "tested_revision": "a" * 40,
             "tested_scope": {
                 "model": "Exact Model",
+                "product_family": "IOS XE",
                 "hardware_revision": "Rev A",
                 "software_version": "1.2.3",
                 "region": "test-lab",
@@ -140,6 +141,7 @@ class VendorAdapterRegistryTests(unittest.TestCase):
             "tested_revision": "b" * 40,
             "tested_scope": {
                 "model": "Exact Router",
+                "product_family": "Exact router family",
                 "hardware_revision": "Rev B",
                 "software_version": "OpenWrt target build",
                 "region": "test-lab",
