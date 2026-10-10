@@ -112,22 +112,34 @@ def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> Co
     if not simulation_cfg["branchLimitEnforcedBeforeSpawn"]:
         add("simulation.branch_limit.not_enforced", "/simulation/parameters/branchLimit",
             "renderer must enforce the effective limit before branch creation")
+
+    if not simulation_cfg["resourceBranchLimitConfigurable"]:
+        add("simulation.resource_branch_limit.not_configurable", "/resourceBudget/maxBranches",
+            "renderer settings path cannot express the independent resourceBudget.maxBranches ceiling")
+    resource_branch_budget = manifest.get("resourceBudget", {}).get("maxBranches")
+    if isinstance(resource_branch_budget, int) and resource_branch_budget > simulation_cfg["maxResourceBranchLimit"]:
+        add("budget.branch_ceiling.exceeds_core_ceiling", "/resourceBudget/maxBranches",
+            "requested resource branch ceiling exceeds the renderer profile maximum")
     if isinstance(requested_branches, int) and isinstance(aggregate_branches, int) and requested_branches > aggregate_branches:
         add("budget.branch_limit.exceeds_resource_budget", "/simulation/parameters/branchLimit",
             "simulation branchLimit exceeds resourceBudget.maxBranches")
     requested_depth = parameters.get("maxDepth")
     if isinstance(requested_depth, int) and requested_depth > simulation_cfg["maxDepthCeiling"]:
         add("simulation.max_depth.exceeds_core_ceiling", "/simulation/parameters/maxDepth",
-            f"requested depth {requested_depth} exceeds profile ceiling {simulation_cfg['fixedMaxDepth']}")
+            f"requested depth {requested_depth} exceeds profile ceiling {simulation_cfg['maxDepthCeiling']}")
 
     resources = profile["resources"]
     budget = manifest.get("resourceBudget", {})
     requested_memory = budget.get("maxMemoryMiB")
     if not resources["rendererMemoryEstimateEnforced"]:
-        add("budget.renderer_estimate.not_enforced", "/resourceBudget/maxMemoryMiB", "renderer-owned memory estimate is not enforced")
-    if not resources["manifestMemoryBudgetEnforced"] or resources["maxMemoryMiB"] is None:
+        add("budget.renderer_estimate.not_enforced", "/resourceBudget/maxMemoryMiB",
+            "renderer-owned memory estimate is not enforced")
+    if not resources["wholeProcessMemoryLimitEnforced"]:
+        add("budget.whole_process.not_enforced", "/resourceBudget/maxMemoryMiB",
+            "the renderer does not guarantee the manifest's whole-process memory ceiling")
+    if resources["maxMemoryMiB"] is None:
         add("budget.memory.not_enforced", "/resourceBudget/maxMemoryMiB",
-            "renderer profile does not enforce the manifest's aggregate memory ceiling")
+            "renderer profile does not declare a renderer-owned memory estimate ceiling")
     elif isinstance(requested_memory, int) and requested_memory > resources["maxMemoryMiB"]:
         add("budget.memory.exceeds_core_ceiling", "/resourceBudget/maxMemoryMiB",
             f"requested {requested_memory} MiB exceeds profile ceiling {resources['maxMemoryMiB']} MiB")

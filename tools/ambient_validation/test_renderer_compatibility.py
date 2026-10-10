@@ -29,7 +29,7 @@ class RendererCompatibilityTests(unittest.TestCase):
     def test_pinned_renderer_profile_matches_its_schema(self):
         issues = validate_profile(self.profile_schema, self.profile)
         self.assertEqual([], issues, "\n".join(map(str, issues)))
-        self.assertEqual("740d755a7c3e7a2ba7be4ddb91ebf65ae62cd943", self.profile["renderer"]["commit"])
+        self.assertEqual("13127ef41ea64312a8b206e6313bd9c48cc5c2a2", self.profile["renderer"]["commit"])
         self.assertEqual("source-inspection-only", self.profile["renderer"]["qualificationState"])
 
     def test_mismatched_engine_id_is_rejected(self):
@@ -44,13 +44,13 @@ class RendererCompatibilityTests(unittest.TestCase):
     def test_current_profile_fails_closed_for_known_scene_pack_gaps(self):
         report = audit_compatibility(self.manifest, self.profile)
         self.assertFalse(report.compatible)
-        self.assertEqual("740d755a7c3e7a2ba7be4ddb91ebf65ae62cd943", report.renderer_commit)
+        self.assertEqual("13127ef41ea64312a8b206e6313bd9c48cc5c2a2", report.renderer_commit)
         self.assertEqual("source-inspection-only", report.qualification_state)
         codes = {item.code for item in report.issues}
         self.assertTrue({
             "engine.version.unsupported",
             "manifest.adapter.not_implemented",
-            "budget.memory.not_enforced",
+            "budget.whole_process.not_enforced",
             "presentation.variant.unsupported",
             "presentation.field_unmapped",
             "presentation.static_gradient.unsupported",
@@ -65,6 +65,23 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertNotIn("simulation.pulse_period.not_configurable", codes)
         self.assertNotIn("simulation.drift_amplitude.not_configurable", codes)
         self.assertNotIn("budget.renderer_estimate.not_enforced", codes)
+        self.assertNotIn("presentation.static_gradient.unsupported", codes)
+        self.assertNotIn("simulation.resource_branch_limit.not_configurable", codes)
+        self.assertNotIn("budget.branch_ceiling.exceeds_core_ceiling", codes)
+
+    def test_lower_profile_depth_ceiling_reports_typed_blocker_without_crashing(self):
+        candidate = copy.deepcopy(self.profile)
+        candidate["simulation"]["maxDepthCeiling"] = 1
+        report = audit_compatibility(self.manifest, candidate)
+        found = [item for item in report.issues if item.code == "simulation.max_depth.exceeds_core_ceiling"]
+        self.assertEqual(1, len(found))
+        self.assertIn("profile ceiling 1", found[0].message)
+
+    def test_missing_independent_resource_branch_ceiling_is_reported(self):
+        candidate = copy.deepcopy(self.profile)
+        candidate["simulation"]["resourceBranchLimitConfigurable"] = False
+        report = audit_compatibility(self.manifest, candidate)
+        self.assertIn("simulation.resource_branch_limit.not_configurable", {item.code for item in report.issues})
 
     def test_a_fully_declared_profile_can_pass_compatibility_without_claiming_qualification(self):
         candidate = copy.deepcopy(self.profile)
@@ -77,6 +94,8 @@ class RendererCompatibilityTests(unittest.TestCase):
         }
         candidate["simulation"].update({
             "branchLimitConfigurable": True,
+            "resourceBranchLimitConfigurable": True,
+            "maxResourceBranchLimit": 8192,
             "maxDepthConfigurable": True,
             "growthRateConfigurable": True,
             "fixedStepHzConfigurable": True,
@@ -89,7 +108,7 @@ class RendererCompatibilityTests(unittest.TestCase):
         candidate["resources"].update({
             "maxMemoryMiB": 2048,
             "rendererMemoryEstimateEnforced": True,
-            "manifestMemoryBudgetEnforced": True,
+            "wholeProcessMemoryLimitEnforced": True,
         })
         candidate["presentation"] = {
             "supportedVariants": ["boot", "desktop", "idle", "lockedBackground", "staticFallback"],

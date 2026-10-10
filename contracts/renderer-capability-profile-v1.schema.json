@@ -95,7 +95,9 @@
         "growthRateConfigurable",
         "fixedStepHzConfigurable",
         "pulsePeriodConfigurable",
-        "driftAmplitudeConfigurable"
+        "driftAmplitudeConfigurable",
+        "resourceBranchLimitConfigurable",
+        "maxResourceBranchLimit"
       ],
       "properties": {
         "branchLimitConfigurable": {
@@ -128,6 +130,14 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 256
+        },
+        "resourceBranchLimitConfigurable": {
+          "type": "boolean"
+        },
+        "maxResourceBranchLimit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
         }
       }
     },
@@ -139,7 +149,7 @@
         "maxPixels",
         "maxMemoryMiB",
         "rendererMemoryEstimateEnforced",
-        "manifestMemoryBudgetEnforced"
+        "wholeProcessMemoryLimitEnforced"
       ],
       "properties": {
         "maxDimension": {
@@ -157,10 +167,10 @@
           ],
           "minimum": 1
         },
-        "manifestMemoryBudgetEnforced": {
+        "rendererMemoryEstimateEnforced": {
           "type": "boolean"
         },
-        "rendererMemoryEstimateEnforced": {
+        "wholeProcessMemoryLimitEnforced": {
           "type": "boolean"
         }
       }

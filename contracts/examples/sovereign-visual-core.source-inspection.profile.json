@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "profileId": "sovereign-visual-core.browser-wasm-wit-api.source-inspection-2026-10-10",
+  "profileId": "sovereign-visual-core.browser-wasm-wit-settings.source-inspection-2026-10-10",
   "renderer": {
     "repository": "Luminous-Dynamics/sovereign-boot",
-    "commit": "740d755a7c3e7a2ba7be4ddb91ebf65ae62cd943",
+    "commit": "13127ef41ea64312a8b206e6313bd9c48cc5c2a2",
     "crate": "sovereign-visual-core",
     "qualificationState": "source-inspection-only"
   },
@@ -27,19 +27,21 @@
     "growthRateConfigurable": true,
     "fixedStepHzConfigurable": true,
     "pulsePeriodConfigurable": true,
-    "driftAmplitudeConfigurable": true
+    "driftAmplitudeConfigurable": true,
+    "resourceBranchLimitConfigurable": true,
+    "maxResourceBranchLimit": 8192
   },
   "resources": {
     "maxDimension": 4096,
     "maxPixels": 8294400,
     "maxMemoryMiB": 2048,
     "rendererMemoryEstimateEnforced": true,
-    "manifestMemoryBudgetEnforced": false
+    "wholeProcessMemoryLimitEnforced": false
   },
   "presentation": {
     "supportedVariants": [],
     "configurableFields": [],
-    "staticGradientFallback": false
+    "staticGradientFallback": true
   },
   "lifecycle": {
     "supportedPolicies": []
