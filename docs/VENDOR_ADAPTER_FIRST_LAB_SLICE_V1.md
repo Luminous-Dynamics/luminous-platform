@@ -1,7 +1,7 @@
 # Vendor Adapter First Lab Slice v1
 
 **State:** execution runbook / acceptance contract; no adapter or physical device is qualified by this document.  
-**Related:** [Issue #23](https://github.com/Luminous-Dynamics/luminous-platform/issues/23), [adapter execution contract](VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md), [capability registry](../security/vendor-adapter-capability-registry-v1.json).
+**Related:** [Issue #23](https://github.com/Luminous-Dynamics/luminous-platform/issues/23), [adapter execution contract](VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md), [endpoint and credential boundary](VENDOR_MANAGEMENT_ENDPOINT_SECURITY_V1.md), [capability registry](../security/vendor-adapter-capability-registry-v1.json).
 
 ## Purpose
 
