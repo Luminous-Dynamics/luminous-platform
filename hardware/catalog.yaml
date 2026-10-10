@@ -286,6 +286,29 @@ records:
       - "Driver/firmware/security update support"
       - "Thermal, power, performance and interoperability tests"
 
+  - id: HW-013
+    domain: authentication-token-firmware
+    project: OpenSK
+    record_type: open_security_key_firmware_reference_not_complete_hardware
+    maturity: discovered
+    current_part_or_revision: "Exact underlying hardware, source and firmware revision not selected"
+    sources:
+      - "https://github.com/google/OpenSK"
+    hardware_source_state: "Project mentions a printable enclosure; this survey did not establish complete editable PCB design and BOM for a fully reproducible token"
+    software_source_state: "Rust FIDO2/U2F implementation is public; project notes CTAP 2.0 version was FIDO certified while the current development branch is not"
+    licensing_state: "Review repository and underlying hardware/firmware licenses for exact deployment"
+    availability_state: "Underlying token hardware and vendor support not established by firmware repository"
+    allowed_initial_use: "Firmware/interoperability study only"
+    not_yet_claimed:
+      - "Complete open-hardware token"
+      - "FIDO certification for current development branch"
+      - "Government procurement suitability"
+    required_evidence:
+      - "Exact hardware platform and editable source/BOM"
+      - "Exact certified firmware build and certification record if required"
+      - "Secure element, key generation/storage and lifecycle assessment"
+      - "Device issuance, revocation, lost-token recovery and reader compatibility"
+
 gaps:
   - id: GAP-001
     domain: cryptographic-appliance-hsm
