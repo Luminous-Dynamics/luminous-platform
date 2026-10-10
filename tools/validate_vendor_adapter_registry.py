@@ -187,6 +187,14 @@ def registry_errors(
                     errors.append(f"{op_prefix}: tested operation requires LAB_TESTED or QUALIFIED implementation")
                 if not operation.get("tested_scope"):
                     errors.append(f"{op_prefix}: tested operation requires exact model/revision/software/region scope")
+                else:
+                    scope = operation["tested_scope"]
+                    if scope.get("product_family") not in adapter["product_families"]:
+                        errors.append(f"{op_prefix}: tested_scope.product_family must match an adapter-declared product family")
+                    for scope_field in ("model", "hardware_revision", "software_version", "region"):
+                        normalized = str(scope.get(scope_field, "")).strip().lower()
+                        if normalized in {"", "*", "any", "all", "unknown", "unspecified", "n/a", "na"}:
+                            errors.append(f"{op_prefix}: tested_scope.{scope_field} must be exact, not a wildcard or unknown value")
 
             if risk in {"configuration_mutation", "disruptive_lifecycle", "reflash"}:
                 auto_retry = catalog[op_name]["automatic_retry_after_uncertain_outcome"]
