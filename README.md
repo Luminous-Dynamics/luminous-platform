@@ -93,6 +93,7 @@ Luminous Platform is being organized into a product line for secure administrati
 - [Government control evidence matrix v1](docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md)
 - [Machine-readable control evidence baseline](security/control-evidence-matrix-v1.json)
 - [Control matrix schema](schemas/hardware-control-evidence-matrix-v1.schema.json)
+- [Open-hardware design package plan](docs/OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md)
 
 The register explicitly separates candidate devices, upstream design/software references and unselected equipment gaps. All hardware remains unqualified until exact-model evidence is recorded. Queue status, public design files, and an OS that boots are not qualification evidence.
 
