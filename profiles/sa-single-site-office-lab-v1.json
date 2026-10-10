@@ -276,7 +276,8 @@
       "blockers": [
         "Pin hardware revision and firmware; validate WPA3 and 802.1X against the selected identity service.",
         "Use local management/controller mode and test WAN/cloud outage.",
-        "Survey RF and confirm legal South African channel/power settings."
+        "Survey RF and confirm legal South African channel/power settings.",
+        "Confirm exact SKU/type-approval status and identify the South African registered applicant/importer responsible for ICASA type approval where required."
       ]
     },
     {
