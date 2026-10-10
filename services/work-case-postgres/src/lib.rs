@@ -23,12 +23,20 @@ impl CaseState {
             Self::Resolved => "resolved", Self::Closed => "closed", Self::Cancelled => "cancelled" }
     }
 }
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ActorRole { Technician, Admin, Integration, Requester }
 impl ActorRole {
     fn as_db_str(self) -> &'static str {
         match self { Self::Technician => "technician", Self::Admin => "admin",
             Self::Integration => "integration", Self::Requester => "requester" }
+    }
+    fn from_db_str(value: &str) -> Self {
+        match value {
+            "technician" => Self::Technician, "admin" => Self::Admin,
+            "integration" => Self::Integration, "requester" => Self::Requester,
+            _ => unreachable!("database CHECK constraint restricts actor role"),
+        }
     }
 }
 
@@ -78,6 +86,23 @@ pub struct WorkCase {
     pub assignee_id: Option<String>, pub created_at: DateTime<Utc>, pub updated_at: DateTime<Utc>,
     pub external_refs: Vec<ExternalReference>, pub evidence_refs: Vec<EvidenceReference>,
 }
+/// Immutable history entry returned in ascending revision order.
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct CaseActivity {
+    pub tenant_id: String,
+    pub case_id: String,
+    pub sequence: i64,
+    pub activity_id: String,
+    pub command_id: String,
+    pub actor_id: String,
+    pub actor_role: ActorRole,
+    pub activity_type: String,
+    pub occurred_at: DateTime<Utc>,
+    pub reason: String,
+    pub prior_revision: i64,
+    pub new_revision: i64,
+    pub details: Value,
+}
 #[derive(Debug, thiserror::Error)]
 pub enum RepositoryError {
     #[error("database operation failed")] Database(#[from] sqlx::Error),
@@ -97,6 +122,12 @@ struct WorkCaseRow {
     customer_id: String, site_id: Option<String>, asset_ids: Vec<String>, priority: i16,
     state: String, revision: i64, assignee_id: Option<String>,
     created_at: DateTime<Utc>, updated_at: DateTime<Utc>,
+}
+struct CaseActivityRow {
+    tenant_id: String, case_id: String, sequence: i64, activity_id: String,
+    command_id: String, actor_id: String, actor_role: String, activity_type: String,
+    occurred_at: DateTime<Utc>, reason: String, prior_revision: i64, new_revision: i64,
+    details: Json<Value>,
 }
 struct IdempotencyRow { command_digest: String, result_case_id: String, result_payload: Json<Value> }
 struct ExternalReferenceRow { provider: String, connection_id: String, external_id: String, linked_at: DateTime<Utc> }
@@ -218,6 +249,37 @@ impl WorkCaseRepository {
         tx.commit().await?;
         Ok(row)
     }
+
+    /// Return immutable activity after an exclusive sequence cursor, oldest first.
+    /// The page size is deliberately capped so a case with long history cannot
+    /// force an unbounded allocation or query response.
+    pub async fn list_activity(
+        &self, principal: &VerifiedPrincipal, case_id: &str, after_sequence: i64, limit: i64,
+    ) -> Result<Vec<CaseActivity>, RepositoryError> {
+        if after_sequence < 0 || !(1..=100).contains(&limit) {
+            return Err(RepositoryError::InvalidInput);
+        }
+        let case_id = clean_case_id(case_id)?;
+        let mut tx = self.pool.begin().await?;
+        set_tenant(&mut tx, &principal.tenant_id).await?;
+        if fetch_case_row(&mut tx, &principal.tenant_id, &case_id).await?.is_none() {
+            return Err(RepositoryError::NotFound);
+        }
+        let rows = sqlx::query_as!(
+            CaseActivityRow,
+            r#"SELECT tenant_id, case_id, sequence, activity_id, command_id, actor_id, actor_role,
+                      activity_type, occurred_at, reason, prior_revision, new_revision,
+                      details AS "details: Json<Value>"
+               FROM case_activity
+               WHERE tenant_id = $1 AND case_id = $2 AND sequence > $3
+               ORDER BY sequence ASC
+               LIMIT $4"#,
+            principal.tenant_id, case_id, after_sequence, limit
+        ).fetch_all(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(rows.into_iter().map(CaseActivity::from).collect())
+    }
+
     /// Apply a lifecycle transition using optimistic revision checks and durable idempotency.
     pub async fn transition_case(
         &self, principal: &VerifiedPrincipal, case_id: &str, target: CaseState,
@@ -308,6 +370,18 @@ impl WorkCaseRepository {
 
     #[cfg(test)]
     fn pool(&self) -> &PgPool { &self.pool }
+}
+
+impl From<CaseActivityRow> for CaseActivity {
+    fn from(row: CaseActivityRow) -> Self {
+        Self {
+            tenant_id: row.tenant_id, case_id: row.case_id, sequence: row.sequence,
+            activity_id: row.activity_id, command_id: row.command_id, actor_id: row.actor_id,
+            actor_role: ActorRole::from_db_str(&row.actor_role), activity_type: row.activity_type,
+            occurred_at: row.occurred_at, reason: row.reason, prior_revision: row.prior_revision,
+            new_revision: row.new_revision, details: row.details.0,
+        }
+    }
 }
 
 impl From<(WorkCaseRow, Vec<ExternalReference>, Vec<EvidenceReference>)> for WorkCase {
@@ -533,6 +607,59 @@ mod tests {
         assert_eq!(unscoped_rls_count(&pool, &a).await.expect("RLS A"), 1);
         assert_eq!(unscoped_rls_count(&pool, &b).await.expect("RLS B"), 1);
         assert_ne!(ca.tenant_id, cb.tenant_id);
+    }
+
+    #[tokio::test]
+    async fn activity_history_uses_bounded_tenant_scoped_keyset_pagination() {
+        let pool = pool(3).await;
+        let repo = WorkCaseRepository { pool };
+        let p = principal();
+        let created = repo.create_case(
+            &p, command("history-create-key-001", "case-history-pagination-001", "Activity history case")
+        ).await.expect("create history case");
+        repo.transition_case(&p, &created.case_id, CaseState::InProgress, 1,
+            "Work started", "history-transition-key-001", "history-command-002", "2026-10-09T13:00:00Z")
+            .await.expect("transition to in_progress");
+        repo.transition_case(&p, &created.case_id, CaseState::Resolved, 2,
+            "Work completed", "history-resolve-key-001", "history-command-003", "2026-10-09T13:10:00Z")
+            .await.expect("transition to resolved");
+
+        let first = repo.list_activity(&p, &created.case_id, 0, 1).await.expect("first history page");
+        assert_eq!(first.len(), 1);
+        assert_eq!(first[0].sequence, 1);
+        assert_eq!(first[0].activity_type, "case.created");
+        assert_eq!(first[0].actor_role, p.role);
+
+        let second = repo.list_activity(&p, &created.case_id, first[0].sequence, 1)
+            .await.expect("second history page");
+        assert_eq!(second.len(), 1);
+        assert_eq!(second[0].sequence, 2);
+        assert_eq!(second[0].prior_revision, 1);
+        assert_eq!(second[0].new_revision, 2);
+        assert_eq!(second[0].details["from"], "open");
+        assert_eq!(second[0].details["to"], "in_progress");
+
+        let third = repo.list_activity(&p, &created.case_id, second[0].sequence, 100)
+            .await.expect("final history page");
+        assert_eq!(third.len(), 1);
+        assert_eq!(third[0].sequence, 3);
+        assert_eq!(third[0].details["to"], "resolved");
+        assert!(repo.list_activity(&p, &created.case_id, 3, 100).await
+            .expect("history after newest cursor").is_empty());
+
+        assert!(matches!(
+            repo.list_activity(&p, &created.case_id, -1, 1).await,
+            Err(RepositoryError::InvalidInput)
+        ));
+        assert!(matches!(
+            repo.list_activity(&p, &created.case_id, 0, 101).await,
+            Err(RepositoryError::InvalidInput)
+        ));
+        let other_tenant = principal();
+        assert!(matches!(
+            repo.list_activity(&other_tenant, &created.case_id, 0, 100).await,
+            Err(RepositoryError::NotFound)
+        ));
     }
 
     #[tokio::test]
