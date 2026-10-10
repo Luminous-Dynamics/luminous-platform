@@ -63,7 +63,13 @@ CREATE TABLE case_outbox (
  lease_owner uuid, lease_until timestamptz, created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  delivered_at timestamptz, PRIMARY KEY (tenant_id, outbox_id),
  UNIQUE (tenant_id, case_id, revision, event_type),
- FOREIGN KEY (tenant_id, case_id) REFERENCES work_cases (tenant_id, case_id)
+ FOREIGN KEY (tenant_id, case_id) REFERENCES work_cases (tenant_id, case_id),
+ CONSTRAINT case_outbox_state_shape CHECK (
+   (status = 'PENDING' AND lease_owner IS NULL AND lease_until IS NULL AND delivered_at IS NULL)
+   OR (status = 'LEASED' AND lease_owner IS NOT NULL AND lease_until IS NOT NULL AND delivered_at IS NULL)
+   OR (status = 'DELIVERED' AND lease_owner IS NULL AND lease_until IS NULL AND delivered_at IS NOT NULL)
+   OR (status = 'DEAD_LETTER' AND lease_owner IS NULL AND lease_until IS NULL AND delivered_at IS NULL)
+ )
 );
 CREATE INDEX case_activity_timeline_idx ON case_activity (tenant_id, case_id, sequence);
 CREATE INDEX case_outbox_ready_idx ON case_outbox (status, lease_until, created_at, tenant_id, outbox_id);
