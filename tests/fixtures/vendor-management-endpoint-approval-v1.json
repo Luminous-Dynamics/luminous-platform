@@ -5,7 +5,7 @@
   "state": "pending",
   "profile_id": "synthetic-meraki-readonly-lab",
   "profile_revision": 1,
-  "profile_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+  "profile_digest": "f033804373ce59be1545b69f5fe87190b92562ed8b7fd47aabc3765ca6f63994",
   "adapter": {
     "adapter_id": "cisco-meraki-dashboard",
     "adapter_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
