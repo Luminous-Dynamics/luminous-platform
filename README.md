@@ -86,6 +86,7 @@ inputs.nixward.url         = "github:Luminous-Dynamics/nixward";
 Luminous Platform is being organized into a product line for secure administrative, public-service, research, regulated-enterprise and appropriate unclassified government IT. This is a product taxonomy and qualification effort—not a claim of certification or deployment authorization.
 
 - [Government-network product line v1](docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md)
+- [Global vendor interoperability and firmware services v1](docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md)
 - [Hardware portfolio research register v1](hardware/portfolio-v1.json)
 - [Hardware portfolio schema v1](schemas/hardware-portfolio-v1.schema.json)
 - [Single-site office/lab draft BOM](profiles/sa-single-site-office-lab-v1.json)
