@@ -173,6 +173,13 @@ class VendorManagementEndpointProfileTests(unittest.TestCase):
         profile["source_refs"][0]["last_reviewed_on"] = "2026-10-12"
         self.assertTrue(any("cannot be after profile.as_of" in error for error in self.errors(profile)))
 
+    def test_duplicate_source_url_with_different_claims_is_rejected(self) -> None:
+        profile = copy.deepcopy(self.fixture)
+        duplicate = copy.deepcopy(profile["source_refs"][0])
+        duplicate["purposes"] = ["security_baseline"]
+        profile["source_refs"].append(duplicate)
+        self.assertTrue(any("source_refs.url values must be unique" in error for error in self.errors(profile)))
+
     def test_retry_limit_is_schema_bounded(self) -> None:
         profile = copy.deepcopy(self.fixture)
         profile["limits"]["max_retries"] = 4
