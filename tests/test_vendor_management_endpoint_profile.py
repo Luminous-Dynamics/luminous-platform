@@ -81,6 +81,11 @@ class VendorManagementEndpointProfileTests(unittest.TestCase):
         profile["authentication"]["expected_principal_ref"] = "principal:another-identity"
         self.assertTrue(any("must match scope.expected_principal_ref" in error for error in self.errors(profile)))
 
+    def test_tenant_or_org_scope_must_match_exactly(self) -> None:
+        profile = copy.deepcopy(self.fixture)
+        profile["authentication"]["expected_tenant_or_org_ref"] = "scope:another-org"
+        self.assertTrue(any("must match scope.expected_tenant_or_org_ref" in error for error in self.errors(profile)))
+
     def test_deny_redirect_policy_rejects_origins(self) -> None:
         profile = copy.deepcopy(self.fixture)
         profile["redirect_policy"]["allowed_origins"] = ["https://api.example.invalid"]
@@ -105,7 +110,7 @@ class VendorManagementEndpointProfileTests(unittest.TestCase):
     def test_api_path_rejects_encoded_traversal(self) -> None:
         profile = copy.deepcopy(self.fixture)
         profile["endpoint"]["api_base_path"] = "/api/%2e%2e/admin"
-        self.assertTrue(any("dot-segments" in error for error in self.errors(profile)))
+        self.assertTrue(any("percent-encoding" in error for error in self.errors(profile)))
 
     def test_api_path_rejects_ambiguous_trailing_slash(self) -> None:
         profile = copy.deepcopy(self.fixture)
@@ -128,6 +133,7 @@ class VendorManagementEndpointProfileTests(unittest.TestCase):
         profile["authentication"]["mode"] = "ssh_key_reference"
         profile["peer_verification"]["minimum_tls_version"] = None
         profile["peer_verification"]["method"] = "platform_trust_store"
+        profile["peer_verification"]["hostname_validation"] = False
         self.assertTrue(any("ssh_known_hosts" in error for error in self.errors(profile)))
 
     def test_ambient_proxy_is_forbidden(self) -> None:
@@ -154,7 +160,15 @@ class VendorManagementEndpointProfileTests(unittest.TestCase):
     def test_approved_lab_profile_requires_approval_evidence(self) -> None:
         profile = copy.deepcopy(self.fixture)
         profile["state"] = "approved_for_lab"
-        self.assertTrue(any("must not be empty for approved_for_lab" in error for error in self.errors(profile)))
+        profile["approval_evidence_refs"] = ["evidence:lab-approval"]
+        self.assertTrue(any("cannot be unresolved in approved_for_lab state" in error for error in self.errors(profile)))
+        profile["scope"]["deployment_jurisdiction"]["state"] = "assessed"
+        profile["scope"]["deployment_jurisdiction"]["value"] = "test-lab"
+        profile["scope"]["deployment_jurisdiction"]["evidence_refs"] = ["evidence:jurisdiction-assessment"]
+        profile["scope"]["hardware_or_commercial_region"]["state"] = "assessed"
+        profile["scope"]["hardware_or_commercial_region"]["value"] = "test-lab"
+        profile["scope"]["hardware_or_commercial_region"]["evidence_refs"] = ["evidence:hardware-region-assessment"]
+        self.assertTrue(any("cannot be unresolved in approved_for_lab state" in error for error in self.errors(profile)))
 
     def test_draft_cannot_carry_approval_evidence(self) -> None:
         profile = copy.deepcopy(self.fixture)
