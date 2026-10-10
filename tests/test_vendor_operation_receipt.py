@@ -47,10 +47,21 @@ class VendorOperationReceiptTests(unittest.TestCase):
         receipt["adapter_revision"] = "a" * 40
         self.assertEqual(registry_binding_errors(receipt, registry), [])
 
-        drifted = copy.deepcopy(receipt)
-        drifted["target"]["hardware_revision"] = "different-revision"
-        errors = registry_binding_errors(drifted, registry)
-        self.assertTrue(any("hardware_revision must exactly match" in error for error in errors))
+        # Exercise every independently scoped target dimension. A match on
+        # vendor/family or on the source revision must not mask target drift.
+        mismatches = {
+            "model": "different-model",
+            "hardware_revision": "different-revision",
+            "software_version": "different-software",
+            "region": "different-region",
+        }
+        for field, value in mismatches.items():
+            with self.subTest(target_field=field):
+                drifted = copy.deepcopy(receipt)
+                drifted["target"][field] = value
+                errors = registry_binding_errors(drifted, registry)
+                expected = f"$.target.{field} must exactly match registry tested_scope.{field}"
+                self.assertIn(expected, errors)
 
     def test_authorized_receipt_must_bind_adapter_source_revision(self) -> None:
         receipt = self._authorized_applied_receipt()
