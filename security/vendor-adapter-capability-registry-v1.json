@@ -78,7 +78,7 @@
       "product_families": [
         "IOS XE",
         "NX-OS",
-        "IOS (exact platform scope required)"
+        "IOS"
       ],
       "maturity": "A0_DISCOVERED",
       "implementation_state": "NOT_IMPLEMENTED",
@@ -141,8 +141,7 @@
       "product_families": [
         "Meraki MX",
         "Meraki MS",
-        "Meraki MR",
-        "Other Dashboard-managed families after review"
+        "Meraki MR"
       ],
       "maturity": "A0_DISCOVERED",
       "implementation_state": "NOT_IMPLEMENTED",
@@ -193,7 +192,8 @@
       ],
       "known_boundaries": [
         "Dashboard cloud/API availability, organization scope, licensing and rate limits affect supportability.",
-        "Do not infer generic alternative-OS flashing or bypass Meraki licensing/cloud controls."
+        "Do not infer generic alternative-OS flashing or bypass Meraki licensing/cloud controls.",
+        "Additional Meraki product families are not in scope until named explicitly in this list and separately assessed."
       ],
       "maturity_evidence_refs": []
     },
@@ -329,7 +329,8 @@
       "adapter_id": "openwrt-supported-devices",
       "vendor": "OpenWrt",
       "product_families": [
-        "Exact supported router/AP model and hardware revision"
+        "OpenWrt-supported router",
+        "OpenWrt-supported access point"
       ],
       "maturity": "A0_DISCOVERED",
       "implementation_state": "NOT_IMPLEMENTED",
@@ -392,7 +393,7 @@
       "adapter_id": "sonic-supported-switches",
       "vendor": "SONiC",
       "product_families": [
-        "Only platforms on a maintained SONiC supported-device list"
+        "SONiC-supported Ethernet switch"
       ],
       "maturity": "A0_DISCOVERED",
       "implementation_state": "NOT_IMPLEMENTED",
