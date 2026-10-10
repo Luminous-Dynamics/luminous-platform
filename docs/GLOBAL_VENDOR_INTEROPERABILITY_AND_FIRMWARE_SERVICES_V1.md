@@ -40,6 +40,18 @@ Each operation should be characterized as one of:
 
 No general-purpose adapter should have unrestricted command execution as its normal interface. Where a vendor provides only an interactive CLI, use command templates, a bounded parser, a tested state-machine and exact allowlists. Never accept model output or natural language as executable authority.
 
+### Standards-first interoperability
+
+Prefer a supported standard protocol and model before a proprietary CLI where the exact device exposes it:
+- **OpenConfig YANG + gNMI/gNOI** for supported configuration/state, telemetry and operational actions. OpenConfig models are vendor-neutral but intentionally cover common operational features, not every vendor function; verify model/version/leaf support on the exact platform.
+- **NETCONF/RESTCONF + YANG** where exposed and documented; validate advertised capabilities and deviations.
+- **SNMPv3** for narrowly scoped inventory/telemetry if required; no routine write access and no SNMPv1/v2c community strings.
+- **Vendor API/CLI** for unsupported capabilities and product-specific workflows, each implemented as a separate qualified adapter.
+
+Standard protocol support is not an equivalence guarantee: a platform can expose a subset of a model, return incomplete state, differ in commit/rollback semantics, or require vendor-specific operational sequences. Capability discovery and exact-model tests remain mandatory.
+
+References: [OpenConfig models](https://openconfig.net/projects/models/), [OpenConfig gRPC APIs](https://www.openconfig.net/projects/), [IETF NETCONF RFC 6241](https://www.rfc-editor.org/rfc/rfc6241), and [IETF RESTCONF RFC 8040](https://www.rfc-editor.org/rfc/rfc8040).
+
 ### Jurisdiction overlay
 
 Global means *portable across jurisdictions*, not identical legal claims worldwide. Keep one technology/control vocabulary and attach separately versioned jurisdiction/customer overlays. Overlays may specify privacy/data residency, crypto/import/export restrictions, radio/equipment approval, product security/product liability, accessibility/language, records retention, critical-infrastructure controls, procurement eligibility, support location, local representative/importer and acceptable cryptographic validations.
