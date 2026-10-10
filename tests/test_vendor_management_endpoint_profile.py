@@ -168,7 +168,7 @@ class VendorManagementEndpointProfileTests(unittest.TestCase):
         profile["scope"]["hardware_or_commercial_region"]["state"] = "assessed"
         profile["scope"]["hardware_or_commercial_region"]["value"] = "test-lab"
         profile["scope"]["hardware_or_commercial_region"]["evidence_refs"] = ["evidence:hardware-region-assessment"]
-        self.assertTrue(any("cannot be unresolved in approved_for_lab state" in error for error in self.errors(profile)))
+        self.assertEqual(self.errors(profile), [])
 
     def test_draft_cannot_carry_approval_evidence(self) -> None:
         profile = copy.deepcopy(self.fixture)
