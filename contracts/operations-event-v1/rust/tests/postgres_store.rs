@@ -913,6 +913,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         "Synthetic permanent delivery failure",
     );
     dead_letter_first["data"]["source_reference"]["resource_id"] = json!("7302");
+    dead_letter_first["subject"] = json!("incident/incident-dead-letter-order");
     assert_eq!(
         store.ingest_event(&auth, &dead_letter_first).await.unwrap(),
         IngestOutcome::Accepted { outbox_sequence: 1 }
@@ -922,6 +923,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         "Must remain blocked behind the dead-lettered predecessor",
     );
     dead_letter_successor["data"]["source_reference"]["resource_id"] = json!("7302");
+    dead_letter_successor["subject"] = json!("incident/incident-dead-letter-order");
     assert_eq!(
         store.ingest_event(&auth, &dead_letter_successor).await.unwrap(),
         IngestOutcome::Accepted { outbox_sequence: 2 }
@@ -961,6 +963,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         "Synthetic attempt ceiling probe",
     );
     exhausted_event["data"]["source_reference"]["resource_id"] = json!("7303");
+    exhausted_event["subject"] = json!("incident/incident-attempt-ceiling");
     assert_eq!(
         store.ingest_event(&auth, &exhausted_event).await.unwrap(),
         IngestOutcome::Accepted { outbox_sequence: 1 }
@@ -998,6 +1001,7 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
         "Synthetic expired-lease ceiling probe",
     );
     expired_ceiling_event["data"]["source_reference"]["resource_id"] = json!("7304");
+    expired_ceiling_event["subject"] = json!("incident/incident-expired-attempt-ceiling");
     assert_eq!(
         store.ingest_event(&auth, &expired_ceiling_event).await.unwrap(),
         IngestOutcome::Accepted { outbox_sequence: 1 }
