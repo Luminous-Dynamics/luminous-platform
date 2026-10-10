@@ -1,0 +1,277 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/vendor-management-endpoint-approval-v1.schema.json",
+  "title": "Luminous Vendor Management Endpoint Approval Record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_id",
+    "created_at",
+    "state",
+    "profile_id",
+    "profile_revision",
+    "profile_digest",
+    "adapter",
+    "target",
+    "expected_principal_ref",
+    "expected_tenant_or_org_ref",
+    "policy_revision",
+    "requested_by_ref",
+    "approver_ref",
+    "allowed_operations",
+    "not_before",
+    "expires_at",
+    "signature_scheme_ref",
+    "signing_key_ref",
+    "signed_payload_digest",
+    "signature_evidence_ref",
+    "reason_code",
+    "supersedes_decision_ref"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.vendor-management-endpoint-approval.v1"
+    },
+    "decision_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{12,128}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "state": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "revoked"
+      ]
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "profile_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "profile_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter_id",
+        "adapter_revision",
+        "vendor",
+        "product_family"
+      ],
+      "properties": {
+        "adapter_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "adapter_revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "vendor": {
+          "type": "string",
+          "minLength": 2
+        },
+        "product_family": {
+          "type": "string",
+          "minLength": 2
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model",
+        "hardware_revision",
+        "software_version",
+        "identity_digest"
+      ],
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 2
+        },
+        "hardware_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "software_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "expected_principal_ref": {
+      "type": "string",
+      "minLength": 8
+    },
+    "expected_tenant_or_org_ref": {
+      "type": "string",
+      "minLength": 8
+    },
+    "policy_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "requested_by_ref": {
+      "type": "string",
+      "minLength": 8
+    },
+    "approver_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 8
+    },
+    "allowed_operations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "inventory_read",
+          "health_read",
+          "version_read",
+          "entitlement_read",
+          "lifecycle_read"
+        ]
+      }
+    },
+    "not_before": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "signature_scheme_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 8
+    },
+    "signing_key_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 8
+    },
+    "signed_payload_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "signature_evidence_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 8
+    },
+    "reason_code": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "scope_review_required",
+        "policy_denied",
+        "authorization_withdrawn",
+        "superseded",
+        "operator_rejected",
+        null
+      ]
+    },
+    "supersedes_decision_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 8
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "const": "approved"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "approver_ref": {
+            "type": "string",
+            "minLength": 8
+          },
+          "allowed_operations": {
+            "minItems": 1
+          },
+          "signature_scheme_ref": {
+            "type": "string",
+            "minLength": 8
+          },
+          "signing_key_ref": {
+            "type": "string",
+            "minLength": 8
+          },
+          "signed_payload_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "signature_evidence_ref": {
+            "type": "string",
+            "minLength": 8
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "state": {
+            "enum": [
+              "rejected",
+              "revoked"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "reason_code": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}
