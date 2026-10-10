@@ -1,0 +1,31 @@
+{
+  "specversion": "1.0",
+  "id": "0199f3a2-5b41-7a10-8d23-1a8bfe29d641",
+  "source": "urn:luminousdynamics:integration:connectwise-connection-demo",
+  "type": "io.luminousdynamics.ops.incident.snapshot.v1",
+  "subject": "incident/incident-local-7301",
+  "time": "2026-10-09T08:00:00Z",
+  "datacontenttype": "application/json",
+  "dataschema": "https://luminousdynamics.io/contracts/operations-event-v1/payloads/incident-snapshot-v1.schema.json",
+  "tenantid": "tenant-demo-001",
+  "idempotencykey": "connectwise-psa:company-42:ticket-7301:snapshot-v1",
+  "observedat": "2026-10-09T08:00:02Z",
+  "correlationid": "workflow-0199f3a2-5b41-7a10-8d23",
+  "producersystem": "connectwise-psa",
+  "producercomponent": "synthetic-adapter",
+  "producerversion": "0.0.1-test",
+  "actorkind": "external_system",
+  "actorid": "connectwise-connection-demo",
+  "data": {
+    "source_reference": {
+      "system": "connectwise-psa",
+      "company_id": "company-42",
+      "resource_type": "service_ticket",
+      "resource_id": "7301",
+      "revision": "revision-1"
+    },
+    "status": "new",
+    "summary": "Synthetic test incident; no customer data",
+    "evidence_refs": []
+  }
+}

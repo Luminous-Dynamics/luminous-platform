@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/contracts/operations-event-v1/payloads/incident-snapshot-v1.schema.json",
+  "x-payload-schema-id": "https://luminousdynamics.io/contracts/operations-event-v1/payloads/incident-snapshot-v1.schema.json",
+  "title": "Normalized Incident Snapshot Payload V1",
+  "description": "Vendor-neutral normalized incident data for the initial integration workflow. Source references are data, not proof of identity or tenant authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source_reference", "status", "summary", "evidence_refs"],
+  "properties": {
+    "source_reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["system", "company_id", "resource_type", "resource_id", "revision"],
+      "properties": {
+        "system": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,63}$"
+        },
+        "company_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "resource_type": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_-]{1,63}$"
+        },
+        "resource_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Provider-adapter-defined stable source revision token; do not assume it is lexically ordered."
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["new", "open", "in_progress", "waiting_on_customer", "resolved", "closed", "cancelled"]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "description": "A short redacted summary. Do not place credentials, secrets, or raw diagnostic/media contents here."
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Optional normalized priority; mapping semantics must be documented by each adapter."
+    },
+    "evidence_refs": {
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifact_id", "sha256", "classification"],
+        "properties": {
+          "artifact_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "classification": {
+            "enum": ["public", "internal", "sensitive", "redacted"]
+          }
+        }
+      }
+    }
+  }
+}
