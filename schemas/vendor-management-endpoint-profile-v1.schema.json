@@ -19,8 +19,7 @@
     "egress",
     "limits",
     "privacy",
-    "source_refs",
-    "approval_evidence_refs"
+    "source_refs"
   ],
   "properties": {
     "schema_version": {
@@ -37,7 +36,6 @@
     "state": {
       "enum": [
         "draft",
-        "approved_for_lab",
         "retired"
       ]
     },
@@ -386,14 +384,6 @@
         "type": "string",
         "format": "uri",
         "pattern": "^https://"
-      }
-    },
-    "approval_evidence_refs": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "minLength": 8
       }
     }
   },
