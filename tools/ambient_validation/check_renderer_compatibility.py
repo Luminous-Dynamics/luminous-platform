@@ -43,6 +43,8 @@ class CompatibilityReport:
     manifest_scene_id: str
     profile_id: str
     renderer_commit: str
+    adapter_id: str
+    adapter_source_paths: tuple[str, ...]
     qualification_state: str
     compatible: bool
     issues: tuple[CompatibilityIssue, ...]
@@ -52,6 +54,8 @@ class CompatibilityReport:
             "manifestSceneId": self.manifest_scene_id,
             "profileId": self.profile_id,
             "rendererCommit": self.renderer_commit,
+            "adapterId": self.adapter_id,
+            "adapterSourcePaths": list(self.adapter_source_paths),
             "qualificationState": self.qualification_state,
             "compatible": self.compatible,
             "issueCount": len(self.issues),
@@ -214,7 +218,9 @@ def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> Co
         manifest_scene_id=str(manifest.get("sceneId", "")),
         profile_id=str(profile.get("profileId", "")),
         renderer_commit=str(renderer.get("commit", "")),
-        qualification_state=str(renderer.get("qualificationState", "unknown")),
+        adapter_id=str(profile["adapter"]["id"]),
+        adapter_source_paths=tuple(profile["adapter"]["sourcePaths"]),
+        qualification_state=str(profile["adapter"]["qualificationState"]),
         compatible=(len(issues) == 0),
         issues=tuple(issues),
     )
@@ -254,6 +260,9 @@ def main(argv: list[str] | None = None) -> int:
         state = "COMPATIBLE" if report.compatible else "INCOMPATIBLE"
         print(f"{state}: scene={report.manifest_scene_id} profile={report.profile_id}")
         print(f"renderer_commit={report.renderer_commit} qualification={report.qualification_state}")
+        print(f"adapter_id={report.adapter_id}")
+        for source_path in report.adapter_source_paths:
+            print(f"adapter_source={source_path}")
         for issue in report.issues:
             print(f"BLOCKER [{issue.code}] {issue.path}: {issue.message}")
     return 0 if report.compatible else 1

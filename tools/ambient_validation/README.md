@@ -18,7 +18,7 @@ Schema references are resolved only within the supplied schema document: local J
 
 ## Renderer compatibility audit
 
-This audit keeps schema validity separate from renderer compatibility and target qualification.
+This audit keeps schema validity separate from renderer compatibility and target qualification. Adapter scope is part of the report; the checked-in profile covers only the browser-WASM demo, not every host in Sovereign Boot. See [the adapter qualification matrix](../../docs/architecture/AMBIENT_ADAPTER_QUALIFICATION_MATRIX.md).
 
 Run:
 
@@ -28,7 +28,7 @@ Run:
 
 The compatibility CLI returns exit code 0 when the supplied profile declares support for every checked setting, 1 when the valid Scene Pack is incompatible, and 2 when input/schema/profile validation fails. Therefore the checked-in Sovereign Visual Core profile is expected to return exit code 1: it records the current blockers, not a supported renderer.
 
-The profile pins the exact inspected Sovereign Boot source snapshot `ab6eac9641e0673cf2de36018a35986c122b36a8` and remains `source-inspection-only`. This snapshot adds `crates/visual-pack`, a duplicate-key-aware Scene Pack v1 parser that validates engine version `1.0.0` and maps the manifest to typed renderer settings. The browser-WASM adapter consumes the parser, and the WASI CLI and capability-denied Wasmtime host also use it. The browser/WASI rendering paths accept centered-network motion and the gradient-only static fallback; they reject non-empty safe regions, unsupported compositions, assets without a trusted resolver, required external capabilities, and inputs rather than silently dropping them. The exact-head upstream CI run was queued at the last check; parser presence is not build or runtime qualification. Keep the profile `source-inspection-only` until exact-head evidence completes.
+The checked-in profile is explicitly scoped to `browser-wasm-demo` and pins source snapshot `ab6eac9641e0673cf2de36018a35986c122b36a8`; its adapter paths are `crates/visual-wasm/src/lib.rs` and `crates/visual-wasm/www/app.js`. It remains `source-inspection-only`. This pinned source contains a duplicate-key-aware Scene Pack v1 parser and maps supported settings into the renderer. The app pauses its render loop when `document.hidden`; that source supports the browser's hidden-page pause promise, not display-sleep or OS lifecycle guarantees. Do not use this profile to qualify WASI, WIT guest, Wasmtime host, or native DRM boot. See [the adapter qualification matrix](../../docs/architecture/AMBIENT_ADAPTER_QUALIFICATION_MATRIX.md).
 
 The parser explicitly validates the fixture's `engineVersion` against `1.0.0`, and the capability profile now records that implementation plus the implemented strict manifest-to-settings mapping. That does not make the whole Scene Pack compatible: the current browser/WASI rendering adapters support only centered-network motion and gradient-only `staticFallback`, reject non-empty `safeRegions`, and do not implement the fixture's edge-biased/minimal compositions. Asset bytes still require a safe host resolver and actual SHA-256 verification; signed-pack/attribution policy is separate. Browser reduced-motion and document-visibility handling exist, but OS lock/suspend/wake behavior and whole-process memory accounting remain unqualified. The profile therefore continues to fail closed for those unsupported capabilities.
 

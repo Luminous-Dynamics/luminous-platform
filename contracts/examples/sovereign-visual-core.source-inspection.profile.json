@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "profileId": "sovereign-visual-core.scene-pack.v1.inspect.2026-10-10",
+  "profileId": "sovereign-visual-core.browser-wasm.source-inspection-2026-10-10",
   "renderer": {
     "repository": "Luminous-Dynamics/sovereign-boot",
     "commit": "ab6eac9641e0673cf2de36018a35986c122b36a8",
@@ -60,7 +60,9 @@
     ]
   },
   "lifecycle": {
-    "supportedPolicies": []
+    "supportedPolicies": [
+      "onHidden:pause"
+    ]
   },
   "engineId": "mycelial-network-v1",
   "engineVersions": [
@@ -70,5 +72,13 @@
     "phrase-hash-blake3-utf8",
     "uint32-domain-separated-blake3-v1"
   ],
-  "manifestAdapterImplemented": true
+  "manifestAdapterImplemented": true,
+  "adapter": {
+    "id": "browser-wasm-demo",
+    "sourcePaths": [
+      "crates/visual-wasm/src/lib.rs",
+      "crates/visual-wasm/www/app.js"
+    ],
+    "qualificationState": "source-inspection-only"
+  }
 }

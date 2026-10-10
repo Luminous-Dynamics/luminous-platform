@@ -32,6 +32,16 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertEqual("ab6eac9641e0673cf2de36018a35986c122b36a8", self.profile["renderer"]["commit"])
         self.assertEqual("source-inspection-only", self.profile["renderer"]["qualificationState"])
 
+    def test_profile_is_scoped_to_browser_wasm_entrypoints(self):
+        issues = validate_profile(self.profile_schema, self.profile)
+        self.assertEqual([], issues, "\n".join(map(str, issues)))
+        self.assertEqual("browser-wasm-demo", self.profile["adapter"]["id"])
+        self.assertEqual(
+            ["crates/visual-wasm/src/lib.rs", "crates/visual-wasm/www/app.js"],
+            self.profile["adapter"]["sourcePaths"],
+        )
+        self.assertEqual("source-inspection-only", self.profile["adapter"]["qualificationState"])
+
     def test_mismatched_engine_id_is_rejected(self):
         candidate = copy.deepcopy(self.profile)
         candidate["engineId"] = "different-engine-v1"
@@ -54,7 +64,6 @@ class RendererCompatibilityTests(unittest.TestCase):
             "presentation.motion.unsupported",
             "presentation.composition.unsupported",
             "accessibility.reduced_motion_variant.unsupported",
-            "budget.pause_when_hidden.not_enforced",
             "budget.pause_when_display_asleep.not_enforced",
             "lifecycle.policy.unsupported",
         }.issubset(codes), f"missing expected blockers: {codes}")
@@ -76,7 +85,8 @@ class RendererCompatibilityTests(unittest.TestCase):
     def test_hidden_and_display_sleep_budgets_are_independent_host_policies(self):
         report = audit_compatibility(self.manifest, self.profile)
         codes = {item.code for item in report.issues}
-        self.assertIn("budget.pause_when_hidden.not_enforced", codes)
+        # Browser source pauses on document.hidden; it makes no display-sleep claim.
+        self.assertNotIn("budget.pause_when_hidden.not_enforced", codes)
         self.assertIn("budget.pause_when_display_asleep.not_enforced", codes)
 
         candidate = copy.deepcopy(self.profile)
@@ -89,7 +99,7 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertNotIn("budget.pause_when_hidden.not_enforced", supported_codes)
         self.assertNotIn("budget.pause_when_display_asleep.not_enforced", supported_codes)
 
-        # A suspend policy is not a substitute for the distinct display-sleep promise.
+        # A suspend policy is not a substitute for either promise.
         candidate["lifecycle"]["supportedPolicies"] = ["onSuspend:pause"]
         partial_report = audit_compatibility(self.manifest, candidate)
         partial_codes = {item.code for item in partial_report.issues}
@@ -196,6 +206,11 @@ class RendererCompatibilityTests(unittest.TestCase):
         report = audit_compatibility(self.manifest, candidate)
         self.assertTrue(report.compatible, "\n".join(f"{i.code}: {i.message}" for i in report.issues))
         self.assertEqual("source-inspection-only", report.qualification_state)
+        self.assertEqual("browser-wasm-demo", report.adapter_id)
+        self.assertEqual(
+            ("crates/visual-wasm/src/lib.rs", "crates/visual-wasm/www/app.js"),
+            report.adapter_source_paths,
+        )
 
 
 if __name__ == "__main__":
