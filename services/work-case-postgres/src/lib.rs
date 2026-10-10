@@ -194,11 +194,10 @@ impl WorkCaseRepository {
         ).execute(&mut *tx).await?;
 
         sqlx::query!(
-            r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload, created_at)
-               VALUES ($1,$2,$3,1,'io.luminousdynamics.workcase.created',$4,$5)"#,
+            r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload)
+               VALUES ($1,$2,$3,1,'io.luminousdynamics.workcase.created',$4)"#,
             principal.tenant_id, Uuid::new_v4(), case_id,
-            Json(json!({"tenant_id": principal.tenant_id, "case_id": case_id, "revision": 1, "activity_id": activity_id})),
-            occurred_at
+            Json(json!({"tenant_id": principal.tenant_id, "case_id": case_id, "revision": 1, "activity_id": activity_id}))
         ).execute(&mut *tx).await?;
 
         let created = WorkCase::from((row, Vec::new(), Vec::new()));
@@ -289,12 +288,12 @@ impl WorkCaseRepository {
             Json(json!({"from": current.state.as_db_str(), "to": target.as_db_str()}))
         ).execute(&mut *tx).await?;
         sqlx::query!(
-            r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload, created_at)
-               VALUES ($1,$2,$3,$4,'io.luminousdynamics.workcase.state_changed',$5,$6)"#,
+            r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload)
+               VALUES ($1,$2,$3,$4,'io.luminousdynamics.workcase.state_changed',$5)"#,
             principal.tenant_id, Uuid::new_v4(), case_id, expected_revision + 1,
             Json(json!({"tenant_id": principal.tenant_id, "case_id": case_id,
                 "revision": expected_revision + 1, "activity_id": activity_id,
-                "from": current.state.as_db_str(), "to": target.as_db_str()})), occurred_at
+                "from": current.state.as_db_str(), "to": target.as_db_str()}))
         ).execute(&mut *tx).await?;
 
         let updated = WorkCase::from((row, current.external_refs, current.evidence_refs));
@@ -623,6 +622,10 @@ mod tests {
                 has_table_privilege(current_user, 'case_outbox', 'UPDATE') AS "outbox_table_update!",
                 has_table_privilege(current_user, 'case_outbox', 'DELETE') AS "outbox_table_delete!",
                 has_column_privilege(current_user, 'case_outbox', 'tenant_id', 'INSERT') AS "outbox_tenant_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'outbox_id', 'INSERT') AS "outbox_id_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'case_id', 'INSERT') AS "outbox_case_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'revision', 'INSERT') AS "outbox_revision_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'event_type', 'INSERT') AS "outbox_event_type_insert!",
                 has_column_privilege(current_user, 'case_outbox', 'payload', 'INSERT') AS "outbox_payload_insert!",
                 has_column_privilege(current_user, 'case_outbox', 'created_at', 'INSERT') AS "outbox_created_at_insert!",
                 has_column_privilege(current_user, 'case_outbox', 'status', 'UPDATE') AS "outbox_status_update!",
@@ -631,6 +634,7 @@ mod tests {
                 has_column_privilege(current_user, 'case_outbox', 'lease_owner', 'INSERT') AS "outbox_lease_owner_insert!",
                 has_column_privilege(current_user, 'case_outbox', 'lease_until', 'INSERT') AS "outbox_lease_until_insert!",
                 has_column_privilege(current_user, 'case_outbox', 'delivered_at', 'UPDATE') AS "outbox_delivered_at_update!",
+                has_column_privilege(current_user, 'case_outbox', 'delivered_at', 'INSERT') AS "outbox_delivered_at_insert!",
                 has_table_privilege(current_user, 'case_activity', 'UPDATE') AS "activity_update!""#
         ).fetch_one(&pool).await.expect("read application-role privilege boundary");
 
@@ -640,14 +644,17 @@ mod tests {
         assert!(!privileges.outbox_table_insert, "outbox INSERT must be column-scoped");
         assert!(!privileges.outbox_table_update, "the current service has no dispatcher update capability");
         assert!(!privileges.outbox_table_delete, "outbox rows must not be deleted by the application role");
-        assert!(privileges.outbox_tenant_insert && privileges.outbox_payload_insert && privileges.outbox_created_at_insert,
+        assert!(privileges.outbox_tenant_insert && privileges.outbox_id_insert && privileges.outbox_case_insert
+            && privileges.outbox_revision_insert && privileges.outbox_event_type_insert && privileges.outbox_payload_insert,
             "create and transition paths need their explicit outbox event columns");
+        assert!(!privileges.outbox_created_at_insert, "outbox creation time must be set by the database clock");
         assert!(!privileges.outbox_status_update, "outbox delivery state belongs to a qualified dispatcher");
         assert!(!privileges.outbox_status_insert, "the runtime role must use the database default outbox status");
         assert!(!privileges.outbox_attempts_insert, "the runtime role must use the database default attempt counter");
         assert!(!privileges.outbox_lease_owner_insert, "outbox lease ownership belongs to the dispatcher");
         assert!(!privileges.outbox_lease_until_insert, "outbox lease fields belong to the dispatcher");
         assert!(!privileges.outbox_delivered_at_update, "delivery acknowledgement belongs to the dispatcher");
+        assert!(!privileges.outbox_delivered_at_insert, "runtime callers cannot backdate or pre-acknowledge delivery");
         assert!(!privileges.activity_update, "activity is append-only");
     }
 
