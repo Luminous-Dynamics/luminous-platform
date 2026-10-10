@@ -105,7 +105,28 @@ Stop and preserve a redacted record when the destination, tenant/account identit
 
 Do not retry by weakening TLS, accepting a new host key without out-of-band verification, removing a tenant check, following an unapproved redirect, or broadening an endpoint allowlist. A changed endpoint is a new profile revision and may require new lab evidence and authorization.
 
-## 8. Current implementation slice
+## 8. External approval record — deliberately separate from profile
+
+A profile describes a destination and its connection constraints; it cannot authorize itself. A separate approval record is versioned in [vendor-management-endpoint-approval-v1.schema.json](../schemas/vendor-management-endpoint-approval-v1.schema.json), with a [semantic binding checker](../tools/validate_vendor_management_endpoint_approval.py) and synthetic pending fixture.
+
+The decision record binds the canonical profile digest, profile revision, adapter ID/source revision, exact target model/hardware/software identity, principal and tenant/org scope, policy revision, requestor, distinct approver, an explicit allowlist of read-only operations, and a bounded validity interval. The schema makes pending records non-authorizing and prohibits write/lifecycle/reflash operations from this read-only approval family. Rejected/revoked decisions require signed-decision metadata; revocation references the prior decision.
+
+The validator checks record structure and cross-field/profile binding only. It does **not** cryptographically verify signature bytes, authenticate the signing key against a trusted identity registry, perform revocation lookup, or authorize a connection. Runtime enforcement must verify the signed payload digest and signature using a versioned trusted key/scheme policy, then verify current state, validity interval and revocation before credential use. The stable evidence reference alone is never proof of signature validity or authority.
+
+The frozen profile digest uses this constrained profile schema's deterministic canonical JSON representation (sorted ASCII schema keys, compact JSON, UTF-8, no floating-point values) followed by SHA-256. This is a Luminous contract version, not a blanket claim of complete RFC 8785 implementation. Changing canonicalization requires a version bump and new binding evidence.
+
+Contract commands:
+
+```sh
+python tools/validate_vendor_management_endpoint_profile.py
+python -m unittest discover -s tests -p "test_vendor_management_endpoint_profile.py" -v
+python tools/validate_vendor_management_endpoint_approval.py
+python -m unittest discover -s tests -p "test_vendor_management_endpoint_approval.py" -v
+```
+
+Both validators are intended to be network-free. Passing these synthetic contracts is not device qualification, signer authentication, customer authorization, or production readiness.
+
+## 9. Current implementation slice
 
 The repository now contains these initial contract artifacts:
 
@@ -126,7 +147,7 @@ The profile itself is never an approval. Its only lifecycle states are `draft` a
 
 Evidence consumers must compute a profile digest from the complete frozen profile using a single specified canonicalization contract (recommended: RFC 8785 JSON Canonicalization Scheme followed by SHA-256) and place that digest in the external signed work/evidence record. Do not store a self-referential digest inside the profile. The independent verifier must recompute the digest from the exact profile bytes/parsed value and refuse a mismatch.
 
-## 9. Definition of done for the endpoint gate
+## 10. Definition of done for the endpoint gate
 
 - A versioned endpoint profile schema and strict semantic validator exist.
 - The profile separates deployment jurisdiction from endpoint origin and optional vendor-specific dimensions.
