@@ -376,9 +376,9 @@ pub fn parse_six_list_one_xml(input: &str) -> Result<SixListOneImport, SixXmlErr
                         let builder = entry.as_ref().expect("entry checked");
                         if builder.fields.contains_key(&name) { return Err(fail(format!("duplicate {name} field in record {source_entry_count}"))); }
                         if empty {
-                            entry.as_mut().expect("entry checked").fields.insert(name, String::new());
+                            entry.as_mut().expect("entry checked").fields.insert(name.clone(), String::new());
                         } else {
-                            active_field = Some(name);
+                            active_field = Some(name.clone());
                             field_text.clear();
                         }
                     }

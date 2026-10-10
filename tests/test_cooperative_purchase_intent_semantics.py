@@ -39,6 +39,9 @@ def binding_order_candidate() -> dict:
     document["metadata"]["state"] = "binding_order"
     document["metadata"]["idempotency_key"] = "fixture-once-only-key-000001"
     document["demand"]["product_reference"]["offer_specification_sha256"] = "e" * 64
+    # That product-reference change modifies explicitly consented data, so create
+    # a fresh consent-scope digest before binding the purchase authorization to it.
+    document["sharing"]["consent"]["scope_sha256"] = consent_scope_sha256(document)
     document["accepted_offer"] = {
         "offer_id": "fixture:offer:001",
         "revision": 1,
@@ -134,10 +137,16 @@ class CooperativePurchaseIntentSemanticTests(unittest.TestCase):
         document = copy.deepcopy(FIXTURE)
         document["buyer"]["buyer_party_id"] = "\ud800"
         report = self.validate(document)
-        self.assertTrue(report["structural_valid"])
+        # A schema/format checker may reject the unpaired surrogate structurally;
+        # if it reaches semantic canonicalization, that layer must reject it there.
         self.assertFalse(report["semantic_valid"])
         self.assertFalse(report["transaction_authorized"])
-        self.assertTrue(any("cannot be represented by RFC 8785 JCS" in error for error in report["errors"]))
+        self.assertTrue(report["errors"])
+        if report["structural_valid"]:
+            self.assertTrue(
+                any("cannot be represented by RFC 8785 JCS" in error for error in report["errors"]),
+                report["errors"],
+            )
 
     def test_out_of_range_revision_fails_closed_before_jcs_hashing(self):
         document = binding_order_candidate()

@@ -76,14 +76,20 @@ class CooperativePurchaseIntentSchemaTests(unittest.TestCase):
         document["metadata"]["revision"] = 9007199254740992
         errors = self.errors(document)
         self.assertTrue(errors)
-        self.assertTrue(any("revision" in error.message for error in errors))
+        self.assertTrue(
+            any(list(error.absolute_path) == ["metadata", "revision"] for error in errors),
+            [error.message for error in errors],
+        )
 
     def test_offer_revision_outside_jcs_safe_integer_range_is_rejected(self):
         document = binding_order_candidate()
         document["accepted_offer"]["revision"] = 9007199254740992
         errors = self.errors(document)
         self.assertTrue(errors)
-        self.assertTrue(any("revision" in error.message for error in errors))
+        self.assertTrue(
+            any(list(error.absolute_path) == ["accepted_offer", "revision"] for error in errors),
+            [error.message for error in errors],
+        )
 
     def test_binding_order_requires_product_specification_digest(self):
         document = binding_order_candidate()
@@ -135,7 +141,10 @@ class CooperativePurchaseIntentSchemaTests(unittest.TestCase):
         errors = self.errors(document)
         self.assertTrue(errors)
         self.assertTrue(any("evidence_sha256" in error.message for error in errors))
-        self.assertTrue(any("true" in error.message for error in errors))
+        self.assertTrue(
+            any(list(error.absolute_path) == ["sharing", "consent", "revocable"] for error in errors),
+            [error.message for error in errors],
+        )
 
     def test_money_and_quantity_use_decimal_strings(self):
         document = binding_order_candidate()
@@ -143,7 +152,13 @@ class CooperativePurchaseIntentSchemaTests(unittest.TestCase):
         document["accepted_offer"]["accepted_total"]["amount"] = 2500.0
         errors = self.errors(document)
         self.assertTrue(errors)
-        self.assertTrue(any("requested_quantity" in error.message or "does not match" in error.message for error in errors))
+        paths = {tuple(error.absolute_path) for error in errors}
+        self.assertIn(("demand", "requested_quantity"), paths, [error.message for error in errors])
+        self.assertIn(
+            ("accepted_offer", "accepted_total", "amount"),
+            paths,
+            [error.message for error in errors],
+        )
 
 
 if __name__ == "__main__":

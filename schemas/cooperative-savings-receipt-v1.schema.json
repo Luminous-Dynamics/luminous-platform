@@ -310,8 +310,7 @@
           }
         }
       }
-    },
-    null
+    }
   ],
   "$defs": {
     "currencyCode": {
