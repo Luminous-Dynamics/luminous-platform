@@ -18,9 +18,9 @@ A renderer core, manifest parser, host adapter, and displayed product are differ
 
 ## Checked-in compatibility profile
 
-The profile at [`sovereign-visual-core.source-inspection.profile.json`](../../contracts/examples/sovereign-visual-core.source-inspection.profile.json) is explicitly scoped to **browser-wasm-demo** and names the two source paths backing that scope. It declares only browser motion/composition values identified in source. It records `onHidden:pause` because the browser loop checks `document.hidden`; it does not declare display-sleep handling, OS lock behavior, suspend behavior, or wake reinitialization.
+The profile at [`sovereign-visual-core.source-inspection.profile.json`](../../contracts/examples/sovereign-visual-core.source-inspection.profile.json) is explicitly scoped to **browser-wasm-demo** and records the two source paths and their Git blob IDs backing that scope. It declares only browser motion/composition values identified in source. It records `onHidden:pause` because the browser loop checks `document.hidden`; it does not declare display-sleep handling, OS lock behavior, suspend behavior, or wake reinitialization.
 
-Every compatibility report includes the adapter ID and entrypoint paths so saved reports preserve their target context. Profiles for WASI, WIT, Wasmtime, and native boot need independent capability declarations before they can support adoption claims.
+Every compatibility report includes the adapter ID plus each entrypoint path and Git blob ID so saved reports preserve target context and source identity. Profiles for WASI, WIT, Wasmtime, and native boot need independent capability declarations before they can support adoption claims.
 
 ## Evidence gate per adapter
 

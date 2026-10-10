@@ -75,10 +75,16 @@
   "manifestAdapterImplemented": true,
   "adapter": {
     "id": "browser-wasm-demo",
-    "sourcePaths": [
-      "crates/visual-wasm/src/lib.rs",
-      "crates/visual-wasm/www/app.js"
-    ],
-    "qualificationState": "source-inspection-only"
+    "qualificationState": "source-inspection-only",
+    "sourceFiles": [
+      {
+        "path": "crates/visual-wasm/src/lib.rs",
+        "blobSha": "98fed90a641d0cf9eb19744a4c701459ec47a656"
+      },
+      {
+        "path": "crates/visual-wasm/www/app.js",
+        "blobSha": "a1bff649baf62a9dc7f6248b39a8f8df11a65a22"
+      }
+    ]
   }
 }

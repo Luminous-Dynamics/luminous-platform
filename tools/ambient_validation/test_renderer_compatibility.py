@@ -34,11 +34,14 @@ class RendererCompatibilityTests(unittest.TestCase):
 
     def test_profile_is_scoped_to_browser_wasm_entrypoints(self):
         issues = validate_profile(self.profile_schema, self.profile)
-        self.assertEqual([], issues, "\n".join(map(str, issues)))
+        self.assertEqual([], issues, "\\n".join(map(str, issues)))
         self.assertEqual("browser-wasm-demo", self.profile["adapter"]["id"])
         self.assertEqual(
-            ["crates/visual-wasm/src/lib.rs", "crates/visual-wasm/www/app.js"],
-            self.profile["adapter"]["sourcePaths"],
+            [
+                {"path": "crates/visual-wasm/src/lib.rs", "blobSha": "98fed90a641d0cf9eb19744a4c701459ec47a656"},
+                {"path": "crates/visual-wasm/www/app.js", "blobSha": "a1bff649baf62a9dc7f6248b39a8f8df11a65a22"},
+            ],
+            self.profile["adapter"]["sourceFiles"],
         )
         self.assertEqual("source-inspection-only", self.profile["adapter"]["qualificationState"])
 
@@ -208,8 +211,9 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertEqual("source-inspection-only", report.qualification_state)
         self.assertEqual("browser-wasm-demo", report.adapter_id)
         self.assertEqual(
-            ("crates/visual-wasm/src/lib.rs", "crates/visual-wasm/www/app.js"),
-            report.adapter_source_paths,
+            ("crates/visual-wasm/src/lib.rs", "98fed90a641d0cf9eb19744a4c701459ec47a656"),
+             ("crates/visual-wasm/www/app.js", "a1bff649baf62a9dc7f6248b39a8f8df11a65a22"),
+            report.adapter_source_files,
         )
 
 

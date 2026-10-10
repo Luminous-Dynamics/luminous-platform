@@ -44,7 +44,7 @@ class CompatibilityReport:
     profile_id: str
     renderer_commit: str
     adapter_id: str
-    adapter_source_paths: tuple[str, ...]
+    adapter_source_files: tuple[tuple[str, str], ...]
     qualification_state: str
     compatible: bool
     issues: tuple[CompatibilityIssue, ...]
@@ -55,7 +55,7 @@ class CompatibilityReport:
             "profileId": self.profile_id,
             "rendererCommit": self.renderer_commit,
             "adapterId": self.adapter_id,
-            "adapterSourcePaths": list(self.adapter_source_paths),
+            "adapterSourceFiles": [{"path": path, "blobSha": blob_sha} for path, blob_sha in self.adapter_source_files],
             "qualificationState": self.qualification_state,
             "compatible": self.compatible,
             "issueCount": len(self.issues),
@@ -219,7 +219,7 @@ def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> Co
         profile_id=str(profile.get("profileId", "")),
         renderer_commit=str(renderer.get("commit", "")),
         adapter_id=str(profile["adapter"]["id"]),
-        adapter_source_paths=tuple(profile["adapter"]["sourcePaths"]),
+        adapter_source_files=tuple((item["path"], item["blobSha"]) for item in profile["adapter"]["sourceFiles"]),
         qualification_state=str(profile["adapter"]["qualificationState"]),
         compatible=(len(issues) == 0),
         issues=tuple(issues),
@@ -261,8 +261,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{state}: scene={report.manifest_scene_id} profile={report.profile_id}")
         print(f"renderer_commit={report.renderer_commit} qualification={report.qualification_state}")
         print(f"adapter_id={report.adapter_id}")
-        for source_path in report.adapter_source_paths:
-            print(f"adapter_source={source_path}")
+        for source_path, blob_sha in report.adapter_source_files:
+            print(f"adapter_source={source_path} blob_sha={blob_sha}")
         for issue in report.issues:
             print(f"BLOCKER [{issue.code}] {issue.path}: {issue.message}")
     return 0 if report.compatible else 1

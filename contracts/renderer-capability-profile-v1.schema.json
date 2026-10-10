@@ -299,7 +299,7 @@
       "additionalProperties": false,
       "required": [
         "id",
-        "sourcePaths",
+        "sourceFiles",
         "qualificationState"
       ],
       "properties": {
@@ -312,23 +312,37 @@
             "native-drm-boot"
           ]
         },
-        "sourcePaths": {
-          "type": "array",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 240,
-            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
-          }
-        },
         "qualificationState": {
           "enum": [
             "source-inspection-only",
             "compile-qualified",
             "runtime-qualified"
           ]
+        },
+        "sourceFiles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "blobSha"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240,
+                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+              },
+              "blobSha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              }
+            }
+          }
         }
       }
     }
