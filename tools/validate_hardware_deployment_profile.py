@@ -77,12 +77,21 @@ def profile_errors(
         if flow["id"] in flow_ids:
             errors.append(f"{prefix}.id duplicates {flow['id']!r}")
         flow_ids.add(flow["id"])
-        for source in flow["from"]:
-            if source in segments_by_id:
-                continue
-            if source in {"approved WAN egress", "site networks", "named services"}:
-                continue
-            errors.append(f"{prefix}.from references unknown segment or named zone {source!r}")
+        for field in ("from", "to"):
+            for zone in flow[field]:
+                if zone in segments_by_id:
+                    continue
+                if zone in {"approved WAN egress", "site networks", "named services"}:
+                    continue
+                errors.append(f"{prefix}.{field} references unknown segment or named zone {zone!r}")
+
+    assumptions = profile["assumptions"]
+    if not (
+        assumptions["managed_endpoints_min"]
+        <= assumptions["managed_endpoints_target"]
+        <= assumptions["managed_endpoints_max"]
+    ):
+        errors.append("$.assumptions endpoint sizing must satisfy min <= target <= max")
 
     guest = segments_by_id.get("guest")
     if guest is not None:
