@@ -171,12 +171,13 @@
     },
     {
       "id": "opentitan-earl-grey",
-      "name": "OpenTitan Earl Grey silicon root-of-trust project",
+      "name": "OpenTitan Earl Grey production silicon and open design ecosystem",
       "item_type": "hardware_design_family",
       "category": "root_of_trust",
       "source_urls": [
-        "https://opentitan.org/documentation/",
-        "https://opentitan.org/documentation/hw/"
+        "https://opentitan.org/toplevels/",
+        "https://opentitan.org/history/",
+        "https://opentitan.org/documentation/"
       ],
       "source_revision": null,
       "source_completeness": "native_design_files_visible_bom_unverified",
@@ -188,11 +189,12 @@
       "deployment_profile": null,
       "named_model_or_revision": null,
       "last_checked": "2026-10-10",
-      "observed_evidence": "OpenTitan publishes open silicon root-of-trust design and implementation documentation; project design openness does not identify a validated, traceable chip/module for a finished Luminous product.",
+      "observed_evidence": "Official OpenTitan documentation states that Earl Grey production silicon is in production and release v1.0.0 is the first production silicon; the project timeline records fabrication beginning with Nuvoton in February 2025 and the first production deployment in Chromebooks in March 2026. Luminous has not selected a purchasable part/package/module or verified its supply, integration fit, certificate scope, or deployment suitability.",
       "open_blockers": [
-        "Select a concrete manufactured part and supplier if one is available for intended use.",
-        "Review exact RTL, verification, silicon stepping, errata, lifecycle and root-key provisioning.",
-        "Establish integration design, manufacturing provenance, validation status and recovery/replaceability."
+        "Identify the concrete Nuvoton part number, package and ordering channel; verify supply and lifecycle for the target region.",
+        "Review exact RTL/release and silicon stepping, datasheet, errata, validation evidence, product security advisories and license terms.",
+        "Establish how keys are provisioned and protected, the trust/attestation interface, secure recovery, and whether the proposed module fits the target host.",
+        "Keep upstream chip production status separate from Luminous integration qualification and any customer certification/authorization."
       ],
       "qualification_evidence_refs": []
     },
@@ -628,6 +630,60 @@
         "Map relevant controls to each deployment profile and procurement contract.",
         "Maintain supplier, component provenance, vulnerability, obsolescence and exception evidence.",
         "Use other jurisdictional requirements where NIST is not the applicable authority."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "framework-laptop13-amd-ai300",
+      "name": "Framework Laptop 13 AMD Ryzen AI 300 Series (exact configuration still to qualify)",
+      "item_type": "hardware_product_or_board",
+      "category": "endpoint",
+      "source_urls": [
+        "https://frame.work/laptop13?tab=linux",
+        "https://wiki.nixos.org/wiki/Hardware/Framework"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "unknown_or_not_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": "Framework Laptop 13 AMD Ryzen AI 300 Series; exact RAM, wireless module, board revision and firmware not selected",
+      "last_checked": "2026-10-10",
+      "observed_evidence": "The official Framework Linux compatibility page lists the Ryzen AI 300 Series model and lists NixOS as community-supported, with Wi-Fi/Bluetooth working out of the box but fingerprint-reader setup required; support differs by generation/configuration. These are vendor compatibility notes, not a Luminous NixOS image or endpoint security qualification.",
+      "open_blockers": [
+        "Verify current South African ordering, import, warranty, repair and spare-part support; do not infer local stock from the vendor product page.",
+        "Choose exact mainboard generation, RAM, wireless module and firmware baseline and pin the deployable configuration.",
+        "Qualify secure boot/TPM, firmware update and rollback, IOMMU, sleep/resume, docking, device enrollment and recovery for the intended NixOS profile.",
+        "Check lifecycle/support terms, firmware/proprietary binary dependencies, hardware revision changes and replacement-unit reproducibility."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "south-africa-dpsa-public-service-ict-security",
+      "name": "South African DPSA public-service ICT/security policy index (applicability review required)",
+      "item_type": "standards_programme",
+      "category": "security_assurance",
+      "source_urls": [
+        "https://www.dpsa.gov.za/policy-updates/e-gov/e_government/standards/"
+      ],
+      "source_revision": null,
+      "source_completeness": "specification_or_partial_files",
+      "license_status": "not_applicable_reference",
+      "bill_of_materials_status": "not_applicable_or_unknown",
+      "availability_status": "not_applicable",
+      "maturity": "REFERENCE_ONLY",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "The official DPSA standards index lists public-service information-security directive material (2022), a Public Service ICT Security Assessment Standard and checklist (2018), ICT Security Guidelines and service-continuity guidance (2017), MIOS v6, and older policy items including FOSS policy and MISS. The index alone does not establish current applicability to a particular agency, contract or information class.",
+      "open_blockers": [
+        "Retrieve and review the actual signed directive, circulars and current agency ICT/security policies; confirm whether each older standard remains applicable or has been superseded.",
+        "Map each applicable requirement to product controls, evidence, procurement clauses, data classification and acceptance tests.",
+        "Confirm with the contracting authority whether additional sector-specific, critical-infrastructure, privacy, cryptographic or cross-border requirements apply."
       ],
       "qualification_evidence_refs": []
     }
