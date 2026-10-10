@@ -114,7 +114,8 @@
         "limits": [
           "DHCP",
           "DNS through approved resolver",
-          "established outbound traffic"
+          "established outbound traffic",
+          "Deny all site-private IPv4 prefixes and internal IPv6 prefixes"
         ],
         "description": "Deny all internal prefixes and inter-VLAN destinations, including IPv6."
       },
