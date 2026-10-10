@@ -42,6 +42,7 @@ Source: https://www.sita.co.za/content/sita-effective-panel-contracts
 | 6611_2168_2026 | Three-year LAN cabling and server-room infrastructure maintenance/support — CSPS | 13 Oct 2026 | Confirm in the downloaded pack | Better aligned to a qualified local cabling/infrastructure supplier; Luminous should only participate through an explicitly permitted, competent delivery arrangement. |
 | 6615-AH-2026 | Network switches and SFP modules — Military Health Formation | 16 Oct 2026 | Compulsory virtual briefing listed for 7 Oct 2026 | **Blocked unless** the required briefing was attended and the pack confirms eligibility. Deadline alone does not reopen a missed mandatory briefing. |
 | 6619_AH_2026 | Network switches and SFP modules — SA Army HQ, Bester Building | 14 Oct 2026 | Compulsory virtual briefing listed for 5 Oct 2026 | **Blocked unless** the required briefing was attended and the tender pack explicitly permits participation. |
+| 6590_2168_2026 | LAN infrastructure installation — SA Naval Station Port Elizabeth | 16 Oct 2026 (extension shown) | Compulsory virtual briefing listed for 11 Sep 2026 | **Blocked unless** the required briefing was attended and eligibility is established; a later closing date does not cure a missed compulsory briefing. |
 | 6621_2168_2026 | LAN infrastructure installation — SA Army HQ, Bester Building | 30 Oct 2026 | Compulsory virtual briefing listed for 16 Oct 2026 at 11:30 | **Watch / conditional lead.** Download and review the pack before the briefing; confirm the permitted supplier route, technical scope and attendance process. The meeting is a future obligation as of this review date, not a completed gate. |
 
 Source: https://rfq.sita.co.za/RFQ/RFQInvitations.asp
@@ -80,7 +81,7 @@ Official ICASA guidance says relevant communications equipment must be type-appr
 | Component | Current research direction | Exit evidence before purchase/qualification |
 |---|---|---|
 | Gateway | OpenWrt One 1 for **lab only**; production NGFW is a separate line | Exact board lot/revision, supported firmware, source/license review, full BOM status, checksum/signature path, recovery test, measured VLAN/firewall/VPN throughput, local sourcing evidence. Upstream notes a physical M.2 post detail on some later batches; inspect the actual unit. |
-| Switch | Compare current, exact revisions of listed candidates | Written South African quotes; firmware/lifecycle evidence; tested trunk/access ports, ACLs, DHCP protections, management isolation, IPv4 and IPv6 policy, PoE budget and config restore. |
+| Switch | Compare the current orderable Omada model/revision; do not freeze TL-SG3210XHP-M2 V1 from a generic listing | TP-Link US documentation labels TL-SG3210XHP-M2 V1 end-of-sale and identifies a newer SG3210XHP-M2; TP-Link South Africa still has a V1 page, so reconcile the exact local SKU, revision, availability, firmware support and warranty with a written local quote. Then test trunk/access ports, ACLs, DHCP protections, management isolation, IPv4/IPv6 policy, PoE budget and config restore. Sources: https://www.tp-link.com/us/business-networking/omada-switch-access-pro/tl-sg3210xhp-m2/v1/ and https://www.tp-link.com/za/business-networking/managed-switch/tl-sg3210xhp-m2/v1/. |
 | AP | EAP650 is a lead, not a selection | Exact SKU and ICASA path where applicable; local controller mode; VLAN/SSID and guest isolation tests; legal country/RF configuration; WAN/controller outage behavior. |
 | Server | PowerEdge T160 is an unconfigured reference candidate | Line-item SKU quote; ECC RAM, TPM, storage/controller, NIC, firmware and warranty; NixOS and iDRAC tests; dedicated management isolation; power/thermal and restore measurements. |
 | Endpoint | Framework Laptop 13 Ryzen AI 300 is a managed-endpoint lead | Exact locally serviceable SKU; signed boot/Secure Boot custom-key and firmware-update drill; encryption recovery; NixOS driver baseline; local warranty and replacement path. |
@@ -92,7 +93,22 @@ Official ICASA guidance says relevant communications equipment must be type-appr
 
 The current partial ZAR subtotal in the profile is only the access point plus a low-end server marketplace comparison (**ZAR 29,428–61,848** as checked 10 October 2026). It excludes most of the system, does not reflect the desired server configuration, and is neither a quote nor a total cost of ownership. Keep the UPS entry outside that subtotal unless the arithmetic and included-component list are explicitly updated together.
 
-## 5. Qualification sequence and release gates
+## 5. Local supplier quote leads — not prequalified partners
+
+The following Johannesburg-area contacts are discovery leads for requesting comparable, written quotes. Business-directory presence does not establish manufacturer authorization, stock, tender eligibility, panel membership, supplier quality, or willingness to provide government-grade SLAs. Independently verify registered company details, channel authorization for the exact manufacturer/SKU, return/RMA process, warranties, local spares, traceability, and written support commitments.
+
+| Quote category | Lead | Contact / location | Suggested request |
+|---|---|---|---|
+| Network, switching and access-layer options | [Duxbury Networking](https://www.duxbury.co.za/connect-with-us/) | +27 11 351 9800; Block 2, Riviera Office Park, 66 Oxford Road, Johannesburg | Ask whether they can quote the exact current South African TL-SG3210XHP-M2/SG3210XHP-M2 revision, EAP650 hardware revision, supported firmware, authorized channel, lead time, RMA and lifecycle evidence. Their public dealer page says they are trade-only and require an account approval process; eligibility as a reseller is therefore an open gate. |
+| Networking equipment | The Networking Warehouse | +27 11 805 4111; Unit 2, Midrand Junxion, 940 Old Pretoria Road, Halfway House, Midrand | Request competing switch/AP SKUs, SFP/SFP+ compatibility confirmation, exact hardware/firmware revision, stock/lead time, warranty, support options and full line-item pricing. |
+| Server / compute | Server Warehouse (Pty) Ltd | +27 12 012 5044; 13 Camden Place, Midstream Estate, Olifantsfontein | Request a build-specific server quote with CPU, ECC RAM, TPM, NIC/storage controller, enterprise drives, iDRAC/BMC, rails/power where needed, warranty SLA, NixOS/firmware caveats and replacement lead time. |
+| UPS / power | [PSS (UPS) Distributors](https://www.pssups.co.za/) | +27 11 608 4259; 19 Angus Crescent, Longmeadow Business Park East, Modderfontein/Edenvale | Request exact APC model and South African plug/outlet SKU, battery replacement price/availability, warranty, stock, load/runtime sizing, telemetry compatibility and service response. Verify current website/contact details before outreach. |
+
+For each class, seek **two independent quotes** on the same configuration where practical. Request a quote expiry date and distinguish VAT, shipping, import charges, installation, licensing, three-year support, and optional line items. Do not combine prices from incompatible hardware revisions or marketing configurations into a claimed system total.
+
+The immediate switching decision should remain **H0 / candidate** until this manufacturer-revision mismatch is resolved and the chosen exact unit passes the physical network contract. A vendor listing or old manufacturer page does not satisfy that gate.
+
+## 6. Qualification sequence and release gates
 
 Run these as ordered, evidence-producing gates. A blocked gate prevents progression; a simulation or schema pass cannot replace a physical observation.
 
@@ -116,11 +132,11 @@ Run these as ordered, evidence-producing gates. A blocked gate prevents progress
 
 Each evidence packet must contain raw observations, expected-vs-actual outcome, exact subject identity, tool/test versions, test-run URL and artifact digests, assessor, time, exceptions and remediation owner. Preserve failures; don't rewrite the record as a pass after remediation without running and capturing the test again.
 
-## 6. Stop conditions
+## 7. Stop conditions
 
 Stop the procurement or release path if any of these is true: a required compulsory briefing was missed; bidder/supplier eligibility is uncertain; current legal status or procurement terms are unverified; the advertised SKU does not match the physical unit; firmware/source/license/BOM claims cannot be substantiated; the device cannot be updated and recovered safely; IPv6 bypasses network segmentation; no independent recovery/restore works; local regulatory approval remains unresolved; or support, SLA, warranty and lifecycle commitments are absent.
 
-## 7. Review cadence
+## 8. Review cadence
 
 - Recheck open RFQ pages and amendments before each internal go/no-go and no later than two business days before closing.
 - Recheck legal/procurement framework and SITA effective panels before every bid; preserve the official source and date of retrieval.
