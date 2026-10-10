@@ -165,6 +165,7 @@ class VendorOperationReceiptTests(unittest.TestCase):
             "authorized_prestate_digest": receipt["intent"]["prestate_digest"],
             "authorized_policy_revision": receipt["intent"]["policy_revision"],
             "authorized_profile_digest": receipt["intent"]["profile_digest"],
+            "authorized_prestate_max_age_seconds": receipt["intent"]["prestate_max_age_seconds"],
             "signature_evidence_refs": ["evidence:signed-approval"],
         })
         errors = self.errors(receipt)
@@ -180,11 +181,34 @@ class VendorOperationReceiptTests(unittest.TestCase):
             "actor_ref": "principal:fixture-executor",
             "evidence_refs": ["evidence:fixture-before-apply"],
             "prestate_digest": receipt["intent"]["prestate_digest"],
+            "apply_prestate_observed_at": "2026-10-10T19:21:59+02:00",
+            "apply_prestate_observation_ref": "evidence:fixture-fresh-prestate-readback",
         })
         errors = self.errors(receipt)
         self.assertTrue(any("verified before APPLY_STARTED" in error for error in errors))
         self.assertTrue(any("authorization must be verified" in error for error in errors))
         self.assertTrue(any("recovery_evidence_refs are required before any mutation starts" in error for error in errors))
+
+    def test_apply_time_prestate_observation_must_be_fresh(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        apply_event = next(item for item in receipt["journal"] if item["state"] == "APPLY_STARTED")
+        # Re-read occurs at authorization time, 60 seconds before apply; policy permits only 30.
+        apply_event["apply_prestate_observed_at"] = "2026-10-10T19:21:00+02:00"
+        errors = self.errors(receipt)
+        self.assertTrue(any("age exceeds the authorized maximum" in error for error in errors))
+
+    def test_apply_time_prestate_observation_must_follow_authorization(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        apply_event = next(item for item in receipt["journal"] if item["state"] == "APPLY_STARTED")
+        apply_event["apply_prestate_observed_at"] = "2026-10-10T19:20:59+02:00"
+        errors = self.errors(receipt)
+        self.assertTrue(any("must not predate verified authorization" in error for error in errors))
+
+    def test_authorization_must_bind_prestate_freshness_limit(self) -> None:
+        receipt = self._authorization_verified_receipt()
+        receipt["authorization"]["authorized_prestate_max_age_seconds"] = 300
+        errors = self.errors(receipt)
+        self.assertTrue(any("authorized_prestate_max_age_seconds" in error for error in errors))
 
     def test_expired_authorization_cannot_start_mutation(self) -> None:
         receipt = self._authorized_applied_receipt()
@@ -372,6 +396,8 @@ class VendorOperationReceiptTests(unittest.TestCase):
                 "actor_ref": "principal:fixture-executor",
                 "evidence_refs": ["evidence:prestate-recheck"],
                 "prestate_digest": receipt["intent"]["prestate_digest"],
+                "apply_prestate_observed_at": "2026-10-10T19:21:59+02:00",
+                "apply_prestate_observation_ref": "evidence:fresh-apply-prestate-readback",
             },
             {
                 "state": "APPLIED_UNVERIFIED",
