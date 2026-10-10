@@ -12,6 +12,7 @@ from typing import Any
 from jsonschema import Draft202012Validator, FormatChecker
 
 from validate_hardware_portfolio import load_json
+from validate_vendor_adapter_registry import registry_errors as vendor_registry_errors
 
 _APPLY_STATES = {
     "APPLY_STARTED",
@@ -190,6 +191,93 @@ def receipt_errors(receipt: dict[str, Any], schema: dict[str, Any]) -> list[str]
     return errors
 
 
+
+_REQUIRED_MATURITY = {
+    "configuration_apply": "A3_CHANGE_QUALIFIED",
+    "oem_firmware_update": "A4_FIRMWARE_RECOVERY_QUALIFIED",
+    "oem_firmware_recovery": "A4_FIRMWARE_RECOVERY_QUALIFIED",
+    "alternative_os_flash": "A4_FIRMWARE_RECOVERY_QUALIFIED",
+}
+_MATURITY_ORDER = {
+    "A0_DISCOVERED": 0,
+    "A1_READ_ONLY_TESTED": 1,
+    "A2_STATE_CONTRACT_TESTED": 2,
+    "A3_CHANGE_QUALIFIED": 3,
+    "A4_FIRMWARE_RECOVERY_QUALIFIED": 4,
+    "A5_SERVICEABLE": 5,
+}
+
+
+def registry_binding_errors(receipt: dict[str, Any], registry: dict[str, Any]) -> list[str]:
+    """Require any authorized/effectful receipt to match the exact tested registry capability."""
+    errors: list[str] = []
+    adapters = {item["adapter_id"]: item for item in registry.get("adapters", [])}
+    catalog = {item["operation"]: item for item in registry.get("operation_catalog", [])}
+    adapter_id = receipt["adapter_id"]
+    operation_name = receipt["operation"]
+    adapter = adapters.get(adapter_id)
+    catalog_operation = catalog.get(operation_name)
+
+    if adapter is None:
+        return [f"$.adapter_id {adapter_id!r} is absent from the capability registry"]
+    if catalog_operation is None:
+        return [f"$.operation {operation_name!r} is absent from the registry operation catalog"]
+
+    adapter_operation = next(
+        (item for item in adapter.get("operations", []) if item["operation"] == operation_name),
+        None,
+    )
+    if adapter_operation is None:
+        return [f"$.operation {operation_name!r} is not declared by adapter {adapter_id!r}"]
+
+    if adapter_operation["state"] == "unsupported":
+        errors.append("$.operation cannot be prepared or authorized for a registry-declared unsupported capability")
+
+    journal = receipt["journal"]
+    auth_verified = receipt["authorization"]["state"] == "verified"
+    effect_may_have_started = any(event["state"] in _APPLY_STATES for event in journal)
+    needs_tested_scope = auth_verified or effect_may_have_started
+
+    if not needs_tested_scope:
+        return errors
+
+    if adapter_operation["state"] != "tested":
+        errors.append(
+            "$.operation requires registry state=tested before authorization or any possible device effect"
+        )
+        return errors
+
+    expected_maturity = _REQUIRED_MATURITY[operation_name]
+    if _MATURITY_ORDER[adapter["maturity"]] < _MATURITY_ORDER[expected_maturity]:
+        errors.append(
+            f"$.adapter_id requires at least {expected_maturity} for {operation_name}"
+        )
+    if adapter["implementation_state"] not in {"LAB_TESTED", "QUALIFIED"}:
+        errors.append("$.adapter_id requires a LAB_TESTED or QUALIFIED implementation before authorization")
+    if adapter["model_scope_state"] != "exact_models_tested":
+        errors.append("$.adapter_id requires exact_models_tested scope before authorization")
+
+    tested_scope = adapter_operation.get("tested_scope") or {}
+    target = receipt["target"]
+    scope_fields = {
+        "model": "model",
+        "hardware_revision": "hardware_revision",
+        "software_version": "software_version",
+        "region": "region",
+    }
+    for scope_key, target_key in scope_fields.items():
+        if tested_scope.get(scope_key) != target.get(target_key):
+            errors.append(
+                f"$.target.{target_key} must exactly match registry tested_scope.{scope_key}"
+            )
+
+    if receipt.get("adapter_revision") != adapter_operation.get("tested_revision"):
+        errors.append(
+            "$.adapter_revision must match the registry tested_revision for the exact operation"
+        )
+    return errors
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -202,27 +290,46 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("schemas/vendor-operation-effect-receipt-v1.schema.json"),
     )
+    parser.add_argument(
+        "--registry",
+        type=Path,
+        default=Path("security/vendor-adapter-capability-registry-v1.json"),
+    )
+    parser.add_argument(
+        "--registry-schema",
+        type=Path,
+        default=Path("schemas/vendor-adapter-capability-registry-v1.schema.json"),
+    )
     args = parser.parse_args(argv)
 
     try:
         receipt = load_json(args.receipt)
         schema = load_json(args.schema)
+        registry = load_json(args.registry)
+        registry_schema = load_json(args.registry_schema)
     except ValueError as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
 
-    if not isinstance(receipt, dict) or not isinstance(schema, dict):
-        print("FAIL: receipt and schema roots must be JSON objects", file=sys.stderr)
+    if not all(isinstance(item, dict) for item in (receipt, schema, registry, registry_schema)):
+        print("FAIL: receipt, receipt schema, registry and registry schema roots must be JSON objects", file=sys.stderr)
+        return 1
+
+    registry_failures = vendor_registry_errors(registry, registry_schema)
+    if registry_failures:
+        for failure in registry_failures:
+            print(f"FAIL: registry: {failure}", file=sys.stderr)
         return 1
 
     failures = receipt_errors(receipt, schema)
+    failures.extend(registry_binding_errors(receipt, registry))
     if failures:
         for failure in failures:
             print(f"FAIL: {failure}", file=sys.stderr)
         return 1
 
     print(
-        "PASS: operation effect receipt contract is structurally valid; "
+        "PASS: operation effect receipt and registry binding are structurally valid; "
         "a PREPARED receipt is not authorization to mutate a device."
     )
     return 0
