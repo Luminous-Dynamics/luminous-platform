@@ -76,8 +76,10 @@ def _origin_errors(value: str, field: str) -> list[str]:
         errors.append(f"{field} must use https")
     if not parsed.hostname or parsed.username is not None or parsed.password is not None:
         errors.append(f"{field} must contain a host and no user information")
-    elif parsed.hostname != parsed.hostname.lower() or parsed.hostname.endswith("."):
-        errors.append(f"{field} host must be lowercase and have no trailing dot")
+    else:
+        if parsed.hostname != parsed.hostname.lower() or parsed.hostname.endswith("."):
+            errors.append(f"{field} host must be lowercase and have no trailing dot")
+        errors.extend(_host_errors(parsed.hostname, f"{field}.host"))
     if parsed.path not in ("", "/") or parsed.query or parsed.fragment:
         errors.append(f"{field} must be an origin only (no non-root path, query, or fragment)")
     if "*" in parsed.netloc:
@@ -127,14 +129,13 @@ def profile_errors(profile: dict[str, Any], schema: dict[str, Any]) -> list[str]
         errors.append("$.endpoint.transport must match the protocol implied by endpoint.kind")
 
     errors.extend(_host_errors(endpoint["host"]))
-    if transport in {"https", "ssh", "tls", "grpc_tls"}:
-        if endpoint["api_base_path"] is not None:
-            errors.append("$.endpoint.api_base_path must be null for non-HTTP API transports")
-    else:
+    if transport == "https":
         if endpoint["api_base_path"] is None:
-            errors.append("$.endpoint.api_base_path is required for API base-path transport")
+            errors.append("$.endpoint.api_base_path is required for HTTPS API transports")
         else:
             errors.extend(_path_errors(endpoint["api_base_path"]))
+    elif endpoint["api_base_path"] is not None:
+        errors.append("$.endpoint.api_base_path must be null for non-HTTP API transports")
 
     peer = profile["peer_verification"]
     if transport in _TLS_TRANSPORTS:
