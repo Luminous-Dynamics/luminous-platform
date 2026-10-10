@@ -1,0 +1,942 @@
+{
+  "schema_version": "luminous.hardware-control-evidence-matrix.v1",
+  "as_of": "2026-10-10",
+  "register_status": "baseline_not_evaluated",
+  "title": "Luminous Government & Regulated Infrastructure Control Evidence Matrix",
+  "scope": "Traceable control intents and required evidence for civilian/public service, regulated enterprise and appropriate unclassified government IT. Not a certification, legal conclusion, system security plan or authorization.",
+  "jurisdiction_profiles": [
+    "south-africa-public-service",
+    "us-civilian-government",
+    "us-unclassified-defense",
+    "regulated-enterprise",
+    "customer-specific"
+  ],
+  "references": [
+    {
+      "id": "nist-800-53-r5",
+      "title": "NIST SP 800-53 Rev. 5, including Update 1",
+      "url": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+      "authority": "NIST",
+      "source_type": "security-control-catalog",
+      "last_reviewed": "2026-10-10",
+      "applicability_note": "Candidate control catalog; selects no baseline by itself and does not imply legal or agency applicability."
+    },
+    {
+      "id": "nist-800-53a-r5",
+      "title": "NIST SP 800-53A Rev. 5 assessment procedures",
+      "url": "https://csrc.nist.gov/pubs/sp/800/53/a/r5/final",
+      "authority": "NIST",
+      "source_type": "assessment-methodology",
+      "last_reviewed": "2026-10-10",
+      "applicability_note": "Assessment procedures inform test design; current published release and agency tailoring must be checked before use."
+    },
+    {
+      "id": "nist-800-161-r1",
+      "title": "NIST SP 800-161 Rev. 1 Update 1 supply-chain risk management",
+      "url": "https://csrc.nist.gov/pubs/sp/800/161/r1/upd1/final",
+      "authority": "NIST",
+      "source_type": "supply-chain-risk",
+      "last_reviewed": "2026-10-10",
+      "applicability_note": "Risk-management reference; not a product certification or authorization."
+    },
+    {
+      "id": "nist-800-63b-4",
+      "title": "NIST SP 800-63B-4 authentication and authenticator management",
+      "url": "https://csrc.nist.gov/pubs/sp/800/63/b/4/final",
+      "authority": "NIST",
+      "source_type": "digital-identity-guidance",
+      "last_reviewed": "2026-10-10",
+      "applicability_note": "Reference for digital identity; target assurance levels and use must be determined by the relying party."
+    },
+    {
+      "id": "nist-cmvp",
+      "title": "NIST Cryptographic Module Validation Program validated-module database",
+      "url": "https://csrc.nist.gov/Projects/cryptographic-module-validation-program/validated-modules",
+      "authority": "NIST",
+      "source_type": "validation-registry",
+      "last_reviewed": "2026-10-10",
+      "applicability_note": "Use only when the applicable jurisdiction or contract requires it; verify exact certificate, module version, mode and operational environment."
+    },
+    {
+      "id": "dpsa-info-sec",
+      "title": "DPSA public-service information security and ICT standards index",
+      "url": "https://www.dpsa.gov.za/policy-updates/e-gov/e_government/standards/",
+      "authority": "South African Department of Public Service and Administration",
+      "source_type": "government-policy-index",
+      "last_reviewed": "2026-10-10",
+      "applicability_note": "Index includes signed information-security directive material and older ICT security materials. Fetch actual documents and confirm current applicability with the agency."
+    },
+    {
+      "id": "dpsa-ps-handbook",
+      "title": "DPSA Public Service Handbook 2024",
+      "url": "https://www.dpsa.gov.za/legislation/ps-handbook/",
+      "authority": "South African Department of Public Service and Administration",
+      "source_type": "government-policy-reference",
+      "last_reviewed": "2026-10-10",
+      "applicability_note": "Useful discovery reference; confirm current circulars, directives and agency-specific rules before requirements are frozen."
+    },
+    {
+      "id": "icasa-type-approval",
+      "title": "ICASA type approval requirements",
+      "url": "https://www.icasa.org.za/pages/type-approval",
+      "authority": "Independent Communications Authority of South Africa",
+      "source_type": "regulatory-requirements",
+      "last_reviewed": "2026-10-10",
+      "applicability_note": "Confirm applicability to each radio/electronic communications product and exact SKU before import, sale, lease or operation in South Africa."
+    },
+    {
+      "id": "sita-panels",
+      "title": "SITA effective panel contracts",
+      "url": "https://www.sita.co.za/content/sita-effective-panel-contracts",
+      "authority": "State Information Technology Agency",
+      "source_type": "procurement-source",
+      "last_reviewed": "2026-10-10",
+      "applicability_note": "Contract scope, dates, eligible suppliers and joining/procurement rules must be verified against live tender and panel documents."
+    },
+    {
+      "id": "sita-rfqs",
+      "title": "SITA RFQ invitations",
+      "url": "https://rfq.sita.co.za/RFQ/RFQInvitations.asp",
+      "authority": "State Information Technology Agency",
+      "source_type": "procurement-source",
+      "last_reviewed": "2026-10-10",
+      "applicability_note": "Time-sensitive market discovery only. Check the live pack, compulsory briefing, closing time and bidder eligibility; a listing is not an award or eligibility determination."
+    }
+  ],
+  "controls": [
+    {
+      "id": "AUTH-001",
+      "domain": "identity_and_access",
+      "title": "Account lifecycle and privileged authentication",
+      "intent": "Every human and service identity has a named owner, least privilege, managed enrollment/revocation and authentication strength matched to risk.",
+      "applies_to": [
+        "managed endpoints",
+        "network devices",
+        "server/BMC",
+        "fleet operations",
+        "identity plane"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:AC-2",
+        "nist-800-53-r5:AC-6",
+        "nist-800-53-r5:IA-2",
+        "nist-800-53-r5:IA-5",
+        "dpsa-info-sec",
+        "nist-800-63b-4"
+      ],
+      "platform_surfaces": [
+        "Secure Core",
+        "Nixward",
+        "sovereign-ops",
+        "Xenia operations"
+      ],
+      "verification_method": "Negative API/CLI tests for unauthenticated, cross-tenant, disabled and over-privileged principals; test enrollment, revocation, recovery and privileged MFA.",
+      "required_evidence": [
+        "identity authority and trust-boundary diagram",
+        "role-to-capability matrix",
+        "test results for unauthorized actions and revocation",
+        "exact policy/configuration revision"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "Select an identity provider and authenticator policy for the target profile.",
+        "Verify end-to-end enforcement at the actual endpoint, switch, server and management interfaces."
+      ]
+    },
+    {
+      "id": "AUTH-002",
+      "domain": "identity_and_access",
+      "title": "Break-glass credentials and recovery authority",
+      "intent": "Emergency access is individually attributable, limited in scope and duration, stored separately, rotated after use, and tested without reliance on the failed control plane.",
+      "applies_to": [
+        "all deployment profiles"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:AC-2",
+        "nist-800-53-r5:AC-6",
+        "nist-800-53-r5:IA-5",
+        "nist-800-53-r5:CP-2",
+        "dpsa-info-sec"
+      ],
+      "platform_surfaces": [
+        "Nixward",
+        "sovereign-boot",
+        "local console",
+        "backup/recovery"
+      ],
+      "verification_method": "Exercise recovery with WAN, central identity and normal management services unavailable; test authorization, audit record, credential rotation and return to steady state.",
+      "required_evidence": [
+        "break-glass procedure",
+        "custodian/rotation record",
+        "offline recovery run receipt",
+        "post-use review record"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "No production-grade independent recovery device or approved customer break-glass policy has been selected."
+      ]
+    },
+    {
+      "id": "AUTHZ-003",
+      "domain": "identity_and_access",
+      "title": "Deterministic authorization for state-changing operations",
+      "intent": "Observations, events, tickets, model recommendations and API payloads do not themselves authorize privileged actions; the subsystem owning the state enforces explicit capability, precondition and actor checks.",
+      "applies_to": [
+        "fleet operations",
+        "network changes",
+        "endpoint configuration",
+        "server management"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:AC-3",
+        "nist-800-53-r5:AC-6",
+        "nist-800-53-r5:CM-3"
+      ],
+      "platform_surfaces": [
+        "Nixward",
+        "sovereign-ops",
+        "Xenia",
+        "operations-event contract"
+      ],
+      "verification_method": "Attempt stale-precondition, forged-actor, replayed and cross-tenant mutation paths; verify no state change without owning-service authorization.",
+      "required_evidence": [
+        "capability/authorization contract",
+        "negative test logs",
+        "pre/post state evidence",
+        "actor and reason audit events"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "Wire all products into the same reviewed authorization contract; do not accept caller-supplied tenant or identity fields as authority."
+      ]
+    },
+    {
+      "id": "CFG-004",
+      "domain": "configuration_integrity",
+      "title": "Versioned configuration baseline and drift control",
+      "intent": "The declared configuration is canonical, revision-bound, diffable and recoverable; unsupported fields and ambiguous state transitions fail closed.",
+      "applies_to": [
+        "NixOS endpoints",
+        "routers/switches/APs",
+        "server/management firmware",
+        "site profiles"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:CM-2",
+        "nist-800-53-r5:CM-3",
+        "nist-800-53-r5:CM-6",
+        "nist-800-53-r5:CM-8"
+      ],
+      "platform_surfaces": [
+        "Nixward",
+        "luminous-edge",
+        "deployment profiles",
+        "hardware register"
+      ],
+      "verification_method": "Validate exact schema/profile revision; inject unknown fields, stale generation, unreviewed drift and failed rollout; verify reject or controlled rollback.",
+      "required_evidence": [
+        "locked deployment manifest",
+        "configuration digest",
+        "change authorization record",
+        "before/after state and rollback test"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "The reference profile is a declaration, not yet a hardware-applied configuration."
+      ]
+    },
+    {
+      "id": "BOOT-005",
+      "domain": "platform_trust",
+      "title": "Firmware trust, secure boot and recovery",
+      "intent": "Boot integrity and firmware update assumptions are explicit per exact SKU; signed boot/update and recovery paths remain usable when an image is rejected or power is lost.",
+      "applies_to": [
+        "endpoints",
+        "servers",
+        "network equipment",
+        "BMC",
+        "boot media"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SI-7",
+        "nist-800-53-r5:CM-6",
+        "nist-800-53-r5:SI-2"
+      ],
+      "platform_surfaces": [
+        "sovereign-boot",
+        "NixOS profile",
+        "TPM/firmware integration"
+      ],
+      "verification_method": "On exact hardware, verify firmware state, TPM, key enrollment, measured-boot reports where used, signed update, rollback protection and recovery from invalid image.",
+      "required_evidence": [
+        "exact hardware/model/firmware tuple",
+        "boot-policy output",
+        "signed artifact digests",
+        "invalid-image rejection and recovery evidence"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "Framework NixOS Secure Boot path remains a configuration-specific qualification item; equivalent checks are needed for the exact server and gateway."
+      ]
+    },
+    {
+      "id": "PATCH-006",
+      "domain": "platform_trust",
+      "title": "Vulnerability response and controlled updates",
+      "intent": "Firmware, OS, application and third-party dependencies have tracked versions, an update policy, severity handling, exception expiry and an evidence-backed rollback plan.",
+      "applies_to": [
+        "all compute and network devices",
+        "firmware",
+        "CI artifacts"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SI-2",
+        "nist-800-53-r5:RA-5",
+        "nist-800-53-r5:CM-3"
+      ],
+      "platform_surfaces": [
+        "Nixward",
+        "Nix flake locks",
+        "CI workflows",
+        "hardware ledger"
+      ],
+      "verification_method": "Inject stale advisory data, missing deployed closure, expired exception and failed update; prove coverage is explicit and exceptions cannot suppress future findings.",
+      "required_evidence": [
+        "SBOM/lock digest",
+        "advisory-feed version and timestamp",
+        "scanner report",
+        "exception approvals and expiries",
+        "update rollback receipt"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "No exact deployable system closure or end-to-end firmware inventory has been bound to a qualified pilot."
+      ]
+    },
+    {
+      "id": "NET-007",
+      "domain": "network_boundary",
+      "title": "Network segmentation and explicit traffic flows",
+      "intent": "Inter-zone traffic is default-deny; permitted flows are narrow, logged where material, and tested for IPv4 and IPv6 so that guest, IoT and quarantine networks cannot reach management or protected services.",
+      "applies_to": [
+        "site gateway",
+        "managed switch",
+        "Wi-Fi AP",
+        "host firewalls"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SC-7",
+        "nist-800-53-r5:AC-4",
+        "nist-800-53-r5:SC-5"
+      ],
+      "platform_surfaces": [
+        "deployment profile VLANs 10–80",
+        "gateway",
+        "switch/AP configuration"
+      ],
+      "verification_method": "Hardware-in-the-loop tests of access/trunk VLAN mapping, allowed/denied path matrix, IPv4/IPv6 private-prefix blocking, rogue DHCP and reset behavior.",
+      "required_evidence": [
+        "port/VLAN map",
+        "firewall/ACL export",
+        "bidirectional flow-test report",
+        "packet capture for critical negative cases"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "The proposed eight VLANs and flow contracts have not been applied to or tested on selected hardware."
+      ]
+    },
+    {
+      "id": "NET-008",
+      "domain": "network_boundary",
+      "title": "Management plane and out-of-band isolation",
+      "intent": "Management access is not exposed directly to the Internet; privileged control paths are isolated, authenticated and logged; recovery does not silently depend on the production network.",
+      "applies_to": [
+        "gateway",
+        "switch/AP",
+        "server BMC",
+        "physical console",
+        "fleet control plane"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SC-7",
+        "nist-800-53-r5:AC-17",
+        "nist-800-53-r5:AC-6",
+        "nist-800-53-r5:MA-4"
+      ],
+      "platform_surfaces": [
+        "server iDRAC/BMC",
+        "management VLAN",
+        "local console",
+        "OOB recovery"
+      ],
+      "verification_method": "Scan from WAN/staff/guest networks, try default and revoked credentials, and disconnect WAN/production LAN while recovering from local console/OOB.",
+      "required_evidence": [
+        "network trust-boundary drawing",
+        "port scan and access-denial results",
+        "OOB independence/failure test",
+        "management credential and firmware records"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "The current lab profile explicitly lacks a physically independent OOB network/console server; local physical console is only an initial recovery path."
+      ]
+    },
+    {
+      "id": "CRYPTO-009",
+      "domain": "cryptography_and_keys",
+      "title": "Cryptographic algorithms, key lifecycle and validated module scope",
+      "intent": "Use maintained implementations; define generation, provisioning, storage, rotation, revocation, recovery and destruction of keys. Any required cryptographic-module validation is checked against the exact module/version/mode/environment.",
+      "applies_to": [
+        "identity services",
+        "TLS/VPN",
+        "disk/backup encryption",
+        "hardware root of trust"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SC-12",
+        "nist-800-53-r5:SC-13",
+        "nist-800-53-r5:SC-28",
+        "nist-cmvp",
+        "nist-800-63b-4"
+      ],
+      "platform_surfaces": [
+        "Secure Core",
+        "VPN/PKI integrations",
+        "TPM/HSM integration",
+        "backup encryption"
+      ],
+      "verification_method": "Verify exact cryptographic module certificates where applicable, approved algorithms/modes, key custody and recovery; exercise key loss/revocation and encrypted restore.",
+      "required_evidence": [
+        "key-management design",
+        "selected algorithm/library/module versions",
+        "certificate IDs and allowed scope where required",
+        "key rotation/revocation/restore test"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "No concrete HSM/token SKU, key-custody design or jurisdiction-specific crypto requirement has been selected."
+      ]
+    },
+    {
+      "id": "ASSET-010",
+      "domain": "supply_chain_and_lifecycle",
+      "title": "Asset inventory, SBOM/HBOM and provenance",
+      "intent": "Every deployed unit and artifact is tied to exact model/revision, firmware/software version, supplier, orderable part, origin/provenance, warranty, end-of-support and replacement path.",
+      "applies_to": [
+        "hardware",
+        "firmware",
+        "software images",
+        "network optics",
+        "power components"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:CM-8",
+        "nist-800-53-r5:SR-4",
+        "nist-800-53-r5:SR-11",
+        "nist-800-161-r1"
+      ],
+      "platform_surfaces": [
+        "hardware/portfolio-v1.json",
+        "deployment profile",
+        "release SBOMs",
+        "asset register"
+      ],
+      "verification_method": "Reconcile physical labels, supplier documents, serials, firmware versions and SBOM/HBOM; challenge unknown and substituted parts.",
+      "required_evidence": [
+        "per-unit and per-build inventory",
+        "software/hardware BOM",
+        "supplier provenance packet",
+        "lifecycle/warranty confirmation"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "No purchased pilot inventory, complete HBOM or written supplier quote exists yet."
+      ]
+    },
+    {
+      "id": "LOG-011",
+      "domain": "audit_and_evidence",
+      "title": "Tamper-evident audit, time source and evidence receipt",
+      "intent": "Material actions record actor, policy decision, target, precondition, result, time/correlation, and versioned evidence; permissions and retention prevent unreviewed alteration.",
+      "applies_to": [
+        "identity",
+        "network changes",
+        "fleet operations",
+        "incident workflow",
+        "backup/recovery"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:AU-2",
+        "nist-800-53-r5:AU-3",
+        "nist-800-53-r5:AU-8",
+        "nist-800-53-r5:AU-9",
+        "nist-800-53-r5:AU-12"
+      ],
+      "platform_surfaces": [
+        "operations-event contract",
+        "PostgreSQL stores",
+        "Xenia operations",
+        "deployment verifier"
+      ],
+      "verification_method": "Attempt direct mutation/deletion with runtime roles, inject clock skew and malformed receipts, and confirm event integrity, completeness and searchable history.",
+      "required_evidence": [
+        "event schema and retention policy",
+        "clock/time-source config",
+        "tamper negative-test logs",
+        "audit queries and storage privilege proof"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "A data schema is not proof that the deployed collector, storage and independent verifier preserve evidence."
+      ]
+    },
+    {
+      "id": "MON-012",
+      "domain": "detection_and_response",
+      "title": "Monitoring, incident triage and response",
+      "intent": "Alerts and events feed a documented triage process with severity, accountable responder, evidence preservation, containment and closure; analytics do not independently execute privileged changes.",
+      "applies_to": [
+        "host/network telemetry",
+        "security events",
+        "fleet control plane",
+        "case management"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SI-4",
+        "nist-800-53-r5:IR-4",
+        "nist-800-53-r5:IR-5"
+      ],
+      "platform_surfaces": [
+        "Xenia",
+        "sovereign-ops",
+        "log integrations",
+        "Symthaea advisory"
+      ],
+      "verification_method": "Replay known benign and malicious synthetic signals; confirm triage, provenance, case lifecycle and authorization boundaries.",
+      "required_evidence": [
+        "detection/use-case test corpus",
+        "alert-to-case trace",
+        "incident handling playbook",
+        "authorization and containment test results"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "No production SIEM or incident response provider has been selected; Symthaea outputs remain advisory."
+      ]
+    },
+    {
+      "id": "BACKUP-013",
+      "domain": "resilience_and_recovery",
+      "title": "Encrypted, independent backup and verified restore",
+      "intent": "Backups have separate failure/credential domains, explicit key custody, retention and integrity; restore is regularly tested to measured RPO/RTO rather than inferred from backup completion.",
+      "applies_to": [
+        "server data",
+        "configuration",
+        "evidence/audit stores",
+        "fleet policy and key-recovery records"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:CP-9",
+        "nist-800-53-r5:CP-10",
+        "nist-800-53-r5:SC-28"
+      ],
+      "platform_surfaces": [
+        "profile backup target",
+        "offline recovery media",
+        "NixOS generations",
+        "service database"
+      ],
+      "verification_method": "Restore a known snapshot with production network disconnected; test corrupted, stale and missing key/media scenarios and measure recovery time.",
+      "required_evidence": [
+        "backup policy and scopes",
+        "encryption/key custody record",
+        "restore logs and checksum",
+        "measured RPO/RTO result",
+        "media rotation/retirement log"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "Backup target, offline media, key custody and retention values remain unselected in the lab profile."
+      ]
+    },
+    {
+      "id": "CONT-014",
+      "domain": "resilience_and_recovery",
+      "title": "Service continuity, power and environmental resilience",
+      "intent": "Power loss, thermal overload, WAN/control-plane loss and hardware failure produce predictable degraded behavior and safe recovery; UPS runtime is sized from measured load.",
+      "applies_to": [
+        "switch/AP/router",
+        "server/storage",
+        "UPS/PDU",
+        "remote/branch sites"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:CP-2",
+        "nist-800-53-r5:CP-4",
+        "nist-800-53-r5:PE-14"
+      ],
+      "platform_surfaces": [
+        "UPS management",
+        "site profile",
+        "Nixward recovery",
+        "local DNS/identity services"
+      ],
+      "verification_method": "Measure loaded power, remove mains/WAN/management links, induce service failures and confirm orderly shutdown, local operation and recovery.",
+      "required_evidence": [
+        "load/runtime calculation",
+        "UPS test log",
+        "thermal/load report",
+        "WAN/control-plane isolation test",
+        "continuity plan"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "The APC SMV1500AI is an H0 candidate only; actual load, battery runtime, local support and monitoring-driver compatibility have not been tested."
+      ]
+    },
+    {
+      "id": "DATA-015",
+      "domain": "data_protection_and_privacy",
+      "title": "Data classification, minimization, retention and encryption",
+      "intent": "Each deployment declares permitted information classes, retention and sharing rules; the first lab uses only public/synthetic data and does not collect unnecessary endpoint content.",
+      "applies_to": [
+        "all endpoints",
+        "logs and telemetry",
+        "backup",
+        "voice/video",
+        "AI-assisted analysis"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SC-28",
+        "nist-800-53-r5:MP-6",
+        "nist-800-53-r5:PT-2",
+        "nist-800-53-r5:PT-3",
+        "dpsa-info-sec",
+        "dpsa-ps-handbook"
+      ],
+      "platform_surfaces": [
+        "deployment profile",
+        "Symthaea inputs",
+        "logging/telemetry adapters",
+        "storage/backup"
+      ],
+      "verification_method": "Inspect data flows, logs, retention and access; inject synthetic records and test export/deletion/media retirement according to the selected policy.",
+      "required_evidence": [
+        "data-flow and classification register",
+        "retention/access policy",
+        "encryption test",
+        "log/telemetry minimization review",
+        "disposal evidence"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "Agency-specific data classification, POPIA/privacy obligations and retention requirements must be determined for any real deployment."
+      ]
+    },
+    {
+      "id": "PHYS-016",
+      "domain": "physical_and_site_security",
+      "title": "Physical access, tamper, maintenance and media disposal",
+      "intent": "Racks, rooms, console ports, removable media and device maintenance have named custodians, controlled access and auditable repair/retirement procedures.",
+      "applies_to": [
+        "server room",
+        "network racks",
+        "endpoints",
+        "hardware lab",
+        "backup media"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:PE-2",
+        "nist-800-53-r5:PE-3",
+        "nist-800-53-r5:PE-6",
+        "nist-800-53-r5:MA-2",
+        "nist-800-53-r5:MP-6"
+      ],
+      "platform_surfaces": [
+        "deployment runbook",
+        "asset register",
+        "recovery kit",
+        "supplier/repair records"
+      ],
+      "verification_method": "Review site controls and custody; simulate lost/stolen device, unapproved repair, removable media loss and end-of-life sanitization.",
+      "required_evidence": [
+        "physical/site threat assessment",
+        "custodian/access list",
+        "maintenance/repair log",
+        "media sanitization/retirement certificates"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "No physical site or equipment-custody environment has been assessed."
+      ]
+    },
+    {
+      "id": "SCRM-017",
+      "domain": "supply_chain_and_lifecycle",
+      "title": "Supplier, vulnerability, license and end-of-support risk",
+      "intent": "Supplier risk, component substitution, license obligations, vulnerability disclosure, lead times and end-of-life dependencies are tracked and reviewed before procurement and upgrades.",
+      "applies_to": [
+        "all open and commercial hardware",
+        "firmware",
+        "commercial support services",
+        "critical software"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SR-3",
+        "nist-800-53-r5:SR-4",
+        "nist-800-53-r5:SR-11",
+        "nist-800-53-r5:SA-9",
+        "nist-800-161-r1"
+      ],
+      "platform_surfaces": [
+        "hardware register",
+        "procurement record",
+        "Nix flake locks",
+        "release SBOM"
+      ],
+      "verification_method": "Reconcile declared bill of materials and supplier paperwork; simulate unavailable part, substitute firmware and expired support; verify approvals and updated evidence.",
+      "required_evidence": [
+        "supplier assessment",
+        "license/provenance dossier",
+        "support and lifecycle SLA",
+        "approved substitution policy",
+        "vulnerability/exception register"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "Every hardware candidate remains H0/reference/gap; written quotes, contracts and lead times have not been verified."
+      ]
+    },
+    {
+      "id": "RADIO-018",
+      "domain": "jurisdictional_and_regulatory",
+      "title": "Radio equipment, electrical safety and jurisdiction-specific hardware approvals",
+      "intent": "Radio/wireless and power products have the approvals required for the destination jurisdiction and the exact SKU; importer/supplier and product obligations are identified.",
+      "applies_to": [
+        "Wi-Fi AP",
+        "cellular modem",
+        "antenna/radio",
+        "PSU/UPS",
+        "imported network equipment"
+      ],
+      "mapped_controls": [
+        "icasa-type-approval",
+        "dpsa-info-sec"
+      ],
+      "platform_surfaces": [
+        "hardware register",
+        "procurement pack",
+        "site deployment profile"
+      ],
+      "verification_method": "Check exact model/hardware revision against applicable ICASA type-approval status and required labeling; review appropriate electrical/safety conformity and local procurement terms.",
+      "required_evidence": [
+        "regulator lookup/scope",
+        "exact SKU and labeling photos",
+        "supplier/importer conformity declarations",
+        "electrical/radio compliance record"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "No selected AP/modem/UPS has been verified against a complete local compliance dossier; applicability must be confirmed by SKU and use."
+      ]
+    },
+    {
+      "id": "INCIDENT-019",
+      "domain": "audit_and_evidence",
+      "title": "Incident records, outbox delivery, replay and reconciliation",
+      "intent": "Incident state and outbound events are replay-safe and ordered; every replay/redrive is authenticated, bounded, idempotent and attributable, with ambiguous external effects reconciled rather than blindly repeated.",
+      "applies_to": [
+        "case management",
+        "network/host alerts",
+        "external ticketing/inventory integrations"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:AU-3",
+        "nist-800-53-r5:AU-12",
+        "nist-800-53-r5:IR-4",
+        "nist-800-53-r5:AC-6"
+      ],
+      "platform_surfaces": [
+        "operations-event contract",
+        "PostgreSQL outbox",
+        "Xenia operations fabric"
+      ],
+      "verification_method": "Inject duplicate delivery, stale lease, dead letter, expired approval and uncertain remote acknowledgement; verify no skip-order or unauthorized replay.",
+      "required_evidence": [
+        "migration/privilege tests",
+        "outbox delivery traces",
+        "operator authorization receipt",
+        "append-only replay audit record",
+        "reconciliation test"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "The outbox API slice remains separate from production authenticated operator replay, provider integration and exact-head database qualification."
+      ]
+    },
+    {
+      "id": "THIRD-020",
+      "domain": "external_services_and_cloud",
+      "title": "Cloud/controller, external service and data-residency boundaries",
+      "intent": "Every external service dependency is explicit; hosted control is optional where promised; data location/retention, loss-of-service behavior and supplier obligations are assessed.",
+      "applies_to": [
+        "Omada/other controllers",
+        "identity services",
+        "cloud APIs",
+        "remote monitoring",
+        "support"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SA-9",
+        "nist-800-53-r5:AC-20",
+        "nist-800-53-r5:SC-7",
+        "dpsa-info-sec",
+        "dpsa-ps-handbook"
+      ],
+      "platform_surfaces": [
+        "deployment profile",
+        "network diagrams",
+        "procurement/security review"
+      ],
+      "verification_method": "Disconnect WAN/provider endpoints, validate local configuration and recovery, inspect outbound telemetry and confirm allowed data flows and contracts.",
+      "required_evidence": [
+        "third-party service register",
+        "data-location/subprocessor review",
+        "local-only mode test",
+        "contract/SLA and incident notice clauses"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "The pilot requires local management, but actual controller behavior and outbound telemetry have not been verified on selected hardware."
+      ]
+    },
+    {
+      "id": "DEVSEC-021",
+      "domain": "software_supply_chain",
+      "title": "Build provenance, dependency and workflow integrity",
+      "intent": "Build/test evidence is tied to exact source and workflow revisions; pinned dependencies, actions, artifact hashes and runtime closure coverage are recorded; missing evidence is INCOMPLETE, never PASS.",
+      "applies_to": [
+        "all platform repositories and hardware tooling"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SA-10",
+        "nist-800-53-r5:SI-2",
+        "nist-800-53-r5:CM-3",
+        "nist-800-53-r5:SR-4"
+      ],
+      "platform_surfaces": [
+        "GitHub Actions",
+        "Nix flake locks",
+        "artifact evidence",
+        "catalog/profile validators"
+      ],
+      "verification_method": "Test stale HEAD, lock drift, missing test output, queued/skipped job, malformed artifact, absent deployable closure and expired exception behavior.",
+      "required_evidence": [
+        "exact commit SHA",
+        "workflow/action SHAs",
+        "dependency lock/hashes",
+        "artifact digest",
+        "job-level conclusion and logs",
+        "scope/completeness statement"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "The hardware-profile CI runs observed so far have remained pending with no job results; no exact-head validator pass is asserted."
+      ]
+    },
+    {
+      "id": "PROC-022",
+      "domain": "procurement_and_support",
+      "title": "Tender scope, eligible supply route, warranty and contract-backed support",
+      "intent": "Each procurement opportunity is evaluated against the actual technical specification, eligible supplier channel, compulsory briefing, pricing/support duration and warranty; open-source publication is not a substitute for contractual obligations.",
+      "applies_to": [
+        "South African public-sector procurement",
+        "US civilian/unclassified IT procurement",
+        "regulated enterprise"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:SA-4",
+        "nist-800-53-r5:SA-9",
+        "nist-800-53-r5:SR-5",
+        "sita-panels",
+        "sita-rfqs",
+        "dpsa-ps-handbook"
+      ],
+      "platform_surfaces": [
+        "hardware register",
+        "commercial licensing/support",
+        "supplier-partner plan"
+      ],
+      "verification_method": "Read the live tender/panel documents and record deadlines, mandatory meetings, supplier eligibility, exact SKU/support terms and written quote.",
+      "required_evidence": [
+        "full tender/panel document version",
+        "eligibility decision",
+        "mandatory-briefing evidence",
+        "line-item quote",
+        "SLA/warranty",
+        "procurement review sign-off"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "Current panels/tenders are research leads only; Luminous supplier accreditation/eligibility and support capacity are not established."
+      ]
+    },
+    {
+      "id": "EVIDENCE-023",
+      "domain": "assurance_and_authorization",
+      "title": "Independent evaluation, evidence quality and deployment authorization",
+      "intent": "Claims are scoped to a named deployment profile and exact tested revision; simulated/model results are distinct from runtime/hardware evidence, and customer authorization is a separate approval.",
+      "applies_to": [
+        "all products and deployment profiles"
+      ],
+      "mapped_controls": [
+        "nist-800-53-r5:CA-2",
+        "nist-800-53-r5:CA-7",
+        "nist-800-53a-r5",
+        "dpsa-info-sec"
+      ],
+      "platform_surfaces": [
+        "deployment profile",
+        "control matrix",
+        "evidence verifier",
+        "release checklist"
+      ],
+      "verification_method": "Attempt to advance maturity with only source files, schema validation, a queued CI job, simulation or missing scope; verify gate blocks promotion.",
+      "required_evidence": [
+        "assessment plan and assessor identity",
+        "exact source/model/firmware scope",
+        "runtime/hardware test artifacts",
+        "limitations and exceptions",
+        "written authorizing official decision when required"
+      ],
+      "status": "NOT_EVALUATED",
+      "assessment_record": null,
+      "open_gaps": [
+        "No product or deployment profile has been independently assessed or authorized; current matrix is a baseline, not a compliance assertion."
+      ]
+    }
+  ]
+}
