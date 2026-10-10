@@ -131,3 +131,61 @@ No mutation-capable adapter can advance beyond discovery/read-only until all of 
 - support/entitlement/licensing and customer authorization review.
 
 The registry in its current state deliberately labels each vendor family `A0_DISCOVERED` and `NOT_IMPLEMENTED`. This is a plan and validation contract, not evidence that vendor integration is done.
+
+## 10. Process-first qualification loop
+
+The aim of each work session is to close one bounded evidence gap, not to wait for a workflow run or expand the promised vendor matrix. A queued, cancelled, missing, or empty CI result never blocks source review and deterministic local work; equally, local success does not become an exact-head CI pass or physical-device qualification.
+
+### Keep three status axes separate
+
+Record these independently in issue/PR updates and evidence packets:
+
+1. **Implementation/validation status:** not started, authored, locally executed (with exact command and exit code), or CI-confirmed (with exact commit and completed job result).
+2. **Adapter maturity:** the declared A0–A5 registry maturity, promoted only when its operation-specific evidence gate is met.
+3. **Evidence class:** design/source research, synthetic fixture, mock/emulator, physical-device observation, or independently corroborated physical result.
+
+Evidence does not inherit a stronger class because a test passed. A fixture pass is fixture evidence; a mock pass is mock evidence; a green workflow validates only the exact code and tests that ran. Do not advance maturity on the strength of a queued workflow, schema validity, vendor-family name, successful API response alone, or executor-generated claims without independent observation.
+
+### Work one operation at a time
+
+**Step 1 — freeze the exact scope.** Create a small scope manifest for one adapter operation. It must name the adapter and operation; vendor, product family, exact model and hardware revision; exact software/firmware version; region or endpoint region; entitlement/support state where relevant; adapter source revision; authoritative source references and their last-checked dates; allowed credential scope; lab owner/authorization; and available recovery route. Record unknowns as unknown. If exact identity, lawful access, entitlement or recovery path is not established, remain at discovery/read-only planning—do not infer support from a product family.
+
+**Step 2 — define the oracle before implementation.** List the fields the operation is allowed to return, required fields, normalized semantics, safe redaction rules, expected invariants, error mapping, timeout/rate-limit behavior, and negative cases. State which evidence must come from the device and which can be derived locally. Define the success oracle independently of the adapter's own “success” message. For inventory, for example, a syntactically valid response is not enough if model, revision or software identity is missing or contradicted by an independent source.
+
+**Step 3 — implement the smallest safe capability.** Start with read-only discovery, version, health, entitlement, or configuration-export calls. Use least-privilege, short-lived or revocable credentials in the approved secret store; never place credentials in command-line arguments, receipts, logs, or public artifacts. Do not implement a generic shell escape hatch. Do not add an apply/firmware method until that exact operation is represented in the registry and its risk-specific gate is independently satisfied.
+
+**Step 4 — use deterministic synthetic and mock tests while hardware is unavailable.** Use bounded, sanitized fixtures and deterministic clocks/identifiers. At minimum, cover: a valid response; missing or unknown identity fields; unexpected schema/value; software/model/revision drift; malformed or truncated output; timeout before response; timeout after a request may have taken effect; rate limiting; revoked/expired credential; wrong tenant/organization/region; partial export; and secret/topology redaction. Assert both the result and the absence of forbidden effects. A mock must record that it did not contact or mutate a physical device.
+
+**Step 5 — execute the repository validators locally.** Use the same pinned dependency file and commands defined in `.github/workflows/hardware-portfolio.yml`. On a Python 3.13.7 environment, install `requirements-hardware-portfolio.txt`, then run `tools/validate_hardware_portfolio.py`, `tools/validate_hardware_deployment_profile.py`, `tools/validate_hardware_control_evidence_matrix.py`, `tools/validate_vendor_adapter_registry.py`, and `tools/validate_vendor_operation_receipt.py`. Run `python -m unittest discover -s tests -p "test_vendor_adapter_registry.py" -v`, `python -m unittest discover -s tests -p "test_vendor_operation_receipt.py" -v`, and `python -m unittest discover -s tests -p "test_hardware_*.py" -v`. Capture interpreter/dependency versions, exact source SHA, commands, exit codes and logs with secrets redacted. These local results are useful immediate feedback, but must not be labelled as CI evidence.
+
+**Step 6 — independently review the evidence packet.** Keep protected raw captures and customer-sensitive state in customer-controlled encrypted storage. The packet should carry (a) exact scope and source revision, (b) timestamps and request/correlation IDs, (c) raw-artifact references and SHA-256 digests, (d) normalized-observation digest and field-level results, (e) fixture/mock corpus version and test results, (f) source/license/support evidence, (g) redaction review, (h) known limitations and unresolved fields, and (i) reviewer/verifier identity separate from the executor. Never place credentials, recovery material, complete configurations, personal data or unredacted topology in a shared DHT. Publish only minimal, reviewed commitments/receipts where useful.
+
+**Step 7 — stop at the evidence boundary.** A missing physical device, console access, entitlement, trustworthy source, authorization, or recovery mechanism is a named blocker—not a reason to silently substitute a mock. Continue fixture tests, adapter scaffolding, registry/schema checks, source review and documentation without claiming the blocked gate passed. Record the next concrete action and who must supply the missing evidence.
+
+### Promotion gates
+
+| Promotion | Minimum evidence to consider it | What it does not mean |
+|---|---|---|
+| A0 — discovered | Versioned research, candidate API/protocol, known gaps and an honest support boundary | No implementation or tested support |
+| A1 — read-only tested | Exact target scope; deterministic valid and adversarial read fixtures; local validator/test output; read-only lab observation where the registry's declared gate requires it; redaction review | No configuration-change authorization |
+| A2 — state-contract tested | Receipt/state-machine tests, target/pre-state/action binding, failure and replay tests, expiry and revocation cases, verifier-separation checks, and evidence that uncertainty never becomes implicit success | No live change qualification |
+| A3 — change qualified | Exact model/revision/software/region; authorized non-production hardware; plan/apply diff review; fresh apply-time pre-state; low-risk change and independent read-back; failure injection; recovery/rollback demonstrated and recorded | No firmware or reflash qualification |
+| A4 — firmware/recovery qualified | Exact image/source/signature and compatibility evidence; entitlement and written scope; backup and proven recovery path; controlled maintenance/canary; post-boot identity and health checks; recovery evidence and independent review | No support for untested revisions or related models |
+| A5 — serviceable | Repeatable operations, monitoring/escalation, support and warranty boundaries, lifecycle/source recheck cadence, staff/customer runbook, known-limitations record and accountable service owner | No blanket vendor SLA or legal/regulatory certification |
+
+The registry is the authority for declared maturity and tested scope. This table describes the evidence discipline; it does not promote any current adapter. In particular, configuration mutation needs its A3 gate, and firmware/recovery or alternative-OS effects need the required A4-or-higher gate already enforced by the receipt validator.
+
+### Mandatory stop and reconcile conditions
+
+Stop before a side effect when any of the following is true: exact target or version differs; desired operation is not declared and tested for that scope; approval is stale, expired, revoked or bound to a different action/pre-state; a required license/entitlement is not established; backup/recovery readiness is missing; the independent verifier or required authority is unavailable; rate-limit or API semantics are unclear; or an unexpected response makes the outcome ambiguous.
+
+If a request may have taken effect but acknowledgement is missing, do not retry it. Preserve the attempt identity, mark the effect as possible/indeterminate as required by the receipt contract, and perform read-only reconciliation. Only after the actual device state is independently established may a new operation be planned with a new action digest and authorization. A “rollback” is itself a new state-changing operation requiring its own authority and evidence; it is never assumed merely because a command returned an error.
+
+### First pilot selection rule
+
+Choose the first physical pilot based on *access and recoverability*, not brand popularity: one exact, non-production unit that the project is authorized to administer, can identify down to hardware revision and software version, can reach through a documented management interface, and can restore through console or an OEM-documented recovery path. Start with one read-only inventory/version/health operation and a protected evidence capture. A different source or model is a new scope requiring fresh qualification.
+
+If no such unit is currently available, execute the synthetic/mock milestone and source review now, and mark the physical-device milestone blocked on the named device/access prerequisite. Do not call a mock a lab test or promote an adapter to A1 solely because the repository suite succeeds.
+
+This staged approach aligns with [NIST SP 800-193](https://csrc.nist.gov/pubs/sp/800/193/final)'s protection, detection and recovery model, uses gNMI's [Capabilities discovery](https://github.com/openconfig/reference/blob/master/rpc/gnmi/gnmi-specification.md) rather than assuming model support, and requires an exact entry in OpenWrt's [installation/recovery references](https://openwrt.org/toh/views/toh_admin_installation_recovery) before considering an OpenWrt conversion. These sources guide the process; they do not independently qualify a particular product.
+
