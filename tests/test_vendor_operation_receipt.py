@@ -179,7 +179,7 @@ class VendorOperationReceiptTests(unittest.TestCase):
             "state": "APPLY_STARTED",
             "occurred_at": "2026-10-10T19:22:00+02:00",
             "actor_ref": "principal:fixture-executor",
-            "evidence_refs": ["evidence:fixture-before-apply"],
+            "evidence_refs": ["evidence:fixture-before-apply", "evidence:fixture-fresh-prestate-readback"],
             "prestate_digest": receipt["intent"]["prestate_digest"],
             "apply_prestate_observed_at": "2026-10-10T19:21:59+02:00",
             "apply_prestate_observation_ref": "evidence:fixture-fresh-prestate-readback",
@@ -196,6 +196,13 @@ class VendorOperationReceiptTests(unittest.TestCase):
         apply_event["apply_prestate_observed_at"] = "2026-10-10T19:21:00+02:00"
         errors = self.errors(receipt)
         self.assertTrue(any("age exceeds the authorized maximum" in error for error in errors))
+
+    def test_apply_prestate_evidence_ref_must_be_bound_to_the_event(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        apply_event = next(item for item in receipt["journal"] if item["state"] == "APPLY_STARTED")
+        apply_event["apply_prestate_observation_ref"] = "evidence:unlinked-fresh-readback"
+        errors = self.errors(receipt)
+        self.assertTrue(any("must also appear in the journal event evidence_refs" in error for error in errors))
 
     def test_apply_time_prestate_observation_must_follow_authorization(self) -> None:
         receipt = self._authorized_applied_receipt()
@@ -395,7 +402,7 @@ class VendorOperationReceiptTests(unittest.TestCase):
                 "state": "APPLY_STARTED",
                 "occurred_at": "2026-10-10T19:22:00+02:00",
                 "actor_ref": "principal:fixture-executor",
-                "evidence_refs": ["evidence:prestate-recheck"],
+                "evidence_refs": ["evidence:prestate-recheck", "evidence:fresh-apply-prestate-readback"],
                 "prestate_digest": receipt["intent"]["prestate_digest"],
                 "apply_prestate_observed_at": "2026-10-10T19:21:59+02:00",
                 "apply_prestate_observation_ref": "evidence:fresh-apply-prestate-readback",
