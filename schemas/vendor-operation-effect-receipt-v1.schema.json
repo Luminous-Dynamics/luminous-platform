@@ -10,6 +10,7 @@
     "created_at",
     "operation",
     "adapter_id",
+    "adapter_revision",
     "target",
     "intent",
     "authorization",
@@ -45,6 +46,11 @@
     "adapter_id": {
       "type": "string",
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "adapter_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Exact source commit of the adapter implementation producing this receipt."
     },
     "target": {
       "type": "object",
