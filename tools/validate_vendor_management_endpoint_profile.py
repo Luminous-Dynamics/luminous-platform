@@ -96,8 +96,8 @@ def _path_errors(path: str, field: str = "$.endpoint.api_base_path") -> list[str
         errors.append(f"{field} must be an absolute path beginning with one slash")
     if path != "/" and path.endswith("/"):
         errors.append(f"{field} must not have a trailing slash unless it is the root path")
-    if "?" in path or "#" in path or "\\" in path:
-        errors.append(f"{field} cannot contain query, fragment, or backslash characters")
+    if "?" in path or "#" in path or "\\" in path or "%" in path:
+        errors.append(f"{field} cannot contain query, fragment, backslash, or percent-encoding characters")
     if any(segment in (".", "..") for segment in decoded.split("/")):
         errors.append(f"{field} cannot contain dot-segments, including percent-encoded dot-segments")
     return errors
@@ -148,11 +148,15 @@ def profile_errors(profile: dict[str, Any], schema: dict[str, Any]) -> list[str]
     elif transport == "ssh":
         if peer["method"] != "ssh_known_hosts":
             errors.append("$.peer_verification.method must be ssh_known_hosts for SSH")
+        if peer["hostname_validation"]:
+            errors.append("$.peer_verification.hostname_validation must be false for non-TLS SSH transport")
         if peer["minimum_tls_version"] is not None:
             errors.append("$.peer_verification.minimum_tls_version must be null for SSH")
     else:
         if peer["method"] != "protocol_specific_trust":
             errors.append("$.peer_verification.method must be protocol_specific_trust for SNMPv3")
+        if peer["hostname_validation"]:
+            errors.append("$.peer_verification.hostname_validation must be false for SNMPv3")
         if peer["minimum_tls_version"] is not None:
             errors.append("$.peer_verification.minimum_tls_version must be null for SNMPv3")
 
@@ -160,6 +164,8 @@ def profile_errors(profile: dict[str, Any], schema: dict[str, Any]) -> list[str]
         errors.append("$.authentication.mode is incompatible with endpoint.transport")
     if profile["authentication"]["expected_principal_ref"] != profile["scope"]["expected_principal_ref"]:
         errors.append("$.authentication.expected_principal_ref must match scope.expected_principal_ref")
+    if profile["authentication"]["expected_tenant_or_org_ref"] != profile["scope"]["expected_tenant_or_org_ref"]:
+        errors.append("$.authentication.expected_tenant_or_org_ref must match scope.expected_tenant_or_org_ref")
 
     credential_ref = profile["authentication"]["credential_reference"]
     if not credential_ref.startswith(("secretref:", "credential-profile:", "vaultref:")):
@@ -205,6 +211,11 @@ def profile_errors(profile: dict[str, Any], schema: dict[str, Any]) -> list[str]
 
     if profile["state"] == "approved_for_lab" and not profile["approval_evidence_refs"]:
         errors.append("$.approval_evidence_refs must not be empty for approved_for_lab")
+    if profile["state"] == "approved_for_lab":
+        for dimension_name in ("deployment_jurisdiction", "hardware_or_commercial_region", "support_jurisdiction"):
+            dimension = profile["scope"][dimension_name]
+            if dimension["state"] == "unresolved":
+                errors.append(f"$.scope.{dimension_name} cannot be unresolved in approved_for_lab state")
     if profile["state"] == "draft" and profile["approval_evidence_refs"]:
         errors.append("$.approval_evidence_refs must be empty for draft state")
 
