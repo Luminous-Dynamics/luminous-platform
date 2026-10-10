@@ -18,7 +18,7 @@ Schema references are resolved only within the supplied schema document: local J
 
 ## Renderer compatibility audit
 
-This audit keeps schema validity separate from renderer compatibility and target qualification. Adapter scope is part of the report; the checked-in profile covers only the browser-WASM demo, not every host in Sovereign Boot. See [the adapter qualification matrix](../../docs/architecture/AMBIENT_ADAPTER_QUALIFICATION_MATRIX.md).
+This audit keeps schema validity separate from renderer compatibility and target qualification. Adapter scope is part of the report; the checked-in profile covers only the browser-WASM demo, not every host in Sovereign Boot. Profile validation also binds each adapter ID to required entrypoint paths and rejects duplicate paths even when blob IDs differ, so a browser-only source list cannot be relabeled as native boot. See [the adapter qualification matrix](../../docs/architecture/AMBIENT_ADAPTER_QUALIFICATION_MATRIX.md).
 
 Run:
 

@@ -30,6 +30,19 @@ SIMULATION_SUPPORT = {
     "driftAmplitude": ("driftAmplitudeConfigurable", "simulation.drift_amplitude.not_configurable"),
 }
 
+# Each adapter identity must pin its own minimum source entrypoints. Additional
+# supporting paths may be recorded, but paths cannot be relabeled across hosts.
+ADAPTER_REQUIRED_ENTRYPOINTS = {
+    "browser-wasm-demo": {
+        "crates/visual-wasm/src/lib.rs",
+        "crates/visual-wasm/www/app.js",
+    },
+    "wasi-cli": {"crates/visual-wasi/src/main.rs"},
+    "wit-component-guest": {"crates/visual-component/src/lib.rs"},
+    "wasmtime-conformance-host": {"tools/component-host-smoke/src/main.rs"},
+    "native-drm-boot": {"crates/quicken-fb/src/main.rs"},
+}
+
 
 @dataclass(frozen=True)
 class CompatibilityIssue:
@@ -73,7 +86,25 @@ def validate_profile(profile_schema: Any, profile: Any) -> list[Issue]:
         return schema_issues
     validator = Draft202012Validator(profile_schema, format_checker=FormatChecker())
     errors = sorted(validator.iter_errors(profile), key=lambda e: (tuple(map(str, e.absolute_path)), e.message))
-    return [Issue("profile.invalid", f"at /{'/'.join(map(str, e.absolute_path))}: {e.message}") for e in errors]
+    if errors:
+        return [Issue("profile.invalid", f"at /{'/'.join(map(str, e.absolute_path))}: {e.message}") for e in errors]
+
+    adapter = profile["adapter"]
+    paths = [item["path"] for item in adapter["sourceFiles"]]
+    issues: list[Issue] = []
+    if len(paths) != len(set(paths)):
+        issues.append(Issue(
+            "profile.adapter_source_path.duplicate",
+            "adapter sourceFiles must contain each path exactly once, regardless of blobSha",
+        ))
+    required = ADAPTER_REQUIRED_ENTRYPOINTS[adapter["id"]]
+    missing = sorted(required - set(paths))
+    if missing:
+        issues.append(Issue(
+            "profile.adapter_source_entrypoint.missing",
+            f"adapter {adapter['id']!r} must pin required entrypoint(s): {', '.join(missing)}",
+        ))
+    return issues
 
 
 def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> CompatibilityReport:

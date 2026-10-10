@@ -45,6 +45,29 @@ class RendererCompatibilityTests(unittest.TestCase):
         )
         self.assertEqual("source-inspection-only", self.profile["adapter"]["qualificationState"])
 
+    def test_adapter_id_requires_its_pinned_entrypoints(self):
+        candidate = copy.deepcopy(self.profile)
+        candidate["adapter"]["id"] = "native-drm-boot"
+        issues = validate_profile(self.profile_schema, candidate)
+        self.assertIn(
+            "profile.adapter_source_entrypoint.missing",
+            {issue.code for issue in issues},
+        )
+
+    def test_duplicate_adapter_source_path_is_rejected_when_blob_sha_differs(self):
+        candidate = copy.deepcopy(self.profile)
+        candidate["adapter"]["sourceFiles"].append({
+            "path": "crates/visual-wasm/src/lib.rs",
+            "blobSha": "0" * 40,
+        })
+        # Distinct objects pass JSON Schema's uniqueItems check; semantic path
+        # identity must still reject a repeated source path.
+        issues = validate_profile(self.profile_schema, candidate)
+        self.assertIn(
+            "profile.adapter_source_path.duplicate",
+            {issue.code for issue in issues},
+        )
+
     def test_mismatched_engine_id_is_rejected(self):
         candidate = copy.deepcopy(self.profile)
         candidate["engineId"] = "different-engine-v1"
