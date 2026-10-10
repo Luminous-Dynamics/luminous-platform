@@ -23,6 +23,7 @@ CREATE TABLE case_activity (
  actor_id text NOT NULL, actor_role text NOT NULL CHECK (actor_role IN ('technician','admin','integration','requester')),
  activity_type text NOT NULL, occurred_at timestamptz NOT NULL, reason text NOT NULL,
  prior_revision bigint NOT NULL CHECK (prior_revision >= 0), new_revision bigint NOT NULL CHECK (new_revision >= 1),
+ CONSTRAINT case_activity_revision_step CHECK (new_revision = prior_revision + 1 AND sequence = new_revision),
  details jsonb NOT NULL DEFAULT '{}'::jsonb,
  PRIMARY KEY (tenant_id, case_id, sequence), UNIQUE (tenant_id, activity_id),
  FOREIGN KEY (tenant_id, case_id) REFERENCES work_cases (tenant_id, case_id)
