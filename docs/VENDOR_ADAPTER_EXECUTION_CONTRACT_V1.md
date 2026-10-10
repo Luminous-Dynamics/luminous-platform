@@ -83,6 +83,8 @@ Immediately before mutation, re-read enough device state to establish that the p
 
 The mutation receipt records an opaque target identity digest rather than requiring a raw serial number in shared records. Protect the mapping to the physical asset as sensitive customer inventory. Even a digest can leak information if it is predictable or correlatable; use an appropriately keyed commitment or random asset token where needed.
 
+The receipt also binds the **adapter implementation source commit** and exact product family. Before `AUTHORIZATION_VERIFIED` or any possible device effect, the receipt validator cross-checks the capability registry: the named operation must be `tested`, its adapter must meet the risk-specific maturity gate, the physical target's vendor/product family/model/hardware revision/software version/region must match the tested scope, and the receipt's adapter revision must equal that operation's tested source revision. A family-level `A0_DISCOVERED` entry may support a `PREPARED` planning receipt only; it cannot authorize an operation. This cross-document gate is still a contract implementation, not evidence that a real device was tested.
+
 ## 6. Recovery evidence gates
 
 Before an operation begins, the receipt must reference a recovery plan and evidence sufficient for the risk of the operation. For firmware/reflash, that normally means:
@@ -116,7 +118,8 @@ A shared Holochain DHT must not become the default store for full inventory, raw
 
 No mutation-capable adapter can advance beyond discovery/read-only until all of these pass for an exact physical device/software/region scope:
 
-- schema and adversarial tests for action/target/pre-state/policy/profile binding;
+- schema and adversarial tests for action/target/pre-state/policy/profile binding, exact adapter source revision, product family and tested model/revision/software/region scope;
+- cross-document receipt-to-registry validation that rejects authorization/effects unless the operation is explicitly tested and its adapter maturity meets the risk-specific gate;
 - stale pre-state, expired authorization, forged actor, wrong tenant/region/target and revoked credential denial tests;
 - timeout-before-apply, timeout-after-apply, rate-limit and partial-commit cases;
 - no-replay behavior after `INDETERMINATE` and read-only reconciliation tests;
