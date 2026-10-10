@@ -116,7 +116,6 @@
               "software_source_only",
               "source_incomplete_or_stale",
               "unselected",
-              "native_design_and_bom_reviewed",
               "product_documentation_reviewed"
             ]
           },
