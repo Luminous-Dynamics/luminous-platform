@@ -82,8 +82,8 @@ def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> Co
             issues.append(issue)
 
     simulation = manifest.get("simulation", {})
-    if simulation.get("engine") != "mycelial-network-v1":
-        add("engine.unsupported", "/simulation/engine", "profile does not declare support for this engine")
+    if simulation.get("engine") != profile["engineId"]:
+        add("engine.unsupported", "/simulation/engine", f"profile declares engine {profile["engineId"]!r}, not {simulation.get("engine")!r}")
     if profile["seedEncoding"] != "uint32-domain-separated-blake3-v1":
         add("seed.encoding.unsupported", "/simulation/seed", "Scene Pack uint32 seed encoding is not implemented by this renderer profile")
 

@@ -36,5 +36,6 @@
   },
   "lifecycle": {
     "supportedPolicies": []
-  }
+  },
+  "engineId": "mycelial-network-v1"
 }

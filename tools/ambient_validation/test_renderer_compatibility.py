@@ -32,6 +32,12 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertEqual("c3b7bb9a376af9abd7bff7cdfc13472e2d44e82e", self.profile["renderer"]["commit"])
         self.assertEqual("source-inspection-only", self.profile["renderer"]["qualificationState"])
 
+    def test_mismatched_engine_id_is_rejected(self):
+        candidate = copy.deepcopy(self.profile)
+        candidate["engineId"] = "different-engine-v1"
+        report = audit_compatibility(self.manifest, candidate)
+        self.assertIn("engine.unsupported", {item.code for item in report.issues})
+
     def test_current_profile_fails_closed_for_known_scene_pack_gaps(self):
         report = audit_compatibility(self.manifest, self.profile)
         self.assertFalse(report.compatible)
