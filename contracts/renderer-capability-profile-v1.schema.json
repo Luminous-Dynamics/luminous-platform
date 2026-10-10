@@ -259,7 +259,9 @@
               "onLock:reduced-motion",
               "onLock:static",
               "onSuspend:pause",
-              "onWake:reinitialize-from-seed"
+              "onWake:reinitialize-from-seed",
+              "onHidden:pause",
+              "onDisplayAsleep:pause"
             ]
           }
         }

@@ -54,6 +54,8 @@ class RendererCompatibilityTests(unittest.TestCase):
             "presentation.motion.unsupported",
             "presentation.composition.unsupported",
             "accessibility.reduced_motion_variant.unsupported",
+            "budget.pause_when_hidden.not_enforced",
+            "budget.pause_when_display_asleep.not_enforced",
             "lifecycle.policy.unsupported",
         }.issubset(codes), f"missing expected blockers: {codes}")
         self.assertNotIn("seed.encoding.unsupported", codes)
@@ -70,6 +72,29 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertNotIn("presentation.static_gradient.unsupported", codes)
         self.assertNotIn("simulation.resource_branch_limit.not_configurable", codes)
         self.assertNotIn("budget.branch_ceiling.exceeds_core_ceiling", codes)
+
+    def test_hidden_and_display_sleep_budgets_are_independent_host_policies(self):
+        report = audit_compatibility(self.manifest, self.profile)
+        codes = {item.code for item in report.issues}
+        self.assertIn("budget.pause_when_hidden.not_enforced", codes)
+        self.assertIn("budget.pause_when_display_asleep.not_enforced", codes)
+
+        candidate = copy.deepcopy(self.profile)
+        candidate["lifecycle"]["supportedPolicies"] = [
+            "onHidden:pause",
+            "onDisplayAsleep:pause",
+        ]
+        supported_report = audit_compatibility(self.manifest, candidate)
+        supported_codes = {item.code for item in supported_report.issues}
+        self.assertNotIn("budget.pause_when_hidden.not_enforced", supported_codes)
+        self.assertNotIn("budget.pause_when_display_asleep.not_enforced", supported_codes)
+
+        # A suspend policy is not a substitute for the distinct display-sleep promise.
+        candidate["lifecycle"]["supportedPolicies"] = ["onSuspend:pause"]
+        partial_report = audit_compatibility(self.manifest, candidate)
+        partial_codes = {item.code for item in partial_report.issues}
+        self.assertIn("budget.pause_when_hidden.not_enforced", partial_codes)
+        self.assertIn("budget.pause_when_display_asleep.not_enforced", partial_codes)
 
     def test_variant_support_does_not_imply_motion_or_composition_support(self):
         candidate = copy.deepcopy(self.profile)
@@ -163,7 +188,8 @@ class RendererCompatibilityTests(unittest.TestCase):
             "staticGradientFallback": True,
         }
         candidate["lifecycle"]["supportedPolicies"] = [
-            "onLock:reduced-motion", "onSuspend:pause", "onWake:reinitialize-from-seed"
+            "onLock:reduced-motion", "onSuspend:pause", "onWake:reinitialize-from-seed",
+            "onHidden:pause", "onDisplayAsleep:pause",
         ]
         issues = validate_profile(self.profile_schema, candidate)
         self.assertEqual([], issues, "\n".join(map(str, issues)))

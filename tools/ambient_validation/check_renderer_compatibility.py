@@ -189,9 +189,23 @@ def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> Co
             "profile cannot produce the required gradient-only static fallback")
 
     lifecycle = manifest.get("lifecycle", {})
+    supported_lifecycle_policies = profile["lifecycle"]["supportedPolicies"]
+    resource_budget = manifest.get("resourceBudget", {})
+    if resource_budget.get("pauseWhenHidden") is True and "onHidden:pause" not in supported_lifecycle_policies:
+        add(
+            "budget.pause_when_hidden.not_enforced",
+            "/resourceBudget/pauseWhenHidden",
+            "the selected renderer/host profile does not declare pause-on-hidden enforcement",
+        )
+    if resource_budget.get("pauseWhenDisplayAsleep") is True and "onDisplayAsleep:pause" not in supported_lifecycle_policies:
+        add(
+            "budget.pause_when_display_asleep.not_enforced",
+            "/resourceBudget/pauseWhenDisplayAsleep",
+            "the selected renderer/host profile does not declare pause-on-display-asleep enforcement",
+        )
     for field in ("onLock", "onSuspend", "onWake"):
         policy = lifecycle.get(field)
-        if policy is not None and f"{field}:{policy}" not in profile["lifecycle"]["supportedPolicies"]:
+        if policy is not None and f"{field}:{policy}" not in supported_lifecycle_policies:
             add("lifecycle.policy.unsupported", f"/lifecycle/{field}",
                 f"renderer/host profile does not enforce lifecycle policy {field}={policy}")
 

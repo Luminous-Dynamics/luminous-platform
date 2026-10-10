@@ -34,6 +34,8 @@ The parser explicitly validates the fixture's `engineVersion` against `1.0.0`, a
 
 The audit checks `accessibility.reducedMotionPresentation` as a selected variant, not just whether static-gradient pixels can be generated. A `staticFallback` primitive does not automatically implement a manifest preference for `idle` or `lockedBackground`; the chosen variant must be declared supported, or the compatibility report emits `accessibility.reduced_motion_variant.unsupported`. It also records supported motion modes and composition values separately from variant names: declaring `desktop` as a variant does not imply support for `edge-biased-network`, just as declaring a `motion` field configurable does not mean every mode is implemented.
 
+The resource-budget flags `pauseWhenHidden` and `pauseWhenDisplayAsleep` are audited independently from `lifecycle.onSuspend`. Visibility throttling does not prove display-sleep handling, and an OS suspend policy does not by itself prove either behavior. Host profiles must explicitly declare `onHidden:pause` and `onDisplayAsleep:pause` when those promises are actually implemented.
+
 A compatibility pass from a future profile still requires exact-head compile/runtime tests, effective-settings checks, golden RGBA output, resource enforcement, and host lifecycle evidence. This checker does not render images or qualify runtime behavior.
 
 
