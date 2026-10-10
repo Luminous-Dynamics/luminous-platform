@@ -89,6 +89,7 @@ Luminous Platform is being organized into a product line for secure administrati
 - [Global vendor interoperability and firmware services v1](docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md)
 - [Vendor adapter execution contract v1](docs/VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md)
 - [First vendor adapter lab slice v1](docs/VENDOR_ADAPTER_FIRST_LAB_SLICE_V1.md)
+- [Vendor management endpoint and credential boundary v1](docs/VENDOR_MANAGEMENT_ENDPOINT_SECURITY_V1.md)
 - [Vendor adapter capability registry](security/vendor-adapter-capability-registry-v1.json)
 - [Vendor adapter capability schema](schemas/vendor-adapter-capability-registry-v1.schema.json)
 - [Vendor mutation receipt schema](schemas/vendor-operation-effect-receipt-v1.schema.json)
