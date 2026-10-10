@@ -6,22 +6,36 @@ on:
     paths:
       - "hardware/**"
       - "profiles/**"
+      - "security/**"
       - "schemas/hardware-portfolio-v1.schema.json"
       - "schemas/hardware-deployment-profile-v1.schema.json"
+      - "schemas/hardware-control-evidence-matrix-v1.schema.json"
       - "tools/validate_hardware_portfolio.py"
       - "tools/validate_hardware_deployment_profile.py"
-      - "tests/test_hardware_portfolio.py"
-      - "tests/test_hardware_deployment_profile.py"
+      - "tools/validate_hardware_control_evidence_matrix.py"
+      - "tests/test_hardware_*.py"
       - "requirements-hardware-portfolio.txt"
+      - "docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md"
+      - "docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md"
+      - "README.md"
       - ".github/workflows/hardware-portfolio.yml"
   push:
     branches: [main]
     paths:
       - "hardware/**"
+      - "profiles/**"
+      - "security/**"
       - "schemas/hardware-portfolio-v1.schema.json"
+      - "schemas/hardware-deployment-profile-v1.schema.json"
+      - "schemas/hardware-control-evidence-matrix-v1.schema.json"
       - "tools/validate_hardware_portfolio.py"
-      - "tests/test_hardware_portfolio.py"
+      - "tools/validate_hardware_deployment_profile.py"
+      - "tools/validate_hardware_control_evidence_matrix.py"
+      - "tests/test_hardware_*.py"
       - "requirements-hardware-portfolio.txt"
+      - "docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md"
+      - "docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md"
+      - "README.md"
       - ".github/workflows/hardware-portfolio.yml"
   workflow_dispatch:
 
@@ -34,7 +48,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate catalog and fail-closed maturity rules
+    name: Validate hardware catalog, deployment profile and control evidence
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -53,11 +67,14 @@ jobs:
       - name: Install pinned validation dependency
         run: python -m pip install --disable-pip-version-check --requirement requirements-hardware-portfolio.txt
 
-      - name: Validate catalog and schema
+      - name: Validate hardware catalog
         run: python tools/validate_hardware_portfolio.py
 
       - name: Validate draft deployment profile and catalog references
         run: python tools/validate_hardware_deployment_profile.py
+
+      - name: Validate control evidence matrix and status semantics
+        run: python tools/validate_hardware_control_evidence_matrix.py
 
       - name: Run adversarial contract tests
         run: python -m unittest discover -s tests -p "test_hardware_*.py" -v
