@@ -258,8 +258,10 @@ class VendorOperationReceiptTests(unittest.TestCase):
             "state": "APPLY_STARTED",
             "occurred_at": "2026-10-10T19:24:00+02:00",
             "actor_ref": "principal:fixture-executor",
-            "evidence_refs": ["evidence:replay-attempt"],
+            "evidence_refs": ["evidence:replay-attempt", "evidence:replay-fresh-prestate"],
             "prestate_digest": receipt["intent"]["prestate_digest"],
+            "apply_prestate_observed_at": "2026-10-10T19:23:59+02:00",
+            "apply_prestate_observation_ref": "evidence:replay-fresh-prestate",
         })
         receipt["state"] = "APPLY_STARTED"
         receipt["effect_state"] = "EFFECT_POSSIBLE"
