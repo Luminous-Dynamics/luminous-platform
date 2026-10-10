@@ -86,6 +86,44 @@ class VendorAdapterRegistryTests(unittest.TestCase):
         self.assertTrue(any("tested_revision" in error for error in errors))
         self.assertTrue(any("tested_scope" in error for error in errors))
 
+    def test_tested_scope_rejects_wildcard_identity(self) -> None:
+        payload = copy.deepcopy(self.registry)
+        adapter = payload["adapters"][0]
+        adapter["operations"][0].update({
+            "state": "tested",
+            "evidence_refs": ["evidence:test-run-1"],
+            "tested_revision": "a" * 40,
+            "tested_scope": {
+                "model": "*",
+                "product_family": "IOS XE",
+                "hardware_revision": "Rev A",
+                "software_version": "1.2.3",
+                "region": "test-lab",
+                "test_environment": "isolated bench fixture",
+            },
+        })
+        errors = self.errors(payload)
+        self.assertTrue(any("tested_scope.model must be exact" in error for error in errors))
+
+    def test_tested_scope_family_must_be_declared_by_adapter(self) -> None:
+        payload = copy.deepcopy(self.registry)
+        adapter = payload["adapters"][0]
+        adapter["operations"][0].update({
+            "state": "tested",
+            "evidence_refs": ["evidence:test-run-1"],
+            "tested_revision": "a" * 40,
+            "tested_scope": {
+                "model": "Exact Model",
+                "product_family": "Meraki MX",
+                "hardware_revision": "Rev A",
+                "software_version": "1.2.3",
+                "region": "test-lab",
+                "test_environment": "isolated bench fixture",
+            },
+        })
+        errors = self.errors(payload)
+        self.assertTrue(any("tested_scope.product_family must match" in error for error in errors))
+
     def test_state_change_requires_action_binding_fresh_prestate_and_recovery(self) -> None:
         payload = copy.deepcopy(self.registry)
         adapter = payload["adapters"][0]
@@ -141,7 +179,7 @@ class VendorAdapterRegistryTests(unittest.TestCase):
             "tested_revision": "b" * 40,
             "tested_scope": {
                 "model": "Exact Router",
-                "product_family": "Exact router family",
+                "product_family": "Exact supported router/AP model and hardware revision",
                 "hardware_revision": "Rev B",
                 "software_version": "OpenWrt target build",
                 "region": "test-lab",
