@@ -1516,7 +1516,7 @@ jobs:
               "verified_direct_submodule_count": len(roots) - 1,
               "unaudited_submodules": sorted(set(unaudited_submodules)),
               "lockfile_inventory_mismatch": mismatch,
-              "failure_count": len(workspace_failures) + len(unclassified_manifest_failures) + len(set(unaudited_submodules)),
+              "failure_count": len(failures) + len(set(unaudited_submodules)),
               "status": "PASS" if entries and not workspace_failures and not unclassified_manifest_failures and not unaudited_submodules and discovered_lockfiles == scanned_lockfiles else "FAIL",
               "limitations": [
                   "Tracked Cargo manifests and lockfiles in the root repository and verified direct submodules are inventoried.",
