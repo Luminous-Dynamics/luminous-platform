@@ -232,5 +232,6 @@ pub fn validate_event_for_connection(
 mod postgres_store;
 
 pub use postgres_store::{
-    AuthenticatedConnector, IngestOutcome, OutboxLease, PostgresOperationsStore, StoreError,
+    AuthenticatedConnector, DeadLetteredOutbox, IngestOutcome, OutboxFailureCode,
+    OutboxFailureOutcome, OutboxLease, PostgresOperationsStore, StoreError,
 };
