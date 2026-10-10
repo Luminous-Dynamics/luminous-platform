@@ -1,0 +1,593 @@
+{
+  "schema_version": "luminous.hardware-deployment-profile.v1",
+  "profile_id": "sa-single-site-office-lab-v1",
+  "title": "South Africa single-site office / lab reference profile",
+  "as_of": "2026-10-10",
+  "status": "draft_not_qualified",
+  "deployment_authorization": false,
+  "deployment_class": "nonproduction_validation_lab",
+  "jurisdiction": "South Africa",
+  "permitted_data_classification": "public_or_synthetic_only",
+  "purpose": "Qualify the Luminous Platform software/hardware integration, site segmentation, offline operation and recovery process on a small, reproducible reference site.",
+  "not_for_production": true,
+  "assumptions": {
+    "managed_endpoints_min": 3,
+    "managed_endpoints_target": 10,
+    "managed_endpoints_max": 15,
+    "wireless_access_points": 1,
+    "primary_site_count": 1,
+    "internet_circuit_mbps_target": 1000,
+    "workload_notes": "Assumptions for the lab profile only. Actual throughput, concurrency, coverage, power and storage capacity must be measured on the exact configured hardware."
+  },
+  "design_principles": [
+    "Default deny between security zones; explicitly allow only documented flows.",
+    "No public inbound management services; remote administration only through an approved authenticated path.",
+    "Central management loss must not prevent safe local operation, boot or recovery.",
+    "Keep the out-of-band recovery path independent of the production LAN; a management VLAN on the same switch is not physical independence.",
+    "Backups are separate from primary storage, encrypted, and restore-tested; a mirror alone is not a backup.",
+    "A component's H0 candidate status or a market listing never implies sourcing, product qualification or authorization.",
+    "Use local controller/management mode for the lab; cloud access is disabled unless explicitly assessed and authorized."
+  ],
+  "network": {
+    "inter_vlan_default_policy": "deny",
+    "remote_administration_requires": [
+      "named administrator identity",
+      "phishing-resistant MFA where applicable",
+      "approved VPN or local console",
+      "source restrictions",
+      "append-only audit evidence"
+    ],
+    "management_plane": {
+      "internet_exposure": false,
+      "cloud_controller_allowed": false,
+      "restriction": "Management services are reachable only from the privileged-admin zone or physically controlled local console. Any server BMC/iDRAC uses a dedicated isolated interface where available.",
+      "recovery_limit": "The initial profile has no separately qualified OOB switch/console server. A VLAN on the same switch is not an independent failure domain; physical console recovery remains mandatory."
+    },
+    "segments": [
+      {
+        "segment_id": "management",
+        "vlan_id": 10,
+        "name": "Network and server management",
+        "internet_egress": false,
+        "purpose": "Switch, AP, router management and BMC only; allowlisted time/update flows as required."
+      },
+      {
+        "segment_id": "privileged-admin",
+        "vlan_id": 20,
+        "name": "Privileged administration",
+        "internet_egress": true,
+        "purpose": "Managed admin workstation and approved administrative tools; MFA and host/device controls required."
+      },
+      {
+        "segment_id": "staff",
+        "vlan_id": 30,
+        "name": "Staff endpoints",
+        "internet_egress": true,
+        "purpose": "Ordinary user clients; no direct access to management services."
+      },
+      {
+        "segment_id": "servers",
+        "vlan_id": 40,
+        "name": "Local services",
+        "internet_egress": false,
+        "purpose": "Directory/identity adapters, DNS/NTP if hosted, applications, logs and internal services; explicitly allowlisted outbound updates only."
+      },
+      {
+        "segment_id": "guest",
+        "vlan_id": 50,
+        "name": "Guest Wi-Fi",
+        "internet_egress": true,
+        "purpose": "Internet-only access; block site-private IPv4, internal IPv6 prefixes and all management networks."
+      },
+      {
+        "segment_id": "iot",
+        "vlan_id": 60,
+        "name": "IoT and printers",
+        "internet_egress": false,
+        "purpose": "Permit only named service destinations, DHCP/DNS/NTP and approved updates."
+      },
+      {
+        "segment_id": "backup",
+        "vlan_id": 70,
+        "name": "Backup target",
+        "internet_egress": false,
+        "purpose": "Backup ingress only during allowed windows; separate credentials and retention controls; no ordinary workstation access."
+      },
+      {
+        "segment_id": "quarantine",
+        "vlan_id": 80,
+        "name": "Lab/quarantine",
+        "internet_egress": false,
+        "purpose": "Untrusted devices and test workloads; no route to management, staff or production service zones."
+      }
+    ],
+    "required_flow_contracts": [
+      {
+        "id": "guest-internet-only",
+        "from": [
+          "guest"
+        ],
+        "to": [
+          "approved WAN egress"
+        ],
+        "decision": "allow",
+        "limits": [
+          "DHCP",
+          "DNS through approved resolver",
+          "established outbound traffic"
+        ],
+        "description": "Deny all internal prefixes and inter-VLAN destinations, including IPv6."
+      },
+      {
+        "id": "admin-to-management",
+        "from": [
+          "privileged-admin"
+        ],
+        "to": [
+          "management"
+        ],
+        "decision": "allow",
+        "limits": [
+          "documented management protocols",
+          "named source devices",
+          "authenticated administrators"
+        ],
+        "description": "Only the privileged admin zone may initiate supported management protocols."
+      },
+      {
+        "id": "user-to-server",
+        "from": [
+          "staff"
+        ],
+        "to": [
+          "servers"
+        ],
+        "decision": "allow",
+        "limits": [
+          "explicit application ports only"
+        ],
+        "description": "No blanket user-to-server access."
+      },
+      {
+        "id": "iot-egress",
+        "from": [
+          "iot"
+        ],
+        "to": [
+          "named services"
+        ],
+        "decision": "allow",
+        "limits": [
+          "DHCP",
+          "DNS",
+          "NTP",
+          "approved update endpoints",
+          "device-specific services"
+        ],
+        "description": "No lateral access to staff, admin, management or backup."
+      },
+      {
+        "id": "backup-flow",
+        "from": [
+          "servers"
+        ],
+        "to": [
+          "backup"
+        ],
+        "decision": "allow",
+        "limits": [
+          "selected backup protocol",
+          "scheduled window",
+          "scoped service identity"
+        ],
+        "description": "Backup target is not a general-purpose share and cannot be modified by ordinary endpoint credentials."
+      },
+      {
+        "id": "quarantine-deny",
+        "from": [
+          "quarantine"
+        ],
+        "to": [
+          "site networks"
+        ],
+        "decision": "deny",
+        "limits": [
+          "explicitly approved test exceptions only"
+        ],
+        "description": "No route from quarantine to management, staff or server zones."
+      }
+    ]
+  },
+  "components": [
+    {
+      "component_id": "gateway-lab",
+      "function": "Stateful edge router/firewall for VLAN, WAN, DNS/DHCP and optional VPN integration tests",
+      "required": true,
+      "quantity": 1,
+      "selection_state": "candidate_not_approved",
+      "catalog_refs": [
+        "openwrt-one-v1"
+      ],
+      "model_candidate": "OpenWrt One 1",
+      "candidate_use": "Lab evaluation only; not a substitute for a government procurement's contract-backed next-generation firewall and support obligations.",
+      "minimum_requirements": [
+        "802.1Q tagged LAN trunk",
+        "IPv4/IPv6 stateful filtering",
+        "default-deny inter-VLAN policy",
+        "auditable configuration backup",
+        "signed update and recoverable upgrade",
+        "measured firewall and VPN throughput",
+        "no remote management exposure"
+      ],
+      "blockers": [
+        "Pin exact board revision/lot and firmware release.",
+        "Measure firewall throughput with actual ACL/VPN features and realistic packet sizes.",
+        "Validate secure update, fail-safe reset and restore.",
+        "If used for an operational agency profile, compare against a vendor-supported NGFW with required licensing, support SLA and tender eligibility."
+      ]
+    },
+    {
+      "component_id": "managed-switch",
+      "function": "Managed access switch with PoE for the access point and VLAN segmentation",
+      "required": true,
+      "quantity": 1,
+      "selection_state": "candidate_not_approved",
+      "catalog_refs": [
+        "tp-link-sg2210mp-current-revision"
+      ],
+      "model_candidate": "TP-Link Omada SG2210MP current hardware revision only; exact South African SKU not yet confirmed",
+      "minimum_requirements": [
+        "802.1Q VLANs and trunk/access port profiles",
+        "per-VLAN or per-port access controls",
+        "802.1X/RADIUS if required by chosen policy",
+        "DHCP snooping and management access controls",
+        "PoE+ for AP",
+        "config export/restore and supported firmware",
+        "documented lifecycle/warranty"
+      ],
+      "blockers": [
+        "Do not buy a listing that only says TL-SG2210MP without an exact supported hardware version.",
+        "Confirm local firmware, warranty and end-of-support; an older TL-SG2210MP page is marked End of Life in another region.",
+        "Prove management/cloud access can be disabled or locally controlled.",
+        "Price listings with unknown hardware revision are excluded from the procurement subtotal."
+      ]
+    },
+    {
+      "component_id": "wireless-ap",
+      "function": "Staff and guest Wi-Fi with separated SSIDs/VLANs",
+      "required": true,
+      "quantity": 1,
+      "selection_state": "candidate_not_approved",
+      "catalog_refs": [
+        "tp-link-eap650-indoor-ap"
+      ],
+      "model_candidate": "TP-Link Omada EAP650 indoor ceiling-mount Wi-Fi 6",
+      "minimum_requirements": [
+        "SSID-to-VLAN mapping",
+        "WPA3 policy where supported by all relevant clients",
+        "802.1X/RADIUS when required",
+        "guest-client isolation",
+        "firmware support policy",
+        "local management with no mandatory cloud dependency",
+        "country/regulatory domain and RF survey"
+      ],
+      "blockers": [
+        "Pin hardware revision and firmware; validate WPA3 and 802.1X against the selected identity service.",
+        "Use local management/controller mode and test WAN/cloud outage.",
+        "Survey RF and confirm legal South African channel/power settings."
+      ]
+    },
+    {
+      "component_id": "primary-server",
+      "function": "Local identity/service adapters, evidence/log collection, internal services and deployment control-plane test",
+      "required": true,
+      "quantity": 1,
+      "selection_state": "candidate_not_approved",
+      "catalog_refs": [
+        "dell-poweredge-t160"
+      ],
+      "model_candidate": "Dell PowerEdge T160, quote configuration not selected",
+      "minimum_requirements": [
+        "TPM 2.0 and supported firmware update process",
+        "32–64 GB ECC RAM target for pilot growth",
+        "two enterprise SSDs or boot/storage design with redundancy where supported",
+        "dedicated management port",
+        "NixOS compatibility test for selected CPU/NIC/storage controller",
+        "vendor warranty and service route",
+        "encrypted storage and tested restore"
+      ],
+      "blockers": [
+        "Do not treat a 16 GB/single 2 TB HDD marketplace baseline as the recommended configuration.",
+        "Obtain a line-item quote with exact part numbers, TPM, ECC memory, disk/controller topology, power supply and support response time.",
+        "Isolate iDRAC on management network with no direct Internet exposure; test credentials, firmware and recovery."
+      ]
+    },
+    {
+      "component_id": "managed-endpoint",
+      "function": "Reproducible NixOS workstation profile for admin and ordinary users",
+      "required": true,
+      "quantity": 1,
+      "selection_state": "candidate_not_approved",
+      "catalog_refs": [
+        "framework-laptop13-amd-ai300",
+        "framework-laptop-13"
+      ],
+      "model_candidate": "Framework Laptop 13 AMD Ryzen AI 300 Series; commercial support and exact local SKU not confirmed",
+      "minimum_requirements": [
+        "TPM 2.0 or equivalent platform trust evidence",
+        "full-disk encryption",
+        "signed boot chain per target deployment policy",
+        "hardware-backed admin authentication",
+        "NixOS hardware module and pinned kernel/firmware",
+        "controlled BIOS/firmware updates",
+        "recoverable offline reinstall"
+      ],
+      "blockers": [
+        "Framework/NixOS docs require careful Secure Boot treatment; qualify the exact firmware with a maintained signed boot path such as the applicable Lanzaboote flow rather than turning Secure Boot off and forgetting it.",
+        "Verify custom-key enrollment, firmware updates, dbx handling and recovery on the exact unit.",
+        "Confirm South African procurement, warranty, import and replacement availability; keep a supported commercial endpoint alternative open."
+      ]
+    },
+    {
+      "component_id": "identity-authenticators",
+      "function": "Administrator and operator phishing-resistant authenticators, plus enrollment/revocation process",
+      "required": true,
+      "quantity": 2,
+      "selection_state": "unselected",
+      "catalog_refs": [
+        "identity-tokens-readers"
+      ],
+      "model_candidate": null,
+      "minimum_requirements": [
+        "Two separately stored authenticators per privileged operator, plus an enrollment/recovery procedure",
+        "Document FIDO2/WebAuthn, smart-card or customer-required certificate requirements",
+        "Revocation, loss and replacement process",
+        "Validate required certificate/module status for the relevant jurisdiction"
+      ],
+      "blockers": [
+        "Select exact token and protocol after the relying-party / procurement profile is defined.",
+        "A consumer security key or open design is not a substitute for required cryptographic-module validation."
+      ]
+    },
+    {
+      "component_id": "backup-target",
+      "function": "Independent encrypted backup target for server configuration, records and critical data",
+      "required": true,
+      "quantity": 1,
+      "selection_state": "unselected",
+      "catalog_refs": [
+        "storage-backup-skus"
+      ],
+      "model_candidate": null,
+      "minimum_requirements": [
+        "Separate failure domain from primary server",
+        "Encryption/key custody defined",
+        "Restricted backup credentials and write scope",
+        "Retention/immutability policy appropriate to data",
+        "Periodic restore test with measured RPO/RTO"
+      ],
+      "blockers": [
+        "Select exact NAS/server, drives, controller and firmware.",
+        "A mirror or RAID alone is not a backup; define a separately protected offline/offsite copy."
+      ]
+    },
+    {
+      "component_id": "offline-recovery-media",
+      "function": "Offline or otherwise separately protected recovery and backup copy",
+      "required": true,
+      "quantity": 1,
+      "selection_state": "unselected",
+      "catalog_refs": [
+        "storage-backup-skus"
+      ],
+      "model_candidate": null,
+      "minimum_requirements": [
+        "Encrypted, integrity-checked artifacts and restore media",
+        "Physical custody and rotation record",
+        "Offline recovery instructions tested with no Internet",
+        "Media sanitization and replacement schedule"
+      ],
+      "blockers": [
+        "Choose media capacity, retention, recovery key custody and physical custodian.",
+        "Demonstrate restore from this medium in the no-network failure drill."
+      ]
+    },
+    {
+      "component_id": "ups-power",
+      "function": "Power protection and controlled shutdown",
+      "required": true,
+      "quantity": 1,
+      "selection_state": "unselected",
+      "catalog_refs": [
+        "ups-pdu-sensors"
+      ],
+      "model_candidate": null,
+      "minimum_requirements": [
+        "Runtime sized from measured load and target shutdown/uptime",
+        "USB or network telemetry with maintained shutdown driver",
+        "Replaceable batteries and local support",
+        "Mains-loss, brownout and low-battery alerts"
+      ],
+      "blockers": [
+        "Measure actual wattage, peak PoE load and required runtime before sizing UPS.",
+        "Select a South African 230 V / 50 Hz unit with battery replacement and tested NUT/monitoring compatibility."
+      ]
+    },
+    {
+      "component_id": "out-of-band-recovery",
+      "function": "Recovery path when WAN, normal LAN, central services or management plane fail",
+      "required": true,
+      "quantity": 1,
+      "selection_state": "unselected",
+      "catalog_refs": [
+        "oob-recovery"
+      ],
+      "model_candidate": null,
+      "minimum_requirements": [
+        "Physical console/recovery access for initial lab",
+        "Separate OOB network and console server for operational site",
+        "Credential rotation and access audit",
+        "Recovery not dependent on central management, DNS or WAN"
+      ],
+      "blockers": [
+        "The first lab uses a local physical console, not a fully independent networked OOB plane.",
+        "Choose and test a separate OOB network/console design before operational agency deployment."
+      ]
+    },
+    {
+      "component_id": "production-ngfw",
+      "function": "Operational-government firewall option with support contract when procurement requires it",
+      "required": false,
+      "quantity": 1,
+      "selection_state": "unselected",
+      "catalog_refs": [
+        "production-ngfw-support"
+      ],
+      "model_candidate": null,
+      "minimum_requirements": [
+        "Exact eligible model/SKU",
+        "Three-year or contract-required support and license",
+        "Supported threat-prevention throughput",
+        "Documented software update and incident-response SLA",
+        "Bidder/vendor channel eligible under the actual tender"
+      ],
+      "blockers": [
+        "Not needed to exercise the lab's open-source gateway path; mandatory for some procurement profiles. Re-open this component when turning the lab architecture into a government operational offer."
+      ]
+    },
+    {
+      "component_id": "site-cabling-and-transceivers",
+      "function": "Patch cables, labels and any required SFP/fibre link",
+      "required": true,
+      "quantity": 1,
+      "selection_state": "unselected",
+      "catalog_refs": [
+        "nic-optics-cabling"
+      ],
+      "model_candidate": null,
+      "minimum_requirements": [
+        "CAT6 or better copper for gigabit/PoE runs within length limits",
+        "Correct SFP/SFP+ type and link budget where needed",
+        "Documented cable/link labels and tested port map"
+      ],
+      "blockers": [
+        "Measure run lengths and confirm exact switch hardware version and optics compatibility before ordering."
+      ]
+    }
+  ],
+  "pricing_snapshot": {
+    "checked_on": "2026-10-10",
+    "currency": "ZAR",
+    "confidence": "marketplace_indicative_not_quote",
+    "price_research": [
+      {
+        "component_id": "wireless-ap",
+        "catalog_ref": "tp-link-eap650-indoor-ap",
+        "minimum_zar": 1929,
+        "maximum_zar": 2049,
+        "source_url": "https://www.pricecheck.co.za/offers/218530957/TP-link%2BEAP650%2BAX3000%2BCeiling%2BMount%2BWifi%2B6%2BAccess%2BPoint",
+        "configuration_note": "TP-Link EAP650 indoor ceiling-mount Wi-Fi 6 AP; marketplace comparison showed two sellers. Exact hardware revision and a written quote are still required."
+      },
+      {
+        "component_id": "primary-server",
+        "catalog_ref": "dell-poweredge-t160",
+        "minimum_zar": 27499,
+        "maximum_zar": 59799,
+        "source_url": "https://www.pricecheck.co.za/offers/251362571/Dell%2BPoweredge%2BT160%2BIntel%2BXeon%2BE%2BE-2414%2BTower%2BServer",
+        "configuration_note": "Marketplace comparison of a Xeon E-2414, 16 GB ECC, 2 TB HDD baseline; seller/configuration/service variation is large and this is not the target build."
+      }
+    ],
+    "partial_subtotal_min_zar": 29428,
+    "partial_subtotal_max_zar": 61848,
+    "included_components": [
+      "wireless-ap",
+      "primary-server"
+    ],
+    "excluded_components": [
+      "gateway-lab",
+      "managed-switch",
+      "managed-endpoint",
+      "identity-authenticators",
+      "backup-target",
+      "offline-recovery-media",
+      "ups-power",
+      "out-of-band-recovery",
+      "site-cabling-and-transceivers",
+      "tax/shipping/customs",
+      "memory/storage upgrades",
+      "support contracts",
+      "spares"
+    ],
+    "explanation": "The partial subtotal only sums the two observed marketplace price ranges above for one AP and one server; it is not a full BOM estimate, quote, approval to buy, or procurement budget. Switch pricing is deliberately omitted because live listings may omit an EOL/ambiguous hardware version."
+  },
+  "acceptance_gates": [
+    {
+      "gate_id": "catalog-integrity",
+      "status": "NOT_RUN",
+      "evidence_expected": "Exact-head schema/validator output binds profile to catalogue commit; unknown/duplicate catalogue references fail."
+    },
+    {
+      "gate_id": "sku-and-procurement",
+      "status": "NOT_RUN",
+      "evidence_expected": "Quotes identify exact models/hardware revisions, warranties, support end dates, lead times and local service route."
+    },
+    {
+      "gate_id": "firmware-provenance",
+      "status": "NOT_RUN",
+      "evidence_expected": "Firmware/software bill of materials, signature/update/recovery paths, licenses and source revisions captured."
+    },
+    {
+      "gate_id": "boot-trust",
+      "status": "NOT_RUN",
+      "evidence_expected": "Exact endpoint/server Secure Boot, TPM/measured-boot and full-disk-encryption tests, including rollback/recovery."
+    },
+    {
+      "gate_id": "network-segmentation",
+      "status": "NOT_RUN",
+      "evidence_expected": "Physical-device tests prove VLAN mapping, default deny, guest isolation, IPv4/IPv6 rules and allowed flows."
+    },
+    {
+      "gate_id": "identity-and-management",
+      "status": "NOT_RUN",
+      "evidence_expected": "Admin enrollment/MFA, separate credentials, audit, controller-locality and management-plane isolation tested."
+    },
+    {
+      "gate_id": "update-and-offline-operation",
+      "status": "NOT_RUN",
+      "evidence_expected": "Signed updates, restore and safe operation without WAN/central service tested."
+    },
+    {
+      "gate_id": "backup-restore",
+      "status": "NOT_RUN",
+      "evidence_expected": "Separate backup media, recovery keys, restore point and measured RPO/RTO validated."
+    },
+    {
+      "gate_id": "power-and-fault-injection",
+      "status": "NOT_RUN",
+      "evidence_expected": "Mains loss, UPS runtime/shutdown, PoE limit, disk failure and interrupted update/reboot tested."
+    },
+    {
+      "gate_id": "performance-and-observability",
+      "status": "NOT_RUN",
+      "evidence_expected": "Measured throughput, CPU/memory, Wi-Fi coverage, log retention, alerting and capacity margins captured."
+    },
+    {
+      "gate_id": "local-serviceability",
+      "status": "NOT_RUN",
+      "evidence_expected": "Local spares, replacement procedures, delivery/warranty, support path and obsolescence evidence recorded."
+    },
+    {
+      "gate_id": "customer-authorization",
+      "status": "BLOCKED",
+      "evidence_expected": "Named customer/security authority requirements, formal assessment and written authorization. Not part of this non-production lab profile."
+    }
+  ],
+  "explicit_non_claims": [
+    "This reference profile is not production-qualified or deployment-authorized.",
+    "No listed candidate has passed hardware-in-the-loop or exact SKU validation through this profile.",
+    "No inventory price is a formal supplier quotation.",
+    "The profile is not a substitute for a specific South African agency tender pack, security policy or lawful authorization.",
+    "The OpenWrt One lab candidate is not automatically a contract-backed next-generation firewall.",
+    "The initial management VLAN is not a fully independent out-of-band network."
+  ]
+}
