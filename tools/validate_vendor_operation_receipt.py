@@ -26,7 +26,7 @@ _EFFECT_FOR_STATE = {
     "APPLY_STARTED": {"EFFECT_POSSIBLE"},
     "APPLIED_UNVERIFIED": {"EFFECT_APPLIED"},
     "VERIFIED": {"EFFECT_VERIFIED"},
-    "FAILED": {"NO_EFFECT", "EFFECT_REJECTED"},
+    "FAILED": {"NO_EFFECT", "EFFECT_REJECTED", "EFFECT_PARTIAL"},
     "INDETERMINATE": {"EFFECT_INDETERMINATE"},
     "ABORTED": {"NO_EFFECT"},
 }
@@ -117,6 +117,17 @@ def receipt_errors(receipt: dict[str, Any], schema: dict[str, Any]) -> list[str]
             errors.append("$.authorization must be verified before APPLY_STARTED or any later effect state")
 
     event_states = [item["state"] for item in journal]
+    if auth["state"] == "verified" and "AUTHORIZATION_VERIFIED" in event_states:
+        auth_event = next(item for item in journal if item["state"] == "AUTHORIZATION_VERIFIED")
+        auth_event_time = parse_time(
+            auth_event["occurred_at"],
+            "$.journal[AUTHORIZATION_VERIFIED].occurred_at",
+            errors,
+        )
+        if created and auth_event_time and auth_event_time < created:
+            errors.append("$.journal AUTHORIZATION_VERIFIED cannot predate receipt creation")
+        if auth_event_time and verified_at and auth_event_time != verified_at:
+            errors.append("$.authorization.verified_at must match the AUTHORIZATION_VERIFIED journal timestamp")
     if auth["state"] == "verified" and "AUTHORIZATION_VERIFIED" not in event_states:
         errors.append("$.authorization verified state must have an AUTHORIZATION_VERIFIED journal event")
     if "AUTHORIZATION_VERIFIED" in event_states and auth["state"] != "verified":
@@ -127,9 +138,13 @@ def receipt_errors(receipt: dict[str, Any], schema: dict[str, Any]) -> list[str]
         errors.append("$.state must equal the last journal event state")
 
     if created:
+        if prestate_at and prestate_at > created:
+            errors.append("$.intent.prestate_observed_at cannot be later than receipt creation")
         previous_time = None
         for index, event in enumerate(journal):
             event_time = parse_time(event["occurred_at"], f"$.journal[{index}].occurred_at", errors)
+            if event_time and event_time < created:
+                errors.append(f"$.journal[{index}].occurred_at cannot predate receipt creation")
             if event_time and previous_time and event_time < previous_time:
                 errors.append("$.journal timestamps must be monotonically non-decreasing")
             if event_time:
@@ -175,6 +190,21 @@ def receipt_errors(receipt: dict[str, Any], schema: dict[str, Any]) -> list[str]
             errors.append("$.journal VERIFIED event must reference evidence")
         if not recovery["recovery_evidence_refs"]:
             errors.append("$.recovery.recovery_evidence_refs are required for a verified mutation")
+
+    if state == "FAILED":
+        failed_event = journal[-1]
+        prior_states = event_states[:-1]
+        if "APPLIED_UNVERIFIED" in prior_states and event_states[-2] == "APPLIED_UNVERIFIED":
+            if receipt["effect_state"] != "EFFECT_PARTIAL":
+                errors.append(
+                    "a direct FAILED transition from APPLIED_UNVERIFIED must record EFFECT_PARTIAL, not NO_EFFECT or EFFECT_REJECTED"
+                )
+            if not failed_event["evidence_refs"]:
+                errors.append("FAILED after APPLIED_UNVERIFIED requires evidence of the partial effect and remediation state")
+        elif any(item in _APPLY_STATES for item in prior_states) and not failed_event["evidence_refs"]:
+            errors.append("FAILED after an effect may have started requires reconciliation/rejection evidence")
+        if receipt["effect_state"] == "EFFECT_PARTIAL" and not failed_event["evidence_refs"]:
+            errors.append("EFFECT_PARTIAL requires evidence references on the terminal FAILED event")
 
     if state == "INDETERMINATE" and receipt["effect_state"] != "EFFECT_INDETERMINATE":
         errors.append("indeterminate state must never be described as successful or safely failed")
