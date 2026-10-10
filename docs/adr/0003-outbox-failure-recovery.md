@@ -1,6 +1,6 @@
 # ADR 0003: Outbox Failure and Recovery Contract
 
-**Status:** Proposed implementation contract; runtime replay is intentionally not exposed  
+**Status:** Implemented in prototype; hosted qualification pending; runtime replay is intentionally not exposed  
 **Date:** 2026-10-10  
 **Scope:** PostgreSQL Operations Event V1 transactional outbox  
 **Related:** [ADR 0001](./0001-production-operational-state-store.md), [issue #5](https://github.com/Luminous-Dynamics/luminous-platform/issues/5), [issue #18](https://github.com/Luminous-Dynamics/luminous-platform/issues/18)

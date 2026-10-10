@@ -219,6 +219,27 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert!(retry_owner.try_get::<bool, _>("can_schedule").unwrap());
     assert!(retry_owner.try_get::<bool, _>("can_record_failure").unwrap());
     assert!(!retry_owner.try_get::<bool, _>("can_rewrite_payload").unwrap());
+
+    // All callable delivery-state routines must use the dedicated safe owner,
+    // SECURITY DEFINER, and the fixed trusted search path.
+    let safe_routines: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*)::bigint FROM pg_proc AS p \
+         JOIN pg_roles AS r ON r.oid = p.proowner \
+         WHERE p.oid IN ( \
+           'ops.claim_next_outbox(text,text,integer)'::regprocedure, \
+           'ops.acknowledge_outbox(text,text,text)'::regprocedure, \
+           'ops.record_outbox_failure(text,text,text,text)'::regprocedure \
+         ) \
+           AND r.rolname = 'luminous_ops_retry_owner' \
+           AND NOT r.rolsuper AND NOT r.rolbypassrls AND NOT r.rolcanlogin \
+           AND p.prosecdef \
+           AND p.proconfig @> ARRAY['search_path=pg_catalog, ops, pg_temp']"
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("inspect all SECURITY DEFINER outbox functions");
+    assert_eq!(safe_routines, 3, "every lifecycle function needs the dedicated owner and fixed search path");
+
     let runtime_can_assume_retry_owner: bool = sqlx::query_scalar(
         "SELECT pg_has_role('luminous_ops_runtime_test', 'luminous_ops_retry_owner', 'MEMBER')"
     )
@@ -852,6 +873,10 @@ async fn postgres_transactional_inbox_outbox_and_rls_contract() {
     assert_eq!(dead_letters[0].outbox_id, dead_letter_lease.outbox_id);
     assert_eq!(dead_letters[0].failure_code, "AUTHENTICATION_REJECTED");
     assert_eq!(dead_letters[0].attempts, 1);
+    assert!(matches!(
+        store.list_dead_lettered_outbox(TENANT, 101).await,
+        Err(StoreError::InvalidOutboxQuery)
+    ));
     assert!(store.claim_next_outbox(TENANT, "worker-blocked", 30).await.unwrap().is_none(),
         "a dead-lettered predecessor must not be skipped by a later incident event");
 
