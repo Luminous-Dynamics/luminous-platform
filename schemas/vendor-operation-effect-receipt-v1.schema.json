@@ -276,6 +276,7 @@
         "EFFECT_APPLIED",
         "EFFECT_VERIFIED",
         "EFFECT_REJECTED",
+        "EFFECT_PARTIAL",
         "EFFECT_INDETERMINATE"
       ]
     },
