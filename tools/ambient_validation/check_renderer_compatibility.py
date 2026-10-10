@@ -83,7 +83,10 @@ def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> Co
 
     simulation = manifest.get("simulation", {})
     if simulation.get("engine") != profile["engineId"]:
-        add("engine.unsupported", "/simulation/engine", f"profile declares engine {profile["engineId"]!r}, not {simulation.get("engine")!r}")
+        add("engine.unsupported", "/simulation/engine", "profile declares engine {!r}, not {!r}".format(profile["engineId"], simulation.get("engine")))
+    if simulation.get("engineVersion") not in profile["engineVersions"]:
+        add("engine.version.unsupported", "/simulation/engineVersion",
+            "profile does not declare support for Scene Pack engine version {!r}".format(simulation.get("engineVersion")))
     if profile["seedEncoding"] != "uint32-domain-separated-blake3-v1":
         add("seed.encoding.unsupported", "/simulation/seed", "Scene Pack uint32 seed encoding is not implemented by this renderer profile")
 

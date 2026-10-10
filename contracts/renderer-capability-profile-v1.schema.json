@@ -15,7 +15,8 @@
     "simulation",
     "resources",
     "presentation",
-    "lifecycle"
+    "lifecycle",
+    "engineVersions"
   ],
   "properties": {
     "schemaVersion": {
@@ -228,7 +229,16 @@
       }
     },
     "engineId": {
-      "const": "mycelial-network-v1"
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,63}$"
+    },
+    "engineVersions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
+      }
     }
   }
 }

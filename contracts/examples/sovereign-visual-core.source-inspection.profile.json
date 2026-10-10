@@ -37,5 +37,6 @@
   "lifecycle": {
     "supportedPolicies": []
   },
-  "engineId": "mycelial-network-v1"
+  "engineId": "mycelial-network-v1",
+  "engineVersions": []
 }

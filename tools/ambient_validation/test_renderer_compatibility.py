@@ -35,6 +35,9 @@ class RendererCompatibilityTests(unittest.TestCase):
     def test_mismatched_engine_id_is_rejected(self):
         candidate = copy.deepcopy(self.profile)
         candidate["engineId"] = "different-engine-v1"
+        candidate["engineVersions"] = ["1.0.0"]
+        profile_issues = validate_profile(self.profile_schema, candidate)
+        self.assertEqual([], profile_issues, "\\n".join(map(str, profile_issues)))
         report = audit_compatibility(self.manifest, candidate)
         self.assertIn("engine.unsupported", {item.code for item in report.issues})
 
@@ -45,6 +48,7 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertEqual("source-inspection-only", report.qualification_state)
         codes = {item.code for item in report.issues}
         self.assertTrue({
+            "engine.version.unsupported",
             "seed.encoding.unsupported",
             "palette.field_unmapped",
             "simulation.branch_limit.not_configurable",
@@ -62,6 +66,7 @@ class RendererCompatibilityTests(unittest.TestCase):
 
     def test_a_fully_declared_profile_can_pass_compatibility_without_claiming_qualification(self):
         candidate = copy.deepcopy(self.profile)
+        candidate["engineVersions"] = ["1.0.0"]
         candidate["seedEncoding"] = "uint32-domain-separated-blake3-v1"
         candidate["palette"] = {
             "configurable": True,
