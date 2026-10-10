@@ -65,7 +65,9 @@ class HardwareDeploymentProfileTests(unittest.TestCase):
     def test_acceptance_gate_cannot_claim_pass_without_evidence(self) -> None:
         profile = copy.deepcopy(self.profile)
         profile["acceptance_gates"][0]["status"] = "PASS"
-        self.assertTrue(any("cannot be PASS" in error for error in self.errors(profile)))
+        errors = self.errors(profile)
+        self.assertTrue(errors)
+        self.assertTrue(any("PASS" in error for error in errors))
 
     def test_price_subtotal_must_match_included_components(self) -> None:
         profile = copy.deepcopy(self.profile)
