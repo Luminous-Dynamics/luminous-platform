@@ -93,7 +93,8 @@
           "management_methods",
           "source_urls",
           "operations",
-          "known_boundaries"
+          "known_boundaries",
+          "maturity_evidence_refs"
         ],
         "properties": {
           "adapter_id": {
@@ -341,6 +342,14 @@
             "items": {
               "type": "string",
               "minLength": 12
+            }
+          },
+          "maturity_evidence_refs": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 8
             }
           }
         },
