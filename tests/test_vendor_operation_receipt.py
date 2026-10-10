@@ -85,6 +85,32 @@ class VendorOperationReceiptTests(unittest.TestCase):
         errors = self.errors(receipt)
         self.assertTrue(any("approval was expired at APPLY_STARTED" in error for error in errors))
 
+    def test_prestate_drift_at_apply_start_is_rejected(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        apply_event = next(item for item in receipt["journal"] if item["state"] == "APPLY_STARTED")
+        apply_event["prestate_digest"] = "f" * 64
+        errors = self.errors(receipt)
+        self.assertTrue(any("must revalidate the authorized pre-state" in error for error in errors))
+
+    def test_verified_result_must_match_desired_state_digest(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        receipt["state"] = "VERIFIED"
+        receipt["effect_state"] = "EFFECT_VERIFIED"
+        receipt["journal"].append({
+            "state": "VERIFIED",
+            "occurred_at": "2026-10-10T19:24:00+02:00",
+            "actor_ref": "principal:fixture-verifier",
+            "evidence_refs": ["evidence:verified-observation"],
+            "prestate_digest": None,
+        })
+        receipt["evidence"] = {
+            "raw_artifact_refs": ["evidence:device-state"],
+            "independent_verifier_ref": "principal:independent-reviewer",
+            "verified_state_digest": "f" * 64,
+        }
+        errors = self.errors(receipt)
+        self.assertTrue(any("must match intent.desired_state_digest" in error for error in errors))
+
     def test_indeterminate_effect_cannot_be_replayed_in_same_receipt(self) -> None:
         receipt = self._authorized_applied_receipt()
         receipt["journal"][3]["state"] = "INDETERMINATE"
