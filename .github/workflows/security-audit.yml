@@ -1324,29 +1324,41 @@ jobs:
               return sorted(set(found))
 
           def gitlinks(root):
-              raw = git_output(root, "ls-files", "--stage", "-z")
+              # Read gitlinks from the committed subject tree, not the index.
+              # ls-tree -z keeps arbitrary path bytes delimited without relying
+              # on tabs/newlines as path separators.
+              raw = git_output(root, "ls-tree", "-r", "-z", "--full-tree", "HEAD")
               found = []
               for record in raw.split(bytes([0])):
                   if not record:
                       continue
                   metadata, path_bytes = record.split(bytes([9]), 1)
                   fields = metadata.split()
-                  if fields and fields[0] == b"160000":
-                      found.append((path_bytes.decode(), fields[1].decode()))
+                  if fields and fields[0] == b"160000" and fields[1] == b"commit":
+                      path = path_bytes.decode("utf-8", "strict")
+                      if any(ord(character) < 0x20 or ord(character) == 0x7F for character in path) or "=" in path:
+                          raise ValueError(f"gitlink path cannot be represented safely in audit evidence: {path!r}")
+                      found.append((path, fields[2].decode("ascii")))
               return found
 
           def declared_submodule_paths(root):
-              if not (root / ".gitmodules").is_file():
-                  return []
+              # Parse the committed .gitmodules blob, not a mutable worktree copy.
               try:
-                  raw = git_output(root, "config", "-f", ".gitmodules", "--get-regexp", "^submodule[.].*[.]path$")
+                  git_output(root, "cat-file", "-e", "HEAD:.gitmodules")
+                  raw = git_output(
+                      root, "config", "--blob", "HEAD:.gitmodules",
+                      "--get-regexp", "^submodule[.].*[.]path$"
+                  )
               except subprocess.CalledProcessError:
                   return []
               result = []
-              for line in raw.decode().splitlines():
+              for line in raw.decode("utf-8", "strict").splitlines():
                   parts = line.split(None, 1)
                   if len(parts) == 2:
-                      result.append(parts[1])
+                      path = parts[1]
+                      if any(ord(character) < 0x20 or ord(character) == 0x7F for character in path) or "=" in path:
+                          raise ValueError(f"declared submodule path cannot be represented safely in audit evidence: {path!r}")
+                      result.append(path)
               return sorted(set(result))
 
           def prefixed(prefix, path):
