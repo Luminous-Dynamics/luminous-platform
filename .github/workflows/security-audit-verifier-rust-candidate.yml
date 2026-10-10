@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   candidate:
-    name: Format, lint, and test Rust verifier candidate
+    name: Compile, test, and lint Rust verifier candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
