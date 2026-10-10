@@ -48,6 +48,21 @@ class VendorOperationReceiptTests(unittest.TestCase):
         self.assertTrue(any("exact intent.policy_revision" in error for error in errors))
         self.assertTrue(any("exact intent.profile_digest" in error for error in errors))
 
+    def test_verified_authorization_must_have_a_journal_event(self) -> None:
+        receipt = copy.deepcopy(self.fixture)
+        receipt["authorization"].update({
+            "state": "verified",
+            "verified_at": "2026-10-10T19:21:00+02:00",
+            "authorized_action_digest": receipt["intent"]["action_digest"],
+            "authorized_target_digest": receipt["intent"]["target_digest"],
+            "authorized_prestate_digest": receipt["intent"]["prestate_digest"],
+            "authorized_policy_revision": receipt["intent"]["policy_revision"],
+            "authorized_profile_digest": receipt["intent"]["profile_digest"],
+            "signature_evidence_refs": ["evidence:signed-approval"],
+        })
+        errors = self.errors(receipt)
+        self.assertTrue(any("must have an AUTHORIZATION_VERIFIED journal event" in error for error in errors))
+
     def test_apply_started_requires_verified_approval_and_prestate_refresh(self) -> None:
         receipt = copy.deepcopy(self.fixture)
         receipt["state"] = "APPLY_STARTED"
