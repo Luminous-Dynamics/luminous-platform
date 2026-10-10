@@ -84,7 +84,7 @@
         "hardware_or_commercial_region",
         "support_jurisdiction",
         "expected_principal_ref",
-        "expected_scope_ref"
+        "expected_tenant_or_org_ref"
       ],
       "properties": {
         "model": {
@@ -112,7 +112,7 @@
           "type": "string",
           "minLength": 8
         },
-        "expected_scope_ref": {
+        "expected_tenant_or_org_ref": {
           "type": "string",
           "minLength": 8
         }
@@ -248,7 +248,8 @@
         "expected_principal_ref",
         "permission_scope_ref",
         "read_only",
-        "mutation_enabled"
+        "mutation_enabled",
+        "expected_tenant_or_org_ref"
       ],
       "properties": {
         "mode": {
@@ -278,6 +279,10 @@
         },
         "mutation_enabled": {
           "const": false
+        },
+        "expected_tenant_or_org_ref": {
+          "type": "string",
+          "minLength": 8
         }
       }
     },
