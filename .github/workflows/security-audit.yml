@@ -2016,10 +2016,10 @@ jobs:
               "authoritative_lockfile_sha256": authoritative_sha
           }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           PY
-                : > "$stderr"
+                printf '%s\n' "npm audit was not invoked because npm-shrinkwrap.json takes precedence." > "$stderr"
                 report_sha="$(sha256sum "$report" | cut -d' ' -f1)"
                 stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1)"
-                printf 'lockfile=%s lockfile_sha256=%s outcome=SKIPPED_NOT_AUTHORITATIVE authoritative_lockfile=%s authoritative_lockfile_sha256=%s report_sha256=%s stderr_sha256=%s\n' \
+                printf 'lockfile=%s lockfile_sha256=%s exit_code=NOT_RUN outcome=SKIPPED_NOT_AUTHORITATIVE authoritative_lockfile=%s authoritative_lockfile_sha256=%s report_sha256=%s stderr_sha256=%s\n' \
                   "$lockfile" "$lock_sha" "$shrinkwrap" "$shrinkwrap_sha" "$report_sha" "$stderr_sha" \
                   >> "$result_root/summary.txt"
                 continue
@@ -2202,6 +2202,19 @@ jobs:
               >> "$result_root/summary.txt"
           done
 
+          # Exactly one result row must exist for each committed lockfile.
+          # Without this completeness invariant, an errexit/unbound-variable
+          # failure mid-loop could leave a partial artifact that looks like a
+          # completed scan of the discovered inventory.
+          lockfile_result_count="$(grep -c '^lockfile=.* exit_code=' "$result_root/summary.txt" || true)"
+          echo "lockfile_result_count=$lockfile_result_count" >> "$result_root/summary.txt"
+          if [[ "$lockfile_result_count" -eq "${#lockfiles[@]}" ]]; then
+            echo "lockfile_result_coverage_status=PASS" >> "$result_root/summary.txt"
+          else
+            echo "lockfile_result_coverage_status=FAIL" >> "$result_root/summary.txt"
+            echo "lockfile_result_coverage_failure=expected_${#lockfiles[@]}_observed_$lockfile_result_count" >> "$result_root/summary.txt"
+            npm_failed=1
+          fi
           if [[ "$npm_failed" -eq 0 ]]; then overall="PASS"; else overall="FAIL"; fi
           sed -i "s/^npm_status=.*/npm_status=$overall/" "$result_root/summary.txt"
           echo "overall_status=$overall" | tee -a "$result_root/summary.txt"
