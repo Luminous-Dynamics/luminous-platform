@@ -150,9 +150,22 @@ jobs:
           log="$RUNNER_TEMP/work-case-postgres-tests.log"
           cp -a services/work-case-postgres "$RUNNER_TEMP/work-case-postgres"
           cargo +1.96.0 test --manifest-path "$RUNNER_TEMP/work-case-postgres/Cargo.toml" --all-targets 2>&1 | tee "$log"
-          count="$(awk '/^test result:/ { for (i = 1; i <= NF; i++) if ($i == "passed;") total += $(i - 1) } END { print total + 0 }' "$log")"
-          if [[ -z "$count" || "$count" -lt 9 ]]; then
-            echo "::error::PostgreSQL Work Case suite must execute at least 9 tests; observed $count."
+          stats="$(awk '
+            /^running [0-9]+ tests?$/ { discovered += $2 }
+            /^test result:/ {
+              for (i = 1; i <= NF; i++) {
+                if ($i == "passed;") passed += $(i - 1)
+                else if ($i == "failed;") failed += $(i - 1)
+                else if ($i == "ignored;") ignored += $(i - 1)
+                else if ($i == "measured;") measured += $(i - 1)
+                else if ($i == "filtered" && $(i + 1) == "out;") filtered += $(i - 1)
+              }
+            }
+            END { printf "%d %d %d %d %d %d\\n", discovered, passed, failed, ignored, measured, filtered }
+          ' "$log")"
+          read -r discovered count failed ignored measured filtered <<< "$stats"
+          if [[ "$count" -lt 9 || "$failed" -ne 0 || "$ignored" -ne 0 || "$measured" -ne 0 || "$filtered" -ne 0 || "$discovered" -ne "$((count + failed + ignored + measured))" ]]; then
+            echo "::error::PostgreSQL suite must execute at least 9 tests with no failures, ignores, measured or filtered tests; discovered=$discovered passed=$count failed=$failed ignored=$ignored measured=$measured filtered=$filtered."
             exit 1
           fi
           echo "test_count=$count" >> "$GITHUB_OUTPUT"
