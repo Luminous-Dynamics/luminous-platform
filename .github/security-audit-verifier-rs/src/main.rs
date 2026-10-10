@@ -322,12 +322,14 @@ fn download_artifact_zip(repo: &str, artifact_id: u64, token: &str) -> VerifyRes
         .map_err(|e| format!("artifact download API unavailable: {e}"))?;
     if response.status() != StatusCode::FOUND {
         let status = response.status();
-        let detail = response
-            .text()
-            .unwrap_or_else(|_| String::new())
-            .chars()
-            .take(1200)
-            .collect::<String>();
+        let mut limited = response.take((MAX_API_BODY + 1) as u64);
+        let mut body = Vec::new();
+        limited.read_to_end(&mut body)
+            .map_err(|e| format!("could not read artifact API error body: {e}"))?;
+        if body.len() > MAX_API_BODY {
+            return Err("artifact download API error response exceeded 5 MiB".to_string());
+        }
+        let detail = String::from_utf8_lossy(&body).chars().take(1200).collect::<String>();
         return Err(format!("artifact download API returned HTTP {}: {detail}", status.as_u16()));
     }
     let location = response
@@ -339,6 +341,7 @@ fn download_artifact_zip(repo: &str, artifact_id: u64, token: &str) -> VerifyRes
     // Deliberately use a separate client with no GitHub token for the signed URL.
     let storage_client = Client::builder()
         .timeout(Duration::from_secs(60))
+        .redirect(RedirectPolicy::none())
         .user_agent("luminous-security-audit-verifier-rs/1")
         .build()
         .map_err(|e| format!("could not build signed storage client: {e}"))?;
