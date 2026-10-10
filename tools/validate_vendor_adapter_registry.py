@@ -193,7 +193,7 @@ def registry_errors(
                         errors.append(f"{op_prefix}: tested_scope.product_family must match an adapter-declared product family")
                     for scope_field in ("model", "hardware_revision", "software_version", "region"):
                         normalized = str(scope.get(scope_field, "")).strip().lower()
-                        if normalized in {"", "*", "any", "all", "unknown", "unspecified", "n/a", "na"}:
+                        if normalized in {"", "*", "any", "all", "global", "unknown", "unspecified", "n/a", "na"}:
                             errors.append(f"{op_prefix}: tested_scope.{scope_field} must be exact, not a wildcard or unknown value")
 
             if risk in {"configuration_mutation", "disruptive_lifecycle", "reflash"}:
