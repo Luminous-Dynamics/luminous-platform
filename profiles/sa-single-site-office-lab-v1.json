@@ -234,9 +234,10 @@
       "quantity": 1,
       "selection_state": "candidate_not_approved",
       "catalog_refs": [
-        "tp-link-sg2210mp-current-revision"
+        "tp-link-sg2210mp-current-revision",
+        "tp-link-sg3210xhp-m2-v1"
       ],
-      "model_candidate": "TP-Link Omada SG2210MP current hardware revision only; exact South African SKU not yet confirmed",
+      "model_candidate": "Compare exact-current TP-Link Omada SG2210MP and TL-SG3210XHP-M2 V1 quotations; select only after model/firmware/lifecycle and VLAN test evidence.",
       "minimum_requirements": [
         "802.1Q VLANs and trunk/access port profiles",
         "per-VLAN or per-port access controls",
@@ -247,10 +248,10 @@
         "documented lifecycle/warranty"
       ],
       "blockers": [
-        "Do not buy a listing that only says TL-SG2210MP without an exact supported hardware version.",
-        "Confirm local firmware, warranty and end-of-support; an older TL-SG2210MP page is marked End of Life in another region.",
-        "Prove management/cloud access can be disabled or locally controlled.",
-        "Price listings with unknown hardware revision are excluded from the procurement subtotal."
+        "Get South African supplier quotes for both exact hardware revisions, firmware branch, warranty, stock and end-of-support dates.",
+        "Do not order an unspecified TL-SG2210MP listing; older revision names may refer to an EOL model.",
+        "Validate local management/controller mode, cloud dependency, 802.1X/RADIUS, VLAN ACL behavior, DHCP controls and IPv4/IPv6 segmentation on the exact selected hardware.",
+        "Compare PoE demand, uplink capacity, noise/thermal behavior, serviceability and total cost before choosing one."
       ]
     },
     {
@@ -334,11 +335,12 @@
       "function": "Administrator and operator phishing-resistant authenticators, plus enrollment/revocation process",
       "required": true,
       "quantity": 2,
-      "selection_state": "unselected",
+      "selection_state": "candidate_for_comparison",
       "catalog_refs": [
-        "identity-tokens-readers"
+        "identity-tokens-readers",
+        "yubikey-5c-nfc-fips-140-3"
       ],
-      "model_candidate": null,
+      "model_candidate": "Evaluate YubiKey 5C NFC FIPS 140-3 as one authentication option; exact certificate scope, IdP compatibility and local supply still unverified.",
       "minimum_requirements": [
         "Two separately stored authenticators per privileged operator, plus an enrollment/recovery procedure",
         "Document FIDO2/WebAuthn, smart-card or customer-required certificate requirements",
@@ -346,8 +348,10 @@
         "Validate required certificate/module status for the relevant jurisdiction"
       ],
       "blockers": [
-        "Select exact token and protocol after the relying-party / procurement profile is defined.",
-        "A consumer security key or open design is not a substitute for required cryptographic-module validation."
+        "Determine the relying party and customer-required authenticator protocol/assurance profile before selecting hardware.",
+        "Verify exact model and certificate #5291 scope/status if a FIPS validated module is required.",
+        "Confirm South African delivery, warranty/replacements and identity-provider/browser compatibility.",
+        "Exercise enroll, sign-in, revoke, loss and emergency account recovery with two separate keys per privileged operator."
       ]
     },
     {
