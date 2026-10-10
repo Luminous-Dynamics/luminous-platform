@@ -153,6 +153,31 @@ class VendorManagementEndpointProfileTests(unittest.TestCase):
         profile["egress"]["ambient_proxy_allowed"] = True
         self.assertTrue(self.errors(profile))
 
+    def test_explicit_proxy_requires_its_profile_reference(self) -> None:
+        profile = copy.deepcopy(self.fixture)
+        profile["egress"]["proxy_mode"] = "explicit_profile"
+        self.assertTrue(any("proxy_profile_ref is required" in error for error in self.errors(profile)))
+
+    def test_disabled_proxy_cannot_have_ambient_profile_reference(self) -> None:
+        profile = copy.deepcopy(self.fixture)
+        profile["egress"]["proxy_profile_ref"] = "proxy:unreviewed"
+        self.assertTrue(any("must be null when proxy_mode=disabled" in error for error in self.errors(profile)))
+
+    def test_cloud_api_requires_endpoint_selection_and_product_api_sources(self) -> None:
+        profile = copy.deepcopy(self.fixture)
+        profile["source_refs"][0]["purposes"] = ["protocol_contract"]
+        self.assertTrue(any("endpoint_selection source" in error for error in self.errors(profile)))
+
+    def test_source_review_date_cannot_postdate_profile_as_of(self) -> None:
+        profile = copy.deepcopy(self.fixture)
+        profile["source_refs"][0]["last_reviewed_on"] = "2026-10-12"
+        self.assertTrue(any("cannot be after profile.as_of" in error for error in self.errors(profile)))
+
+    def test_retry_limit_is_schema_bounded(self) -> None:
+        profile = copy.deepcopy(self.fixture)
+        profile["limits"]["max_retries"] = 4
+        self.assertTrue(self.errors(profile))
+
     def test_request_timeout_must_cover_connect_timeout(self) -> None:
         profile = copy.deepcopy(self.fixture)
         profile["limits"]["request_timeout_ms"] = 1000
