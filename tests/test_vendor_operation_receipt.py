@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from validate_hardware_portfolio import load_json  # noqa: E402
-from validate_vendor_operation_receipt import receipt_errors  # noqa: E402
+from validate_vendor_operation_receipt import receipt_errors, registry_binding_errors  # noqa: E402
 
 
 class VendorOperationReceiptTests(unittest.TestCase):
@@ -19,6 +19,7 @@ class VendorOperationReceiptTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.fixture = load_json(ROOT / "tests/fixtures/vendor-operation-effect-receipt-prepared-v1.json")
         cls.schema = load_json(ROOT / "schemas/vendor-operation-effect-receipt-v1.schema.json")
+        cls.registry = load_json(ROOT / "security/vendor-adapter-capability-registry-v1.json")
 
     def errors(self, receipt):
         return receipt_errors(receipt, self.schema)
@@ -28,6 +29,72 @@ class VendorOperationReceiptTests(unittest.TestCase):
         self.assertEqual(self.fixture["state"], "PREPARED")
         self.assertEqual(self.fixture["authorization"]["state"], "pending")
         self.assertEqual(self.fixture["effect_state"], "NO_EFFECT")
+
+    def test_prepared_receipt_may_reference_planned_operation_without_authorizing_it(self) -> None:
+        self.assertEqual(registry_binding_errors(copy.deepcopy(self.fixture), copy.deepcopy(self.registry)), [])
+
+    def test_authorization_is_blocked_until_registry_operation_is_tested(self) -> None:
+        receipt = self._authorization_verified_receipt()
+        errors = registry_binding_errors(receipt, copy.deepcopy(self.registry))
+        self.assertTrue(any("requires registry state=tested" in error for error in errors))
+
+    def test_authorized_receipt_must_match_exact_adapter_model_revision_and_region(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        registry = self._synthetic_test_registry()
+        receipt["adapter_revision"] = "a" * 40
+        self.assertEqual(registry_binding_errors(receipt, registry), [])
+
+        drifted = copy.deepcopy(receipt)
+        drifted["target"]["hardware_revision"] = "different-revision"
+        errors = registry_binding_errors(drifted, registry)
+        self.assertTrue(any("hardware_revision must exactly match" in error for error in errors))
+
+    def test_authorized_receipt_must_bind_adapter_source_revision(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        registry = self._synthetic_test_registry()
+        receipt["adapter_revision"] = "f" * 40
+        errors = registry_binding_errors(receipt, registry)
+        self.assertTrue(any("adapter_revision must match" in error for error in errors))
+
+    def test_configuration_mutation_requires_a3_or_higher_maturity(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        registry = self._synthetic_test_registry()
+        adapter = next(item for item in registry["adapters"] if item["adapter_id"] == receipt["adapter_id"])
+        adapter["maturity"] = "A2_STATE_CONTRACT_TESTED"
+        errors = registry_binding_errors(receipt, registry)
+        self.assertTrue(any("requires at least A3_CHANGE_QUALIFIED" in error for error in errors))
+
+    def _synthetic_test_registry(self):
+        """Return an explicitly synthetic exact-scope registry for contract tests only."""
+        registry = copy.deepcopy(self.registry)
+        adapter = next(item for item in registry["adapters"] if item["adapter_id"] == self.fixture["adapter_id"])
+        adapter.update({
+            "maturity": "A3_CHANGE_QUALIFIED",
+            "implementation_state": "LAB_TESTED",
+            "model_scope_state": "exact_models_tested",
+            "region_scope_state": "region_scoped",
+            "maturity_evidence_refs": ["evidence:synthetic-adapter-contract-tests"],
+        })
+        operation = next(item for item in adapter["operations"] if item["operation"] == "configuration_apply")
+        operation.update({
+            "state": "tested",
+            "evidence_refs": ["evidence:synthetic-physical-fixture-test"],
+            "tested_revision": "a" * 40,
+            "tested_scope": {
+                "model": self.fixture["target"]["model"],
+                "hardware_revision": self.fixture["target"]["hardware_revision"],
+                "software_version": self.fixture["target"]["software_version"],
+                "region": self.fixture["target"]["region"],
+                "test_environment": "synthetic fixture only; not a physical device claim",
+            },
+            "security_controls": {
+                "action_digest_bound_authorization": True,
+                "fresh_prestate_required": True,
+                "uncertain_outcome_policy": "NEVER_AUTOMATIC_REPLAY",
+                "recovery_evidence_refs": ["evidence:synthetic-recovery-contract"],
+            },
+        })
+        return registry
 
     def test_target_digest_must_bind_to_target_identity(self) -> None:
         receipt = copy.deepcopy(self.fixture)
