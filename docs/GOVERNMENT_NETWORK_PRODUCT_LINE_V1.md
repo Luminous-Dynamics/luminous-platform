@@ -4,6 +4,7 @@
 **Last reviewed:** 2026-10-10  
 **Canonical machine-readable register:** [../hardware/portfolio-v1.json](../hardware/portfolio-v1.json)  
 **Register schema:** [../schemas/hardware-portfolio-v1.schema.json](../schemas/hardware-portfolio-v1.schema.json)
+**Control evidence matrix:** [GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md](GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md) and [machine-readable JSON](../security/control-evidence-matrix-v1.json)
 
 ## Decision summary
 
@@ -126,6 +127,7 @@ These are price-discovery signals, not quotes or purchase recommendations:
 
 - [TP-Link EAP650 price comparison](https://www.pricecheck.co.za/offers/218530957/TP-link%2BEAP650%2BAX3000%2BCeiling%2BMount%2BWifi%2B6%2BAccess%2BPoint): R1,929–R2,049 in the surfaced listings.
 - [Dell PowerEdge T160 price comparison](https://www.pricecheck.co.za/offers/251362571/Dell%2BPoweredge%2BT160%2BIntel%2BXeon%2BE%2BE-2414%2BTower%2BServer): R27,499–R59,799 across sellers for an E-2414/16 GB ECC/2 TB HDD baseline listing. That baseline is **not** the target build and the spread requires a comparable written quote.
+- **Power protection:** Schneider Electric South Africa lists the APC Easy UPS SMV1500AI, 230 V / 1500 VA / 1050 W, with USB and serial management and replacement-battery availability. Its official page displayed **ZAR 8,630 excluding VAT** on 10 October 2026, subject to change. This is now an H0 candidate. Exact outlet variant, local stock, warranty, monitoring-daemon compatibility, measured load and runtime remain blockers.
 - Switch pricing is not included in the partial subtotal because listings with ambiguous model revision cannot be matched safely to the current supported model.
 
 The profile's partial priced subtotal is R29,428–R61,848 for one AP and one server listing only. It excludes gateway, switch, endpoint, identity authenticators, backup and offline media, UPS, cabling, spares, support contracts, memory/storage upgrades, shipping, tax and customs. It is not a full system budget.
@@ -185,6 +187,7 @@ NIST SP 800-161 Rev. 1 Update 1 is a useful supply-chain risk reference for supp
 - [BeagleV-Fire design documentation](https://docs.beagleboard.org/boards/beaglev/fire/03-design.html)
 - [Framework Laptop 13 design documentation](https://github.com/FrameworkComputer/Framework-Laptop-13)
 - [MNT open hardware](https://www.mntre.com/open-hardware.html)
+- [APC Easy UPS SMV1500AI — South Africa](https://www.se.com/za/en/product/SMV1500AI/apc-easy-ups-1-ph-line-interactive-1500va-tower-230v-6-iec-c13-outlets-avr-lcd/)
 - [LibreRouter board repository and successor link](https://github.com/LibreRouterOrg/board)
 - [OpenBMC supported machines](https://github.com/openbmc/openbmc/blob/master/meta-phosphor/docs/supported-machines.md)
 - [NixOS device compatibility](https://nixos.org/devices/)
