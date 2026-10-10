@@ -3,7 +3,7 @@
   "profileId": "sovereign-visual-core.browser-wasm-wit-api.source-inspection-2026-10-10",
   "renderer": {
     "repository": "Luminous-Dynamics/sovereign-boot",
-    "commit": "4622644cd5cc5dc6f8ef2556271429b4727e7cef",
+    "commit": "740d755a7c3e7a2ba7be4ddb91ebf65ae62cd943",
     "crate": "sovereign-visual-core",
     "qualificationState": "source-inspection-only"
   },
