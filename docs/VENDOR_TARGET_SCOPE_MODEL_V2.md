@@ -62,7 +62,9 @@ Model endpoint identity as a typed record, not a free-form region label. It shou
 
 Canonicalization must be implemented once, specified and tested. At minimum it must define scheme, hostname normalization, effective port, base path and treatment of query/fragment components. API credentials must not be embedded in a URI. A private device hostname/IP, tenant ID or network location must not be written to public DHT records; keep sensitive originals in customer-controlled protected evidence and publish only reviewed, minimized commitments.
 
-Before sending credentials or requests, the adapter must validate the endpoint against its declared allowlist. Do not follow an origin-changing redirect with credentials. Reject unexpected scheme/host/port/base-path changes; a redirect to another origin requires a new explicit endpoint resolution and authorization check. This also prevents endpoint substitution from becoming a server-side request forgery path.
+Before sending credentials or requests, the adapter must validate the endpoint against its declared allowlist. Do not follow an origin-changing redirect with credentials. Reject unexpected scheme/host/port/base-path changes; a redirect to another origin requires a new explicit endpoint resolution and authorization check.
+
+Treat the adapter as a privileged network client and apply the [OWASP SSRF Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html): parse URLs with a maintained parser, allowlist approved destinations, validate DNS answers against the permitted destination policy, and ensure the connection uses the addresses actually validated so a second DNS lookup cannot bypass the decision. Apply the same policy to retries and fallback connections. Preserve normal TLS hostname/certificate verification; do not “solve” endpoint drift by disabling TLS checks. For private/local device endpoints, permitted network ranges must come from the customer-approved site profile rather than from arbitrary target input.
 
 ### Meraki source-backed example
 
