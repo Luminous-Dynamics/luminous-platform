@@ -74,7 +74,7 @@ class VendorManagementEndpointProfileTests(unittest.TestCase):
     def test_credential_material_is_not_accepted_as_reference(self) -> None:
         profile = copy.deepcopy(self.fixture)
         profile["authentication"]["credential_reference"] = "actual-secret-value-123456"
-        self.assertTrue(any("opaque secret-manager reference" in error for error in self.errors(profile)))
+        self.assertTrue(any("$.authentication.credential_reference" in error for error in self.errors(profile)))
 
     def test_principal_must_match_declared_scope(self) -> None:
         profile = copy.deepcopy(self.fixture)
