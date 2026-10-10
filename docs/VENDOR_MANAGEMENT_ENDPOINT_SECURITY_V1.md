@@ -105,7 +105,26 @@ Stop and preserve a redacted record when the destination, tenant/account identit
 
 Do not retry by weakening TLS, accepting a new host key without out-of-band verification, removing a tenant check, following an unapproved redirect, or broadening an endpoint allowlist. A changed endpoint is a new profile revision and may require new lab evidence and authorization.
 
-## 8. Definition of done for the endpoint gate
+## 8. Current implementation slice
+
+The repository now contains these initial contract artifacts:
+
+- [Profile schema](../schemas/vendor-management-endpoint-profile-v1.schema.json)
+- [Semantic validator](../tools/validate_vendor_management_endpoint_profile.py)
+- [Synthetic fixture](../tests/fixtures/vendor-management-endpoint-profile-v1.json), using the reserved `.invalid` domain and non-secret references
+- [Adversarial tests](../tests/test_vendor_management_endpoint_profile.py)
+- Workflow entry in [hardware-portfolio.yml](../.github/workflows/hardware-portfolio.yml)
+
+The validator performs contract checks only and makes no network requests. A source write or schema parse is not a validator/test pass. These artifacts are authored but have not been shown executing successfully in this session; the profile remains `draft`, and no device or credential was contacted. The local commands are:
+
+```sh
+python tools/validate_vendor_management_endpoint_profile.py
+python -m unittest discover -s tests -p "test_vendor_management_endpoint_profile.py" -v
+```
+
+Evidence consumers must compute a profile digest from the complete frozen profile using a single specified canonicalization contract (recommended: RFC 8785 JSON Canonicalization Scheme followed by SHA-256) and place that digest in the external signed work/evidence record. Do not store a self-referential digest inside the profile. The independent verifier must recompute the digest from the exact profile bytes/parsed value and refuse a mismatch.
+
+## 9. Definition of done for the endpoint gate
 
 - A versioned endpoint profile schema and strict semantic validator exist.
 - The profile separates deployment jurisdiction from endpoint origin and optional vendor-specific dimensions.
