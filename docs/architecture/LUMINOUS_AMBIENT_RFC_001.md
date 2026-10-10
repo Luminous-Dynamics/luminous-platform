@@ -153,6 +153,21 @@ For COSMIC in particular, recent upstream work has made background/layer-shell d
 
 6. **Wallpaper Engine compatibility:** treat the third-party `open-wallpaper-engine` path as an optional compatibility feature, not as the scene format or runtime foundation. External renderer plugins are executable code; do not auto-install or silently trust user-downloaded plugins.
 
+
+### Internal renderer candidate found during follow-up (2026-10-10)
+
+Before creating a second mycelial engine, evaluate the extracted `sovereign-visual-core` candidate in [sovereign-boot PR #1](https://github.com/Luminous-Dynamics/sovereign-boot/pull/1). At the inspection snapshot, its branch was `hardening/standalone-boundary-v1`, head `d5ee9af9fffb6283786a5663a6022ee6aeb4c09f`. Relevant pinned-at-branch source paths:
+
+- [`crates/visual-core/Cargo.toml`](https://github.com/Luminous-Dynamics/sovereign-boot/blob/hardening/standalone-boundary-v1/crates/visual-core/Cargo.toml) — platform-neutral Rust core with deterministic RNG dependencies and no windowing/GPU dependency.
+- [`crates/visual-core/src/mycelium.rs`](https://github.com/Luminous-Dynamics/sovereign-boot/blob/hardening/standalone-boundary-v1/crates/visual-core/src/mycelium.rs) — CPU renderer and packed RGBA output.
+- [`crates/visual-wasm/src/lib.rs`](https://github.com/Luminous-Dynamics/sovereign-boot/blob/hardening/standalone-boundary-v1/crates/visual-wasm/src/lib.rs) — browser-facing bounded frame API.
+
+This is a **reuse candidate, not a qualified Scene Pack consumer or a dependency**. There are contract mismatches that must be resolved in an adapter or a deliberate core API change: the current constructor takes a seed phrase rather than the manifest's integer seed; palette colors are hard-coded; the runtime uses internal branch/depth/growth constants rather than the manifest's declared parameters; and the core does not validate Scene Pack metadata. In particular, the current core's 8192-branch ceiling is not equivalent to this fixture's declared 2048-branch budget. Scene validation, path containment and asset digest verification belong outside the hot renderer; typed, validated settings should cross the core boundary.
+
+At this inspection snapshot, PR #1 was still draft, its workflow run `38043391259` was queued without a conclusion, and [sovereign-boot issue #3](https://github.com/Luminous-Dynamics/sovereign-boot/issues/3) remained open regarding the standalone state/recovery boundary. Do not depend on or copy code from the candidate until the exact head passes independent build and test gates. No ambient work should add dependencies to the boot-critical renderer.
+
+The first follow-up should therefore be a contract adapter prototype and deterministic capture evidence, while retaining a second-engine implementation as the fallback only if the existing core cannot meet Scene Pack v1 semantics without compromising its boot boundary.
+
 ### Reuse policy
 
 Start with a short, pinned upstream spike: build the existing display stack on the chosen NixOS target, capture its process/GPU/CPU behavior, test pause/resume across desktop/lock/suspend, and document integration gaps. If it gives us stable display and lifecycle plumbing, write our scene engine and settings on top of that boundary. If it does not, record the specific failing requirement before writing our own adapter.
