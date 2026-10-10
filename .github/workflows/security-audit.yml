@@ -992,7 +992,7 @@ jobs:
             if [[ "$submodule_status" == "PASS" ]]; then
               while IFS= read -r line; do
                 path="${line#* }"
-                gitlink_metadata="$(git ls-tree --format='%(mode) %(type) %(objectname)' HEAD -- ":(literal)$path")"
+                gitlink_metadata="$(git ls-tree --format='%(objectmode) %(objecttype) %(objectname)' HEAD -- ":(literal)$path")"
                 gitlink_mode=""
                 gitlink_type=""
                 expected=""
@@ -1134,7 +1134,7 @@ jobs:
               parent="$parent/$component"
               [[ -d "$parent" && ! -L "$parent" ]] || return 1
             done
-            metadata="$(git -C "$root" ls-tree --format='%(mode) %(type) %(objectname)' HEAD -- ":(literal)$relative")" || return 1
+            metadata="$(git -C "$root" ls-tree --format='%(objectmode) %(objecttype) %(objectname)' HEAD -- ":(literal)$relative")" || return 1
             [[ -n "$metadata" && "$metadata" != *$'\n'* ]] || return 1
             read -r mode object_type object_id <<< "$metadata"
             [[ "$mode" == "100644" || "$mode" == "100755" ]] || return 1
@@ -1970,7 +1970,7 @@ jobs:
             if [[ "$npm_submodule_status" == "PASS" ]]; then
               while IFS= read -r line; do
                 path="${line#* }"
-                gitlink_metadata="$(git ls-tree --format='%(mode) %(type) %(objectname)' HEAD -- ":(literal)$path")"
+                gitlink_metadata="$(git ls-tree --format='%(objectmode) %(objecttype) %(objectname)' HEAD -- ":(literal)$path")"
                 gitlink_mode=""
                 gitlink_type=""
                 expected=""
@@ -2058,7 +2058,7 @@ jobs:
               parent="$parent/$component"
               [[ -d "$parent" && ! -L "$parent" ]] || return 1
             done
-            metadata="$(git -C "$root" ls-tree --format='%(mode) %(type) %(objectname)' HEAD -- ":(literal)$relative")" || return 1
+            metadata="$(git -C "$root" ls-tree --format='%(objectmode) %(objecttype) %(objectname)' HEAD -- ":(literal)$relative")" || return 1
             [[ -n "$metadata" && "$metadata" != *$'\n'* ]] || return 1
             read -r mode object_type object_id <<< "$metadata"
             [[ "$mode" == "100644" || "$mode" == "100755" ]] || return 1
