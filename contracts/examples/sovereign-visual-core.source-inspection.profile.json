@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "profileId": "sovereign-visual-core.scene-pack.v1.inspect.2026-10-10",
+  "renderer": {
+    "repository": "Luminous-Dynamics/sovereign-boot",
+    "commit": "ab6eac9641e0673cf2de36018a35986c122b36a8",
+    "crate": "sovereign-visual-core",
+    "qualificationState": "source-inspection-only"
+  },
+  "palette": {
+    "configurable": true,
+    "supportedFields": [
+      "canvas",
+      "substrate",
+      "filament",
+      "node",
+      "lichen",
+      "glow"
+    ]
+  },
+  "simulation": {
+    "branchLimitConfigurable": true,
+    "branchLimitEnforcedBeforeSpawn": true,
+    "maxBranchLimit": 8192,
+    "maxDepthConfigurable": true,
+    "maxDepthCeiling": 24,
+    "growthRateConfigurable": true,
+    "fixedStepHzConfigurable": true,
+    "pulsePeriodConfigurable": true,
+    "driftAmplitudeConfigurable": true,
+    "resourceBranchLimitConfigurable": true,
+    "maxResourceBranchLimit": 8192
+  },
+  "resources": {
+    "maxDimension": 4096,
+    "maxPixels": 8294400,
+    "maxMemoryMiB": 2048,
+    "rendererMemoryEstimateEnforced": true,
+    "wholeProcessMemoryLimitEnforced": false
+  },
+  "presentation": {
+    "supportedVariants": [
+      "boot",
+      "staticFallback"
+    ],
+    "configurableFields": [
+      "motion",
+      "maxFps",
+      "brightness",
+      "composition"
+    ],
+    "staticGradientFallback": true,
+    "supportedMotions": [
+      "full",
+      "none"
+    ],
+    "supportedCompositions": [
+      "centered-network",
+      "gradient-only"
+    ]
+  },
+  "lifecycle": {
+    "supportedPolicies": []
+  },
+  "engineId": "mycelial-network-v1",
+  "engineVersions": [
+    "1.0.0"
+  ],
+  "seedEncodings": [
+    "phrase-hash-blake3-utf8",
+    "uint32-domain-separated-blake3-v1"
+  ],
+  "manifestAdapterImplemented": true
+}
