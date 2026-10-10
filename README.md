@@ -87,6 +87,10 @@ Luminous Platform is being organized into a product line for secure administrati
 
 - [Government-network product line v1](docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md)
 - [Global vendor interoperability and firmware services v1](docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md)
+- [Vendor adapter execution contract v1](docs/VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md)
+- [Vendor adapter capability registry](security/vendor-adapter-capability-registry-v1.json)
+- [Vendor adapter capability schema](schemas/vendor-adapter-capability-registry-v1.schema.json)
+- [Vendor mutation receipt schema](schemas/vendor-operation-effect-receipt-v1.schema.json)
 - [Hardware portfolio research register v1](hardware/portfolio-v1.json)
 - [Hardware portfolio schema v1](schemas/hardware-portfolio-v1.schema.json)
 - [Single-site office/lab draft BOM](profiles/sa-single-site-office-lab-v1.json)
