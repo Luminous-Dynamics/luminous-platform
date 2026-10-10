@@ -161,7 +161,7 @@ jobs:
                 else if ($i == "filtered" && $(i + 1) == "out;") filtered += $(i - 1)
               }
             }
-            END { printf "%d %d %d %d %d %d\\n", discovered, passed, failed, ignored, measured, filtered }
+            END { printf "%d %d %d %d %d %d\n", discovered, passed, failed, ignored, measured, filtered }
           ' "$log")"
           read -r discovered count failed ignored measured filtered <<< "$stats"
           if [[ "$count" -lt 9 || "$failed" -ne 0 || "$ignored" -ne 0 || "$measured" -ne 0 || "$filtered" -ne 0 || "$discovered" -ne "$((count + failed + ignored + measured))" ]]; then
