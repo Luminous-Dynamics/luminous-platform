@@ -33,12 +33,11 @@ jobs:
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.96.0 --profile minimal --component rustfmt --component clippy
 
-      - name: Check Rust formatting
-        continue-on-error: true
-        run: cargo +1.96.0 fmt --manifest-path .github/security-audit-verifier-rs/Cargo.toml -- --check
-
       - name: Run candidate tests
         run: cargo +1.96.0 test --manifest-path .github/security-audit-verifier-rs/Cargo.toml --all-targets
+
+      - name: Check Rust formatting
+        run: cargo +1.96.0 fmt --manifest-path .github/security-audit-verifier-rs/Cargo.toml -- --check
 
       - name: Run Clippy
         run: cargo +1.96.0 clippy --manifest-path .github/security-audit-verifier-rs/Cargo.toml --all-targets -- -D warnings
