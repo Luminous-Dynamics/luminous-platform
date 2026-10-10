@@ -1395,6 +1395,11 @@ jobs:
 
           entries = []
           discovered_lockfiles = set()
+          # Keep manifest-to-workspace mappings and workspace lockfile
+          # contracts separate: a missing root lockfile should be one actionable
+          # workspace finding, not dozens of misleading per-member lockfile
+          # findings. Member entries remain individually represented.
+          workspace_records = {}
           for prefix, checkout in roots:
               manifests = tracked(checkout, ["Cargo.toml", "**/Cargo.toml"])
               local_lockfiles = set(tracked(checkout, ["Cargo.lock", "**/Cargo.lock"]))
@@ -1402,8 +1407,11 @@ jobs:
               parsed = {}
               parse_errors = {}
               for rel in manifests:
+                  manifest_path = checkout / rel
                   try:
-                      with (checkout / rel).open("rb") as fh:
+                      if manifest_path.is_symlink() or not manifest_path.is_file():
+                          raise ValueError("manifest_not_regular_or_is_symlink")
+                      with manifest_path.open("rb") as fh:
                           parsed[rel] = tomllib.load(fh)
                   except Exception as exc:
                       parse_errors[rel] = f"{type(exc).__name__}: {exc}"
@@ -1438,14 +1446,41 @@ jobs:
                       entries.append({"manifest": name, "status": "FAIL", "reason": "workspace_outside_checkout"})
                       continue
                   lock = (Path(root_rel) / "Cargo.lock").as_posix() if root_rel != "." else "Cargo.lock"
-                  exists = lock in local_lockfiles and (checkout / lock).is_file()
-                  entries.append({
-                      "manifest": name,
-                      "workspace_root": prefixed(prefix, root_rel),
-                      "expected_lockfile": prefixed(prefix, lock),
+                  lock_path = checkout / lock
+                  lock_tracked = lock in local_lockfiles
+                  lock_symlink = lock_path.is_symlink()
+                  lock_regular = lock_path.is_file() and not lock_symlink
+                  exists = lock_tracked and lock_regular
+                  lock_reason = (
+                      "workspace_lockfile_is_symlink" if lock_tracked and lock_symlink
+                      else "workspace_lockfile_not_regular" if lock_tracked and not lock_regular
+                      else "workspace_lockfile_missing_or_untracked" if not exists
+                      else None
+                  )
+                  workspace_name = prefixed(prefix, root_rel)
+                  expected_lock_name = prefixed(prefix, lock)
+                  workspace_record = workspace_records.setdefault(workspace_name, {
+                      "workspace_root": workspace_name,
+                      "expected_lockfile": expected_lock_name,
                       "lockfile_tracked": exists,
                       "status": "PASS" if exists else "FAIL",
-                      "reason": None if exists else "workspace_lockfile_missing_or_untracked"
+                      "reason": lock_reason,
+                      "member_manifest_count": 0,
+                  })
+                  if workspace_record["expected_lockfile"] != expected_lock_name:
+                      raise SystemExit(f"workspace lockfile mapping changed within {workspace_name}")
+                  workspace_record["member_manifest_count"] += 1
+                  if not exists:
+                      workspace_record["lockfile_tracked"] = False
+                      workspace_record["status"] = "FAIL"
+                      workspace_record["reason"] = lock_reason
+                  entries.append({
+                      "manifest": name,
+                      "workspace_root": workspace_name,
+                      "expected_lockfile": expected_lock_name,
+                      "lockfile_tracked": exists,
+                      "status": "PASS" if exists else "FAIL",
+                      "reason": lock_reason
                   })
 
               if prefix:
@@ -1455,6 +1490,16 @@ jobs:
           mismatch = sorted(discovered_lockfiles.symmetric_difference(scanned_lockfiles))
           unaudited_submodules.extend(f"lockfile_inventory_mismatch:{path}" for path in mismatch)
           failures = [entry for entry in entries if entry["status"] != "PASS"]
+          workspace_roots = sorted(
+              workspace_records.values(),
+              key=lambda item: item["workspace_root"]
+          )
+          workspace_failures = [root for root in workspace_roots if root["status"] != "PASS"]
+          unclassified_manifest_failures = [
+              entry for entry in failures
+              if entry.get("reason") in ("workspace_outside_checkout",)
+              or entry.get("manifest") and entry.get("expected_lockfile") is None
+          ]
           report = {
               "schema": "luminous.security-audit.manifest-coverage.v1",
               "repository": str(repo),
@@ -1464,11 +1509,15 @@ jobs:
               "scanned_lockfile_count": len(scanned_lockfiles),
               "mapped_manifest_count": sum(entry["status"] == "PASS" for entry in entries),
               "manifest_failure_count": len(failures),
+              "workspace_root_count": len(workspace_roots),
+              "workspace_lockfile_failure_count": len(workspace_failures),
+              "unclassified_manifest_failure_count": len(unclassified_manifest_failures),
+              "workspace_roots": workspace_roots,
               "verified_direct_submodule_count": len(roots) - 1,
               "unaudited_submodules": sorted(set(unaudited_submodules)),
               "lockfile_inventory_mismatch": mismatch,
-              "failure_count": len(failures) + len(set(unaudited_submodules)),
-              "status": "PASS" if entries and not failures and not unaudited_submodules and discovered_lockfiles == scanned_lockfiles else "FAIL",
+              "failure_count": len(workspace_failures) + len(unclassified_manifest_failures) + len(set(unaudited_submodules)),
+              "status": "PASS" if entries and not workspace_failures and not unclassified_manifest_failures and not unaudited_submodules and discovered_lockfiles == scanned_lockfiles else "FAIL",
               "limitations": [
                   "Tracked Cargo manifests and lockfiles in the root repository and verified direct submodules are inventoried.",
                   "Cargo package resolution is not completely reconstructed; nested submodules fail closed.",
@@ -1479,8 +1528,15 @@ jobs:
           }
           output.write_text(json.dumps(report, indent=2, sort_keys=True) + chr(10))
           print(f"Manifest coverage: {report['status']} ({report['mapped_manifest_count']}/{report['manifest_count']} mapped manifests; {report['scanned_lockfile_count']} scanned lockfiles; {report['verified_direct_submodule_count']} direct submodules)")
-          for entry in failures:
-              print(f"UNCOVERED: {entry}")
+          for root in workspace_failures:
+              print(f"UNCOVERED_WORKSPACE: {root}")
+          for entry in unclassified_manifest_failures:
+              print(f"UNCOVERED_MANIFEST: {entry}")
+          if report["manifest_failure_count"] and not unclassified_manifest_failures:
+              print(
+                  f"Manifest membership details: {report['manifest_failure_count']} member records "
+                  f"depend on {report['workspace_lockfile_failure_count']} missing/unsafe workspace lockfile(s)"
+              )
           for submodule in report["unaudited_submodules"]:
               print(f"SUBMODULE_UNAUDITED: {submodule}")
           if report["status"] != "PASS":
