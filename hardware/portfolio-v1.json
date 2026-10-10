@@ -503,8 +503,8 @@
       "item_type": "selection_gap",
       "category": "identity_tokens",
       "source_urls": [
-        "https://csrc.nist.gov/Projects/cryptographic-module-validation-program/validated-modules",
-        "https://www.nist.gov/itl/tig/projects/special-publication-800-63"
+        "https://csrc.nist.gov/pubs/sp/800/63/b/4/final",
+        "https://csrc.nist.gov/Projects/cryptographic-module-validation-program/validated-modules"
       ],
       "source_revision": null,
       "source_completeness": "unselected",
