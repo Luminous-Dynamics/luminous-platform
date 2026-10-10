@@ -40,3 +40,18 @@ A compatibility pass from a future profile still requires exact-head compile/run
 
 
 The compatibility checker distinguishes renderer-owned memory estimates from an operating-system-enforced whole-process memory ceiling, and separately checks scene-requested versus resource-budget branch ceilings. These contracts are not interchangeable.
+
+## Qualification evidence receipts
+
+The contract workflow writes and uploads `ambient-qualification-receipt.json` for each run that reaches validation. The receipt binds the checked-out exact commit, renderer adapter ID and pinned source blobs, SHA-256 digests of the Scene Pack schema, profile schema, manifest fixture and renderer profile, workflow run/attempt, Python/jsonschema versions, and individual gate outcomes. The job deliberately continues through the contract test step after a test failure so that a failure receipt can still be uploaded; a final enforcement step then keeps the workflow failed when validation, tests, receipt generation or upload fails.
+
+Run locally after a checkout and validation/test run:
+
+    python tools/ambient_validation/qualification_receipt.py create \
+      --expected-commit "$(git rev-parse HEAD)" \
+      --schema-outcome success \
+      --tests-outcome success \
+      --run-id 1 --run-attempt 1 \
+      --output artifacts/ambient-qualification-receipt.json
+
+The CLI refuses a mismatched HEAD and validates each generated receipt against `contracts/ambient-qualification-receipt-v1.schema.json`. Its derived evidence level is fail-closed: passing contract checks yields `contract-validated`, which does **not** upgrade the profile's declared `source-inspection-only` renderer qualification. `compile-qualified` requires a renderer build gate; `runtime-qualified` additionally requires deterministic replay, resource checks, lifecycle checks and visual capture to pass. Gates not exercised by this workflow are recorded as `not-run`. The receipt's hashes provide input identity, not a cryptographic signature or trusted attestation.
