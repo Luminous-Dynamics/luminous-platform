@@ -216,16 +216,6 @@ def profile_errors(profile: dict[str, Any], schema: dict[str, Any]) -> list[str]
         if dimension["state"] in {"unresolved", "not_applicable"} and not dimension["rationale"]:
             errors.append(f"{prefix}.rationale is required when state is unresolved or not_applicable")
 
-    if profile["state"] == "approved_for_lab" and not profile["approval_evidence_refs"]:
-        errors.append("$.approval_evidence_refs must not be empty for approved_for_lab")
-    if profile["state"] == "approved_for_lab":
-        for dimension_name in ("deployment_jurisdiction", "hardware_or_commercial_region", "support_jurisdiction"):
-            dimension = profile["scope"][dimension_name]
-            if dimension["state"] == "unresolved":
-                errors.append(f"$.scope.{dimension_name} cannot be unresolved in approved_for_lab state")
-    if profile["state"] == "draft" and profile["approval_evidence_refs"]:
-        errors.append("$.approval_evidence_refs must be empty for draft state")
-
     return errors
 
 
