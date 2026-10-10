@@ -899,6 +899,89 @@
         "Test mains loss, brownout, battery self-test failure, alerting, graceful shutdown and recovery; verify serviceable battery lifecycle."
       ],
       "qualification_evidence_refs": []
+    },
+    {
+      "id": "yubikey-5c-nfc-fips-140-3",
+      "name": "YubiKey 5C NFC FIPS 140-3 Series",
+      "item_type": "hardware_product_or_board",
+      "category": "identity_tokens",
+      "source_urls": [
+        "https://www.yubico.com/za/product/yubikey-5-fips-140-3-series/",
+        "https://www.yubico.com/press-releases/yubico-announces-upgraded-yubikey-5-fips-series-now-fips-140-3-validated/"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "vendor_terms_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": "YubiKey 5C NFC FIPS (140-3), series claims certificate #5291; exact orderable SKU and certificate scope to verify",
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Yubico's official May 2026 announcement says the upgraded YubiKey 5 FIPS Series is FIPS 140-3 validated under certificate #5291. The South African storefront lists a 5C NFC FIPS 140-3 model but states ships from the EU. This makes it a concrete candidate for phishing-resistant administrator authentication where contract requirements fit; it does not establish local reseller stock, certificate applicability to the exact submitted product and operating mode, tenant/IdP compatibility or customer authorization.",
+      "open_blockers": [
+        "Verify the exact orderable part number, certificate #5291 scope/status, firmware/version, approved operating mode and relevant NIST CMVP entry.",
+        "Get a written SA import/reseller quote with stock, lead time, taxes, warranty and replacement process; EU storefront shipping is not local stock.",
+        "Test registration/authentication, PIN/touch, account recovery, lost/revoked credential, two-key provisioning and supported IdP/browser/OS versions.",
+        "Confirm the customer's required assurance and certificate profile; do not impose FIPS on jurisdictions/use cases that do not require it."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "yubihsm-2-fips",
+      "name": "YubiHSM 2 FIPS cryptographic module candidate",
+      "item_type": "hardware_product_or_board",
+      "category": "cryptographic_module",
+      "source_urls": [
+        "https://www.yubico.com/blog/yubikey-5-fips-series-is-now-fips-140-3-validated-what-it-means-for-high-assurance-security/",
+        "https://csrc.nist.gov/Projects/cryptographic-module-validation-program/validated-modules"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "vendor_terms_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": "YubiHSM 2 FIPS; vendor reports FIPS 140-3 certificate #5302; exact hardware/firmware/configuration and CMVP scope to verify",
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Yubico's June 2026 updated publication reports YubiHSM 2 FIPS FIPS 140-3 validation, certificate #5302. It is a credible candidate for a dedicated key-management/signing integration where required, but the actual NIST certificate scope, orderable model, operational environment, interface fit, provisioning design and local supply/support have not been independently qualified by Luminous.",
+      "open_blockers": [
+        "Verify certificate #5302 in the NIST CMVP database and confirm exact model, firmware, allowed mode and operational environment for intended use.",
+        "Obtain exact SKU, quote, support/firmware lifecycle, interface documentation, replacement/service arrangements and delivery for the target jurisdiction.",
+        "Define key custody, quorum/administrator roles, backup/restore, rotation/revocation and compromise recovery before deciding which keys belong in the HSM.",
+        "Implement a prototype only after confirming client libraries, OS compatibility, integration path and certificate scope; FIPS validation of the module alone does not approve the complete system."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "tp-link-sg3210xhp-m2-v1",
+      "name": "TP-Link Omada JetStream TL-SG3210XHP-M2 hardware V1 managed PoE+ switch",
+      "item_type": "hardware_product_or_board",
+      "category": "switching",
+      "source_urls": [
+        "https://www.tp-link.com/za/business-networking/managed-switch/tl-sg3210xhp-m2/v1/"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "vendor_terms_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": "TL-SG3210XHP-M2 hardware V1; exact firmware build, SA orderable SKU and support status not yet pinned",
+      "last_checked": "2026-10-10",
+      "observed_evidence": "TP-Link South Africa documents the V1 switch as eight 2.5GBASE-T ports with PoE+ and two 10GE SFP+ uplinks; feature documentation includes VLAN, L2+ static routing, ACL, RADIUS/802.1X and IPv6 controls. No current local written quote, hardware supply evidence, firmware/EOL commitment or lab validation has been obtained.",
+      "open_blockers": [
+        "Get an exact SKU/serial/revision and firmware/support quote from a local supplier; verify warranty, availability, support end date and any cloud/controller requirements.",
+        "Prove VLAN/access/trunk mapping, 802.1X/RADIUS, per-VLAN ACLs, DHCP controls, IPv4/IPv6 guest denial, configuration backup/restore and update recovery on the exact hardware.",
+        "Validate PoE budget and cooling under the AP load; measure switching and uplink behavior, and test power-loss/factory-reset recovery.",
+        "Compare total cost and supply support with the SG2210MP alternative before selecting the pilot switch."
+      ],
+      "qualification_evidence_refs": []
     }
   ]
 }
