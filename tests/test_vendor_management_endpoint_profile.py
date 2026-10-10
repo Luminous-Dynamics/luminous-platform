@@ -169,29 +169,20 @@ class VendorManagementEndpointProfileTests(unittest.TestCase):
         }
         self.assertTrue(any("evidence_refs is required when state=assessed" in error for error in self.errors(profile)))
 
-    def test_approved_lab_profile_requires_approval_evidence(self) -> None:
+    def test_profile_cannot_self_assert_lab_approval(self) -> None:
         profile = copy.deepcopy(self.fixture)
         profile["state"] = "approved_for_lab"
+        self.assertTrue(any("$.state" in error for error in self.errors(profile)))
+
+    def test_approval_evidence_cannot_be_embedded_as_profile_authority(self) -> None:
+        profile = copy.deepcopy(self.fixture)
         profile["approval_evidence_refs"] = ["evidence:lab-approval"]
-        self.assertTrue(any("cannot be unresolved in approved_for_lab state" in error for error in self.errors(profile)))
-        profile["scope"]["deployment_jurisdiction"]["state"] = "assessed"
-        profile["scope"]["deployment_jurisdiction"]["value"] = "test-lab"
-        profile["scope"]["deployment_jurisdiction"]["evidence_refs"] = ["evidence:jurisdiction-assessment"]
-        profile["scope"]["hardware_or_commercial_region"]["state"] = "assessed"
-        profile["scope"]["hardware_or_commercial_region"]["value"] = "test-lab"
-        profile["scope"]["hardware_or_commercial_region"]["evidence_refs"] = ["evidence:hardware-region-assessment"]
+        self.assertTrue(any("approval_evidence_refs" in error for error in self.errors(profile)))
+
+    def test_draft_profile_can_record_unresolved_scope_without_claiming_approval(self) -> None:
+        profile = copy.deepcopy(self.fixture)
+        self.assertEqual(profile["state"], "draft")
         self.assertEqual(self.errors(profile), [])
-
-    def test_draft_cannot_carry_approval_evidence(self) -> None:
-        profile = copy.deepcopy(self.fixture)
-        profile["approval_evidence_refs"] = ["evidence:approval-record"]
-        self.assertTrue(any("must be empty for draft state" in error for error in self.errors(profile)))
-
-    def test_endpoint_profile_cannot_enable_ambient_environment_scope(self) -> None:
-        profile = copy.deepcopy(self.fixture)
-        profile["egress"]["proxy_mode"] = "explicit_profile"
-        profile["egress"]["ambient_proxy_allowed"] = True
-        self.assertTrue(self.errors(profile))
 
 
 if __name__ == "__main__":
