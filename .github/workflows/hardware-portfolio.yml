@@ -5,9 +5,13 @@ on:
     types: [opened, synchronize, reopened]
     paths:
       - "hardware/**"
+      - "profiles/**"
       - "schemas/hardware-portfolio-v1.schema.json"
+      - "schemas/hardware-deployment-profile-v1.schema.json"
       - "tools/validate_hardware_portfolio.py"
+      - "tools/validate_hardware_deployment_profile.py"
       - "tests/test_hardware_portfolio.py"
+      - "tests/test_hardware_deployment_profile.py"
       - "requirements-hardware-portfolio.txt"
       - ".github/workflows/hardware-portfolio.yml"
   push:
@@ -52,5 +56,8 @@ jobs:
       - name: Validate catalog and schema
         run: python tools/validate_hardware_portfolio.py
 
+      - name: Validate draft deployment profile and catalog references
+        run: python tools/validate_hardware_deployment_profile.py
+
       - name: Run adversarial contract tests
-        run: python -m unittest discover -s tests -p "test_hardware_portfolio.py" -v
+        run: python -m unittest discover -s tests -p "test_hardware_*.py" -v
