@@ -686,6 +686,35 @@
         "Confirm with the contracting authority whether additional sector-specific, critical-infrastructure, privacy, cryptographic or cross-border requirements apply."
       ],
       "qualification_evidence_refs": []
+    },
+    {
+      "id": "south-africa-sita-ict-procurement",
+      "name": "SITA public-sector ICT hardware and security procurement routes (contract applicability must be checked)",
+      "item_type": "standards_programme",
+      "category": "security_assurance",
+      "source_urls": [
+        "https://www.sita.co.za/content/sita-effective-panel-contracts",
+        "https://www.sita.co.za/node/186",
+        "https://www.gcommerce.gov.za/Home/Supplier"
+      ],
+      "source_revision": null,
+      "source_completeness": "specification_or_partial_files",
+      "license_status": "not_applicable_reference",
+      "bill_of_materials_status": "not_applicable_or_unknown",
+      "availability_status": "not_applicable",
+      "maturity": "REFERENCE_ONLY",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "SITA's effective-panel page says listed contracts are available to public bodies, parastatals and organs of state; as viewed 2026-10-10 it lists the information-security products/services panel RFA 2494-2021 ending 2027-09-06 and the server-room/network-cabling related panel RFA 2168-2024 ending 2031-10-10. It also lists UC/VC panel RFA 2501-2021 ending 2026-10-08, which is past the snapshot date and is not treated as current. SITA's hardware page lists RFB 2009 (2026-04-20 to 2027-04-20) and RFB 740 (2025-11-24 to 2026-11-24); actual scope, amendments and category fit must be confirmed against the tender/contract documents.",
+      "open_blockers": [
+        "Read actual engagement models, technical specifications, terms, accredited-supplier lists and amendments; the public landing page alone is not tender qualification.",
+        "Determine whether Luminous should be a product vendor, open-source software supplier, subcontractor, integration partner or supplier through an accredited reseller; none is assumed eligible by this record.",
+        "Confirm current contract validity, commodity coverage, licensing terms and procuring authority instructions immediately before any bid or quote.",
+        "Prepare commercial support, warranty, SLA, security evidence and local delivery obligations that open-source publication alone does not provide."
+      ],
+      "qualification_evidence_refs": []
     }
   ]
 }
