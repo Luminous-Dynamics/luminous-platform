@@ -44,8 +44,9 @@ def canonical_profile_digest(profile: dict[str, Any]) -> str:
     """Compute the profile digest for this schema's string/integer-only value domain.
 
     The endpoint profile schema excludes arbitrary properties and floating-point values;
-    its keys are fixed ASCII schema keys. Keep this routine version-pinned and covered by
-    fixtures before using it as part of a cryptographic verifier.
+    its keys are fixed ASCII schema keys and its values are strings, integers, booleans or null.
+    Keep this routine version-pinned and covered by fixtures before using it as part of a
+    cryptographic verifier.
     """
     canonical = json.dumps(
         profile,
@@ -118,9 +119,11 @@ def approval_errors(
     if created and expires and expires <= created:
         errors.append("$.expires_at must be later than $.created_at")
 
-    if approval["state"] == "approved":
+    if approval["state"] in {"approved", "rejected", "revoked"}:
         if approval["requested_by_ref"] == approval["approver_ref"]:
             errors.append("$.requested_by_ref and $.approver_ref must be distinct principals")
+
+    if approval["state"] == "approved":
         if not approval["allowed_operations"]:
             errors.append("$.allowed_operations must name at least one explicit read-only operation")
         unexpected = set(approval["allowed_operations"]) - _READ_ONLY_OPERATIONS
