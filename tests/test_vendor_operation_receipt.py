@@ -5,13 +5,16 @@ from __future__ import annotations
 import copy
 import sys
 import unittest
+from contextlib import redirect_stderr
+from io import StringIO
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from validate_hardware_portfolio import load_json  # noqa: E402
-from validate_vendor_operation_receipt import receipt_errors, registry_binding_errors  # noqa: E402
+from validate_vendor_operation_receipt import main, receipt_errors, registry_binding_errors  # noqa: E402
 
 
 class VendorOperationReceiptTests(unittest.TestCase):
@@ -116,6 +119,22 @@ class VendorOperationReceiptTests(unittest.TestCase):
         errors = registry_binding_errors(receipt, registry)
         self.assertTrue(any("product_family must be explicitly declared" in error for error in errors))
         self.assertTrue(any("must exactly match registry tested_scope.product_family" in error for error in errors))
+
+    def test_cli_fails_closed_on_schema_invalid_receipt_without_crashing(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            bad_receipt = Path(temp_dir) / "invalid-receipt.json"
+            bad_receipt.write_text('{"operation": "configuration_apply"}', encoding="utf-8")
+            stderr = StringIO()
+            with redirect_stderr(stderr):
+                result = main([
+                    "--receipt", str(bad_receipt),
+                    "--schema", str(ROOT / "schemas/vendor-operation-effect-receipt-v1.schema.json"),
+                    "--registry", str(ROOT / "security/vendor-adapter-capability-registry-v1.json"),
+                    "--registry-schema", str(ROOT / "schemas/vendor-adapter-capability-registry-v1.schema.json"),
+                ])
+            self.assertEqual(result, 1)
+            self.assertIn("FAIL:", stderr.getvalue())
+            self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_target_digest_must_bind_to_target_identity(self) -> None:
         receipt = copy.deepcopy(self.fixture)
