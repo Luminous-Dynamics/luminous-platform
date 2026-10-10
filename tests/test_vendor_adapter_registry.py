@@ -105,6 +105,24 @@ class VendorAdapterRegistryTests(unittest.TestCase):
         errors = self.errors(payload)
         self.assertTrue(any("tested_scope.model must be exact" in error for error in errors))
 
+        payload = copy.deepcopy(self.registry)
+        adapter = payload["adapters"][0]
+        adapter["operations"][0].update({
+            "state": "tested",
+            "evidence_refs": ["evidence:test-run-2"],
+            "tested_revision": "b" * 40,
+            "tested_scope": {
+                "model": "Exact Model",
+                "product_family": "IOS XE",
+                "hardware_revision": "Rev A",
+                "software_version": "1.2.3",
+                "region": "global",
+                "test_environment": "isolated bench fixture",
+            },
+        })
+        errors = self.errors(payload)
+        self.assertTrue(any("tested_scope.region must be exact" in error for error in errors))
+
     def test_tested_scope_family_must_be_declared_by_adapter(self) -> None:
         payload = copy.deepcopy(self.registry)
         adapter = payload["adapters"][0]
@@ -179,7 +197,7 @@ class VendorAdapterRegistryTests(unittest.TestCase):
             "tested_revision": "b" * 40,
             "tested_scope": {
                 "model": "Exact Router",
-                "product_family": "Exact supported router/AP model and hardware revision",
+                "product_family": "OpenWrt-supported router",
                 "hardware_revision": "Rev B",
                 "software_version": "OpenWrt target build",
                 "region": "test-lab",
