@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "contracts/ambient-scene-pack-v1.schema.json"
+      - "contracts/renderer-capability-profile-v1.schema.json"
       - "contracts/examples/**"
       - "contracts/tests/**"
       - "tools/ambient_validation/**"
@@ -12,6 +13,7 @@ on:
     branches: [main]
     paths:
       - "contracts/ambient-scene-pack-v1.schema.json"
+      - "contracts/renderer-capability-profile-v1.schema.json"
       - "contracts/examples/**"
       - "contracts/tests/**"
       - "tools/ambient_validation/**"
@@ -41,5 +43,5 @@ jobs:
         run: python -m pip install --disable-pip-version-check -r tools/ambient_validation/requirements.txt
       - name: Validate schema and example
         run: python tools/ambient_validation/validate_scene_pack.py contracts/examples/first-germination.scene.json
-      - name: Run negative fixtures and filesystem tests
-        run: python tools/ambient_validation/test_validate_scene_pack.py
+      - name: Run contract and renderer compatibility tests
+        run: python -m unittest discover -s tools/ambient_validation -p 'test_*.py' -v

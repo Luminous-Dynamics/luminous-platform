@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "profileId": "sovereign-visual-core.source-inspection-2026-10-10",
+  "renderer": {
+    "repository": "Luminous-Dynamics/sovereign-boot",
+    "commit": "c3b7bb9a376af9abd7bff7cdfc13472e2d44e82e",
+    "crate": "sovereign-visual-core",
+    "qualificationState": "source-inspection-only"
+  },
+  "seedEncoding": "phrase-hash-blake3-utf8",
+  "palette": {
+    "configurable": false,
+    "supportedFields": []
+  },
+  "simulation": {
+    "branchLimitConfigurable": false,
+    "branchLimitEnforcedBeforeSpawn": true,
+    "maxBranchLimit": 8192,
+    "maxDepthConfigurable": false,
+    "fixedMaxDepth": 12,
+    "growthRateConfigurable": false,
+    "fixedStepHzConfigurable": false,
+    "pulsePeriodConfigurable": false,
+    "driftAmplitudeConfigurable": false
+  },
+  "resources": {
+    "maxDimension": 4096,
+    "maxPixels": 8294400,
+    "maxMemoryMiB": null,
+    "manifestMemoryBudgetEnforced": false
+  },
+  "presentation": {
+    "supportedVariants": [],
+    "configurableFields": [],
+    "staticGradientFallback": false
+  },
+  "lifecycle": {
+    "supportedPolicies": []
+  }
+}

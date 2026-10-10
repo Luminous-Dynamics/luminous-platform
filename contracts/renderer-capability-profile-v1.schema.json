@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:ambient-renderer-capability-profile:v1",
+  "title": "Luminous Ambient Renderer Capability Profile v1",
+  "description": "Explicit renderer implementation capabilities, separate from runtime qualification status.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profileId", "renderer", "seedEncoding", "palette", "simulation", "resources", "presentation", "lifecycle"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "profileId": { "type": "string", "pattern": "^[a-z][a-z0-9.-]{2,63}$" },
+    "renderer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "crate", "qualificationState"],
+      "properties": {
+        "repository": { "const": "Luminous-Dynamics/sovereign-boot" },
+        "commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+        "crate": { "const": "sovereign-visual-core" },
+        "qualificationState": { "enum": ["source-inspection-only", "compile-qualified", "runtime-qualified"] }
+      }
+    },
+    "seedEncoding": { "enum": ["phrase-hash-blake3-utf8", "uint32-domain-separated-blake3-v1"] },
+    "palette": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["configurable", "supportedFields"],
+      "properties": {
+        "configurable": { "type": "boolean" },
+        "supportedFields": { "type": "array", "uniqueItems": true, "items": { "enum": ["canvas", "substrate", "filament", "node", "lichen", "glow"] } }
+      }
+    },
+    "simulation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branchLimitConfigurable", "branchLimitEnforcedBeforeSpawn", "maxBranchLimit", "maxDepthConfigurable", "fixedMaxDepth", "growthRateConfigurable", "fixedStepHzConfigurable", "pulsePeriodConfigurable", "driftAmplitudeConfigurable"],
+      "properties": {
+        "branchLimitConfigurable": { "type": "boolean" },
+        "branchLimitEnforcedBeforeSpawn": { "type": "boolean" },
+        "maxBranchLimit": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+        "maxDepthConfigurable": { "type": "boolean" },
+        "fixedMaxDepth": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "growthRateConfigurable": { "type": "boolean" },
+        "fixedStepHzConfigurable": { "type": "boolean" },
+        "pulsePeriodConfigurable": { "type": "boolean" },
+        "driftAmplitudeConfigurable": { "type": "boolean" }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxDimension", "maxPixels", "maxMemoryMiB", "manifestMemoryBudgetEnforced"],
+      "properties": {
+        "maxDimension": { "type": "integer", "minimum": 1 },
+        "maxPixels": { "type": "integer", "minimum": 1 },
+        "maxMemoryMiB": { "type": ["integer", "null"], "minimum": 1 },
+        "manifestMemoryBudgetEnforced": { "type": "boolean" }
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supportedVariants", "configurableFields", "staticGradientFallback"],
+      "properties": {
+        "supportedVariants": { "type": "array", "uniqueItems": true, "items": { "enum": ["boot", "desktop", "idle", "lockedBackground", "staticFallback"] } },
+        "configurableFields": { "type": "array", "uniqueItems": true, "items": { "enum": ["motion", "maxFps", "brightness", "composition", "safeRegions"] } },
+        "staticGradientFallback": { "type": "boolean" }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supportedPolicies"],
+      "properties": {
+        "supportedPolicies": { "type": "array", "uniqueItems": true, "items": { "enum": ["onLock:pause", "onLock:reduced-motion", "onLock:static", "onSuspend:pause", "onWake:reinitialize-from-seed"] } }
+      }
+    }
+  }
+}
