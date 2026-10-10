@@ -146,6 +146,17 @@ def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> Co
 
     presentations = manifest.get("presentations", {})
     presentation_profile = profile["presentation"]
+    accessibility = manifest.get("accessibility", {})
+    reduced_motion_variant = accessibility.get("reducedMotionPresentation")
+    if (
+        isinstance(reduced_motion_variant, str)
+        and reduced_motion_variant not in presentation_profile["supportedVariants"]
+    ):
+        add(
+            "accessibility.reduced_motion_variant.unsupported",
+            "/accessibility/reducedMotionPresentation",
+            f"manifest selects {reduced_motion_variant!r} for reduced motion, but the renderer profile does not declare that variant supported",
+        )
     for variant, config in presentations.items():
         if variant not in presentation_profile["supportedVariants"]:
             add("presentation.variant.unsupported", f"/presentations/{variant}",

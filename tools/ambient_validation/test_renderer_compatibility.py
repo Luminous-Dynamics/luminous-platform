@@ -68,6 +68,24 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertNotIn("simulation.resource_branch_limit.not_configurable", codes)
         self.assertNotIn("budget.branch_ceiling.exceeds_core_ceiling", codes)
 
+    def test_reduced_motion_variant_is_a_specific_capability_gate(self):
+        report = audit_compatibility(self.manifest, self.profile)
+        found = [
+            item for item in report.issues
+            if item.code == "accessibility.reduced_motion_variant.unsupported"
+        ]
+        self.assertEqual(1, len(found))
+        self.assertEqual("/accessibility/reducedMotionPresentation", found[0].path)
+        self.assertIn("'idle'", found[0].message)
+
+        candidate = copy.deepcopy(self.profile)
+        candidate["presentation"]["supportedVariants"].append("idle")
+        supported_report = audit_compatibility(self.manifest, candidate)
+        self.assertNotIn(
+            "accessibility.reduced_motion_variant.unsupported",
+            {item.code for item in supported_report.issues},
+        )
+
     def test_lower_profile_depth_ceiling_reports_typed_blocker_without_crashing(self):
         candidate = copy.deepcopy(self.profile)
         candidate["simulation"]["maxDepthCeiling"] = 1
