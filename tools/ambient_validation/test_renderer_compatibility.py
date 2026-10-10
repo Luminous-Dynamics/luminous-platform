@@ -29,7 +29,7 @@ class RendererCompatibilityTests(unittest.TestCase):
     def test_pinned_renderer_profile_matches_its_schema(self):
         issues = validate_profile(self.profile_schema, self.profile)
         self.assertEqual([], issues, "\n".join(map(str, issues)))
-        self.assertEqual("13127ef41ea64312a8b206e6313bd9c48cc5c2a2", self.profile["renderer"]["commit"])
+        self.assertEqual("ab6eac9641e0673cf2de36018a35986c122b36a8", self.profile["renderer"]["commit"])
         self.assertEqual("source-inspection-only", self.profile["renderer"]["qualificationState"])
 
     def test_mismatched_engine_id_is_rejected(self):
@@ -44,12 +44,10 @@ class RendererCompatibilityTests(unittest.TestCase):
     def test_current_profile_fails_closed_for_known_scene_pack_gaps(self):
         report = audit_compatibility(self.manifest, self.profile)
         self.assertFalse(report.compatible)
-        self.assertEqual("13127ef41ea64312a8b206e6313bd9c48cc5c2a2", report.renderer_commit)
+        self.assertEqual("ab6eac9641e0673cf2de36018a35986c122b36a8", report.renderer_commit)
         self.assertEqual("source-inspection-only", report.qualification_state)
         codes = {item.code for item in report.issues}
         self.assertTrue({
-            "engine.version.unsupported",
-            "manifest.adapter.not_implemented",
             "budget.whole_process.not_enforced",
             "presentation.variant.unsupported",
             "presentation.field_unmapped",
@@ -64,6 +62,8 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertNotIn("simulation.pulse_period.not_configurable", codes)
         self.assertNotIn("simulation.drift_amplitude.not_configurable", codes)
         self.assertNotIn("budget.renderer_estimate.not_enforced", codes)
+        self.assertNotIn("engine.version.unsupported", codes)
+        self.assertNotIn("manifest.adapter.not_implemented", codes)
         self.assertNotIn("presentation.static_gradient.unsupported", codes)
         self.assertNotIn("simulation.resource_branch_limit.not_configurable", codes)
         self.assertNotIn("budget.branch_ceiling.exceeds_core_ceiling", codes)
