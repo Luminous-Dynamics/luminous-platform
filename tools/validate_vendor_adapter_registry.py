@@ -130,6 +130,22 @@ def registry_errors(
             if adapter["model_scope_state"] != "exact_models_tested":
                 errors.append(f"{prefix}: tested maturity requires exact_models_tested scope")
 
+        tested_operations = {
+            item["operation"] for item in adapter["operations"] if item["state"] == "tested"
+        }
+        if maturity_level >= _MATURITY["A1_READ_ONLY_TESTED"] and not (
+            tested_operations & {"inventory_read", "health_read", "version_read", "configuration_export"}
+        ):
+            errors.append(f"{prefix}: A1 or higher requires at least one tested read-only operation")
+        if maturity_level >= _MATURITY["A2_STATE_CONTRACT_TESTED"] and "configuration_plan" not in tested_operations:
+            errors.append(f"{prefix}: A2 or higher requires a tested configuration_plan operation")
+        if maturity_level >= _MATURITY["A3_CHANGE_QUALIFIED"] and "configuration_apply" not in tested_operations:
+            errors.append(f"{prefix}: A3 or higher requires a tested configuration_apply operation")
+        if maturity_level >= _MATURITY["A4_FIRMWARE_RECOVERY_QUALIFIED"] and not (
+            tested_operations & {"oem_firmware_update", "oem_firmware_recovery"}
+        ):
+            errors.append(f"{prefix}: A4 or higher requires tested OEM firmware update/recovery capability")
+
         if implementation == "NOT_IMPLEMENTED":
             for op in adapter["operations"]:
                 if op["state"] in {"implemented_untested", "tested"}:
