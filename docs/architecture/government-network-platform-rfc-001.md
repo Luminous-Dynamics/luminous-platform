@@ -132,7 +132,7 @@ A state change requires evidence artifacts and a named reviewer. A test plan is 
 - Define acceptance checks and evidence owners.
 
 ### Stage 2 — Pilot site definition
-- Start from the [small-site reference bill of functional materials](../hardware/profiles/small-site-reference-bom.md), then produce exact physical/logical diagrams, network-zone and allowed-flow tables, IP/DNS/DHCP/NTP plan, rack elevation, power budget, cable schedule, BOM, spares list and recovery workflow.
+- Start from the [small-site reference bill of functional materials](../hardware/profiles/small-site-reference-bom.md) and the [site segmentation/allowed-flow profile](site-segmentation-profile-v1.md), then produce exact physical/logical diagrams, network-zone and allowed-flow tables, IP/DNS/DHCP/NTP plan, rack elevation, power budget, cable schedule, BOM, spares list and recovery workflow.
 - Build a disposable lab and test isolation, certificate failure, gateway loss, WAN loss, stale policy, controller outage, package mirror outage, log-storage pressure and full restore.
 - Select an endpoint/server profile based on current supported firmware and drivers, not merely openness.
 
