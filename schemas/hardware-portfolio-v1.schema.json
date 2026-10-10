@@ -189,7 +189,6 @@
           },
           "open_blockers": {
             "type": "array",
-            "minItems": 1,
             "items": {
               "type": "string",
               "minLength": 10
