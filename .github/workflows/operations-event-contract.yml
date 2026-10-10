@@ -164,8 +164,8 @@ jobs:
             END { printf "%d %d %d %d %d %d\n", discovered, passed, failed, ignored, measured, filtered }
           ' "$log")"
           read -r discovered count failed ignored measured filtered <<< "$stats"
-          if [[ "$count" -lt 11 || "$failed" -ne 0 || "$ignored" -ne 0 || "$measured" -ne 0 || "$filtered" -ne 0 || "$discovered" -ne "$((count + failed + ignored + measured))" ]]; then
-            echo "::error::PostgreSQL suite must execute at least 11 tests with no failures, ignores, measured or filtered tests; discovered=$discovered passed=$count failed=$failed ignored=$ignored measured=$measured filtered=$filtered."
+          if [[ "$count" -lt 12 || "$failed" -ne 0 || "$ignored" -ne 0 || "$measured" -ne 0 || "$filtered" -ne 0 || "$discovered" -ne "$((count + failed + ignored + measured))" ]]; then
+            echo "::error::PostgreSQL suite must execute at least 12 tests with no failures, ignores, measured or filtered tests; discovered=$discovered passed=$count failed=$failed ignored=$ignored measured=$measured filtered=$filtered."
             exit 1
           fi
           echo "test_count=$count" >> "$GITHUB_OUTPUT"
@@ -207,6 +207,6 @@ jobs:
             echo "- Work Case Contract V1 tests executed: $WORK_CASE_TESTS"
             echo "- Rust Holochain Attestation Share Package V1 tests executed: $HOLOCHAIN_TESTS"
             echo "- Rust/PostgreSQL Work Case repository tests executed against PostgreSQL 18.6-bookworm and a non-owner application role: $POSTGRES_TESTS"
-            echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Work Case suite requires at least 34 tests; the PostgreSQL repository suite requires at least 11 tests. The Holochain share-package validator and its contract tests are Rust-native."
+            echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Work Case suite requires at least 34 tests; the PostgreSQL repository suite requires at least 12 tests. The Holochain share-package validator and its contract tests are Rust-native."
             echo "- This workflow qualifies only the tested Rust repository slice and migration on the stated disposable PostgreSQL test image. It does not qualify API authentication, lifecycle transitions, provider integration, outbox dispatch/recovery, backups/restores, the Holochain integrity zome or multi-agent DHT behavior, cryptographic evidence verification, or remote execution."
           } >> "$GITHUB_STEP_SUMMARY"
