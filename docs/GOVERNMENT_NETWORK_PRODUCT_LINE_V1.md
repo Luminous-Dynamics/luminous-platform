@@ -6,6 +6,7 @@
 **Register schema:** [../schemas/hardware-portfolio-v1.schema.json](../schemas/hardware-portfolio-v1.schema.json)
 **Control evidence matrix:** [GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md](GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md) and [machine-readable JSON](../security/control-evidence-matrix-v1.json)
 **Open-hardware design package plan:** [OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md](OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md)
+**Global vendor/firmware service architecture:** [GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md](GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md)
 
 ## Decision summary
 
