@@ -141,7 +141,8 @@
       "assessment_record": null,
       "open_gaps": [
         "Select an identity provider and authenticator policy for the target profile.",
-        "Verify end-to-end enforcement at the actual endpoint, switch, server and management interfaces."
+        "Verify end-to-end enforcement at the actual endpoint, switch, server and management interfaces.",
+        "YubiKey 5C NFC FIPS 140-3 is a potential token candidate only; certificate #5291 scope, model compatibility and SA supply/replacement remain unverified."
       ]
     },
     {
@@ -424,7 +425,9 @@
       "status": "NOT_EVALUATED",
       "assessment_record": null,
       "open_gaps": [
-        "No concrete HSM/token SKU, key-custody design or jurisdiction-specific crypto requirement has been selected."
+        "No HSM/token SKU is selected. YubiHSM 2 FIPS is a candidate; verify NIST certificate #5302 scope, local supply and integration before selecting it.",
+        "Key custody, admin quorum, backup/restore, rotation/revocation and compromise recovery require a written design.",
+        "Any certificate/module-validation requirement must be mapped to the exact jurisdiction, module version, operational environment and permitted mode; a module certificate alone does not certify the system."
       ]
     },
     {
