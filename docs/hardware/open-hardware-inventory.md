@@ -22,6 +22,12 @@ Distinguish **open design**, **open software**, **obtainable hardware**, **secur
 | HW-005 | RISC-V / FPGA development | **BeagleV-Fire** | Official documentation describes a RISC-V SoC plus FPGA board and links hardware/mechanical design files. | Lab fixture, FPGA experiments, hardware-interface prototyping. | **Development platform** | Not a generic secure server or gateway. Verify firmware/boot chain, current sourcing, toolchain, FPGA bitstream trust, thermal limits and support for the intended workload. |
 | HW-006 | Open laptop | **MNT Reform family** | MNT publishes Reform-related schematics, design files and documentation; public repositories document design files and relevant licenses. | Study as an open workstation and repairable endpoint reference. | **Open design reference** | Not yet qualified as a government endpoint. Need exact model, current production/support evidence, firmware/boot chain, hardware-backed identity, wireless choices, disk encryption, drivers, endpoint management and environmental/security testing. |
 | HW-007 | Community mesh / rural connectivity | **LibreRouter** | Project repositories describe an open-hardware mesh router for community networks. | Evaluate for public-interest/community connectivity and resilient rural networking. | **Research candidate** | Current board revision, component/BOM completeness, maintenance, availability, radio approvals, performance and security-update lifecycle need direct review. Do not infer suitability for a regulated boundary from the “mesh” label. |
+| HW-008 | Site / lab gateway | **Turris Omnia** | Official docs list schematics for multiple board revisions, a 3D PCB model and source files for diplexers; the product uses an OpenWrt-based OS. | Commercial candidate for controlled lab/site evaluation, compared with OpenWrt One. | **Open-schematic candidate** | Public docs do not by themselves prove that all preferred editable PCB files and a complete reproducible manufacturing package are public. Check exact revision, BOM, firmware/boot chain, current support and supplier availability; not a pre-approved boundary gateway. |
+| HW-009 | Modular edge router | **Turris MOX** | Official docs list schematics for its modules and manufacturing docs for an NVMe adapter. Community clarification says full editable Altium files are not publicly available. | Study modular network design and community/site connectivity. | **Partial design disclosure, not a complete open-hardware package** | Public schematics alone are not a substitute for editable layout/source, complete BOM and reproducible build inputs. Verify current availability, source licenses, firmware lifecycle, radio/PoE modules and applicable approvals. |
+| HW-010 | Cryptographic appliance research | **CrypTech HSM / Alpha** | The project's public site describes an auditable hardware cryptographic engine and publishes software/firmware/FPGA-from-source instructions. The available project material found is old. | Historical research lead for an open-auditable HSM architecture. | **Legacy research lead; not a product recommendation** | Current maintenance, exact hardware availability, complete build reproducibility, lifecycle, security evaluation and any applicable cryptographic-module validation were not established. Do not deploy for protected government keys based on source openness alone. |
+| HW-011 | Rack / physical infrastructure | **OCP Open Rack Wide and Rack & Power design collateral** | OCP's design-file archive lists Open Rack Wide design collateral in 2026. | Rack/mechanical/power interface reference for a datacenter/edge bill of materials. | **Current design-package lead; exact revision to pin** | A rack design is not a complete site power system. Verify files/license, load ratings, grounding/bonding, PDU/UPS/generator compatibility, cooling, safety approvals, manufacturing partner and spare parts. |
+| HW-012 | Server NIC interface / test infrastructure | **OCP NIC 3.0 specification and test-fixture collateral** | OCP lists a released NIC 3.0 specification and a 2026 draft, plus design collateral and test fixture packages with schematics/layout/BOM. | Use interface/mechanical standards and fixture references when selecting server NICs. | **Open specification / fixture collateral; not a selected NIC** | NIC form-factor openness does not make a card's ASIC/firmware open. Pin exact spec and card model; verify supported firmware, drivers, security, heat/power, interoperability and vendor lifecycle. |
+
 
 ### Authoritative references
 - [OpenWrt One hardware design files](https://one.openwrt.org/hardware/)
@@ -34,10 +40,15 @@ Distinguish **open design**, **open software**, **obtainable hardware**, **secur
 - [BeagleV-Fire design documentation](https://docs.beagleboard.io/boards/beaglev/fire/03-design.html)
 - [MNT source index](https://mntmn.com/sources.html)
 - [LibreRouter repositories](https://gitlab.com/librerouter)
+- [Turris Omnia hardware documentation](https://docs.turris.cz/hw/omnia/omnia/) and [revision history](https://docs.turris.cz/hw/omnia/revisions/)
+- [Turris MOX hardware documentation](https://docs.turris.cz/hw/mox/hw/)
+- [CrypTech project](https://wiki.cryptech.is/) and [source-build notes](https://wiki.cryptech.is/BuildingFromSource/)
+- [OCP design-file archive](https://www.opencompute.org/contribution-type/design-file/)
+- [OCP NIC / Mezzanine project](https://www.opencompute.org/projects/server/mezz-nic/)
 
 ## 2. Unresolved hardware classes
 
-These are tracked as gaps, not silently filled with guesses.
+These are tracked as gaps, not silently filled with guesses. Turris schematic disclosures, historical CrypTech material, and OpenSK firmware are useful leads but do not close the production HSM/token requirements without exact hardware, lifecycle, and validation evidence.
 
 | ID | Hardware class | Current disposition | What resolves the gap |
 |---|---|---|---|
