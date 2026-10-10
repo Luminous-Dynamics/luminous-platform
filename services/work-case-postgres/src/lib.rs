@@ -619,10 +619,17 @@ mod tests {
                 has_schema_privilege(current_user, 'public', 'CREATE') AS "schema_create!",
                 has_table_privilege(current_user, 'external_case_mappings', 'INSERT') AS "mapping_insert!",
                 has_table_privilege(current_user, 'case_evidence_refs', 'INSERT') AS "evidence_insert!",
+                has_table_privilege(current_user, 'case_outbox', 'INSERT') AS "outbox_table_insert!",
+                has_table_privilege(current_user, 'case_outbox', 'UPDATE') AS "outbox_table_update!",
+                has_table_privilege(current_user, 'case_outbox', 'DELETE') AS "outbox_table_delete!",
+                has_column_privilege(current_user, 'case_outbox', 'tenant_id', 'INSERT') AS "outbox_tenant_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'payload', 'INSERT') AS "outbox_payload_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'created_at', 'INSERT') AS "outbox_created_at_insert!",
                 has_column_privilege(current_user, 'case_outbox', 'status', 'UPDATE') AS "outbox_status_update!",
                 has_column_privilege(current_user, 'case_outbox', 'status', 'INSERT') AS "outbox_status_insert!",
                 has_column_privilege(current_user, 'case_outbox', 'attempts', 'INSERT') AS "outbox_attempts_insert!",
                 has_column_privilege(current_user, 'case_outbox', 'lease_owner', 'INSERT') AS "outbox_lease_owner_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'lease_until', 'INSERT') AS "outbox_lease_until_insert!",
                 has_column_privilege(current_user, 'case_outbox', 'delivered_at', 'UPDATE') AS "outbox_delivered_at_update!",
                 has_table_privilege(current_user, 'case_activity', 'UPDATE') AS "activity_update!""#
         ).fetch_one(&pool).await.expect("read application-role privilege boundary");
@@ -630,10 +637,16 @@ mod tests {
         assert!(!privileges.schema_create, "runtime role must not create objects in public");
         assert!(!privileges.mapping_insert, "mapping writes are not exposed yet");
         assert!(!privileges.evidence_insert, "evidence writes are not exposed yet");
+        assert!(!privileges.outbox_table_insert, "outbox INSERT must be column-scoped");
+        assert!(!privileges.outbox_table_update, "the current service has no dispatcher update capability");
+        assert!(!privileges.outbox_table_delete, "outbox rows must not be deleted by the application role");
+        assert!(privileges.outbox_tenant_insert && privileges.outbox_payload_insert && privileges.outbox_created_at_insert,
+            "create and transition paths need their explicit outbox event columns");
         assert!(!privileges.outbox_status_update, "outbox delivery state belongs to a qualified dispatcher");
         assert!(!privileges.outbox_status_insert, "the runtime role must use the database default outbox status");
         assert!(!privileges.outbox_attempts_insert, "the runtime role must use the database default attempt counter");
         assert!(!privileges.outbox_lease_owner_insert, "outbox lease ownership belongs to the dispatcher");
+        assert!(!privileges.outbox_lease_until_insert, "outbox lease fields belong to the dispatcher");
         assert!(!privileges.outbox_delivered_at_update, "delivery acknowledgement belongs to the dispatcher");
         assert!(!privileges.activity_update, "activity is append-only");
     }
