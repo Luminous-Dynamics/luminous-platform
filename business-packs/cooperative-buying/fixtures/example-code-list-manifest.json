@@ -1,0 +1,47 @@
+{
+  "schema": "luminous.code-list-snapshot-manifest/v1",
+  "metadata": {
+    "manifest_id": "fixture:code-list:iso4217",
+    "revision": 1,
+    "status": "illustrative",
+    "fixture_only": true,
+    "created_at": "2026-10-09T00:00:00Z",
+    "review_due_at": "2026-10-10T00:00:00Z"
+  },
+  "code_list": {
+    "code_list_id": "iso4217-currency",
+    "domain": "currency",
+    "scheme_uri": "https://www.iso.org/iso-4217-currency-codes.html",
+    "version_label": "not-retrieved",
+    "record_effectivity": "current_and_historical",
+    "jurisdiction_codes": [],
+    "superseded_codes_retained": true,
+    "license_or_terms_uri": "https://www.six-group.com/en/products-services/financial-information/market-reference-data/data-standards.html"
+  },
+  "source": {
+    "authority_name": "SIX Financial Information AG — ISO 4217 Maintenance Agency",
+    "source_uri": "https://www.six-group.com/en/products-services/financial-information/market-reference-data/data-standards.html",
+    "retrieval_status": "not_retrieved",
+    "license_or_terms_summary": "Review current reuse terms and licensing before retaining or redistributing a derived snapshot."
+  },
+  "snapshot": {
+    "format": "json",
+    "record_count": 0,
+    "duplicate_code_count": 0,
+    "parser_id": "not-implemented",
+    "schema_or_mapping_version": "fixture-only"
+  },
+  "validation": {
+    "status": "not_run",
+    "checks": [],
+    "reviewed_at": "2026-10-09T00:00:00Z",
+    "limitations": [
+      "No official currency-code payload has been retained or validated.",
+      "This fixture proves only the manifest's illustrative shape and must never be activated."
+    ]
+  },
+  "limitations": [
+    "Illustrative registry metadata only; this is not a live or reviewed ISO 4217 snapshot.",
+    "The source authority URL is identified, but no source payload or active code list is included."
+  ]
+}

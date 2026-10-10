@@ -1,0 +1,132 @@
+name: deployment-profile-validator
+
+on:
+  pull_request:
+    paths:
+      - "schemas/**"
+      - "business-packs/cooperative-buying/**"
+      - "crates/cooperative-commerce-core/**"
+      - "profiles/**"
+      - "tools/**"
+      - "tests/**"
+      - "requirements-profile-validator.txt"
+      - ".github/workflows/deployment-profile-validator.yml"
+      - ".github/workflows/six-currency-source-smoke.yml"
+  push:
+    branches: [main]
+    paths:
+      - "schemas/**"
+      - "business-packs/cooperative-buying/**"
+      - "crates/cooperative-commerce-core/**"
+      - "profiles/**"
+      - "tools/**"
+      - "tests/**"
+      - "requirements-profile-validator.txt"
+      - ".github/workflows/deployment-profile-validator.yml"
+      - ".github/workflows/six-currency-source-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deployment-profile-validator-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-profile-declaration:
+    name: Validate declaration contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact workflow revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up pinned Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.12"
+
+      - name: Record validator environment
+        run: |
+          python --version
+          python -m pip --version
+
+      - name: Install pinned validator dependencies
+        run: python -m pip install --disable-pip-version-check --requirement requirements-profile-validator.txt
+
+      - name: Run validator regression corpus
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Validate cooperative offer fixtures
+        run: |
+          python tools/validate_cooperative_offer.py business-packs/cooperative-buying/fixtures/example-offer-zar.json > cooperative-offer-zar-validation.json
+          python tools/validate_cooperative_offer.py business-packs/cooperative-buying/fixtures/example-offer-eur.json > cooperative-offer-eur-validation.json
+          python tools/validate_cooperative_purchase_intent.py business-packs/cooperative-buying/fixtures/example-nonbinding-interest.json > cooperative-purchase-intent-validation.json
+          python tools/validate_code_list_manifest.py business-packs/cooperative-buying/fixtures/example-code-list-manifest.json > code-list-snapshot-manifest-validation.json
+          cat cooperative-offer-zar-validation.json
+          cat cooperative-offer-eur-validation.json
+          cat cooperative-purchase-intent-validation.json
+          cat code-list-snapshot-manifest-validation.json
+
+      - name: Check resolved dependency compatibility
+        run: python -m pip check
+
+      - name: Check SIX acquisition script syntax
+        run: bash -n tools/fetch_six_list_one.sh
+
+      - name: Set up pinned Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
+        with:
+          toolchain: 1.96.0
+          components: rustfmt
+
+      - name: Test exact-decimal commerce core
+        run: cargo test --locked --manifest-path crates/cooperative-commerce-core/Cargo.toml
+
+      - name: Test SIX importer CLI on synthetic source
+        run: |
+          set -euo pipefail
+          cargo run --locked --quiet \
+            --manifest-path crates/cooperative-commerce-core/Cargo.toml \
+            --bin six-iso4217-import -- crates/cooperative-commerce-core/fixtures/six-list-one-minimal.xml \
+            > six-list-one-synthetic-normalized.json
+          jq -e '
+            .schema == "luminous.six-iso4217-normalized/v1"
+            and .publisher == "SIX ISO 4217 List One"
+            and .publication_date == "2026-10-01"
+            and .source_entry_count == 4
+            and .entries_without_currency_code == 1
+            and .record_count == 2
+            and (.records | any(.[]; .alpha_code == "EUR" and .numeric_code == "978"
+              and .entities == ["COUNTRY A", "COUNTRY B"]))
+            and (.records | any(.[]; .alpha_code == "TST" and .numeric_code == "001"
+              and .minor_units == "N.A."))
+          ' six-list-one-synthetic-normalized.json > /dev/null
+          cargo run --locked --quiet \
+            --manifest-path crates/cooperative-commerce-core/Cargo.toml \
+            --bin six-iso4217-import -- crates/cooperative-commerce-core/fixtures/six-list-one-minimal.xml \
+            > six-list-one-synthetic-normalized-second.json
+          cmp six-list-one-synthetic-normalized.json six-list-one-synthetic-normalized-second.json
+
+      - name: Validate local NixOS pilot declaration
+        run: |
+          python tools/validate_deployment_profile.py profiles/examples/local-nixos-pilot.yaml > profile-validation.json
+          cat profile-validation.json
+
+      - name: Upload declaration validation report
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: deployment-profile-validation-${{ github.sha }}
+          path: |
+            profile-validation.json
+            cooperative-offer-zar-validation.json
+            cooperative-offer-eur-validation.json
+            cooperative-purchase-intent-validation.json
+            code-list-snapshot-manifest-validation.json
+            six-list-one-synthetic-normalized.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Record resolved Python dependencies
+        run: python -m pip freeze

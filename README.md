@@ -1,6 +1,24 @@
 # Luminous Platform
 
-The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, fail-open, consciousness-aware runtime for NixOS hosts.
+The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, boot-safe runtime with bounded authority and evidence-producing operations for NixOS hosts.
+
+See [Global Deployment and Business Model](docs/GLOBAL_DEPLOYMENT_AND_BUSINESS_MODEL.md) for the proposed product boundaries, deployment profiles, business model, and qualification roadmap. That document is a roadmap, not a claim of production readiness or universal compliance.
+
+For the partner/operator on-ramp, start with [Start a Luminous Business](docs/START_A_LUMINOUS_BUSINESS.md) and the [MSP Incident-to-Evidence starter pack](business-packs/msp-incident-to-evidence/README.md). The pack includes a service manifest and reusable intake, scope, and delivery-report templates. Its first delivery mode is manual-first; it does not claim a qualified live PSA connector.
+
+See [One Luminous Platform, Many Business Packs](docs/PLATFORM_AND_REPOSITORY_STRATEGY.md) for the product/repository strategy. The goal is one coherent platform with independently qualified vertical packs—not a separate platform for every industry.
+
+For the proposed globally portable, member-oriented buying network and free business capability floor, see [Global Cooperative Commerce](docs/GLOBAL_COOPERATIVE_COMMERCE.md). The first schema/validator prototypes cover [supplier offers](schemas/cooperative-offer-v1.schema.json) and [consent-scoped purchase intents](schemas/cooperative-purchase-intent-v1.schema.json), with synthetic fixtures and regression tests in the [Cooperative Buying pack](business-packs/cooperative-buying/README.md). A [dependency-free Rust savings core](crates/cooperative-commerce-core/README.md) now defines exact-decimal basket comparison, symmetric cost coverage, delivery-line binding, and explicit credit handling. The [Savings Receipt schema](schemas/cooperative-savings-receipt-v1.schema.json) defines a portable record of input evidence references, calculations, and limitations. A [code-list snapshot manifest](schemas/code-list-snapshot-manifest-v1.schema.json) and [semantic validator](tools/validate_code_list_manifest.py) now define the provenance, immutability, freshness, and review gates for global registries, with a deliberately inactive illustrative fixture. These are proposed structures, not a live purchasing service or universal-compliance claim.
+
+For a machine-readable draft, see the [Deployment Profile Contract](docs/DEPLOYMENT_PROFILE_CONTRACT.md), [JSON Schema](schemas/deployment-profile-v1.schema.json), and [local NixOS pilot example](profiles/examples/local-nixos-pilot.yaml). A first declaration-only validator is available at `tools/validate_deployment_profile.py`; it has a regression corpus in `tests/test_deployment_profile_validator.py` and a pinned dependency file.
+
+```bash
+python -m pip install --requirement requirements-profile-validator.txt
+python -m unittest discover -s tests -p 'test_deployment_profile_validator.py' -v
+python tools/validate_deployment_profile.py profiles/examples/local-nixos-pilot.yaml
+```
+
+The validator checks syntax and declaration consistency only. Its `VALID_DECLARATION` result does not mean that a target was tested or is production-ready; any profile that claims runtime qualification remains blocked pending adapter-specific evidence evaluation.
 
 ## Architecture
 
@@ -49,6 +67,8 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 Every platform component follows the same core safety rule:
 
 > **Platform components may observe host state; they must never be required for host boot.**
+
+Boot availability and authorization are separate concerns: optional platform services should not prevent local boot or recovery, but an unknown, stale, or unverifiable authority must never grant privileged actuation.
 
 - `sovereign-boot` — disabled by default; QEMU-gated before any host enable
 - `nixward` — read-only diagnosis by default; actuation requires explicit operator receipt

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ISO_4217 Pblshd="2026-10-01">
+  <CcyTbl>
+    <CcyNtry>
+      <CtryNm>COUNTRY A</CtryNm>
+      <CcyNm>Euro</CcyNm>
+      <Ccy>EUR</Ccy>
+      <CcyNbr>978</CcyNbr>
+      <CcyMnrUnts>2</CcyMnrUnts>
+    </CcyNtry>
+    <CcyNtry>
+      <CtryNm>COUNTRY B</CtryNm>
+      <CcyNm>Euro</CcyNm>
+      <Ccy>EUR</Ccy>
+      <CcyNbr>978</CcyNbr>
+      <CcyMnrUnts>2</CcyMnrUnts>
+    </CcyNtry>
+    <CcyNtry>
+      <CtryNm>UNASSIGNED AREA</CtryNm>
+      <CcyNm>No universal currency</CcyNm>
+    </CcyNtry>
+    <CcyNtry>
+      <CtryNm>SYNTHETIC TEST ENTITY</CtryNm>
+      <CcyNm>Test currency</CcyNm>
+      <Ccy>TST</Ccy>
+      <CcyNbr>001</CcyNbr>
+      <CcyMnrUnts>N.A.</CcyMnrUnts>
+    </CcyNtry>
+  </CcyTbl>
+</ISO_4217>

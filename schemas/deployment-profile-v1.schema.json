@@ -1,0 +1,526 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:deployment-profile:v1",
+  "title": "Luminous Deployment Profile v1",
+  "description": "Proposed deployment-profile declaration. Schema validation does not qualify a runtime or prove a security claim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "metadata",
+    "target",
+    "authority",
+    "services",
+    "data",
+    "lifecycle",
+    "evidence",
+    "qualification"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous.deployment-profile/v1"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "status",
+        "owner",
+        "description"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)([-+][0-9A-Za-z.-]+)?$"
+        },
+        "status": {
+          "enum": [
+            "proposed",
+            "experimental",
+            "qualified",
+            "deprecated"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "documentation_uri": {
+          "type": "string",
+          "format": "uri"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "os",
+        "architectures",
+        "execution_mode",
+        "supported_hardware",
+        "unsupported_hardware"
+      ],
+      "properties": {
+        "os": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "architectures": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "execution_mode": {
+          "enum": [
+            "local",
+            "self_hosted_fleet",
+            "hybrid_federated",
+            "offline_high_assurance"
+          ]
+        },
+        "supported_hardware": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "unsupported_hardware": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "adapter_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "tested_platform_revisions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "default_action",
+        "privileged_execution",
+        "require_fresh_authorization",
+        "require_target_binding",
+        "require_operation_binding",
+        "require_attempt_identity",
+        "reject_replay",
+        "break_glass"
+      ],
+      "properties": {
+        "default_action": {
+          "const": "deny"
+        },
+        "privileged_execution": {
+          "type": "boolean"
+        },
+        "require_fresh_authorization": {
+          "const": true
+        },
+        "require_target_binding": {
+          "const": true
+        },
+        "require_operation_binding": {
+          "const": true
+        },
+        "require_attempt_identity": {
+          "const": true
+        },
+        "reject_replay": {
+          "const": true
+        },
+        "break_glass": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled",
+            "documented_out_of_band_recovery"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "documented_out_of_band_recovery": {
+              "enum": [
+                "required",
+                "not_applicable"
+              ]
+            },
+            "procedure_uri": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "authorization_authority": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "description": "Named local or remote authority that authorizes privileged operations; configuration alone is not proof that it exists or is verified."
+        }
+      }
+    },
+    "services": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coordinator",
+        "remote_control",
+        "telemetry_export"
+      ],
+      "properties": {
+        "coordinator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "required_for_boot",
+            "required_for_local_recovery"
+          ],
+          "properties": {
+            "required_for_boot": {
+              "const": false
+            },
+            "required_for_local_recovery": {
+              "const": false
+            }
+          }
+        },
+        "remote_control": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "authentication_authority": {
+              "type": "string",
+              "minLength": 1
+            },
+            "network_exposure": {
+              "enum": [
+                "loopback_only",
+                "private_network",
+                "public_network",
+                "disabled"
+              ]
+            }
+          }
+        },
+        "telemetry_export": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "enabled"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "destination_classes": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "approval_required": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_telemetry",
+        "evidence_export",
+        "retention_policy",
+        "secrets_in_browser_storage",
+        "customer_key_custody"
+      ],
+      "properties": {
+        "raw_telemetry": {
+          "enum": [
+            "local-only",
+            "customer-selected-region",
+            "customer-managed-external",
+            "explicit-policy-dependent"
+          ]
+        },
+        "evidence_export": {
+          "enum": [
+            "disabled",
+            "operator-approved",
+            "policy-approved",
+            "automatic-sanitized-only"
+          ]
+        },
+        "retention_policy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "secrets_in_browser_storage": {
+          "const": "prohibited"
+        },
+        "customer_key_custody": {
+          "enum": [
+            "customer-controlled",
+            "shared-custody",
+            "provider-controlled",
+            "not-applicable"
+          ]
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "installation",
+        "upgrade",
+        "rollback",
+        "uninstall",
+        "export_exit_path"
+      ],
+      "properties": {
+        "installation": {
+          "enum": [
+            "undocumented",
+            "documented",
+            "automated-tested"
+          ]
+        },
+        "upgrade": {
+          "enum": [
+            "undocumented",
+            "pinned-inputs-and-rollback-plan",
+            "automated-tested"
+          ]
+        },
+        "rollback": {
+          "enum": [
+            "not-defined",
+            "documented",
+            "required",
+            "automated-tested"
+          ]
+        },
+        "uninstall": {
+          "enum": [
+            "undocumented",
+            "documented",
+            "automated-tested"
+          ]
+        },
+        "export_exit_path": {
+          "enum": [
+            "absent",
+            "documented",
+            "tested"
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_fields",
+        "unknown_evidence",
+        "simulation_as_live_evidence",
+        "command_success_as_recovery_proof"
+      ],
+      "properties": {
+        "required_fields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "unknown_evidence": {
+          "const": "unproven"
+        },
+        "simulation_as_live_evidence": {
+          "const": "prohibited"
+        },
+        "command_success_as_recovery_proof": {
+          "const": "prohibited"
+        },
+        "schema_versions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "independent_verifier_required_for": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claimed_level",
+        "required_checks",
+        "unqualified_capabilities",
+        "qualified_capabilities"
+      ],
+      "properties": {
+        "claimed_level": {
+          "enum": [
+            "M0",
+            "M1",
+            "M2",
+            "M3",
+            "M4",
+            "M5",
+            "independent-assessment"
+          ]
+        },
+        "required_checks": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "unqualified_capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "last_qualification_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "qualified_capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Explicit capability scope covered by the stated evidence; empty for unqualified draft profiles."
+        },
+        "assessment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "assessor",
+            "scope",
+            "assessment_date",
+            "exceptions"
+          ],
+          "properties": {
+            "assessor": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "assessment_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "exceptions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "report_uri": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      }
+    }
+  }
+}
