@@ -68,7 +68,7 @@ Official vendor/source references:
 - Cisco IOS XE software lifecycle: https://www.cisco.com/c/en/us/products/collateral/ios-nx-os-software/ios-xe-26/bulletin-c25-2378701.html
 - Cisco software lifecycle and supported trains: https://www.cisco.com/c/en/us/support/lifecycle/software.html
 - Meraki firmware upgrade process: https://documentation.meraki.com/Platform_Management/Product_Information/Compatibility_and_Firmware/Firmware_Upgrades/Cisco_Meraki_Firmware_FAQ
-- Meraki licensing FAQ: https://documentation.meraki.com/Platform_Management/Product_Information/Meraki_Licensing/General_Licensing_Information/Meraki_Licensing_FAQs
+- Meraki licensing FAQ: https://documentation.meraki.com/Platform_Management/Product_Information/Meraki_Licensing/General_Licensing_Information/General_Licensing_FAQs
 - Meraki Dashboard API: https://developer.cisco.com/meraki/api-v1/
 - PAN-OS API overview: https://docs.paloaltonetworks.com/ngfw/api/get-started-with-the-pan-os-rest-api
 - PAN-OS Support-license/update requirement: https://docs.paloaltonetworks.com/pan-os/11-0/pan-os-admin/subscriptions/activate-subscription-licenses
