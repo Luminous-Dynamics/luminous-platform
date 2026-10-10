@@ -81,6 +81,28 @@ inputs.nixward.url         = "github:Luminous-Dynamics/nixward";
 |---------------|----------------|---------|---------------|---------|
 | v0.1 | v0.3.4f (605735c) | main (Aug 2026) | incubating | nixos-unstable |
 
+## Government & Regulated Infrastructure
+
+Luminous Platform is being organized into a product line for secure administrative, public-service, research, regulated-enterprise and appropriate unclassified government IT. This is a product taxonomy and qualification effort—not a claim of certification or deployment authorization.
+
+- [Government-network product line v1](docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md)
+- [Global vendor interoperability and firmware services v1](docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md)
+- [Vendor adapter execution contract v1](docs/VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md)
+- [Vendor adapter capability registry](security/vendor-adapter-capability-registry-v1.json)
+- [Vendor adapter capability schema](schemas/vendor-adapter-capability-registry-v1.schema.json)
+- [Vendor mutation receipt schema](schemas/vendor-operation-effect-receipt-v1.schema.json)
+- [Hardware portfolio research register v1](hardware/portfolio-v1.json)
+- [Hardware portfolio schema v1](schemas/hardware-portfolio-v1.schema.json)
+- [Single-site office/lab draft BOM](profiles/sa-single-site-office-lab-v1.json)
+- [Hardware deployment profile schema](schemas/hardware-deployment-profile-v1.schema.json)
+- [Government control evidence matrix v1](docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md)
+- [Machine-readable control evidence baseline](security/control-evidence-matrix-v1.json)
+- [South African procurement and single-site execution track v1](docs/SA_PROCUREMENT_AND_SINGLE_SITE_EXECUTION_TRACK_V1.md)
+- [Control matrix schema](schemas/hardware-control-evidence-matrix-v1.schema.json)
+- [Open-hardware design package plan](docs/OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md)
+
+The register explicitly separates candidate devices, upstream design/software references and unselected equipment gaps. All hardware remains unqualified until exact-model evidence is recorded. Queue status, public design files, and an OS that boots are not qualification evidence.
+
 ## License
 
 AGPL-3.0-or-later. Commercial licensing available — see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).

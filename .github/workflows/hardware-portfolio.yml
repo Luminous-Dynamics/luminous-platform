@@ -1,0 +1,116 @@
+name: Hardware portfolio contract
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "hardware/**"
+      - "profiles/**"
+      - "security/**"
+      - "schemas/hardware-portfolio-v1.schema.json"
+      - "schemas/hardware-deployment-profile-v1.schema.json"
+      - "schemas/hardware-control-evidence-matrix-v1.schema.json"
+      - "schemas/vendor-adapter-capability-registry-v1.schema.json"
+      - "schemas/vendor-operation-effect-receipt-v1.schema.json"
+      - "security/vendor-adapter-capability-registry-v1.json"
+      - "tests/fixtures/vendor-operation-effect-receipt-prepared-v1.json"
+      - "tools/validate_vendor_adapter_registry.py"
+      - "tools/validate_vendor_operation_receipt.py"
+      - "tests/test_vendor_adapter_registry.py"
+      - "tests/test_vendor_operation_receipt.py"
+      - "tools/validate_hardware_portfolio.py"
+      - "tools/validate_hardware_deployment_profile.py"
+      - "tools/validate_hardware_control_evidence_matrix.py"
+      - "tests/test_hardware_*.py"
+      - "requirements-hardware-portfolio.txt"
+      - "docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md"
+      - "docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md"
+      - "docs/OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md"
+      - "docs/SA_PROCUREMENT_AND_SINGLE_SITE_EXECUTION_TRACK_V1.md"
+      - "docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md"
+      - "docs/VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md"
+      - "README.md"
+      - ".github/workflows/hardware-portfolio.yml"
+  push:
+    branches: [main]
+    paths:
+      - "hardware/**"
+      - "profiles/**"
+      - "security/**"
+      - "schemas/hardware-portfolio-v1.schema.json"
+      - "schemas/hardware-deployment-profile-v1.schema.json"
+      - "schemas/hardware-control-evidence-matrix-v1.schema.json"
+      - "schemas/vendor-adapter-capability-registry-v1.schema.json"
+      - "schemas/vendor-operation-effect-receipt-v1.schema.json"
+      - "security/vendor-adapter-capability-registry-v1.json"
+      - "tests/fixtures/vendor-operation-effect-receipt-prepared-v1.json"
+      - "tools/validate_vendor_adapter_registry.py"
+      - "tools/validate_vendor_operation_receipt.py"
+      - "tests/test_vendor_adapter_registry.py"
+      - "tests/test_vendor_operation_receipt.py"
+      - "tools/validate_hardware_portfolio.py"
+      - "tools/validate_hardware_deployment_profile.py"
+      - "tools/validate_hardware_control_evidence_matrix.py"
+      - "tests/test_hardware_*.py"
+      - "requirements-hardware-portfolio.txt"
+      - "docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md"
+      - "docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md"
+      - "docs/OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md"
+      - "docs/SA_PROCUREMENT_AND_SINGLE_SITE_EXECUTION_TRACK_V1.md"
+      - "docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md"
+      - "docs/VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md"
+      - "README.md"
+      - ".github/workflows/hardware-portfolio.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hardware-portfolio-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate hardware catalog, deployment profile and control evidence
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact triggering revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up pinned Python runtime
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13.7"
+          cache: pip
+          cache-dependency-path: requirements-hardware-portfolio.txt
+
+      - name: Install pinned validation dependency
+        run: python -m pip install --disable-pip-version-check --requirement requirements-hardware-portfolio.txt
+
+      - name: Validate hardware catalog
+        run: python tools/validate_hardware_portfolio.py
+
+      - name: Validate draft deployment profile and catalog references
+        run: python tools/validate_hardware_deployment_profile.py
+
+      - name: Validate control evidence matrix and status semantics
+        run: python tools/validate_hardware_control_evidence_matrix.py
+
+      - name: Validate vendor adapter capability registry
+        run: python tools/validate_vendor_adapter_registry.py
+
+      - name: Validate synthetic prepared mutation receipt
+        run: python tools/validate_vendor_operation_receipt.py
+
+      - name: Run adversarial vendor adapter registry tests
+        run: python -m unittest discover -s tests -p "test_vendor_adapter_registry.py" -v
+
+      - name: Run adversarial vendor operation receipt tests
+        run: python -m unittest discover -s tests -p "test_vendor_operation_receipt.py" -v
+
+      - name: Run hardware portfolio adversarial tests
+        run: python -m unittest discover -s tests -p "test_hardware_*.py" -v
