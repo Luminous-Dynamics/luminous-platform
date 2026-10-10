@@ -113,9 +113,9 @@ def catalog_errors(payload: dict[str, Any], schema: dict[str, Any]) -> list[str]
                 errors.append(f"{prefix}: H5 requires named-profile deployment authorization")
             if not item["deployment_profile"]:
                 errors.append(f"{prefix}: H5 requires deployment_profile")
-            if not item["open_blockers"]:
-                pass
-            else:
+            if not item["named_model_or_revision"]:
+                errors.append(f"{prefix}: H5 requires a named model and revision")
+            if item["open_blockers"]:
                 errors.append(f"{prefix}: H5 cannot have open_blockers")
         elif item["deployment_authorization"] == "approved_for_named_profile":
             errors.append(f"{prefix}: authorization cannot be claimed below H5")
