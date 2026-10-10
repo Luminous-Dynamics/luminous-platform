@@ -66,7 +66,8 @@
   "egress": {
     "allowlist_policy_ref": "egress-policy:synthetic-lab-only",
     "proxy_mode": "disabled",
-    "ambient_proxy_allowed": false
+    "ambient_proxy_allowed": false,
+    "proxy_profile_ref": null
   },
   "limits": {
     "connect_timeout_ms": 3000,
@@ -83,7 +84,20 @@
     "customer_personal_data_in_shared_dht": false
   },
   "source_refs": [
-    "https://developer.cisco.com/meraki/api-v1/getting-started/",
-    "https://www.rfc-editor.org/rfc/rfc8040"
+    {
+      "url": "https://developer.cisco.com/meraki/api-v1/getting-started/",
+      "purposes": [
+        "endpoint_selection",
+        "product_api"
+      ],
+      "last_reviewed_on": "2026-10-11"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc8040",
+      "purposes": [
+        "protocol_contract"
+      ],
+      "last_reviewed_on": "2026-10-11"
+    }
   ]
 }
