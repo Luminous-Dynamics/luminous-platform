@@ -398,11 +398,12 @@
       "function": "Power protection and controlled shutdown",
       "required": true,
       "quantity": 1,
-      "selection_state": "unselected",
+      "selection_state": "candidate_for_comparison",
       "catalog_refs": [
+        "apc-easy-ups-smv1500ai",
         "ups-pdu-sensors"
       ],
-      "model_candidate": null,
+      "model_candidate": "APC Easy UPS SMV1500AI or SMV1500AI-GR, 230 V; exact outlet SKU to select",
       "minimum_requirements": [
         "Runtime sized from measured load and target shutdown/uptime",
         "USB or network telemetry with maintained shutdown driver",
@@ -410,8 +411,10 @@
         "Mains-loss, brownout and low-battery alerts"
       ],
       "blockers": [
-        "Measure actual wattage, peak PoE load and required runtime before sizing UPS.",
-        "Select a South African 230 V / 50 Hz unit with battery replacement and tested NUT/monitoring compatibility."
+        "Obtain written local quote and verify exact outlet/plug SKU, stock, warranty, support and replacement-battery price.",
+        "Measure total server/switch/AP load and choose runtime target before calculating battery runtime.",
+        "Verify and test USB/serial monitoring with NUT or the chosen shutdown daemon; capture exact driver/model compatibility.",
+        "Run mains-loss, low-battery, self-test-failure, graceful shutdown and recovery tests before the profile can pass."
       ]
     },
     {
@@ -496,6 +499,14 @@
         "maximum_zar": 59799,
         "source_url": "https://www.pricecheck.co.za/offers/251362571/Dell%2BPoweredge%2BT160%2BIntel%2BXeon%2BE%2BE-2414%2BTower%2BServer",
         "configuration_note": "Marketplace comparison of a Xeon E-2414, 16 GB ECC, 2 TB HDD baseline; seller/configuration/service variation is large and this is not the target build."
+      },
+      {
+        "component_id": "ups-power",
+        "catalog_ref": "apc-easy-ups-smv1500ai",
+        "minimum_zar": 8630,
+        "maximum_zar": 8630,
+        "source_url": "https://www.se.com/za/en/product/SMV1500AI/apc-easy-ups-1-ph-line-interactive-1500va-tower-230v-6-iec-c13-outlets-avr-lcd/",
+        "configuration_note": "Manufacturer product page showed ZAR 8,630 excluding VAT and subject to change on 2026-10-10. This is an indicative price, not a supplier quote; exact outlet SKU and local stock need confirmation."
       }
     ],
     "partial_subtotal_min_zar": 29428,
@@ -519,7 +530,7 @@
       "support contracts",
       "spares"
     ],
-    "explanation": "The partial subtotal only sums the two observed marketplace price ranges above for one AP and one server; it is not a full BOM estimate, quote, approval to buy, or procurement budget. Switch pricing is deliberately omitted because live listings may omit an EOL/ambiguous hardware version."
+    "explanation": "The partial subtotal only sums the two observed marketplace price ranges above for one AP and one server; it is not a full BOM estimate, quote, approval to buy, or procurement budget. Switch pricing is deliberately omitted because live listings may omit an EOL/ambiguous hardware version. The UPS's manufacturer price is recorded as an indicative candidate but excluded from the partial subtotal until the unit/outlet SKU and supplier quote are pinned."
   },
   "acceptance_gates": [
     {
