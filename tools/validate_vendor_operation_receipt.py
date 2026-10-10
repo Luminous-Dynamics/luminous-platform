@@ -97,6 +97,10 @@ def receipt_errors(receipt: dict[str, Any], schema: dict[str, Any]) -> list[str]
             errors.append("$.authorization must bind to the exact intent.target_digest")
         if auth["authorized_prestate_digest"] != intent["prestate_digest"]:
             errors.append("$.authorization must bind to the exact intent.prestate_digest")
+        if auth["authorized_policy_revision"] != intent["policy_revision"]:
+            errors.append("$.authorization must bind to the exact intent.policy_revision")
+        if auth["authorized_profile_digest"] != intent["profile_digest"]:
+            errors.append("$.authorization must bind to the exact intent.profile_digest")
         if auth["requested_by_ref"] in auth["approver_refs"]:
             errors.append("$.authorization requester and approver must be distinct principals")
         verified_at = parse_time(auth["verified_at"], "$.authorization.verified_at", errors)
