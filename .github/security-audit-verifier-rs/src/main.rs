@@ -566,7 +566,7 @@ fn verify_artifact(repo: &str, policy: Policy, run: &Value, expected_pr: u64, to
     }
     let mut archive = ZipArchive::new(Cursor::new(bytes))
         .map_err(|e| format!("artifact ZIP is invalid: {e}"))?;
-    if archive.is_empty() || archive.len() > MAX_ZIP_ENTRIES {
+    if archive.len() == 0 || archive.len() > MAX_ZIP_ENTRIES {
         return Err("verdict artifact contains an invalid number of entries".to_string());
     }
     let mut total_size = 0u64;
@@ -705,7 +705,7 @@ fn validate_verdict(verdict: &Value, repo: &str, policy: Policy, run: &Value, ex
     }
     let expected_rust = if policy.audit_rust { "PASS" } else { "SKIPPED_NOT_REQUESTED" };
     let expected_node = if policy.audit_node { "PASS" } else { "SKIPPED_NOT_REQUESTED" };
-    if get_field_str(verdict, "required_lanes").and_then(|_| required.get("workflow_security")).and_then(Value::as_str) != Some("PASS")
+    if required.get("workflow_security").and_then(Value::as_str) != Some("PASS")
         || required.get("rustsec").and_then(Value::as_str) != Some(expected_rust)
         || required.get("npm").and_then(Value::as_str) != Some(expected_node)
     {
