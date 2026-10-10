@@ -14,5 +14,7 @@ GRANT INSERT (tenant_id, idempotency_key, command_digest, result_case_id) ON com
 GRANT UPDATE (result_payload) ON command_idempotency TO work_case_app;
 GRANT SELECT ON external_case_mappings TO work_case_app;
 GRANT SELECT ON case_evidence_refs TO work_case_app;
-GRANT SELECT, INSERT ON case_outbox TO work_case_app;
+GRANT SELECT ON case_outbox TO work_case_app;
+GRANT INSERT (tenant_id, outbox_id, case_id, revision, event_type, payload, created_at)
+    ON case_outbox TO work_case_app;
 -- Dispatcher writes remain ungranted until a separately qualified dispatcher boundary exists.
