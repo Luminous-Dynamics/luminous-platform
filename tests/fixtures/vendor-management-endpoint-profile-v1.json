@@ -85,6 +85,5 @@
   "source_refs": [
     "https://developer.cisco.com/meraki/api-v1/getting-started/",
     "https://www.rfc-editor.org/rfc/rfc8040"
-  ],
-  "approval_evidence_refs": []
+  ]
 }
