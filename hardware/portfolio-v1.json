@@ -229,28 +229,31 @@
     },
     {
       "id": "mnt-reform-family",
-      "name": "MNT Reform open-hardware laptop family (model selection required)",
+      "name": "MNT Reform open-hardware family (prior Reform v0 discontinued; Reform Next/Pocket Reform need exact configuration)",
       "item_type": "hardware_design_family",
       "category": "endpoint",
       "source_urls": [
-        "https://www.mntre.com/open-hardware.html",
-        "https://shop.mntre.com/products/mnt-reform-v0"
+        "https://mnt.computer/reform.html",
+        "https://www.mntmn.com/docs-reform-next.html",
+        "https://mnt.computer/news-archive.html",
+        "https://mnt.computer/modularity.html"
       ],
       "source_revision": null,
-      "source_completeness": "partial_documentation",
+      "source_completeness": "native_design_files_visible_bom_unverified",
       "license_status": "open_license_identified_not_fully_reviewed",
       "bill_of_materials_status": "partial_or_unknown",
       "availability_status": "not_verified",
       "maturity": "H0_CANDIDATE",
       "deployment_authorization": "not_authorized",
       "deployment_profile": null,
-      "named_model_or_revision": null,
+      "named_model_or_revision": "MNT Reform Next, first two units reported shipped 2026-09-30; exact order and processor module revision not pinned",
       "last_checked": "2026-10-10",
-      "observed_evidence": "MNT publishes design files for open hardware; the official shop explicitly marks the Reform v0 listing as an older version no longer sold.",
+      "observed_evidence": "MNT's official Reform Next documentation lists an operator handbook and Electronics Sources (KiCAD, various); the official 2026-09-30 update says the first batch of two Reform Next units shipped, with larger batches planned for October and November. Its product family includes distinct models and CPU modules with different performance, firmware openness and compatibility. The older Reform v0 listing is no longer sold, so the current Reform Next/Pocket Reform configuration must be assessed separately.",
       "open_blockers": [
-        "Identify a currently supported model and source repository; do not base procurement on Reform v0.",
-        "Pin parts and licenses, check component availability, firmware and NixOS compatibility.",
-        "Qualify performance, repair logistics, service support, identity hardware and lifecycle before workforce use."
+        "Verify which exact model, module, mainboard revision and order configuration is actually available to a new buyer; the 2026-09-30 update describes only the first two Reform Next units shipped and projected later batches.",
+        "Review artifact-by-artifact hardware/software licenses, full BOM, KiCad source completeness, closed firmware dependencies and approved substitutions.",
+        "Verify South African shipping, customs, warranty, repair, return and spare-module support.",
+        "Test exact CPU module and firmware against supported NixOS/Linux requirements, secure boot/TPM assumptions, device-management policy, performance and recovery before workforce deployment."
       ],
       "qualification_evidence_refs": []
     },
@@ -697,7 +700,8 @@
         "https://www.sita.co.za/content/sita-effective-panel-contracts",
         "https://www.sita.co.za/node/186",
         "https://www.gcommerce.gov.za/Home/Supplier",
-        "https://rfq.sita.co.za/TendersAdministration/invitations.asp"
+        "https://rfq.sita.co.za/TendersAdministration/invitations.asp",
+        "https://rfq.sita.co.za/RFQ/RFQInvitations.asp"
       ],
       "source_revision": null,
       "source_completeness": "specification_or_partial_files",
@@ -709,13 +713,14 @@
       "deployment_profile": null,
       "named_model_or_revision": null,
       "last_checked": "2026-10-10",
-      "observed_evidence": "SITA's effective-panel page says listed contracts are available to public bodies, parastatals and organs of state; as viewed 2026-10-10 it lists the information-security products/services panel RFA 2494-2021 ending 2027-09-06 and the server-room/network-cabling related panel RFA 2168-2024 ending 2031-10-10. It also lists UC/VC panel RFA 2501-2021 ending 2026-10-08, which is past the snapshot date and is not treated as current. SITA's hardware page lists RFB 2009 (2026-04-20 to 2027-04-20) and RFB 740 (2025-11-24 to 2026-11-24); actual scope, amendments and category fit must be confirmed against the tender/contract documents. The SITA tender administration listing also showed RFB 3261-2026 for Ethernet switches, wireless LAN, WAN routers, backhaul, copper/fibre cabling and related services with a closing date of 28 August 2026; that date has passed as of this snapshot, so it is historical market evidence rather than an open opportunity.",
+      "observed_evidence": "SITA's effective-panel page says listed contracts are available to public bodies, parastatals and organs of state; as viewed 2026-10-10 it lists the information-security products/services panel RFA 2494-2021 ending 2027-09-06 and the server-room/network-cabling related panel RFA 2168-2024 ending 2031-10-10. It also lists UC/VC panel RFA 2501-2021 ending 2026-10-08, which is past the snapshot date and is not treated as current. SITA's hardware page lists RFB 2009 (2026-04-20 to 2027-04-20) and RFB 740 (2025-11-24 to 2026-11-24); actual scope, amendments and category fit must be confirmed against the tender/contract documents. The SITA tender administration listing also showed RFB 3261-2026 for Ethernet switches, wireless LAN, WAN routers, backhaul, copper/fibre cabling and related services with a closing date of 28 August 2026; that date has passed as of this snapshot, so it is historical market evidence rather than an open opportunity. On the official RFQ listing reviewed 2026-10-10, RFQ 6614_2494_2026 (DPSA next-generation firewall, licenses, maintenance and support) and RFQ 6611_2168_2026 (CSPS LAN cabling/server-room maintenance) were listed to close 13 October 2026 at 11:00; RFQ 6615-AH-2026 for Military Health Formation switches/SFPs was listed for 16 October after a compulsory 7 October briefing; RFQ 6619_AH_2026 for SA Army HQ switches/SFPs was listed for 14 October after a compulsory 5 October briefing; and RFQ 6621_2168_2026 for SA Army HQ LAN infrastructure was listed for 30 October with a compulsory briefing scheduled for 16 October. These listing details can change and do not imply bidder eligibility.",
       "open_blockers": [
         "Read actual engagement models, technical specifications, terms, accredited-supplier lists and amendments; the public landing page alone is not tender qualification.",
         "Determine whether Luminous should be a product vendor, open-source software supplier, subcontractor, integration partner or supplier through an accredited reseller; none is assumed eligible by this record.",
         "Confirm current contract validity, commodity coverage, licensing terms and procuring authority instructions immediately before any bid or quote.",
         "Prepare commercial support, warranty, SLA, security evidence and local delivery obligations that open-source publication alone does not provide.",
-        "Treat tenders whose published closing date has passed as historical only; monitor new calls and verify amendments on the official tender portal."
+        "Treat tenders whose published closing date has passed as historical only; monitor new calls and verify amendments on the official tender portal.",
+        "Verify every deadline, mandatory meeting and eligibility clause in the full live RFQ pack; expired compulsory briefings or prior supplier-panel restrictions can make a listing unusable for a new entrant."
       ],
       "qualification_evidence_refs": []
     }
