@@ -7,6 +7,8 @@
 **Control evidence matrix:** [GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md](GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md) and [machine-readable JSON](../security/control-evidence-matrix-v1.json)
 **Open-hardware design package plan:** [OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md](OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md)
 **Global vendor/firmware service architecture:** [GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md](GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md)
+**Vendor adapter execution contract:** [VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md](VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md)
+**Vendor adapter capability registry:** [../security/vendor-adapter-capability-registry-v1.json](../security/vendor-adapter-capability-registry-v1.json)
 
 ## Decision summary
 
