@@ -122,6 +122,8 @@ python tools/validate_vendor_management_endpoint_profile.py
 python -m unittest discover -s tests -p "test_vendor_management_endpoint_profile.py" -v
 ```
 
+The profile itself is never an approval. Its only lifecycle states are `draft` and `retired`; a field such as `approved_for_lab` or a list of arbitrary evidence strings cannot authorize a connection or operation. Lab approval must be a separate signed authority record that binds the profile digest, exact target, expected principal and tenant/org scope, allowed read-only operations, policy revision, approver identity and expiry. The verifier must authenticate the approver and verify those bindings; merely finding a reference string is not enough.
+
 Evidence consumers must compute a profile digest from the complete frozen profile using a single specified canonicalization contract (recommended: RFC 8785 JSON Canonicalization Scheme followed by SHA-256) and place that digest in the external signed work/evidence record. Do not store a self-referential digest inside the profile. The independent verifier must recompute the digest from the exact profile bytes/parsed value and refuse a mismatch.
 
 ## 9. Definition of done for the endpoint gate
