@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import date
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Any
 
 from jsonschema import Draft202012Validator, FormatChecker
@@ -30,6 +32,17 @@ def profile_errors(
         errors.append(f"{where}: {error.message}")
     if errors:
         return errors
+
+    # Make date and source-URL checks explicit; JSON Schema format checkers may
+    # not enforce every optional format identically across installations.
+    for label, raw_date in (
+        ("$.as_of", profile["as_of"]),
+        ("$.pricing_snapshot.checked_on", profile["pricing_snapshot"]["checked_on"]),
+    ):
+        try:
+            date.fromisoformat(raw_date)
+        except (TypeError, ValueError):
+            errors.append(f"{label} must be an ISO calendar date")
 
     catalog_items = {item["id"]: item for item in catalog.get("items", []) if isinstance(item, dict) and "id" in item}
     component_ids: set[str] = set()
@@ -141,6 +154,13 @@ def profile_errors(
             errors.append(f"{prefix}.component_id does not match a declared component")
         elif row["catalog_ref"] not in component["catalog_refs"]:
             errors.append(f"{prefix}.catalog_ref is not one of the component's catalog references")
+        parsed_source = urlparse(row["source_url"])
+        if parsed_source.scheme != "https" or not parsed_source.netloc:
+            errors.append(f"{prefix}.source_url must be an HTTPS URL")
+        try:
+            date.fromisoformat(price["checked_on"])
+        except (TypeError, ValueError):
+            errors.append("$.pricing_snapshot.checked_on must be an ISO calendar date")
         if row["maximum_zar"] < row["minimum_zar"]:
             errors.append(f"{prefix}.maximum_zar is less than minimum_zar")
     for included_id in price["included_components"]:
