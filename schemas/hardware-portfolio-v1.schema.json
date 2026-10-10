@@ -105,7 +105,8 @@
               "string",
               "null"
             ],
-            "minLength": 7
+            "minLength": 7,
+            "description": "Immutable upstream source commit/version or reviewed design/firmware revision when source artifacts exist. Native editable design packages must pin this field before H1; commercial products without published source code may leave it null if their exact SKU/hardware revision is recorded separately."
           },
           "source_completeness": {
             "enum": [
@@ -176,7 +177,8 @@
               "string",
               "null"
             ],
-            "minLength": 2
+            "minLength": 2,
+            "description": "Exact product SKU/model, board revision, design package version or hardware/firmware variant. Required for hardware_product_or_board at H1 or above and for hardware_design_family at H1 or above."
           },
           "last_checked": {
             "type": "string",
