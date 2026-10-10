@@ -40,6 +40,14 @@ class VendorOperationReceiptTests(unittest.TestCase):
         errors = self.errors(receipt)
         self.assertTrue(any("exact intent.action_digest" in error for error in errors))
 
+    def test_authorization_must_bind_policy_and_profile_revision(self) -> None:
+        receipt = self._authorization_verified_receipt()
+        receipt["authorization"]["authorized_policy_revision"] = "f" * 40
+        receipt["authorization"]["authorized_profile_digest"] = "8" * 64
+        errors = self.errors(receipt)
+        self.assertTrue(any("exact intent.policy_revision" in error for error in errors))
+        self.assertTrue(any("exact intent.profile_digest" in error for error in errors))
+
     def test_apply_started_requires_verified_approval_and_prestate_refresh(self) -> None:
         receipt = copy.deepcopy(self.fixture)
         receipt["state"] = "APPLY_STARTED"
@@ -118,6 +126,8 @@ class VendorOperationReceiptTests(unittest.TestCase):
             "authorized_action_digest": receipt["intent"]["action_digest"],
             "authorized_target_digest": receipt["intent"]["target_digest"],
             "authorized_prestate_digest": receipt["intent"]["prestate_digest"],
+            "authorized_policy_revision": receipt["intent"]["policy_revision"],
+            "authorized_profile_digest": receipt["intent"]["profile_digest"],
             "signature_evidence_refs": ["evidence:signed-approval"],
         })
         receipt["state"] = "AUTHORIZATION_VERIFIED"
