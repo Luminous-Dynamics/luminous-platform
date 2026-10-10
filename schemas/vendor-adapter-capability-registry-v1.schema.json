@@ -268,10 +268,10 @@
                   ],
                   "properties": {
                     "action_digest_bound_authorization": {
-                      "const": true
+                      "type": "boolean"
                     },
                     "fresh_prestate_required": {
-                      "const": true
+                      "type": "boolean"
                     },
                     "uncertain_outcome_policy": {
                       "enum": [
