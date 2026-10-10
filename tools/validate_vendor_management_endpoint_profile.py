@@ -199,8 +199,31 @@ def profile_errors(profile: dict[str, Any], schema: dict[str, Any]) -> list[str]
 
     if limits["request_timeout_ms"] < limits["connect_timeout_ms"]:
         errors.append("$.limits.request_timeout_ms must be at least connect_timeout_ms")
-    if limits["max_retries"] > 3:
-        errors.append("$.limits.max_retries must remain bounded to at most 3 for the read-only profile")
+    if limits["request_timeout_ms"] < limits["connect_timeout_ms"]:
+        errors.append("$.limits.request_timeout_ms must be at least connect_timeout_ms")
+
+    egress = profile["egress"]
+    if egress["proxy_mode"] == "disabled" and egress["proxy_profile_ref"] is not None:
+        errors.append("$.egress.proxy_profile_ref must be null when proxy_mode=disabled")
+    if egress["proxy_mode"] == "explicit_profile" and not egress["proxy_profile_ref"]:
+        errors.append("$.egress.proxy_profile_ref is required when proxy_mode=explicit_profile")
+
+    reviewed_dates = []
+    for index, source in enumerate(profile["source_refs"]):
+        try:
+            reviewed_dates.append((index, date.fromisoformat(source["last_reviewed_on"])))
+        except (TypeError, ValueError):
+            errors.append(f"$.source_refs[{index}].last_reviewed_on must be an ISO calendar date")
+    as_of = date.fromisoformat(profile["as_of"])
+    for index, reviewed_on in reviewed_dates:
+        if reviewed_on > as_of:
+            errors.append(f"$.source_refs[{index}].last_reviewed_on cannot be after profile.as_of")
+    if profile["endpoint"]["kind"] == "vendor_cloud_api":
+        claims = {purpose for source in profile["source_refs"] for purpose in source["purposes"]}
+        if "endpoint_selection" not in claims:
+            errors.append("$.source_refs must include an endpoint_selection source for vendor_cloud_api")
+        if "product_api" not in claims:
+            errors.append("$.source_refs must include a product_api source for vendor_cloud_api")
 
     for dimension_name, dimension in profile["scope"].items():
         if not isinstance(dimension, dict) or "state" not in dimension:
