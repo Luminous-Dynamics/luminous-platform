@@ -33,7 +33,7 @@
       "evidence_refs": []
     },
     "expected_principal_ref": "principal:synthetic-readonly",
-    "expected_scope_ref": "scope:synthetic-org-fixture"
+    "expected_tenant_or_org_ref": "scope:synthetic-org-fixture"
   },
   "endpoint": {
     "kind": "vendor_cloud_api",
@@ -60,7 +60,8 @@
     "expected_principal_ref": "principal:synthetic-readonly",
     "permission_scope_ref": "permission:read-only-fixture",
     "read_only": true,
-    "mutation_enabled": false
+    "mutation_enabled": false,
+    "expected_tenant_or_org_ref": "scope:synthetic-org-fixture"
   },
   "egress": {
     "allowlist_policy_ref": "egress-policy:synthetic-lab-only",
