@@ -12,12 +12,16 @@ on:
       - "schemas/hardware-control-evidence-matrix-v1.schema.json"
       - "schemas/vendor-adapter-capability-registry-v1.schema.json"
       - "schemas/vendor-operation-effect-receipt-v1.schema.json"
+      - "schemas/vendor-management-endpoint-profile-v1.schema.json"
       - "security/vendor-adapter-capability-registry-v1.json"
       - "tests/fixtures/vendor-operation-effect-receipt-prepared-v1.json"
+      - "tests/fixtures/vendor-management-endpoint-profile-v1.json"
       - "tools/validate_vendor_adapter_registry.py"
       - "tools/validate_vendor_operation_receipt.py"
+      - "tools/validate_vendor_management_endpoint_profile.py"
       - "tests/test_vendor_adapter_registry.py"
       - "tests/test_vendor_operation_receipt.py"
+      - "tests/test_vendor_management_endpoint_profile.py"
       - "tools/validate_hardware_portfolio.py"
       - "tools/validate_hardware_deployment_profile.py"
       - "tools/validate_hardware_control_evidence_matrix.py"
@@ -29,6 +33,8 @@ on:
       - "docs/SA_PROCUREMENT_AND_SINGLE_SITE_EXECUTION_TRACK_V1.md"
       - "docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md"
       - "docs/VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md"
+      - "docs/VENDOR_ADAPTER_FIRST_LAB_SLICE_V1.md"
+      - "docs/VENDOR_MANAGEMENT_ENDPOINT_SECURITY_V1.md"
       - "README.md"
       - ".github/workflows/hardware-portfolio.yml"
   push:
@@ -42,12 +48,16 @@ on:
       - "schemas/hardware-control-evidence-matrix-v1.schema.json"
       - "schemas/vendor-adapter-capability-registry-v1.schema.json"
       - "schemas/vendor-operation-effect-receipt-v1.schema.json"
+      - "schemas/vendor-management-endpoint-profile-v1.schema.json"
       - "security/vendor-adapter-capability-registry-v1.json"
       - "tests/fixtures/vendor-operation-effect-receipt-prepared-v1.json"
+      - "tests/fixtures/vendor-management-endpoint-profile-v1.json"
       - "tools/validate_vendor_adapter_registry.py"
       - "tools/validate_vendor_operation_receipt.py"
+      - "tools/validate_vendor_management_endpoint_profile.py"
       - "tests/test_vendor_adapter_registry.py"
       - "tests/test_vendor_operation_receipt.py"
+      - "tests/test_vendor_management_endpoint_profile.py"
       - "tools/validate_hardware_portfolio.py"
       - "tools/validate_hardware_deployment_profile.py"
       - "tools/validate_hardware_control_evidence_matrix.py"
@@ -59,6 +69,8 @@ on:
       - "docs/SA_PROCUREMENT_AND_SINGLE_SITE_EXECUTION_TRACK_V1.md"
       - "docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md"
       - "docs/VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md"
+      - "docs/VENDOR_ADAPTER_FIRST_LAB_SLICE_V1.md"
+      - "docs/VENDOR_MANAGEMENT_ENDPOINT_SECURITY_V1.md"
       - "README.md"
       - ".github/workflows/hardware-portfolio.yml"
   workflow_dispatch:
@@ -106,11 +118,17 @@ jobs:
       - name: Validate synthetic prepared mutation receipt
         run: python tools/validate_vendor_operation_receipt.py
 
+      - name: Validate synthetic management endpoint profile
+        run: python tools/validate_vendor_management_endpoint_profile.py
+
       - name: Run adversarial vendor adapter registry tests
         run: python -m unittest discover -s tests -p "test_vendor_adapter_registry.py" -v
 
       - name: Run adversarial vendor operation receipt tests
         run: python -m unittest discover -s tests -p "test_vendor_operation_receipt.py" -v
+
+      - name: Run adversarial endpoint profile tests
+        run: python -m unittest discover -s tests -p "test_vendor_management_endpoint_profile.py" -v
 
       - name: Run hardware portfolio adversarial tests
         run: python -m unittest discover -s tests -p "test_hardware_*.py" -v
