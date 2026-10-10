@@ -104,7 +104,7 @@ class VendorOperationReceiptTests(unittest.TestCase):
         self.assertTrue(any("target.vendor must match" in error for error in errors))
 
         receipt = copy.deepcopy(self.fixture)
-        receipt["target"]["product_family"] = "NX-OS"
+        receipt["target"]["product_family"] = "Meraki MX"
         errors = registry_binding_errors(receipt, copy.deepcopy(self.registry))
         self.assertTrue(any("product_family must be explicitly declared" in error for error in errors))
 
@@ -112,7 +112,7 @@ class VendorOperationReceiptTests(unittest.TestCase):
         receipt = self._authorized_applied_receipt()
         registry = self._synthetic_test_registry()
         receipt["adapter_revision"] = "a" * 40
-        receipt["target"]["product_family"] = "NX-OS"
+        receipt["target"]["product_family"] = "Meraki MX"
         errors = registry_binding_errors(receipt, registry)
         self.assertTrue(any("product_family must be explicitly declared" in error for error in errors))
         self.assertTrue(any("must exactly match registry tested_scope.product_family" in error for error in errors))
