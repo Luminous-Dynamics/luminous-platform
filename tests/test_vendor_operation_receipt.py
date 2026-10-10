@@ -53,7 +53,7 @@ class VendorOperationReceiptTests(unittest.TestCase):
         })
         errors = self.errors(receipt)
         self.assertTrue(any("verified before APPLY_STARTED" in error for error in errors))
-        self.assertTrue(any("approval must be verified" in error for error in errors))
+        self.assertTrue(any("authorization must be verified" in error for error in errors))
         self.assertTrue(any("recovery_evidence_refs are required before any mutation starts" in error for error in errors))
 
     def test_expired_authorization_cannot_start_mutation(self) -> None:
@@ -84,22 +84,13 @@ class VendorOperationReceiptTests(unittest.TestCase):
         receipt = self._authorized_applied_receipt()
         receipt["state"] = "VERIFIED"
         receipt["effect_state"] = "EFFECT_VERIFIED"
-        receipt["journal"].extend([
-            {
-                "state": "APPLIED_UNVERIFIED",
-                "occurred_at": "2026-10-10T19:23:00+02:00",
-                "actor_ref": "principal:fixture-executor",
-                "evidence_refs": ["evidence:apply-result"],
-                "prestate_digest": None,
-            },
-            {
-                "state": "VERIFIED",
-                "occurred_at": "2026-10-10T19:24:00+02:00",
-                "actor_ref": "principal:fixture-verifier",
-                "evidence_refs": ["evidence:verified-observation"],
-                "prestate_digest": None,
-            },
-        ])
+        receipt["journal"].append({
+            "state": "VERIFIED",
+            "occurred_at": "2026-10-10T19:24:00+02:00",
+            "actor_ref": "principal:fixture-verifier",
+            "evidence_refs": ["evidence:verified-observation"],
+            "prestate_digest": None,
+        })
         receipt["evidence"] = {
             "raw_artifact_refs": ["evidence:verified-observation"],
             "independent_verifier_ref": "principal:fixture-verifier",
