@@ -164,9 +164,14 @@ def receipt_errors(receipt: dict[str, Any], schema: dict[str, Any]) -> list[str]
                     f"$.journal[{index}].apply_prestate_observed_at",
                     errors,
                 )
-                if not event.get("apply_prestate_observation_ref"):
+                apply_prestate_ref = event.get("apply_prestate_observation_ref")
+                if not apply_prestate_ref:
                     errors.append(
                         f"$.journal[{index}].apply_prestate_observation_ref must identify the fresh read-back evidence"
+                    )
+                elif apply_prestate_ref not in event["evidence_refs"]:
+                    errors.append(
+                        f"$.journal[{index}].apply_prestate_observation_ref must also appear in the journal event evidence_refs"
                     )
                 if prestate_at and apply_prestate_at and apply_prestate_at < prestate_at:
                     errors.append(
