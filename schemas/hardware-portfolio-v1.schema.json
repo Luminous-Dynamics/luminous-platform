@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/hardware-portfolio-v1.schema.json",
+  "title": "Luminous Hardware Portfolio v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "as_of",
+    "register_state",
+    "maturity_contract",
+    "items"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.hardware-portfolio.v1"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "register_state": {
+      "const": "research_baseline_not_qualified"
+    },
+    "maturity_contract": {
+      "type": "string",
+      "minLength": 20
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "item_type",
+          "category",
+          "source_urls",
+          "source_revision",
+          "source_completeness",
+          "license_status",
+          "bill_of_materials_status",
+          "availability_status",
+          "maturity",
+          "deployment_authorization",
+          "deployment_profile",
+          "named_model_or_revision",
+          "last_checked",
+          "observed_evidence",
+          "open_blockers",
+          "qualification_evidence_refs"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 5
+          },
+          "item_type": {
+            "enum": [
+              "hardware_product_or_board",
+              "hardware_design_family",
+              "standards_programme",
+              "firmware_project",
+              "selection_gap"
+            ]
+          },
+          "category": {
+            "enum": [
+              "branch_gateway",
+              "switching",
+              "server_compute",
+              "storage_backup",
+              "rack_power",
+              "lab_compute",
+              "root_of_trust",
+              "endpoint",
+              "out_of_band_management",
+              "boot_firmware",
+              "community_network",
+              "cryptographic_module",
+              "network_access",
+              "optics_cabling",
+              "identity_tokens",
+              "collaboration_endpoints",
+              "security_assurance"
+            ]
+          },
+          "source_urls": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "source_revision": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 7
+          },
+          "source_completeness": {
+            "enum": [
+              "native_design_and_bom_reviewed",
+              "native_design_files_visible_bom_unverified",
+              "partial_documentation",
+              "specification_or_partial_files",
+              "software_source_only",
+              "source_incomplete_or_stale",
+              "unselected"
+            ]
+          },
+          "license_status": {
+            "enum": [
+              "compatible_open_license_reviewed",
+              "vendor_terms_reviewed",
+              "open_license_identified_not_fully_reviewed",
+              "unknown_or_not_reviewed",
+              "not_applicable_reference",
+              "not_selected"
+            ]
+          },
+          "bill_of_materials_status": {
+            "enum": [
+              "complete_and_reviewed",
+              "partial_or_unknown",
+              "unknown",
+              "not_applicable_or_unknown"
+            ]
+          },
+          "availability_status": {
+            "enum": [
+              "verified_stock",
+              "manufacturing_path_verified",
+              "not_verified",
+              "not_available_or_archived",
+              "not_applicable"
+            ]
+          },
+          "maturity": {
+            "enum": [
+              "H0_CANDIDATE",
+              "H1_SOURCE_REVIEWED",
+              "H2_BUILDABLE",
+              "H3_PLATFORM_INTEGRATED",
+              "H4_OPERATIONALLY_QUALIFIED",
+              "H5_DEPLOYMENT_AUTHORIZED",
+              "GAP_UNSELECTED",
+              "REFERENCE_ONLY"
+            ]
+          },
+          "deployment_authorization": {
+            "enum": [
+              "not_authorized",
+              "approved_for_named_profile"
+            ]
+          },
+          "deployment_profile": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 2
+          },
+          "named_model_or_revision": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 2
+          },
+          "last_checked": {
+            "type": "string",
+            "format": "date"
+          },
+          "observed_evidence": {
+            "type": "string",
+            "minLength": 20
+          },
+          "open_blockers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 10
+            }
+          },
+          "qualification_evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 3
+            }
+          }
+        }
+      }
+    }
+  }
+}
