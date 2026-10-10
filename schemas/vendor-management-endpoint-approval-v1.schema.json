@@ -12,6 +12,7 @@
     "profile_id",
     "profile_revision",
     "profile_digest",
+    "profile_digest_scheme",
     "adapter",
     "target",
     "expected_principal_ref",
@@ -209,6 +210,9 @@
         "null"
       ],
       "minLength": 8
+    },
+    "profile_digest_scheme": {
+      "const": "luminous-json-canonical-v1"
     }
   },
   "allOf": [
