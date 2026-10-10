@@ -74,6 +74,21 @@ class HardwareDeploymentProfileTests(unittest.TestCase):
         profile["pricing_snapshot"]["partial_subtotal_min_zar"] += 1
         self.assertTrue(any("lower bounds" in error for error in self.errors(profile)))
 
+    def test_non_https_price_source_fails_closed(self) -> None:
+        profile = copy.deepcopy(self.profile)
+        profile["pricing_snapshot"]["price_research"][0]["source_url"] = "http://example.org/quote"
+        self.assertTrue(any("must be an HTTPS URL" in error for error in self.errors(profile)))
+
+    def test_unknown_destination_zone_fails_closed(self) -> None:
+        profile = copy.deepcopy(self.profile)
+        profile["network"]["required_flow_contracts"][0]["to"] = ["invented-internal-zone"]
+        self.assertTrue(any("references unknown segment or named zone" in error for error in self.errors(profile)))
+
+    def test_endpoint_size_ordering_fails_closed(self) -> None:
+        profile = copy.deepcopy(self.profile)
+        profile["assumptions"]["managed_endpoints_min"] = 20
+        self.assertTrue(any("min <= target <= max" in error for error in self.errors(profile)))
+
     def test_profile_cannot_claim_deployment_authorization(self) -> None:
         profile = copy.deepcopy(self.profile)
         profile["deployment_authorization"] = True
