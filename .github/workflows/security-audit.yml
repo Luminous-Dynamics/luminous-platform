@@ -1306,8 +1306,22 @@ jobs:
               return subprocess.check_output(["git", *args], cwd=root)
 
           def tracked(root, patterns):
-              raw = git_output(root, "ls-files", "-z", "--", *patterns)
-              return sorted(set(item.decode() for item in raw.split(bytes([0])) if item))
+              # Audit the subject's immutable commit tree, not its mutable index.
+              # Current callers only ask for Cargo.toml and Cargo.lock, so a
+              # basename set is both clearer and independent of Git pathspec
+              # glob dialect/working-directory edge cases.
+              wanted = {Path(pattern).name for pattern in patterns}
+              raw = git_output(root, "ls-tree", "-r", "-z", "--name-only", "HEAD")
+              found = []
+              for item in raw.split(bytes([0])):
+                  if not item:
+                      continue
+                  path = item.decode("utf-8", "strict")
+                  if any(ord(character) < 0x20 or ord(character) == 0x7F for character in path) or "=" in path:
+                      raise ValueError(f"tracked path cannot be represented safely in coverage evidence: {path!r}")
+                  if Path(path).name in wanted:
+                      found.append(path)
+              return sorted(set(found))
 
           def gitlinks(root):
               raw = git_output(root, "ls-files", "--stage", "-z")
@@ -1444,6 +1458,7 @@ jobs:
           report = {
               "schema": "luminous.security-audit.manifest-coverage.v1",
               "repository": str(repo),
+              "inventory_source": "git-tree-at-HEAD",
               "manifest_count": len(entries),
               "tracked_lockfile_count": len(discovered_lockfiles),
               "scanned_lockfile_count": len(scanned_lockfiles),
@@ -1753,19 +1768,59 @@ jobs:
             echo "npm_submodule_audit_reason=${npm_submodule_reason:-none}"
             echo "verified_npm_direct_submodule_count=$(wc -l < "$verified_npm_submodules" | tr -d ' ')"
           } | tee -a "$result_root/summary.txt"
-          mapfile -t lockfiles < <(
-            {
-              git ls-files -- 'package-lock.json' '**/package-lock.json'
-              git ls-files -- 'npm-shrinkwrap.json' '**/npm-shrinkwrap.json'
-              while IFS= read -r module_path; do
-                [[ -n "$module_path" && -d "$workspace/$module_path" ]] || continue
-                git -C "$workspace/$module_path" ls-files -- 'package-lock.json' '**/package-lock.json' 'npm-shrinkwrap.json' '**/npm-shrinkwrap.json' | sed "s#^#${module_path}/#"
-              done < "$verified_npm_submodules"
-            } | LC_ALL=C sort -u
-          )
+          # Use the exact subject commit tree for both the lockfile and
+          # manifest inventory. This makes nested-file discovery explicit and
+          # avoids treating a stale/mutated index as evidence about HEAD.
+          tracked_named_paths() {
+            local root="$1" prefix="$2"
+            shift 2
+            local tree_file path basename expected
+            tree_file="$(mktemp "$RUNNER_TEMP/tracked-tree.XXXXXX")"
+            if ! git -C "$root" ls-tree -r -z --name-only HEAD > "$tree_file"; then
+              rm -f -- "$tree_file"
+              echo "FAIL: cannot enumerate committed tree for $root" >&2
+              return 2
+            fi
+            while IFS= read -r -d '' path; do
+              if [[ "$path" =~ [[:cntrl:]] || "$path" == *=* ]]; then
+                rm -f -- "$tree_file"
+                echo "FAIL: tracked path cannot be represented safely in evidence: $root/$path" >&2
+                return 2
+              fi
+              basename="${path##*/}"
+              for expected in "$@"; do
+                if [[ "$basename" == "$expected" ]]; then
+                  printf '%s%s\n' "$prefix" "$path"
+                  break
+                fi
+              done
+            done < "$tree_file"
+            rm -f -- "$tree_file"
+          }
+
+          lock_inventory_raw="$RUNNER_TEMP/npm-lockfiles.raw"
+          lock_inventory_file="$RUNNER_TEMP/npm-lockfiles.txt"
+          : > "$lock_inventory_raw"
+          lock_inventory_discovery_failed=0
+          tracked_named_paths "$workspace" "" "package-lock.json" "npm-shrinkwrap.json" >> "$lock_inventory_raw" || lock_inventory_discovery_failed=1
+          while IFS= read -r module_path; do
+            [[ -n "$module_path" && -d "$workspace/$module_path" ]] || continue
+            tracked_named_paths "$workspace/$module_path" "$module_path/" "package-lock.json" "npm-shrinkwrap.json" >> "$lock_inventory_raw" || lock_inventory_discovery_failed=1
+          done < "$verified_npm_submodules"
+          if ! LC_ALL=C sort -u "$lock_inventory_raw" > "$lock_inventory_file"; then
+            lock_inventory_discovery_failed=1
+            : > "$lock_inventory_file"
+          fi
+          mapfile -t lockfiles < "$lock_inventory_file"
+          if [[ "$lock_inventory_discovery_failed" -ne 0 ]]; then
+            npm_failed=1
+          fi
+          echo "lockfile_inventory_source=git-tree-at-HEAD" >> "$result_root/summary.txt"
+          echo "lockfile_inventory_discovery_status=$([[ "$lock_inventory_discovery_failed" -eq 0 ]] && echo PASS || echo FAIL)" >> "$result_root/summary.txt"
           echo "node=$(node --version)" >> "$result_root/summary.txt"
           echo "npm=$(npm --version)" >> "$result_root/summary.txt"
           echo "lockfile_count=${#lockfiles[@]}" >> "$result_root/summary.txt"
+          printf 'lockfile_inventory_path=%s\n' "${lockfiles[@]}" >> "$result_root/summary.txt"
 
           if [[ "${#lockfiles[@]}" -eq 0 ]]; then
             npm_failed=1
@@ -1785,15 +1840,25 @@ jobs:
           npm_home="$RUNNER_TEMP/npm-audit-home"
           rm -rf -- "$npm_sandbox" "$npm_home"
           mkdir -p "$npm_sandbox" "$npm_home"
-          mapfile -t manifests < <(
-            {
-              git ls-files -- 'package.json' '**/package.json'
-              while IFS= read -r module_path; do
-                [[ -n "$module_path" && -d "$workspace/$module_path" ]] || continue
-                git -C "$workspace/$module_path" ls-files -- 'package.json' '**/package.json' | sed "s#^#${module_path}/#"
-              done < "$verified_npm_submodules"
-            } | LC_ALL=C sort -u
-          )
+          manifest_inventory_raw="$RUNNER_TEMP/npm-manifests.raw"
+          manifest_inventory_file="$RUNNER_TEMP/npm-manifests.txt"
+          : > "$manifest_inventory_raw"
+          manifest_inventory_discovery_failed=0
+          tracked_named_paths "$workspace" "" "package.json" >> "$manifest_inventory_raw" || manifest_inventory_discovery_failed=1
+          while IFS= read -r module_path; do
+            [[ -n "$module_path" && -d "$workspace/$module_path" ]] || continue
+            tracked_named_paths "$workspace/$module_path" "$module_path/" "package.json" >> "$manifest_inventory_raw" || manifest_inventory_discovery_failed=1
+          done < "$verified_npm_submodules"
+          if ! LC_ALL=C sort -u "$manifest_inventory_raw" > "$manifest_inventory_file"; then
+            manifest_inventory_discovery_failed=1
+            : > "$manifest_inventory_file"
+          fi
+          mapfile -t manifests < "$manifest_inventory_file"
+          if [[ "$manifest_inventory_discovery_failed" -ne 0 ]]; then
+            npm_failed=1
+          fi
+          echo "manifest_inventory_source=git-tree-at-HEAD" >> "$result_root/summary.txt"
+          echo "manifest_inventory_discovery_status=$([[ "$manifest_inventory_discovery_failed" -eq 0 ]] && echo PASS || echo FAIL)" >> "$result_root/summary.txt"
           echo "tracked_package_manifest_count=${#manifests[@]}" >> "$result_root/summary.txt"
           for manifest_path in "${manifests[@]}"; do
             source_path="$workspace/$manifest_path"
@@ -1877,7 +1942,7 @@ jobs:
             if [[ "$lockfile" == "package-lock.json" || "$lockfile" == */package-lock.json ]]; then
               shrinkwrap_rel="${lock_rel%package-lock.json}npm-shrinkwrap.json"
               shrinkwrap="${lock_prefix}${shrinkwrap_rel}"
-              if git -C "$lock_repo" ls-files --error-unmatch -- "$shrinkwrap_rel" >/dev/null 2>&1 && [[ -f "$lock_repo/$shrinkwrap_rel" && ! -L "$lock_repo/$shrinkwrap_rel" ]]; then
+              if git -C "$lock_repo" cat-file -e "HEAD:$shrinkwrap_rel" >/dev/null 2>&1 && [[ -f "$lock_repo/$shrinkwrap_rel" && ! -L "$lock_repo/$shrinkwrap_rel" ]]; then
                 lock_sha="$(sha256sum "$lock_abs" | cut -d' ' -f1)"
                 shrinkwrap_sha="$(sha256sum "$lock_repo/$shrinkwrap_rel" | cut -d' ' -f1)"
                 python3 - "$report" "$lockfile" "$lock_sha" "$shrinkwrap" "$shrinkwrap_sha" <<'PY'
@@ -1917,7 +1982,7 @@ jobs:
                   ;;
               esac
             done < "$verified_npm_submodules"
-            if ! git -C "$manifest_repo" ls-files --error-unmatch -- "$manifest_rel" >/dev/null 2>&1 || [[ ! -f "$workspace/$manifest" || -L "$workspace/$manifest" ]]; then
+            if ! git -C "$manifest_repo" cat-file -e "HEAD:$manifest_rel" >/dev/null 2>&1 || [[ ! -f "$workspace/$manifest" || -L "$workspace/$manifest" ]]; then
               lock_sha="$(sha256sum "$lock_abs" | cut -d' ' -f1)"
               python3 - "$report" "$lockfile" "$lock_sha" "$manifest" <<'PY'
           import json
