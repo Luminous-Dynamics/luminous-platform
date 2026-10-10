@@ -40,28 +40,43 @@ class HardwarePortfolioTests(unittest.TestCase):
         payload["items"][0]["source_urls"][0] = "http://example.org/hardware"
         self.assertTrue(any("HTTPS URLs" in error for error in self.errors(payload)))
 
-    def test_h1_accepts_reviewed_source_when_revision_and_license_are_present(self) -> None:
+    def test_h1_commercial_sku_can_be_reviewed_without_a_source_repo_revision(self) -> None:
         payload = copy.deepcopy(self.catalog)
-        item = payload["items"][0]
+        item = next(entry for entry in payload["items"] if entry["id"] == "dell-poweredge-t160")
         item.update({
             "maturity": "H1_SOURCE_REVIEWED",
-            "source_revision": "0123456789abcdef0123456789abcdef01234567",
-            "source_completeness": "native_design_and_bom_reviewed",
-            "license_status": "compatible_open_license_reviewed",
+            "source_revision": None,
+            "named_model_or_revision": "PowerEdge T160; exact Dell order code, BOM and board revision",
+            "source_completeness": "product_documentation_reviewed",
+            "license_status": "vendor_terms_reviewed",
             "bill_of_materials_status": "complete_and_reviewed",
         })
         self.assertEqual(self.errors(payload), [])
 
-    def test_h1_without_revision_fails_closed(self) -> None:
+    def test_h1_open_design_requires_a_pinned_source_and_model_revision(self) -> None:
         payload = copy.deepcopy(self.catalog)
-        item = payload["items"][0]
+        item = next(entry for entry in payload["items"] if entry["id"] == "ocp-minipack3")
         item.update({
             "maturity": "H1_SOURCE_REVIEWED",
-            "license_status": "compatible_open_license_reviewed",
-            "source_completeness": "native_design_and_bom_reviewed",
             "source_revision": None,
+            "named_model_or_revision": "Minipack3 design package v1.0 exact immutable package revision",
+            "source_completeness": "native_design_and_bom_reviewed",
+            "license_status": "compatible_open_license_reviewed",
+            "bill_of_materials_status": "complete_and_reviewed",
         })
-        self.assertTrue(any("immutable source/model revision" in error for error in self.errors(payload)))
+        self.assertTrue(any("immutable design-source revision" in error for error in self.errors(payload)))
+
+    def test_h1_without_exact_model_or_source_revision_fails_closed(self) -> None:
+        payload = copy.deepcopy(self.catalog)
+        item = next(entry for entry in payload["items"] if entry["id"] == "dell-poweredge-t160")
+        item.update({
+            "maturity": "H1_SOURCE_REVIEWED",
+            "source_revision": None,
+            "named_model_or_revision": None,
+            "source_completeness": "product_documentation_reviewed",
+            "license_status": "vendor_terms_reviewed",
+        })
+        self.assertTrue(any("exact product SKU/model" in error for error in self.errors(payload)))
 
     def test_h2_without_verified_supply_or_bom_fails(self) -> None:
         payload = copy.deepcopy(self.catalog)
