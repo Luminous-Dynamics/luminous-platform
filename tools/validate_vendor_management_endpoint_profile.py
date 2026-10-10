@@ -206,6 +206,10 @@ def profile_errors(profile: dict[str, Any], schema: dict[str, Any]) -> list[str]
     if egress["proxy_mode"] == "explicit_profile" and not egress["proxy_profile_ref"]:
         errors.append("$.egress.proxy_profile_ref is required when proxy_mode=explicit_profile")
 
+    source_urls = [source["url"] for source in profile["source_refs"]]
+    if len(source_urls) != len(set(source_urls)):
+        errors.append("$.source_refs.url values must be unique; do not duplicate a source to attach different claims")
+
     reviewed_dates = []
     for index, source in enumerate(profile["source_refs"]):
         try:
