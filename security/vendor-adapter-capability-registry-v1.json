@@ -132,7 +132,8 @@
       "known_boundaries": [
         "IOS, IOS XE and NX-OS are distinct adapter/product families; do not infer feature equivalence.",
         "Software image access, licensing, support entitlement and lifecycle must be checked for the exact product and release."
-      ]
+      ],
+      "maturity_evidence_refs": []
     },
     {
       "adapter_id": "cisco-meraki-dashboard",
@@ -193,7 +194,8 @@
       "known_boundaries": [
         "Dashboard cloud/API availability, organization scope, licensing and rate limits affect supportability.",
         "Do not infer generic alternative-OS flashing or bypass Meraki licensing/cloud controls."
-      ]
+      ],
+      "maturity_evidence_refs": []
     },
     {
       "adapter_id": "palo-alto-pan-os-panorama",
@@ -255,7 +257,8 @@
       "known_boundaries": [
         "PAN-OS REST API covers a subset of functions; some configuration commit workflows require XML API or other documented interfaces.",
         "Support license, exact PAN-OS version, commit semantics and post-commit verification must be treated as separate gates."
-      ]
+      ],
+      "maturity_evidence_refs": []
     },
     {
       "adapter_id": "netgear-managed-families",
@@ -319,7 +322,8 @@
       "known_boundaries": [
         "Product families have different interfaces and support routes; a generic NETGEAR adapter is not a universal capability claim.",
         "OpenWrt compatibility is exact model/revision-specific and does not prove OEM warranty continuity."
-      ]
+      ],
+      "maturity_evidence_refs": []
     },
     {
       "adapter_id": "openwrt-supported-devices",
@@ -381,7 +385,8 @@
       "known_boundaries": [
         "Exact device page, hardware revision, flash layout and documented recovery are mandatory for install/upgrade decisions.",
         "Wi-Fi firmware blobs, bootloader behavior and region-specific radio constraints require device-level evidence."
-      ]
+      ],
+      "maturity_evidence_refs": []
     },
     {
       "adapter_id": "sonic-supported-switches",
@@ -441,7 +446,8 @@
       "known_boundaries": [
         "A supported NOS image, hardware platform, ASIC, port/optic combination and support provider must be selected together.",
         "Community support does not imply a vendor support SLA or a working conversion/recovery path."
-      ]
+      ],
+      "maturity_evidence_refs": []
     }
   ],
   "explicit_non_claims": [
