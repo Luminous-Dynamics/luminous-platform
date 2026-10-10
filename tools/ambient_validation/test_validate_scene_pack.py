@@ -49,6 +49,27 @@ class ScenePackValidationTests(unittest.TestCase):
                 self.assertTrue(issues, f"negative fixture unexpectedly passed: {fixture['id']}")
                 self.assertIn(fixture["expectedCode"], {issue.code for issue in issues}, str(issues))
 
+    def test_invalid_schema_meta_schema_is_rejected(self):
+        candidate_schema = copy.deepcopy(self.schema)
+        candidate_schema["properties"]["schemaVersion"]["type"] = "not-a-json-schema-type"
+        issues = validate_manifest(candidate_schema, self.example, package_root=EXAMPLE_PATH.parent)
+        self.assertIn("schema.meta_schema", {issue.code for issue in issues})
+
+    def test_external_schema_references_are_rejected(self):
+        candidate_schema = copy.deepcopy(self.schema)
+        candidate_schema["$defs"]["color"] = {"$ref": "https://example.invalid/untrusted-schema"}
+        issues = validate_manifest(candidate_schema, self.example, package_root=EXAMPLE_PATH.parent)
+        self.assertIn("schema.external_ref", {issue.code for issue in issues})
+
+    def test_asset_bearing_manifest_requires_explicit_package_root_for_library_call(self):
+        candidate = copy.deepcopy(self.example)
+        candidate["assets"] = [{
+            "assetId": "scene-one", "path": "scene.svg", "sha256": "0" * 64,
+            "mediaType": "image/svg+xml", "license": {"spdxId": "MIT"},
+        }]
+        issues = validate_manifest(self.schema, candidate, package_root=None)
+        self.assertIn("asset.root_required", {issue.code for issue in issues})
+
     def test_duplicate_json_keys_rejected(self):
         with self.assertRaisesRegex(ValueError, "duplicate JSON object key"):
             load_json_bytes(b'{"schemaVersion":1,"schemaVersion":1}')
