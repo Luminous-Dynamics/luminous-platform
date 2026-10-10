@@ -194,8 +194,8 @@ impl WorkCaseRepository {
         ).execute(&mut *tx).await?;
 
         sqlx::query!(
-            r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload, status, attempts, created_at)
-               VALUES ($1,$2,$3,1,'io.luminousdynamics.workcase.created',$4,'PENDING',0,$5)"#,
+            r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload, created_at)
+               VALUES ($1,$2,$3,1,'io.luminousdynamics.workcase.created',$4,$5)"#,
             principal.tenant_id, Uuid::new_v4(), case_id,
             Json(json!({"tenant_id": principal.tenant_id, "case_id": case_id, "revision": 1, "activity_id": activity_id})),
             occurred_at
@@ -289,8 +289,8 @@ impl WorkCaseRepository {
             Json(json!({"from": current.state.as_db_str(), "to": target.as_db_str()}))
         ).execute(&mut *tx).await?;
         sqlx::query!(
-            r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload, status, attempts, created_at)
-               VALUES ($1,$2,$3,$4,'io.luminousdynamics.workcase.state_changed',$5,'PENDING',0,$6)"#,
+            r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload, created_at)
+               VALUES ($1,$2,$3,$4,'io.luminousdynamics.workcase.state_changed',$5,$6)"#,
             principal.tenant_id, Uuid::new_v4(), case_id, expected_revision + 1,
             Json(json!({"tenant_id": principal.tenant_id, "case_id": case_id,
                 "revision": expected_revision + 1, "activity_id": activity_id,
@@ -620,6 +620,10 @@ mod tests {
                 has_table_privilege(current_user, 'external_case_mappings', 'INSERT') AS "mapping_insert!",
                 has_table_privilege(current_user, 'case_evidence_refs', 'INSERT') AS "evidence_insert!",
                 has_column_privilege(current_user, 'case_outbox', 'status', 'UPDATE') AS "outbox_status_update!",
+                has_column_privilege(current_user, 'case_outbox', 'status', 'INSERT') AS "outbox_status_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'attempts', 'INSERT') AS "outbox_attempts_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'lease_owner', 'INSERT') AS "outbox_lease_owner_insert!",
+                has_column_privilege(current_user, 'case_outbox', 'delivered_at', 'UPDATE') AS "outbox_delivered_at_update!",
                 has_table_privilege(current_user, 'case_activity', 'UPDATE') AS "activity_update!""#
         ).fetch_one(&pool).await.expect("read application-role privilege boundary");
 
@@ -627,6 +631,10 @@ mod tests {
         assert!(!privileges.mapping_insert, "mapping writes are not exposed yet");
         assert!(!privileges.evidence_insert, "evidence writes are not exposed yet");
         assert!(!privileges.outbox_status_update, "outbox delivery state belongs to a qualified dispatcher");
+        assert!(!privileges.outbox_status_insert, "the runtime role must use the database default outbox status");
+        assert!(!privileges.outbox_attempts_insert, "the runtime role must use the database default attempt counter");
+        assert!(!privileges.outbox_lease_owner_insert, "outbox lease ownership belongs to the dispatcher");
+        assert!(!privileges.outbox_delivered_at_update, "delivery acknowledgement belongs to the dispatcher");
         assert!(!privileges.activity_update, "activity is append-only");
     }
 
