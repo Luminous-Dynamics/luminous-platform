@@ -10,6 +10,7 @@
       "item_type": "hardware_product_or_board",
       "category": "branch_gateway",
       "source_urls": [
+        "https://openwrt.org/toh/hwdata/openwrt/openwrt_one_1",
         "https://openwrt.org/toh/openwrt/one",
         "https://one.openwrt.org/hardware/",
         "https://one.openwrt.org/sources/"
@@ -22,9 +23,9 @@
       "maturity": "H0_CANDIDATE",
       "deployment_authorization": "not_authorized",
       "deployment_profile": null,
-      "named_model_or_revision": null,
+      "named_model_or_revision": "OpenWrt One 1; exact board revision and production lot not yet pinned",
       "last_checked": "2026-10-10",
-      "observed_evidence": "The OpenWrt hardware index exposes KiCad schematic files and board/schematic PDFs; official device documentation describes interfaces and notes a hardware detail affecting some 2025 batches.",
+      "observed_evidence": "The OpenWrt Techdata record identifies the model as OpenWrt One 1, says it is available in 2026 and lists current upstream support release 25.12.5, the MediaTek MT7981BA, 1 GB RAM, NAND/flash, 2.5 GbE WAN and 1 GbE LAN. Official design pages expose KiCad schematic files and board/schematic PDFs. These upstream facts do not prove vetted South African stock, exact batch condition, complete BOM/license audit, or deployment suitability.",
       "open_blockers": [
         "Pin exact purchased board revision and supplier lot.",
         "Review licenses for each design artifact and verify a complete BOM and substitutions.",
@@ -187,7 +188,7 @@
       "maturity": "H0_CANDIDATE",
       "deployment_authorization": "not_authorized",
       "deployment_profile": null,
-      "named_model_or_revision": null,
+      "named_model_or_revision": "Earl Grey v1.0.0 production silicon top-level; commercial part/package not yet identified",
       "last_checked": "2026-10-10",
       "observed_evidence": "Official OpenTitan documentation states that Earl Grey production silicon is in production and release v1.0.0 is the first production silicon; the project timeline records fabrication beginning with Nuvoton in February 2025 and the first production deployment in Chromebooks in March 2026. Luminous has not selected a purchasable part/package/module or verified its supply, integration fit, certificate scope, or deployment suitability.",
       "open_blockers": [
