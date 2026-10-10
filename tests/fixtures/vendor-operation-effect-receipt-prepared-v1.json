@@ -6,7 +6,8 @@
   "adapter_id": "cisco-ios-xe-nxos",
   "adapter_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "target": {
-    "vendor": "Synthetic Vendor",
+    "vendor": "Cisco",
+    "product_family": "IOS XE",
     "model": "synthetic-lab-switch",
     "hardware_revision": "fixture-r1",
     "software_version": "mock-os-0.0.1",
