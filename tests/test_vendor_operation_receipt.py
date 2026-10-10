@@ -88,6 +88,24 @@ class VendorOperationReceiptTests(unittest.TestCase):
         self.assertTrue(any("invalid transition INDETERMINATE -> APPLY_STARTED" in error for error in errors))
         self.assertTrue(any("cannot repeat APPLY_STARTED" in error for error in errors))
 
+    def test_complete_independently_verified_receipt_passes(self) -> None:
+        receipt = self._authorized_applied_receipt()
+        receipt["state"] = "VERIFIED"
+        receipt["effect_state"] = "EFFECT_VERIFIED"
+        receipt["journal"].append({
+            "state": "VERIFIED",
+            "occurred_at": "2026-10-10T19:24:00+02:00",
+            "actor_ref": "principal:fixture-verifier",
+            "evidence_refs": ["evidence:verified-observation"],
+            "prestate_digest": None,
+        })
+        receipt["evidence"] = {
+            "raw_artifact_refs": ["evidence:packet-capture", "evidence:device-state"],
+            "independent_verifier_ref": "principal:independent-reviewer",
+            "verified_state_digest": receipt["intent"]["desired_state_digest"],
+        }
+        self.assertEqual(self.errors(receipt), [])
+
     def test_verified_receipt_requires_independent_evidence(self) -> None:
         receipt = self._authorized_applied_receipt()
         receipt["state"] = "VERIFIED"
