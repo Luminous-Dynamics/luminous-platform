@@ -170,10 +170,126 @@ records:
       - "Radio regulations and RF/antenna safety"
       - "Firmware lifecycle, link/performance and failure tests"
       - "Supplier and spare-part path"
+  - id: HW-008
+    domain: site-edge-router
+    project: Turris Omnia
+    record_type: open-schematic-commercial_candidate
+    maturity: discovered
+    current_part_or_revision: "Exact hardware revision required; Omnia revisions differ"
+    sources:
+      - "https://docs.turris.cz/hw/omnia/omnia/"
+      - "https://docs.turris.cz/hw/omnia/revisions/"
+      - "https://www.turris.com/en/produkty/omnia/"
+    hardware_source_state: "Official documentation lists schematics for several board revisions and a 3D PCB model; complete preferred editable PCB source was not confirmed"
+    software_source_state: "OpenWrt-based Turris OS source is published; exact installed version/support must be pinned"
+    licensing_state: "Review exact board/document/firmware license and branding"
+    availability_state: "Current stock, revision and lifecycle must be verified with supplier"
+    allowed_initial_use: "Controlled lab/site evaluation against other gateway candidates"
+    not_yet_claimed:
+      - "Complete reproducible open-hardware manufacturing package"
+      - "Government-approved boundary gateway"
+      - "Current guaranteed supply or support"
+    required_evidence:
+      - "Exact board revision and preferred editable source files"
+      - "Full BOM, alternatives and parts sourcing"
+      - "Firmware boot/update/recovery and vulnerability-response review"
+      - "Measured throughput, failover and power"
+  - id: HW-009
+    domain: modular-edge-router
+    project: Turris MOX
+    record_type: partial-hardware-documentation
+    maturity: discovered
+    current_part_or_revision: "Exact module set/revisions not selected"
+    sources:
+      - "https://docs.turris.cz/hw/mox/hw/"
+      - "https://docs.turris.cz/hw/mox/sets/start/"
+      - "https://forum.turris.cz/t/where-to-find-the-altium-design-files-of-the-open-source-mox/13581"
+    hardware_source_state: "Official docs list module schematics and selected adapter manufacturing docs; community clarification says full editable Altium files are not publicly available"
+    software_source_state: "OpenWrt-based firmware; exact current support and release to be pinned"
+    licensing_state: "Review exact source licenses and limitations"
+    availability_state: "Verify current module-set availability before considering a purchase"
+    allowed_initial_use: "Modular router research and limited lab/community network evaluation"
+    not_yet_claimed:
+      - "Complete open-hardware source package"
+      - "Production boundary gateway"
+      - "Current long-term support assurance"
+    required_evidence:
+      - "Exact module set and available revisions"
+      - "Editable design source availability and complete BOM"
+      - "Firmware security/update/lifecycle review"
+      - "Radio/PoE/thermal and failover tests as relevant"
+  - id: HW-010
+    domain: cryptographic-appliance-research
+    project: CrypTech HSM / Alpha
+    record_type: historical_open_hardware_research
+    maturity: discovered
+    current_part_or_revision: "No current production revision selected"
+    sources:
+      - "https://wiki.cryptech.is/"
+      - "https://wiki.cryptech.is/BuildingFromSource/"
+    hardware_source_state: "Project described an auditable open cryptographic-engine design; old project material found during this survey"
+    software_source_state: "Historical software/firmware/FPGA build-from-source instructions are published"
+    licensing_state: "Review licenses and third-party dependencies for the exact source snapshot"
+    availability_state: "Current maintenance, hardware availability and supplier path unverified"
+    allowed_initial_use: "Historical architecture research only"
+    not_yet_claimed:
+      - "Supported production HSM"
+      - "FIPS 140-2 or 140-3 validation"
+      - "Suitable storage for protected government keys"
+    required_evidence:
+      - "Current maintained source and exact hardware package"
+      - "Reproducible build and independent security review"
+      - "Hardware availability, support and lifecycle plan"
+      - "Exact cryptographic module certificate/security policy if required"
+  - id: HW-011
+    domain: rack-and-power-mechanics
+    project: OCP Open Rack Wide / Rack & Power design collateral
+    record_type: open_mechanical_electrical_design_lead
+    maturity: discovered
+    current_part_or_revision: "Pin exact Open Rack Wide design collateral revision"
+    sources:
+      - "https://www.opencompute.org/contribution-type/design-file/"
+    hardware_source_state: "OCP design-file archive lists Open Rack Wide design collateral in 2026"
+    software_source_state: "Not applicable"
+    licensing_state: "Verify exact design-package license and third-party contributions"
+    availability_state: "Manufacturing, partner availability, shipping and support are not established by the archive listing"
+    allowed_initial_use: "Rack/mechanical/electrical interface reference"
+    not_yet_claimed:
+      - "Complete UPS/PDU/generator system"
+      - "Installed-site electrical or fire-code compliance"
+      - "Current manufacture or supply"
+    required_evidence:
+      - "Exact design files, license, ratings and assembly instructions"
+      - "Grounding/bonding, load and thermal calculations"
+      - "Compatible PDU/UPS, safety and local-code review"
+  - id: HW-012
+    domain: server-network-interface
+    project: OCP NIC 3.0 specifications and test-fixture collateral
+    record_type: open_interface_specification_and_fixture_reference
+    maturity: discovered
+    current_part_or_revision: "Released OCP NIC 3.0 spec 1.6.0; 1.6.1 draft listed August 2026"
+    sources:
+      - "https://www.opencompute.org/projects/server/mezz-nic/"
+      - "https://www.opencompute.org/contribution-type/design-file/"
+    hardware_source_state: "Interface/mechanical specs and test-fixture schematics/layout/BOM collateral are listed; not evidence that a chosen production NIC's full design is open"
+    software_source_state: "Driver, firmware and NOS support depend on exact card"
+    licensing_state: "Check license of the individual card design and each collateral package"
+    availability_state: "Select exact NIC, supplier and firmware lifecycle before procurement"
+    allowed_initial_use: "Interoperability standard and server-NIC candidate comparison"
+    not_yet_claimed:
+      - "Fully open NIC product"
+      - "Open switch/NIC ASIC or firmware"
+      - "Qualified driver/firmware stack"
+    required_evidence:
+      - "Exact card and spec revision"
+      - "License and source/BOM completeness"
+      - "Driver/firmware/security update support"
+      - "Thermal, power, performance and interoperability tests"
+
 gaps:
   - id: GAP-001
     domain: cryptographic-appliance-hsm
-    status: no_candidate_selected
+    status: research_leads_only_no_qualified_candidate
     exit_criteria: "Exact required module/certificate, supported firmware/configuration, key lifecycle, recovery, supplier and lifecycle reviewed."
   - id: GAP-002
     domain: smart-card-and-security-token
