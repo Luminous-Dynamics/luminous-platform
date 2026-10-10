@@ -15,7 +15,7 @@ Distinguish **open design**, **open software**, **obtainable hardware**, **secur
 
 | ID | Domain | Candidate | Evidence found | Proposed use | Current maturity | Main gaps / constraints |
 |---|---|---|---|---|---|---|
-| HW-001 | Site / lab gateway | **OpenWrt One** | Official hardware index exposes KiCad schematic files and PDF schematic/PCB documentation; official source-download page publishes source corresponding to shipped software. | Lab gateway, home/community network, controlled branch-site evaluation. | **Reference candidate** | Small embedded platform; not a datacenter switch or presumptively approved cryptographic gateway. Verify exact board revision, full BOM/alternates, supplier lead time, secure boot/recovery, firmware provenance, radio regulatory fit, throughput, and required cryptographic approvals. |
+| HW-001 | Site / lab gateway | **OpenWrt One** | Official hardware index exposes KiCad schematic files and PDF schematic/PCB documentation; official source-download page publishes source corresponding to shipped software. | Lab gateway, home/community network, controlled branch-site evaluation. | **Schematic-visible reference candidate** | Editable PCB layout and complete BOM were not established in the indexed files; see [evaluation plan](plans/openwrt-one-evaluation-plan.md). Small embedded platform; not a datacenter switch or presumptively approved cryptographic gateway. Verify exact board revision, alternatives, supply, boot/recovery, firmware provenance, regulatory fit, measured throughput and applicable approvals. |
 | HW-002 | Datacenter switching | **Open Compute Project networking designs** | OCP Networking describes open/disaggregated hardware and software work, with multiple design/specification candidates and an ONIE ecosystem. | Evaluate exact whitebox switch designs for campus core/leaf-spine networking. | **Design ecosystem; exact model not selected** | OCP is a portfolio, not one device. Select exact design, chip/ASIC, board, license, firmware, ONIE/OS compatibility, optics, power, cooling, and current source. Do not assume ASIC RTL or firmware is open. |
 | HW-003 | Servers / chassis | **OCP server projects and published design packages** | OCP Server covers chassis, sleds, peripherals, interfaces, manageability and testing; public projects such as Project Olympus expose specifications and hardware-collateral organization. | Use for mechanical/electrical interoperability and server-design reference. | **Reference ecosystem; exact current platform not selected** | Some published designs may be historical. Pick exact revision and check editable files, licenses, BOM completeness, current processors/firmware, assembly process, parts availability and support life. |
 | HW-004 | Hardware root of trust | **OpenTitan** | Open silicon root-of-trust RTL, hardware/software and verification collateral are public under Apache 2.0 except where noted; the project has commercial silicon deployments. | Architecture study, silicon/IP evaluation, future board/chip partner discussion. | **Open IP / integration candidate** | Open RTL is not a drop-in HSM or automatically available chip/module. A real product needs exact silicon supply, integration, lifecycle support, testing, and any required cryptographic/module validation. |
@@ -40,6 +40,7 @@ Distinguish **open design**, **open software**, **obtainable hardware**, **secur
 - [BeagleV-Fire design documentation](https://docs.beagleboard.io/boards/beaglev/fire/03-design.html)
 - [MNT source index](https://mntmn.com/sources.html)
 - [LibreRouter repositories](https://gitlab.com/librerouter)
+- [OpenSK source repository](https://github.com/google/OpenSK)
 - [Turris Omnia hardware documentation](https://docs.turris.cz/hw/omnia/omnia/) and [revision history](https://docs.turris.cz/hw/omnia/revisions/)
 - [Turris MOX hardware documentation](https://docs.turris.cz/hw/mox/hw/)
 - [CrypTech project](https://wiki.cryptech.is/) and [source-build notes](https://wiki.cryptech.is/BuildingFromSource/)
@@ -67,6 +68,10 @@ These are tracked as gaps, not silently filled with guesses. Turris schematic di
 | GAP-013 | Mobile voice/video and emergency communications | Xenia is a software/network capability, not a qualified hardware endpoint. | User scenarios and interoperability targets; codecs, privacy, accessibility, device management, radio/regulatory requirements and update lifecycle. |
 | GAP-014 | WAN diversity / modem / satellite / radio | No jurisdiction-qualified device set selected. | Local spectrum/operator rules, coverage, carrier/service contracts, encryption/identity, environmental limits and disconnected-mode tests. |
 | GAP-015 | Secure erase and hardware retirement | No standard kit/process selected. | Sanitization standard, verification evidence, key destruction and chain of custody, disposition process and customer data-handling rules. |
+
+### Adjacent firmware lead: OpenSK (not a complete open-hardware platform)
+
+[OpenSK](https://github.com/google/OpenSK) is a Rust FIDO2/U2F security-key implementation and describes an open software experience with a printable enclosure. The project README says its CTAP 2.0 version was FIDO certified, while the current development branch is not FIDO certified. This research did not establish a complete editable PCB/BOM manufacturing package or a currently qualified government token. Keep it as an implementation/interoperability research lead; it does not close GAP-002.
 
 ## 3. Design-package standard for hardware we publish
 
