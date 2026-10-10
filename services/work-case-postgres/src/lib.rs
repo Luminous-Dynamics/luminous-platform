@@ -695,4 +695,39 @@ mod tests {
         assert_eq!(recovered_counts, (1, 1), "corrected retry commits exactly one activity and outbox event");
     }
 
+    #[tokio::test]
+    async fn database_rejects_inconsistent_outbox_lease_state() {
+        let app_pool = pool(1).await;
+        let repo = WorkCaseRepository { pool: app_pool };
+        let p = principal();
+        let created = repo.create_case(
+            &p,
+            command("outbox-state-create-key-001", "case-outbox-state-001", "Outbox state constraint"),
+        ).await.expect("create case for outbox constraint");
+
+        // Use the migration role to bypass app-role column grants and prove the schema
+        // itself rejects contradictory delivery state, independent of repository code.
+        let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must use the migration/test owner role");
+        let owner_pool = PgPoolOptions::new().max_connections(1).connect(&database_url)
+            .await.expect("connect with migration/test owner role");
+        let mut tx = owner_pool.begin().await.expect("begin owner transaction");
+        set_tenant(&mut tx, &p.tenant_id).await.expect("set tenant context");
+
+        let invalid = sqlx::query!(
+            r#"INSERT INTO case_outbox
+               (tenant_id, outbox_id, case_id, revision, event_type, payload, status, attempts, lease_owner, lease_until)
+               VALUES ($1,$2,$3,2,'test.invalid.outbox_lease',$4,'LEASED',1,NULL,NULL)"#,
+            p.tenant_id, Uuid::new_v4(), created.case_id, Json(json!({"synthetic": true}))
+        ).execute(&mut *tx).await;
+        match invalid {
+            Err(sqlx::Error::Database(error)) => {
+                assert_eq!(error.constraint(), Some("case_outbox_state_shape"));
+            }
+            Ok(_) => panic!("database accepted a leased outbox row without owner and expiry"),
+            Err(error) => panic!("unexpected error instead of state-shape violation: {error}"),
+        }
+        tx.rollback().await.expect("roll back rejected invalid row");
+        owner_pool.close().await;
+    }
+
 }
