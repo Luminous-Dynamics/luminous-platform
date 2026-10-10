@@ -119,6 +119,7 @@ A shared Holochain DHT must not become the default store for full inventory, raw
 No mutation-capable adapter can advance beyond discovery/read-only until all of these pass for an exact physical device/software/region scope:
 
 - schema and adversarial tests for action/target/pre-state/policy/profile binding, exact adapter source revision, product family and tested model/revision/software/region scope;
+- malformed receipts must fail with structured schema errors before any cross-registry lookup; invalid input must not crash the validator or reach adapter binding logic;
 - cross-document receipt-to-registry validation that rejects authorization/effects unless the operation is explicitly tested and its adapter maturity meets the risk-specific gate;
 - stale pre-state, expired authorization, forged actor, wrong tenant/region/target and revoked credential denial tests;
 - terminal failure/effect consistency, direct partial-effect reporting, reconciliation evidence, receipt chronology and authorization/journal timestamp binding tests;
