@@ -1507,10 +1507,28 @@ jobs:
               key=lambda item: item["workspace_root"]
           )
           workspace_failures = [root for root in workspace_roots if root["status"] != "PASS"]
+
+          def is_unclassified_manifest_failure(entry):
+              # Missing workspace locks are classified by the unique workspace
+              # root record below. Every other non-PASS member—including an
+              # INCOMPLETE TOML parse—must independently block coverage.
+              return (
+                  entry.get("status") != "FAIL"
+                  or entry.get("reason") == "workspace_outside_checkout"
+                  or not entry.get("workspace_root")
+                  or not entry.get("expected_lockfile")
+              )
+
+          parse_failure_fixture = {
+              "manifest": "fixture/Cargo.toml",
+              "status": "INCOMPLETE",
+              "reason": "TOMLDecodeError: fixture invalid TOML",
+          }
+          if not is_unclassified_manifest_failure(parse_failure_fixture):
+              raise SystemExit("manifest coverage regression: an INCOMPLETE parse must be blocking")
+
           unclassified_manifest_failures = [
-              entry for entry in failures
-              if entry.get("reason") in ("workspace_outside_checkout",)
-              or entry.get("manifest") and entry.get("expected_lockfile") is None
+              entry for entry in failures if is_unclassified_manifest_failure(entry)
           ]
           report = {
               "schema": "luminous.security-audit.manifest-coverage.v1",
