@@ -37,7 +37,7 @@ class RendererCompatibilityTests(unittest.TestCase):
         candidate["engineId"] = "different-engine-v1"
         candidate["engineVersions"] = ["1.0.0"]
         profile_issues = validate_profile(self.profile_schema, candidate)
-        self.assertEqual([], profile_issues, "\\n".join(map(str, profile_issues)))
+        self.assertEqual([], profile_issues, "\n".join(map(str, profile_issues)))
         report = audit_compatibility(self.manifest, candidate)
         self.assertIn("engine.unsupported", {item.code for item in report.issues})
 
