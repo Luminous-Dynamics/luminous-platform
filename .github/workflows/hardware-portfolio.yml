@@ -13,15 +13,19 @@ on:
       - "schemas/vendor-adapter-capability-registry-v1.schema.json"
       - "schemas/vendor-operation-effect-receipt-v1.schema.json"
       - "schemas/vendor-management-endpoint-profile-v1.schema.json"
+      - "schemas/vendor-management-endpoint-approval-v1.schema.json"
       - "security/vendor-adapter-capability-registry-v1.json"
       - "tests/fixtures/vendor-operation-effect-receipt-prepared-v1.json"
       - "tests/fixtures/vendor-management-endpoint-profile-v1.json"
+      - "tests/fixtures/vendor-management-endpoint-approval-v1.json"
       - "tools/validate_vendor_adapter_registry.py"
       - "tools/validate_vendor_operation_receipt.py"
       - "tools/validate_vendor_management_endpoint_profile.py"
+      - "tools/validate_vendor_management_endpoint_approval.py"
       - "tests/test_vendor_adapter_registry.py"
       - "tests/test_vendor_operation_receipt.py"
       - "tests/test_vendor_management_endpoint_profile.py"
+      - "tests/test_vendor_management_endpoint_approval.py"
       - "tools/validate_hardware_portfolio.py"
       - "tools/validate_hardware_deployment_profile.py"
       - "tools/validate_hardware_control_evidence_matrix.py"
@@ -49,15 +53,19 @@ on:
       - "schemas/vendor-adapter-capability-registry-v1.schema.json"
       - "schemas/vendor-operation-effect-receipt-v1.schema.json"
       - "schemas/vendor-management-endpoint-profile-v1.schema.json"
+      - "schemas/vendor-management-endpoint-approval-v1.schema.json"
       - "security/vendor-adapter-capability-registry-v1.json"
       - "tests/fixtures/vendor-operation-effect-receipt-prepared-v1.json"
       - "tests/fixtures/vendor-management-endpoint-profile-v1.json"
+      - "tests/fixtures/vendor-management-endpoint-approval-v1.json"
       - "tools/validate_vendor_adapter_registry.py"
       - "tools/validate_vendor_operation_receipt.py"
       - "tools/validate_vendor_management_endpoint_profile.py"
+      - "tools/validate_vendor_management_endpoint_approval.py"
       - "tests/test_vendor_adapter_registry.py"
       - "tests/test_vendor_operation_receipt.py"
       - "tests/test_vendor_management_endpoint_profile.py"
+      - "tests/test_vendor_management_endpoint_approval.py"
       - "tools/validate_hardware_portfolio.py"
       - "tools/validate_hardware_deployment_profile.py"
       - "tools/validate_hardware_control_evidence_matrix.py"
@@ -121,6 +129,9 @@ jobs:
       - name: Validate synthetic management endpoint profile
         run: python tools/validate_vendor_management_endpoint_profile.py
 
+      - name: Validate external endpoint approval/profile binding record
+        run: python tools/validate_vendor_management_endpoint_approval.py
+
       - name: Run adversarial vendor adapter registry tests
         run: python -m unittest discover -s tests -p "test_vendor_adapter_registry.py" -v
 
@@ -129,6 +140,9 @@ jobs:
 
       - name: Run adversarial endpoint profile tests
         run: python -m unittest discover -s tests -p "test_vendor_management_endpoint_profile.py" -v
+
+      - name: Run adversarial endpoint approval binding tests
+        run: python -m unittest discover -s tests -p "test_vendor_management_endpoint_approval.py" -v
 
       - name: Run hardware portfolio adversarial tests
         run: python -m unittest discover -s tests -p "test_hardware_*.py" -v
