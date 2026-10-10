@@ -33,6 +33,10 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 └─────────────────────────────────────────────────────────┘
 ```
 
+## Government & Regulated Infrastructure (proposed)
+
+The product architecture and initial hardware survey are tracked in [RFC 001](docs/architecture/government-network-platform-rfc-001.md), the [open-hardware qualification ledger](docs/hardware/open-hardware-inventory.md), and the machine-readable [hardware catalog](hardware/catalog.yaml). These are research and planning artifacts, not a finalized product catalog, qualified bill of materials, or accreditation claim. Follow [issue #19](https://github.com/Luminous-Dynamics/luminous-platform/issues/19) for the open work.
+
 ## Platform Components
 
 | Repo | Role | Flake? | Status |
