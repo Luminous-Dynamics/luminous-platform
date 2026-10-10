@@ -264,7 +264,8 @@
         "credential_reference": {
           "type": "string",
           "minLength": 8,
-          "maxLength": 512
+          "maxLength": 512,
+          "pattern": "^(secretref|credential-profile|vaultref):[A-Za-z0-9._:/-]+$"
         },
         "expected_principal_ref": {
           "type": "string",
