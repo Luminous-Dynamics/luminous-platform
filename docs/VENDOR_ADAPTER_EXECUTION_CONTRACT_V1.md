@@ -52,7 +52,7 @@ Each state-changing operation writes a durable event before and after its possib
 | `APPLY_STARTED` | Immediately before the side effect, the executor re-read and confirmed the authorized pre-state | If pre-state differs, abort and re-plan; journal that mutation may now have occurred |
 | `APPLIED_UNVERIFIED` | Request returned or a possible effect was observed, but desired state is not independently verified | Do not call this a pass; collect fresh read-only observations |
 | `VERIFIED` | Independent verifier observed the exact intended result and linked the raw evidence | Terminal success for this bounded operation only |
-| `FAILED` | Definite rejection or known no-effect/failure was established | Preserve failure output and artifacts; remediation is a new attempt |
+| `FAILED` | Definite no-effect/rejection, or an observed partial effect with explicit remediation evidence | Preserve failure output and artifacts; a direct transition from `APPLIED_UNVERIFIED` must use `EFFECT_PARTIAL` with evidence. A no-effect/rejected conclusion after uncertainty requires read-only reconciliation evidence; remediation is a new authorized attempt |
 | `INDETERMINATE` | Effect may have occurred, but the outcome cannot yet be established | No re-apply or automatic retry. Reconcile read-only; append only a permitted reconciliation state |
 | `ABORTED` | Operation stopped before any effect | Record reason; any new attempt uses a fresh plan/authorization |
 
@@ -83,7 +83,7 @@ Immediately before mutation, re-read enough device state to establish that the p
 
 The mutation receipt records an opaque target identity digest rather than requiring a raw serial number in shared records. Protect the mapping to the physical asset as sensitive customer inventory. Even a digest can leak information if it is predictable or correlatable; use an appropriately keyed commitment or random asset token where needed.
 
-The receipt also binds the **adapter implementation source commit** and exact product family. Before `AUTHORIZATION_VERIFIED` or any possible device effect, the receipt validator cross-checks the capability registry: the named operation must be `tested`, its adapter must meet the risk-specific maturity gate, the physical target's vendor/product family/model/hardware revision/software version/region must match the tested scope, and the receipt's adapter revision must equal that operation's tested source revision. A family-level `A0_DISCOVERED` entry may support a `PREPARED` planning receipt only; it cannot authorize an operation. This cross-document gate is still a contract implementation, not evidence that a real device was tested.
+The receipt also binds the **adapter implementation source commit** and exact product family. Effect-state semantics are fail-closed too: a receipt cannot move directly from `APPLIED_UNVERIFIED` to `FAILED` while claiming `NO_EFFECT` or `EFFECT_REJECTED`; it must record `EFFECT_PARTIAL` and evidence. A no-effect/rejected outcome after an uncertain or possibly applied request must pass through reconciliation evidence. Journal events and authorization timestamps must not predate receipt creation or contradict each other. Before `AUTHORIZATION_VERIFIED` or any possible device effect, the receipt validator cross-checks the capability registry: the named operation must be `tested`, its adapter must meet the risk-specific maturity gate, the physical target's vendor/product family/model/hardware revision/software version/region must match the tested scope, and the receipt's adapter revision must equal that operation's tested source revision. A family-level `A0_DISCOVERED` entry may support a `PREPARED` planning receipt only; it cannot authorize an operation. This cross-document gate is still a contract implementation, not evidence that a real device was tested.
 
 ## 6. Recovery evidence gates
 
@@ -121,6 +121,7 @@ No mutation-capable adapter can advance beyond discovery/read-only until all of 
 - schema and adversarial tests for action/target/pre-state/policy/profile binding, exact adapter source revision, product family and tested model/revision/software/region scope;
 - cross-document receipt-to-registry validation that rejects authorization/effects unless the operation is explicitly tested and its adapter maturity meets the risk-specific gate;
 - stale pre-state, expired authorization, forged actor, wrong tenant/region/target and revoked credential denial tests;
+- terminal failure/effect consistency, direct partial-effect reporting, reconciliation evidence, receipt chronology and authorization/journal timestamp binding tests;
 - timeout-before-apply, timeout-after-apply, rate-limit and partial-commit cases;
 - no-replay behavior after `INDETERMINATE` and read-only reconciliation tests;
 - independently observed post-state and preserved raw artifacts;
