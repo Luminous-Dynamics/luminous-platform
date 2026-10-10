@@ -16,6 +16,8 @@ Before connecting to any device, run the synthetic endpoint-profile contract che
 ```sh
 python tools/validate_vendor_management_endpoint_profile.py
 python -m unittest discover -s tests -p "test_vendor_management_endpoint_profile.py" -v
+python tools/validate_vendor_management_endpoint_approval.py
+python -m unittest discover -s tests -p "test_vendor_management_endpoint_approval.py" -v
 ```
 
 These commands validate a synthetic profile only. They do not contact a device, confirm ownership, validate a production credential, establish vendor support, or qualify an adapter. For a real lab target, create a new revision with exact endpoint and scope values; do not edit the synthetic fixture into customer evidence. Any unresolved policy/commercial/support dimension must be reviewed or explicitly marked not applicable with a rationale before lab approval.
