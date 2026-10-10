@@ -938,11 +938,31 @@ jobs:
           : > "$verified_file"
           submodule_status="NOT_REQUIRED"
           submodule_reason=""
-          if [[ -f .gitmodules ]]; then
+          submodule_urls=()
+          submodule_paths=()
+          gitmodules_metadata="$(git ls-tree --format='%(objectmode) %(objecttype) %(objectname)' HEAD -- ':(literal).gitmodules' 2>/dev/null || true)"
+          gitmodules_mode=""
+          gitmodules_type=""
+          gitmodules_blob=""
+          if [[ -n "$gitmodules_metadata" && "$gitmodules_metadata" != *$'\n'* ]]; then
+            read -r gitmodules_mode gitmodules_type gitmodules_blob <<< "$gitmodules_metadata"
+          fi
+          if [[ -e .gitmodules || -L .gitmodules || -n "$gitmodules_metadata" ]]; then
             submodule_status="PASS"
-            mapfile -t submodule_urls < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]url$' || true)
-            mapfile -t submodule_paths < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
-            if [[ "${#submodule_urls[@]}" -ne 1 || "${#submodule_paths[@]}" -ne 1 ]]; then
+            if [[ ( "$gitmodules_mode" != "100644" && "$gitmodules_mode" != "100755" ) || "$gitmodules_type" != "blob" || ! "$gitmodules_blob" =~ ^[0-9a-f]{40}$ || ! -f .gitmodules || -L .gitmodules ]]; then
+              submodule_status="FAIL"
+              submodule_reason="gitmodules_not_committed_regular_blob"
+            else
+              worktree_gitmodules="$(git hash-object --no-filters -- .gitmodules || true)"
+              if [[ "$worktree_gitmodules" != "$gitmodules_blob" ]]; then
+                submodule_status="FAIL"
+                submodule_reason="gitmodules_worktree_differs_from_HEAD"
+              else
+                mapfile -t submodule_urls < <(git config --blob HEAD:.gitmodules --get-regexp '^submodule[.].*[.]url$' || true)
+                mapfile -t submodule_paths < <(git config --blob HEAD:.gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
+              fi
+            fi
+            if [[ "$submodule_status" == "PASS" && ( "${#submodule_urls[@]}" -ne 1 || "${#submodule_paths[@]}" -ne 1 ) ]]; then
               submodule_status="FAIL"
               submodule_reason="submodule_url_path_inventory_empty_or_mismatched"
             fi
@@ -981,7 +1001,7 @@ jobs:
                   submodule_reason="submodule_path_invalid"
                   break
                 fi
-              done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$')
+              done < <(git config --blob HEAD:.gitmodules --get-regexp '^submodule[.].*[.]path$')
             fi
             if [[ "$submodule_status" == "PASS" ]]; then
               if ! git submodule update --init; then
@@ -1011,8 +1031,18 @@ jobs:
                   break
                 fi
                 printf '%s\n' "$path" >> "$verified_file"
-              done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$')
+              done < <(git config --blob HEAD:.gitmodules --get-regexp '^submodule[.].*[.]path$')
             fi
+          fi
+          if [[ "$submodule_status" == "NOT_REQUIRED" ]]; then
+            while IFS= read -r -d '' gitlink_record; do
+              gitlink_metadata="${gitlink_record%%$'\t'*}"
+              if [[ "$gitlink_metadata" == "160000 commit "* ]]; then
+                submodule_status="FAIL"
+                submodule_reason="gitlink_without_committed_gitmodules"
+                break
+              fi
+            done < <(git ls-tree -r -z --full-tree HEAD)
           fi
           {
             echo "submodule_audit_status=$submodule_status"
