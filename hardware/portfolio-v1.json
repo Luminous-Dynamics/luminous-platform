@@ -1,0 +1,635 @@
+{
+  "schema_version": "luminous.hardware-portfolio.v1",
+  "as_of": "2026-10-10",
+  "register_state": "research_baseline_not_qualified",
+  "maturity_contract": "H0-Candidate; H1-Source-reviewed; H2-Buildable; H3-Platform-integrated; H4-Operationally-qualified for a named profile; H5-Deployment-authorized for a named customer/environment. Reference and gap entries cannot be treated as products.",
+  "items": [
+    {
+      "id": "openwrt-one-v1",
+      "name": "OpenWrt One hardware (board revision must be pinned)",
+      "item_type": "hardware_product_or_board",
+      "category": "branch_gateway",
+      "source_urls": [
+        "https://openwrt.org/toh/openwrt/one",
+        "https://one.openwrt.org/hardware/",
+        "https://one.openwrt.org/sources/"
+      ],
+      "source_revision": null,
+      "source_completeness": "native_design_files_visible_bom_unverified",
+      "license_status": "unknown_or_not_reviewed",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "The OpenWrt hardware index exposes KiCad schematic files and board/schematic PDFs; official device documentation describes interfaces and notes a hardware detail affecting some 2025 batches.",
+      "open_blockers": [
+        "Pin exact purchased board revision and supplier lot.",
+        "Review licenses for each design artifact and verify a complete BOM and substitutions.",
+        "Validate firmware trust/update/recovery, radio configuration, VLAN/firewall throughput and fail-safe behavior.",
+        "Test availability, lifecycle support and physical-unit behavior."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "ocp-minipack3",
+      "name": "OCP Meta Minipack3 network switch design package v1.0",
+      "item_type": "hardware_design_family",
+      "category": "switching",
+      "source_urls": [
+        "https://www.opencompute.org/projects/networking/",
+        "https://www.opencompute.org/contribution-type/design-file/"
+      ],
+      "source_revision": null,
+      "source_completeness": "specification_or_partial_files",
+      "license_status": "unknown_or_not_reviewed",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "OCP lists a Minipack3 design package in its networking design-file catalogue; no specific build vendor, fully audited source revision, or purchasable configured unit is selected here.",
+      "open_blockers": [
+        "Pin the exact design package and revision; identify applicable hardware/IP license terms.",
+        "Review schematics, layout, BOM, firmware, CPLD/boot and manufacturing package completeness.",
+        "Identify manufacturer/assembler, exact supported NOS image and lifecycle support.",
+        "Qualify management-plane isolation, port compatibility, thermals, acoustics, power and failure recovery."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "ocp-server-project",
+      "name": "Open Compute Project server design ecosystem (no exact server SKU selected)",
+      "item_type": "standards_programme",
+      "category": "server_compute",
+      "source_urls": [
+        "https://www.opencompute.org/projects/server/",
+        "https://www.opencompute.org/contribution-type/design-file/"
+      ],
+      "source_revision": null,
+      "source_completeness": "specification_or_partial_files",
+      "license_status": "not_applicable_reference",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "REFERENCE_ONLY",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "OCP publishes multiple server specifications and design files. This entry is an ecosystem/source-of-design pointer, not a qualified platform or ordered BOM.",
+      "open_blockers": [
+        "Choose exact design and production supplier appropriate to small-site and datacenter needs.",
+        "Audit exact source files, license, BOM, firmware and management controller.",
+        "Verify serviceability, supply-chain traceability, spares, warranty, noise, power and thermals."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "ocp-storage-project",
+      "name": "Open Compute Project storage designs (no exact storage SKU selected)",
+      "item_type": "standards_programme",
+      "category": "storage_backup",
+      "source_urls": [
+        "https://www.opencompute.org/projects/storage/",
+        "https://www.opencompute.org/contribution-type/design-file/"
+      ],
+      "source_revision": null,
+      "source_completeness": "specification_or_partial_files",
+      "license_status": "not_applicable_reference",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "REFERENCE_ONLY",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "OCP lists storage chassis/sleds, device and technology specifications; the catalogue does not select a complete drive/controller/system configuration.",
+      "open_blockers": [
+        "Select exact chassis, controller, drives and firmware revisions.",
+        "Define encryption/key custody, secure erase, integrity checks, backup/restore and replacement policy.",
+        "Measure performance, endurance, failure recovery and local sourcing/lead time."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "ocp-rack-power",
+      "name": "Open Compute Project Rack & Power design ecosystem",
+      "item_type": "standards_programme",
+      "category": "rack_power",
+      "source_urls": [
+        "https://www.opencompute.org/projects/rack-and-power/"
+      ],
+      "source_revision": null,
+      "source_completeness": "specification_or_partial_files",
+      "license_status": "not_applicable_reference",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "REFERENCE_ONLY",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "OCP covers rack systems and rack-level power conversion, storage and control; it is a standards/design resource, not a selected UPS or PDU.",
+      "open_blockers": [
+        "Select compatible 19-inch rack, PDU, UPS/battery and power distribution configuration.",
+        "Qualify local electrical compliance, surge/brownout response, battery replacement, alerting and runtime sizing.",
+        "Document rack loads, grounding, thermal envelope and maintenance."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "beaglev-fire",
+      "name": "BeagleV-Fire RISC-V/FPGA development board",
+      "item_type": "hardware_product_or_board",
+      "category": "lab_compute",
+      "source_urls": [
+        "https://www.beagleboard.org/boards/beaglev-fire",
+        "https://docs.beagleboard.org/boards/beaglev/fire/03-design.html",
+        "https://git.beagleboard.org/beaglev-fire/beaglev-fire"
+      ],
+      "source_revision": null,
+      "source_completeness": "native_design_files_visible_bom_unverified",
+      "license_status": "unknown_or_not_reviewed",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Official docs link hardware design files and schematics. Suitable for lab, interface, trusted-boot and edge-acceleration research, not assumed to be a production server or certified security module.",
+      "open_blockers": [
+        "Pin board/FPGA bitstream and toolchain revisions and review licenses.",
+        "Check Linux/NixOS support, boot chain, FPGA image update and recovery.",
+        "Assess industrial temperature, long-term supply and real workload/peripheral support."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "opentitan-earl-grey",
+      "name": "OpenTitan Earl Grey silicon root-of-trust project",
+      "item_type": "hardware_design_family",
+      "category": "root_of_trust",
+      "source_urls": [
+        "https://opentitan.org/documentation/",
+        "https://opentitan.org/documentation/hw/"
+      ],
+      "source_revision": null,
+      "source_completeness": "native_design_files_visible_bom_unverified",
+      "license_status": "unknown_or_not_reviewed",
+      "bill_of_materials_status": "not_applicable_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "OpenTitan publishes open silicon root-of-trust design and implementation documentation; project design openness does not identify a validated, traceable chip/module for a finished Luminous product.",
+      "open_blockers": [
+        "Select a concrete manufactured part and supplier if one is available for intended use.",
+        "Review exact RTL, verification, silicon stepping, errata, lifecycle and root-key provisioning.",
+        "Establish integration design, manufacturing provenance, validation status and recovery/replaceability."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "framework-laptop-13",
+      "name": "Framework Laptop 13 documentation and modular hardware family",
+      "item_type": "hardware_design_family",
+      "category": "endpoint",
+      "source_urls": [
+        "https://github.com/FrameworkComputer/Framework-Laptop-13",
+        "https://nixos.org/devices/"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "open_license_identified_not_fully_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "The upstream repository publishes CAD, module documentation, connector pinouts and partial mainboard documentation under CC BY 4.0. It does not publish a complete public mainboard schematic set; NixOS lists Framework among devices with official hardware-team testing.",
+      "open_blockers": [
+        "Choose an exact mainboard generation, SKU, Wi-Fi module and firmware baseline.",
+        "Pin source revision and audit license scope and all proprietary firmware dependencies.",
+        "Qualify secure boot/TPM, suspend, docking, fleet deployment, firmware update, spares and lifecycle.",
+        "Keep endpoint authorization separate from NixOS compatibility."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "mnt-reform-family",
+      "name": "MNT Reform open-hardware laptop family (model selection required)",
+      "item_type": "hardware_design_family",
+      "category": "endpoint",
+      "source_urls": [
+        "https://www.mntre.com/open-hardware.html",
+        "https://shop.mntre.com/products/mnt-reform-v0"
+      ],
+      "source_revision": null,
+      "source_completeness": "partial_documentation",
+      "license_status": "open_license_identified_not_fully_reviewed",
+      "bill_of_materials_status": "partial_or_unknown",
+      "availability_status": "not_verified",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "MNT publishes design files for open hardware; the official shop explicitly marks the Reform v0 listing as an older version no longer sold.",
+      "open_blockers": [
+        "Identify a currently supported model and source repository; do not base procurement on Reform v0.",
+        "Pin parts and licenses, check component availability, firmware and NixOS compatibility.",
+        "Qualify performance, repair logistics, service support, identity hardware and lifecycle before workforce use."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "librerouter-board",
+      "name": "LibreRouter board design (historical lead; successor review required)",
+      "item_type": "hardware_design_family",
+      "category": "community_network",
+      "source_urls": [
+        "https://github.com/LibreRouterOrg/board",
+        "https://gitlab.com/librerouter/boards"
+      ],
+      "source_revision": null,
+      "source_completeness": "source_incomplete_or_stale",
+      "license_status": "open_license_identified_not_fully_reviewed",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_available_or_archived",
+      "maturity": "H0_CANDIDATE",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "The GitHub hardware repository is archived and states that development moved to GitLab. No current successor revision or manufacturing availability has been qualified.",
+      "open_blockers": [
+        "Inspect the successor repository and identify a maintained exact hardware revision.",
+        "Confirm open license, native file completeness, BOM and manufacturability.",
+        "Validate radio compliance, firmware support, secure update, parts sourcing and operational maintenance."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "openbmc-integration",
+      "name": "OpenBMC out-of-band management firmware (software integration reference)",
+      "item_type": "firmware_project",
+      "category": "out_of_band_management",
+      "source_urls": [
+        "https://github.com/openbmc/openbmc",
+        "https://github.com/openbmc/openbmc/blob/master/meta-phosphor/docs/supported-machines.md",
+        "https://www.opencompute.org/projects/hardware-management/"
+      ],
+      "source_revision": null,
+      "source_completeness": "software_source_only",
+      "license_status": "open_license_identified_not_fully_reviewed",
+      "bill_of_materials_status": "not_applicable_or_unknown",
+      "availability_status": "not_applicable",
+      "maturity": "REFERENCE_ONLY",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "OpenBMC is a source-available management-controller distribution with a supported-machine list; upstream states supported-machine functionality/maturity varies and is not warranted.",
+      "open_blockers": [
+        "Select a specific server/BMC combination explicitly listed and supported by the vendor.",
+        "Review source revision, vendor extensions, signing, network exposure, credentials and update/recovery controls.",
+        "Disable or isolate unnecessary management interfaces; validate separate OOB network and access logging."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "coreboot-integration",
+      "name": "coreboot firmware compatibility (model-specific integration reference)",
+      "item_type": "firmware_project",
+      "category": "boot_firmware",
+      "source_urls": [
+        "https://www.coreboot.org/",
+        "https://doc.coreboot.org/",
+        "https://doc.coreboot.org/mainboard/index.html"
+      ],
+      "source_revision": null,
+      "source_completeness": "software_source_only",
+      "license_status": "open_license_identified_not_fully_reviewed",
+      "bill_of_materials_status": "not_applicable_or_unknown",
+      "availability_status": "not_applicable",
+      "maturity": "REFERENCE_ONLY",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "coreboot supports a model-specific range of platforms; firmware support does not imply that all required vendor silicon initialization, microcode or peripheral firmware is open.",
+      "open_blockers": [
+        "Choose an exact mainboard and verify current board-status, maturity and any binary blobs.",
+        "Qualify measured boot, TPM integration, update recovery, IOMMU and peripheral initialization.",
+        "Do not promise fully open firmware without a per-component binary audit."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "crypto-hsm",
+      "name": "Validated cryptographic module / HSM (exact product not selected)",
+      "item_type": "selection_gap",
+      "category": "cryptographic_module",
+      "source_urls": [
+        "https://csrc.nist.gov/Projects/cryptographic-module-validation-program/validated-modules",
+        "https://csrc.nist.gov/Projects/cryptographic-module-validation-program/faqs"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "NIST maintains the authoritative CMVP database for FIPS 140 module validation. The register intentionally names no module because validation scope/status and customer requirements must be matched to exact module, firmware and use.",
+      "open_blockers": [
+        "Define jurisdiction, threat model, key custody, interface and performance needs.",
+        "Select exact module/certificate and verify active status, certificate scope, firmware version, operational environment and allowed mode.",
+        "Choose a separate non-US procurement/assurance route where required; a certificate does not authorize the full network."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "managed-campus-switch-ap",
+      "name": "Managed campus switch, PoE and Wi-Fi access point (exact SKUs not selected)",
+      "item_type": "selection_gap",
+      "category": "network_access",
+      "source_urls": [
+        "https://www.opencompute.org/projects/networking/",
+        "https://openwrt.org/"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Open network operating systems and open switch design projects exist, but the portfolio has no chosen switch/AP SKU with verified chipset support, RF approvals, lifecycle and supplier stock.",
+      "open_blockers": [
+        "Select supported managed L2/L3/PoE switch and AP models with exact hardware revisions.",
+        "Verify 802.1X/RADIUS, VLAN enforcement, WPA3-Enterprise where required, roaming, logging, firmware support and factory reset behavior.",
+        "Document radio certification and country-specific channel/power rules; qualify wired management path."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "compute-endpoint-skus",
+      "name": "Production server and managed endpoint SKUs (not yet selected)",
+      "item_type": "selection_gap",
+      "category": "server_compute",
+      "source_urls": [
+        "https://www.opencompute.org/projects/server/",
+        "https://nixos.org/devices/",
+        "https://github.com/openbmc/openbmc/blob/master/meta-phosphor/docs/supported-machines.md"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Design ecosystems and Linux compatibility references are available, but no production server, workstation or endpoint bill of materials has been selected for Luminous support.",
+      "open_blockers": [
+        "Set workload, form factor, RAM/ECC, CPU, NIC, TPM, GPU and serviceability floors.",
+        "Select at least one supportable server and endpoint configuration, including exact motherboard and firmware variants.",
+        "Collect vendor lifecycle, warranty, spare availability, BOM, origin/provenance and firmware update disclosures."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "storage-backup-skus",
+      "name": "Production storage, backup target and removable recovery media (not selected)",
+      "item_type": "selection_gap",
+      "category": "storage_backup",
+      "source_urls": [
+        "https://www.opencompute.org/projects/storage/",
+        "https://www.opencompute.org/projects/server/"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "OCP provides storage specifications and reference designs, but Luminous has not selected exact drives, controllers, chassis or backup media.",
+      "open_blockers": [
+        "Select drive/SSD models and firmware based on endurance, power-loss protection, endurance and availability.",
+        "Define immutable/offline backup tiers, encryption keys, restore objectives, sanitization and media retirement.",
+        "Run restore and failure tests against the exact storage/software revision."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "nic-optics-cabling",
+      "name": "NICs, optical transceivers, fibre/copper cabling and link budget (not selected)",
+      "item_type": "selection_gap",
+      "category": "optics_cabling",
+      "source_urls": [
+        "https://www.opencompute.org/projects/networking/",
+        "https://www.opencompute.org/contribution-type/design-file/"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Interoperability specifications exist, but exact NICs, optics, switches, cable lengths and validated module combinations are not chosen for any supported deployment profile.",
+      "open_blockers": [
+        "Set throughput, port count, reach, redundancy and oversubscription targets per reference deployment.",
+        "Verify compatibility matrix, firmware/driver support, optical budgets, supplier authenticity and replacements.",
+        "Test error counters, failover, heat and link recovery using physical interfaces."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "ups-pdu-sensors",
+      "name": "UPS, PDU, environmental and rack monitoring (not selected)",
+      "item_type": "selection_gap",
+      "category": "rack_power",
+      "source_urls": [
+        "https://www.opencompute.org/projects/rack-and-power/",
+        "https://www.opencompute.org/projects/hardware-management/"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Open infrastructure and manageability specifications provide reference material, but no local-market UPS/PDU/sensor models or monitoring protocols have been verified.",
+      "open_blockers": [
+        "Measure real load and define target runtime, battery aging and graceful shutdown behavior.",
+        "Select serviceable models with status protocol/API, replacement batteries and local support.",
+        "Test mains loss, brownouts, battery degradation alerts, sensor failure and network isolation."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "identity-tokens-readers",
+      "name": "Identity tokens, smart cards, readers and provisioning station (not selected)",
+      "item_type": "selection_gap",
+      "category": "identity_tokens",
+      "source_urls": [
+        "https://csrc.nist.gov/Projects/cryptographic-module-validation-program/validated-modules",
+        "https://www.nist.gov/itl/tig/projects/special-publication-800-63"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Identity token and key-management hardware has not been selected; appropriate assurance and identity proofing requirements depend on each relying party and jurisdiction.",
+      "open_blockers": [
+        "Specify credential protocol, lifecycle, key generation, revocation, recovery and account recovery threats.",
+        "Select exact tokens/readers with relevant validation/certifications and supported enrollment software.",
+        "Keep identity-proofing, crypto-module validation and whole-system approval claims distinct."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "oob-recovery",
+      "name": "Independent out-of-band console and recovery access (not selected)",
+      "item_type": "selection_gap",
+      "category": "out_of_band_management",
+      "source_urls": [
+        "https://www.opencompute.org/projects/hardware-management/",
+        "https://github.com/openbmc/openbmc"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "OOB management design practices and firmware projects exist, but there is no selected isolated console server, management switch, BMC configuration or offline recovery kit.",
+      "open_blockers": [
+        "Define dedicated management plane and local break-glass access without depending on production LAN/WAN.",
+        "Select hardware and validate MFA, source addressing, credential rotation, audit, firmware trust and reset behavior.",
+        "Test that losing central services or normal network access does not prevent safe recovery."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "voice-video-endpoints",
+      "name": "Approved voice/video collaboration endpoints (not selected)",
+      "item_type": "selection_gap",
+      "category": "collaboration_endpoints",
+      "source_urls": [
+        "https://www.nist.gov/cyberframework",
+        "https://csrc.nist.gov/pubs/sp/800/161/r1/upd1/final"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "No voice/video endpoint, SBC, handset, codec or conferencing appliance is selected. Procurement and information-handling requirements vary widely by environment.",
+      "open_blockers": [
+        "Choose collaboration threat model, encryption and meeting identity requirements.",
+        "Select supported client devices and gateway/handset SKUs; review update support, microphones/cameras and telemetry.",
+        "Do not imply certified secure voice or classified use without product- and deployment-specific authorization."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "remote-site-connectivity",
+      "name": "WAN/ISP handoff, cellular backup and remote-site antenna hardware (not selected)",
+      "item_type": "selection_gap",
+      "category": "branch_gateway",
+      "source_urls": [
+        "https://openwrt.org/",
+        "https://www.opencompute.org/projects/networking/"
+      ],
+      "source_revision": null,
+      "source_completeness": "unselected",
+      "license_status": "not_selected",
+      "bill_of_materials_status": "unknown",
+      "availability_status": "not_verified",
+      "maturity": "GAP_UNSELECTED",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "Remote-site connectivity cannot be finalized until fibre/ISP, LTE/5G backup, antenna, SIM/eSIM, carrier and regulatory requirements are defined for target regions.",
+      "open_blockers": [
+        "Define uptime target and acceptable provider/carrier dependencies.",
+        "Select exact modem/router/antenna SKUs supported by software, approved for operating country and available locally.",
+        "Test failover, bandwidth caps, power loss, carrier loss, remote recovery and SIM/key handling."
+      ],
+      "qualification_evidence_refs": []
+    },
+    {
+      "id": "nist-scrm",
+      "name": "NIST SP 800-161 Rev. 1 Update 1 supply-chain risk management reference",
+      "item_type": "standards_programme",
+      "category": "security_assurance",
+      "source_urls": [
+        "https://csrc.nist.gov/pubs/sp/800/161/r1/upd1/final"
+      ],
+      "source_revision": null,
+      "source_completeness": "specification_or_partial_files",
+      "license_status": "not_applicable_reference",
+      "bill_of_materials_status": "not_applicable_or_unknown",
+      "availability_status": "not_applicable",
+      "maturity": "REFERENCE_ONLY",
+      "deployment_authorization": "not_authorized",
+      "deployment_profile": null,
+      "named_model_or_revision": null,
+      "last_checked": "2026-10-10",
+      "observed_evidence": "NIST describes multi-level cyber supply-chain risk practices and the current page notes the November 2024 update; use it as a risk-management reference, not as product certification.",
+      "open_blockers": [
+        "Map relevant controls to each deployment profile and procurement contract.",
+        "Maintain supplier, component provenance, vulnerability, obsolescence and exception evidence.",
+        "Use other jurisdictional requirements where NIST is not the applicable authority."
+      ],
+      "qualification_evidence_refs": []
+    }
+  ]
+}
