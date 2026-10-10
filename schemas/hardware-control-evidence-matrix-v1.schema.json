@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/hardware-control-evidence-matrix-v1.schema.json",
+  "title": "Luminous Hardware Control Evidence Matrix v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "as_of",
+    "register_status",
+    "title",
+    "scope",
+    "jurisdiction_profiles",
+    "references",
+    "controls"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.hardware-control-evidence-matrix.v1"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date"
+    },
+    "register_status": {
+      "const": "baseline_not_evaluated"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 10
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 30
+    },
+    "jurisdiction_profiles": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "south-africa-public-service",
+          "us-civilian-government",
+          "us-unclassified-defense",
+          "regulated-enterprise",
+          "customer-specific"
+        ]
+      }
+    },
+    "references": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "url",
+          "authority",
+          "source_type",
+          "last_reviewed",
+          "applicability_note"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "authority": {
+            "type": "string",
+            "minLength": 2
+          },
+          "source_type": {
+            "enum": [
+              "security-control-catalog",
+              "assessment-methodology",
+              "supply-chain-risk",
+              "digital-identity-guidance",
+              "validation-registry",
+              "government-policy-index",
+              "government-policy-reference",
+              "regulatory-requirements",
+              "procurement-source"
+            ]
+          },
+          "last_reviewed": {
+            "type": "string",
+            "format": "date"
+          },
+          "applicability_note": {
+            "type": "string",
+            "minLength": 20
+          }
+        }
+      }
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 15,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "domain",
+          "title",
+          "intent",
+          "applies_to",
+          "mapped_controls",
+          "platform_surfaces",
+          "verification_method",
+          "required_evidence",
+          "status",
+          "assessment_record",
+          "open_gaps"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9-]+$"
+          },
+          "domain": {
+            "enum": [
+              "identity_and_access",
+              "configuration_integrity",
+              "platform_trust",
+              "network_boundary",
+              "cryptography_and_keys",
+              "supply_chain_and_lifecycle",
+              "audit_and_evidence",
+              "detection_and_response",
+              "resilience_and_recovery",
+              "data_protection_and_privacy",
+              "physical_and_site_security",
+              "jurisdictional_and_regulatory",
+              "external_services_and_cloud",
+              "software_supply_chain",
+              "procurement_and_support",
+              "assurance_and_authorization"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5
+          },
+          "intent": {
+            "type": "string",
+            "minLength": 30
+          },
+          "applies_to": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 3
+            }
+          },
+          "mapped_controls": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 3
+            }
+          },
+          "platform_surfaces": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 2
+            }
+          },
+          "verification_method": {
+            "type": "string",
+            "minLength": 20
+          },
+          "required_evidence": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "string",
+              "minLength": 5
+            }
+          },
+          "status": {
+            "enum": [
+              "NOT_EVALUATED",
+              "PARTIAL",
+              "PASS",
+              "FAIL",
+              "NOT_APPLICABLE"
+            ]
+          },
+          "assessment_record": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "required": [
+              "assessor",
+              "assessed_on",
+              "tested_revision",
+              "scope",
+              "result",
+              "evidence_refs",
+              "limitations"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "assessor": {
+                "type": "string",
+                "minLength": 2
+              },
+              "assessed_on": {
+                "type": "string",
+                "format": "date"
+              },
+              "tested_revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 20
+              },
+              "result": {
+                "enum": [
+                  "PARTIAL",
+                  "PASS",
+                  "FAIL",
+                  "NOT_APPLICABLE"
+                ]
+              },
+              "evidence_refs": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 3
+                }
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 5
+                }
+              }
+            }
+          },
+          "open_gaps": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 5
+            }
+          }
+        }
+      }
+    }
+  }
+}
