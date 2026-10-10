@@ -972,6 +972,23 @@ mod tests {
     }
 
     #[test]
+    fn signed_storage_urls_are_https_and_host_restricted() {
+        assert!(is_safe_signed_url("https://results.blob.core.windows.net/container/item").is_ok());
+        assert!(is_safe_signed_url("https://github-production-repository-file.s3.amazonaws.com/item").is_ok());
+        assert!(is_safe_signed_url("http://results.blob.core.windows.net/item").is_err());
+        assert!(is_safe_signed_url("https://example.invalid/item").is_err());
+        assert!(is_safe_signed_url("https://user:password@results.blob.core.windows.net/item").is_err());
+    }
+
+    #[test]
+    fn sha256_encoding_matches_known_vector() {
+        assert_eq!(
+            digest_hex(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
+
+    #[test]
     fn accepts_only_canonical_lowercase_git_shas() {
         assert!(canonical_sha(&"a".repeat(40)));
         assert!(!canonical_sha(&"A".repeat(40)));
