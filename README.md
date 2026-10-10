@@ -81,6 +81,16 @@ inputs.nixward.url         = "github:Luminous-Dynamics/nixward";
 |---------------|----------------|---------|---------------|---------|
 | v0.1 | v0.3.4f (605735c) | main (Aug 2026) | incubating | nixos-unstable |
 
+## Government & Regulated Infrastructure
+
+Luminous Platform is being organized into a product line for secure administrative, public-service, research, regulated-enterprise and appropriate unclassified government IT. This is a product taxonomy and qualification effort—not a claim of certification or deployment authorization.
+
+- [Government-network product line v1](docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md)
+- [Hardware portfolio research register v1](hardware/portfolio-v1.json)
+- [Hardware portfolio schema v1](schemas/hardware-portfolio-v1.schema.json)
+
+The register explicitly separates candidate devices, upstream design/software references and unselected equipment gaps. All hardware remains unqualified until exact-model evidence is recorded. Queue status, public design files, and an OS that boots are not qualification evidence.
+
 ## License
 
 AGPL-3.0-or-later. Commercial licensing available — see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
