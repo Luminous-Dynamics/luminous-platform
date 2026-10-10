@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -98,6 +98,8 @@ def receipt_errors(receipt: dict[str, Any], schema: dict[str, Any]) -> list[str]
             errors.append("$.authorization must bind to the exact intent.target_digest")
         if auth["authorized_prestate_digest"] != intent["prestate_digest"]:
             errors.append("$.authorization must bind to the exact intent.prestate_digest")
+        if auth["authorized_prestate_max_age_seconds"] != intent["prestate_max_age_seconds"]:
+            errors.append("$.authorization must bind to the exact intent.prestate_max_age_seconds")
         if auth["authorized_policy_revision"] != intent["policy_revision"]:
             errors.append("$.authorization must bind to the exact intent.policy_revision")
         if auth["authorized_profile_digest"] != intent["profile_digest"]:
@@ -157,6 +159,34 @@ def receipt_errors(receipt: dict[str, Any], schema: dict[str, Any]) -> list[str]
             if event["state"] == "APPLY_STARTED":
                 if event.get("prestate_digest") != intent["prestate_digest"]:
                     errors.append(f"$.journal[{index}].prestate_digest must revalidate the authorized pre-state")
+                apply_prestate_at = parse_time(
+                    event.get("apply_prestate_observed_at"),
+                    f"$.journal[{index}].apply_prestate_observed_at",
+                    errors,
+                )
+                if not event.get("apply_prestate_observation_ref"):
+                    errors.append(
+                        f"$.journal[{index}].apply_prestate_observation_ref must identify the fresh read-back evidence"
+                    )
+                if prestate_at and apply_prestate_at and apply_prestate_at < prestate_at:
+                    errors.append(
+                        f"$.journal[{index}].apply_prestate_observed_at cannot precede the planned pre-state observation"
+                    )
+                if verified_at and apply_prestate_at and apply_prestate_at < verified_at:
+                    errors.append(
+                        f"$.journal[{index}].apply_prestate_observed_at must not predate verified authorization"
+                    )
+                if event_time and apply_prestate_at and apply_prestate_at > event_time:
+                    errors.append(
+                        f"$.journal[{index}].apply_prestate_observed_at cannot be later than APPLY_STARTED"
+                    )
+                if event_time and apply_prestate_at:
+                    freshness = event_time - apply_prestate_at
+                    maximum_age = timedelta(seconds=intent["prestate_max_age_seconds"])
+                    if freshness > maximum_age:
+                        errors.append(
+                            f"$.journal[{index}] apply-time pre-state age exceeds the authorized maximum"
+                        )
                 if auth["state"] != "verified":
                     errors.append("$.authorization must be verified before APPLY_STARTED")
                 if event_time and verified_at and event_time < verified_at:
