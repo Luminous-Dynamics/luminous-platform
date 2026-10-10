@@ -992,8 +992,14 @@ jobs:
             if [[ "$submodule_status" == "PASS" ]]; then
               while IFS= read -r line; do
                 path="${line#* }"
-                expected="$(git ls-files --stage -- "$path" | awk '$1 == "160000" {print $2}')"
-                if [[ -z "$expected" || ! -d "$path" ]]; then
+                gitlink_metadata="$(git ls-tree --format='%(mode) %(type) %(objectname)' HEAD -- ":(literal)$path")"
+                gitlink_mode=""
+                gitlink_type=""
+                expected=""
+                if [[ -n "$gitlink_metadata" && "$gitlink_metadata" != *$'\n'* ]]; then
+                  read -r gitlink_mode gitlink_type expected <<< "$gitlink_metadata"
+                fi
+                if [[ "$gitlink_mode" != "160000" || "$gitlink_type" != "commit" || ! "$expected" =~ ^[0-9a-f]{40}$ || ! -d "$path" ]]; then
                   submodule_status="FAIL"
                   submodule_reason="submodule_gitlink_missing"
                   break
@@ -1416,7 +1422,7 @@ jobs:
               if mode not in ("100644", "100755") or kind != "blob":
                   raise ValueError("not_a_regular_committed_blob")
               target = root / relative
-              for parent in reversed(target.parents):
+              for parent in target.parents:
                   if parent == root:
                       break
                   if parent.is_symlink() or not parent.is_dir():
@@ -1898,10 +1904,22 @@ jobs:
           npm_submodule_status="NOT_REQUIRED"
           npm_submodule_reason=""
           npm_failed=0
-          if [[ -f .gitmodules ]]; then
+          submodule_urls=()
+          submodule_paths=()
+          committed_gitmodules="$(git rev-parse --verify 'HEAD:.gitmodules' 2>/dev/null || true)"
+          if [[ -n "$committed_gitmodules" || -e .gitmodules || -L .gitmodules ]]; then
             npm_submodule_status="PASS"
-            mapfile -t submodule_urls < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]url$' || true)
-            mapfile -t submodule_paths < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
+            worktree_gitmodules=""
+            if [[ -f .gitmodules && ! -L .gitmodules ]]; then
+              worktree_gitmodules="$(git hash-object --no-filters -- .gitmodules || true)"
+            fi
+            if [[ -z "$committed_gitmodules" || "$worktree_gitmodules" != "$committed_gitmodules" ]]; then
+              npm_submodule_status="FAIL"
+              npm_submodule_reason="gitmodules_not_exact_committed_regular_blob"
+            else
+              mapfile -t submodule_urls < <(git config --blob HEAD:.gitmodules --get-regexp '^submodule[.].*[.]url$' || true)
+              mapfile -t submodule_paths < <(git config --blob HEAD:.gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
+            fi
             if [[ "${#submodule_urls[@]}" -ne 1 || "${#submodule_paths[@]}" -ne 1 ]]; then
               npm_submodule_status="FAIL"
               npm_submodule_reason="submodule_url_path_inventory_empty_or_mismatched"
@@ -1941,7 +1959,7 @@ jobs:
                   npm_submodule_reason="submodule_path_invalid"
                   break
                 fi
-              done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
+              done < <(git config --blob HEAD:.gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
             fi
             if [[ "$npm_submodule_status" == "PASS" ]]; then
               if ! git submodule update --init mycelix-health; then
@@ -1952,8 +1970,14 @@ jobs:
             if [[ "$npm_submodule_status" == "PASS" ]]; then
               while IFS= read -r line; do
                 path="${line#* }"
-                expected="$(git ls-files --stage -- "$path" | awk '$1 == "160000" {print $2}')"
-                if [[ -z "$expected" || ! -d "$path" ]]; then
+                gitlink_metadata="$(git ls-tree --format='%(mode) %(type) %(objectname)' HEAD -- ":(literal)$path")"
+                gitlink_mode=""
+                gitlink_type=""
+                expected=""
+                if [[ -n "$gitlink_metadata" && "$gitlink_metadata" != *$'\n'* ]]; then
+                  read -r gitlink_mode gitlink_type expected <<< "$gitlink_metadata"
+                fi
+                if [[ "$gitlink_mode" != "160000" || "$gitlink_type" != "commit" || ! "$expected" =~ ^[0-9a-f]{40}$ || ! -d "$path" ]]; then
                   npm_submodule_status="FAIL"
                   npm_submodule_reason="submodule_gitlink_missing"
                   break
@@ -1965,13 +1989,27 @@ jobs:
                   break
                 fi
                 printf '%s\n' "$path" >> "$verified_npm_submodules"
-                nested_count="$(git -C "$path" ls-files --stage | awk '$1 == "160000" {count++} END {print count+0}')"
+                nested_count=0
+                while IFS= read -r -d '' nested_record; do
+                  if [[ "$nested_record" == "160000 commit "* ]]; then
+                    nested_count=$((nested_count + 1))
+                  fi
+                done < <(git -C "$path" ls-tree -r -z --full-tree HEAD)
                 if [[ "$nested_count" -gt 0 ]]; then
                   npm_submodule_status="FAIL"
                   npm_submodule_reason="nested_submodule_not_audited"
                 fi
-              done < <(git config -f .gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
+              done < <(git config --blob HEAD:.gitmodules --get-regexp '^submodule[.].*[.]path$' || true)
             fi
+          fi
+          if [[ "$npm_submodule_status" == "NOT_REQUIRED" ]]; then
+            while IFS= read -r -d '' gitlink_record; do
+              if [[ "$gitlink_record" == "160000 commit "* ]]; then
+                npm_submodule_status="FAIL"
+                npm_submodule_reason="gitlink_without_committed_gitmodules"
+                break
+              fi
+            done < <(git ls-tree -r -z --full-tree HEAD)
           fi
           if [[ "$npm_submodule_status" != "PASS" && "$npm_submodule_status" != "NOT_REQUIRED" ]]; then npm_failed=1; fi
           {
