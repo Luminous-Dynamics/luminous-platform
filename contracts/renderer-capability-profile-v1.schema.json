@@ -180,6 +180,8 @@
       "additionalProperties": false,
       "required": [
         "supportedVariants",
+        "supportedMotions",
+        "supportedCompositions",
         "configurableFields",
         "staticGradientFallback"
       ],
@@ -212,6 +214,32 @@
         },
         "staticGradientFallback": {
           "type": "boolean"
+        },
+        "supportedMotions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "full",
+              "ambient",
+              "reduced",
+              "minimal",
+              "none"
+            ]
+          }
+        },
+        "supportedCompositions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "centered-network",
+              "edge-biased-network",
+              "wide-network",
+              "minimal-network",
+              "gradient-only"
+            ]
+          }
         }
       }
     },

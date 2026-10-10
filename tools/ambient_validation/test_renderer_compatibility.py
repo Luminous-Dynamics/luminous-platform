@@ -51,6 +51,9 @@ class RendererCompatibilityTests(unittest.TestCase):
             "budget.whole_process.not_enforced",
             "presentation.variant.unsupported",
             "presentation.field_unmapped",
+            "presentation.motion.unsupported",
+            "presentation.composition.unsupported",
+            "accessibility.reduced_motion_variant.unsupported",
             "lifecycle.policy.unsupported",
         }.issubset(codes), f"missing expected blockers: {codes}")
         self.assertNotIn("seed.encoding.unsupported", codes)
@@ -67,6 +70,29 @@ class RendererCompatibilityTests(unittest.TestCase):
         self.assertNotIn("presentation.static_gradient.unsupported", codes)
         self.assertNotIn("simulation.resource_branch_limit.not_configurable", codes)
         self.assertNotIn("budget.branch_ceiling.exceeds_core_ceiling", codes)
+
+    def test_variant_support_does_not_imply_motion_or_composition_support(self):
+        candidate = copy.deepcopy(self.profile)
+        candidate["presentation"]["supportedVariants"] = [
+            "boot", "desktop", "idle", "lockedBackground", "staticFallback"
+        ]
+        report = audit_compatibility(self.manifest, candidate)
+        codes = {item.code for item in report.issues}
+        self.assertIn("presentation.motion.unsupported", codes)
+        self.assertIn("presentation.composition.unsupported", codes)
+        motion_issue = next(item for item in report.issues if item.code == "presentation.motion.unsupported")
+        composition_issue = next(item for item in report.issues if item.code == "presentation.composition.unsupported")
+        self.assertEqual("/presentations/desktop/motion", motion_issue.path)
+        self.assertEqual("/presentations/desktop/composition", composition_issue.path)
+
+        candidate["presentation"]["supportedMotions"] = ["full", "ambient", "reduced", "minimal", "none"]
+        candidate["presentation"]["supportedCompositions"] = [
+            "centered-network", "edge-biased-network", "wide-network", "minimal-network", "gradient-only"
+        ]
+        supported_report = audit_compatibility(self.manifest, candidate)
+        supported_codes = {item.code for item in supported_report.issues}
+        self.assertNotIn("presentation.motion.unsupported", supported_codes)
+        self.assertNotIn("presentation.composition.unsupported", supported_codes)
 
     def test_reduced_motion_variant_is_a_specific_capability_gate(self):
         report = audit_compatibility(self.manifest, self.profile)
@@ -129,6 +155,10 @@ class RendererCompatibilityTests(unittest.TestCase):
         })
         candidate["presentation"] = {
             "supportedVariants": ["boot", "desktop", "idle", "lockedBackground", "staticFallback"],
+            "supportedMotions": ["full", "ambient", "reduced", "minimal", "none"],
+            "supportedCompositions": [
+                "centered-network", "edge-biased-network", "wide-network", "minimal-network", "gradient-only"
+            ],
             "configurableFields": ["motion", "maxFps", "brightness", "composition", "safeRegions"],
             "staticGradientFallback": True,
         }

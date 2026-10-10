@@ -49,7 +49,15 @@
       "brightness",
       "composition"
     ],
-    "staticGradientFallback": true
+    "staticGradientFallback": true,
+    "supportedMotions": [
+      "full",
+      "none"
+    ],
+    "supportedCompositions": [
+      "centered-network",
+      "gradient-only"
+    ]
   },
   "lifecycle": {
     "supportedPolicies": []

@@ -163,6 +163,20 @@ def audit_compatibility(manifest: dict[str, Any], profile: dict[str, Any]) -> Co
                 f"renderer profile does not declare support for presentation variant {variant}")
         if not isinstance(config, dict):
             continue
+        motion = config.get("motion")
+        if isinstance(motion, str) and motion not in presentation_profile["supportedMotions"]:
+            add(
+                "presentation.motion.unsupported",
+                f"/presentations/{variant}/motion",
+                f"renderer profile does not implement motion mode {motion!r}",
+            )
+        composition = config.get("composition")
+        if isinstance(composition, str) and composition not in presentation_profile["supportedCompositions"]:
+            add(
+                "presentation.composition.unsupported",
+                f"/presentations/{variant}/composition",
+                f"renderer profile does not implement composition {composition!r}",
+            )
         for field in PRESENTATION_FIELDS:
             if field not in presentation_profile["configurableFields"]:
                 add("presentation.field_unmapped", f"/presentations/{variant}/{field}",
