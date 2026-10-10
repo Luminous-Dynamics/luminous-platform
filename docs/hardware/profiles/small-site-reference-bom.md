@@ -3,7 +3,7 @@
 **Profile:** one office/site, approximately 25–100 managed endpoints, unclassified administrative/business workloads, two WAN paths preferred, and local recovery capability.  
 **Status:** planning baseline only; no exact purchasing BOM or deployment authorization  
 **Research snapshot:** 2026-10-10  
-**Architecture:** [Government Network Platform RFC 001](../architecture/government-network-platform-rfc-001.md)  
+**Architecture:** [Government Network Platform RFC 001](../architecture/government-network-platform-rfc-001.md); [site segmentation/allowed-flow contract](../../architecture/site-segmentation-profile-v1.md)  
 **Tracking:** [Issue #19](https://github.com/Luminous-Dynamics/luminous-platform/issues/19)
 
 ## 1. Assumptions and exclusions
