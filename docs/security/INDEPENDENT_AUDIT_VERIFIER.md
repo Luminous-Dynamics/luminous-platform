@@ -14,7 +14,7 @@ That string does not become a merge requirement merely because it exists. After 
 
 For the latest run and attempt on an exact open, same-repository PR head, the verifier independently queries GitHub's API and checks:
 
-1. The run ID, attempt, workflow ID/name/path, event type, head branch, exact head SHA, and same-repository origin.
+1. The run ID, attempt, workflow ID/name/path, event type, head branch, exact head SHA, and same-repository origin. The API `path` must exactly match the canonical base-owned workflow file path; the verdict workflow reference must use that same path and the independently matched PR number.
 2. The PR is still open and targets the default branch. Fork-originated runs do not qualify for this status.
 3. The run is still the latest attempt for that exact subject; stale completions cannot overwrite a newer attempt.
 4. The workflow file at the audited commit has the exact reviewed Git blob SHA in the verifier policy. The immutable shared engine commit and its workflow blob are also checked; the platform self-audit checks its local engine blob.
@@ -22,7 +22,7 @@ For the latest run and attempt on an exact open, same-repository PR head, the ve
 6. The ZIP is parsed without extracting it or executing its contents.
 The verifier also compares the ZIP's complete non-verdict file set to the verdict's `evidence_files` manifest, recomputes each member's SHA-256, and rejects missing, extra, duplicate, unsafe, or digest-mismatched evidence entries. This prevents an internally inconsistent manifest from passing solely because the outer ZIP digest is correct.
  Unsafe paths, oversized archives, multiple or missing `verdict.json` files, malformed JSON, mismatched run/attempt/subject, missing required lanes, inconsistent finding flags, and `FAIL` or `INCOMPLETE` verdicts all block a passing status.
-7. Verifier invariant tests execute on every event. If those tests fail, the verifier attempts to publish a failure status rather than leaving a previously successful context untouched.
+7. Verifier invariant tests execute on every event. If those tests fail, the verifier attempts to publish a failure status rather than leaving a previously successful context untouched. A missing self-test outcome is also a failure; it cannot default to success.
 
 A clean `PASS` and a `PASS_WITH_FINDINGS` are distinct. The latter can qualify only when the engine's declared blocking thresholds passed, the verdict records the non-blocking sources consistently, and no failure reason is present. Neither status means the project has undergone a human penetration test or a comprehensive independent security audit.
 
