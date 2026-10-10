@@ -696,7 +696,8 @@
       "source_urls": [
         "https://www.sita.co.za/content/sita-effective-panel-contracts",
         "https://www.sita.co.za/node/186",
-        "https://www.gcommerce.gov.za/Home/Supplier"
+        "https://www.gcommerce.gov.za/Home/Supplier",
+        "https://rfq.sita.co.za/TendersAdministration/invitations.asp"
       ],
       "source_revision": null,
       "source_completeness": "specification_or_partial_files",
@@ -708,12 +709,13 @@
       "deployment_profile": null,
       "named_model_or_revision": null,
       "last_checked": "2026-10-10",
-      "observed_evidence": "SITA's effective-panel page says listed contracts are available to public bodies, parastatals and organs of state; as viewed 2026-10-10 it lists the information-security products/services panel RFA 2494-2021 ending 2027-09-06 and the server-room/network-cabling related panel RFA 2168-2024 ending 2031-10-10. It also lists UC/VC panel RFA 2501-2021 ending 2026-10-08, which is past the snapshot date and is not treated as current. SITA's hardware page lists RFB 2009 (2026-04-20 to 2027-04-20) and RFB 740 (2025-11-24 to 2026-11-24); actual scope, amendments and category fit must be confirmed against the tender/contract documents.",
+      "observed_evidence": "SITA's effective-panel page says listed contracts are available to public bodies, parastatals and organs of state; as viewed 2026-10-10 it lists the information-security products/services panel RFA 2494-2021 ending 2027-09-06 and the server-room/network-cabling related panel RFA 2168-2024 ending 2031-10-10. It also lists UC/VC panel RFA 2501-2021 ending 2026-10-08, which is past the snapshot date and is not treated as current. SITA's hardware page lists RFB 2009 (2026-04-20 to 2027-04-20) and RFB 740 (2025-11-24 to 2026-11-24); actual scope, amendments and category fit must be confirmed against the tender/contract documents. The SITA tender administration listing also showed RFB 3261-2026 for Ethernet switches, wireless LAN, WAN routers, backhaul, copper/fibre cabling and related services with a closing date of 28 August 2026; that date has passed as of this snapshot, so it is historical market evidence rather than an open opportunity.",
       "open_blockers": [
         "Read actual engagement models, technical specifications, terms, accredited-supplier lists and amendments; the public landing page alone is not tender qualification.",
         "Determine whether Luminous should be a product vendor, open-source software supplier, subcontractor, integration partner or supplier through an accredited reseller; none is assumed eligible by this record.",
         "Confirm current contract validity, commodity coverage, licensing terms and procuring authority instructions immediately before any bid or quote.",
-        "Prepare commercial support, warranty, SLA, security evidence and local delivery obligations that open-source publication alone does not provide."
+        "Prepare commercial support, warranty, SLA, security evidence and local delivery obligations that open-source publication alone does not provide.",
+        "Treat tenders whose published closing date has passed as historical only; monitor new calls and verify amendments on the official tender portal."
       ],
       "qualification_evidence_refs": []
     }
