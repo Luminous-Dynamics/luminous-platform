@@ -49,7 +49,9 @@ def _host_errors(host: str, field: str = "$.endpoint.host") -> list[str]:
         errors.append(f"{field} must be a literal host or IP address, not a URI or wildcard")
         return errors
     try:
-        ipaddress.ip_address(host)
+        address = ipaddress.ip_address(host)
+        if str(address) != host:
+            errors.append(f"{field} IP address must use its canonical textual representation")
         return errors
     except ValueError:
         pass
@@ -86,6 +88,11 @@ def _origin_errors(value: str, field: str) -> list[str]:
         errors.append(f"{field} cannot use wildcard hosts")
     if port is not None and not (1 <= port <= 65535):
         errors.append(f"{field} port is outside the valid range")
+    if parsed.hostname and not errors:
+        host_wire = f"[{parsed.hostname}]" if ":" in parsed.hostname else parsed.hostname
+        expected = f"https://{host_wire}" + (f":{port}" if port is not None and port != 443 else "")
+        if value != expected:
+            errors.append(f"{field} must use canonical origin syntax (lowercase host, no path or default port)")
     return errors
 
 
