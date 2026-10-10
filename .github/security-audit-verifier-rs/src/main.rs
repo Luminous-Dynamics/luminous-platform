@@ -1059,6 +1059,42 @@ mod tests {
     }
 
     #[test]
+    fn verdict_freshness_rejects_stale_and_far_future_evidence() {
+        let (mut verdict, run, policy) = sample_verdict("Luminous-Dynamics/mycelix", 4911);
+        verdict["generated_at_utc"] = Value::String(
+            (Utc::now() - chrono::Duration::days(8)).format("%Y-%m-%dT%H:%M:%SZ").to_string()
+        );
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_err());
+
+        let (mut verdict, run, policy) = sample_verdict("Luminous-Dynamics/mycelix", 4911);
+        verdict["generated_at_utc"] = Value::String(
+            (Utc::now() + chrono::Duration::minutes(10)).format("%Y-%m-%dT%H:%M:%SZ").to_string()
+        );
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_err());
+    }
+
+    #[test]
+    fn lane_policy_is_consistent_for_all_three_repositories() {
+        for (repo, pr) in [
+            ("Luminous-Dynamics/luminous-platform", 12),
+            ("Luminous-Dynamics/mycelix", 4911),
+            ("Luminous-Dynamics/symthaea", 7288),
+        ] {
+            let (verdict, run, policy) = sample_verdict(repo, pr);
+            assert!(validate_verdict(&verdict, repo, policy, &run, pr).is_ok(), "{repo}");
+        }
+    }
+
+    #[test]
+    fn findings_from_unrequested_lanes_are_rejected() {
+        let (mut verdict, run, policy) = sample_verdict("Luminous-Dynamics/symthaea", 7288);
+        verdict["status"] = json!("PASS_WITH_FINDINGS");
+        verdict["non_blocking_findings_present"] = json!(true);
+        verdict["non_blocking_finding_sources"] = json!(["npm_below_threshold"]);
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/symthaea", policy, &run, 7288).is_err());
+    }
+
+    #[test]
     fn pass_with_findings_must_name_a_permitted_lane() {
         let (mut verdict, run, policy) = sample_verdict("Luminous-Dynamics/mycelix", 4911);
         verdict["status"] = json!("PASS_WITH_FINDINGS");
