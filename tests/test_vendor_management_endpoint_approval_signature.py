@@ -335,7 +335,7 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
     def test_key_revocation_at_exact_use_time_fails_closed(self) -> None:
         store = copy.deepcopy(self.trust_store)
         store["keys"][0]["state"] = "revoked"
-        store["keys"][0]["revoked_at"] = AS_OF.astimezone().isoformat().replace("+02:00", "Z")
+        store["keys"][0]["revoked_at"] = "2026-10-11T08:05:00Z"
         self.assertEqual(self._verify(store=store), "SIGNING_KEY_REVOKED_AT_AS_OF")
 
     def test_key_validity_end_is_exclusive(self) -> None:
