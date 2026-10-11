@@ -15,6 +15,17 @@ class QualificationRunnerContractTests(unittest.TestCase):
         right = {"a": "11", "b": "22"}
         self.assertEqual(qualification.manifest_digest(left), qualification.manifest_digest(right))
 
+    def test_receipt_validator_dependencies_are_bound_into_manifest(self) -> None:
+        required = {
+            "tools/validate_hardware_portfolio.py",
+            "tools/validate_vendor_adapter_registry.py",
+            "tools/validate_vendor_operation_receipt.py",
+            "schemas/vendor-operation-effect-receipt-v1.schema.json",
+            "tests/fixtures/vendor-operation-effect-receipt-prepared-v1.json",
+            "tests/test_vendor_operation_receipt.py",
+        }
+        self.assertTrue(required.issubset(set(qualification.INPUT_PATHS)))
+
     def test_input_hashes_match_sha256_of_file_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
