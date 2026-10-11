@@ -38,4 +38,6 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m py_compile .github/scripts/verify_security_audit_trust_anchor.py
+          python3 -m py_compile .github/scripts/audit_security_required_checks.py
           python3 -m unittest discover -s .github/scripts -p 'test_verify_security_audit_trust_anchor.py' -v
+          python3 -m unittest discover -s .github/scripts -p 'test_audit_security_required_checks.py' -v
