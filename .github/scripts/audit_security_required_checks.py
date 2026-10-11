@@ -227,6 +227,17 @@ def assess_policy(
             "missing_contexts": sorted(required_contexts),
             "reason": "effective branch-rules response exceeds the documented 100-entry page limit",
         }
+    if len(active_rules) == 100:
+        # The API helper discards Link headers, so it cannot prove that there is
+        # no second page. Even a complete-looking first page could hide a
+        # conflicting source binding later; do not publish PASS from it.
+        return {
+            "status": "INCOMPLETE",
+            "source": None,
+            "observed_contexts": [],
+            "missing_contexts": sorted(required_contexts),
+            "reason": "effective branch-rules response reaches the 100-entry page boundary; pagination completeness is unverified",
+        }
 
     qualified_contexts: set[str] = set()
     conflicting_contexts: set[str] = set()
@@ -266,6 +277,15 @@ def assess_policy(
     if isinstance(classic_protection, dict):
         classic = classic_policy_observations(classic_protection, required_contexts)
         if classic is None:
+            if conflicting_contexts:
+                return {
+                    "status": "FAIL",
+                    "source": sorted(source_labels) or None,
+                    "observed_contexts": sorted(observed_contexts),
+                    "missing_contexts": sorted(required_contexts - qualified_contexts),
+                    "conflicting_contexts": sorted(conflicting_contexts),
+                    "reason": "conflicting active ruleset bindings cannot be masked by a malformed classic response",
+                }
             if required_contexts <= qualified_contexts:
                 return {
                     "status": "PASS",
