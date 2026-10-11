@@ -189,6 +189,14 @@ def assess_policy(
             "missing_contexts": sorted(required_contexts),
             "reason": "effective branch-rules response is not a list",
         }
+    if len(active_rules) > 100:
+        return {
+            "status": "INCOMPLETE",
+            "source": None,
+            "observed_contexts": [],
+            "missing_contexts": sorted(required_contexts),
+            "reason": "effective branch-rules response exceeds the documented 100-entry page limit",
+        }
 
     # Effective branch rules are additive. A strict app-bound required-check rule
     # may come from a repository, organization, or enterprise ruleset; the two
@@ -357,6 +365,8 @@ def main() -> int:
             "generated_at_utc": utc_now(),
             "status": "INCOMPLETE",
             "reason": "GITHUB_TOKEN is required; use a read-only token with repository metadata and administration-read access",
+            "required_verifier_context": VERIFIER_CONTEXT,
+            "required_integration_id": GITHUB_ACTIONS_INTEGRATION_ID,
             "repositories": [],
         }, sort_keys=True))
         return 2
@@ -368,6 +378,8 @@ def main() -> int:
             "generated_at_utc": utc_now(),
             "status": "FAIL",
             "reason": "arguments must be unique repository names from the audited policy; options are not accepted",
+            "required_verifier_context": VERIFIER_CONTEXT,
+            "required_integration_id": GITHUB_ACTIONS_INTEGRATION_ID,
             "unknown_repositories": unknown,
             "repositories": [],
         }, sort_keys=True))
