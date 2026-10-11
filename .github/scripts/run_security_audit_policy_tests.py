@@ -12,7 +12,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 EXPECTED_TEST_METHODS: dict[str, int] = {
     "test_verify_security_audit_trust_anchor.py": 34,
     "test_audit_security_required_checks.py": 32,
-    "test_run_security_audit_policy_tests.py": 5,
+    "test_run_security_audit_policy_tests.py": 7,
 }
 
 
