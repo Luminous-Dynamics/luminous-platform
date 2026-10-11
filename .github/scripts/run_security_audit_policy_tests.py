@@ -21,7 +21,7 @@ RECEIPT_PATH = REPOSITORY_ROOT / "security-audit-policy-test-receipt.json"
 RECEIPT_SCHEMA = "luminous.security-audit.policy-test-receipt.v1"
 EXPECTED_TEST_METHODS: dict[str, int] = {
     "test_verify_security_audit_trust_anchor.py": 35,
-    "test_audit_security_required_checks.py": 39,
+    "test_audit_security_required_checks.py": 43,
     "test_run_security_audit_policy_tests.py": 7,
 }
 
@@ -64,6 +64,10 @@ EXPECTED_TEST_NAMES: dict[str, tuple[str, ...]] = {
         "test_wrong_head_or_workflow_is_never_latest",
     ),
     "test_audit_security_required_checks.py": (
+        "test_aggregate_empty_or_malformed_receipt_fails_closed",
+        "test_aggregate_fail_dominates_incomplete",
+        "test_aggregate_incomplete_dominates_only_passes",
+        "test_aggregate_pass_requires_every_repository_pass",
         "test_audit_repository_fails_if_default_branch_changed",
         "test_audit_repository_qualifies_bound_active_rules_even_if_classic_api_forbidden",
         "test_classic_contexts_merge_checks_and_legacy_fields",
