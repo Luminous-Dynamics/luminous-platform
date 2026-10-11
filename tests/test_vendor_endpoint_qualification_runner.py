@@ -72,6 +72,12 @@ class QualificationRunnerContractTests(unittest.TestCase):
             "failed",
         )
 
+    def test_failed_receipt_validator_is_never_downgraded_to_incomplete(self) -> None:
+        self.assertEqual(
+            qualification.qualification_status(["RECEIPT_VALIDATOR_FAILED"]),
+            "failed",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
