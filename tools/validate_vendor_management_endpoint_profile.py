@@ -110,6 +110,12 @@ def _path_errors(path: str, field: str = "$.endpoint.api_base_path") -> list[str
     return errors
 
 
+def _safe_schema_error_code(error: Any) -> str:
+    """Describe a schema failure without echoing untrusted values into logs."""
+    rule = str(getattr(error, "validator", "schema")).upper()
+    return f"SCHEMA_{rule}_VIOLATION"
+
+
 def profile_errors(profile: dict[str, Any], schema: dict[str, Any]) -> list[str]:
     """Return JSON Schema and semantic violations for the frozen profile."""
     errors: list[str] = []
@@ -120,7 +126,7 @@ def profile_errors(profile: dict[str, Any], schema: dict[str, Any]) -> list[str]
             f"[{part}]" if isinstance(part, int) else f".{part}"
             for part in error.absolute_path
         )
-        errors.append(f"{where}: {error.message}")
+        errors.append(f"{where}: {_safe_schema_error_code(error)}")
     if errors:
         return errors
 
