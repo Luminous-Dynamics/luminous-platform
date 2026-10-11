@@ -175,7 +175,7 @@ def successful_suite(summary: Mapping[str, object]) -> bool:
     if summary.get("state") != "passed":
         return False
     pattern = summary.get("pattern")
-    if not isinstance(pattern, str) or not pattern:
+    if not isinstance(pattern, str) or pattern not in TEST_SUITE_PATTERNS:
         return False
     for field in WORKER_COUNTER_FIELDS:
         value = summary.get(field)
@@ -200,7 +200,11 @@ def worker_summary_errors(
         return ["SUMMARY_NOT_OBJECT"]
     if set(summary) != WORKER_SUMMARY_FIELDS:
         return ["SUMMARY_FIELDS_MISMATCH"]
-    if type(summary.get("pattern")) is not str or summary.get("pattern") != expected_pattern:
+    if (
+        expected_pattern not in TEST_SUITE_PATTERNS
+        or type(summary.get("pattern")) is not str
+        or summary.get("pattern") != expected_pattern
+    ):
         return ["SUMMARY_PATTERN_MISMATCH"]
     state = summary.get("state")
     if state not in ("passed", "failed", "runner_error"):
