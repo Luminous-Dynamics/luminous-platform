@@ -17,7 +17,7 @@ class SecurityPolicyTestRunnerTests(unittest.TestCase):
             "test_run_security_audit_policy_tests.py",
         })
         self.assertEqual(set(runner.EXPECTED_TEST_NAMES), set(runner.EXPECTED_TEST_METHODS))
-        self.assertEqual(sum(runner.EXPECTED_TEST_METHODS.values()), 89)
+        self.assertEqual(sum(runner.EXPECTED_TEST_METHODS.values()), 90)
         for filename, names in runner.EXPECTED_TEST_NAMES.items():
             self.assertEqual(len(names), runner.EXPECTED_TEST_METHODS[filename])
             self.assertEqual(names, tuple(sorted(names)))
@@ -66,7 +66,7 @@ class SecurityPolicyTestRunnerTests(unittest.TestCase):
         self.assertFalse(runner.result_is_qualified(result, 2))
 
         passing = unittest.TestResult()
-        passing.testsRun = 89
+        passing.testsRun = 90
         fake_hash = "b" * 64
         with patch.object(runner, "current_git_sha", return_value="a" * 40), \
              patch.object(runner, "file_sha256", return_value=fake_hash), \
@@ -77,7 +77,7 @@ class SecurityPolicyTestRunnerTests(unittest.TestCase):
             )
         self.assertEqual(receipt["status"], "PASS")
         self.assertTrue(receipt["exact_head_match"])
-        self.assertEqual(receipt["test_result"]["tests_run"], 89)
+        self.assertEqual(receipt["test_result"]["tests_run"], 90)
         self.assertRegex(receipt["inventory_sha256"], r"^[0-9a-f]{64}$")
         self.assertEqual(receipt["source_sha256"][".github/scripts/run_security_audit_policy_tests.py"], fake_hash)
 
