@@ -12,7 +12,7 @@ The signature is a detached raw 64-byte Ed25519 signature. `signature_evidence_r
 
 The trust store is supplied separately and validated against [the trust-store schema](../schemas/vendor-management-approval-trust-store-v1.schema.json). It maps an approval principal to an explicitly delegated Ed25519 public-key reference and the `endpoint_approval_signer` role. Key and principal validity use half-open UTC-normalized intervals `[valid_from, valid_until)`. A recorded revocation takes effect at `revoked_at`; verification checks that timestamp against the current execution time.
 
-The caller must pass `--trust-store-sha256` from an independently protected configuration channel. Do not compute the only trusted digest from a trust-store file delivered alongside an untrusted approval or PR. The verifier checks the raw bytes of the trust-store file against that external digest before parsing it. No private key or permanent synthetic trust root is committed.
+The caller must pass `--trust-store-sha256` from an independently protected configuration channel. The CLI also requires `--capability-registry-sha256` from a protected channel; a digest copied from the approval bundle or a pull request is not an independent trust pin. Do not compute the only trusted digest from a trust-store file delivered alongside an untrusted approval or PR. The verifier checks the raw bytes of the trust-store file against that external digest before parsing it. No private key or permanent synthetic trust root is committed.
 
 Example invocation:
 
@@ -22,10 +22,18 @@ python tools/verify_vendor_management_endpoint_approval_signature.py \
   --profile /protected/evidence/frozen-profile.json \
   --signature-file /protected/evidence/approval.sig \
   --trust-store /protected/policy/vendor-approval-trust-store.json \
-  --trust-store-sha256 "$VENDOR_APPROVAL_TRUST_STORE_SHA256"
+  --trust-store-sha256 "$VENDOR_APPROVAL_TRUST_STORE_SHA256" \
+  --capability-registry security/vendor-adapter-capability-registry-v1.json \
+  --capability-registry-sha256 "$VENDOR_CAPABILITY_REGISTRY_SHA256"
 ```
 
 The shell variable above must come from a protected policy channel; it is not a value to copy from the approval bundle.
+
+## Exact capability-scope gate
+
+Before reporting a successful signature check, the CLI validates the capability registry and requires its exact raw-byte SHA-256 to match the external `--capability-registry-sha256` pin. Every requested operation must be marked `tested` for the exact adapter source revision and exact model, product family, hardware revision, software version, and assessed hardware/commercial region. The adapter must have at least A1 read-only maturity, exact-model-tested scope, and `LAB_TESTED` or `QUALIFIED` implementation state. Missing, planned, duplicate, mismatched, or unqualified operations fail closed.
+
+This regional scope is the product/hardware/commercial region recorded in the endpoint profile. It is not inferred from deployment jurisdiction or from the management API hostname; those remain separate decision dimensions. The checked-in registry currently leaves all operations planned and all adapters at A0, so it must reject all real operation requests until exact test evidence is reviewed and the independently pinned registry changes.
 
 ## What this verifier does not establish
 

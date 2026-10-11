@@ -31,6 +31,7 @@ from validate_vendor_management_endpoint_approval import (  # noqa: E402
     approval_errors,
     canonical_profile_digest,
 )
+from validate_vendor_adapter_registry import registry_errors  # noqa: E402
 
 TRUST_SCHEMA_PATH = ROOT / "schemas/vendor-management-approval-trust-store-v1.schema.json"
 SIGNATURE_SCHEME = "ed25519-rfc8032-luminous-approval-v1"
@@ -227,6 +228,93 @@ def verify_approval_signature(
     return None
 
 
+
+_MATURITY_LEVELS = {
+    "A0_DISCOVERED": 0,
+    "A1_READ_ONLY_TESTED": 1,
+    "A2_STATE_CONTRACT_TESTED": 2,
+    "A3_CHANGE_QUALIFIED": 3,
+    "A4_FIRMWARE_RECOVERY_QUALIFIED": 4,
+    "A5_SERVICEABLE": 5,
+}
+
+
+def capability_scope_error_codes(
+    approval: dict[str, Any],
+    profile: dict[str, Any],
+    registry: dict[str, Any],
+) -> list[str]:
+    """Bind signed read operations to exact, tested adapter and hardware/commercial scope.
+
+    This is a capability gate, not an operational authorizer. The CLI separately pins
+    the registry's raw bytes from a protected channel before using this result.
+    """
+    errors: list[str] = []
+    if approval.get("state") != "approved":
+        return ["DECISION_NOT_APPROVED"]
+
+    profile_adapter = profile.get("adapter", {})
+    target = approval.get("target", {})
+    adapter_id = profile_adapter.get("adapter_id")
+    candidates = [
+        item for item in registry.get("adapters", [])
+        if item.get("adapter_id") == adapter_id
+    ]
+    if len(candidates) != 1:
+        return ["CAPABILITY_ADAPTER_NOT_UNIQUE"]
+    adapter = candidates[0]
+
+    if adapter.get("vendor") != profile_adapter.get("vendor"):
+        errors.append("CAPABILITY_VENDOR_MISMATCH")
+    family = profile_adapter.get("product_family")
+    if family not in adapter.get("product_families", []):
+        errors.append("CAPABILITY_PRODUCT_FAMILY_MISMATCH")
+    if adapter.get("model_scope_state") != "exact_models_tested":
+        errors.append("CAPABILITY_EXACT_MODEL_SCOPE_REQUIRED")
+    if adapter.get("implementation_state") not in {"LAB_TESTED", "QUALIFIED"}:
+        errors.append("CAPABILITY_IMPLEMENTATION_NOT_TESTED")
+    if _MATURITY_LEVELS.get(adapter.get("maturity"), 0) < _MATURITY_LEVELS["A1_READ_ONLY_TESTED"]:
+        errors.append("CAPABILITY_MATURITY_TOO_LOW")
+    if adapter.get("region_scope_state") not in {"region_scoped", "global_scope_assessed"}:
+        errors.append("CAPABILITY_REGION_SCOPE_NOT_ASSESSED")
+
+    region = profile.get("scope", {}).get("hardware_or_commercial_region", {})
+    region_value = region.get("value")
+    if region.get("state") != "assessed" or not isinstance(region_value, str) or not region_value.strip():
+        errors.append("CAPABILITY_HARDWARE_REGION_ASSESSMENT_REQUIRED")
+
+    operations = adapter.get("operations", [])
+    requested_operations = approval.get("allowed_operations", [])
+    if not requested_operations:
+        errors.append("CAPABILITY_OPERATION_SCOPE_EMPTY")
+    for requested in requested_operations:
+        matches = [item for item in operations if item.get("operation") == requested]
+        if len(matches) != 1:
+            errors.append("CAPABILITY_OPERATION_NOT_UNIQUE")
+            continue
+        operation = matches[0]
+        if operation.get("state") != "tested":
+            errors.append("CAPABILITY_OPERATION_NOT_TESTED")
+            continue
+        tested_scope = operation.get("tested_scope")
+        if not isinstance(tested_scope, dict):
+            errors.append("CAPABILITY_TESTED_SCOPE_MISSING")
+            continue
+        expected_scope = {
+            "model": target.get("model"),
+            "product_family": family,
+            "hardware_revision": target.get("hardware_revision"),
+            "software_version": target.get("software_version"),
+            "region": region_value,
+        }
+        if any(tested_scope.get(key) != value for key, value in expected_scope.items()):
+            errors.append("CAPABILITY_TESTED_SCOPE_MISMATCH")
+        if operation.get("tested_revision") != profile_adapter.get("adapter_revision"):
+            errors.append("CAPABILITY_TESTED_REVISION_MISMATCH")
+
+    return sorted(set(errors))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--approval", type=Path, required=True)
@@ -236,6 +324,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--trust-store", type=Path, required=True)
     parser.add_argument("--trust-store-sha256", required=True,
                         help="64-character digest supplied by an independently protected channel.")
+    parser.add_argument("--capability-registry", type=Path, required=True)
+    parser.add_argument("--capability-registry-sha256", required=True,
+                        help="Registry digest supplied by an independently protected channel.")
+    parser.add_argument("--capability-schema", type=Path,
+                        default=ROOT / "schemas/vendor-adapter-capability-registry-v1.schema.json")
     parser.add_argument("--approval-schema", type=Path,
                         default=ROOT / "schemas/vendor-management-endpoint-approval-v1.schema.json")
     parser.add_argument("--profile-schema", type=Path,
@@ -249,6 +342,9 @@ def main(argv: list[str] | None = None) -> int:
         profile_schema = strict_json_loads(args.profile_schema.read_bytes())
         signature = args.signature_file.read_bytes()
         trust_store_raw = args.trust_store.read_bytes()
+        capability_registry_raw = args.capability_registry.read_bytes()
+        capability_schema = strict_json_loads(args.capability_schema.read_bytes())
+        capability_registry = strict_json_loads(capability_registry_raw)
         binding_errors = approval_errors(approval, approval_schema, profile, profile_schema)
     except (OSError, UnicodeDecodeError, ValueError, TypeError):
         print("FAIL: INPUT_INVALID")
@@ -256,6 +352,21 @@ def main(argv: list[str] | None = None) -> int:
 
     if binding_errors:
         print("FAIL: APPROVAL_PROFILE_BINDING_INVALID")
+        return 1
+
+    if not SHA256_RE.fullmatch(args.capability_registry_sha256):
+        print("FAIL: CAPABILITY_REGISTRY_DIGEST_PIN_INVALID")
+        return 1
+    if hashlib.sha256(capability_registry_raw).hexdigest() != args.capability_registry_sha256:
+        print("FAIL: CAPABILITY_REGISTRY_DIGEST_MISMATCH")
+        return 1
+    try:
+        registry_contract_errors = registry_errors(capability_registry, capability_schema)
+    except Exception:
+        print("FAIL: CAPABILITY_REGISTRY_INVALID")
+        return 1
+    if registry_contract_errors:
+        print("FAIL: CAPABILITY_REGISTRY_INVALID")
         return 1
 
     code = verify_approval_signature(
@@ -269,9 +380,15 @@ def main(argv: list[str] | None = None) -> int:
         print("FAIL: " + code)
         return 1
 
+    capability_codes = capability_scope_error_codes(approval, profile, capability_registry)
+    if capability_codes:
+        print("FAIL: " + ",".join(capability_codes))
+        return 1
+
     print(
-        "VERIFIED: signature, externally pinned signer trust, key/principal revocation "
-        "timing, and approval time window; operational authorization NOT evaluated"
+        "VERIFIED: signature and exact externally pinned tested read-capability scope; "
+        "fresh target identity, complete decision revocation, and operational authorization "
+        "NOT evaluated"
     )
     return 0
 

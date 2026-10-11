@@ -38,10 +38,17 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
         profile = verifier.strict_json_loads(
             (ROOT / "tests/fixtures/vendor-management-endpoint-profile-v1.json").read_bytes()
         )
-        for name in ("deployment_jurisdiction", "hardware_or_commercial_region"):
-            profile["scope"][name]["state"] = "not_applicable"
-            profile["scope"][name]["value"] = None
-            profile["scope"][name]["rationale"] = "Synthetic test scope only; no live authorization claim."
+        profile["scope"]["deployment_jurisdiction"]["state"] = "not_applicable"
+        profile["scope"]["deployment_jurisdiction"]["value"] = None
+        profile["scope"]["deployment_jurisdiction"]["rationale"] = (
+            "Synthetic test scope only; no live authorization claim."
+        )
+        profile["scope"]["hardware_or_commercial_region"] = {
+            "state": "assessed",
+            "value": "lab-za",
+            "rationale": "Synthetic test scope only; no live regional qualification claim.",
+            "evidence_refs": ["synthetic-evidence:region-review"],
+        }
         self.profile = profile
 
         approval = verifier.strict_json_loads(
@@ -81,6 +88,33 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
                 "revoked_at": None,
             }],
         }
+        self.registry = verifier.strict_json_loads(
+            (ROOT / "security/vendor-adapter-capability-registry-v1.json").read_bytes()
+        )
+        self.registry_schema = verifier.strict_json_loads(
+            (ROOT / "schemas/vendor-adapter-capability-registry-v1.schema.json").read_bytes()
+        )
+        adapter_record = next(
+            item for item in self.registry["adapters"]
+            if item["adapter_id"] == self.profile["adapter"]["adapter_id"]
+        )
+        adapter_record["maturity"] = "A1_READ_ONLY_TESTED"
+        adapter_record["implementation_state"] = "LAB_TESTED"
+        adapter_record["model_scope_state"] = "exact_models_tested"
+        adapter_record["region_scope_state"] = "region_scoped"
+        adapter_record["maturity_evidence_refs"] = ["synthetic-evidence:adapter-a1"]
+        inventory = next(item for item in adapter_record["operations"] if item["operation"] == "inventory_read")
+        inventory["state"] = "tested"
+        inventory["evidence_refs"] = ["synthetic-evidence:inventory-read"]
+        inventory["tested_revision"] = self.profile["adapter"]["adapter_revision"]
+        inventory["tested_scope"] = {
+            "model": self.profile["scope"]["model"],
+            "product_family": self.profile["adapter"]["product_family"],
+            "hardware_revision": self.profile["scope"]["hardware_revision"],
+            "software_version": self.profile["scope"]["software_version"],
+            "region": "lab-za",
+            "test_environment": "synthetic-test-only",
+        }
         self.signature = self._resign()
 
     def _resign(self) -> bytes:
@@ -111,6 +145,86 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
 
     def test_synthetic_signed_approval_verifies(self) -> None:
         self.assertIsNone(self._verify())
+
+    def test_synthetic_registry_scope_matches_only_exact_tested_target(self) -> None:
+        approval_schema = verifier.strict_json_loads(
+            (ROOT / "schemas/vendor-management-endpoint-approval-v1.schema.json").read_bytes()
+        )
+        profile_schema = verifier.strict_json_loads(
+            (ROOT / "schemas/vendor-management-endpoint-profile-v1.schema.json").read_bytes()
+        )
+        self.assertEqual(verifier.registry_errors(self.registry, self.registry_schema), [])
+        self.assertEqual(
+            verifier.approval_errors(self.approval, approval_schema, self.profile, profile_schema),
+            [],
+        )
+        self.assertEqual(
+            verifier.capability_scope_error_codes(self.approval, self.profile, self.registry),
+            [],
+        )
+
+    def test_planned_operation_is_not_authorizable(self) -> None:
+        registry = copy.deepcopy(self.registry)
+        adapter = next(item for item in registry["adapters"]
+                       if item["adapter_id"] == self.profile["adapter"]["adapter_id"])
+        next(item for item in adapter["operations"]
+             if item["operation"] == "inventory_read")["state"] = "planned"
+        self.assertIn(
+            "CAPABILITY_OPERATION_NOT_TESTED",
+            verifier.capability_scope_error_codes(self.approval, self.profile, registry),
+        )
+
+    def test_tested_revision_must_match_profile_adapter_revision(self) -> None:
+        registry = copy.deepcopy(self.registry)
+        adapter = next(item for item in registry["adapters"]
+                       if item["adapter_id"] == self.profile["adapter"]["adapter_id"])
+        next(item for item in adapter["operations"]
+             if item["operation"] == "inventory_read")["tested_revision"] = "b" * 40
+        self.assertIn(
+            "CAPABILITY_TESTED_REVISION_MISMATCH",
+            verifier.capability_scope_error_codes(self.approval, self.profile, registry),
+        )
+
+    def test_tested_model_drift_blocks_operation(self) -> None:
+        registry = copy.deepcopy(self.registry)
+        adapter = next(item for item in registry["adapters"]
+                       if item["adapter_id"] == self.profile["adapter"]["adapter_id"])
+        next(item for item in adapter["operations"]
+             if item["operation"] == "inventory_read")["tested_scope"]["model"] = "different-model"
+        self.assertIn(
+            "CAPABILITY_TESTED_SCOPE_MISMATCH",
+            verifier.capability_scope_error_codes(self.approval, self.profile, registry),
+        )
+
+    def test_hardware_commercial_region_must_be_assessed(self) -> None:
+        profile = copy.deepcopy(self.profile)
+        profile["scope"]["hardware_or_commercial_region"]["state"] = "unresolved"
+        profile["scope"]["hardware_or_commercial_region"]["value"] = None
+        self.assertIn(
+            "CAPABILITY_HARDWARE_REGION_ASSESSMENT_REQUIRED",
+            verifier.capability_scope_error_codes(self.approval, profile, self.registry),
+        )
+
+    def test_tested_region_must_match_assessed_hardware_commercial_region(self) -> None:
+        registry = copy.deepcopy(self.registry)
+        adapter = next(item for item in registry["adapters"]
+                       if item["adapter_id"] == self.profile["adapter"]["adapter_id"])
+        next(item for item in adapter["operations"]
+             if item["operation"] == "inventory_read")["tested_scope"]["region"] = "lab-eu"
+        self.assertIn(
+            "CAPABILITY_TESTED_SCOPE_MISMATCH",
+            verifier.capability_scope_error_codes(self.approval, self.profile, registry),
+        )
+
+    def test_capability_implementation_must_be_lab_tested_or_qualified(self) -> None:
+        registry = copy.deepcopy(self.registry)
+        adapter = next(item for item in registry["adapters"]
+                       if item["adapter_id"] == self.profile["adapter"]["adapter_id"])
+        adapter["implementation_state"] = "NOT_IMPLEMENTED"
+        self.assertIn(
+            "CAPABILITY_IMPLEMENTATION_NOT_TESTED",
+            verifier.capability_scope_error_codes(self.approval, self.profile, registry),
+        )
 
     def test_approval_profile_contract_binds_the_signed_profile(self) -> None:
         approval_schema = verifier.strict_json_loads(

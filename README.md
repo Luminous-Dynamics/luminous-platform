@@ -99,6 +99,7 @@ Luminous Platform is being organized into a product line for secure administrati
 - [Endpoint approval trust-store schema](schemas/vendor-management-approval-trust-store-v1.schema.json)
 - [Offline Ed25519 endpoint approval verifier](tools/verify_vendor_management_endpoint_approval_signature.py)
 - [Approval signature verifier contract](docs/VENDOR_ENDPOINT_APPROVAL_SIGNATURE_VERIFICATION_V1.md)
+- Capability promotion remains blocked until exact tested-scope evidence is externally pinned and reviewed.
 - [Approval signature adversarial tests](tests/test_vendor_management_endpoint_approval_signature.py)
 - [Synthetic pending approval fixture](tests/fixtures/vendor-management-endpoint-approval-v1.json)
 - [Endpoint approval adversarial tests](tests/test_vendor_management_endpoint_approval.py)

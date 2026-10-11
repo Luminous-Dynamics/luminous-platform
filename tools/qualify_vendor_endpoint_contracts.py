@@ -30,11 +30,13 @@ EXPECTED_CRYPTOGRAPHY_VERSION = "50.0.2"
 VALIDATORS = {
     "endpoint_profile": "tools/validate_vendor_management_endpoint_profile.py",
     "endpoint_approval_binding": "tools/validate_vendor_management_endpoint_approval.py",
+    "capability_registry": "tools/validate_vendor_adapter_registry.py",
 }
 TEST_SUITE_PATTERNS = (
     "test_vendor_management_endpoint_profile.py",
     "test_vendor_management_endpoint_approval.py",
     "test_vendor_management_endpoint_approval_signature.py",
+    "test_vendor_adapter_registry.py",
     "test_vendor_endpoint_qualification_runner.py",
 )
 INPUT_PATHS = (
@@ -43,14 +45,18 @@ INPUT_PATHS = (
     "schemas/vendor-management-endpoint-profile-v1.schema.json",
     "schemas/vendor-management-endpoint-approval-v1.schema.json",
     "schemas/vendor-management-approval-trust-store-v1.schema.json",
+    "schemas/vendor-adapter-capability-registry-v1.schema.json",
+    "security/vendor-adapter-capability-registry-v1.json",
     "tests/fixtures/vendor-management-endpoint-profile-v1.json",
     "tests/fixtures/vendor-management-endpoint-approval-v1.json",
     "tools/validate_vendor_management_endpoint_profile.py",
     "tools/validate_vendor_management_endpoint_approval.py",
     "tools/verify_vendor_management_endpoint_approval_signature.py",
+    "tools/validate_vendor_adapter_registry.py",
     "tests/test_vendor_management_endpoint_profile.py",
     "tests/test_vendor_management_endpoint_approval.py",
     "tests/test_vendor_management_endpoint_approval_signature.py",
+    "tests/test_vendor_adapter_registry.py",
     "tests/test_vendor_endpoint_qualification_runner.py",
     "tools/qualify_vendor_endpoint_contracts.py",
 )
@@ -65,6 +71,7 @@ FAILURE_CODES = {
     "APPROVAL_VALIDATOR_FAILED",
     "TEST_SUITE_FAILED",
     "TEST_WORKER_FAILED",
+    "CAPABILITY_REGISTRY_FAILED",
 }
 INCOMPLETE_CODES = {
     "CHECKED_OUT_HEAD_UNAVAILABLE",
@@ -342,6 +349,8 @@ def main(argv: list[str] | None = None) -> int:
         blockers.append("PROFILE_VALIDATOR_FAILED")
     if validators["endpoint_approval_binding"]["state"] != "passed":
         blockers.append("APPROVAL_VALIDATOR_FAILED")
+    if validators["capability_registry"]["state"] != "passed":
+        blockers.append("CAPABILITY_REGISTRY_FAILED")
 
     test_suites: list[dict[str, object]] = []
     for pattern in TEST_SUITE_PATTERNS:
@@ -360,7 +369,7 @@ def main(argv: list[str] | None = None) -> int:
     blocker_codes = sorted(set(blockers))
     report = {
         "report_schema_version": REPORT_SCHEMA_VERSION,
-        "scope": "synthetic_endpoint_profile_pending_approval_and_signature_verifier_contract_tests_only",
+        "scope": "synthetic_endpoint_profile_approval_signature_and_capability_scope_contract_tests_only",
         "started_at_utc": started_at,
         "finished_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "revision": {
