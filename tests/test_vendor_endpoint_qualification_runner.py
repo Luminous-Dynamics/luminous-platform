@@ -10,6 +10,22 @@ from tools import qualify_vendor_endpoint_contracts as qualification
 
 
 class QualificationRunnerContractTests(unittest.TestCase):
+    @staticmethod
+    def _worker_summary(**overrides: object) -> dict[str, object]:
+        summary: dict[str, object] = {
+            "pattern": "test_vendor_endpoint_qualification_runner.py",
+            "state": "passed",
+            "tests_run": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "expected_failures": 0,
+            "unexpected_successes": 0,
+            "discovery_errors": 0,
+        }
+        summary.update(overrides)
+        return summary
+
     def test_manifest_digest_is_stable_across_mapping_order(self) -> None:
         left = {"b": "22", "a": "11"}
         right = {"a": "11", "b": "22"}
@@ -94,6 +110,102 @@ class QualificationRunnerContractTests(unittest.TestCase):
             "skipped": 1, "expected_failures": 0, "unexpected_successes": 0,
             "discovery_errors": 0,
         }))
+
+    def test_worker_summary_contract_accepts_only_clean_pass_evidence(self) -> None:
+        summary = self._worker_summary()
+        self.assertEqual(
+            qualification.worker_summary_errors(
+                summary, "test_vendor_endpoint_qualification_runner.py", 0
+            ),
+            [],
+        )
+
+    def test_worker_summary_contract_rejects_open_or_incomplete_schemas(self) -> None:
+        extra = self._worker_summary(debug="must not enter evidence")
+        missing = self._worker_summary()
+        del missing["errors"]
+        for summary in (extra, missing):
+            with self.subTest(summary=summary):
+                self.assertEqual(
+                    qualification.worker_summary_errors(
+                        summary, "test_vendor_endpoint_qualification_runner.py", 0
+                    ),
+                    ["SUMMARY_FIELDS_MISMATCH"],
+                )
+
+    def test_worker_summary_contract_rejects_boolean_and_negative_counters(self) -> None:
+        for value in (True, -1):
+            with self.subTest(value=value):
+                summary = self._worker_summary(tests_run=value)
+                self.assertEqual(
+                    qualification.worker_summary_errors(
+                        summary, "test_vendor_endpoint_qualification_runner.py", 0
+                    ),
+                    ["SUMMARY_COUNTER_INVALID"],
+                )
+
+    def test_worker_summary_contract_rejects_state_exit_mismatch(self) -> None:
+        self.assertEqual(
+            qualification.worker_summary_errors(
+                self._worker_summary(), "test_vendor_endpoint_qualification_runner.py", 1
+            ),
+            ["PASSED_SUMMARY_EXIT_MISMATCH"],
+        )
+        self.assertEqual(
+            qualification.worker_summary_errors(
+                self._worker_summary(state="failed"), "test_vendor_endpoint_qualification_runner.py", 0
+            ),
+            ["FAILED_SUMMARY_EXIT_MISMATCH"],
+        )
+
+    def test_worker_summary_contract_requires_failure_evidence_for_failed_state(self) -> None:
+        self.assertEqual(
+            qualification.worker_summary_errors(
+                self._worker_summary(state="failed"),
+                "test_vendor_endpoint_qualification_runner.py",
+                1,
+            ),
+            ["FAILED_SUMMARY_HAS_NO_FAILURE_EVIDENCE"],
+        )
+        self.assertEqual(
+            qualification.worker_summary_errors(
+                self._worker_summary(state="failed", errors=1),
+                "test_vendor_endpoint_qualification_runner.py",
+                1,
+            ),
+            [],
+        )
+
+    def test_worker_summary_contract_fixes_runner_error_shape(self) -> None:
+        runner_error = self._worker_summary(
+            state="runner_error",
+            tests_run=0,
+            errors=1,
+            discovery_errors=1,
+        )
+        self.assertEqual(
+            qualification.worker_summary_errors(
+                runner_error, "test_vendor_endpoint_qualification_runner.py", 2
+            ),
+            [],
+        )
+        runner_error["discovery_errors"] = 0
+        self.assertEqual(
+            qualification.worker_summary_errors(
+                runner_error, "test_vendor_endpoint_qualification_runner.py", 2
+            ),
+            ["RUNNER_ERROR_SUMMARY_INCONSISTENT"],
+        )
+
+    def test_worker_summary_contract_binds_the_requested_suite_identity(self) -> None:
+        self.assertEqual(
+            qualification.worker_summary_errors(
+                self._worker_summary(),
+                "test_vendor_operation_receipt.py",
+                0,
+            ),
+            ["SUMMARY_PATTERN_MISMATCH"],
+        )
 
     def test_clean_evidence_is_the_only_pass_state(self) -> None:
         self.assertEqual(qualification.qualification_status([]), "passed")
