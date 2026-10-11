@@ -21,7 +21,7 @@ RECEIPT_PATH = REPOSITORY_ROOT / "security-audit-policy-test-receipt.json"
 RECEIPT_SCHEMA = "luminous.security-audit.policy-test-receipt.v1"
 EXPECTED_TEST_METHODS: dict[str, int] = {
     "test_verify_security_audit_trust_anchor.py": 35,
-    "test_audit_security_required_checks.py": 47,
+    "test_audit_security_required_checks.py": 48,
     "test_run_security_audit_policy_tests.py": 7,
 }
 
@@ -64,6 +64,7 @@ EXPECTED_TEST_NAMES: dict[str, tuple[str, ...]] = {
         "test_wrong_head_or_workflow_is_never_latest",
     ),
     "test_audit_security_required_checks.py": (
+        "test_active_rules_pagination_accepts_exact_ceiling_with_empty_probe",
         "test_active_rules_pagination_exceeds_ceiling_fail_closed",
         "test_active_rules_pagination_fetches_until_short_page",
         "test_active_rules_pagination_rejects_malformed_page",
