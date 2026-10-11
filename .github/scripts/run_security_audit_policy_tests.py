@@ -336,7 +336,7 @@ def main() -> int:
         receipt_written = write_receipt(build_receipt("FAIL", counts, method_names, None, errors))
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
-        return 1 if receipt_written else 1
+        return 1
 
     combined = unittest.TestSuite()
     for filename in EXPECTED_TEST_METHODS:
