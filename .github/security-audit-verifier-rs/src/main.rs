@@ -17,9 +17,9 @@ const API: &str = "https://api.github.com";
 const API_VERSION: &str = "2022-11-28";
 const STATUS_CONTEXT: &str = "Security Audit / Independent Verifier";
 const ENGINE_REPO: &str = "Luminous-Dynamics/luminous-platform";
-const ENGINE_SHA: &str = "15f8135368e6162ca9b07861713a567f95fe765a";
+const ENGINE_SHA: &str = "dfccbd97e72463b2513c79912ca868490114b47f";
 const ENGINE_PATH: &str = ".github/workflows/security-audit.yml";
-const ENGINE_BLOB: &str = "6d8f9981822a65835550895b4964337182cf3fb5";
+const ENGINE_BLOB: &str = "a50e47261890e1d87ef903c1b6c92b28ec77d0a1";
 const MAX_API_BODY: usize = 5 * 1024 * 1024;
 const MAX_ZIP_BYTES: usize = 100 * 1024 * 1024;
 const MAX_ZIP_ENTRIES: usize = 4096;
@@ -47,7 +47,7 @@ fn policy(repo: &str) -> Option<Policy> {
             workflow_id: 379572428,
             workflow_name: "Security Audit",
             workflow_path: ".github/workflows/security-audit.yml",
-            workflow_blob: "d7660286694f4f0369120506c6089e544cdc54cb",
+            workflow_blob: "9af82c4da828b627ecaf5c4841041b1acb5882e3",
             engine_sha: Some(ENGINE_SHA),
             audit_rust: true,
             audit_node: true,
@@ -56,7 +56,7 @@ fn policy(repo: &str) -> Option<Policy> {
             workflow_id: 379572736,
             workflow_name: "Security Audit",
             workflow_path: ".github/workflows/security-audit.yml",
-            workflow_blob: "f24de1c8d249c365498b78c8ad97557e666d97b0",
+            workflow_blob: "45c94f39b379ee1aa78709dab0e529c9fd02b551",
             engine_sha: Some(ENGINE_SHA),
             audit_rust: true,
             audit_node: false,
@@ -182,6 +182,64 @@ fn find_open_pr(
         return Err("ambiguous open same-repository PRs match the exact subject".to_string());
     }
     Ok(matches.pop())
+}
+
+fn validate_authoritative_pr_merge_sha(
+    current: &Value,
+    repo: &str,
+    number: u64,
+    subject: &str,
+    branch: &str,
+    default_branch: &str,
+) -> VerifyResult<String> {
+    if current.get("number").and_then(Value::as_u64) != Some(number) {
+        return Err("authoritative PR lookup returned a missing or mismatched PR".to_string());
+    }
+    if get_field_str(current, "state") != Some("open") {
+        return Err("PR is no longer open".to_string());
+    }
+    let head = current.get("head").unwrap_or(&Value::Null);
+    let base = current.get("base").unwrap_or(&Value::Null);
+    let head_repo = head.get("repo").unwrap_or(&Value::Null);
+    let base_repo = base.get("repo").unwrap_or(&Value::Null);
+    if get_field_str(head, "sha") != Some(subject) || get_field_str(head, "ref") != Some(branch) {
+        return Err("authoritative PR head differs from the audited subject".to_string());
+    }
+    if !get_field_str(head_repo, "full_name").is_some_and(|value| value.eq_ignore_ascii_case(repo)) {
+        return Err("authoritative PR head is not from the trusted repository".to_string());
+    }
+    if get_field_str(base, "ref") != Some(default_branch)
+        || !get_field_str(base_repo, "full_name").is_some_and(|value| value.eq_ignore_ascii_case(repo))
+    {
+        return Err("authoritative PR base differs from the trusted default branch".to_string());
+    }
+    if current.get("mergeable").and_then(Value::as_bool) != Some(true) {
+        return Err("GitHub has not confirmed a mergeable PR test-merge commit".to_string());
+    }
+    match get_field_str(current, "mergeable_state") {
+        Some("behind") => Err("PR head is behind the current base; strict up-to-date qualification is required".to_string()),
+        Some("unknown") => Err("GitHub has not resolved the PR merge state".to_string()),
+        Some("clean" | "unstable" | "blocked" | "ahead" | "identical" | "has_hooks" | "draft") => {
+            sha_or_error(get_field_str(current, "merge_commit_sha").unwrap_or(""), "pr.merge_commit_sha")
+        }
+        _ => Err("PR merge state is missing or not explicitly recognized".to_string()),
+    }
+}
+
+fn fetch_authoritative_pr_merge_sha(
+    repo: &str,
+    pr: &Value,
+    subject: &str,
+    branch: &str,
+    default_branch: &str,
+    token: &str,
+) -> VerifyResult<String> {
+    let number = pr.get("number").and_then(Value::as_u64)
+        .filter(|number| *number > 0)
+        .ok_or_else(|| "matched PR has an invalid number".to_string())?;
+    let path = format!("/repos/{repo}/pulls/{number}");
+    let current = api_json(Method::GET, &path, token, None)?;
+    validate_authoritative_pr_merge_sha(&current, repo, number, subject, branch, default_branch)
 }
 
 fn is_latest_run(candidate: &Value, runs: &[Value], policy: Policy, subject: &str) -> bool {
@@ -537,7 +595,7 @@ fn validate_evidence_files(
     Ok(())
 }
 
-fn verify_artifact(repo: &str, policy: Policy, run: &Value, expected_pr: u64, token: &str) -> VerifyResult<()> {
+fn verify_artifact(repo: &str, policy: Policy, run: &Value, expected_pr: u64, token: &str, expected_workflow_sha: &str) -> VerifyResult<()> {
     let run_id = run.get("id").and_then(Value::as_u64)
         .ok_or_else(|| "workflow run ID is missing or invalid".to_string())?;
     let subject = sha_or_error(get_field_str(run, "head_sha").unwrap_or(""), "run.head_sha")?;
@@ -624,7 +682,7 @@ fn verify_artifact(repo: &str, policy: Policy, run: &Value, expected_pr: u64, to
     drop(verdict_file);
     let verdict = parse_unique_json(&verdict_bytes)?;
     validate_evidence_files(&mut archive, verdict.get("evidence_files").unwrap_or(&Value::Null), &actual_files)?;
-    validate_verdict(&verdict, repo, policy, run, expected_pr)?;
+    validate_verdict(&verdict, repo, policy, run, expected_pr, expected_workflow_sha)?;
     Ok(())
 }
 
@@ -655,7 +713,7 @@ fn validate_workflow_ref(raw: &str, repo: &str, path: &str, expected_pr: u64) ->
     Ok(())
 }
 
-fn validate_verdict(verdict: &Value, repo: &str, policy: Policy, run: &Value, expected_pr: u64) -> VerifyResult<()> {
+fn validate_verdict(verdict: &Value, repo: &str, policy: Policy, run: &Value, expected_pr: u64, expected_workflow_sha: &str) -> VerifyResult<()> {
     let object = verdict.as_object().ok_or_else(|| "verdict artifact is not a JSON object".to_string())?;
     let expected_keys: HashSet<&str> = [
         "schema", "repository", "subject_sha", "audit_engine_sha", "workflow_ref", "workflow_sha",
@@ -688,7 +746,10 @@ fn validate_verdict(verdict: &Value, repo: &str, policy: Policy, run: &Value, ex
         return Err("verdict run ID/attempt or workflow-security result is inconsistent".to_string());
     }
     validate_workflow_ref(get_field_str(verdict, "workflow_ref").unwrap_or(""), repo, policy.workflow_path, expected_pr)?;
-    sha_or_error(get_field_str(verdict, "workflow_sha").unwrap_or(""), "verdict.workflow_sha")?;
+    let workflow_sha = sha_or_error(get_field_str(verdict, "workflow_sha").unwrap_or(""), "verdict.workflow_sha")?;
+    if workflow_sha != expected_workflow_sha {
+        return Err("verdict workflow SHA differs from the authoritative PR test-merge commit".to_string());
+    }
     let run_url = get_field_str(run, "html_url").ok_or_else(|| "authoritative run URL is missing".to_string())?;
     if !run_url.starts_with("https://") || get_field_str(verdict, "workflow_run_url") != Some(run_url) {
         return Err("verdict run URL does not match authoritative GitHub run".to_string());
@@ -871,9 +932,10 @@ fn run_verifier() -> VerifyResult<i32> {
         return Ok(0);
     }
     let target = get_field_str(&run, "html_url").unwrap_or("");
-    let self_test_outcome = env::var("VERIFIER_TEST_OUTCOME").unwrap_or_else(|_| "success".to_string());
-    if self_test_outcome != "success" {
-        post_status(&repo, &subject, &token, "failure", &format!("Independent verifier self-tests did not pass: {self_test_outcome}"), Some(target))?;
+    let self_test_outcome = env::var("VERIFIER_TEST_OUTCOME").ok();
+    if self_test_outcome.as_deref() != Some("success") {
+        let observed_outcome = self_test_outcome.as_deref().unwrap_or("");
+        post_status(&repo, &subject, &token, "failure", &format!("Independent verifier self-tests did not pass: {observed_outcome}"), Some(target))?;
         eprintln!("FAIL: independent verifier self-tests did not pass");
         return Ok(1);
     }
@@ -900,7 +962,16 @@ fn run_verifier() -> VerifyResult<i32> {
         }
         let pr_number = pr.get("number").and_then(Value::as_u64)
             .filter(|n| *n > 0).ok_or_else(|| "matched open PR has an invalid number".to_string())?;
-        verify_artifact(&repo, policy, &run, pr_number, &token)?;
+        let expected_workflow_sha = fetch_authoritative_pr_merge_sha(
+            &repo, &pr, &subject, &branch, &default_branch, &token
+        )?;
+        verify_artifact(&repo, policy, &run, pr_number, &token, &expected_workflow_sha)?;
+        let observed_workflow_sha = fetch_authoritative_pr_merge_sha(
+            &repo, &pr, &subject, &branch, &default_branch, &token
+        )?;
+        if observed_workflow_sha != expected_workflow_sha {
+            return Err("PR test-merge commit changed while the verdict artifact was being verified".to_string());
+        }
         Ok(())
     })();
     match verification {
@@ -981,6 +1052,45 @@ mod tests {
     }
 
     #[test]
+    fn verifier_self_tests_require_explicit_success() {
+        assert_eq!(Some("success"), Some("success").filter(|outcome| *outcome == "success"));
+        assert_ne!(Some("success"), None::<&str>);
+        for outcome in ["", "failure", "cancelled", "skipped", "unexpected"] {
+            assert_ne!(Some("success"), Some(outcome).filter(|value| *value == "success"));
+        }
+    }
+
+    #[test]
+    fn authoritative_pr_merge_sha_rejects_stale_and_unresolved_state() {
+        let repo = "owner/repo";
+        let subject = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let valid = json!({
+            "number": 12,
+            "state": "open",
+            "mergeable": true,
+            "mergeable_state": "clean",
+            "merge_commit_sha": "cccccccccccccccccccccccccccccccccccccccc",
+            "head": {"sha": subject, "ref": "security/fix", "repo": {"full_name": repo}},
+            "base": {"ref": "main", "repo": {"full_name": repo}}
+        });
+        assert_eq!(
+            validate_authoritative_pr_merge_sha(&valid, repo, 12, subject, "security/fix", "main").unwrap(),
+            "cccccccccccccccccccccccccccccccccccccccc"
+        );
+        for state in ["behind", "unknown", "", "future-state"] {
+            let mut candidate = valid.clone();
+            candidate["mergeable_state"] = json!(state);
+            assert!(validate_authoritative_pr_merge_sha(&candidate, repo, 12, subject, "security/fix", "main").is_err(), "{state:?}");
+        }
+        let mut changed_head = valid.clone();
+        changed_head["head"]["sha"] = json!("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+        assert!(validate_authoritative_pr_merge_sha(&changed_head, repo, 12, subject, "security/fix", "main").is_err());
+        let mut not_mergeable = valid.clone();
+        not_mergeable["mergeable"] = json!(false);
+        assert!(validate_authoritative_pr_merge_sha(&not_mergeable, repo, 12, subject, "security/fix", "main").is_err());
+    }
+
+    #[test]
     fn signed_storage_urls_are_https_and_host_restricted() {
         assert!(is_safe_signed_url("https://results.blob.core.windows.net/container/item").is_ok());
         assert!(is_safe_signed_url("https://github-production-repository-file.s3.amazonaws.com/item").is_ok());
@@ -1055,28 +1165,29 @@ mod tests {
     #[test]
     fn valid_verdict_matches_policy_and_exact_pr() {
         let (verdict, run, policy) = sample_verdict("Luminous-Dynamics/mycelix", 4911);
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_ok());
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4912).is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "cccccccccccccccccccccccccccccccccccccccc").is_ok());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "dddddddddddddddddddddddddddddddddddddddd").is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4912, "cccccccccccccccccccccccccccccccccccccccc").is_err());
     }
 
     #[test]
     fn verdict_must_match_engine_and_required_lanes() {
         let (mut verdict, run, policy) = sample_verdict("Luminous-Dynamics/mycelix", 4911);
         verdict["audit_engine_sha"] = Value::String("dddddddddddddddddddddddddddddddddddddddd".to_string());
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "cccccccccccccccccccccccccccccccccccccccc").is_err());
         let (mut verdict, run, policy) = sample_verdict("Luminous-Dynamics/mycelix", 4911);
         verdict["required_lanes"]["npm"] = Value::String("SKIPPED_NOT_REQUESTED".to_string());
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "cccccccccccccccccccccccccccccccccccccccc").is_err());
     }
 
     #[test]
     fn verdict_rejects_unknown_fields_and_failure_reasons() {
         let (mut verdict, run, policy) = sample_verdict("Luminous-Dynamics/mycelix", 4911);
         verdict["extra"] = json!(true);
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "cccccccccccccccccccccccccccccccccccccccc").is_err());
         let (mut verdict, run, policy) = sample_verdict("Luminous-Dynamics/mycelix", 4911);
         verdict["failure_reasons"] = json!(["unexpected issue"]);
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "cccccccccccccccccccccccccccccccccccccccc").is_err());
     }
 
     #[test]
@@ -1084,7 +1195,7 @@ mod tests {
         let (mut verdict, run, policy) = sample_verdict("Luminous-Dynamics/mycelix", 4911);
         verdict["non_blocking_findings_present"] = json!(true);
         verdict["non_blocking_finding_sources"] = json!(["npm_below_threshold"]);
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "cccccccccccccccccccccccccccccccccccccccc").is_err());
     }
 
     #[test]
@@ -1093,13 +1204,13 @@ mod tests {
         verdict["generated_at_utc"] = Value::String(
             (Utc::now() - chrono::Duration::days(8)).format("%Y-%m-%dT%H:%M:%SZ").to_string()
         );
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "cccccccccccccccccccccccccccccccccccccccc").is_err());
 
         let (mut verdict, run, policy) = sample_verdict("Luminous-Dynamics/mycelix", 4911);
         verdict["generated_at_utc"] = Value::String(
             (Utc::now() + chrono::Duration::minutes(10)).format("%Y-%m-%dT%H:%M:%SZ").to_string()
         );
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "cccccccccccccccccccccccccccccccccccccccc").is_err());
     }
 
     #[test]
@@ -1120,7 +1231,7 @@ mod tests {
         verdict["status"] = json!("PASS_WITH_FINDINGS");
         verdict["non_blocking_findings_present"] = json!(true);
         verdict["non_blocking_finding_sources"] = json!(["npm_below_threshold"]);
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/symthaea", policy, &run, 7288).is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/symthaea", policy, &run, 7288, "cccccccccccccccccccccccccccccccccccccccc").is_err());
     }
 
     #[test]
@@ -1129,8 +1240,8 @@ mod tests {
         verdict["status"] = json!("PASS_WITH_FINDINGS");
         verdict["non_blocking_findings_present"] = json!(true);
         verdict["non_blocking_finding_sources"] = json!(["npm_below_threshold"]);
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_ok());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "cccccccccccccccccccccccccccccccccccccccc").is_ok());
         verdict["non_blocking_finding_sources"] = json!(["unreviewed_source"]);
-        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911).is_err());
+        assert!(validate_verdict(&verdict, "Luminous-Dynamics/mycelix", policy, &run, 4911, "cccccccccccccccccccccccccccccccccccccccc").is_err());
     }
 }
