@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tools import qualify_vendor_endpoint_contracts as qualification
 
@@ -63,6 +66,72 @@ class QualificationRunnerContractTests(unittest.TestCase):
             actual = qualification.input_hashes(root, ("fixture.json",))
             expected = hashlib.sha256(b'{"synthetic":true}\n').hexdigest()
             self.assertEqual(actual, {"fixture.json": expected})
+
+    def test_input_manifest_fence_detects_changed_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = root / "fixture.json"
+            fixture.write_bytes(b'{"frozen":true}\\n')
+            baseline = qualification.input_hashes(root, ("fixture.json",))
+            self.assertTrue(qualification.input_manifest_unchanged(root, baseline))
+            fixture.write_bytes(b'{"frozen":false}\\n')
+            self.assertFalse(qualification.input_manifest_unchanged(root, baseline))
+
+    def test_manifest_drift_stops_later_checks_and_discards_current_result(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in qualification.INPUT_PATHS:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"baseline input\\n")
+            report_path = root / "artifacts" / "qualification-report.json"
+            changed_path = root / qualification.INPUT_PATHS[0]
+            old_cwd = Path.cwd()
+
+            def mutating_validator(_root: Path, relative_script: str) -> dict[str, object]:
+                changed_path.write_bytes(b"mutated input\\n")
+                return {
+                    "script": relative_script,
+                    "return_code": 0,
+                    "timed_out": False,
+                    "state": "passed",
+                }
+
+            try:
+                with (
+                    patch.object(qualification, "ROOT", root),
+                    patch.object(qualification, "checked_out_sha", return_value="a" * 40),
+                    patch.object(qualification.platform, "python_version", return_value="3.13.7"),
+                    patch.object(
+                        qualification,
+                        "dependency_version",
+                        side_effect={"jsonschema": "4.26.0", "cryptography": "50.0.2"}.get,
+                    ),
+                    patch.dict(os.environ, {"GITHUB_SHA": "a" * 40}),
+                    patch.object(qualification, "run_validator", side_effect=mutating_validator) as run_validator,
+                    patch.object(qualification, "run_test_suite") as run_test_suite,
+                ):
+                    return_code = qualification.main(["--report", str(report_path)])
+                    report = json.loads(report_path.read_text(encoding="utf-8"))
+                    self.assertEqual(return_code, 1)
+                    self.assertEqual(run_validator.call_count, 1)
+                    run_test_suite.assert_not_called()
+                    self.assertEqual(report["status"], "failed")
+                    self.assertEqual(report["blocker_codes"], ["INPUT_DIGEST_CHANGED"])
+                    self.assertEqual(
+                        report["validators"]["endpoint_profile"]["state"],
+                        "input_drift_detected",
+                    )
+                    self.assertTrue(all(
+                        report["validators"][name]["state"] == "blocked_input_digest_changed"
+                        for name in ("endpoint_approval_binding", "capability_registry", "mutation_receipt")
+                    ))
+                    self.assertTrue(all(
+                        suite["state"] == "blocked_input_digest_changed"
+                        for suite in report["test_suites"]
+                    ))
+            finally:
+                os.chdir(old_cwd)
 
     def test_missing_input_is_explicit_not_silently_omitted(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
