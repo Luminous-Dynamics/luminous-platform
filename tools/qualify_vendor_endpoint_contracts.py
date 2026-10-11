@@ -57,6 +57,7 @@ INPUT_PATHS = (
     "tools/validate_vendor_management_endpoint_approval.py",
     "tools/verify_vendor_management_endpoint_approval_signature.py",
     "tools/validate_vendor_adapter_registry.py",
+    "tools/validate_hardware_portfolio.py",
     "tools/validate_vendor_operation_receipt.py",
     "tests/test_vendor_management_endpoint_profile.py",
     "tests/test_vendor_management_endpoint_approval.py",
