@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Run exact-head, redacted qualification checks for synthetic vendor endpoints.
 
-This runner validates only the checked-in synthetic profile, pending approval
-record, and their local contract tests. It does not contact an endpoint, verify
+This runner validates the checked-in synthetic endpoint profile, approval records,
+capability registry, mutation receipt, and their local contract tests. It does not contact an endpoint, verify
 a cryptographic approval, authorize a target, or qualify an adapter/device.
 Raw validator/test output and traceback text are intentionally discarded.
 """
@@ -31,12 +31,14 @@ VALIDATORS = {
     "endpoint_profile": "tools/validate_vendor_management_endpoint_profile.py",
     "endpoint_approval_binding": "tools/validate_vendor_management_endpoint_approval.py",
     "capability_registry": "tools/validate_vendor_adapter_registry.py",
+    "mutation_receipt": "tools/validate_vendor_operation_receipt.py",
 }
 TEST_SUITE_PATTERNS = (
     "test_vendor_management_endpoint_profile.py",
     "test_vendor_management_endpoint_approval.py",
     "test_vendor_management_endpoint_approval_signature.py",
     "test_vendor_adapter_registry.py",
+    "test_vendor_operation_receipt.py",
     "test_vendor_endpoint_qualification_runner.py",
 )
 INPUT_PATHS = (
@@ -46,18 +48,25 @@ INPUT_PATHS = (
     "schemas/vendor-management-endpoint-approval-v1.schema.json",
     "schemas/vendor-management-approval-trust-store-v1.schema.json",
     "schemas/vendor-adapter-capability-registry-v1.schema.json",
+    "schemas/vendor-operation-effect-receipt-v1.schema.json",
     "security/vendor-adapter-capability-registry-v1.json",
+    "tests/fixtures/vendor-operation-effect-receipt-prepared-v1.json",
     "tests/fixtures/vendor-management-endpoint-profile-v1.json",
     "tests/fixtures/vendor-management-endpoint-approval-v1.json",
     "tools/validate_vendor_management_endpoint_profile.py",
     "tools/validate_vendor_management_endpoint_approval.py",
     "tools/verify_vendor_management_endpoint_approval_signature.py",
     "tools/validate_vendor_adapter_registry.py",
+    "tools/validate_vendor_operation_receipt.py",
     "tests/test_vendor_management_endpoint_profile.py",
     "tests/test_vendor_management_endpoint_approval.py",
     "tests/test_vendor_management_endpoint_approval_signature.py",
     "tests/test_vendor_adapter_registry.py",
+    "tests/test_vendor_operation_receipt.py",
     "tests/test_vendor_endpoint_qualification_runner.py",
+    "docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md",
+    "docs/VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md",
+    "docs/VENDOR_ADAPTER_PILOT_EXECUTION_PLAYBOOK_V1.md",
     "tools/qualify_vendor_endpoint_contracts.py",
 )
 FAILURE_CODES = {
@@ -72,6 +81,7 @@ FAILURE_CODES = {
     "TEST_SUITE_FAILED",
     "TEST_WORKER_FAILED",
     "CAPABILITY_REGISTRY_FAILED",
+    "RECEIPT_VALIDATOR_FAILED",
 }
 INCOMPLETE_CODES = {
     "CHECKED_OUT_HEAD_UNAVAILABLE",
@@ -351,6 +361,8 @@ def main(argv: list[str] | None = None) -> int:
         blockers.append("APPROVAL_VALIDATOR_FAILED")
     if validators["capability_registry"]["state"] != "passed":
         blockers.append("CAPABILITY_REGISTRY_FAILED")
+    if validators["mutation_receipt"]["state"] != "passed":
+        blockers.append("RECEIPT_VALIDATOR_FAILED")
 
     test_suites: list[dict[str, object]] = []
     for pattern in TEST_SUITE_PATTERNS:
@@ -369,7 +381,7 @@ def main(argv: list[str] | None = None) -> int:
     blocker_codes = sorted(set(blockers))
     report = {
         "report_schema_version": REPORT_SCHEMA_VERSION,
-        "scope": "synthetic_endpoint_profile_approval_signature_and_capability_scope_contract_tests_only",
+        "scope": "synthetic_endpoint_profile_approval_signature_capability_registry_and_mutation_receipt_contract_tests_only",
         "started_at_utc": started_at,
         "finished_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "revision": {
