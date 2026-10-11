@@ -83,6 +83,7 @@ FAILURE_CODES = {
     "TEST_WORKER_FAILED",
     "CAPABILITY_REGISTRY_FAILED",
     "RECEIPT_VALIDATOR_FAILED",
+    "INPUT_MANIFEST_INCOMPLETE",
 }
 INCOMPLETE_CODES = {
     "CHECKED_OUT_HEAD_UNAVAILABLE",
@@ -120,6 +121,23 @@ def input_hashes(root: Path, paths: tuple[str, ...] = INPUT_PATHS) -> dict[str, 
 
 def manifest_digest(hashes: Mapping[str, str | None]) -> str:
     return hashlib.sha256(canonical_json_bytes(dict(hashes))).hexdigest()
+
+
+def manifest_coverage_gaps(
+    validators: Mapping[str, str] | None = None,
+    test_suite_patterns: tuple[str, ...] | None = None,
+    input_paths: tuple[str, ...] | None = None,
+) -> list[str]:
+    """Return invoked qualification code not bound into the frozen input manifest."""
+    validator_paths = VALIDATORS if validators is None else validators
+    suite_patterns = TEST_SUITE_PATTERNS if test_suite_patterns is None else test_suite_patterns
+    manifest_paths = INPUT_PATHS if input_paths is None else input_paths
+    required = {
+        "tools/qualify_vendor_endpoint_contracts.py",
+        *validator_paths.values(),
+        *(f"tests/{pattern}" for pattern in suite_patterns),
+    }
+    return sorted(required.difference(manifest_paths))
 
 
 def child_environment(source: Mapping[str, str] | None = None) -> dict[str, str]:
@@ -347,6 +365,10 @@ def main(argv: list[str] | None = None) -> int:
     elif cryptography_version != EXPECTED_CRYPTOGRAPHY_VERSION:
         blockers.append("CRYPTOGRAPHY_VERSION_MISMATCH")
 
+    manifest_gaps = manifest_coverage_gaps()
+    if manifest_gaps:
+        blockers.append("INPUT_MANIFEST_INCOMPLETE")
+
     before_hashes = input_hashes(root)
     missing_inputs = [path for path, digest in before_hashes.items() if digest is None]
     if missing_inputs:
@@ -407,6 +429,7 @@ def main(argv: list[str] | None = None) -> int:
         "input_manifest_sha256": before_manifest_digest,
         "inputs_unchanged_after_execution": before_hashes == after_hashes,
         "missing_inputs": missing_inputs,
+        "manifest_coverage_gaps": manifest_gaps,
         "validators": validators,
         "test_suites": test_suites,
         "blocker_codes": blocker_codes,
