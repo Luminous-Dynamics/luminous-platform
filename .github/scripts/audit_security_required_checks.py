@@ -134,46 +134,6 @@ def ruleset_identity(rule: Any) -> dict[str, Any] | None:
     return {"ruleset_id": ruleset_id, "source_type": source_type, "source": source}
 
 
-def ruleset_contexts(rule: Any, required_contexts: set[str]) -> set[str]:
-    """Return required contexts bound to Actions in one strict required-check rule."""
-    if not isinstance(rule, dict) or rule.get("type") != "required_status_checks":
-        return set()
-    parameters = rule.get("parameters")
-    if not isinstance(parameters, dict) or parameters.get("strict_required_status_checks_policy") is not True:
-        return set()
-    entries = parameters.get("required_status_checks")
-    if not isinstance(entries, list):
-        return set()
-    by_context: dict[str, list[Any]] = {}
-    for item in entries:
-        if isinstance(item, dict) and isinstance(item.get("context"), str) and item["context"]:
-            by_context.setdefault(item["context"], []).append(item.get("integration_id"))
-    return {
-        context for context in required_contexts
-        if context in by_context
-        and all(app_id == GITHUB_ACTIONS_INTEGRATION_ID for app_id in by_context[context])
-    }
-
-
-def classic_bound_contexts(payload: Any, required_contexts: set[str]) -> set[str]:
-    """Require modern branch-protection checks[] entries bound to GitHub Actions.
-
-    Legacy contexts[] identifies names only and cannot establish which app supplied
-    a status. It is intentionally insufficient for an authorization-grade PASS.
-    """
-    if not isinstance(payload, dict) or not isinstance(payload.get("checks"), list):
-        return set()
-    by_context: dict[str, list[Any]] = {}
-    for item in payload["checks"]:
-        if isinstance(item, dict) and isinstance(item.get("context"), str) and item["context"]:
-            by_context.setdefault(item["context"], []).append(item.get("app_id"))
-    return {
-        context for context in required_contexts
-        if context in by_context
-        and all(app_id == GITHUB_ACTIONS_INTEGRATION_ID for app_id in by_context[context])
-    }
-
-
 def ruleset_required_check_observations(
     rule: Any, required_contexts: set[str]
 ) -> dict[str, list[tuple[bool, Any]]] | None:
