@@ -58,6 +58,12 @@ def canonical_profile_digest(profile: dict[str, Any]) -> str:
     return hashlib.sha256(canonical).hexdigest()
 
 
+def _safe_schema_error_code(error: Any) -> str:
+    """Describe a schema failure without echoing untrusted values into logs."""
+    rule = str(getattr(error, "validator", "schema")).upper()
+    return f"SCHEMA_{rule}_VIOLATION"
+
+
 def approval_errors(
     approval: dict[str, Any],
     approval_schema: dict[str, Any],
@@ -73,7 +79,7 @@ def approval_errors(
             f"[{part}]" if isinstance(part, int) else f".{part}"
             for part in error.absolute_path
         )
-        errors.append(f"{where}: {error.message}")
+        errors.append(f"{where}: {_safe_schema_error_code(error)}")
     if errors:
         return errors
 
