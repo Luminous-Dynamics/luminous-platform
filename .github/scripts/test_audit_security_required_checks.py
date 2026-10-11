@@ -235,6 +235,67 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("Security Audit / Independent Verifier", result["conflicting_contexts"])
 
+    def test_paginated_exactly_100_rule_entries_can_qualify(self):
+        rules = [self.strict_rule()]
+        rules.extend({
+            "type": "commit_message_pattern",
+            "ruleset_id": 1000 + i,
+            "ruleset_source_type": "Repository",
+            "ruleset_source": "owner/repo",
+            "parameters": {},
+        } for i in range(99))
+        decision = module.assess_policy(
+            rules, None, 404, self.required, pagination_complete=True
+        )
+        self.assertEqual(decision["status"], "PASS")
+
+    def test_active_rules_pagination_fetches_until_short_page(self):
+        first = [self.strict_rule()] + [{
+            "type": "commit_message_pattern",
+            "ruleset_id": 1000 + i,
+            "ruleset_source_type": "Repository",
+            "ruleset_source": "owner/repo",
+            "parameters": {},
+        } for i in range(99)]
+        second = [{
+            "type": "commit_message_pattern",
+            "ruleset_id": 2000,
+            "ruleset_source_type": "Repository",
+            "ruleset_source": "owner/repo",
+            "parameters": {},
+        }]
+        with patch.object(module, "get_json", side_effect=[first, second]) as mocked:
+            rules = module.fetch_all_active_rules("owner", "repo", "main", "token")
+        self.assertEqual(len(rules), 101)
+        self.assertEqual(mocked.call_count, 2)
+        self.assertIn("per_page=100&page=1", mocked.call_args_list[0].args[0])
+        self.assertIn("per_page=100&page=2", mocked.call_args_list[1].args[0])
+
+    def test_active_rules_pagination_rejects_malformed_page(self):
+        with patch.object(module, "get_json", return_value={"rules": []}):
+            with self.assertRaisesRegex(module.AuditError, "page 1 is malformed"):
+                module.fetch_all_active_rules("owner", "repo", "main", "token")
+
+    def test_active_rules_pagination_exceeds_ceiling_fail_closed(self):
+        full_page = [{
+            "type": "commit_message_pattern",
+            "ruleset_id": 1000 + i,
+            "ruleset_source_type": "Repository",
+            "ruleset_source": "owner/repo",
+            "parameters": {},
+        } for i in range(100)]
+        beyond_ceiling = [{
+            "type": "commit_message_pattern",
+            "ruleset_id": 5000,
+            "ruleset_source_type": "Repository",
+            "ruleset_source": "owner/repo",
+            "parameters": {},
+        }]
+        with patch.object(module, "get_json", side_effect=[full_page] * 10 + [beyond_ceiling]) as mocked:
+            with self.assertRaisesRegex(module.AuditError, "exceed the 1000-rule audit ceiling"):
+                module.fetch_all_active_rules("owner", "repo", "main", "token")
+        self.assertEqual(mocked.call_count, 11)
+
     def test_page_limit_with_unresolved_contexts_is_incomplete(self):
         rules = [{"type": "deletion", "ruleset_id": i + 1,
                   "ruleset_source_type": "Repository", "ruleset_source": "owner/repo",
