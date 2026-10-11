@@ -94,8 +94,22 @@ def classic_contexts(payload: Any) -> set[str]:
     return result
 
 
+def ruleset_identity(rule: Any) -> dict[str, Any] | None:
+    """Validate the provenance fields present on an effective branch-rule entry."""
+    if not isinstance(rule, dict):
+        return None
+    ruleset_id = rule.get("ruleset_id")
+    source_type = rule.get("ruleset_source_type")
+    source = rule.get("ruleset_source")
+    if (not isinstance(ruleset_id, int) or isinstance(ruleset_id, bool) or ruleset_id <= 0
+            or source_type not in {"Repository", "Organization", "Enterprise"}
+            or not isinstance(source, str) or not source.strip()):
+        return None
+    return {"ruleset_id": ruleset_id, "source_type": source_type, "source": source}
+
+
 def ruleset_contexts(rule: Any, required_contexts: set[str]) -> set[str]:
-    """Return only required contexts pinned to the expected GitHub Actions integration."""
+    """Return required contexts bound to Actions in one strict required-check rule."""
     if not isinstance(rule, dict) or rule.get("type") != "required_status_checks":
         return set()
     parameters = rule.get("parameters")
@@ -150,20 +164,40 @@ def assess_policy(
             "reason": "effective branch-rules response is not a list",
         }
 
+    # Effective branch rules are additive. A strict app-bound required-check rule
+    # may come from a repository, organization, or enterprise ruleset; the two
+    # contexts need not be stored in the same ruleset.
+    qualified_contexts: set[str] = set()
+    qualifying_sources: list[dict[str, Any]] = []
     for rule in active_rules:
-        contexts = ruleset_contexts(rule, required_contexts)
-        if required_contexts <= contexts:
-            label = f"ruleset:{rule.get('ruleset_id', 'unknown')}"
+        identity = ruleset_identity(rule)
+        if identity is None:
             return {
-                "status": "PASS",
-                "source": label,
-                "observed_contexts": sorted(contexts),
-                "missing_contexts": [],
-                "reason": (
-                    "active required-status-check rule requires all contexts with strict up-to-date policy "
-                    f"and integration_id {GITHUB_ACTIONS_INTEGRATION_ID}"
-                ),
+                "status": "INCOMPLETE",
+                "source": None,
+                "observed_contexts": [],
+                "missing_contexts": sorted(required_contexts),
+                "reason": "effective branch-rules response contains an entry with malformed ruleset provenance",
             }
+        contexts = ruleset_contexts(rule, required_contexts)
+        if contexts:
+            qualified_contexts.update(contexts)
+            qualifying_sources.append(identity)
+    if required_contexts <= qualified_contexts:
+        source_labels = sorted({
+            f"{item['source_type']}:{item['source']}#{item['ruleset_id']}"
+            for item in qualifying_sources
+        })
+        return {
+            "status": "PASS",
+            "source": source_labels,
+            "observed_contexts": sorted(qualified_contexts),
+            "missing_contexts": [],
+            "reason": (
+                "active strict required-status-check rules collectively require all contexts, "
+                f"each pinned to integration_id {GITHUB_ACTIONS_INTEGRATION_ID}"
+            ),
+        }
 
     if isinstance(classic_protection, dict):
         observed = classic_contexts(classic_protection)
@@ -192,6 +226,15 @@ def assess_policy(
             "bound_contexts": sorted(contexts),
             "missing_contexts": sorted(missing),
             "reason": "; ".join(reasons),
+        }
+
+    if len(active_rules) >= 100 and classic_error_status != 404:
+        return {
+            "status": "INCOMPLETE",
+            "source": None,
+            "observed_contexts": [],
+            "missing_contexts": sorted(required_contexts),
+            "reason": "effective branch-rules page may be truncated; unable to prove complete required-check configuration",
         }
 
     if classic_error_status == 404:
@@ -235,7 +278,7 @@ def audit_repository(repo: str, policy: dict[str, Any], token: str) -> dict[str,
             return result
 
         active_rules = get_json(
-            f"/repos/{owner}/{name}/rules/branches/{encoded_branch}", token
+            f"/repos/{owner}/{name}/rules/branches/{encoded_branch}?per_page=100&page=1", token
         )
         classic: Any | None = None
         classic_error_status: int | None = None
