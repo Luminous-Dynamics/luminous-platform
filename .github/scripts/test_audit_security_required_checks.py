@@ -69,7 +69,7 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         }
         decision = module.assess_policy([], classic, None, self.required)
         self.assertEqual(decision["status"], "PASS")
-        self.assertEqual(decision["source"], "classic-branch-protection")
+        self.assertEqual(decision["source"], ["classic-branch-protection"])
 
     def test_classic_protection_name_only_contexts_do_not_qualify(self):
         classic = {"strict": True, "contexts": sorted(self.required)}
@@ -124,7 +124,7 @@ class RequiredCheckPolicyTests(unittest.TestCase):
                 "required_status_checks": [{"context": context} for context in self.required],
              }}
         ], None, 404, self.required)
-        self.assertEqual(decision["status"], "FAIL")
+        self.assertEqual(decision["status"], "INCOMPLETE")
 
     def test_classic_contexts_merge_checks_and_legacy_fields(self):
         contexts = module.classic_contexts({
@@ -132,6 +132,36 @@ class RequiredCheckPolicyTests(unittest.TestCase):
             "checks": [{"context": "Shared security audit / Deterministic audit verdict and evidence completeness"}],
         })
         self.assertEqual(contexts, self.required)
+
+    def test_required_contexts_can_be_split_between_active_ruleset_and_classic_protection(self):
+        producer = self.strict_rule(contexts=[
+            "Shared security audit / Deterministic audit verdict and evidence completeness"
+        ])
+        classic = {
+            "strict": True,
+            "contexts": [],
+            "checks": [{"context": "Security Audit / Independent Verifier",
+                        "app_id": module.GITHUB_ACTIONS_INTEGRATION_ID}],
+        }
+        result = module.assess_policy([producer], classic, None, self.required)
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(set(result["observed_contexts"]), self.required)
+        self.assertEqual(set(result["source"]), {"Repository:owner/repo#42", "classic-branch-protection"})
+
+    def test_ruleset_duplicate_context_with_conflicting_app_binding_fails(self):
+        correct = self.strict_rule()
+        conflicting = self.strict_rule(contexts=["Security Audit / Independent Verifier"])
+        conflicting["ruleset_id"] = 43
+        conflicting["ruleset_source_type"] = "Organization"
+        conflicting["ruleset_source"] = "Luminous-Dynamics"
+        conflicting["parameters"]["required_status_checks"][0]["integration_id"] = 99999
+        result = module.assess_policy([correct, conflicting], None, 404, self.required)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("Security Audit / Independent Verifier", result["conflicting_contexts"])
+
+    def test_malformed_classic_protection_is_incomplete(self):
+        result = module.assess_policy([], {"contexts": sorted(self.required)}, None, self.required)
+        self.assertEqual(result["status"], "INCOMPLETE")
 
     def test_required_contexts_can_be_split_across_strict_active_rulesets(self):
         producer = self.strict_rule(contexts=[
