@@ -202,10 +202,12 @@ jobs:
           shellcheck_archive="$RUNNER_TEMP/shellcheck-v0.11.0.linux.x86_64.tar.xz"
           shellcheck_dir="$RUNNER_TEMP/shellcheck-v0.11.0"
           mkdir -p security-audit-results/workflows "$tool_dir" "$shellcheck_dir"
-          echo "version=v1.7.12" > "$report"
-          echo "expected_archive_sha256=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8" >> "$report"
-          echo "shellcheck_version_expected=v0.11.0" >> "$report"
-          echo "shellcheck_archive_sha256_expected=8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198" >> "$report"
+          {
+            echo "version=v1.7.12"
+            echo "expected_archive_sha256=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+            echo "shellcheck_version_expected=v0.11.0"
+            echo "shellcheck_archive_sha256_expected=8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
+          } > "$report"
           curl -fsSL --retry 3 \
             -o "$archive" \
             "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
@@ -1071,7 +1073,8 @@ jobs:
           tracked_named_paths() {
             local root="$1" prefix="$2"
             shift 2
-            local tree_file path basename expected
+            local tree_file path basename expected unsafe_path unsafe_path_sha256
+            local unsafe_path_found=0
             tree_file="$(mktemp "$RUNNER_TEMP/tracked-tree.XXXXXX")"
             if ! git -C "$root" ls-tree -r -z --name-only HEAD > "$tree_file"; then
               rm -f -- "$tree_file"
@@ -1080,9 +1083,9 @@ jobs:
             fi
             while IFS= read -r -d '' path; do
               if [[ "$path" =~ [[:cntrl:]] || "$path" == *=* ]]; then
-                rm -f -- "$tree_file"
-                echo "FAIL: tracked path cannot be represented safely in evidence: $root/$path" >&2
-                return 2
+                unsafe_path="$root/$path"
+                unsafe_path_found=1
+                break
               fi
               basename="${path##*/}"
               for expected in "$@"; do
@@ -1093,6 +1096,11 @@ jobs:
               done
             done < "$tree_file"
             rm -f -- "$tree_file"
+            if [[ "$unsafe_path_found" -ne 0 ]]; then
+              unsafe_path_sha256="$(printf '%s' "$unsafe_path" | sha256sum | cut -d' ' -f1)"
+              echo "FAIL: tracked path cannot be represented safely in evidence: path_sha256=$unsafe_path_sha256" >&2
+              return 2
+            fi
           }
 
           raw_inventory="$RUNNER_TEMP/rustsec-lockfiles.raw"
@@ -1109,9 +1117,11 @@ jobs:
           fi
           mapfile -t lockfiles < "$inventory_file"
           printf '%s\n' "${lockfiles[@]}" > "$inventory_file"
-          echo "lockfile_inventory_source=git-tree-at-HEAD" >> "$result_root/summary.txt"
-          echo "lockfile_inventory_discovery_status=$([[ "$lock_inventory_discovery_failed" -eq 0 ]] && echo PASS || echo FAIL)" >> "$result_root/summary.txt"
-          echo "lockfile_inventory_sha256=$(sha256sum "$inventory_file" | cut -d' ' -f1)" >> "$result_root/summary.txt"
+          {
+            echo "lockfile_inventory_source=git-tree-at-HEAD"
+            echo "lockfile_inventory_discovery_status=$([[ "$lock_inventory_discovery_failed" -eq 0 ]] && echo PASS || echo FAIL)"
+            echo "lockfile_inventory_sha256=$(sha256sum "$inventory_file" | cut -d' ' -f1)"
+          } >> "$result_root/summary.txt"
 
           rustsec_failed=0
           coverage_failed=0
@@ -1126,10 +1136,12 @@ jobs:
             sed -i 's/^rustsec_status=.*/rustsec_status=RUNNING/' "$result_root/summary.txt"
             sed -i '/^incomplete_reason=setup_or_audit_not_completed$/d' "$result_root/summary.txt"
           fi
-          echo "lockfile_count=${#lockfiles[@]}" >> "$result_root/summary.txt"
-          echo "rustc=$(rustc +1.96.0 --version)" >> "$result_root/summary.txt"
-          echo "cargo=$(cargo +1.96.0 --version)" >> "$result_root/summary.txt"
-          echo "cargo_audit=$(cargo audit --version)" >> "$result_root/summary.txt"
+          {
+            echo "lockfile_count=${#lockfiles[@]}"
+            echo "rustc=$(rustc +1.96.0 --version)"
+            echo "cargo=$(cargo +1.96.0 --version)"
+            echo "cargo_audit=$(cargo audit --version)"
+          } >> "$result_root/summary.txt"
 
           advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
           if git clone --depth 1 https://github.com/RustSec/advisory-db "$advisory_db"; then
@@ -1225,7 +1237,7 @@ jobs:
                 case "$lockfile" in
                   "$module_path"/*)
                     lockfile_repo="$workspace/$module_path"
-                    lockfile_rel="${lockfile#${module_path}/}"
+                    lockfile_rel="${lockfile#"$module_path"/}"
                     break
                     ;;
                 esac
@@ -2053,7 +2065,8 @@ jobs:
           tracked_named_paths() {
             local root="$1" prefix="$2"
             shift 2
-            local tree_file path basename expected
+            local tree_file path basename expected unsafe_path unsafe_path_sha256
+            local unsafe_path_found=0
             tree_file="$(mktemp "$RUNNER_TEMP/tracked-tree.XXXXXX")"
             if ! git -C "$root" ls-tree -r -z --name-only HEAD > "$tree_file"; then
               rm -f -- "$tree_file"
@@ -2062,9 +2075,9 @@ jobs:
             fi
             while IFS= read -r -d '' path; do
               if [[ "$path" =~ [[:cntrl:]] || "$path" == *=* ]]; then
-                rm -f -- "$tree_file"
-                echo "FAIL: tracked path cannot be represented safely in evidence: $root/$path" >&2
-                return 2
+                unsafe_path="$root/$path"
+                unsafe_path_found=1
+                break
               fi
               basename="${path##*/}"
               for expected in "$@"; do
@@ -2075,6 +2088,11 @@ jobs:
               done
             done < "$tree_file"
             rm -f -- "$tree_file"
+            if [[ "$unsafe_path_found" -ne 0 ]]; then
+              unsafe_path_sha256="$(printf '%s' "$unsafe_path" | sha256sum | cut -d' ' -f1)"
+              echo "FAIL: tracked path cannot be represented safely in evidence: path_sha256=$unsafe_path_sha256" >&2
+              return 2
+            fi
           }
 
           stage_exact_committed_blob() {
@@ -2197,12 +2215,14 @@ jobs:
           if [[ "$lock_inventory_discovery_failed" -ne 0 ]]; then
             npm_failed=1
           fi
-          echo "lockfile_inventory_source=git-tree-at-HEAD" >> "$result_root/summary.txt"
-          echo "lockfile_inventory_discovery_status=$([[ "$lock_inventory_discovery_failed" -eq 0 ]] && echo PASS || echo FAIL)" >> "$result_root/summary.txt"
-          echo "node=$(node --version)" >> "$result_root/summary.txt"
-          echo "npm=$(npm --version)" >> "$result_root/summary.txt"
-          echo "lockfile_count=${#lockfiles[@]}" >> "$result_root/summary.txt"
-          printf 'lockfile_inventory_path=%s\n' "${lockfiles[@]}" >> "$result_root/summary.txt"
+          {
+            echo "lockfile_inventory_source=git-tree-at-HEAD"
+            echo "lockfile_inventory_discovery_status=$([[ "$lock_inventory_discovery_failed" -eq 0 ]] && echo PASS || echo FAIL)"
+            echo "node=$(node --version)"
+            echo "npm=$(npm --version)"
+            echo "lockfile_count=${#lockfiles[@]}"
+            printf 'lockfile_inventory_path=%s\n' "${lockfiles[@]}"
+          } >> "$result_root/summary.txt"
 
           if [[ "${#lockfiles[@]}" -eq 0 ]]; then
             npm_failed=1
@@ -2239,9 +2259,11 @@ jobs:
           if [[ "$manifest_inventory_discovery_failed" -ne 0 ]]; then
             npm_failed=1
           fi
-          echo "manifest_inventory_source=git-tree-at-HEAD" >> "$result_root/summary.txt"
-          echo "manifest_inventory_discovery_status=$([[ "$manifest_inventory_discovery_failed" -eq 0 ]] && echo PASS || echo FAIL)" >> "$result_root/summary.txt"
-          echo "tracked_package_manifest_count=${#manifests[@]}" >> "$result_root/summary.txt"
+          {
+            echo "manifest_inventory_source=git-tree-at-HEAD"
+            echo "manifest_inventory_discovery_status=$([[ "$manifest_inventory_discovery_failed" -eq 0 ]] && echo PASS || echo FAIL)"
+            echo "tracked_package_manifest_count=${#manifests[@]}"
+          } >> "$result_root/summary.txt"
           for manifest_path in "${manifests[@]}"; do
             source_repo="$workspace"
             source_rel="$manifest_path"
@@ -2250,7 +2272,7 @@ jobs:
               case "$manifest_path" in
                 "$module_path"/*)
                   source_repo="$workspace/$module_path"
-                  source_rel="${manifest_path#${module_path}/}"
+                  source_rel="${manifest_path#"$module_path"/}"
                   break
                   ;;
               esac
@@ -2269,7 +2291,7 @@ jobs:
               case "$lockfile" in
                 "$module_path"/*)
                   source_repo="$workspace/$module_path"
-                  source_rel="${lockfile#${module_path}/}"
+                  source_rel="${lockfile#"$module_path"/}"
                   break
                   ;;
               esac
@@ -2308,7 +2330,7 @@ jobs:
               case "$lockfile" in
                 "$module_path"/*)
                   lock_repo="$workspace/$module_path"
-                  lock_rel="${lockfile#${module_path}/}"
+                  lock_rel="${lockfile#"$module_path"/}"
                   lock_prefix="${module_path}/"
                   break
                   ;;
@@ -2383,7 +2405,7 @@ jobs:
               case "$manifest" in
                 "$module_path"/*)
                   manifest_repo="$workspace/$module_path"
-                  manifest_rel="${manifest#${module_path}/}"
+                  manifest_rel="${manifest#"$module_path"/}"
                   break
                   ;;
               esac
@@ -2545,8 +2567,18 @@ jobs:
               outcome="FAIL"
               npm_failed=1
             fi
-            if [[ -f "$report" ]]; then report_sha="$(sha256sum "$report" | cut -d' ' -f1); else report_sha="missing"; npm_failed=1; fi
-            if [[ -f "$stderr" ]]; then stderr_sha="$(sha256sum "$stderr" | cut -d' ' -f1); else stderr_sha="missing"; npm_failed=1; fi
+            if [[ -f "$report" ]]; then
+              report_sha="$(sha256sum -- "$report" | cut -d' ' -f1)"
+            else
+              report_sha="missing"
+              npm_failed=1
+            fi
+            if [[ -f "$stderr" ]]; then
+              stderr_sha="$(sha256sum -- "$stderr" | cut -d' ' -f1)"
+            else
+              stderr_sha="missing"
+              npm_failed=1
+            fi
             printf 'lockfile=%s lockfile_sha256=%s manifest=%s manifest_sha256=%s exit_code=%s outcome=%s report_sha256=%s stderr_sha256=%s\n' \
               "$lockfile" "$lock_sha" "$manifest" "$manifest_sha" "$rc" "$outcome" "$report_sha" "$stderr_sha" \
               >> "$result_root/summary.txt"
@@ -3047,8 +3079,8 @@ jobs:
             echo '### Security audit verdict'
             echo
             echo "- Overall: **$verdict_status**"
-            echo "- Subject: `$SUBJECT_SHA`"
-            echo "- Audit engine: `$AUDIT_ENGINE_SHA`"
+            echo "- Subject: \`$SUBJECT_SHA\`"
+            echo "- Audit engine: \`$AUDIT_ENGINE_SHA\`"
             echo "- Workflow analysis: **$workflow_status**"
             echo "- RustSec: **$rustsec_status** (requested: $AUDIT_RUST)"
             echo "- npm: **$npm_status** (requested: $AUDIT_NODE)"
