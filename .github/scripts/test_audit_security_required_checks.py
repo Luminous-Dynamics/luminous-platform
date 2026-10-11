@@ -276,6 +276,19 @@ class RequiredCheckPolicyTests(unittest.TestCase):
             with self.assertRaisesRegex(module.AuditError, "page 1 is malformed"):
                 module.fetch_all_active_rules("owner", "repo", "main", "token")
 
+    def test_active_rules_pagination_accepts_exact_ceiling_with_empty_probe(self):
+        full_page = [{
+            "type": "commit_message_pattern",
+            "ruleset_id": 1000 + i,
+            "ruleset_source_type": "Repository",
+            "ruleset_source": "owner/repo",
+            "parameters": {},
+        } for i in range(100)]
+        with patch.object(module, "get_json", side_effect=[full_page] * 10 + [[]]) as mocked:
+            rules = module.fetch_all_active_rules("owner", "repo", "main", "token")
+        self.assertEqual(len(rules), module.MAX_EFFECTIVE_RULES)
+        self.assertEqual(mocked.call_count, 11)
+
     def test_active_rules_pagination_exceeds_ceiling_fail_closed(self):
         full_page = [{
             "type": "commit_message_pattern",
