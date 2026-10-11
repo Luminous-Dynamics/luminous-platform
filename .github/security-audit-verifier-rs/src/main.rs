@@ -97,6 +97,10 @@ fn digest_hex(bytes: &[u8]) -> String {
     encoded
 }
 
+fn verifier_tests_passed(outcome: Option<&str>) -> bool {
+    outcome == Some("success")
+}
+
 fn api_json(method: Method, path: &str, token: &str, body: Option<Value>) -> VerifyResult<Value> {
     let client = Client::builder()
         .timeout(Duration::from_secs(25))
@@ -933,7 +937,7 @@ fn run_verifier() -> VerifyResult<i32> {
     }
     let target = get_field_str(&run, "html_url").unwrap_or("");
     let self_test_outcome = env::var("VERIFIER_TEST_OUTCOME").ok();
-    if self_test_outcome.as_deref() != Some("success") {
+    if !verifier_tests_passed(self_test_outcome.as_deref()) {
         let observed_outcome = self_test_outcome.as_deref().unwrap_or("");
         post_status(&repo, &subject, &token, "failure", &format!("Independent verifier self-tests did not pass: {observed_outcome}"), Some(target))?;
         eprintln!("FAIL: independent verifier self-tests did not pass");
@@ -1053,10 +1057,9 @@ mod tests {
 
     #[test]
     fn verifier_self_tests_require_explicit_success() {
-        assert_eq!(Some("success"), Some("success").filter(|outcome| *outcome == "success"));
-        assert_ne!(Some("success"), None::<&str>);
-        for outcome in ["", "failure", "cancelled", "skipped", "unexpected"] {
-            assert_ne!(Some("success"), Some(outcome).filter(|value| *value == "success"));
+        assert!(verifier_tests_passed(Some("success")));
+        for outcome in [None, Some(""), Some("failure"), Some("cancelled"), Some("skipped"), Some("unexpected")] {
+            assert!(!verifier_tests_passed(outcome), "{outcome:?}");
         }
     }
 
