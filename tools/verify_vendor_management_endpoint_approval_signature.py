@@ -41,6 +41,14 @@ SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 EXCLUDED_PAYLOAD_FIELDS = frozenset({"signed_payload_digest", "signature_evidence_ref"})
 
 
+def _parse_integer(value: str) -> int:
+    # RFC 8785's verified erratum warns that -0 canonicalizes to 0 and SHOULD
+    # be rejected at parse time to prevent ambiguity with unparsed source bytes.
+    if value == "-0":
+        raise ValueError("negative zero is outside the canonical contract")
+    return int(value)
+
+
 def _reject_float(value: str) -> None:
     raise ValueError("floating-point JSON values are outside the canonical contract")
 
@@ -63,6 +71,7 @@ def strict_json_loads(data: bytes | str) -> Any:
     return json.loads(
         data,
         object_pairs_hook=_unique_object,
+        parse_int=_parse_integer,
         parse_float=_reject_float,
         parse_constant=_reject_constant,
     )
