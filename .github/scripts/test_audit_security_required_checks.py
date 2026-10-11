@@ -24,6 +24,8 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         return {
             "type": "required_status_checks",
             "ruleset_id": 42,
+            "ruleset_source_type": "Repository",
+            "ruleset_source": "owner/repo",
             "parameters": {
                 "strict_required_status_checks_policy": strict,
                 "required_status_checks": [
@@ -127,6 +129,34 @@ class RequiredCheckPolicyTests(unittest.TestCase):
             "checks": [{"context": "Shared security audit / Deterministic audit verdict and evidence completeness"}],
         })
         self.assertEqual(contexts, self.required)
+
+    def test_required_contexts_can_be_split_across_strict_active_rulesets(self):
+        producer = self.strict_rule(contexts=[
+            "Shared security audit / Deterministic audit verdict and evidence completeness"
+        ])
+        verifier = self.strict_rule(contexts=["Security Audit / Independent Verifier"])
+        verifier["ruleset_id"] = 43
+        verifier["ruleset_source_type"] = "Organization"
+        verifier["ruleset_source"] = "Luminous-Dynamics"
+        result = module.assess_policy([producer, verifier], None, 404, self.required)
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["source"], [
+            "Organization:Luminous-Dynamics#43",
+            "Repository:owner/repo#42",
+        ])
+
+    def test_malformed_ruleset_provenance_is_incomplete_not_pass(self):
+        producer = self.strict_rule()
+        producer.pop("ruleset_source_type")
+        result = module.assess_policy([producer], None, 404, self.required)
+        self.assertEqual(result["status"], "INCOMPLETE")
+
+    def test_page_limit_with_unresolved_contexts_is_incomplete(self):
+        rules = [{"type": "deletion", "ruleset_id": i + 1,
+                  "ruleset_source_type": "Repository", "ruleset_source": "owner/repo",
+                  "parameters": {}} for i in range(100)]
+        result = module.assess_policy(rules, None, 404, self.required)
+        self.assertEqual(result["status"], "INCOMPLETE")
 
     def test_ruleset_wrong_integration_id_does_not_qualify(self):
         rule = self.strict_rule()
