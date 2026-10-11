@@ -329,15 +329,6 @@ def assess_policy(
             ),
         }
 
-    if len(active_rules) >= 100:
-        return {
-            "status": "INCOMPLETE",
-            "source": sorted(source_labels) or None,
-            "observed_contexts": sorted(observed_contexts),
-            "missing_contexts": sorted(required_contexts - qualified_contexts),
-            "reason": "effective branch-rules page may be truncated; unable to prove complete required-check configuration",
-        }
-
     if isinstance(classic_protection, dict):
         if classic is None:
             return {
