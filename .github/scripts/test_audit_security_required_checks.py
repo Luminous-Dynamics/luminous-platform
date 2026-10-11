@@ -359,6 +359,27 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertIn("Usage:", output.getvalue())
 
+    def test_aggregate_fail_dominates_incomplete(self):
+        rows = [
+            {"repository": "Luminous-Dynamics/mycelix", "status": "FAIL"},
+            {"repository": "Luminous-Dynamics/symthaea", "status": "INCOMPLETE"},
+            {"repository": "Luminous-Dynamics/luminous-platform", "status": "PASS"},
+        ]
+        self.assertEqual(module.aggregate_status(rows), "FAIL")
+
+    def test_aggregate_incomplete_dominates_only_passes(self):
+        rows = [{"status": "PASS"}, {"status": "INCOMPLETE"}]
+        self.assertEqual(module.aggregate_status(rows), "INCOMPLETE")
+
+    def test_aggregate_pass_requires_every_repository_pass(self):
+        self.assertEqual(module.aggregate_status([{"status": "PASS"}, {"status": "PASS"}]), "PASS")
+
+    def test_aggregate_empty_or_malformed_receipt_fails_closed(self):
+        self.assertEqual(module.aggregate_status([]), "INCOMPLETE")
+        self.assertEqual(module.aggregate_status(None), "INCOMPLETE")
+        self.assertEqual(module.aggregate_status([{"status": "MAYBE"}]), "INCOMPLETE")
+        self.assertEqual(module.aggregate_status([None]), "INCOMPLETE")
+
     def test_policy_requires_default_branch_match(self):
         # The repository-default branch consistency is enforced in audit_repository;
         # this asserts that policy always names the branch that must be checked.
