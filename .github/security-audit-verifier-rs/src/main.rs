@@ -188,6 +188,57 @@ fn find_open_pr(
     Ok(matches.pop())
 }
 
+fn check_run_pr_binding(
+    run: &Value,
+    repo: &str,
+    pr: &Value,
+    subject: &str,
+    branch: &str,
+    default_branch: &str,
+) -> VerifyResult<()> {
+    let associations = run.get("pull_requests").and_then(Value::as_array)
+        .ok_or_else(|| "workflow run PR association is missing or malformed".to_string())?;
+    if associations.len() != 1 {
+        return Err("workflow run must have exactly one authoritative PR association".to_string());
+    }
+    let number = pr.get("number").and_then(Value::as_u64)
+        .filter(|number| *number > 0)
+        .ok_or_else(|| "matched PR has an invalid number".to_string())?;
+    let associated = &associations[0];
+    if associated.get("number").and_then(Value::as_u64) != Some(number) {
+        return Err("workflow-run PR association number differs from the independently matched PR".to_string());
+    }
+    let head = associated.get("head").unwrap_or(&Value::Null);
+    let base = associated.get("base").unwrap_or(&Value::Null);
+    let head_repo = head.get("repo").unwrap_or(&Value::Null);
+    let base_repo = base.get("repo").unwrap_or(&Value::Null);
+    if get_field_str(head, "sha") != Some(subject)
+        || get_field_str(head, "ref") != Some(branch)
+        || get_field_str(base, "ref") != Some(default_branch)
+    {
+        return Err("workflow-run PR association head/base differs from the independently matched PR".to_string());
+    }
+    if !get_field_str(head_repo, "full_name").is_some_and(|name| name.eq_ignore_ascii_case(repo))
+        || !get_field_str(base_repo, "full_name").is_some_and(|name| name.eq_ignore_ascii_case(repo))
+    {
+        return Err("workflow-run PR association is not same-repository".to_string());
+    }
+    let run_head = run.get("head_repository").unwrap_or(&Value::Null);
+    let run_repo = run.get("repository").unwrap_or(&Value::Null);
+    let run_head_id = run_head.get("id").and_then(Value::as_u64)
+        .ok_or_else(|| "run head repository ID is missing".to_string())?;
+    let run_repo_id = run_repo.get("id").and_then(Value::as_u64)
+        .ok_or_else(|| "run repository ID is missing".to_string())?;
+    let associated_head_id = head_repo.get("id").and_then(Value::as_u64)
+        .ok_or_else(|| "associated PR head repository ID is missing".to_string())?;
+    let associated_base_id = base_repo.get("id").and_then(Value::as_u64)
+        .ok_or_else(|| "associated PR base repository ID is missing".to_string())?;
+    if run_head_id != run_repo_id || associated_head_id != run_head_id || associated_base_id != run_repo_id {
+        return Err("workflow-run PR association repository IDs disagree".to_string());
+    }
+    Ok(())
+}
+
 fn validate_authoritative_pr_merge_sha(
     current: &Value,
     repo: &str,
@@ -923,6 +974,7 @@ fn run_verifier() -> VerifyResult<i32> {
         println!("No open same-repository PR targets the default branch; no merge status applies.");
         return Ok(0);
     };
+    check_run_pr_binding(&run, &repo, &pr, &subject, &branch, &default_branch)?;
     check_run_binding(&run, &repo, policy, &branch, &subject, expected_attempt)?;
     let workflow_runs_path = format!(
         "/repos/{repo}/actions/workflows/{}/runs?head_sha={subject}&event=pull_request&per_page=100&page=1",
@@ -1060,6 +1112,46 @@ mod tests {
         assert!(verifier_tests_passed(Some("success")));
         for outcome in [None, Some(""), Some("failure"), Some("cancelled"), Some("skipped"), Some("unexpected")] {
             assert!(!verifier_tests_passed(outcome), "{outcome:?}");
+        }
+    }
+
+    #[test]
+    fn workflow_run_pr_association_must_match_exact_same_repo_pr() {
+        let repo = "owner/repo";
+        let subject = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let associated = json!({
+            "number": 12,
+            "head": {
+                "sha": subject,
+                "ref": "security/fix",
+                "repo": {"id": 123, "full_name": repo}
+            },
+            "base": {
+                "ref": "main",
+                "repo": {"id": 123, "full_name": repo}
+            }
+        });
+        let run = json!({
+            "pull_requests": [associated.clone()],
+            "head_repository": {"id": 123, "full_name": repo},
+            "repository": {"id": 123, "full_name": repo}
+        });
+        let pr = json!({"number": 12});
+        assert!(check_run_pr_binding(&run, repo, &pr, subject, "security/fix", "main").is_ok());
+
+        let invalid = vec![
+            json!({"pull_requests": [], "head_repository": {"id":123}, "repository": {"id":123}}),
+            json!({"pull_requests": [{"number":13, "head":associated["head"].clone(), "base":associated["base"].clone()}],
+                   "head_repository": {"id":123}, "repository": {"id":123}}),
+            json!({"pull_requests": [{"number":12, "head": {"sha":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "ref":"security/fix", "repo":{"id":123,"full_name":repo}}, "base":associated["base"].clone()}],
+                   "head_repository": {"id":123}, "repository": {"id":123}}),
+            json!({"pull_requests": [associated.clone(), associated.clone()],
+                   "head_repository": {"id":123}, "repository": {"id":123}}),
+            json!({"pull_requests": [{"number":12, "head": {"sha":subject,"ref":"security/fix","repo":{"id":999,"full_name":"fork/repo"}}, "base":associated["base"].clone()}],
+                   "head_repository": {"id":123}, "repository": {"id":123}})
+        ];
+        for candidate in invalid {
+            assert!(check_run_pr_binding(&candidate, repo, &pr, subject, "security/fix", "main").is_err());
         }
     }
 
