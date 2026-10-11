@@ -13,6 +13,7 @@
 - Registry validator: [validate_vendor_adapter_registry.py](../tools/validate_vendor_adapter_registry.py)
 - Receipt validator: [validate_vendor_operation_receipt.py](../tools/validate_vendor_operation_receipt.py)
 - Implementation acceptance criteria: [Issue #23](https://github.com/Luminous-Dynamics/luminous-platform/issues/23)
+- Pilot procedure: [Vendor Adapter Pilot Execution Playbook v1](VENDOR_ADAPTER_PILOT_EXECUTION_PLAYBOOK_V1.md)
 
 The schemas define allowed shapes; the Python validators add cross-document and cross-field invariants. Passing either validator proves only that the described record conforms to the declared contract—not that a vendor device behaves correctly or a physical effect occurred.
 
