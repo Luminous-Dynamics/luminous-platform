@@ -86,7 +86,7 @@ class QualificationRunnerContractTests(unittest.TestCase):
 
     def test_suite_success_requires_one_or_more_executed_tests(self) -> None:
         self.assertFalse(qualification.successful_suite({
-            "state": "passed", "tests_run": 0, "failures": 0, "errors": 0,
+            "pattern": "test_vendor_endpoint_qualification_runner.py", "state": "passed", "tests_run": 0, "failures": 0, "errors": 0,
             "skipped": 0, "expected_failures": 0, "unexpected_successes": 0,
             "discovery_errors": 0,
         }))
@@ -94,19 +94,32 @@ class QualificationRunnerContractTests(unittest.TestCase):
     def test_suite_success_rejects_boolean_test_counts(self) -> None:
         # bool is a subclass of int in Python; JSON true must not count as 1 test.
         self.assertFalse(qualification.successful_suite({
-            "state": "passed", "tests_run": True, "failures": 0, "errors": 0,
+            "pattern": "test_vendor_endpoint_qualification_runner.py", "state": "passed", "tests_run": True, "failures": 0, "errors": 0,
             "skipped": 0, "expected_failures": 0, "unexpected_successes": 0,
             "discovery_errors": 0,
         }))
         self.assertFalse(qualification.successful_suite({
-            "state": "passed", "tests_run": 1, "failures": False, "errors": 0,
+            "pattern": "test_vendor_endpoint_qualification_runner.py", "state": "passed", "tests_run": 1, "failures": False, "errors": 0,
             "skipped": 0, "expected_failures": 0, "unexpected_successes": 0,
+            "discovery_errors": 0,
+        }))
+
+    def test_suite_success_rejects_unregistered_suite_identity(self) -> None:
+        self.assertFalse(qualification.successful_suite({
+            "pattern": "unregistered_test_suite.py",
+            "state": "passed",
+            "tests_run": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "expected_failures": 0,
+            "unexpected_successes": 0,
             "discovery_errors": 0,
         }))
 
     def test_suite_success_rejects_skips_even_when_test_runner_is_successful(self) -> None:
         self.assertFalse(qualification.successful_suite({
-            "state": "passed", "tests_run": 1, "failures": 0, "errors": 0,
+            "pattern": "test_vendor_endpoint_qualification_runner.py", "state": "passed", "tests_run": 1, "failures": 0, "errors": 0,
             "skipped": 1, "expected_failures": 0, "unexpected_successes": 0,
             "discovery_errors": 0,
         }))
