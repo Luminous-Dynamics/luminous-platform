@@ -16,11 +16,19 @@ class SecurityPolicyTestRunnerTests(unittest.TestCase):
             "test_audit_security_required_checks.py",
             "test_run_security_audit_policy_tests.py",
         })
+        self.assertEqual(set(runner.EXPECTED_TEST_NAMES), set(runner.EXPECTED_TEST_METHODS))
         self.assertEqual(sum(runner.EXPECTED_TEST_METHODS.values()), 81)
+        for filename, names in runner.EXPECTED_TEST_NAMES.items():
+            self.assertEqual(len(names), runner.EXPECTED_TEST_METHODS[filename])
+            self.assertEqual(names, tuple(sorted(names)))
 
     def test_exact_inventory_is_accepted(self):
         self.assertEqual(
             runner.validate_test_inventory(dict(runner.EXPECTED_TEST_METHODS)),
+            [],
+        )
+        self.assertEqual(
+            runner.validate_test_names(dict(runner.EXPECTED_TEST_NAMES)),
             [],
         )
 
@@ -29,12 +37,27 @@ class SecurityPolicyTestRunnerTests(unittest.TestCase):
         actual.pop("test_audit_security_required_checks.py")
         errors = runner.validate_test_inventory(actual)
         self.assertTrue(any("required test suite missing" in error for error in errors))
+        name_errors = runner.validate_test_names({
+            key: value for key, value in runner.EXPECTED_TEST_NAMES.items()
+            if key != "test_audit_security_required_checks.py"
+        })
+        self.assertTrue(any("required test-name inventory missing" in error for error in name_errors))
 
     def test_wrong_test_method_count_is_rejected(self):
         actual = dict(runner.EXPECTED_TEST_METHODS)
         actual["test_verify_security_audit_trust_anchor.py"] = 0
         errors = runner.validate_test_inventory(actual)
-        self.assertTrue(any("expected 39 test methods, observed 0" in error for error in errors))
+        self.assertTrue(any("expected 35 test methods, observed 0" in error for error in errors))
+
+        # Keep the suite count unchanged but replace a reviewed test name; the
+        # exact method-name gate must catch the drift too.
+        changed_names = dict(runner.EXPECTED_TEST_NAMES)
+        filename = "test_audit_security_required_checks.py"
+        names = list(changed_names[filename])
+        names[0] = "test_unreviewed_replacement"
+        changed_names[filename] = tuple(sorted(names))
+        name_errors = runner.validate_test_names(changed_names)
+        self.assertTrue(any("test-name inventory differs" in error for error in name_errors))
 
     def test_result_count_must_match_exact_inventory(self):
         result = unittest.TestResult()
