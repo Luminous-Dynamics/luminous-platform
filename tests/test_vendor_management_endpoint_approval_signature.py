@@ -140,6 +140,7 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
             signature=self.signature if signature is None else signature,
             trust_store_raw=raw,
             expected_trust_store_sha256=pin,
+            expected_trust_store_revision=actual_store["revision"],
             as_of=as_of,
         )
 
@@ -260,6 +261,37 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
 
     def test_trust_store_pin_mismatch_fails_closed(self) -> None:
         self.assertEqual(self._verify(expected_pin="0" * 64), "TRUST_STORE_DIGEST_MISMATCH")
+
+    def test_trust_store_revision_rollback_fails_closed_even_with_matching_old_digest(self) -> None:
+        older = copy.deepcopy(self.trust_store)
+        older["revision"] = 1
+        raw = _canonical_store(older)
+        pin = hashlib.sha256(raw).hexdigest()
+        self.assertEqual(
+            verifier.verify_approval_signature(
+                approval=copy.deepcopy(self.approval),
+                signature=self.signature,
+                trust_store_raw=raw,
+                expected_trust_store_sha256=pin,
+                expected_trust_store_revision=2,
+                as_of=AS_OF,
+            ),
+            "TRUST_STORE_REVISION_PIN_MISMATCH",
+        )
+
+    def test_trust_store_revision_pin_rejects_boolean(self) -> None:
+        raw = _canonical_store(self.trust_store)
+        self.assertEqual(
+            verifier.verify_approval_signature(
+                approval=copy.deepcopy(self.approval),
+                signature=self.signature,
+                trust_store_raw=raw,
+                expected_trust_store_sha256=hashlib.sha256(raw).hexdigest(),
+                expected_trust_store_revision=True,
+                as_of=AS_OF,
+            ),
+            "TRUST_STORE_REVISION_PIN_INVALID",
+        )
 
     def test_signature_sidecar_digest_must_match(self) -> None:
         changed = copy.deepcopy(self.approval)

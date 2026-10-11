@@ -147,6 +147,7 @@ def verify_approval_signature(
     signature: bytes,
     trust_store_raw: bytes,
     expected_trust_store_sha256: str,
+    expected_trust_store_revision: int,
     as_of: datetime,
 ) -> str | None:
     """Return a stable failure code, or None for valid signature/trust/time checks.
@@ -167,6 +168,10 @@ def verify_approval_signature(
     store_errors = _trust_store_errors(trust_store)
     if store_errors:
         return store_errors[0]
+    if not isinstance(expected_trust_store_revision, int) or isinstance(expected_trust_store_revision, bool) or expected_trust_store_revision < 1:
+        return "TRUST_STORE_REVISION_PIN_INVALID"
+    if trust_store["revision"] != expected_trust_store_revision:
+        return "TRUST_STORE_REVISION_PIN_MISMATCH"
 
     if not isinstance(approval, dict) or approval.get("state") != "approved":
         return "DECISION_NOT_APPROVED"
@@ -324,6 +329,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--trust-store", type=Path, required=True)
     parser.add_argument("--trust-store-sha256", required=True,
                         help="64-character digest supplied by an independently protected channel.")
+    parser.add_argument("--trust-store-revision", required=True, type=int,
+                        help="Monotonic trust-store revision pinned by an independently protected channel.")
     parser.add_argument("--capability-registry", type=Path, required=True)
     parser.add_argument("--capability-registry-sha256", required=True,
                         help="Registry digest supplied by an independently protected channel.")
@@ -374,6 +381,7 @@ def main(argv: list[str] | None = None) -> int:
         signature=signature,
         trust_store_raw=trust_store_raw,
         expected_trust_store_sha256=args.trust_store_sha256,
+        expected_trust_store_revision=args.trust_store_revision,
         as_of=datetime.now(timezone.utc),
     )
     if code:
