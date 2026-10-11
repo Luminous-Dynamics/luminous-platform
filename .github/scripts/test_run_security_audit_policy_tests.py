@@ -16,7 +16,7 @@ class SecurityPolicyTestRunnerTests(unittest.TestCase):
             "test_audit_security_required_checks.py",
             "test_run_security_audit_policy_tests.py",
         })
-        self.assertEqual(sum(runner.EXPECTED_TEST_METHODS.values()), 73)
+        self.assertEqual(sum(runner.EXPECTED_TEST_METHODS.values()), 74)
 
     def test_exact_inventory_is_accepted(self):
         self.assertEqual(
@@ -34,7 +34,7 @@ class SecurityPolicyTestRunnerTests(unittest.TestCase):
         actual = dict(runner.EXPECTED_TEST_METHODS)
         actual["test_verify_security_audit_trust_anchor.py"] = 0
         errors = runner.validate_test_inventory(actual)
-        self.assertTrue(any("expected 34 test methods, observed 0" in error for error in errors))
+        self.assertTrue(any("expected 35 test methods, observed 0" in error for error in errors))
 
     def test_result_count_must_match_exact_inventory(self):
         result = unittest.TestResult()
