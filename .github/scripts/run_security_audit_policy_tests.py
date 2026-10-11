@@ -21,7 +21,7 @@ RECEIPT_PATH = REPOSITORY_ROOT / "security-audit-policy-test-receipt.json"
 RECEIPT_SCHEMA = "luminous.security-audit.policy-test-receipt.v1"
 EXPECTED_TEST_METHODS: dict[str, int] = {
     "test_verify_security_audit_trust_anchor.py": 35,
-    "test_audit_security_required_checks.py": 43,
+    "test_audit_security_required_checks.py": 47,
     "test_run_security_audit_policy_tests.py": 7,
 }
 
@@ -64,6 +64,9 @@ EXPECTED_TEST_NAMES: dict[str, tuple[str, ...]] = {
         "test_wrong_head_or_workflow_is_never_latest",
     ),
     "test_audit_security_required_checks.py": (
+        "test_active_rules_pagination_exceeds_ceiling_fail_closed",
+        "test_active_rules_pagination_fetches_until_short_page",
+        "test_active_rules_pagination_rejects_malformed_page",
         "test_aggregate_empty_or_malformed_receipt_fails_closed",
         "test_aggregate_fail_dominates_incomplete",
         "test_aggregate_incomplete_dominates_only_passes",
@@ -91,6 +94,7 @@ EXPECTED_TEST_NAMES: dict[str, tuple[str, ...]] = {
         "test_oversized_rules_response_is_incomplete",
         "test_page_limit_with_qualified_contexts_is_still_incomplete",
         "test_page_limit_with_unresolved_contexts_is_incomplete",
+        "test_paginated_exactly_100_rule_entries_can_qualify",
         "test_policy_digest_is_deterministic_and_policy_sensitive",
         "test_policy_requires_default_branch_match",
         "test_receipt_policy_names_all_three_repositories",
