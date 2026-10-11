@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 import io
 import json
@@ -241,6 +242,39 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertEqual(receipt["status"], "FAIL")
         self.assertEqual(receipt["unknown_repositories"], ["--audit-all"])
+
+    def test_policy_digest_is_deterministic_and_policy_sensitive(self):
+        original = module.policy_digest()
+        self.assertRegex(original, r"^[0-9a-f]{64}$")
+        self.assertEqual(original, module.policy_digest())
+        changed = dict(module.POLICY)
+        changed["Luminous-Dynamics/mycelix"] = {
+            **module.POLICY["Luminous-Dynamics/mycelix"],
+            "default_branch": "trunk",
+        }
+        self.assertNotEqual(original, module.policy_digest(changed))
+
+    def test_missing_token_receipt_binds_exact_tool_and_runtime(self):
+        output = io.StringIO()
+        with patch.object(module.sys, "argv", ["audit_security_required_checks.py"]), \
+             patch.dict(module.os.environ, {}, clear=True), redirect_stdout(output):
+            exit_code = module.main()
+        receipt = json.loads(output.getvalue())
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(receipt["status"], "INCOMPLETE")
+        self.assertEqual(receipt["auditor_sha256"], hashlib.sha256(SCRIPT.read_bytes()).hexdigest())
+        self.assertEqual(receipt["policy_sha256"], module.policy_digest())
+        self.assertTrue(receipt["python_version"])
+        self.assertTrue(receipt["python_implementation"])
+        self.assertEqual(receipt["api_version"], module.API_VERSION)
+
+    def test_help_does_not_require_a_token(self):
+        output = io.StringIO()
+        with patch.object(module.sys, "argv", ["audit_security_required_checks.py", "--help"]), \
+             patch.dict(module.os.environ, {}, clear=True), redirect_stdout(output):
+            exit_code = module.main()
+        self.assertEqual(exit_code, 0)
+        self.assertIn("Usage:", output.getvalue())
 
     def test_policy_requires_default_branch_match(self):
         # The repository-default branch consistency is enforced in audit_repository;
