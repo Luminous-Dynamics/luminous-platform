@@ -35,6 +35,8 @@ Before interpreting any test result, record:
 
 Never combine evidence from different source revisions into one implied passing result. If source changes, rerun the checks affected by the change and create a new evidence packet.
 
+The qualification runner must verify that every configured validator and invoked test suite is present in its frozen `INPUT_PATHS` manifest. Missing entries are a hard `INPUT_MANIFEST_INCOMPLETE` failure, not a warning. When a validator or suite is added, update the manifest and its regression guard in the same change.
+
 ### Lane 1 — Parse, then validate schema
 
 Run a strict parser before semantic checks. Reject invalid UTF-8, duplicate JSON object keys, non-standard constants such as NaN/Infinity, trailing content, and malformed JSON. A malformed receipt must stop here with a structured validation error; it must not reach registry lookup or adapter-binding logic.
