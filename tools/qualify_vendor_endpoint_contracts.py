@@ -166,11 +166,13 @@ def successful_suite(summary: Mapping[str, object]) -> bool:
     )
     if summary.get("state") != "passed":
         return False
-    if not isinstance(summary.get("tests_run"), int) or summary["tests_run"] < 1:
+    tests_run = summary.get("tests_run")
+    # bool is a subclass of int in Python; reject True/False as test counts.
+    if type(tests_run) is not int or tests_run < 1:
         return False
     for field in integer_fields[1:]:
         value = summary.get(field)
-        if not isinstance(value, int) or value != 0:
+        if type(value) is not int or value != 0:
             return False
     return True
 
