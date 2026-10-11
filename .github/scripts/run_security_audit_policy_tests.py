@@ -2,13 +2,23 @@
 """Fail-closed runner for the independent security-audit policy test inventory."""
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
+import os
 from pathlib import Path
+import platform
+import re
+import subprocess
 import sys
 import unittest
+from datetime import datetime, timezone
 from typing import Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+REPOSITORY_ROOT = SCRIPT_DIR.parent.parent
+RECEIPT_PATH = REPOSITORY_ROOT / "security-audit-policy-test-receipt.json"
+RECEIPT_SCHEMA = "luminous.security-audit.policy-test-receipt.v1"
 EXPECTED_TEST_METHODS: dict[str, int] = {
     "test_verify_security_audit_trust_anchor.py": 35,
     "test_audit_security_required_checks.py": 39,
@@ -107,6 +117,129 @@ EXPECTED_TEST_NAMES: dict[str, tuple[str, ...]] = {
 
 
 
+def file_sha256(path: Path) -> str | None:
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def current_git_sha() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPOSITORY_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    value = result.stdout.strip()
+    return value if re.fullmatch(r"[0-9a-f]{40}", value) else None
+
+
+def build_receipt(
+    status: str,
+    counts: dict[str, int],
+    method_names: dict[str, tuple[str, ...]],
+    result: Any | None,
+    inventory_errors: list[str],
+) -> dict[str, Any]:
+    """Bind the test outcome to the actual checkout, source bytes and test inventory."""
+    checkout_sha = current_git_sha()
+    expected_head = os.environ.get("EXPECTED_TEST_HEAD_SHA", "").strip()
+    exact_head_match = (
+        bool(re.fullmatch(r"[0-9a-f]{40}", expected_head))
+        and checkout_sha == expected_head
+    )
+    evidence_paths = [
+        ".github/scripts/verify_security_audit_trust_anchor.py",
+        ".github/scripts/test_verify_security_audit_trust_anchor.py",
+        ".github/scripts/audit_security_required_checks.py",
+        ".github/scripts/test_audit_security_required_checks.py",
+        ".github/scripts/run_security_audit_policy_tests.py",
+        ".github/scripts/test_run_security_audit_policy_tests.py",
+        ".github/workflows/security-audit-verifier-tests.yml",
+    ]
+    source_hashes = {
+        relative: file_sha256(REPOSITORY_ROOT / relative)
+        for relative in evidence_paths
+    }
+    source_hashes_complete = all(
+        isinstance(value, str) and bool(re.fullmatch(r"[0-9a-f]{64}", value))
+        for value in source_hashes.values()
+    )
+    normalized_inventory = {
+        "expected_method_counts": EXPECTED_TEST_METHODS,
+        "expected_method_names": EXPECTED_TEST_NAMES,
+        "observed_method_counts": counts,
+        "observed_method_names": method_names,
+    }
+    inventory_bytes = json.dumps(
+        normalized_inventory, sort_keys=True, separators=(",", ":"), ensure_ascii=True
+    ).encode("utf-8")
+    metrics = {
+        "tests_run": getattr(result, "testsRun", 0) if result is not None else 0,
+        "was_successful": result.wasSuccessful() if result is not None else False,
+        "skipped": len(result.skipped) if result is not None else 0,
+        "expected_failures": len(result.expectedFailures) if result is not None else 0,
+        "unexpected_successes": len(result.unexpectedSuccesses) if result is not None else 0,
+        "failures": len(result.failures) if result is not None else 0,
+        "errors": len(result.errors) if result is not None else 0,
+    }
+    qualified = (
+        status == "PASS"
+        and exact_head_match
+        and source_hashes_complete
+        and not inventory_errors
+        and result is not None
+        and result_is_qualified(result, sum(EXPECTED_TEST_METHODS.values()))
+    )
+    server = os.environ.get("GITHUB_SERVER_URL", "").rstrip("/")
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
+    run_url = f"{server}/{repository}/actions/runs/{run_id}" if server and repository and run_id else None
+    return {
+        "schema": RECEIPT_SCHEMA,
+        "status": "PASS" if qualified else "FAIL",
+        "generated_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "repository": repository or None,
+        "event_name": os.environ.get("GITHUB_EVENT_NAME") or None,
+        "workflow_run_url": run_url,
+        "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT") or None,
+        "expected_head_sha": expected_head or None,
+        "checked_out_head_sha": checkout_sha,
+        "exact_head_match": exact_head_match,
+        "python_implementation": platform.python_implementation(),
+        "python_version": platform.python_version(),
+        "source_sha256": source_hashes,
+        "inventory_sha256": hashlib.sha256(inventory_bytes).hexdigest(),
+        "expected_method_counts": EXPECTED_TEST_METHODS,
+        "observed_method_counts": counts,
+        "expected_method_names": EXPECTED_TEST_NAMES,
+        "observed_method_names": method_names,
+        "inventory_errors": inventory_errors,
+        "test_result": metrics,
+    }
+
+
+def write_receipt(receipt: dict[str, Any]) -> bool:
+    try:
+        RECEIPT_PATH.write_text(
+            json.dumps(receipt, sort_keys=True, indent=2, ensure_ascii=True) + "\n",
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        print(
+            f"FAIL: unable to write exact-head test receipt: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return False
+    return True
+
+
 def validate_test_inventory(actual: dict[str, int],
                             expected: dict[str, int] = EXPECTED_TEST_METHODS) -> list[str]:
     """Return errors unless the exact expected files and method counts are present."""
@@ -184,40 +317,53 @@ def load_test_suite(filename: str) -> unittest.TestSuite:
 
 def main() -> int:
     suites: dict[str, unittest.TestSuite] = {}
+    counts: dict[str, int] = {}
+    method_names: dict[str, tuple[str, ...]] = {}
     try:
         for filename in EXPECTED_TEST_METHODS:
             suites[filename] = load_test_suite(filename)
     except Exception as exc:
-        print(f"FAIL: unable to load required policy test inventory: {type(exc).__name__}: {exc}", file=sys.stderr)
+        errors = [f"unable to load required policy test inventory: {type(exc).__name__}: {exc}"]
+        write_receipt(build_receipt("FAIL", counts, method_names, None, errors))
+        for error in errors:
+            print(f"FAIL: {error}", file=sys.stderr)
         return 1
 
     counts = {name: suite.countTestCases() for name, suite in suites.items()}
     method_names = {name: suite_test_method_names(suite) for name, suite in suites.items()}
     errors = validate_test_inventory(counts) + validate_test_names(method_names)
     if errors:
+        receipt_written = write_receipt(build_receipt("FAIL", counts, method_names, None, errors))
         for error in errors:
             print(f"FAIL: {error}", file=sys.stderr)
-        return 1
+        return 1 if receipt_written else 1
 
     combined = unittest.TestSuite()
     for filename in EXPECTED_TEST_METHODS:
         combined.addTests(suites[filename])
     expected_total = sum(EXPECTED_TEST_METHODS.values())
     result = unittest.TextTestRunner(verbosity=2).run(combined)
-    if not result_is_qualified(result, expected_total):
+    tests_passed = result_is_qualified(result, expected_total)
+    receipt = build_receipt(
+        "PASS" if tests_passed else "FAIL", counts, method_names, result, []
+    )
+    receipt_written = write_receipt(receipt)
+    if receipt["status"] != "PASS" or not receipt_written:
         print(
-            "FAIL: required policy test run did not execute the exact inventory "
-            f"(expected={expected_total}, executed={result.testsRun}, "
+            "FAIL: exact-head policy test qualification failed "
+            f"(status={receipt['status']}, head_match={receipt['exact_head_match']}, "
+            f"expected={expected_total}, executed={result.testsRun}, "
             f"skipped={len(result.skipped)}, expected_failures={len(result.expectedFailures)}, "
             f"unexpected_successes={len(result.unexpectedSuccesses)}, "
-            f"failures={len(result.failures)}, errors={len(result.errors)})",
+            f"failures={len(result.failures)}, errors={len(result.errors)}, "
+            f"receipt_written={receipt_written})",
             file=sys.stderr,
         )
         return 1
     print(
         "PASS: exact policy test inventory executed "
         f"({', '.join(f'{name}={counts[name]}' for name in EXPECTED_TEST_METHODS)}; "
-        f"total={result.testsRun})"
+        f"total={result.testsRun}); exact-head receipt written to {RECEIPT_PATH.name}"
     )
     return 0
 
