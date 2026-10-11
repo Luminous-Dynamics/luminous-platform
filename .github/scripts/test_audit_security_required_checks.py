@@ -154,6 +154,14 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         result = module.assess_policy([producer], None, 404, self.required)
         self.assertEqual(result["status"], "INCOMPLETE")
 
+    def test_oversized_rules_response_is_incomplete(self):
+        rules = [{"type": "deletion", "ruleset_id": i + 1,
+                  "ruleset_source_type": "Repository", "ruleset_source": "owner/repo",
+                  "parameters": {}} for i in range(101)]
+        result = module.assess_policy(rules, None, None, self.required)
+        self.assertEqual(result["status"], "INCOMPLETE")
+        self.assertIn("exceeds the documented", result["reason"])
+
     def test_page_limit_with_unresolved_contexts_is_incomplete(self):
         rules = [{"type": "deletion", "ruleset_id": i + 1,
                   "ruleset_source_type": "Repository", "ruleset_source": "owner/repo",
@@ -262,6 +270,8 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         receipt = json.loads(output.getvalue())
         self.assertEqual(exit_code, 2)
         self.assertEqual(receipt["status"], "INCOMPLETE")
+        self.assertEqual(receipt["required_verifier_context"], module.VERIFIER_CONTEXT)
+        self.assertEqual(receipt["required_integration_id"], module.GITHUB_ACTIONS_INTEGRATION_ID)
         self.assertEqual(receipt["auditor_sha256"], hashlib.sha256(SCRIPT.read_bytes()).hexdigest())
         self.assertEqual(receipt["policy_sha256"], module.policy_digest())
         self.assertTrue(receipt["python_version"])
