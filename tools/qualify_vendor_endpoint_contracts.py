@@ -133,6 +133,14 @@ def manifest_digest(hashes: Mapping[str, str | None]) -> str:
     return hashlib.sha256(canonical_json_bytes(dict(hashes))).hexdigest()
 
 
+def input_manifest_unchanged(
+    root: Path,
+    expected_hashes: Mapping[str, str | None],
+) -> bool:
+    """Fence tracked inputs at subprocess boundaries, not only at finalization."""
+    return input_hashes(root) == dict(expected_hashes)
+
+
 def manifest_coverage_gaps(
     validators: Mapping[str, str] | None = None,
     test_suite_patterns: tuple[str, ...] | None = None,
@@ -453,21 +461,49 @@ def main(argv: list[str] | None = None) -> int:
         blockers.append("INPUT_MISSING")
     before_manifest_digest = manifest_digest(before_hashes)
 
-    validators = {
-        name: run_validator(root, script) for name, script in VALIDATORS.items()
-    }
-    if validators["endpoint_profile"]["state"] != "passed":
+    validators: dict[str, dict[str, object]] = {}
+    input_drift_detected = False
+    for name, script in VALIDATORS.items():
+        if input_drift_detected:
+            validators[name] = {
+                "script": script,
+                "return_code": None,
+                "timed_out": False,
+                "state": "blocked_input_digest_changed",
+            }
+            continue
+        result = run_validator(root, script)
+        if not input_manifest_unchanged(root, before_hashes):
+            blockers.append("INPUT_DIGEST_CHANGED")
+            input_drift_detected = True
+            # The current validator ran across an observed input-digest change;
+            # do not preserve its return code as successful validation evidence.
+            validators[name] = {**result, "state": "input_drift_detected"}
+        else:
+            validators[name] = result
+
+    stopped_validator_states = {"input_drift_detected", "blocked_input_digest_changed"}
+    if validators["endpoint_profile"]["state"] not in ({"passed"} | stopped_validator_states):
         blockers.append("PROFILE_VALIDATOR_FAILED")
-    if validators["endpoint_approval_binding"]["state"] != "passed":
+    if validators["endpoint_approval_binding"]["state"] not in ({"passed"} | stopped_validator_states):
         blockers.append("APPROVAL_VALIDATOR_FAILED")
-    if validators["capability_registry"]["state"] != "passed":
+    if validators["capability_registry"]["state"] not in ({"passed"} | stopped_validator_states):
         blockers.append("CAPABILITY_REGISTRY_FAILED")
-    if validators["mutation_receipt"]["state"] != "passed":
+    if validators["mutation_receipt"]["state"] not in ({"passed"} | stopped_validator_states):
         blockers.append("RECEIPT_VALIDATOR_FAILED")
 
     test_suites: list[dict[str, object]] = []
     for pattern in TEST_SUITE_PATTERNS:
+        if input_drift_detected:
+            test_suites.append({"pattern": pattern, "state": "blocked_input_digest_changed"})
+            continue
         summary, failed = run_test_suite(root, pattern)
+        if not input_manifest_unchanged(root, before_hashes):
+            blockers.append("INPUT_DIGEST_CHANGED")
+            input_drift_detected = True
+            # Invalidate this suite's own result as well as all remaining suites.
+            test_suites.append({"pattern": pattern, "state": "input_drift_detected"})
+            continue
         test_suites.append(summary)
         if failed:
             if str(summary.get("state", "")).startswith("worker_") or summary.get("state") == "runner_error":
