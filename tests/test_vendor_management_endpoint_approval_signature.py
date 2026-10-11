@@ -348,6 +348,10 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verifier.strict_json_loads(b'{"state":"pending","state":"approved"}')
 
+    def test_negative_zero_json_integer_is_rejected_before_canonicalization(self) -> None:
+        with self.assertRaisesRegex(ValueError, "negative zero"):
+            verifier.strict_json_loads(b'{"profile_revision":-0}')
+
     def test_signature_payload_excludes_only_circular_fields(self) -> None:
         original = verifier.signature_message_bytes(self.approval)
         changed_references = copy.deepcopy(self.approval)
