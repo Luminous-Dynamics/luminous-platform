@@ -41,6 +41,16 @@ TEST_SUITE_PATTERNS = (
     "test_vendor_operation_receipt.py",
     "test_vendor_endpoint_qualification_runner.py",
 )
+WORKER_COUNTER_FIELDS = (
+    "tests_run",
+    "failures",
+    "errors",
+    "skipped",
+    "expected_failures",
+    "unexpected_successes",
+    "discovery_errors",
+)
+WORKER_SUMMARY_FIELDS = frozenset({"pattern", "state", *WORKER_COUNTER_FIELDS})
 INPUT_PATHS = (
     ".github/workflows/hardware-portfolio.yml",
     "requirements-hardware-portfolio.txt",
@@ -160,21 +170,83 @@ def child_environment(source: Mapping[str, str] | None = None) -> dict[str, str]
 
 
 def successful_suite(summary: Mapping[str, object]) -> bool:
-    integer_fields = (
-        "tests_run", "failures", "errors", "skipped",
-        "expected_failures", "unexpected_successes", "discovery_errors",
-    )
+    if set(summary) != WORKER_SUMMARY_FIELDS:
+        return False
     if summary.get("state") != "passed":
         return False
-    tests_run = summary.get("tests_run")
-    # bool is a subclass of int in Python; reject True/False as test counts.
-    if type(tests_run) is not int or tests_run < 1:
+    pattern = summary.get("pattern")
+    if not isinstance(pattern, str) or not pattern:
         return False
-    for field in integer_fields[1:]:
+    for field in WORKER_COUNTER_FIELDS:
         value = summary.get(field)
-        if type(value) is not int or value != 0:
+        # bool is a subclass of int in Python; JSON booleans must never count.
+        if type(value) is not int or value < 0:
+            return False
+        if field == "tests_run":
+            if value < 1:
+                return False
+        elif value != 0:
             return False
     return True
+
+
+def worker_summary_errors(
+    summary: object,
+    expected_pattern: str,
+    process_exit_code: object,
+) -> list[str]:
+    """Validate child evidence as a closed, state/exit-code-consistent contract."""
+    if not isinstance(summary, dict):
+        return ["SUMMARY_NOT_OBJECT"]
+    if set(summary) != WORKER_SUMMARY_FIELDS:
+        return ["SUMMARY_FIELDS_MISMATCH"]
+    if type(summary.get("pattern")) is not str or summary.get("pattern") != expected_pattern:
+        return ["SUMMARY_PATTERN_MISMATCH"]
+    state = summary.get("state")
+    if state not in ("passed", "failed", "runner_error"):
+        return ["SUMMARY_STATE_INVALID"]
+    if type(process_exit_code) is not int:
+        return ["WORKER_EXIT_CODE_INVALID"]
+
+    counters: dict[str, int] = {}
+    for field in WORKER_COUNTER_FIELDS:
+        value = summary.get(field)
+        if type(value) is not int or value < 0:
+            return ["SUMMARY_COUNTER_INVALID"]
+        counters[field] = value
+
+    if state == "passed":
+        if not successful_suite(summary):
+            return ["PASSED_SUMMARY_NOT_CLEAN"]
+        if process_exit_code != 0:
+            return ["PASSED_SUMMARY_EXIT_MISMATCH"]
+        return []
+
+    if state == "failed":
+        if process_exit_code != 1:
+            return ["FAILED_SUMMARY_EXIT_MISMATCH"]
+        failure_counts = (
+            "failures", "errors", "skipped", "expected_failures",
+            "unexpected_successes", "discovery_errors",
+        )
+        if counters["tests_run"] > 0 and not any(counters[name] for name in failure_counts):
+            return ["FAILED_SUMMARY_HAS_NO_FAILURE_EVIDENCE"]
+        return []
+
+    # The only runner_error shape emitted by this worker is deliberately fixed;
+    # it records a failed runner/discovery path without exposing exception text.
+    expected_runner_error = {
+        "tests_run": 0,
+        "failures": 0,
+        "errors": 1,
+        "skipped": 0,
+        "expected_failures": 0,
+        "unexpected_successes": 0,
+        "discovery_errors": 1,
+    }
+    if process_exit_code != 2 or counters != expected_runner_error:
+        return ["RUNNER_ERROR_SUMMARY_INCONSISTENT"]
+    return []
 
 
 def qualification_status(blocker_codes: list[str] | tuple[str, ...]) -> str:
@@ -261,11 +333,11 @@ def run_test_suite(root: Path, pattern: str) -> tuple[dict[str, object], bool]:
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return ({"pattern": pattern, "state": "worker_summary_unavailable"}, True)
-        if not isinstance(summary, dict) or summary.get("pattern") != pattern:
+        if worker_summary_errors(summary, pattern, process.returncode):
+            # Never preserve malformed child counters/state in the qualification report.
             return ({"pattern": pattern, "state": "worker_summary_invalid"}, True)
         summary["worker_exit_code"] = process.returncode
-        failed = process.returncode != 0 or not successful_suite(summary)
-        return summary, failed
+        return summary, summary["state"] != "passed"
 
 
 def run_validator(root: Path, relative_script: str) -> dict[str, object]:
