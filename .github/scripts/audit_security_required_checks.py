@@ -102,7 +102,7 @@ def ruleset_identity(rule: Any) -> dict[str, Any] | None:
     source_type = rule.get("ruleset_source_type")
     source = rule.get("ruleset_source")
     if (not isinstance(ruleset_id, int) or isinstance(ruleset_id, bool) or ruleset_id <= 0
-            or source_type not in {"Repository", "Organization", "Enterprise"}
+            or not isinstance(source_type, str) or source_type not in {"Repository", "Organization", "Enterprise"}
             or not isinstance(source, str) or not source.strip()):
         return None
     return {"ruleset_id": ruleset_id, "source_type": source_type, "source": source}
@@ -199,6 +199,32 @@ def assess_policy(
             ),
         }
 
+    if len(active_rules) >= 100:
+        # Even a well-formed first page may hide additional active rules. If
+        # neither the rules page nor a fully qualifying classic policy proved
+        # both checks above, absence is not established.
+        if (isinstance(classic_protection, dict)
+                and classic_protection.get("strict") is True
+                and not (required_contexts - classic_bound_contexts(classic_protection, required_contexts))):
+            contexts = classic_bound_contexts(classic_protection, required_contexts)
+            return {
+                "status": "PASS",
+                "source": "classic-branch-protection",
+                "observed_contexts": sorted(contexts),
+                "missing_contexts": [],
+                "reason": (
+                    "classic required-status-check protection is strict and pins all required contexts "
+                    f"to integration_id {GITHUB_ACTIONS_INTEGRATION_ID}"
+                ),
+            }
+        return {
+            "status": "INCOMPLETE",
+            "source": None,
+            "observed_contexts": [],
+            "missing_contexts": sorted(required_contexts),
+            "reason": "effective branch-rules page may be truncated; unable to prove complete required-check configuration",
+        }
+
     if isinstance(classic_protection, dict):
         observed = classic_contexts(classic_protection)
         contexts = classic_bound_contexts(classic_protection, required_contexts)
@@ -226,15 +252,6 @@ def assess_policy(
             "bound_contexts": sorted(contexts),
             "missing_contexts": sorted(missing),
             "reason": "; ".join(reasons),
-        }
-
-    if len(active_rules) >= 100 and classic_error_status != 404:
-        return {
-            "status": "INCOMPLETE",
-            "source": None,
-            "observed_contexts": [],
-            "missing_contexts": sorted(required_contexts),
-            "reason": "effective branch-rules page may be truncated; unable to prove complete required-check configuration",
         }
 
     if classic_error_status == 404:
