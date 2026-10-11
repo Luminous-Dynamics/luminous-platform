@@ -16,7 +16,6 @@ permissions:
   actions: read
   contents: read
   pull-requests: read
-  statuses: write
 
 # Do not cancel one verifier run because a newer commit is being audited.
 # The verifier itself rejects superseded run IDs and attempts before publishing.
