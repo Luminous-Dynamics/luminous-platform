@@ -87,7 +87,14 @@ fn sha_or_error(value: &str, label: &str) -> VerifyResult<String> {
 }
 
 fn digest_hex(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    use std::fmt::Write as _;
+    let digest = Sha256::digest(bytes);
+    let mut encoded = String::with_capacity(digest.len() * 2);
+    for byte in digest {
+        // Formatting into a String cannot fail; preserve exactly two lowercase hex digits per byte.
+        write!(&mut encoded, "{byte:02x}").expect("writing hexadecimal into String is infallible");
+    }
+    encoded
 }
 
 fn api_json(method: Method, path: &str, token: &str, body: Option<Value>) -> VerifyResult<Value> {
@@ -613,6 +620,8 @@ fn verify_artifact(repo: &str, policy: Policy, run: &Value, expected_pr: u64, to
     if verdict_bytes.len() as u64 != declared_verdict_size {
         return Err("verdict.json size differs from ZIP metadata".to_string());
     }
+    // End the mutable borrow of the archive entry before validating the other ZIP members.
+    drop(verdict_file);
     let verdict = parse_unique_json(&verdict_bytes)?;
     validate_evidence_files(&mut archive, verdict.get("evidence_files").unwrap_or(&Value::Null), &actual_files)?;
     validate_verdict(&verdict, repo, policy, run, expected_pr)?;
