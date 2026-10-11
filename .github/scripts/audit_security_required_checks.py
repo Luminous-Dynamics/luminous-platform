@@ -409,6 +409,23 @@ def audit_repository(repo: str, policy: dict[str, Any], token: str) -> dict[str,
         return result
 
 
+def aggregate_status(rows: Any) -> str:
+    """Preserve confirmed failures when another repository's observation is incomplete."""
+    if not isinstance(rows, list) or not rows:
+        return "INCOMPLETE"
+    statuses = []
+    for row in rows:
+        if not isinstance(row, dict) or row.get("status") not in {"PASS", "FAIL", "INCOMPLETE"}:
+            statuses.append("INCOMPLETE")
+        else:
+            statuses.append(row["status"])
+    if "FAIL" in statuses:
+        return "FAIL"
+    if "INCOMPLETE" in statuses:
+        return "INCOMPLETE"
+    return "PASS" if all(status == "PASS" for status in statuses) else "INCOMPLETE"
+
+
 def main() -> int:
     selected = list(sys.argv[1:])
     if selected == ["--help"] or selected == ["-h"]:
@@ -445,8 +462,7 @@ def main() -> int:
 
     targets = selected or sorted(POLICY)
     rows = [audit_repository(repo, POLICY[repo], token) for repo in targets]
-    statuses = {row["status"] for row in rows}
-    overall = "PASS" if statuses == {"PASS"} else ("INCOMPLETE" if "INCOMPLETE" in statuses else "FAIL")
+    overall = aggregate_status(rows)
     receipt = {
         "schema": SCHEMA,
         **receipt_provenance(),
