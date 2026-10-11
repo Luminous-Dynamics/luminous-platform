@@ -4,11 +4,7 @@
 
 ## Signed-message contract
 
-The verifier accepts only the versioned scheme `ed25519-rfc8032-luminous-approval-v1`, using Ed25519 as specified by [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032). The signed bytes are the domain prefix
-
-`LUMINOUS:VENDOR-MANAGEMENT-ENDPOINT-APPROVAL:V1\\0`
-
-followed by UTF-8 JSON serialized with sorted object keys, no insignificant whitespace, no duplicate object members, no floating-point numbers, and no non-finite values. The JSON payload includes the complete decision record, including the decision state, target/profile/adapter bindings, approver and key references, allowed operations, policy revision, and validity interval. Only `signed_payload_digest` and `signature_evidence_ref` are excluded to avoid a circular reference. The SHA-256 of those complete signed bytes must equal `signed_payload_digest`.
+The verifier accepts only the versioned scheme `ed25519-rfc8032-luminous-approval-v1`, using Ed25519 as specified by [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032). The signed bytes begin with the domain-separation prefix `LUMINOUS:VENDOR-MANAGEMENT-ENDPOINT-APPROVAL:V1` followed by exactly one NUL byte, then UTF-8 JSON serialized with sorted object keys, no insignificant whitespace, no duplicate object members, no floating-point numbers, and no non-finite values. The JSON payload includes the complete decision record, including the decision state, target/profile/adapter bindings, approver and key references, allowed operations, policy revision, and validity interval. Only `signed_payload_digest` and `signature_evidence_ref` are excluded to avoid a circular reference. The SHA-256 of those complete signed bytes must equal `signed_payload_digest`.
 
 The signature is a detached raw 64-byte Ed25519 signature. `signature_evidence_ref` must equal `sha256:` plus the lowercase SHA-256 digest of that exact 64-byte file. The key reference and algorithm/scheme are themselves covered by the signed payload. A changed payload, key, signature, or reference fails closed.
 
@@ -20,14 +16,14 @@ The caller must pass `--trust-store-sha256` from an independently protected conf
 
 Example invocation:
 
-``sh
-python tools/verify_vendor_management_endpoint_approval_signature.py \\
-  --approval /protected/evidence/approval.json \\
-  --profile /protected/evidence/frozen-profile.json \\
-  --signature-file /protected/evidence/approval.sig \\
-  --trust-store /protected/policy/vendor-approval-trust-store.json \\
+```sh
+python tools/verify_vendor_management_endpoint_approval_signature.py \
+  --approval /protected/evidence/approval.json \
+  --profile /protected/evidence/frozen-profile.json \
+  --signature-file /protected/evidence/approval.sig \
+  --trust-store /protected/policy/vendor-approval-trust-store.json \
   --trust-store-sha256 "$VENDOR_APPROVAL_TRUST_STORE_SHA256"
-``
+```
 
 The shell variable above must come from a protected policy channel; it is not a value to copy from the approval bundle.
 

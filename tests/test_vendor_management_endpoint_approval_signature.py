@@ -160,7 +160,7 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
         ).hexdigest()
         self.assertEqual(self._verify(approval=changed), "KEY_NOT_DELEGATED_TO_APPROVER")
 
-    def test_principal_must_delegate_the_key_used_by_the_record(self) -> None:
+    def test_trust_store_schema_rejects_empty_key_delegation_list(self) -> None:
         store = copy.deepcopy(self.trust_store)
         store["principals"][0]["key_refs"] = []
         self.assertEqual(self._verify(store=store), "TRUST_STORE_SCHEMA_INVALID")
