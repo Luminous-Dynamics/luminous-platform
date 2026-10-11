@@ -65,6 +65,30 @@ class SecurityPolicyTestRunnerTests(unittest.TestCase):
         self.assertTrue(runner.result_is_qualified(result, 1))
         self.assertFalse(runner.result_is_qualified(result, 2))
 
+        passing = unittest.TestResult()
+        passing.testsRun = 81
+        fake_hash = "b" * 64
+        with patch.object(runner, "current_git_sha", return_value="a" * 40), \
+             patch.object(runner, "file_sha256", return_value=fake_hash), \
+             patch.dict(runner.os.environ, {"EXPECTED_TEST_HEAD_SHA": "a" * 40}, clear=True):
+            receipt = runner.build_receipt(
+                "PASS", dict(runner.EXPECTED_TEST_METHODS),
+                dict(runner.EXPECTED_TEST_NAMES), passing, []
+            )
+        self.assertEqual(receipt["status"], "PASS")
+        self.assertTrue(receipt["exact_head_match"])
+        self.assertEqual(receipt["test_result"]["tests_run"], 81)
+        self.assertRegex(receipt["inventory_sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(receipt["source_sha256"][".github/scripts/run_security_audit_policy_tests.py"], fake_hash)
+
+        with patch.object(runner, "current_git_sha", return_value="c" * 40):
+            mismatch = runner.build_receipt(
+                "PASS", dict(runner.EXPECTED_TEST_METHODS),
+                dict(runner.EXPECTED_TEST_NAMES), passing, []
+            )
+        self.assertEqual(mismatch["status"], "FAIL")
+        self.assertFalse(mismatch["exact_head_match"])
+
     def test_runner_rejects_green_results_with_skips_or_expected_failures(self):
         skipped = unittest.TestResult()
         skipped.testsRun = 1
