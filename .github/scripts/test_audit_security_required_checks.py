@@ -100,7 +100,7 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         classic = {"strict": False, "contexts": sorted(self.required)}
         decision = module.assess_policy([], classic, None, self.required)
         self.assertEqual(decision["status"], "FAIL")
-        self.assertEqual(decision["missing_contexts"], [])
+        self.assertEqual(set(decision["missing_contexts"]), self.required)
 
     def test_missing_classic_protection_fails_when_no_strict_ruleset_exists(self):
         decision = module.assess_policy([], None, 404, self.required)
@@ -160,6 +160,12 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         result = module.assess_policy(rules, None, 404, self.required)
         self.assertEqual(result["status"], "INCOMPLETE")
 
+    def test_unhashable_ruleset_source_type_is_incomplete_not_crash(self):
+        malformed = self.strict_rule()
+        malformed["ruleset_source_type"] = ["Repository"]
+        result = module.assess_policy([malformed], None, 404, self.required)
+        self.assertEqual(result["status"], "INCOMPLETE")
+
     def test_ruleset_wrong_integration_id_does_not_qualify(self):
         rule = self.strict_rule()
         for item in rule["parameters"]["required_status_checks"]:
@@ -197,7 +203,7 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["source"], ["Repository:owner/repo#42"])
         self.assertEqual(mocked.call_args_list[0].args[0], f"/repos/{repo}")
-        self.assertEqual(mocked.call_args_list[1].args[0], f"/repos/{repo}/rules/branches/main")
+        self.assertEqual(mocked.call_args_list[1].args[0], f"/repos/{repo}/rules/branches/main?per_page=100&page=1")
         self.assertEqual(mocked.call_args_list[2].args[0], f"/repos/{repo}/branches/main/protection/required_status_checks")
 
     def test_audit_repository_fails_if_default_branch_changed(self):
