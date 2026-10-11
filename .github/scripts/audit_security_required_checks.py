@@ -8,13 +8,16 @@ integration ID (15368). Name-only legacy contexts do not qualify.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import platform
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 API = "https://api.github.com"
@@ -40,6 +43,29 @@ POLICY: dict[str, dict[str, Any]] = {
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def policy_digest(policy: dict[str, dict[str, Any]] = POLICY) -> str:
+    canonical = {
+        "schema": SCHEMA,
+        "required_verifier_context": VERIFIER_CONTEXT,
+        "required_integration_id": GITHUB_ACTIONS_INTEGRATION_ID,
+        "repositories": policy,
+    }
+    encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def receipt_provenance() -> dict[str, str]:
+    """Bind receipt identity to exact running source, policy and interpreter."""
+    source_bytes = Path(__file__).read_bytes()
+    return {
+        "auditor_sha256": hashlib.sha256(source_bytes).hexdigest(),
+        "policy_sha256": policy_digest(),
+        "python_implementation": platform.python_implementation(),
+        "python_version": platform.python_version(),
+        "api_version": API_VERSION,
+    }
 
 
 class AuditError(RuntimeError):
@@ -318,25 +344,27 @@ def audit_repository(repo: str, policy: dict[str, Any], token: str) -> dict[str,
 
 
 def main() -> int:
+    selected = list(sys.argv[1:])
+    if selected == ["--help"] or selected == ["-h"]:
+        print("Usage: audit_security_required_checks.py [Luminous-Dynamics/mycelix] [Luminous-Dynamics/symthaea] [Luminous-Dynamics/luminous-platform]")
+        return 0
+
     token = os.environ.get("GITHUB_TOKEN", "").strip()
     if not token:
         print(json.dumps({
             "schema": SCHEMA,
+            **receipt_provenance(),
             "generated_at_utc": utc_now(),
             "status": "INCOMPLETE",
             "reason": "GITHUB_TOKEN is required; use a read-only token with repository metadata and administration-read access",
             "repositories": [],
         }, sort_keys=True))
         return 2
-
-    selected = list(sys.argv[1:])
-    if selected == ["--help"] or selected == ["-h"]:
-        print("Usage: audit_security_required_checks.py [Luminous-Dynamics/mycelix] [Luminous-Dynamics/symthaea] [Luminous-Dynamics/luminous-platform]")
-        return 0
     unknown = sorted(set(selected) - set(POLICY))
     if unknown or len(selected) != len(set(selected)):
         print(json.dumps({
             "schema": SCHEMA,
+            **receipt_provenance(),
             "generated_at_utc": utc_now(),
             "status": "FAIL",
             "reason": "arguments must be unique repository names from the audited policy; options are not accepted",
@@ -351,6 +379,7 @@ def main() -> int:
     overall = "PASS" if statuses == {"PASS"} else ("INCOMPLETE" if "INCOMPLETE" in statuses else "FAIL")
     receipt = {
         "schema": SCHEMA,
+        **receipt_provenance(),
         "generated_at_utc": utc_now(),
         "status": overall,
         "required_verifier_context": VERIFIER_CONTEXT,
