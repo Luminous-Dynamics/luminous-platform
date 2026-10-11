@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REPORT_SCHEMA_VERSION = "luminous.vendor-endpoint-qualification-report.v1"
 EXPECTED_PYTHON_VERSION = "3.13.7"
 EXPECTED_JSONSCHEMA_VERSION = "4.26.0"
+EXPECTED_CRYPTOGRAPHY_VERSION = "50.0.2"
 VALIDATORS = {
     "endpoint_profile": "tools/validate_vendor_management_endpoint_profile.py",
     "endpoint_approval_binding": "tools/validate_vendor_management_endpoint_approval.py",
@@ -33,6 +34,7 @@ VALIDATORS = {
 TEST_SUITE_PATTERNS = (
     "test_vendor_management_endpoint_profile.py",
     "test_vendor_management_endpoint_approval.py",
+    "test_vendor_management_endpoint_approval_signature.py",
     "test_vendor_endpoint_qualification_runner.py",
 )
 INPUT_PATHS = (
@@ -40,12 +42,15 @@ INPUT_PATHS = (
     "requirements-hardware-portfolio.txt",
     "schemas/vendor-management-endpoint-profile-v1.schema.json",
     "schemas/vendor-management-endpoint-approval-v1.schema.json",
+    "schemas/vendor-management-approval-trust-store-v1.schema.json",
     "tests/fixtures/vendor-management-endpoint-profile-v1.json",
     "tests/fixtures/vendor-management-endpoint-approval-v1.json",
     "tools/validate_vendor_management_endpoint_profile.py",
     "tools/validate_vendor_management_endpoint_approval.py",
+    "tools/verify_vendor_management_endpoint_approval_signature.py",
     "tests/test_vendor_management_endpoint_profile.py",
     "tests/test_vendor_management_endpoint_approval.py",
+    "tests/test_vendor_management_endpoint_approval_signature.py",
     "tests/test_vendor_endpoint_qualification_runner.py",
     "tools/qualify_vendor_endpoint_contracts.py",
 )
@@ -55,6 +60,7 @@ FAILURE_CODES = {
     "REVISION_MISMATCH",
     "PYTHON_VERSION_MISMATCH",
     "JSONSCHEMA_VERSION_MISMATCH",
+    "CRYPTOGRAPHY_VERSION_MISMATCH",
     "PROFILE_VALIDATOR_FAILED",
     "APPROVAL_VALIDATOR_FAILED",
     "TEST_SUITE_FAILED",
@@ -64,6 +70,7 @@ INCOMPLETE_CODES = {
     "CHECKED_OUT_HEAD_UNAVAILABLE",
     "COMMIT_SHA_UNAVAILABLE",
     "JSONSCHEMA_VERSION_UNAVAILABLE",
+    "CRYPTOGRAPHY_VERSION_UNAVAILABLE",
 }
 
 
@@ -310,12 +317,17 @@ def main(argv: list[str] | None = None) -> int:
 
     python_version = platform.python_version()
     jsonschema_version = dependency_version("jsonschema")
+    cryptography_version = dependency_version("cryptography")
     if python_version != EXPECTED_PYTHON_VERSION:
         blockers.append("PYTHON_VERSION_MISMATCH")
     if jsonschema_version is None:
         blockers.append("JSONSCHEMA_VERSION_UNAVAILABLE")
     elif jsonschema_version != EXPECTED_JSONSCHEMA_VERSION:
         blockers.append("JSONSCHEMA_VERSION_MISMATCH")
+    if cryptography_version is None:
+        blockers.append("CRYPTOGRAPHY_VERSION_UNAVAILABLE")
+    elif cryptography_version != EXPECTED_CRYPTOGRAPHY_VERSION:
+        blockers.append("CRYPTOGRAPHY_VERSION_MISMATCH")
 
     before_hashes = input_hashes(root)
     missing_inputs = [path for path, digest in before_hashes.items() if digest is None]
@@ -348,7 +360,7 @@ def main(argv: list[str] | None = None) -> int:
     blocker_codes = sorted(set(blockers))
     report = {
         "report_schema_version": REPORT_SCHEMA_VERSION,
-        "scope": "synthetic_endpoint_profile_and_pending_approval_contract_only",
+        "scope": "synthetic_endpoint_profile_pending_approval_and_signature_verifier_contract_tests_only",
         "started_at_utc": started_at,
         "finished_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "revision": {
@@ -366,6 +378,8 @@ def main(argv: list[str] | None = None) -> int:
             "platform": platform.system() + "-" + platform.machine(),
             "jsonschema_version": jsonschema_version,
             "expected_jsonschema_version": EXPECTED_JSONSCHEMA_VERSION,
+            "cryptography_version": cryptography_version,
+            "expected_cryptography_version": EXPECTED_CRYPTOGRAPHY_VERSION,
         },
         "input_sha256": before_hashes,
         "input_manifest_sha256": before_manifest_digest,
@@ -378,9 +392,10 @@ def main(argv: list[str] | None = None) -> int:
         "limitations": [
             "synthetic fixture validation only",
             "no endpoint or device contacted by the runner",
-            "no cryptographic signature or signer trust verification",
+            "no production signature or signer trust material evaluated (only ephemeral synthetic verifier tests)",
+            "no complete decision-revocation/supersession ledger evaluated",
             "no revocation or authorization-at-use verification",
-            "no fresh target inventory binding or adapter qualification",
+            "no fresh target inventory binding, tested-capability scope, or adapter qualification",
         ],
         "diagnostics_policy": "raw stdout, stderr, test identifiers and traceback text are not persisted",
     }

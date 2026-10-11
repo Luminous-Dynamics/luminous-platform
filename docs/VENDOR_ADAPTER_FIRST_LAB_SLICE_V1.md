@@ -1,7 +1,7 @@
 # Vendor Adapter First Lab Slice v1
 
 **State:** execution runbook / acceptance contract; no adapter or physical device is qualified by this document.  
-**Related:** [Issue #23](https://github.com/Luminous-Dynamics/luminous-platform/issues/23), [adapter execution contract](VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md), [endpoint and credential boundary](VENDOR_MANAGEMENT_ENDPOINT_SECURITY_V1.md), [capability registry](../security/vendor-adapter-capability-registry-v1.json).
+**Related:** [Issue #23](https://github.com/Luminous-Dynamics/luminous-platform/issues/23), [adapter execution contract](VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md), [endpoint and credential boundary](VENDOR_MANAGEMENT_ENDPOINT_SECURITY_V1.md), [capability registry](../security/vendor-adapter-capability-registry-v1.json). [Offline approval signature verification](VENDOR_ENDPOINT_APPROVAL_SIGNATURE_VERIFICATION_V1.md).
 
 ## Purpose
 
@@ -17,7 +17,7 @@ Before connecting to any device, run the synthetic endpoint-profile contract che
 python tools/qualify_vendor_endpoint_contracts.py --report artifacts/vendor-endpoint-qualification.json
 ```
 
-The runner executes both endpoint validators and their adversarial test suites in child processes with a minimal environment. It emits an exact-head JSON report containing source-file SHA-256 digests, pinned runtime versions, validator return codes, aggregate test counts, and stable blocker codes. Raw stdout/stderr and traceback text are discarded rather than copied into the artifact. In CI, the report is uploaded even when qualification fails.
+The runner executes the endpoint profile and approval/profile-binding validators plus the profile, approval, detached-signature verifier, and runner-contract adversarial test suites in child processes with a minimal environment. The signature tests use ephemeral keys generated in memory; they do not validate any real trust store. It emits an exact-head JSON report containing source-file SHA-256 digests, pinned runtime versions, validator return codes, aggregate test counts, and stable blocker codes. Raw stdout/stderr and traceback text are discarded rather than copied into the artifact. In CI, the report is uploaded even when qualification fails.
 
 This gate validates checked-in synthetic data only. It does not contact a device, establish ownership, validate a production credential, verify approval signatures or signer trust, check revocation at use, or qualify an adapter. For a real lab target, create a new revision with exact endpoint and scope values; do not edit the synthetic fixture into customer evidence. Any unresolved policy/commercial/support dimension must be reviewed or explicitly marked not applicable with a rationale before lab approval.
 
