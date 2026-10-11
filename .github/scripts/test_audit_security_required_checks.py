@@ -362,6 +362,25 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         self.assertEqual(mocked.call_args_list[1].args[0], f"/repos/{repo}/rules/branches/main?per_page=100&page=1")
         self.assertEqual(mocked.call_args_list[2].args[0], f"/repos/{repo}/branches/main/protection/required_status_checks")
 
+    def test_audit_repository_qualifies_after_complete_paginated_rules_read(self):
+        repo = "Luminous-Dynamics/mycelix"
+        metadata = {"full_name": repo, "default_branch": "main"}
+        full_page = [self.strict_rule()] + [{
+            "type": "commit_message_pattern",
+            "ruleset_id": 1000 + i,
+            "ruleset_source_type": "Repository",
+            "ruleset_source": "owner/repo",
+            "parameters": {},
+        } for i in range(99)]
+        with patch.object(module, "get_json", side_effect=[
+            metadata, full_page, [], module.ApiError(404, "no classic protections")
+        ]) as mocked:
+            result = module.audit_repository(repo, module.POLICY[repo], "token")
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(mocked.call_count, 4)
+        self.assertIn("page=1", mocked.call_args_list[1].args[0])
+        self.assertIn("page=2", mocked.call_args_list[2].args[0])
+
     def test_audit_repository_fails_if_default_branch_changed(self):
         repo = "Luminous-Dynamics/mycelix"
         with patch.object(module, "get_json", return_value={
