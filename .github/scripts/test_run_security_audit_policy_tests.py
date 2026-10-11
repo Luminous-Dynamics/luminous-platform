@@ -16,7 +16,7 @@ class SecurityPolicyTestRunnerTests(unittest.TestCase):
             "test_audit_security_required_checks.py",
             "test_run_security_audit_policy_tests.py",
         })
-        self.assertEqual(sum(runner.EXPECTED_TEST_METHODS.values()), 74)
+        self.assertEqual(sum(runner.EXPECTED_TEST_METHODS.values()), 77)
 
     def test_exact_inventory_is_accepted(self):
         self.assertEqual(
