@@ -124,7 +124,7 @@ python tools/validate_vendor_management_endpoint_approval.py
 python -m unittest discover -s tests -p "test_vendor_management_endpoint_approval.py" -v
 ```
 
-Both validators are intended to be network-free. Passing these synthetic contracts is not device qualification, signer authentication, customer authorization, or production readiness.
+Both validators are intended to be network-free. Schema failures are rendered as stable validator-rule codes and JSON Pointers; diagnostics do not include rejected input values, credential-shaped strings, or full exception text. Regression tests deliberately inject secret-like invalid values and require them to remain absent from diagnostics. This is defense in depth, not a reason to place credentials in a profile. Passing these synthetic contracts is not device qualification, signer authentication, customer authorization, or production readiness.
 
 ## 9. Current implementation slice
 
