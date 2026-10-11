@@ -33,11 +33,15 @@ jobs:
       - name: Validate Python runtime
         run: python3 -c 'import sys; assert sys.version_info >= (3, 10), sys.version'
 
-      - name: Compile and run verifier adversarial tests
+      - name: Compile all policy test sources and run exact test inventory
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile .github/scripts/verify_security_audit_trust_anchor.py
-          python3 -m py_compile .github/scripts/audit_security_required_checks.py
-          python3 -m unittest discover -s .github/scripts -p 'test_verify_security_audit_trust_anchor.py' -v
-          python3 -m unittest discover -s .github/scripts -p 'test_audit_security_required_checks.py' -v
+          python3 -m py_compile \
+            .github/scripts/verify_security_audit_trust_anchor.py \
+            .github/scripts/test_verify_security_audit_trust_anchor.py \
+            .github/scripts/audit_security_required_checks.py \
+            .github/scripts/test_audit_security_required_checks.py \
+            .github/scripts/run_security_audit_policy_tests.py \
+            .github/scripts/test_run_security_audit_policy_tests.py
+          python3 .github/scripts/run_security_audit_policy_tests.py
