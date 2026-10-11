@@ -17,7 +17,7 @@ import urllib.request
 from datetime import datetime, timezone
 from typing import Any
 
-API = os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
+API = "https://api.github.com"
 API_VERSION = "2022-11-28"
 GITHUB_ACTIONS_INTEGRATION_ID = 15368
 SCHEMA = "luminous.security-audit.required-check-policy.v1"
@@ -36,6 +36,10 @@ POLICY: dict[str, dict[str, Any]] = {
         "producer_context": "Audit platform workflow definitions / Deterministic audit verdict and evidence completeness",
     },
 }
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 class AuditError(RuntimeError):
@@ -220,7 +224,8 @@ def audit_repository(repo: str, policy: dict[str, Any], token: str) -> dict[str,
     encoded_branch = urllib.parse.quote(branch, safe="")
     try:
         metadata = get_json(f"/repos/{owner}/{name}", token)
-        if not isinstance(metadata, dict) or metadata.get("full_name", "").lower() != repo.lower():
+        full_name = metadata.get("full_name") if isinstance(metadata, dict) else None
+        if not isinstance(full_name, str) or full_name.lower() != repo.lower():
             raise AuditError("repository metadata is missing or names a different repository")
         if metadata.get("default_branch") != branch:
             result.update(
@@ -257,21 +262,24 @@ def main() -> int:
     if not token:
         print(json.dumps({
             "schema": SCHEMA,
-            "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "generated_at_utc": utc_now(),
             "status": "INCOMPLETE",
             "reason": "GITHUB_TOKEN is required; use a read-only token with repository metadata and administration-read access",
             "repositories": [],
         }, sort_keys=True))
         return 2
 
-    selected = [arg for arg in sys.argv[1:] if not arg.startswith("-")]
+    selected = list(sys.argv[1:])
+    if selected == ["--help"] or selected == ["-h"]:
+        print("Usage: audit_security_required_checks.py [Luminous-Dynamics/mycelix] [Luminous-Dynamics/symthaea] [Luminous-Dynamics/luminous-platform]")
+        return 0
     unknown = sorted(set(selected) - set(POLICY))
     if unknown or len(selected) != len(set(selected)):
         print(json.dumps({
             "schema": SCHEMA,
-            "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "generated_at_utc": utc_now(),
             "status": "FAIL",
-            "reason": "repository arguments must be unique members of the audited repository policy",
+            "reason": "arguments must be unique repository names from the audited policy; options are not accepted",
             "unknown_repositories": unknown,
             "repositories": [],
         }, sort_keys=True))
@@ -283,7 +291,7 @@ def main() -> int:
     overall = "PASS" if statuses == {"PASS"} else ("INCOMPLETE" if "INCOMPLETE" in statuses else "FAIL")
     receipt = {
         "schema": SCHEMA,
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "generated_at_utc": utc_now(),
         "status": overall,
         "required_verifier_context": VERIFIER_CONTEXT,
         "required_integration_id": GITHUB_ACTIONS_INTEGRATION_ID,
