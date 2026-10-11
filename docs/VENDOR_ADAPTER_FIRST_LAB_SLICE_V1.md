@@ -14,13 +14,12 @@ The initial target is chosen from devices the project owner can lawfully adminis
 Before connecting to any device, run the synthetic endpoint-profile contract checks:
 
 ```sh
-python tools/validate_vendor_management_endpoint_profile.py
-python -m unittest discover -s tests -p "test_vendor_management_endpoint_profile.py" -v
-python tools/validate_vendor_management_endpoint_approval.py
-python -m unittest discover -s tests -p "test_vendor_management_endpoint_approval.py" -v
+python tools/qualify_vendor_endpoint_contracts.py --report artifacts/vendor-endpoint-qualification.json
 ```
 
-These commands validate a synthetic profile only. They do not contact a device, confirm ownership, validate a production credential, establish vendor support, or qualify an adapter. For a real lab target, create a new revision with exact endpoint and scope values; do not edit the synthetic fixture into customer evidence. Any unresolved policy/commercial/support dimension must be reviewed or explicitly marked not applicable with a rationale before lab approval.
+The runner executes both endpoint validators and their adversarial test suites in child processes with a minimal environment. It emits an exact-head JSON report containing source-file SHA-256 digests, pinned runtime versions, validator return codes, aggregate test counts, and stable blocker codes. Raw stdout/stderr and traceback text are discarded rather than copied into the artifact. In CI, the report is uploaded even when qualification fails.
+
+This gate validates checked-in synthetic data only. It does not contact a device, establish ownership, validate a production credential, verify approval signatures or signer trust, check revocation at use, or qualify an adapter. For a real lab target, create a new revision with exact endpoint and scope values; do not edit the synthetic fixture into customer evidence. Any unresolved policy/commercial/support dimension must be reviewed or explicitly marked not applicable with a rationale before lab approval.
 
 Record the following before writing an adapter:
 

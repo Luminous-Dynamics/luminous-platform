@@ -98,6 +98,8 @@ Luminous Platform is being organized into a product line for secure administrati
 - [Endpoint approval/profile binding validator](tools/validate_vendor_management_endpoint_approval.py)
 - [Synthetic pending approval fixture](tests/fixtures/vendor-management-endpoint-approval-v1.json)
 - [Endpoint approval adversarial tests](tests/test_vendor_management_endpoint_approval.py)
+- [Exact-head endpoint qualification runner](tools/qualify_vendor_endpoint_contracts.py)
+- [Qualification runner contract tests](tests/test_vendor_endpoint_qualification_runner.py)
 - [Vendor adapter capability registry](security/vendor-adapter-capability-registry-v1.json)
 - [Vendor adapter capability schema](schemas/vendor-adapter-capability-registry-v1.schema.json)
 - [Vendor mutation receipt schema](schemas/vendor-operation-effect-receipt-v1.schema.json)

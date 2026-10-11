@@ -22,6 +22,8 @@ on:
       - "tools/validate_vendor_operation_receipt.py"
       - "tools/validate_vendor_management_endpoint_profile.py"
       - "tools/validate_vendor_management_endpoint_approval.py"
+      - "tools/qualify_vendor_endpoint_contracts.py"
+      - "tests/test_vendor_endpoint_qualification_runner.py"
       - "tests/test_vendor_adapter_registry.py"
       - "tests/test_vendor_operation_receipt.py"
       - "tests/test_vendor_management_endpoint_profile.py"
@@ -62,6 +64,8 @@ on:
       - "tools/validate_vendor_operation_receipt.py"
       - "tools/validate_vendor_management_endpoint_profile.py"
       - "tools/validate_vendor_management_endpoint_approval.py"
+      - "tools/qualify_vendor_endpoint_contracts.py"
+      - "tests/test_vendor_endpoint_qualification_runner.py"
       - "tests/test_vendor_adapter_registry.py"
       - "tests/test_vendor_operation_receipt.py"
       - "tests/test_vendor_management_endpoint_profile.py"
@@ -126,23 +130,16 @@ jobs:
       - name: Validate synthetic prepared mutation receipt
         run: python tools/validate_vendor_operation_receipt.py
 
-      - name: Validate synthetic management endpoint profile
-        run: python tools/validate_vendor_management_endpoint_profile.py
+      - name: Run exact-head vendor endpoint qualification and emit redacted manifest
+        run: python tools/qualify_vendor_endpoint_contracts.py --report artifacts/vendor-endpoint-qualification.json
 
-      - name: Validate external endpoint approval/profile binding record
-        run: python tools/validate_vendor_management_endpoint_approval.py
-
-      - name: Run adversarial vendor adapter registry tests
-        run: python -m unittest discover -s tests -p "test_vendor_adapter_registry.py" -v
-
-      - name: Run adversarial vendor operation receipt tests
-        run: python -m unittest discover -s tests -p "test_vendor_operation_receipt.py" -v
-
-      - name: Run adversarial endpoint profile tests
-        run: python -m unittest discover -s tests -p "test_vendor_management_endpoint_profile.py" -v
-
-      - name: Run adversarial endpoint approval binding tests
-        run: python -m unittest discover -s tests -p "test_vendor_management_endpoint_approval.py" -v
-
+      - name: Upload endpoint qualification manifest (including failed runs)
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vendor-endpoint-qualification-${{ github.sha }}
+          path: artifacts/vendor-endpoint-qualification.json
+          if-no-files-found: error
+          retention-days: 30
       - name: Run hardware portfolio adversarial tests
         run: python -m unittest discover -s tests -p "test_hardware_*.py" -v
