@@ -92,3 +92,20 @@ GitHub documents that `workflow_run: requested` is not emitted for a re-run; `in
 - This does not revoke a green commit status after `main` advances later. The minimum enforcement configuration is: require the producer audit check and `Security Audit / Independent Verifier`, with **Require branches to be up to date before merging** enabled. GitHub documents strict required checks as requiring the topic branch to be up to date, and notes required checks must pass on the latest commit SHA: [ruleset requirements](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets), [required-check troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks).
 - If a merge queue is selected instead, every required workflow needs `merge_group: checks_requested` and a separately qualified merge-group provenance path; this verifier is not currently qualified for merge-group runs. See [GitHub's merge-group event guidance](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
 - Hosted runs for these new changes remain queued or pending. No pass is claimed, and none of these draft PRs is an active merge gate.
+
+
+## Read-only required-check policy preflight
+
+The Platform PR also adds `.github/scripts/audit_security_required_checks.py`, a read-only preflight for the enforcement step in [issue #24](https://github.com/Luminous-Dynamics/luminous-platform/issues/24). Run it from a trusted administrative workstation after configuring the rules:
+
+```sh
+GITHUB_TOKEN="$(gh auth token)" python3 .github/scripts/audit_security_required_checks.py
+```
+
+Pass one or more exact repository names to limit scope; without arguments it checks all three policy entries. Use a read-only token with repository Metadata read and Administration read permissions. The command prints one machine-readable JSON receipt and exits 0 only if every selected repository qualifies (1 for a confirmed policy failure, 2 for an incomplete observation). It does not create or edit branch protection/rulesets.
+
+The checker inspects GitHub's effective active rules for each repository's API-reported default branch and the classic required-status-check endpoint. It requires strict/up-to-date behavior and both the producer's terminal aggregate-verdict job and `Security Audit / Independent Verifier` to be pinned to the GitHub Actions application (`integration_id` / `app_id` 15368). Name-only legacy `contexts[]`, an absent source binding, a different application ID, an unrecognized repository/default branch, or an API permission failure cannot be reported as a pass. The producer contexts are fixed in reviewed policy: `Shared security audit / Deterministic audit verdict and evidence completeness` for Mycelix and Symthaea, and `Audit platform workflow definitions / Deterministic audit verdict and evidence completeness` for the Platform self-check.
+
+The preflight audits only required-check freshness and source binding. It does not certify ruleset bypass actors, administrator enforcement, review policy, merge-queue support, or a real merge attempt; record those separately before declaring the enforcement boundary active. It must run with sufficient read permission and its JSON receipt must be retained as evidence. This design follows GitHub's APIs for [effective branch rules](https://docs.github.com/en/rest/repos/rules?apiVersion=2022-11-28) and [classic required status checks](https://docs.github.com/en/rest/branches/branch-protection?apiVersion=2022-11-28).
+
+The unprivileged verifier-test workflow now compiles this utility and runs `.github/scripts/test_audit_security_required_checks.py` in addition to the 34 verifier tests. Its 24 policy-auditor tests use synthetic API payloads and require no credentials or network calls; their presence is authored coverage, not evidence of a hosted test pass.
