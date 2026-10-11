@@ -23,9 +23,8 @@ class RequiredCheckPolicyTests(unittest.TestCase):
             "parameters": {
                 "strict_required_status_checks_policy": strict,
                 "required_status_checks": [
-                    {"context": context} for context in (
-                        sorted(self.required) if contexts is None else contexts
-                    )
+                    {"context": context, "integration_id": module.GITHUB_ACTIONS_INTEGRATION_ID}
+                    for context in (sorted(self.required) if contexts is None else contexts)
                 ],
             },
         }
@@ -58,17 +57,38 @@ class RequiredCheckPolicyTests(unittest.TestCase):
     def test_classic_protection_strict_checks_array_qualifies(self):
         classic = {
             "strict": True,
-            "checks": [{"context": context, "app_id": 15368} for context in self.required],
+            "checks": [{"context": context, "app_id": module.GITHUB_ACTIONS_INTEGRATION_ID} for context in self.required],
             "contexts": [],
         }
         decision = module.assess_policy([], classic, None, self.required)
         self.assertEqual(decision["status"], "PASS")
         self.assertEqual(decision["source"], "classic-branch-protection")
 
-    def test_classic_protection_legacy_contexts_qualifies(self):
+    def test_classic_protection_name_only_contexts_do_not_qualify(self):
         classic = {"strict": True, "contexts": sorted(self.required)}
         decision = module.assess_policy([], classic, None, self.required)
-        self.assertEqual(decision["status"], "PASS")
+        self.assertEqual(decision["status"], "FAIL")
+        self.assertEqual(set(decision["missing_contexts"]), self.required)
+
+    def test_classic_protection_wrong_app_id_does_not_qualify(self):
+        classic = {
+            "strict": True,
+            "checks": [{"context": context, "app_id": 99999} for context in self.required],
+            "contexts": [],
+        }
+        decision = module.assess_policy([], classic, None, self.required)
+        self.assertEqual(decision["status"], "FAIL")
+        self.assertEqual(set(decision["missing_contexts"]), self.required)
+
+    def test_classic_protection_missing_app_id_does_not_qualify(self):
+        classic = {
+            "strict": True,
+            "checks": [{"context": context} for context in self.required],
+            "contexts": sorted(self.required),
+        }
+        decision = module.assess_policy([], classic, None, self.required)
+        self.assertEqual(decision["status"], "FAIL")
+        self.assertEqual(set(decision["missing_contexts"]), self.required)
 
     def test_classic_loose_policy_fails_even_when_contexts_exist(self):
         classic = {"strict": False, "contexts": sorted(self.required)}
@@ -103,6 +123,32 @@ class RequiredCheckPolicyTests(unittest.TestCase):
             "checks": [{"context": "Shared security audit / Deterministic audit verdict and evidence completeness"}],
         })
         self.assertEqual(contexts, self.required)
+
+    def test_ruleset_wrong_integration_id_does_not_qualify(self):
+        rule = self.strict_rule()
+        for item in rule["parameters"]["required_status_checks"]:
+            item["integration_id"] = 99999
+        decision = module.assess_policy([rule], None, 404, self.required)
+        self.assertEqual(decision["status"], "FAIL")
+        self.assertEqual(set(decision["missing_contexts"]), self.required)
+
+    def test_ruleset_missing_integration_id_does_not_qualify(self):
+        rule = self.strict_rule()
+        for item in rule["parameters"]["required_status_checks"]:
+            item.pop("integration_id")
+        decision = module.assess_policy([rule], None, 404, self.required)
+        self.assertEqual(decision["status"], "FAIL")
+        self.assertEqual(set(decision["missing_contexts"]), self.required)
+
+    def test_ruleset_conflicting_duplicate_binding_does_not_qualify(self):
+        rule = self.strict_rule()
+        rule["parameters"]["required_status_checks"].append({
+            "context": "Security Audit / Independent Verifier",
+            "integration_id": None,
+        })
+        decision = module.assess_policy([rule], None, 404, self.required)
+        self.assertEqual(decision["status"], "FAIL")
+        self.assertIn("Security Audit / Independent Verifier", decision["missing_contexts"])
 
     def test_policy_requires_default_branch_match(self):
         # The repository-default branch consistency is enforced in audit_repository;
