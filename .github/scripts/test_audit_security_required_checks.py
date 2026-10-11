@@ -192,6 +192,24 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         self.assertEqual(result["status"], "INCOMPLETE")
         self.assertIn("exceeds the documented", result["reason"])
 
+    def test_page_limit_with_qualified_contexts_is_still_incomplete(self):
+        rules = [self.strict_rule()]
+        rules.extend({"type": "deletion", "ruleset_id": i + 100,
+                      "ruleset_source_type": "Repository", "ruleset_source": "owner/repo",
+                      "parameters": {}} for i in range(99))
+        result = module.assess_policy(rules, None, 404, self.required)
+        self.assertEqual(result["status"], "INCOMPLETE")
+        self.assertIn("pagination completeness is unverified", result["reason"])
+
+    def test_conflict_is_not_masked_by_malformed_classic_response(self):
+        correct = self.strict_rule()
+        conflict = self.strict_rule(contexts=["Security Audit / Independent Verifier"])
+        conflict["ruleset_id"] = 51
+        conflict["parameters"]["required_status_checks"][0]["integration_id"] = 777
+        result = module.assess_policy([correct, conflict], {"contexts": sorted(self.required)}, None, self.required)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("Security Audit / Independent Verifier", result["conflicting_contexts"])
+
     def test_page_limit_with_unresolved_contexts_is_incomplete(self):
         rules = [{"type": "deletion", "ruleset_id": i + 1,
                   "ruleset_source_type": "Repository", "ruleset_source": "owner/repo",
