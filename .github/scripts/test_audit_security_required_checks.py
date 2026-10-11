@@ -1,6 +1,10 @@
 import importlib.util
+import io
+import json
+from contextlib import redirect_stdout
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 SCRIPT = Path(__file__).with_name("audit_security_required_checks.py")
 spec = importlib.util.spec_from_file_location("required_check_auditor", SCRIPT)
@@ -149,6 +153,56 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         decision = module.assess_policy([rule], None, 404, self.required)
         self.assertEqual(decision["status"], "FAIL")
         self.assertIn("Security Audit / Independent Verifier", decision["missing_contexts"])
+
+    def test_audit_repository_qualifies_bound_active_rules_even_if_classic_api_forbidden(self):
+        repo = "Luminous-Dynamics/mycelix"
+        metadata = {"full_name": repo, "default_branch": "main"}
+        rule = self.strict_rule()
+        with patch.object(module, "get_json", side_effect=[
+            metadata, [rule], module.ApiError(403, "not authorized to inspect legacy protection")
+        ]) as mocked:
+            result = module.audit_repository(repo, module.POLICY[repo], "token")
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["source"], "ruleset:42")
+        self.assertEqual(mocked.call_args_list[0].args[0], f"/repos/{repo}")
+        self.assertEqual(mocked.call_args_list[1].args[0], f"/repos/{repo}/rules/branches/main")
+        self.assertEqual(mocked.call_args_list[2].args[0], f"/repos/{repo}/branches/main/protection/required_status_checks")
+
+    def test_audit_repository_fails_if_default_branch_changed(self):
+        repo = "Luminous-Dynamics/mycelix"
+        with patch.object(module, "get_json", return_value={
+            "full_name": repo, "default_branch": "trunk"
+        }) as mocked:
+            result = module.audit_repository(repo, module.POLICY[repo], "token")
+        self.assertEqual(result["status"], "FAIL")
+        self.assertIn("differs from API default branch", result["reason"])
+        mocked.assert_called_once()
+
+    def test_malformed_repository_metadata_is_incomplete(self):
+        repo = "Luminous-Dynamics/mycelix"
+        with patch.object(module, "get_json", return_value={"full_name": None, "default_branch": "main"}):
+            result = module.audit_repository(repo, module.POLICY[repo], "token")
+        self.assertEqual(result["status"], "INCOMPLETE")
+
+    def test_effective_rules_api_failure_is_incomplete(self):
+        repo = "Luminous-Dynamics/mycelix"
+        with patch.object(module, "get_json", side_effect=[
+            {"full_name": repo, "default_branch": "main"},
+            module.ApiError(403, "forbidden"),
+        ]):
+            result = module.audit_repository(repo, module.POLICY[repo], "token")
+        self.assertEqual(result["status"], "INCOMPLETE")
+
+    def test_unknown_cli_options_are_not_silently_ignored(self):
+        output = io.StringIO()
+        with patch.object(module.sys, "argv", ["audit_security_required_checks.py", "--audit-all"]), \
+             patch.dict(module.os.environ, {"GITHUB_TOKEN": "test-token"}), \
+             redirect_stdout(output):
+            exit_code = module.main()
+        receipt = json.loads(output.getvalue())
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(receipt["status"], "FAIL")
+        self.assertEqual(receipt["unknown_repositories"], ["--audit-all"])
 
     def test_policy_requires_default_branch_match(self):
         # The repository-default branch consistency is enforced in audit_repository;
