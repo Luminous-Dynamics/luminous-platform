@@ -181,6 +181,14 @@ class VendorManagementEndpointApprovalTests(unittest.TestCase):
         })
         self.assertTrue(any("distinct principals" in error for error in self.errors(approval=approval)))
 
+    def test_schema_diagnostics_never_echo_invalid_sensitive_values(self) -> None:
+        approval = copy.deepcopy(self.approval)
+        marker = "SYNTHETIC-SECRET-MUST-NOT-APPEAR"
+        approval["profile_digest"] = marker
+        errors = self.errors(approval=approval)
+        self.assertTrue(errors)
+        self.assertNotIn(marker, "\n".join(errors))
+
     def test_signature_presence_is_not_claimed_to_be_signature_verification(self) -> None:
         source = (ROOT / "tools/validate_vendor_management_endpoint_approval.py").read_text()
         self.assertIn("does not authenticate a signer", source)
