@@ -38,7 +38,7 @@ class RequiredCheckPolicyTests(unittest.TestCase):
     def test_strict_active_ruleset_requires_both_exact_contexts(self):
         decision = module.assess_policy([self.strict_rule()], None, 404, self.required)
         self.assertEqual(decision["status"], "PASS")
-        self.assertEqual(decision["source"], "ruleset:42")
+        self.assertEqual(decision["source"], ["Repository:owner/repo#42"])
         self.assertEqual(decision["missing_contexts"], [])
 
     def test_ruleset_with_loose_policy_does_not_qualify(self):
@@ -116,10 +116,12 @@ class RequiredCheckPolicyTests(unittest.TestCase):
 
     def test_unknown_and_malformed_rules_never_qualify(self):
         decision = module.assess_policy([
-            {"type": "required_status_checks", "parameters": {
+            {"type": "required_status_checks", "ruleset_id": 50,
+             "ruleset_source_type": "Repository", "ruleset_source": "owner/repo",
+             "parameters": {
                 "strict_required_status_checks_policy": "true",
                 "required_status_checks": [{"context": context} for context in self.required],
-            }}
+             }}
         ], None, 404, self.required)
         self.assertEqual(decision["status"], "FAIL")
 
@@ -193,7 +195,7 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         ]) as mocked:
             result = module.audit_repository(repo, module.POLICY[repo], "token")
         self.assertEqual(result["status"], "PASS")
-        self.assertEqual(result["source"], "ruleset:42")
+        self.assertEqual(result["source"], ["Repository:owner/repo#42"])
         self.assertEqual(mocked.call_args_list[0].args[0], f"/repos/{repo}")
         self.assertEqual(mocked.call_args_list[1].args[0], f"/repos/{repo}/rules/branches/main")
         self.assertEqual(mocked.call_args_list[2].args[0], f"/repos/{repo}/branches/main/protection/required_status_checks")
