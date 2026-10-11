@@ -2,9 +2,9 @@
 """Read-only qualification check for security-audit merge protection.
 
 This tool does not change repository rules. It exits successfully only when
-GitHub's effective branch rules OR classic branch-protection API confirm that
-both the producer's terminal audit check and the independent verifier status
-are required with strict (up-to-date) checking enabled.
+GitHub's effective ruleset or classic branch-protection API confirms strict
+up-to-date checking and both required contexts are bound to the GitHub Actions
+integration ID (15368). Name-only legacy contexts do not qualify.
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from typing import Any
 
 API = os.environ.get("GITHUB_API_URL", "https://api.github.com").rstrip("/")
 API_VERSION = "2022-11-28"
+GITHUB_ACTIONS_INTEGRATION_ID = 15368
 SCHEMA = "luminous.security-audit.required-check-policy.v1"
 VERIFIER_CONTEXT = "Security Audit / Independent Verifier"
 POLICY: dict[str, dict[str, Any]] = {
@@ -89,7 +90,8 @@ def classic_contexts(payload: Any) -> set[str]:
     return result
 
 
-def ruleset_contexts(rule: Any) -> set[str]:
+def ruleset_contexts(rule: Any, required_contexts: set[str]) -> set[str]:
+    """Return only required contexts pinned to the expected GitHub Actions integration."""
     if not isinstance(rule, dict) or rule.get("type") != "required_status_checks":
         return set()
     parameters = rule.get("parameters")
@@ -98,9 +100,33 @@ def ruleset_contexts(rule: Any) -> set[str]:
     entries = parameters.get("required_status_checks")
     if not isinstance(entries, list):
         return set()
+    by_context: dict[str, list[Any]] = {}
+    for item in entries:
+        if isinstance(item, dict) and isinstance(item.get("context"), str) and item["context"]:
+            by_context.setdefault(item["context"], []).append(item.get("integration_id"))
     return {
-        item["context"] for item in entries
-        if isinstance(item, dict) and isinstance(item.get("context"), str) and item["context"]
+        context for context in required_contexts
+        if context in by_context
+        and all(app_id == GITHUB_ACTIONS_INTEGRATION_ID for app_id in by_context[context])
+    }
+
+
+def classic_bound_contexts(payload: Any, required_contexts: set[str]) -> set[str]:
+    """Require modern branch-protection checks[] entries bound to GitHub Actions.
+
+    Legacy contexts[] identifies names only and cannot establish which app supplied
+    a status. It is intentionally insufficient for an authorization-grade PASS.
+    """
+    if not isinstance(payload, dict) or not isinstance(payload.get("checks"), list):
+        return set()
+    by_context: dict[str, list[Any]] = {}
+    for item in payload["checks"]:
+        if isinstance(item, dict) and isinstance(item.get("context"), str) and item["context"]:
+            by_context.setdefault(item["context"], []).append(item.get("app_id"))
+    return {
+        context for context in required_contexts
+        if context in by_context
+        and all(app_id == GITHUB_ACTIONS_INTEGRATION_ID for app_id in by_context[context])
     }
 
 
@@ -121,7 +147,7 @@ def assess_policy(
         }
 
     for rule in active_rules:
-        contexts = ruleset_contexts(rule)
+        contexts = ruleset_contexts(rule, required_contexts)
         if required_contexts <= contexts:
             label = f"ruleset:{rule.get('ruleset_id', 'unknown')}"
             return {
@@ -129,11 +155,15 @@ def assess_policy(
                 "source": label,
                 "observed_contexts": sorted(contexts),
                 "missing_contexts": [],
-                "reason": "active required-status-check rule requires all contexts with strict up-to-date policy",
+                "reason": (
+                    "active required-status-check rule requires all contexts with strict up-to-date policy "
+                    f"and integration_id {GITHUB_ACTIONS_INTEGRATION_ID}"
+                ),
             }
 
     if isinstance(classic_protection, dict):
-        contexts = classic_contexts(classic_protection)
+        observed = classic_contexts(classic_protection)
+        contexts = classic_bound_contexts(classic_protection, required_contexts)
         missing = required_contexts - contexts
         if classic_protection.get("strict") is True and not missing:
             return {
@@ -141,17 +171,21 @@ def assess_policy(
                 "source": "classic-branch-protection",
                 "observed_contexts": sorted(contexts),
                 "missing_contexts": [],
-                "reason": "classic required-status-check protection is strict and contains all required contexts",
+                "reason": (
+                    "classic required-status-check protection is strict and pins all required contexts "
+                    f"to integration_id {GITHUB_ACTIONS_INTEGRATION_ID}"
+                ),
             }
         reasons = []
         if classic_protection.get("strict") is not True:
             reasons.append("classic protection strict is not true")
         if missing:
-            reasons.append("required contexts missing from classic protection")
+            reasons.append("required contexts missing, malformed, or not pinned to GitHub Actions")
         return {
             "status": "FAIL",
             "source": "classic-branch-protection",
-            "observed_contexts": sorted(contexts),
+            "observed_contexts": sorted(observed),
+            "bound_contexts": sorted(contexts),
             "missing_contexts": sorted(missing),
             "reason": "; ".join(reasons),
         }
@@ -252,6 +286,7 @@ def main() -> int:
         "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "status": overall,
         "required_verifier_context": VERIFIER_CONTEXT,
+        "required_integration_id": GITHUB_ACTIONS_INTEGRATION_ID,
         "repositories": rows,
     }
     print(json.dumps(receipt, sort_keys=True, separators=(",", ":")))
