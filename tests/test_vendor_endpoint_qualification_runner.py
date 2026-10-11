@@ -26,6 +26,20 @@ class QualificationRunnerContractTests(unittest.TestCase):
         }
         self.assertTrue(required.issubset(set(qualification.INPUT_PATHS)))
 
+    def test_all_invoked_code_is_bound_into_input_manifest(self) -> None:
+        self.assertEqual(qualification.manifest_coverage_gaps(), [])
+
+    def test_unmanifested_validator_or_test_suite_blocks_qualification(self) -> None:
+        gaps = qualification.manifest_coverage_gaps(
+            validators={"new_validator": "tools/validate_new_contract.py"},
+            test_suite_patterns=("test_new_contract.py",),
+            input_paths=("tools/qualify_vendor_endpoint_contracts.py",),
+        )
+        self.assertEqual(
+            gaps,
+            ["tests/test_new_contract.py", "tools/validate_new_contract.py"],
+        )
+
     def test_input_hashes_match_sha256_of_file_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
