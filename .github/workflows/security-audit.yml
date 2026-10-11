@@ -22,6 +22,7 @@ on:
         default: false
         type: boolean
 
+# The reusable workflow reads the caller's exact source snapshot and never writes repository content.
 permissions:
   contents: read
 
@@ -30,6 +31,7 @@ jobs:
     name: GitHub Actions workflow security (zizmor)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    # Actions read is limited to audit/run provenance; contents read is the inspected exact subject tree.
     permissions:
       actions: read
       contents: read
@@ -2645,6 +2647,7 @@ jobs:
       - npmsec
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    # The aggregator downloads run-scoped evidence artifacts and reads subject metadata; it has no write grants.
     permissions:
       actions: read
       contents: read
