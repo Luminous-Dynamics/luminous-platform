@@ -23,6 +23,9 @@ from typing import Any
 API = "https://api.github.com"
 API_VERSION = "2022-11-28"
 GITHUB_ACTIONS_INTEGRATION_ID = 15368
+RULES_PER_PAGE = 100
+MAX_RULE_PAGES = 10
+MAX_EFFECTIVE_RULES = RULES_PER_PAGE * MAX_RULE_PAGES
 SCHEMA = "luminous.security-audit.required-check-policy.v1"
 VERIFIER_CONTEXT = "Security Audit / Independent Verifier"
 POLICY: dict[str, dict[str, Any]] = {
@@ -101,6 +104,30 @@ def get_json(path: str, token: str) -> Any:
         return json.loads(payload)
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise AuditError(f"GitHub API returned invalid JSON for {path}") from exc
+
+
+def fetch_all_active_rules(owner: str, name: str, encoded_branch: str, token: str) -> list[Any]:
+    """Fetch every effective branch-rule page, with a fail-closed bounded ceiling."""
+    collected: list[Any] = []
+    # One extra request proves whether exactly MAX_EFFECTIVE_RULES is complete.
+    for page in range(1, MAX_RULE_PAGES + 2):
+        payload = get_json(
+            f"/repos/{owner}/{name}/rules/branches/{encoded_branch}"
+            f"?per_page={RULES_PER_PAGE}&page={page}",
+            token,
+        )
+        if not isinstance(payload, list) or len(payload) > RULES_PER_PAGE:
+            raise AuditError(f"effective branch-rules page {page} is malformed or exceeds page size")
+        if page > MAX_RULE_PAGES:
+            if payload:
+                raise AuditError(
+                    f"effective branch-rules exceed the {MAX_EFFECTIVE_RULES}-rule audit ceiling"
+                )
+            return collected
+        collected.extend(payload)
+        if len(payload) < RULES_PER_PAGE:
+            return collected
+    raise AuditError("effective branch-rules pagination ended without a completeness proof")
 
 
 def classic_contexts(payload: Any) -> set[str]:
@@ -209,6 +236,8 @@ def assess_policy(
     classic_protection: Any | None,
     classic_error_status: int | None,
     required_contexts: set[str],
+    *,
+    pagination_complete: bool = False,
 ) -> dict[str, Any]:
     """Prove that each required context is strict and source-bound across active controls."""
     if not isinstance(active_rules, list):
@@ -219,24 +248,21 @@ def assess_policy(
             "missing_contexts": sorted(required_contexts),
             "reason": "effective branch-rules response is not a list",
         }
-    if len(active_rules) > 100:
+    if len(active_rules) > MAX_EFFECTIVE_RULES:
         return {
             "status": "INCOMPLETE",
             "source": None,
             "observed_contexts": [],
             "missing_contexts": sorted(required_contexts),
-            "reason": "effective branch-rules response exceeds the documented 100-entry page limit",
+            "reason": f"effective branch-rules response exceeds the {MAX_EFFECTIVE_RULES}-rule audit ceiling",
         }
-    if len(active_rules) == 100:
-        # The API helper discards Link headers, so it cannot prove that there is
-        # no second page. Even a complete-looking first page could hide a
-        # conflicting source binding later; do not publish PASS from it.
+    if len(active_rules) >= RULES_PER_PAGE and not pagination_complete:
         return {
             "status": "INCOMPLETE",
             "source": None,
             "observed_contexts": [],
             "missing_contexts": sorted(required_contexts),
-            "reason": "effective branch-rules response reaches the 100-entry page boundary; pagination completeness is unverified",
+            "reason": "effective branch-rules response has not been proven complete across all API pages",
         }
 
     qualified_contexts: set[str] = set()
@@ -386,9 +412,7 @@ def audit_repository(repo: str, policy: dict[str, Any], token: str) -> dict[str,
             )
             return result
 
-        active_rules = get_json(
-            f"/repos/{owner}/{name}/rules/branches/{encoded_branch}?per_page=100&page=1", token
-        )
+        active_rules = fetch_all_active_rules(owner, name, encoded_branch, token)
         classic: Any | None = None
         classic_error_status: int | None = None
         try:
@@ -398,7 +422,7 @@ def audit_repository(repo: str, policy: dict[str, Any], token: str) -> dict[str,
             )
         except ApiError as exc:
             classic_error_status = exc.status
-        decision = assess_policy(active_rules, classic, classic_error_status, required)
+        decision = assess_policy(active_rules, classic, classic_error_status, required, pagination_complete=True)
         result.update(decision)
         return result
     except ApiError as exc:
