@@ -174,13 +174,83 @@ def classic_bound_contexts(payload: Any, required_contexts: set[str]) -> set[str
     }
 
 
+def ruleset_required_check_observations(
+    rule: Any, required_contexts: set[str]
+) -> dict[str, list[tuple[bool, Any]]] | None:
+    """Parse target-check declarations, keeping non-strict or unbound conflicts visible."""
+    if not isinstance(rule, dict) or rule.get("type") != "required_status_checks":
+        return {}
+    parameters = rule.get("parameters")
+    if not isinstance(parameters, dict) or type(parameters.get("strict_required_status_checks_policy")) is not bool:
+        return None
+    entries = parameters.get("required_status_checks")
+    if not isinstance(entries, list):
+        return None
+    strict = parameters["strict_required_status_checks_policy"]
+    result: dict[str, list[tuple[bool, Any]]] = {}
+    for item in entries:
+        if not isinstance(item, dict):
+            return None
+        context = item.get("context")
+        if not isinstance(context, str) or not context:
+            return None
+        if context in required_contexts:
+            result.setdefault(context, []).append((strict, item.get("integration_id")))
+    return result
+
+
+def classic_policy_observations(
+    payload: Any, required_contexts: set[str]
+) -> dict[str, Any] | None:
+    """Parse classic branch protection; legacy name-only contexts never qualify."""
+    if not isinstance(payload, dict) or type(payload.get("strict")) is not bool:
+        return None
+    legacy = payload.get("contexts", [])
+    checks = payload.get("checks", [])
+    if not isinstance(legacy, list) or not isinstance(checks, list):
+        return None
+    if not all(isinstance(item, str) and item for item in legacy):
+        return None
+    observations: dict[str, list[Any]] = {}
+    for item in checks:
+        if not isinstance(item, dict):
+            return None
+        context = item.get("context")
+        if not isinstance(context, str) or not context:
+            return None
+        if context in required_contexts:
+            observations.setdefault(context, []).append(item.get("app_id"))
+    observed = set(legacy)
+    observed.update(
+        item["context"] for item in checks
+        if isinstance(item.get("context"), str) and item["context"]
+    )
+    qualified = {
+        context for context, app_ids in observations.items()
+        if payload["strict"] is True
+        and app_ids
+        and all(app_id == GITHUB_ACTIONS_INTEGRATION_ID for app_id in app_ids)
+    }
+    conflicts = {
+        context for context, app_ids in observations.items()
+        if any(app_id != GITHUB_ACTIONS_INTEGRATION_ID for app_id in app_ids)
+    }
+    return {
+        "strict": payload["strict"],
+        "observed": observed,
+        "qualified": qualified,
+        "conflicts": conflicts,
+        "observations": observations,
+    }
+
+
 def assess_policy(
     active_rules: Any,
     classic_protection: Any | None,
     classic_error_status: int | None,
     required_contexts: set[str],
 ) -> dict[str, Any]:
-    """Return a bounded policy decision without assuming missing fields are safe."""
+    """Prove that each required context is strict and source-bound across active controls."""
     if not isinstance(active_rules, list):
         return {
             "status": "INCOMPLETE",
@@ -198,109 +268,126 @@ def assess_policy(
             "reason": "effective branch-rules response exceeds the documented 100-entry page limit",
         }
 
-    # Effective branch rules are additive. A strict app-bound required-check rule
-    # may come from a repository, organization, or enterprise ruleset; the two
-    # contexts need not be stored in the same ruleset.
     qualified_contexts: set[str] = set()
-    qualifying_sources: list[dict[str, Any]] = []
+    conflicting_contexts: set[str] = set()
+    observed_contexts: set[str] = set()
+    source_labels: set[str] = set()
     for rule in active_rules:
         identity = ruleset_identity(rule)
         if identity is None:
             return {
                 "status": "INCOMPLETE",
                 "source": None,
-                "observed_contexts": [],
-                "missing_contexts": sorted(required_contexts),
+                "observed_contexts": sorted(observed_contexts),
+                "missing_contexts": sorted(required_contexts - qualified_contexts),
                 "reason": "effective branch-rules response contains an entry with malformed ruleset provenance",
             }
-        contexts = ruleset_contexts(rule, required_contexts)
-        if contexts:
-            qualified_contexts.update(contexts)
-            qualifying_sources.append(identity)
+        parsed = ruleset_required_check_observations(rule, required_contexts)
+        if parsed is None:
+            return {
+                "status": "INCOMPLETE",
+                "source": None,
+                "observed_contexts": sorted(observed_contexts),
+                "missing_contexts": sorted(required_contexts - qualified_contexts),
+                "reason": "effective required-status-check rule is malformed or omits strict-policy metadata",
+            }
+        for context, declarations in parsed.items():
+            observed_contexts.add(context)
+            if any(strict is not True or app_id != GITHUB_ACTIONS_INTEGRATION_ID
+                   for strict, app_id in declarations):
+                conflicting_contexts.add(context)
+            elif declarations:
+                qualified_contexts.add(context)
+                source_labels.add(
+                    f"{identity['source_type']}:{identity['source']}#{identity['ruleset_id']}"
+                )
+
+    classic = None
+    if isinstance(classic_protection, dict):
+        classic = classic_policy_observations(classic_protection, required_contexts)
+        if classic is None:
+            if required_contexts <= qualified_contexts:
+                return {
+                    "status": "PASS",
+                    "source": sorted(source_labels),
+                    "observed_contexts": sorted(qualified_contexts),
+                    "missing_contexts": [],
+                    "reason": "active rulesets independently require every context in strict mode with the expected integration binding",
+                }
+            return {
+                "status": "INCOMPLETE",
+                "source": None,
+                "observed_contexts": sorted(observed_contexts),
+                "missing_contexts": sorted(required_contexts - qualified_contexts),
+                "reason": "classic required-status-check response is malformed and rulesets alone do not prove all required contexts",
+            }
+        observed_contexts.update(classic["observed"])
+        qualified_contexts.update(classic["qualified"])
+        conflicting_contexts.update(classic["conflicts"])
+        if classic["qualified"]:
+            source_labels.add("classic-branch-protection")
+
+    if conflicting_contexts:
+        return {
+            "status": "FAIL",
+            "source": sorted(source_labels) or None,
+            "observed_contexts": sorted(observed_contexts),
+            "missing_contexts": sorted(required_contexts - qualified_contexts),
+            "conflicting_contexts": sorted(conflicting_contexts),
+            "reason": "one or more required contexts have a loose or missing/wrong source binding in an active policy",
+        }
+
     if required_contexts <= qualified_contexts:
-        source_labels = sorted({
-            f"{item['source_type']}:{item['source']}#{item['ruleset_id']}"
-            for item in qualifying_sources
-        })
         return {
             "status": "PASS",
-            "source": source_labels,
+            "source": sorted(source_labels),
             "observed_contexts": sorted(qualified_contexts),
             "missing_contexts": [],
             "reason": (
-                "active strict required-status-check rules collectively require all contexts, "
-                f"each pinned to integration_id {GITHUB_ACTIONS_INTEGRATION_ID}"
+                "active strict required-status-check controls collectively require all contexts "
+                f"and bind each one to integration_id {GITHUB_ACTIONS_INTEGRATION_ID}"
             ),
         }
 
     if len(active_rules) >= 100:
-        # Even a well-formed first page may hide additional active rules. If
-        # neither the rules page nor a fully qualifying classic policy proved
-        # both checks above, absence is not established.
-        if (isinstance(classic_protection, dict)
-                and classic_protection.get("strict") is True
-                and not (required_contexts - classic_bound_contexts(classic_protection, required_contexts))):
-            contexts = classic_bound_contexts(classic_protection, required_contexts)
-            return {
-                "status": "PASS",
-                "source": "classic-branch-protection",
-                "observed_contexts": sorted(contexts),
-                "missing_contexts": [],
-                "reason": (
-                    "classic required-status-check protection is strict and pins all required contexts "
-                    f"to integration_id {GITHUB_ACTIONS_INTEGRATION_ID}"
-                ),
-            }
         return {
             "status": "INCOMPLETE",
-            "source": None,
-            "observed_contexts": [],
-            "missing_contexts": sorted(required_contexts),
+            "source": sorted(source_labels) or None,
+            "observed_contexts": sorted(observed_contexts),
+            "missing_contexts": sorted(required_contexts - qualified_contexts),
             "reason": "effective branch-rules page may be truncated; unable to prove complete required-check configuration",
         }
 
     if isinstance(classic_protection, dict):
-        observed = classic_contexts(classic_protection)
-        contexts = classic_bound_contexts(classic_protection, required_contexts)
-        missing = required_contexts - contexts
-        if classic_protection.get("strict") is True and not missing:
+        if classic is None:
             return {
-                "status": "PASS",
-                "source": "classic-branch-protection",
-                "observed_contexts": sorted(contexts),
-                "missing_contexts": [],
-                "reason": (
-                    "classic required-status-check protection is strict and pins all required contexts "
-                    f"to integration_id {GITHUB_ACTIONS_INTEGRATION_ID}"
-                ),
+                "status": "INCOMPLETE",
+                "source": sorted(source_labels) or None,
+                "observed_contexts": sorted(observed_contexts),
+                "missing_contexts": sorted(required_contexts - qualified_contexts),
+                "reason": "classic required-status-check response is malformed",
             }
-        reasons = []
-        if classic_protection.get("strict") is not True:
-            reasons.append("classic protection strict is not true")
-        if missing:
-            reasons.append("required contexts missing, malformed, or not pinned to GitHub Actions")
         return {
             "status": "FAIL",
-            "source": "classic-branch-protection",
-            "observed_contexts": sorted(observed),
-            "bound_contexts": sorted(contexts),
-            "missing_contexts": sorted(missing),
-            "reason": "; ".join(reasons),
+            "source": sorted(source_labels) or "classic-branch-protection",
+            "observed_contexts": sorted(observed_contexts),
+            "missing_contexts": sorted(required_contexts - qualified_contexts),
+            "reason": "strict, source-bound required status checks do not cover all required contexts",
         }
 
     if classic_error_status == 404:
         return {
             "status": "FAIL",
-            "source": None,
-            "observed_contexts": [],
-            "missing_contexts": sorted(required_contexts),
-            "reason": "no strict active ruleset containing all required contexts and no classic required-status-check protection",
+            "source": sorted(source_labels) or None,
+            "observed_contexts": sorted(observed_contexts),
+            "missing_contexts": sorted(required_contexts - qualified_contexts),
+            "reason": "no classic required-status-check protection and active rulesets do not cover every required context",
         }
     return {
         "status": "INCOMPLETE",
-        "source": None,
-        "observed_contexts": [],
-        "missing_contexts": sorted(required_contexts),
+        "source": sorted(source_labels) or None,
+        "observed_contexts": sorted(observed_contexts),
+        "missing_contexts": sorted(required_contexts - qualified_contexts),
         "reason": f"classic required-status-check policy could not be inspected (HTTP {classic_error_status or 'unknown'})",
     }
 
