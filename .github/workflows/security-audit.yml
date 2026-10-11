@@ -1052,12 +1052,13 @@ jobs:
             echo "verified_direct_submodule_count=$(wc -l < "$verified_file" | tr -d ' ')"
           } | tee -a security-audit-results/summary.txt
       - name: Install pinned Rust toolchain
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # immutable action commit
-        with:
-          toolchain: 1.96.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.96.0 --profile minimal
       - name: Install pinned cargo-audit
         working-directory: ${{ runner.temp }}
-        run: cargo install --locked cargo-audit --version 0.22.2
+        run: cargo +1.96.0 install --locked cargo-audit --version 0.22.2
       - name: Audit dependencies and verify manifest coverage
         shell: bash
         run: |
@@ -1140,7 +1141,7 @@ jobs:
             echo "lockfile_count=${#lockfiles[@]}"
             echo "rustc=$(rustc +1.96.0 --version)"
             echo "cargo=$(cargo +1.96.0 --version)"
-            echo "cargo_audit=$(cargo audit --version)"
+            echo "cargo_audit=$(cargo +1.96.0 audit --version)"
           } >> "$result_root/summary.txt"
 
           advisory_db="$RUNNER_TEMP/rustsec-advisory-db"
@@ -1268,7 +1269,7 @@ jobs:
                 continue
               fi
               lock_sha256="$(sha256sum "$lockfile_abs" | cut -d' ' -f1)"
-              if cargo audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
+              if cargo +1.96.0 audit --db "$advisory_db" --no-fetch --file "$lockfile_abs" --json > "$report" 2> "$stderr"; then
                 rc=0
               else
                 rc=$?
