@@ -159,6 +159,20 @@ class RequiredCheckPolicyTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAIL")
         self.assertIn("Security Audit / Independent Verifier", result["conflicting_contexts"])
 
+    def test_classic_wrong_app_binding_cannot_be_masked_by_ruleset(self):
+        correct = self.strict_rule()
+        classic = {
+            "strict": True,
+            "contexts": [],
+            "checks": [
+                {"context": context, "app_id": 777}
+                for context in self.required
+            ],
+        }
+        result = module.assess_policy([correct], classic, None, self.required)
+        self.assertEqual(result["status"], "FAIL")
+        self.assertEqual(set(result["conflicting_contexts"]), self.required)
+
     def test_malformed_classic_protection_is_incomplete(self):
         result = module.assess_policy([], {"contexts": sorted(self.required)}, None, self.required)
         self.assertEqual(result["status"], "INCOMPLETE")
