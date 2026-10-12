@@ -48,7 +48,7 @@ class QualificationRunnerContractTests(unittest.TestCase):
             )
 
             expected.parent.mkdir()
-            expected.write_text('{"not_a_report":true}\\n', encoding="utf-8")
+            expected.write_text('{"not_a_report":true}\n', encoding="utf-8")
             self.assertIsNone(
                 qualification.safe_report_destination(root, Path("artifacts/report.json"))
             )
