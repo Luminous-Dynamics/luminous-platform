@@ -67,12 +67,17 @@ network:
       port: 443
       exposure: private-network
       enabled: true
-      purpose: Illustrative private HTTPS access through the configured Nginx/vhost path; verify TLS termination, trusted proxy settings, host name and effective listener on the exact target.
+      bind_address: 192.168.50.20
+      allowed_source_cidrs:
+        - 192.168.50.0/24
+      purpose: Illustrative RFC1918 lab address and subnet; replace with the exact approved host address/client CIDRs. Verify TLS termination, trusted proxy settings, host name, and effective listener on the exact target.
     - id: plain-http
       protocol: tcp
       port: 80
       exposure: disabled
       enabled: false
+      bind_address: 127.0.0.1
+      allowed_source_cidrs: []
       purpose: No clear-text client access in this profile; any ACME challenge or redirect listener requires an explicit separate endpoint/policy declaration.
 data:
   classification: confidential
