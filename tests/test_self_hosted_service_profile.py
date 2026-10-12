@@ -106,15 +106,17 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("ingress hostname/port overlaps" in error["message"] for error in report["errors"]))
 
-    def test_ingress_route_rejects_ipv4_literal_hostname(self):
-        profile = copy.deepcopy(NEXTCLOUD)
-        profile["network"]["endpoints"][0]["ingress_hostnames"] = ["192.0.2.10"]
-        report = validate_profile_data(profile, SCHEMA, "unit-test")
-        self.assertEqual(report["result"], "INVALID")
-        self.assertTrue(any(
-            "valid ASCII DNS names" in error["message"]
-            for error in report["errors"]
-        ))
+    def test_ingress_route_rejects_ipv4_literal_and_ambiguous_numeric_names(self):
+        for hostname in ("192.0.2.10", "127.1"):
+            with self.subTest(hostname=hostname):
+                profile = copy.deepcopy(NEXTCLOUD)
+                profile["network"]["endpoints"][0]["ingress_hostnames"] = [hostname]
+                report = validate_profile_data(profile, SCHEMA, "unit-test")
+                self.assertEqual(report["result"], "INVALID")
+                self.assertTrue(any(
+                    "valid ASCII DNS names" in error["message"]
+                    for error in report["errors"]
+                ))
 
     def test_ingress_route_rejects_surrounding_hostname_whitespace(self):
         profile = copy.deepcopy(NEXTCLOUD)
