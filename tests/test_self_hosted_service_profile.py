@@ -55,6 +55,56 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(BASE["qualification"]["qualified_capabilities"], [])
         self.assertTrue(report["profile_digest_sha256"].startswith("sha256:"))
 
+    def test_ingress_route_requires_declared_reverse_proxy_dependency(self):
+        profile = copy.deepcopy(NEXTCLOUD)
+        profile["network"]["endpoints"][0]["ingress_dependency_id"] = "missing-proxy"
+        report = validate_profile_data(profile, SCHEMA, "unit-test")
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("must reference a declared dependency" in error["message"] for error in report["errors"]))
+
+    def test_ingress_route_dependency_must_have_reverse_proxy_role(self):
+        profile = copy.deepcopy(NEXTCLOUD)
+        for dependency in profile["dependencies"]["items"]:
+            if dependency["id"] == "tls-reverse-proxy":
+                dependency["role"] = "external-provider"
+        report = validate_profile_data(profile, SCHEMA, "unit-test")
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("role='reverse-proxy'" in error["message"] for error in report["errors"]))
+
+    def test_ingress_routes_with_different_hostnames_can_share_proxy_listener(self):
+        profile = copy.deepcopy(NEXTCLOUD)
+        endpoint = copy.deepcopy(profile["network"]["endpoints"][0])
+        endpoint["id"] = "private-https-other-host"
+        endpoint["ingress_hostnames"] = ["files.example.invalid"]
+        profile["network"]["endpoints"].append(endpoint)
+        report = validate_profile_data(profile, SCHEMA, "unit-test")
+        self.assertEqual(report["result"], "VALID_DECLARATION")
+
+    def test_duplicate_ingress_hostname_on_same_proxy_is_rejected(self):
+        profile = copy.deepcopy(NEXTCLOUD)
+        endpoint = copy.deepcopy(profile["network"]["endpoints"][0])
+        endpoint["id"] = "private-https-duplicate"
+        profile["network"]["endpoints"].append(endpoint)
+        report = validate_profile_data(profile, SCHEMA, "unit-test")
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("ingress hostname/port overlaps" in error["message"] for error in report["errors"]))
+
+    def test_ingress_hostname_case_and_trailing_dot_duplicates_are_rejected(self):
+        profile = copy.deepcopy(NEXTCLOUD)
+        profile["network"]["endpoints"][0]["ingress_hostnames"] = [
+            "cloud.example.invalid", "CLOUD.EXAMPLE.INVALID."
+        ]
+        report = validate_profile_data(profile, SCHEMA, "unit-test")
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("unique after case and trailing-dot normalization" in error["message"] for error in report["errors"]))
+
+    def test_listener_cannot_declare_ingress_route_metadata(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["endpoints"][0]["ingress_dependency_id"] = "tls-reverse-proxy"
+        profile["network"]["endpoints"][0]["ingress_hostnames"] = ["pbx.example.invalid"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+
     def test_nextcloud_profile_is_valid_and_declares_stateful_dependencies(self):
         report = validate_profile_data(copy.deepcopy(NEXTCLOUD), SCHEMA, "nextcloud-fixture")
         self.assertEqual(report["result"], "VALID_DECLARATION")
