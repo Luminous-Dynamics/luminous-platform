@@ -312,6 +312,60 @@ class QualificationRunnerContractTests(unittest.TestCase):
             finally:
                 os.chdir(old_cwd)
 
+    def test_unmanifested_source_drift_invalidates_child_result(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in qualification.INPUT_PATHS:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"baseline input\\n")
+            unrelated_source = root / "README.md"
+            unrelated_source.write_text("baseline documentation\\n", encoding="utf-8")
+            report_path = root / "artifacts" / "qualification-report.json"
+            old_cwd = Path.cwd()
+
+            def successful_validator(_root: Path, relative_script: str) -> dict[str, object]:
+                unrelated_source.write_text("changed documentation\\n", encoding="utf-8")
+                return {
+                    "script": relative_script,
+                    "return_code": 0,
+                    "timed_out": False,
+                    "state": "passed",
+                }
+
+            try:
+                with (
+                    patch.object(qualification, "ROOT", root),
+                    patch.object(qualification, "checked_out_sha", return_value="a" * 40),
+                    patch.object(qualification, "source_tree_clean", side_effect=[True, False]),
+                    patch.object(qualification.platform, "python_version", return_value="3.13.7"),
+                    patch.object(
+                        qualification,
+                        "dependency_version",
+                        side_effect={"jsonschema": "4.26.0", "cryptography": "50.0.2"}.get,
+                    ),
+                    patch.dict(os.environ, {"GITHUB_SHA": "a" * 40}),
+                    patch.object(qualification, "run_validator", side_effect=successful_validator) as run_validator,
+                    patch.object(qualification, "run_test_suite") as run_test_suite,
+                ):
+                    return_code = qualification.main(["--report", str(report_path)])
+                    report = json.loads(report_path.read_text(encoding="utf-8"))
+                    self.assertEqual(return_code, 1)
+                    self.assertEqual(report["blocker_codes"], ["SOURCE_TREE_DIRTY"])
+                    self.assertEqual(run_validator.call_count, 1)
+                    run_test_suite.assert_not_called()
+                    self.assertEqual(
+                        report["validators"]["endpoint_profile"]["state"],
+                        "execution_integrity_lost",
+                    )
+                    self.assertTrue(all(
+                        validator["state"] == "blocked_execution_integrity_lost"
+                        for name, validator in report["validators"].items()
+                        if name != "endpoint_profile"
+                    ))
+            finally:
+                os.chdir(old_cwd)
+
     def test_manifest_drift_stops_later_checks_and_discards_current_result(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -361,11 +415,11 @@ class QualificationRunnerContractTests(unittest.TestCase):
                         "input_drift_detected",
                     )
                     self.assertTrue(all(
-                        report["validators"][name]["state"] == "blocked_input_digest_changed"
+                        report["validators"][name]["state"] == "blocked_execution_integrity_lost"
                         for name in ("endpoint_approval_binding", "capability_registry", "mutation_receipt")
                     ))
                     self.assertTrue(all(
-                        suite["state"] == "blocked_input_digest_changed"
+                        suite["state"] == "blocked_execution_integrity_lost"
                         for suite in report["test_suites"]
                     ))
             finally:
