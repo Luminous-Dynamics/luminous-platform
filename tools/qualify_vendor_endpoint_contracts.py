@@ -214,12 +214,10 @@ def make_input_tree_read_only(
         except OSError:
             return None
 
-    changed: list[str] = []
     try:
         for relative in sorted(paths):
             path = root / relative
             os.chmod(path, modes[relative][0] & ~0o222)
-            changed.append(relative)
         for relative in sorted(directories, key=lambda item: item.count("/"), reverse=True):
             path = root / relative
             os.chmod(path, modes[relative][0] & ~0o222)
@@ -695,7 +693,10 @@ def main(argv: list[str] | None = None) -> int:
             "working_tree_clean": source_tree_state,
             "manifest_write_bits_removed_during_children": input_modes is not None,
             "original_permissions_restored": input_modes_restored,
-            "child_execution_gate_passed": execution_ready,
+            "preflight_execution_gate_passed": execution_ready,
+            "execution_integrity_preserved": (
+                execution_ready and not input_drift_detected and before_hashes == after_hashes
+            ),
         },
         "missing_inputs": missing_inputs,
         "manifest_coverage_gaps": manifest_gaps,
