@@ -260,6 +260,8 @@ def validate_receipt(
                 raise ConformanceError("independent verification requires distinct declared authority domains")
     elif ver["result"] == "verified":
         raise ConformanceError("non-verified outcome cannot claim verified evidence")
+    if events is not None and receipt["outcome"] != "verified" and events[-1]["to_state"] == "verified":
+        raise ConformanceError("non-verified receipt conflicts with verified event sequence")
 
 def validate_events(events: list[dict[str, Any]], operation: dict[str, Any] | None = None) -> None:
     if not isinstance(events, list) or not events:
