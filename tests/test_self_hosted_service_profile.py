@@ -176,6 +176,19 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("overlaps ports/protocol" in error["message"] for error in report["errors"]))
 
+    def test_equivalent_ipv6_spellings_do_not_bypass_listener_collision_check(self):
+        profile = copy.deepcopy(BASE)
+        first = profile["network"]["endpoints"][0]
+        first["bind_address"] = "fd12:3456:789a::10"
+        first["allowed_source_cidrs"] = ["fd12:3456:789a::/64"]
+        duplicate = copy.deepcopy(first)
+        duplicate["id"] = "same-listener-expanded-ipv6"
+        duplicate["bind_address"] = "fd12:3456:789a:0:0:0:0:10"
+        profile["network"]["endpoints"].append(duplicate)
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("overlaps ports/protocol" in error["message"] for error in report["errors"]))
+
     def test_same_port_on_distinct_protocols_is_allowed(self):
         profile = copy.deepcopy(BASE)
         tcp_endpoint = copy.deepcopy(profile["network"]["endpoints"][0])
