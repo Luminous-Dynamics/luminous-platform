@@ -69,6 +69,40 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 (expected, "artifacts/report.json"),
             )
 
+    def test_external_report_destination_cannot_overwrite_arbitrary_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            root = parent / "checkout"
+            root.mkdir()
+            arbitrary = parent / "notes.json"
+            arbitrary.write_text('{"keep":"this"}\\n', encoding="utf-8")
+            self.assertIsNone(
+                qualification.safe_report_destination(root, arbitrary)
+            )
+            self.assertEqual(arbitrary.read_text(encoding="utf-8"), '{"keep":"this"}\\n')
+            self.assertIsNone(
+                qualification.safe_report_destination(root, parent / "notes.txt")
+            )
+
+    def test_external_report_destination_allows_only_new_or_existing_runner_json(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            root = parent / "checkout"
+            root.mkdir()
+            output = parent / "qualification-report.json"
+            self.assertEqual(
+                qualification.safe_report_destination(root, output),
+                (output, None),
+            )
+            output.write_text(
+                json.dumps({"report_schema_version": qualification.REPORT_SCHEMA_VERSION}),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                qualification.safe_report_destination(root, output),
+                (output, None),
+            )
+
     def test_report_destination_rejects_external_symlink_into_checkout(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             parent = Path(directory)
