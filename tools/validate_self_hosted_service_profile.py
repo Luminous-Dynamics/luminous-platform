@@ -60,6 +60,46 @@ def _is_private_network(network: ipaddress.IPv4Network | ipaddress.IPv6Network) 
     )
 
 
+def _is_acceptable_public_source_network(
+    network: ipaddress.IPv4Network | ipaddress.IPv6Network,
+) -> bool:
+    """Accept private source ranges, globally routed unicast, or explicit world-wide /0.
+
+    Python's is_global follows IANA special-purpose registry semantics, but broad
+    CIDR aggregates can contain special-use space even when their endpoints look
+    global. Keep non-default aggregates bounded and ensure both endpoints are
+    global. Exact /0 is an intentional, explicit public-wide allow-list.
+    """
+    default_route = ipaddress.ip_network("0.0.0.0/0" if network.version == 4 else "::/0")
+    if network == default_route or _is_private_network(network):
+        return True
+
+    minimum_prefix = 8 if network.version == 4 else 16
+    if network.prefixlen < minimum_prefix:
+        return False
+
+    # A broad aggregate that crosses into RFC1918/ULA is not a private CIDR;
+    # don't let it pass as a public range merely because its endpoints are global.
+    if any(
+        network.version == private.version
+        and network.overlaps(private)
+        and not network.subnet_of(private)
+        for private in _PRIVATE_NETWORKS
+    ):
+        return False
+
+    first, last = network.network_address, network[-1]
+    return (
+        first.is_global
+        and last.is_global
+        and not network.is_multicast
+        and not network.is_loopback
+        and not network.is_link_local
+        and not network.is_unspecified
+        and not network.is_reserved
+    )
+
+
 
 def load_schema(path: Path) -> dict[str, Any]:
     try:
@@ -310,11 +350,22 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                             "path": path + "/allowed_source_cidrs",
                             "message": "public-network exposure requires an explicit source policy, including an explicit public-wide CIDR if intended",
                         })
-                    elif all(_is_private_network(source_network) for source_network in source_networks):
-                        errors.append({
-                            "path": path + "/allowed_source_cidrs",
-                            "message": "public-network exposure must declare at least one explicitly routed/public source range; private CIDRs alone contradict public exposure",
-                        })
+                    else:
+                        for source_index, source_network in enumerate(source_networks):
+                            if not _is_acceptable_public_source_network(source_network):
+                                errors.append({
+                                    "path": f"{path}/allowed_source_cidrs/{source_index}",
+                                    "message": (
+                                        "public-network source CIDR must be a private RFC1918/IPv6 ULA range, "
+                                        "a bounded globally routable unicast range, or an explicit 0.0.0.0/0 "
+                                        "or ::/0; special-purpose and over-broad non-default ranges are rejected"
+                                    ),
+                                })
+                        if all(_is_private_network(source_network) for source_network in source_networks):
+                            errors.append({
+                                "path": path + "/allowed_source_cidrs",
+                                "message": "public-network exposure must declare at least one explicitly routed/public source range; private CIDRs alone contradict public exposure",
+                            })
 
         public_endpoints = [
             endpoint["id"] for endpoint in endpoints
