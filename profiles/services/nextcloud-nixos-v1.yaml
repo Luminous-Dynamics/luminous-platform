@@ -1,0 +1,156 @@
+# Illustrative stateful collaboration workload. M0 only; not an install-ready host configuration.
+schema: luminous.self-hosted-service-profile/v1
+metadata:
+  id: luminous.service.nextcloud-nixos
+  version: 0.1.0
+  status: proposed
+  owner: Luminous Dynamics
+  description: >
+    Proposed native NixOS profile for a private-network Nextcloud instance.
+    It illustrates database, persistent-data, reverse-proxy, secret, and restore
+    dependencies; exact module options and paths must be frozen for the target.
+  documentation_uri: https://docs.nextcloud.com/server/stable/admin_manual/maintenance/backup.html
+application:
+  name: Nextcloud Server
+  category: collaboration
+  upstream_homepage: https://nextcloud.com/
+  source_repository: https://github.com/nextcloud/server
+  upstream_release: Resolved from the target host's locked nixpkgs input; not fixed by this generic profile
+  license: AGPL-3.0-or-later
+  purpose: Private file storage, synchronization, and collaboration for an owner-controlled deployment.
+runtime:
+  kind: nixos-native
+  operating_system: NixOS
+  architectures:
+    - x86_64-linux
+  source_pin:
+    mode: host-flake-lock
+    reference: Pin nixpkgs in the host flake.lock and record the exact Nextcloud package, module/configuration revision, and deployment derivation digest.
+    digest: null
+  update_strategy: rebuild-from-pinned-inputs
+authority:
+  default_action: deny
+  authorization_required_for_mutations: true
+  platform_manager_required_for_runtime: false
+  local_recovery_without_coordinator: true
+  control_authority: Local operator and Nixward authorization; Mycelix and remote coordination are optional and not required for file access or restore.
+dependencies:
+  unknown_dependency_policy: deny-activation
+  items:
+    - id: nextcloud-database
+      role: data-store
+      required_for_start: true
+      failure_policy: stop-service-safely
+      data_shared: application-state
+    - id: nextcloud-data-filesystem
+      role: data-store
+      required_for_start: true
+      failure_policy: stop-service-safely
+      data_shared: application-state
+    - id: tls-reverse-proxy
+      role: reverse-proxy
+      required_for_start: false
+      failure_policy: stop-affected-feature
+      data_shared: metadata-only
+    - id: encrypted-backup-agent
+      role: backup-service
+      required_for_start: false
+      failure_policy: degrade-with-alert
+      data_shared: application-state
+network:
+  public_exposure_default: prohibited
+  public_exposure_approved: false
+  public_exposure_approved_endpoint_ids: []
+  firewall_policy: deny-unspecified
+  endpoints:
+    - id: private-https
+      kind: ingress-route
+      ingress_dependency_id: tls-reverse-proxy
+      ingress_hostnames:
+        - cloud.example.invalid
+      protocol: tcp
+      port: 443
+      exposure: private-network
+      enabled: true
+      bind_address: 192.168.50.20
+      allowed_source_cidrs:
+        - 192.168.50.0/24
+      purpose: Illustrative RFC1918 lab address and subnet; replace with the exact approved host address/client CIDRs. Verify TLS termination, trusted proxy settings, host name, and effective listener on the exact target.
+    - id: plain-http
+      kind: ingress-route
+      ingress_dependency_id: tls-reverse-proxy
+      ingress_hostnames:
+        - cloud.example.invalid
+      protocol: tcp
+      port: 80
+      exposure: disabled
+      enabled: false
+      bind_address: 127.0.0.1
+      allowed_source_cidrs: []
+      purpose: No clear-text client access in this profile; any ACME challenge or redirect listener requires an explicit separate endpoint/policy declaration.
+data:
+  classification: confidential
+  stateful: true
+  persistent_paths:
+    - /var/lib/nextcloud (module home/config; resolve exact path from the locked module)
+    - configured services.nextcloud.datadir (resolve and bind exact path before activation)
+    - database state owned by the declared database dependency
+  backup_policy: application-consistent-periodic-and-before-upgrade
+  restore_test: required-before-production
+  telemetry_export: operator-approved-only
+  retention_owner: Deploying organization; define user/file retention, shared-link expiry, deletion behavior, legal holds if applicable, and backup retention.
+secrets:
+  values_in_profile: false
+  backend: sops-nix
+  references:
+    - nextcloud/admin-initial-password
+    - nextcloud/database-credentials
+  rotation_policy: Keep secret values out of Nix store plaintext, profile files, logs, command arguments, and evidence packets. Treat the initial admin password as a one-time setup secret; rotate through the documented supported application path.
+lifecycle:
+  installation: declarative
+  upgrade: rebuild-from-pinned-inputs
+  rollback: manual-recovery-only
+  uninstall: documented-with-data-retention-choice
+  data_migration: forward-only-with-restore-plan
+health:
+  checks:
+    - id: web-service-ready
+      class: readiness
+      expected_observation: The expected virtual host answers over private HTTPS with a valid deployment certificate and correct trusted-domain/proxy configuration.
+    - id: file-round-trip
+      class: functional
+      expected_observation: A synthetic test user can upload, download, verify, and delete a test object with correct authorization and checksums.
+    - id: tenant-access-boundaries
+      class: security
+      expected_observation: Unauthenticated requests and unauthorized cross-user/share access are denied under the declared sharing policy.
+    - id: maintenance-consistent-backup
+      class: backup
+      expected_observation: Backup includes the configured data and configuration directories plus a consistent database backup, following Nextcloud's maintenance guidance.
+    - id: isolated-restore
+      class: recovery
+      expected_observation: Restore the app configuration, data directory, relevant custom apps/themes, and database into an isolated instance; verify file checksums, permissions, login, and application integrity.
+qualification:
+  maturity: M0_PROPOSED
+  required_checks:
+    - validate-profile-schema-and-semantics
+    - evaluate-locked-nixos-configuration
+    - record-exact-nextcloud-package-and-derivation
+    - verify-private-https-and-trusted-domain-configuration
+    - exercise-authenticated-file-round-trip-and-negative-access-tests
+    - verify-database-and-filesystem-backup-coherence
+    - restore-config-data-and-database-into-isolated-instance
+    - verify-runtime-with-control-plane-absent
+  qualified_capabilities: []
+  unqualified_capabilities:
+    - production-file-hosting
+    - public-exposure
+    - external-identity-federation
+    - application-consistent-backup-restore
+    - multi-node-high-availability
+    - jurisdiction-specific-compliance
+  evidence_refs: []
+  limitations:
+    - Proposed profile fixture only; no NixOS evaluation, build, file-transfer test, backup, restore, or deployment has been run for this revision.
+    - This service is stateful across filesystem and database boundaries; a filesystem snapshot alone is not an application-consistent backup.
+    - Exact data paths, database engine, Nextcloud major version, trusted domains, reverse-proxy behavior, and secret file handling must be pinned and verified on the target.
+    - Public exposure, public sharing policy, external identity integration, and legal/compliance requirements need separate deployment-specific review.

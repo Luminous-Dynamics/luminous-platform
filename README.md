@@ -20,6 +20,14 @@ python tools/validate_deployment_profile.py profiles/examples/local-nixos-pilot.
 
 The validator checks syntax and declaration consistency only. Its `VALID_DECLARATION` result does not mean that a target was tested or is production-ready; any profile that claims runtime qualification remains blocked pending adapter-specific evidence evaluation.
 
+
+For per-application workloads, see the proposed [Self-Hosted Service Catalog and PBX Qualification v1](docs/SELF_HOSTED_SERVICE_CATALOG_AND_PBX_QUALIFICATION_V1.md), [service-profile schema](schemas/self-hosted-service-profile-v1.schema.json), [Asterisk/NixOS profile](profiles/services/asterisk-pbx-nixos-v1.yaml), and [Nextcloud/NixOS profile](profiles/services/nextcloud-nixos-v1.yaml). The dedicated validator is `tools/validate_self_hosted_service_profile.py`; it reuses the platform's strict YAML parser, rejects unsafe/inconsistent declarations, and never emits a runtime-qualified verdict. Both service examples are M0/proposed only.
+
+```bash
+python -m unittest discover -s tests -p 'test_*.py' -v
+python tools/validate_self_hosted_service_profile.py profiles/services/asterisk-pbx-nixos-v1.yaml
+```
+
 ## Architecture
 
 ```
