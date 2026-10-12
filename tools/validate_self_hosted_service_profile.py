@@ -67,6 +67,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
         source_pin = runtime["source_pin"]
         network = profile["network"]
         endpoints = network["endpoints"]
+        dependencies = profile["dependencies"]["items"]
         data = profile["data"]
         qualification = profile["qualification"]
         metadata = profile["metadata"]
@@ -74,6 +75,16 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
         endpoint_ids = [endpoint["id"] for endpoint in endpoints]
         if len(endpoint_ids) != len(set(endpoint_ids)):
             errors.append({"path": "/network/endpoints", "message": "endpoint IDs must be unique"})
+
+        dependency_ids = [dependency["id"] for dependency in dependencies]
+        if len(dependency_ids) != len(set(dependency_ids)):
+            errors.append({"path": "/dependencies/items", "message": "dependency IDs must be unique"})
+        for index, dependency in enumerate(dependencies):
+            if dependency["role"] in {"platform-control-plane", "coordination-service", "telemetry-export"} and dependency["required_for_start"]:
+                errors.append({
+                    "path": f"/dependencies/items/{index}/required_for_start",
+                    "message": "control-plane, coordination, and telemetry dependencies cannot be required for service startup",
+                })
 
         for index, endpoint in enumerate(endpoints):
             path = f"/network/endpoints/{index}"
@@ -114,13 +125,15 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                     "message": "stateful services require a sandbox or pre-production restore test",
                 })
 
+        capture_policy = data.get("sensitive_capture")
         if (
-            data["call_recording"] != "disabled-by-default"
-            and not data.get("recording_policy_reference")
+            capture_policy
+            and capture_policy["default_state"] != "disabled-by-default"
+            and not capture_policy.get("policy_reference")
         ):
             errors.append({
-                "path": "/data/recording_policy_reference",
-                "message": "enabled/opt-in recording requires a reviewed policy reference",
+                "path": "/data/sensitive_capture/policy_reference",
+                "message": "enabled/opt-in sensitive capture requires a reviewed policy reference",
             })
 
         mode = source_pin["mode"]
