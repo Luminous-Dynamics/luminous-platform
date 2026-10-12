@@ -311,7 +311,7 @@ def source_tree_clean(
             return None
         # The -v output lowercases assume-unchanged entries; S marks skip-worktree.
         # Both flags can suppress ordinary working-tree diff evidence.
-        for entry in index_flags.stdout.split(b"\\0"):
+        for entry in index_flags.stdout.split(b"\0"):
             if entry and (entry[:1].islower() or entry[:1] == b"S"):
                 return False
         untracked = subprocess.run(
