@@ -58,6 +58,23 @@ def _validate_transaction_semantics(transaction: dict[str, Any]) -> None:
         if receipt is not None and receipt[field] == "0" * 64:
             raise validator.ConformanceError(f"Nixward {label} digest must be non-zero")
 
+    # Nixward applies byte-size limits to UTF-8 strings. JSON Schema maxLength
+    # counts Unicode characters, so check byte lengths explicitly as well.
+    if authorization is not None:
+        issuer_bytes = len(authorization["issuer"].encode("utf-8"))
+        if issuer_bytes == 0 or issuer_bytes > 256:
+            raise validator.ConformanceError("Nixward authorization issuer has invalid byte length")
+        signer_key_id = authorization["signer_key_id"]
+        if signer_key_id is not None:
+            signer_bytes = len(signer_key_id.encode("utf-8"))
+            if signer_bytes == 0 or signer_bytes > 256:
+                raise validator.ConformanceError("Nixward signer key ID has invalid byte length")
+    if validation is not None and len(validation["summary"].encode("utf-8")) > 4096:
+        raise validator.ConformanceError("Nixward validation summary exceeds byte limit")
+    if outcome is not None and outcome["reason"] is not None:
+        if len(outcome["reason"].encode("utf-8")) > 4096:
+            raise validator.ConformanceError("Nixward outcome reason exceeds byte limit")
+
     def require_present(field: str, value: Any) -> None:
         if value is None:
             raise validator.ConformanceError(
