@@ -34,7 +34,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SCHEMA = ROOT / "schemas" / "self-hosted-service-profile-v1.schema.json"
 VALIDATOR_VERSION = "0.1.0"
 _DNS_LABEL = r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)"
-_DNS_HOSTNAME_RE = re.compile(rf"^(?=.{1,253}$){_DNS_LABEL}(?:\\.{_DNS_LABEL})+$")
+_DNS_HOSTNAME_RE = re.compile(rf"^(?=.{1,253}$){_DNS_LABEL}(?:\.{_DNS_LABEL})+$")
 
 _PRIVATE_NETWORKS = (
     ipaddress.ip_network("10.0.0.0/8"),
