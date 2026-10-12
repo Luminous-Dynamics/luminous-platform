@@ -563,11 +563,57 @@ def qualification_status(blocker_codes: list[str] | tuple[str, ...]) -> str:
     return "passed"
 
 
+def safe_worker_summary_destination(requested: Path) -> bool:
+    """Allow the private child protocol to write only a fresh private temp summary."""
+    try:
+        candidate = Path(os.path.abspath(requested))
+        if not candidate.is_absolute() or candidate.name != "summary.json":
+            return False
+        if candidate.exists() or candidate.is_symlink():
+            return False
+
+        temp_root = Path(tempfile.gettempdir()).resolve(strict=True)
+        parent = candidate.parent.resolve(strict=True)
+        if (
+            parent != candidate.parent
+            or parent.parent != temp_root
+            or not parent.name.startswith("vendor-endpoint-qualification-")
+            or parent.is_symlink()
+        ):
+            return False
+        details = parent.stat(follow_symlinks=False)
+        return (
+            stat.S_ISDIR(details.st_mode)
+            and details.st_uid == os.geteuid()
+            and stat.S_IMODE(details.st_mode) & 0o077 == 0
+        )
+    except (OSError, ValueError):
+        return False
+
+
 def _write_worker_summary(path: Path, summary: dict[str, object]) -> None:
-    path.write_text(
-        json.dumps(summary, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n",
-        encoding="utf-8",
-    )
+    if not safe_worker_summary_destination(path):
+        raise OSError("unsafe worker summary destination")
+
+    directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | os.O_NOFOLLOW
+    directory_fd = os.open(path.parent, directory_flags)
+    try:
+        details = os.fstat(directory_fd)
+        if (
+            not stat.S_ISDIR(details.st_mode)
+            or details.st_uid != os.geteuid()
+            or stat.S_IMODE(details.st_mode) & 0o077
+        ):
+            raise OSError("worker summary directory is not private")
+
+        file_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+        file_fd = os.open(path.name, file_flags, 0o600, dir_fd=directory_fd)
+        with os.fdopen(file_fd, "w", encoding="utf-8", newline="\\n") as output:
+            output.write(
+                json.dumps(summary, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\\n"
+            )
+    finally:
+        os.close(directory_fd)
 
 
 def _run_test_worker(pattern: str, summary_path: Path) -> int:
@@ -774,7 +820,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.test_suite:
-        if not args.summary_file:
+        if not args.summary_file or not safe_worker_summary_destination(args.summary_file):
+            print("ERROR: unsafe worker summary destination")
             return 2
         return _run_test_worker(args.test_suite, args.summary_file)
     if args.summary_file:

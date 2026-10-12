@@ -32,6 +32,38 @@ class QualificationRunnerContractTests(unittest.TestCase):
         summary.update(overrides)
         return summary
 
+    def test_worker_summary_destination_only_allows_fresh_private_temp_files(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="vendor-endpoint-qualification-") as directory:
+            valid = Path(directory) / "summary.json"
+            self.assertTrue(qualification.safe_worker_summary_destination(valid))
+            unrelated = Path(directory) / "other.json"
+            self.assertFalse(qualification.safe_worker_summary_destination(unrelated))
+            valid.write_text("pre-existing", encoding="utf-8")
+            self.assertFalse(qualification.safe_worker_summary_destination(valid))
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            arbitrary = root / "summary.json"
+            self.assertFalse(qualification.safe_worker_summary_destination(arbitrary))
+            outside = root / "outside"
+            outside.mkdir()
+            linked_temp = root / "vendor-endpoint-qualification-linked"
+            linked_temp.symlink_to(outside, target_is_directory=True)
+            self.assertFalse(
+                qualification.safe_worker_summary_destination(linked_temp / "summary.json")
+            )
+
+    def test_hidden_worker_cli_does_not_overwrite_arbitrary_summary_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "summary.json"
+            target.write_text("preserve me", encoding="utf-8")
+            rc = qualification.main([
+                "--test-suite", "test_vendor_endpoint_qualification_runner.py",
+                "--summary-file", str(target),
+            ])
+            self.assertEqual(rc, 2)
+            self.assertEqual(target.read_text(encoding="utf-8"), "preserve me")
+
     def test_child_execution_budget_leaves_workflow_headroom(self) -> None:
         worst_case = (
             len(qualification.VALIDATORS) * qualification.VALIDATOR_TIMEOUT_SECONDS
