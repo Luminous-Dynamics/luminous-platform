@@ -28,9 +28,9 @@ REPORT_SCHEMA_VERSION = "luminous.vendor-endpoint-qualification-report.v1"
 EXPECTED_PYTHON_VERSION = "3.13.7"
 EXPECTED_JSONSCHEMA_VERSION = "4.26.0"
 EXPECTED_CRYPTOGRAPHY_VERSION = "50.0.2"
-VALIDATOR_TIMEOUT_SECONDS = 30
-TEST_WORKER_TIMEOUT_SECONDS = 45
-MAX_CHILD_EXECUTION_BUDGET_SECONDS = 420
+VALIDATOR_TIMEOUT_SECONDS = 20
+TEST_WORKER_TIMEOUT_SECONDS = 30
+MAX_CHILD_EXECUTION_BUDGET_SECONDS = 300
 VALIDATORS = {
     "endpoint_profile": "tools/validate_vendor_management_endpoint_profile.py",
     "endpoint_approval_binding": "tools/validate_vendor_management_endpoint_approval.py",
@@ -242,7 +242,7 @@ def source_tree_clean(
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            timeout=10,
+            timeout=5,
             check=False,
         )
         if tracked.returncode == 1:
@@ -256,7 +256,7 @@ def source_tree_clean(
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-            timeout=10,
+            timeout=5,
             check=False,
             text=True,
         )
@@ -603,7 +603,7 @@ def checked_out_sha(root: Path) -> str | None:
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-            timeout=5,
+            timeout=3,
             check=False,
             text=True,
         )
