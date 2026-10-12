@@ -351,8 +351,9 @@
               },
               {
                 "not": {
-                  "required": [
-                    "port_range"
+                  "anyOf": [
+                    { "required": ["port"] },
+                    { "required": ["port_range"] }
                   ]
                 }
               }
