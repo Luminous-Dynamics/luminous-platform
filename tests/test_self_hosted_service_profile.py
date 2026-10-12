@@ -98,6 +98,19 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("unique after case and trailing-dot normalization" in error["message"] for error in report["errors"]))
 
+    def test_ingress_route_rejects_invalid_dns_hostname(self):
+        profile = copy.deepcopy(NEXTCLOUD)
+        profile["network"]["endpoints"][0]["ingress_hostnames"] = ["cloud server.example.invalid"]
+        report = validate_profile_data(profile, SCHEMA, "unit-test")
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("valid ASCII DNS names" in error["message"] for error in report["errors"]))
+
+    def test_ingress_route_accepts_valid_dns_hostname_with_normalized_trailing_dot(self):
+        profile = copy.deepcopy(NEXTCLOUD)
+        profile["network"]["endpoints"][0]["ingress_hostnames"] = ["CLOUD.EXAMPLE.INVALID."]
+        report = validate_profile_data(profile, SCHEMA, "unit-test")
+        self.assertEqual(report["result"], "VALID_DECLARATION")
+
     def test_listener_cannot_declare_ingress_route_metadata(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["endpoints"][0]["ingress_dependency_id"] = "tls-reverse-proxy"
