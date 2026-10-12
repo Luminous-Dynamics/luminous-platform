@@ -29,6 +29,21 @@ For the Public-Service Operations Profile:
 
 If a later visualisation requires WebAssembly, make it an isolated Rust-built enhancement. The page and its essential data must remain useful if the WASM or generated loader fails to load.
 
+## 3. Current browser-agent exception and migration
+
+Symthaea already has a Rust browser agent at `crates/domains/symthaea-browser`, but it is not a browser rendering engine: its current backend uses `chromiumoxide` to control Chrome/Chromium through CDP. Its current `cdp.rs` still sends authored JavaScript strings into the page via `Page::evaluate` for several operations, including scroll, history navigation, text extraction, fallback observation and input handling. So the repository-wide aspiration of “no handwritten JavaScript” is **not yet achieved** in the browser controller.
+
+The migration is tracked in:
+- [Symthaea Browser pure-Rust strategy PR](https://github.com/Luminous-Dynamics/symthaea/pull/7427)
+- [Remove page-evaluation helpers issue](https://github.com/Luminous-Dynamics/symthaea/issues/7426)
+
+The intent is to replace controller-authored snippets with typed/native CDP commands where semantics are preserved. If an operation cannot be implemented equivalently, the agent should return an explicit unsupported/partial result instead of silently injecting JavaScript. Until that work is implemented and exact-head tests pass, do not describe Symthaea Browser as a no-injected-JS controller or a pure-Rust browser engine.
+
+The distinction remains:
+- **First-party control-plane code** should be Rust.
+- **Core civic UI** should need no JavaScript runtime.
+- **Arbitrary web compatibility** currently relies on a separately sandboxed Chromium engine which executes page-authored JavaScript.
+
 ## 3. Why this is a default, not a purity test
 
 Browsers natively expose DOM and many web APIs through JavaScript-facing interfaces. Rust/WASM toolchains such as wasm-bindgen can generate a small JavaScript loader/binding layer even when all authored application code is Rust. That generated glue should not be confused with a handwritten JavaScript application, but it is still an artifact that can affect delivered runtime behavior.
