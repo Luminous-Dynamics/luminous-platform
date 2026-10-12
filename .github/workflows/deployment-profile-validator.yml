@@ -72,7 +72,7 @@ jobs:
                   line,
               )
           ]
-          minimum = 65
+          minimum = 67
           print(
               "self-hosted service-profile test executions: "
               f"{len(service_cases)} (required minimum: {minimum})"
