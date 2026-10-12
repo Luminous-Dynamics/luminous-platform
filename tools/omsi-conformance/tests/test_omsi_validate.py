@@ -60,6 +60,32 @@ class TestOMSI(unittest.TestCase):
     def test_verified_receipt_requires_post_state(self):
         x=receipt(); del x["verification"]["post_state_digest"]
         with self.assertRaisesRegex(v.ConformanceError, "post-state digest"): v.validate_receipt(x, op())
+    def test_verified_receipt_fixture_has_consistent_event_chronology(self):
+        v.validate_receipt(receipt(), op(), load_fixture("events.json"))
+    def test_verification_observation_cannot_predate_manifest(self):
+        x=receipt(); x["verification"]["observed_at"]="2026-10-12T11:59:00Z"
+        with self.assertRaisesRegex(v.ConformanceError, "observation cannot predate the operation manifest"):
+            v.validate_receipt(x, op())
+    def test_verification_observation_cannot_predate_application_event(self):
+        x=receipt(); x["verification"]["observed_at"]="2026-10-12T12:00:35Z"
+        with self.assertRaisesRegex(v.ConformanceError, "observation predates operation application"):
+            v.validate_receipt(x, op(), load_fixture("events.json"))
+    def test_verified_event_cannot_predate_observation(self):
+        events=load_fixture("events.json"); events[-1]["occurred_at"]="2026-10-12T12:02:57Z"
+        with self.assertRaisesRegex(v.ConformanceError, "verified event predates verification observation"):
+            v.validate_receipt(receipt(), op(), events)
+    def test_receipt_cannot_predate_verified_event(self):
+        events=load_fixture("events.json"); events[-1]["occurred_at"]="2026-10-12T12:03:01Z"
+        with self.assertRaisesRegex(v.ConformanceError, "receipt issuance predates verified event"):
+            v.validate_receipt(receipt(), op(), events)
+    def test_verified_receipt_requires_applied_event(self):
+        events=load_fixture("events.json"); events=[event for event in events if event["to_state"] != "applied"]
+        with self.assertRaisesRegex(v.ConformanceError, "requires an applied event"):
+            v.validate_receipt(receipt(), op(), events)
+    def test_verified_receipt_requires_terminal_verified_event(self):
+        events=load_fixture("events.json"); events.pop()
+        with self.assertRaisesRegex(v.ConformanceError, "requires a terminal verified event"):
+            v.validate_receipt(receipt(), op(), events)
     def test_nonverified_outcome_cannot_claim_verified_result(self):
         x=receipt(); x["outcome"]="indeterminate"
         with self.assertRaisesRegex(v.ConformanceError, "non-verified outcome"): v.validate_receipt(x, op())
