@@ -8,6 +8,7 @@ This is a deliberately small, reviewable reference validator for the OMSI pre-RF
 python -m pip install -r tools/omsi-conformance/requirements.txt
 make -C tools/omsi-conformance schemas
 make -C tools/omsi-conformance test
+make -C tools/omsi-conformance validate-fixtures
 python tools/omsi-conformance/omsi_validate.py operation tools/omsi-conformance/fixtures/operation.json --now 2026-10-12T12:05:00Z
 python tools/omsi-conformance/omsi_validate.py grant tools/omsi-conformance/fixtures/grant.json --manifest tools/omsi-conformance/fixtures/operation.json --now 2026-10-12T12:05:00Z
 python tools/omsi-conformance/omsi_validate.py receipt tools/omsi-conformance/fixtures/receipt.json --manifest tools/omsi-conformance/fixtures/operation.json
