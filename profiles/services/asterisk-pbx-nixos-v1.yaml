@@ -34,6 +34,9 @@ authority:
   platform_manager_required_for_runtime: false
   local_recovery_without_coordinator: true
   control_authority: Local operator and Nixward authorization; Mycelix and the control plane are not runtime dependencies.
+dependencies:
+  unknown_dependency_policy: deny-activation
+  items: []
 network:
   public_exposure_default: prohibited
   public_exposure_approved: false
@@ -74,7 +77,9 @@ data:
     - /var/log/asterisk
   backup_policy: application-consistent-periodic-and-before-upgrade
   restore_test: required-before-production
-  call_recording: disabled-by-default
+  sensitive_capture:
+    kind: call_recording
+    default_state: disabled-by-default
   telemetry_export: operator-approved-only
   retention_owner: Deploying organization; define voicemail, call-detail, diagnostic-log, and any future recording retention before use.
 secrets:
