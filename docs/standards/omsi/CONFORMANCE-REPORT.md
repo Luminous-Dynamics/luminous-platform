@@ -15,7 +15,7 @@
 
 The larger companion starter was extracted from the generated technical archive and its `make test` suite was rerun locally on 2026-10-12: 68 tests passed in 2.017 seconds. This is local design evidence only; the kit has not been independently reviewed, and these results are not a certification. This RFC-only PR does not include that larger companion kit.
 
-A smaller, reviewable implementation seed with four JSON Schemas, a Python validator/CLI, fixtures and a 33-test suite is proposed separately in [PR #32](https://github.com/Luminous-Dynamics/luminous-platform/pull/32). A local mirror of the current seed source passed all 33 tests, schema self-validation and four CLI fixture checks; its GitHub Actions run remains queued. The 33-test seed and the 68-test companion kit are different scopes; do not combine their counts.
+A smaller, reviewable implementation seed with four JSON Schemas, a Python validator/CLI, fixtures and a 36-test suite is proposed separately in [PR #32](https://github.com/Luminous-Dynamics/luminous-platform/pull/32). A local mirror of the current seed source passed all 36 tests, schema self-validation and four CLI fixture checks; its GitHub Actions run remains queued. The 33-test seed and the 68-test companion kit are different scopes; do not combine their counts.
 
 ## Reported security-relevant cases covered locally
 
