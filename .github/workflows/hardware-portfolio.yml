@@ -112,13 +112,13 @@ jobs:
     steps:
       - name: Check out exact triggering revision
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Set up pinned Python runtime
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13.7"
-          cache: pip
-          cache-dependency-path: requirements-hardware-portfolio.txt
 
       - name: Install pinned validation dependency
         run: python -m pip install --disable-pip-version-check --requirement requirements-hardware-portfolio.txt
