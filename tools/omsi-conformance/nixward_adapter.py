@@ -46,6 +46,18 @@ def _validate_transaction_semantics(transaction: dict[str, Any]) -> None:
     verification = transaction["verification"]
     outcome = transaction["outcome"]
 
+    for label, receipt, field in (
+        ("authorization evidence", authorization, "evidence_digest"),
+        ("validation evidence", validation, "evidence_digest"),
+        ("snapshot pre-state", snapshot, "pre_state_digest"),
+        ("snapshot recovery binding", snapshot, "recovery_binding_digest"),
+        ("application command", application, "command_digest"),
+        ("verification post-state", verification, "post_state_digest"),
+        ("verification evidence", verification, "evidence_digest"),
+    ):
+        if receipt is not None and receipt[field] == "0" * 64:
+            raise validator.ConformanceError(f"Nixward {label} digest must be non-zero")
+
     def require_present(field: str, value: Any) -> None:
         if value is None:
             raise validator.ConformanceError(
