@@ -111,6 +111,14 @@ This is a partial desk review, not proof of novelty, completeness or trademark a
 
 OMSI can impose integration work, over-constrain vendor models, or fragment into incompatible profiles. Well-formed evidence may be based on false observations. Management control planes remain high-value targets. Canonicalization and signature mismatches can break authorization. Mitigation requires narrow scope, mappings to existing standards, independent verification, negative tests, external security review and capability-specific claims instead of generic compatibility badges.
 
+## Feedback from the executable seed
+
+The companion conformance seed now uses distinct digest domains for action arguments and the complete operation manifest. Its current digest framing is a prototype: it prefixes canonical JSON with `OMSI-DIGEST/0.1`, a NUL separator, a registered ASCII domain label, another NUL separator, and the canonical bytes. This prevents the same JSON byte sequence from being reused as the digest subject in semantically different contexts.
+
+The seed also prototypes a constrained canonical JSON accepted-input profile: duplicate keys, negative zero, floating-point values, out-of-safe-range integers and invalid Unicode are rejected. This is **not declared full RFC 8785/JCS conformance**, and it is not frozen as normative OMSI behavior. The choice between adopting RFC 8785 without restriction and defining a formally constrained subset remains open. Cross-language golden vectors and independent review must precede any stable digest contract.
+
+The implementation follow-up is tracked in [draft PR #32](https://github.com/Luminous-Dynamics/luminous-platform/pull/32). Local checks and CI status are separate evidence: the 68-test companion kit passed locally, while the small seed's current 33-test branch is awaiting a fresh successful run from the exact head revision. Neither result constitutes security certification or proof of production readiness.
+
 ## Open questions
 
 - Is this the right interoperability gap to standardize, and who experiences it most acutely?
