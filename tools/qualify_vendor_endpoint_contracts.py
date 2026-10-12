@@ -655,8 +655,11 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 blockers.append("TEST_SUITE_FAILED")
 
-    if input_modes is not None and not restore_input_tree_permissions(root, input_modes):
-        blockers.append("INPUT_FREEZE_RESTORE_FAILED")
+    input_modes_restored: bool | None = None
+    if input_modes is not None:
+        input_modes_restored = restore_input_tree_permissions(root, input_modes)
+        if not input_modes_restored:
+            blockers.append("INPUT_FREEZE_RESTORE_FAILED")
     after_hashes = input_hashes(root)
     if before_hashes != after_hashes:
         blockers.append("INPUT_DIGEST_CHANGED")
@@ -688,6 +691,12 @@ def main(argv: list[str] | None = None) -> int:
         "input_sha256": before_hashes,
         "input_manifest_sha256": before_manifest_digest,
         "inputs_unchanged_after_execution": before_hashes == after_hashes,
+        "source_integrity": {
+            "working_tree_clean": source_tree_state,
+            "manifest_write_bits_removed_during_children": input_modes is not None,
+            "original_permissions_restored": input_modes_restored,
+            "child_execution_gate_passed": execution_ready,
+        },
         "missing_inputs": missing_inputs,
         "manifest_coverage_gaps": manifest_gaps,
         "validators": validators,
@@ -701,6 +710,7 @@ def main(argv: list[str] | None = None) -> int:
             "no complete decision-revocation/supersession ledger evaluated",
             "no revocation or authorization-at-use verification",
             "no fresh target inventory binding, tested-capability scope, or adapter qualification",
+            "manifest files and parent directories have write bits removed during child checks; this is not an OS-enforced sandbox, and a same-user child may defeat mode bits (persistent changes are caught by digest fences)",
         ],
         "diagnostics_policy": "raw stdout, stderr, test identifiers and traceback text are not persisted",
     }
