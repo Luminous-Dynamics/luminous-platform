@@ -314,6 +314,8 @@ def main() -> int:
     parser.add_argument("--now", help="explicit RFC3339 time for expiry checks")
     args = parser.parse_args()
     try:
+        if args.events and args.kind != "receipt":
+            raise ConformanceError("--events is only valid with receipt")
         doc = load(args.document)
         now = parse_time(args.now) if args.now else None
         if args.kind == "operation":
