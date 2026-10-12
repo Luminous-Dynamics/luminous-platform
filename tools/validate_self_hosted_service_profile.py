@@ -99,7 +99,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                     "message": "control-plane, coordination, and telemetry dependencies cannot be required for service startup",
                 })
 
-        active_socket_claims: list[tuple[str, str, int, int, int]] = []
+        active_socket_claims: list[tuple[str, str, str, int, int]] = []
         for index, endpoint in enumerate(endpoints):
             path = f"/network/endpoints/{index}"
             if "port_range" in endpoint and endpoint["port_range"][0] > endpoint["port_range"][1]:
