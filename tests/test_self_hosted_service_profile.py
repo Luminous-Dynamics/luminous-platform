@@ -193,13 +193,26 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("dependency IDs must be unique" in error["message"] for error in report["errors"]))
 
-    def test_oci_container_must_be_pinned_by_digest(self):
+    def test_oci_container_rejects_non_oci_pin_mode(self):
         profile = copy.deepcopy(BASE)
         profile["runtime"]["kind"] = "oci-container"
         profile["runtime"]["source_pin"]["mode"] = "host-flake-lock"
         report = self.validate(profile)
         self.assertEqual(report["result"], "INVALID")
-        self.assertTrue(any("immutable OCI digest" in error["message"] for error in report["errors"]))
+        self.assertTrue(any("requires source-pin mode 'oci-digest'" in error["message"] for error in report["errors"]))
+
+    def test_oci_container_requires_digest_even_with_oci_pin_mode(self):
+        profile = copy.deepcopy(BASE)
+        profile["runtime"]["kind"] = "oci-container"
+        profile["runtime"]["source_pin"] = {
+            "mode": "oci-digest",
+            "reference": "registry.example.invalid/example/service:latest",
+            "digest": None,
+        }
+        profile["runtime"]["update_strategy"] = "digest-refresh-reviewed"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("immutable SHA-256 digest" in error["message"] for error in report["errors"]))
 
     def test_digest_pinned_oci_reference_is_valid_declaration(self):
         profile = copy.deepcopy(BASE)
