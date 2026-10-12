@@ -119,6 +119,26 @@ class QualificationRunnerContractTests(unittest.TestCase):
             self.assertEqual(item.stat().st_mode & 0o777, original_file_mode)
             self.assertEqual(item.parent.stat().st_mode & 0o777, original_directory_mode)
 
+    def test_input_freeze_raises_when_partial_rollback_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            item = root / "nested" / "input.json"
+            item.parent.mkdir()
+            item.write_text("{}\\n", encoding="utf-8")
+            real_chmod = os.chmod
+            calls = 0
+
+            def fail_freeze_and_first_restore(path: str | os.PathLike[str], mode: int) -> None:
+                nonlocal calls
+                calls += 1
+                if calls in (2, 3):
+                    raise OSError("synthetic permission failure")
+                real_chmod(path, mode)
+
+            with patch.object(qualification.os, "chmod", side_effect=fail_freeze_and_first_restore):
+                with self.assertRaises(qualification.InputFreezeError):
+                    qualification.make_input_tree_read_only(root, ("nested/input.json",))
+
     def test_source_tree_clean_detects_tracked_and_untracked_source_changes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
