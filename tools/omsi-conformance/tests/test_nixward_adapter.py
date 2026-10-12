@@ -91,7 +91,7 @@ def lifecycle_transaction(phase, recovered_from="failed"):
     if needs_verification:
         tx["verification"] = {
             "post_state_digest": "f" * 64,
-            "evidence_digest": "0" * 64,
+            "evidence_digest": "7" * 64,
             "boot_healthy": True,
         }
     if phase == "verified":
@@ -328,7 +328,7 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         tx = lifecycle_transaction("recovered", recovered_from="failed")
         tx["verification"] = {
             "post_state_digest": "f" * 64,
-            "evidence_digest": "0" * 64,
+            "evidence_digest": "7" * 64,
             "boot_healthy": True,
         }
         with self.assertRaisesRegex(v.ConformanceError, "must not contain verification evidence"):
@@ -345,6 +345,19 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         tx = lifecycle_transaction("planned")
         tx["administrator_approved"] = True
         with self.assertRaisesRegex(v.ConformanceError, "schema error"):
+            binding(tx)
+
+
+    def test_zero_validation_evidence_digest_rejected(self):
+        tx = lifecycle_transaction("validated")
+        tx["validation"]["evidence_digest"] = "0" * 64
+        with self.assertRaisesRegex(v.ConformanceError, "validation evidence digest must be non-zero"):
+            binding(tx)
+
+    def test_zero_verification_digest_rejected(self):
+        tx = lifecycle_transaction("verified")
+        tx["verification"]["post_state_digest"] = "0" * 64
+        with self.assertRaisesRegex(v.ConformanceError, "verification post-state digest must be non-zero"):
             binding(tx)
 
 
