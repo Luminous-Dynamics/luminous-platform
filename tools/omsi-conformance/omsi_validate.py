@@ -213,8 +213,13 @@ def validate_receipt(receipt: dict[str, Any], expected: dict[str, Any] | None = 
         raise ConformanceError("receipt outcome contradicts verification result")
 
 def validate_events(events: list[dict[str, Any]], operation: dict[str, Any] | None = None) -> None:
-    if not events:
-        raise ConformanceError("event sequence cannot be empty")
+    if not isinstance(events, list) or not events:
+        raise ConformanceError("event sequence must be a non-empty array")
+    # Validate every record before dereferencing identifiers; malformed input
+    # must fail as a contract error, never leak KeyError/TypeError to the CLI.
+    for event in events:
+        validate_schema("event", event)
+        _reject_secrets(event)
     if operation is not None:
         validate_operation(operation)
     seen = set()
@@ -230,8 +235,6 @@ def validate_events(events: list[dict[str, Any]], operation: dict[str, Any] | No
     prev_state = None
     prev_time = None
     for seq, event in enumerate(events, 1):
-        validate_schema("event", event)
-        _reject_secrets(event)
         for key in ("tenant_id", "operation_id", "correlation_id"):
             if event[key] != first[key]:
                 raise ConformanceError(f"event sequence mixes {key}")
