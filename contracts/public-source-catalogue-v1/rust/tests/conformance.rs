@@ -41,7 +41,8 @@ fn catalogue_rejects_unknown_nested_fields() {
 #[test]
 fn catalogue_rejects_duplicate_source_ids() {
     let mut value = parse_catalogue_fixture();
-    value["sources"][1]["source_id"] = value["sources"][0]["source_id"].clone();
+    let first_source_id = value["sources"][0]["source_id"].clone();
+    value["sources"][1]["source_id"] = first_source_id;
     let error = validate_catalogue_json(&encoded(&value)).expect_err("duplicate IDs must fail");
     assert!(error.to_string().contains("duplicate source_id"));
 }
