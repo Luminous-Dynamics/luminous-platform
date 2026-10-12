@@ -4,7 +4,7 @@
 - **Status:** Proposed — architecture review only
 - **Date:** 2026-10-12
 - **Scope:** Luminous Platform, Nixward, and Luminous Edge
-- **Implementation status:** Not implemented or qualified by this document
+- **Implementation status:** A pure M0 planner is proposed in [Nixward PR #65](https://github.com/Luminous-Dynamics/nixward/pull/65); it has not been compiled, tested, merged, or qualified.
 - **Decision sought:** Approve the direction and the lab-only discovery milestone, not production network mutation.
 
 ## Summary
@@ -32,6 +32,8 @@ The Luminous Platform already describes a network layer containing `xenia-peer`,
 Those modules concern **workload/network-flow enforcement and its evidence**. This RFC concerns the complementary **device/topology reconciliation plane**: links, addresses, routes, VLANs/bridges, device-facing firewall policy, and eventual fleet-wide network intent. It must reuse shared authority/receipt contracts where appropriate, but must not re-label workload BPF evidence as proof of router/device qualification, duplicate the existing runtime lab, or create a second policy authority.
 
 The broader Luminous Platform also has draft proposals for [government/regulatory network architecture (PR #20)](https://github.com/Luminous-Dynamics/luminous-platform/pull/20), a [hardware portfolio and qualification package (PR #22)](https://github.com/Luminous-Dynamics/luminous-platform/pull/22), and [self-hosted workload/service contracts (PR #28)](https://github.com/Luminous-Dynamics/luminous-platform/pull/28). They remain drafts; the device-control design should align with them rather than duplicating product taxonomy, segmentation contracts, hardware qualification, or workload declarations.
+
+An initial implementation slice is proposed in [Nixward PR #65](https://github.com/Luminous-Dynamics/nixward/pull/65). It defines validated input/snapshot types and a pure decision planner only. It does **not** collect live kernel state, calculate semantic route/firewall diffs, execute changes, or provide a device adapter. Its current validation status is unverified because tests have not been run; it must not be treated as a pass or qualification result.
 
 This RFC applies Nixward's existing transaction discipline to the new resource domain; it does not create a parallel authorization or transaction system. See [Nixward's canonical transaction architecture](https://github.com/Luminous-Dynamics/nixward/blob/main/docs/SYSTEM_TRANSACTION_ARCHITECTURE.md) and the [Luminous Platform architecture](https://github.com/Luminous-Dynamics/luminous-platform).
 
