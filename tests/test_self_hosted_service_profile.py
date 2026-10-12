@@ -135,7 +135,7 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("wildcard or multicast" in error["message"] for error in report["errors"]))
 
-    def test_private_endpoint_requires_restricted_private_source_cidrs(self):
+    def test_private_endpoint_rejects_unspecified_source_cidr(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["endpoints"][0]["allowed_source_cidrs"] = ["0.0.0.0/0"]
         report = self.validate(profile)
