@@ -159,6 +159,26 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("requires a loopback bind address" in error["message"] for error in report["errors"]))
 
+    def test_public_approval_must_target_a_declared_public_endpoint(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["public_exposure_approved"] = True
+        profile["network"]["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("at least one currently declared public endpoint" in error["message"] for error in report["errors"]))
+
+    def test_endpoint_must_declare_exactly_one_port_or_port_range(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["endpoints"][0].pop("port", None)
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+
+    def test_unsupported_icmp_endpoint_protocol_is_rejected(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["endpoints"][0]["protocol"] = "icmp"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+
     def test_public_approval_requires_review_reference(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["public_exposure_approved"] = True
