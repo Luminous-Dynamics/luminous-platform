@@ -6,6 +6,7 @@ on:
     paths:
       - 'contracts/public-source-catalogue-v1/**'
       - 'docs/LANGUAGE_AND_RUNTIME_POLICY.md'
+      - '.github/workflows/public-source-catalogue-v1.yml'
   push:
     branches:
       - main
@@ -13,6 +14,7 @@ on:
     paths:
       - 'contracts/public-source-catalogue-v1/**'
       - 'docs/LANGUAGE_AND_RUNTIME_POLICY.md'
+      - '.github/workflows/public-source-catalogue-v1.yml'
 
 permissions:
   contents: read
@@ -37,7 +39,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rustup toolchain install 1.96.0 --profile minimal --component rustfmt --component clippy
+          rustup toolchain install 1.96.0 --profile minimal
           rustc +1.96.0 --version
           cargo +1.96.0 --version
 
