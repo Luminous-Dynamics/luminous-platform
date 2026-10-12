@@ -14,6 +14,7 @@ import importlib.metadata
 import json
 import os
 import platform
+import signal
 import stat
 import subprocess
 import sys
@@ -607,11 +608,63 @@ def _run_test_worker(pattern: str, summary_path: Path) -> int:
         return 2
 
 
+def run_bounded_process(
+    args: list[str],
+    *,
+    cwd: Path,
+    env: Mapping[str, str],
+    stdin: int | None,
+    stdout: int | None,
+    stderr: int | None,
+    timeout: float,
+    text: bool = False,
+) -> subprocess.CompletedProcess:
+    """Bound a child and kill its whole process group when its deadline expires."""
+    process = subprocess.Popen(
+        args,
+        cwd=cwd,
+        env=dict(env),
+        stdin=stdin,
+        stdout=stdout,
+        stderr=stderr,
+        text=text,
+        start_new_session=True,
+    )
+    try:
+        captured_stdout, captured_stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        try:
+            # start_new_session makes the worker a process-group leader. Kill any
+            # descendants it spawned as well as the direct process before reaping it.
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            # Usually a race with process exit. Do not wait unboundedly if the
+            # direct worker deliberately left its original process group.
+            if process.poll() is None:
+                try:
+                    process.kill()
+                except ProcessLookupError:
+                    pass
+        except OSError:
+            # Best-effort direct-child cleanup, then fail closed at the caller.
+            try:
+                process.kill()
+            except OSError:
+                pass
+            process.communicate()
+            raise
+        process.communicate()
+        raise subprocess.TimeoutExpired(args, timeout) from None
+    return subprocess.CompletedProcess(
+        args, process.returncode, captured_stdout, captured_stderr
+    )
+
+
 def run_test_suite(root: Path, pattern: str) -> tuple[dict[str, object], bool]:
     with tempfile.TemporaryDirectory(prefix="vendor-endpoint-qualification-") as temp_dir:
         summary_path = Path(temp_dir) / "summary.json"
         try:
-            process = subprocess.run(
+            process = run_bounded_process(
                 [
                     sys.executable, str(Path(__file__).resolve()),
                     "--test-suite", pattern, "--summary-file", str(summary_path),
@@ -622,7 +675,6 @@ def run_test_suite(root: Path, pattern: str) -> tuple[dict[str, object], bool]:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 timeout=TEST_WORKER_TIMEOUT_SECONDS,
-                check=False,
             )
         except subprocess.TimeoutExpired:
             return ({"pattern": pattern, "state": "worker_timeout"}, True)
@@ -641,7 +693,7 @@ def run_test_suite(root: Path, pattern: str) -> tuple[dict[str, object], bool]:
 
 def run_validator(root: Path, relative_script: str) -> dict[str, object]:
     try:
-        process = subprocess.run(
+        process = run_bounded_process(
             [sys.executable, str(root / relative_script)],
             cwd=root,
             env=child_environment(),
@@ -649,7 +701,6 @@ def run_validator(root: Path, relative_script: str) -> dict[str, object]:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             timeout=VALIDATOR_TIMEOUT_SECONDS,
-            check=False,
         )
         return {
             "script": relative_script,
@@ -934,6 +985,7 @@ def main(argv: list[str] | None = None) -> int:
             "no revocation or authorization-at-use verification",
             "no fresh target inventory binding, tested-capability scope, or adapter qualification",
             "manifest files and parent directories have write bits removed during child checks; this is not an OS-enforced sandbox, and a same-user child may defeat mode bits (persistent changes are caught by digest fences)",
+            "timed-out validator/test workers run in dedicated process groups that are killed on timeout; this bounded cleanup is not an OS-enforced sandbox",
             f"manifest inputs larger than {MAX_MANIFEST_FILE_BYTES} bytes are rejected",
         ],
         "diagnostics_policy": "raw stdout, stderr, test identifiers and traceback text are not persisted",

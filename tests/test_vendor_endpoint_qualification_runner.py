@@ -5,7 +5,9 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -37,6 +39,36 @@ class QualificationRunnerContractTests(unittest.TestCase):
         )
         self.assertLessEqual(worst_case, qualification.MAX_CHILD_EXECUTION_BUDGET_SECONDS)
         self.assertLess(qualification.MAX_CHILD_EXECUTION_BUDGET_SECONDS, 600)
+
+    def test_child_timeout_kills_spawned_process_group(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            child_started = root / "child-started.txt"
+            marker = root / "surviving-child.txt"
+            child_code = (
+                "import time; from pathlib import Path; "
+                f"Path({str(child_started)!r}).write_text('started', encoding='utf-8'); "
+                "time.sleep(3.5); "
+                f"Path({str(marker)!r}).write_text('survived', encoding='utf-8')"
+            )
+            parent_code = (
+                "import subprocess, sys, time; "
+                "subprocess.Popen([sys.executable, '-c', sys.argv[1]]); "
+                "time.sleep(10)"
+            )
+            with self.assertRaises(subprocess.TimeoutExpired):
+                qualification.run_bounded_process(
+                    [sys.executable, "-c", parent_code, child_code],
+                    cwd=root,
+                    env=qualification.child_environment({"PATH": os.environ.get("PATH", "")}),
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=2.5,
+                )
+            self.assertTrue(child_started.is_file(), "descendant was not running before timeout")
+            time.sleep(1.2)
+            self.assertFalse(marker.exists(), "a child survived its worker's timeout")
 
     def test_report_destination_only_allows_safe_artifact_json(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
