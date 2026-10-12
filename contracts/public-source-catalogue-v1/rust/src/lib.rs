@@ -454,14 +454,10 @@ fn validate_observation(observation: &SourceObservation) -> ValidationErrors {
 fn valid_source_id(value: &str) -> bool {
     let bytes = value.as_bytes();
     (3..=64).contains(&bytes.len())
-        && bytes[0].is_ascii_lowercase().then_some(true).unwrap_or(false)
-            .then(|| bytes[0].is_ascii_digit())
-            .unwrap_or(false)
-            == false
-        && bytes[0].is_ascii_lowercase().then_some(true).unwrap_or(bytes[0].is_ascii_digit())
-        && bytes.iter().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-')
-        && !value.contains("--")
-        && bytes.last().is_some_and(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
+        && (bytes[0].is_ascii_lowercase() || bytes[0].is_ascii_digit())
+        && bytes.iter().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-'
+        })
 }
 
 fn valid_https_url(value: &str) -> bool {
@@ -483,7 +479,7 @@ fn valid_sha256(value: &str) -> bool {
 
 fn valid_iso_date(value: &str) -> bool {
     let bytes = value.as_bytes();
-    if bytes.len() != 10 || bytes[4] != b'-' || bytes[7] != b'-' {
+    if !value.is_ascii() || bytes.len() != 10 || bytes[4] != b'-' || bytes[7] != b'-' {
         return false;
     }
     let Ok(year) = value[0..4].parse::<i32>() else { return false };
