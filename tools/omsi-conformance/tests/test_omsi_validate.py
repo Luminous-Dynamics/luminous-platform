@@ -74,6 +74,11 @@ class TestOMSI(unittest.TestCase):
         x=receipt(); x["verification"]["observed_at"]="2026-10-12T12:00:35Z"
         with self.assertRaisesRegex(v.ConformanceError, "observation predates operation application"):
             v.validate_receipt(x, op(), load_fixture("events.json"))
+    def test_failed_receipt_observation_cannot_predate_application_event(self):
+        x=receipt(); x["outcome"]="failed"; x["verification"]["result"]="failed"
+        x["verification"]["observed_at"]="2026-10-12T12:00:35Z"
+        with self.assertRaisesRegex(v.ConformanceError, "observation predates operation application"):
+            v.validate_receipt(x, op(), load_fixture("events.json"))
     def test_verified_event_cannot_predate_observation(self):
         events=load_fixture("events.json"); events[-1]["occurred_at"]="2026-10-12T12:02:57Z"
         with self.assertRaisesRegex(v.ConformanceError, "verified event predates verification observation"):
