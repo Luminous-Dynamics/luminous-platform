@@ -186,6 +186,10 @@ def source_tree_clean(root: Path) -> bool | None:
     return not bool(untracked.stdout.strip())
 
 
+class InputFreezeError(RuntimeError):
+    """Raised when a failed freeze cannot fully restore original permissions."""
+
+
 def make_input_tree_read_only(
     root: Path,
     paths: tuple[str, ...] = INPUT_PATHS,
@@ -221,8 +225,9 @@ def make_input_tree_read_only(
         for relative in sorted(directories, key=lambda item: item.count("/"), reverse=True):
             path = root / relative
             os.chmod(path, modes[relative][0] & ~0o222)
-    except OSError:
-        restore_input_tree_permissions(root, modes)
+    except OSError as exc:
+        if not restore_input_tree_permissions(root, modes):
+            raise InputFreezeError("permission restoration failed after input-freeze error") from exc
         return None
     return modes
 
@@ -584,10 +589,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     input_modes: dict[str, tuple[int, bool]] | None = None
     if execution_ready:
-        input_modes = make_input_tree_read_only(root)
-        if input_modes is None:
-            blockers.append("INPUT_FREEZE_FAILED")
+        try:
+            input_modes = make_input_tree_read_only(root)
+        except InputFreezeError:
+            blockers.extend(("INPUT_FREEZE_FAILED", "INPUT_FREEZE_RESTORE_FAILED"))
             execution_ready = False
+        else:
+            if input_modes is None:
+                blockers.append("INPUT_FREEZE_FAILED")
+                execution_ready = False
 
     validators: dict[str, dict[str, object]] = {}
     input_drift_detected = False
