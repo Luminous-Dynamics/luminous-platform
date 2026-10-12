@@ -297,6 +297,23 @@ def source_tree_clean(
             return False
         if tracked.returncode != 0:
             return None
+        index_flags = subprocess.run(
+            ["git", "ls-files", "-v", "-z"],
+            cwd=root,
+            env=child_environment(),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            check=False,
+        )
+        if index_flags.returncode != 0:
+            return None
+        # The -v output lowercases assume-unchanged entries; S marks skip-worktree.
+        # Both flags can suppress ordinary working-tree diff evidence.
+        for entry in index_flags.stdout.split(b"\\0"):
+            if entry and (entry[:1].islower() or entry[:1] == b"S"):
+                return False
         untracked = subprocess.run(
             ["git", "ls-files", "--others", "--"],
             cwd=root,
