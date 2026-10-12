@@ -43,6 +43,7 @@ network:
   firewall_policy: deny-unspecified
   endpoints:
     - id: sip-udp
+      kind: listener
       protocol: udp
       port: 5060
       exposure: private-network
@@ -52,6 +53,7 @@ network:
         - 192.168.50.0/24
       purpose: Illustrative RFC1918 lab address and subnet; replace with the exact approved host address and client CIDRs, then verify the rendered PJSIP configuration and effective bind address before qualification.
     - id: sip-tls
+      kind: listener
       protocol: tcp
       port: 5061
       exposure: disabled
@@ -60,6 +62,7 @@ network:
       allowed_source_cidrs: []
       purpose: Disabled until TLS certificates, endpoint authentication, and client compatibility are configured and tested.
     - id: rtp-media
+      kind: listener
       protocol: udp
       port_range:
         - 10000
@@ -71,6 +74,7 @@ network:
         - 192.168.50.0/24
       purpose: Illustrative RFC1918 lab address and subnet; replace with the exact approved host address/client CIDRs. The range must be explicitly matched to rtp.conf and firewall rules, then tested for one-way/no-audio failures.
     - id: http-management
+      kind: listener
       protocol: tcp
       port: 8088
       exposure: disabled
