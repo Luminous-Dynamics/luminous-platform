@@ -36,6 +36,30 @@ VALIDATOR_VERSION = "0.1.0"
 _DNS_LABEL = r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)"
 _DNS_HOSTNAME_RE = re.compile(rf"^(?=.{1,253}$){_DNS_LABEL}(?:\\.{_DNS_LABEL})+$")
 
+_PRIVATE_NETWORKS = (
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("fc00::/7"),
+)
+
+
+def _is_private_address(address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    """Recognize RFC1918 IPv4 and IPv6 ULA only—not every special-purpose range."""
+    return any(
+        address.version == network.version and address in network
+        for network in _PRIVATE_NETWORKS
+    )
+
+
+def _is_private_network(network: ipaddress.IPv4Network | ipaddress.IPv6Network) -> bool:
+    """Require a CIDR to fit wholly inside one RFC1918 or IPv6 ULA range."""
+    return any(
+        network.version == private.version and network.subnet_of(private)
+        for private in _PRIVATE_NETWORKS
+    )
+
+
 
 def load_schema(path: Path) -> dict[str, Any]:
     try:
@@ -207,7 +231,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
             source_networks = []
             for source_index, source_cidr in enumerate(endpoint["allowed_source_cidrs"]):
                 try:
-                    source_networks.append(ipaddress.ip_network(source_cidr, strict=False))
+                    source_networks.append(ipaddress.ip_network(source_cidr, strict=True))
                 except ValueError:
                     errors.append({
                         "path": f"{path}/allowed_source_cidrs/{source_index}",
@@ -235,7 +259,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                             "message": "loopback endpoints do not use remote source CIDRs",
                         })
                 elif endpoint["exposure"] == "private-network":
-                    if bind_address is not None and not bind_address.is_private:
+                    if bind_address is not None and not _is_private_address(bind_address):
                         errors.append({
                             "path": path + "/bind_address",
                             "message": "private-network exposure requires an explicitly private bind address",
@@ -246,8 +270,13 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                             "message": "private-network exposure requires explicit allowed source CIDRs",
                         })
                     for source_index, source_network in enumerate(source_networks):
+                        if bind_address is not None and source_network.version != bind_address.version:
+                            errors.append({
+                                "path": f"{path}/allowed_source_cidrs/{source_index}",
+                                "message": "private endpoint source CIDR family must match the declared bind-address family",
+                            })
                         if (
-                            not source_network.is_private
+                            not _is_private_network(source_network)
                             or source_network.is_unspecified
                             or source_network.prefixlen == 0
                         ):
@@ -261,7 +290,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                             "path": path + "/allowed_source_cidrs",
                             "message": "public-network exposure requires an explicit source policy, including an explicit public-wide CIDR if intended",
                         })
-                    elif all(source_network.is_private for source_network in source_networks):
+                    elif all(_is_private_network(source_network) for source_network in source_networks):
                         errors.append({
                             "path": path + "/allowed_source_cidrs",
                             "message": "public-network exposure must declare at least one explicitly routed/public source range; private CIDRs alone contradict public exposure",
