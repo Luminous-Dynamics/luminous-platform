@@ -40,6 +40,42 @@ class ScenePackValidationTests(unittest.TestCase):
         issues = validate_manifest(self.schema, self.example, package_root=EXAMPLE_PATH.parent)
         self.assertEqual([], issues, "\n".join(map(str, issues)))
 
+    def test_semver_2_accepts_build_metadata_and_rejects_invalid_identifiers(self):
+        valid_versions = (
+            "1.2.3",
+            "1.2.3-alpha",
+            "1.2.3-alpha.1",
+            "1.2.3+build.7",
+            "1.2.3-rc.1+build.42",
+        )
+        for version in valid_versions:
+            with self.subTest(valid_version=version):
+                candidate = copy.deepcopy(self.example)
+                candidate["sceneVersion"] = version
+                issues = validate_manifest(
+                    self.schema, candidate, package_root=EXAMPLE_PATH.parent
+                )
+                self.assertEqual([], issues, f"{version}: " + "\\n".join(map(str, issues)))
+
+        invalid_versions = (
+            "1.2.3-",
+            "1.2.3-01",
+            "1.2.3-alpha..1",
+            "1.2.3+",
+            "1.2.3+build..7",
+            "1.2.3+bad_thing",
+        )
+        for version in invalid_versions:
+            with self.subTest(invalid_version=version):
+                candidate = copy.deepcopy(self.example)
+                candidate["sceneVersion"] = version
+                issues = validate_manifest(
+                    self.schema, candidate, package_root=EXAMPLE_PATH.parent
+                )
+                self.assertIn(
+                    "schema.invalid", {issue.code for issue in issues}, str(issues)
+                )
+
     def test_committed_negative_fixtures_fail_closed(self):
         for fixture in self.negative:
             with self.subTest(fixture=fixture["id"]):
