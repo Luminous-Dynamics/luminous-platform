@@ -1,10 +1,10 @@
 """Pure OMSI/Nixward identity-binding prototype.
 
-This module only binds an already validated OMSI manifest to externally
-obtained Nixward digest values. It does not verify signatures, create
-ChangePlan/ChangeAuthorization objects, invoke NixOSExecutor, or attest host
-state. Callers must obtain the three Nixward identities from the authoritative
-Nixward transaction/plan objects, not from caller-supplied claims alone.
+This module binds an already validated OMSI operation to identities exported
+from one versioned Nixward SystemTransaction envelope. It does not verify
+signatures, create ChangePlan/ChangeAuthorization objects, invoke the
+NixOSExecutor, or attest host state. The caller remains responsible for
+obtaining and validating this envelope through the authoritative Nixward API.
 """
 from __future__ import annotations
 
@@ -16,32 +16,55 @@ import omsi_validate as validator
 
 ADAPTER_SCHEMA = "org.omsi.nixward-adapter-binding/0.1"
 ADAPTER_VERSION = 1
+NIXWARD_TRANSACTION_SCHEMA = "luminous-nixward-system-transaction-v1"
 _NIXWARD_HEX = re.compile(r"^[0-9a-f]{64}$")
 
 
-def _tag_nixward_digest(field: str, raw_hex: str) -> str:
-    if not isinstance(raw_hex, str) or not _NIXWARD_HEX.fullmatch(raw_hex):
+def _tag_nixward_digest(field: str, transaction: dict[str, Any]) -> str:
+    if not isinstance(transaction, dict):
+        raise validator.ConformanceError("Nixward transaction envelope must be an object")
+    if transaction.get("schema") != NIXWARD_TRANSACTION_SCHEMA:
+        raise validator.ConformanceError("unsupported Nixward transaction schema")
+    version = transaction.get("version")
+    if type(version) is not int or version != 1:
+        raise validator.ConformanceError("unsupported Nixward transaction version")
+    value = transaction.get(field)
+    if not isinstance(value, str) or not _NIXWARD_HEX.fullmatch(value):
         raise validator.ConformanceError(
-            f"{field} must be 64 lowercase hexadecimal characters from Nixward"
+            f"Nixward transaction {field} must be 64 lowercase hexadecimal characters"
         )
-    return f"blake3:{raw_hex}"
+    return f"blake3:{value}"
+
+
+def _binding_inputs(transaction: dict[str, Any]) -> dict[str, str]:
+    """Extract namespaced IDs together from one versioned transaction envelope."""
+    if not isinstance(transaction, dict):
+        raise validator.ConformanceError("Nixward transaction envelope must be an object")
+    return {
+        "nixward_plan_digest": _tag_nixward_digest("plan_digest", transaction),
+        "nixward_target_machine_digest": _tag_nixward_digest(
+            "target_machine_digest", transaction
+        ),
+        "nixward_transaction_id": _tag_nixward_digest("transaction_id", transaction),
+    }
 
 
 def build_adapter_binding(
     operation: dict[str, Any],
     *,
-    nixward_plan_digest: str,
-    nixward_target_machine_digest: str,
-    nixward_transaction_id: str,
+    nixward_transaction: dict[str, Any],
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Build an explicit binding record from a validated OMSI operation.
+    """Build a cross-reference from an operation and one Nixward transaction.
 
-    Nixward API digest values are passed as 64-character lowercase hex; the
-    binding adds the blake3: namespace tag. The OMSI manifest digest keeps its
-    sha256: tag. Digest strings are intentionally never interchangeable.
+    The Nixward envelope fields plan_digest, target_machine_digest and
+    transaction_id are expected to come from the same SystemTransaction.
+    Nixward's raw lowercase hex values are tagged blake3:; the OMSI manifest
+    digest retains its sha256: namespace. This does not prove provenance of the
+    envelope or verify its contents using Nixward's Rust implementation.
     """
     validator.validate_operation(operation, now=now)
+    ids = _binding_inputs(nixward_transaction)
     binding = {
         "schema": ADAPTER_SCHEMA,
         "version": ADAPTER_VERSION,
@@ -52,15 +75,7 @@ def build_adapter_binding(
         "omsi_manifest_digest": validator.digest(
             operation, validator.OPERATION_MANIFEST_DOMAIN
         ),
-        "nixward_plan_digest": _tag_nixward_digest(
-            "nixward_plan_digest", nixward_plan_digest
-        ),
-        "nixward_target_machine_digest": _tag_nixward_digest(
-            "nixward_target_machine_digest", nixward_target_machine_digest
-        ),
-        "nixward_transaction_id": _tag_nixward_digest(
-            "nixward_transaction_id", nixward_transaction_id
-        ),
+        **ids,
     }
     validator.validate_schema("nixward_adapter_binding", binding)
     return binding
@@ -70,28 +85,22 @@ def validate_adapter_binding(
     binding: dict[str, Any],
     operation: dict[str, Any],
     *,
-    nixward_plan_digest: str,
-    nixward_target_machine_digest: str,
-    nixward_transaction_id: str,
+    nixward_transaction: dict[str, Any],
     now: datetime | None = None,
 ) -> None:
-    """Fail closed unless every OMSI and Nixward identity still matches.
+    """Fail closed unless every operation and transaction identity still matches.
 
-    Nixward identity values here must be read from the authoritative plan,
-    machine binding and transaction that the caller is about to use. Passing
-    the binding's own stored values back into this function would not
-    independently verify the Nixward side of the relationship.
+    The transaction argument must be the actual versioned Nixward envelope
+    being qualified, not a reconstructed dict copied from the adapter binding.
+    This Python prototype checks structure and cross-binding only; it cannot
+    authenticate the envelope or guarantee that a caller used the Rust API.
     """
     validator.validate_schema("nixward_adapter_binding", binding)
     expected = build_adapter_binding(
-        operation,
-        nixward_plan_digest=nixward_plan_digest,
-        nixward_target_machine_digest=nixward_target_machine_digest,
-        nixward_transaction_id=nixward_transaction_id,
-        now=now,
+        operation, nixward_transaction=nixward_transaction, now=now
     )
     for key in expected:
         if binding.get(key) != expected[key]:
             raise validator.ConformanceError(
-                f"adapter binding {key} does not match authoritative operation/plan identity"
+                f"adapter binding {key} does not match authoritative operation/transaction identity"
             )
