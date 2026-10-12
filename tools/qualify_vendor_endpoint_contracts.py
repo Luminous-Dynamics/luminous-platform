@@ -608,9 +608,9 @@ def _write_worker_summary(path: Path, summary: dict[str, object]) -> None:
 
         file_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
         file_fd = os.open(path.name, file_flags, 0o600, dir_fd=directory_fd)
-        with os.fdopen(file_fd, "w", encoding="utf-8", newline="\\n") as output:
+        with os.fdopen(file_fd, "w", encoding="utf-8", newline="\n") as output:
             output.write(
-                json.dumps(summary, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\\n"
+                json.dumps(summary, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
             )
     finally:
         os.close(directory_fd)

@@ -32,6 +32,26 @@ class QualificationRunnerContractTests(unittest.TestCase):
         summary.update(overrides)
         return summary
 
+    def test_worker_summary_writer_emits_parseable_json_with_real_newline(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="vendor-endpoint-qualification-") as directory:
+            path = Path(directory) / "summary.json"
+            summary = {
+                "pattern": "test_vendor_endpoint_qualification_runner.py",
+                "state": "passed",
+                "tests_run": 1,
+                "failures": 0,
+                "errors": 0,
+                "skipped": 0,
+                "expected_failures": 0,
+                "unexpected_successes": 0,
+                "discovery_errors": 0,
+            }
+            qualification._write_worker_summary(path, summary)
+            output = path.read_text(encoding="utf-8")
+            self.assertTrue(output.endswith("\n"))
+            self.assertEqual(json.loads(output), summary)
+            self.assertNotIn("\\n", output)
+
     def test_worker_summary_destination_only_allows_fresh_private_temp_files(self) -> None:
         with tempfile.TemporaryDirectory(prefix="vendor-endpoint-qualification-") as directory:
             valid = Path(directory) / "summary.json"
