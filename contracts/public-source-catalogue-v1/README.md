@@ -1,31 +1,39 @@
 # Public Source Catalogue V1
 
-This directory defines a machine-readable source inventory for the proposed South African public-service operations profile.
+This directory defines the machine-readable source inventory and observation contract for the proposed South African public-service operations profile.
 
-**Current state: catalogue and contract only.** It does not implement connectors, make network requests, cache government records, or authorise use of private municipal data.
+**Current state: offline contract and validator implementation under review.** It does not implement connectors, make network requests, cache government records, or authorise use of private municipal data. All source entries remain catalogue_only with ingestion disabled.
 
 ## Contents
+- schema.json — JSON Schema Draft 2020-12 for catalogue documents.
+- observation.schema.json — JSON Schema Draft 2020-12 for observations.
+- examples/catalogue.json — initial public-source inventory.
+- examples/observation-v1.json — synthetic provenance fixture.
+- CONFORMANCE.md — future adapter and contract test requirements.
+- rust/ — strict offline validator and CLI, authored in Rust.
 
-- `schema.json` — JSON Schema Draft 2020-12 for the source catalogue.
-- `observation.schema.json` — JSON Schema Draft 2020-12 for provenance-preserving source observations.
-- `examples/catalogue.json` — three official-source entries for initial discovery.
-- `examples/observation-v1.json` — synthetic observation fixture showing how provenance and missing-value semantics should be retained.
-- `CONFORMANCE.md` — requirements for future implementations and their tests.
+## Rust-first / no JavaScript policy
+The validator and first-party domain logic are Rust. This slice adds no JavaScript, TypeScript, Node.js, npm runtime, or browser-side business logic. Follow the platform language/runtime policy at docs/LANGUAGE_AND_RUNTIME_POLICY.md. Any future civic UI must preserve essential workflows with JavaScript disabled; prefer server-rendered HTML and ordinary HTTP forms.
 
 ## Sources selected
-
 1. National Treasury Municipal Finance Data: repairs and maintenance, capital acquisition and expenditure measures.
 2. National Treasury Transparency Portal / eTender published OCDS data.
 3. Johannesburg Water published service information, catalogued as reviewed webpages rather than an assumed API.
 
-Official source documentation was reviewed on 2026-10-12. Entries deliberately disable ingestion. A URL is a discovery pointer, not proof that retrieval, licensing, completeness or API compatibility has been tested.
+Official source documentation was reviewed on 2026-10-12. Catalogue entries deliberately disable ingestion. A URL is a discovery pointer, not proof that retrieval, licensing, completeness or API compatibility has been tested.
 
 ## Critical source semantics
+The Municipal Finance API overview links to an HTTPS API base, while the API guide's 'Using the API' section says the endpoint is HTTP. Do not downgrade transport silently. Confirm an HTTPS-compatible endpoint with the publisher before implementing an adapter; otherwise do not connect. The same guide states that returned null and zero can represent unfilled municipal values and says null should be treated as zero, while a query with no returned row means that data was not supplied to Treasury in an acceptable form. If that source-specific interpretation is applied, retain raw null and record an explicit, versioned normalization. Never convert a missing row into zero.
 
-The Municipal Finance API overview links to an HTTPS API base, while the API guide's 'Using the API' section lists an HTTP endpoint. Implementations must not silently downgrade to cleartext HTTP: verify HTTPS with the publisher and fail closed if it cannot be established. The same documentation says null values may represent data not filled in, while an absent query result can mean a submission was not accepted. Do not collapse raw null, numerical zero, absent row, invalid value and stale data into one representation. Source-specific interpretation must be explicit, versioned and tested.
-
-The eTender Transparency Portal documents CC BY 4.0 for published data, but it also explains that the portal covers only a subset of eTender data shared with National Treasury. Missing records cannot support conclusions about non-existence. Anomaly flags are review leads, not accusations.
+The eTender Transparency Portal documents CC BY 4.0 for published data, but states that the portal covers only a subset of eTender data shared with National Treasury. Missing records cannot support conclusions about non-existence. Anomaly flags are review leads, not accusations.
 
 ## Validation
+The Rust validator enforces strict field sets, unique source IDs, HTTPS URL syntax, catalogue-only ingestion, timestamp shape, observation-state consistency, explicit normalization identity and source snapshot digest requirements.
 
-Validate the catalogue against `schema.json` and the synthetic observation against `observation.schema.json`, using a Draft 2020-12-compliant JSON Schema validator. Validate that `source_id` is unique across the catalogue; JSON Schema uniqueItems cannot enforce uniqueness of just one property. A future production contract crate should be Rust-first and integrated into the repository's qualified contract test workflow. No runtime test pass is claimed in this documentation change.
+Run from the repository root:
+
+    cargo test --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --all-targets
+    cargo run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- catalogue contracts/public-source-catalogue-v1/examples/catalogue.json
+    cargo run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- observation contracts/public-source-catalogue-v1/examples/observation-v1.json
+
+These commands describe the intended workflow. They have not yet been reported as executed on an exact GitHub commit in this PR. The Rust implementation is a strict domain validator, not a general JSON Schema Draft 2020-12 implementation.
