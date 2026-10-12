@@ -34,6 +34,16 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
     def validate(self, profile=None):
         return validate_profile_data(copy.deepcopy(BASE if profile is None else profile), SCHEMA, "unit-test")
 
+    def test_schema_pin_modes_match_runtime_backend_contract(self):
+        expected = {
+            "nixos-native": "host-flake-lock",
+            "oci-container": "oci-digest",
+            "virtual-machine": "guest-image-digest",
+        }
+        declared_modes = set(SCHEMA["properties"]["runtime"]["properties"]["source_pin"]["properties"]["mode"]["enum"])
+        self.assertEqual(declared_modes, set(expected.values()) | {"unresolved"})
+        self.assertNotIn("source-revision", declared_modes)
+
     def test_schema_is_valid_and_fixture_is_valid_declaration_only(self):
         Draft202012Validator.check_schema(SCHEMA)
         report = self.validate()
