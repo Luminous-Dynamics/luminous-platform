@@ -211,7 +211,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                 })
 
         active_socket_claims: list[tuple[str, str, str, int, int]] = []
-        active_ingress_claims: list[tuple[str, str, str, str, int, int, set[str]]] = []
+        active_ingress_claims: list[tuple[str, str, str, int, int, set[str]]] = []
         for index, endpoint in enumerate(endpoints):
             path = f"/network/endpoints/{index}"
             try:
@@ -305,10 +305,9 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                     ))
                 else:
                     ingress_id = endpoint["ingress_dependency_id"]
-                    for prior_id, prior_ingress, prior_bind, prior_protocol, prior_start, prior_end, prior_hosts in active_ingress_claims:
+                    for prior_id, prior_ingress, prior_protocol, prior_start, prior_end, prior_hosts in active_ingress_claims:
                         if (
                             prior_ingress == ingress_id
-                            and prior_bind == bind_key
                             and prior_protocol == endpoint["protocol"]
                             and start_port <= prior_end
                             and prior_start <= end_port
@@ -321,8 +320,11 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                                     "on the same declared reverse proxy"
                                 ),
                             })
+                    # This contract identifies the proxy by dependency ID. Backend
+                    # addresses are not listener identities: identical host/port claims
+                    # on the same proxy conflict even if their backend bind addresses differ.
                     active_ingress_claims.append((
-                        endpoint["id"], ingress_id, bind_key, endpoint["protocol"],
+                        endpoint["id"], ingress_id, endpoint["protocol"],
                         start_port, end_port, normalized_hosts
                     ))
 
