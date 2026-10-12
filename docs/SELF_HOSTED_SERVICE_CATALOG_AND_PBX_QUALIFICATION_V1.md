@@ -28,7 +28,7 @@ Do not begin with Kubernetes. Native systemd/NixOS services, Podman Quadlet, and
 
 Nixpkgs includes a NixOS Asterisk service module at `nixos/modules/services/networking/asterisk.nix`, with options for enabling the service and defining configuration files. That makes native Asterisk a useful first integration target; it does **not** prove that a proposed dialplan, bind address, trunk, or firewall is correct.
 
-Start with a private lab network and synthetic endpoints. Do not open public SIP/RTP as a side effect of installation. The profile currently marks UDP/5060 and a bounded RTP range as private-network examples, disables TCP/5061 and HTTP management, prohibits public exposure by default, and defaults call recording off. These values are illustrative declarations; the exact rendered configuration and effective listening sockets must be observed before test claims are made.
+Start with a private lab network and synthetic endpoints. Do not open public SIP/RTP as a side effect of installation. The profile currently marks UDP/5060 and a bounded RTP range as private-network examples, binds them to an illustrative RFC1918 lab address, restricts declared sources to an example private subnet, disables TCP/5061 and HTTP management, prohibits public exposure by default, and defaults call recording off. The addresses/CIDRs are examples to replace with the exact deployment plan; the validator rejects wildcard binds and broad source ranges, but cannot prove the rendered configuration or host firewall actually enforce them. The exact listeners, routing, and effective firewall must be observed before test claims are made.
 
 For a full-featured web-managed PBX, use a dedicated VM as the first compatibility boundary. FreePBX 17's official installation path specifies Debian 12 and a minimum of 2 GB RAM / 20 GB disk. This is a reason to begin with a Debian guest appliance rather than make full FreePBX containerization a prerequisite for the first platform milestone.
 
@@ -50,7 +50,7 @@ The versioned schema requires:
 - Explicit runtime kind, architecture, update strategy, and source pin.
 - Authority and control-plane independence assertions.
 - Explicit dependencies, whether each is required to start, data shared with it, and a declared unknown-dependency policy. A platform control plane, coordination service, or telemetry exporter cannot be required for workload startup.
-- Per-endpoint protocol, port or range, exposure, enablement, and purpose.
+- Per-endpoint protocol, port or range, exposure, enablement, explicit bind address, allowed source CIDRs, and purpose. Enabled listeners cannot use wildcard/multicast bind addresses; private-network endpoints need an explicit private bind and restricted private source ranges. A profile cannot prove the host firewall actually implements these declarations—the runtime verifier must compare observed sockets and effective firewall policy.
 - Data classification, persistent paths, backup policy, restore-test requirement, optional sensitive-capture policy, telemetry export, and retention owner.
 - Secret backend and reference names, with `values_in_profile: false`.
 - Installation, upgrade, rollback, uninstall, and data-migration declarations.
