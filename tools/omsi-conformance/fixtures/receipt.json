@@ -1,6 +1,6 @@
 {
   "schema": "org.omsi.evidence-receipt/0.1", "id": "receipt-1", "tenant_id": "tenant-a", "operation_id": "op-1",
-  "subject_manifest_digest": "sha256:089efc9c97000eac513664e2601825400df92505e3044316a817a93fde82890f", "target": {"resource_id": "host-1", "tenant_id": "tenant-a"},
+  "subject_manifest_digest": "sha256:3ad3e1f82c667acf6a3c7c8bb19154f1a652e2048f676e39ea500ed00b2c61b0", "target": {"resource_id": "host-1", "tenant_id": "tenant-a"},
   "outcome": "verified", "issued_at": "2026-10-12T12:03:00Z", "issuer": "verifier-1", "executor": "executor-1",
   "verification": {"result": "verified", "observed_at": "2026-10-12T12:02:58Z", "post_state_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd", "independent_verifier_required": true, "verifier_identity": "observer-2", "executor_authority_domain": "control-a", "verifier_authority_domain": "control-b"},
   "correlation_id": "flow-1"
