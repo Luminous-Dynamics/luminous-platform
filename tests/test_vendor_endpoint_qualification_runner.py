@@ -253,6 +253,38 @@ class QualificationRunnerContractTests(unittest.TestCase):
             finally:
                 os.chdir(old_cwd)
 
+    def test_manifest_hashing_rejects_symlinked_files_and_parents(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            actual_dir = root / "actual"
+            actual_dir.mkdir()
+            actual = actual_dir / "input.json"
+            actual.write_text("{}\\n", encoding="utf-8")
+            (root / "linked-file.json").symlink_to(actual)
+            (root / "linked-dir").symlink_to(actual_dir, target_is_directory=True)
+
+            self.assertEqual(
+                qualification.input_hashes(root, ("linked-file.json",)),
+                {"linked-file.json": None},
+            )
+            self.assertEqual(
+                qualification.input_hashes(root, ("linked-dir/input.json",)),
+                {"linked-dir/input.json": None},
+            )
+
+    def test_manifest_hashing_rejects_path_traversal(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            outside = root.parent / "outside-qualification-input.json"
+            outside.write_text("not part of the manifest\\n", encoding="utf-8")
+            try:
+                self.assertEqual(
+                    qualification.input_hashes(root, ("../outside-qualification-input.json",)),
+                    {"../outside-qualification-input.json": None},
+                )
+            finally:
+                outside.unlink(missing_ok=True)
+
     def test_missing_input_is_explicit_not_silently_omitted(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             actual = qualification.input_hashes(Path(directory), ("missing.json",))
