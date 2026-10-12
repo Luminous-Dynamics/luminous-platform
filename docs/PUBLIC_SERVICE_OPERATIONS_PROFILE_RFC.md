@@ -58,7 +58,7 @@ This separation is intentional: a civic deployment should still support ordinary
 
 ### Language and runtime rule
 
-The civic profile follows [`LANGUAGE_AND_RUNTIME_POLICY.md`](LANGUAGE_AND_RUNTIME_POLICY.md): no handwritten JavaScript/TypeScript in first-party production logic, no JavaScript requirement for core workflows, and a preference for Rust/Leptos server-rendered HTML with ordinary HTTP forms. WebAssembly and generated loader glue are optional, documented exceptions for a bounded enhancement—not a basis for browser-side authority. Acceptance must include a no-JavaScript workflow check.
+The civic profile follows [`LANGUAGE_AND_RUNTIME_POLICY.md`](LANGUAGE_AND_RUNTIME_POLICY.md): the first release has no client-side WASM application, JavaScript loader, handwritten JavaScript/TypeScript or Node.js runtime. Use Rust/Leptos server-rendered HTML, standard links and HTTP forms. A future client-side WASM proposal requires separate review, and must not become a requirement for the core workflow. Acceptance must include a no-JavaScript workflow check.
 
 ## 4. Deployment and data-flow model
 
