@@ -13,6 +13,7 @@ import math
 import re
 import struct
 import sys
+import tempfile
 import zlib
 from pathlib import Path
 from typing import Any
