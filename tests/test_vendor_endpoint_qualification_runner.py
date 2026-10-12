@@ -153,6 +153,28 @@ class QualificationRunnerContractTests(unittest.TestCase):
             expected = hashlib.sha256(b'{"synthetic":true}\n').hexdigest()
             self.assertEqual(actual, {"fixture.json": expected})
 
+    def test_manifest_hashing_rejects_file_changed_during_read(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = root / "input.json"
+            fixture.write_bytes(b'{"synthetic":true}\\n')
+            real_read = os.read
+            mutated = False
+
+            def read_then_mutate(descriptor: int, length: int) -> bytes:
+                nonlocal mutated
+                chunk = real_read(descriptor, length)
+                if not mutated:
+                    mutated = True
+                    fixture.write_bytes(b'{"synthetic":false}\\n')
+                return chunk
+
+            with patch.object(qualification.os, "read", side_effect=read_then_mutate):
+                self.assertEqual(
+                    qualification.input_hashes(root, ("input.json",)),
+                    {"input.json": None},
+                )
+
     def test_manifest_hashing_rejects_non_regular_fifo_without_blocking(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -395,6 +417,9 @@ class QualificationRunnerContractTests(unittest.TestCase):
                     self.assertEqual(
                         report["validators"]["endpoint_profile"]["state"],
                         "execution_integrity_lost",
+                    )
+                    self.assertFalse(
+                        report["source_integrity"]["execution_integrity_preserved"]
                     )
                     self.assertTrue(all(
                         validator["state"] == "blocked_execution_integrity_lost"
