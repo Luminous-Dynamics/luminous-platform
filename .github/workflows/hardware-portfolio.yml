@@ -98,8 +98,10 @@ on:
 permissions:
   contents: read
 
+# Isolate runs by exact revision: delayed pull_request events must not cancel
+# the newest commit's pending qualification run.
 concurrency:
-  group: hardware-portfolio-${{ github.workflow }}-${{ github.ref }}
+  group: hardware-portfolio-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: false
 
 jobs:
