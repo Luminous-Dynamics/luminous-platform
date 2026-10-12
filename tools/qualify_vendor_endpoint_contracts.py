@@ -603,15 +603,20 @@ def main(argv: list[str] | None = None) -> int:
         and not missing_inputs
     )
     input_modes: dict[str, tuple[int, bool]] | None = None
+    input_modes_restored: bool | None = None
     if execution_ready:
         try:
             input_modes = make_input_tree_read_only(root)
         except InputFreezeError:
             blockers.extend(("INPUT_FREEZE_FAILED", "INPUT_FREEZE_RESTORE_FAILED"))
+            input_modes_restored = False
             execution_ready = False
         else:
             if input_modes is None:
                 blockers.append("INPUT_FREEZE_FAILED")
+                # No freeze completed: the helper either made no changes or
+                # rolled back its partial changes before returning None.
+                input_modes_restored = True
                 execution_ready = False
 
     validators: dict[str, dict[str, object]] = {}
@@ -677,7 +682,6 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 blockers.append("TEST_SUITE_FAILED")
 
-    input_modes_restored: bool | None = None
     if input_modes is not None:
         input_modes_restored = restore_input_tree_permissions(root, input_modes)
         if not input_modes_restored:
