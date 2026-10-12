@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omsi.example/spec/0.1/authority-grant.schema.json",
+  "title": "OMSI 0.1 Authority Grant (shape only; signature verification is external)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "tenant_id", "target_resource_id", "subject_manifest_digest", "action_profile", "action_verb", "issued_by", "authorized_principal", "audience", "issued_at", "expires_at", "nonce", "approval_refs", "policy_ref", "proof", "correlation_id"],
+  "properties": {
+    "schema": {"const": "org.omsi.authority-grant/0.1"}, "id": {"type": "string", "minLength": 1}, "tenant_id": {"type": "string", "minLength": 1}, "target_resource_id": {"type": "string", "minLength": 1}, "subject_manifest_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "action_profile": {"type": "string"}, "action_verb": {"type": "string"}, "issued_by": {"type": "string"}, "authorized_principal": {"type": "string"}, "audience": {"type": "string"}, "issued_at": {"type": "string", "format": "date-time"}, "not_before": {"type": "string", "format": "date-time"}, "expires_at": {"type": "string", "format": "date-time"}, "nonce": {"type": "string", "minLength": 16}, "approval_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "policy_ref": {"type": "string"}, "proof": {"type": "object", "additionalProperties": false, "required": ["format", "key_id", "signature_base64"], "properties": {"format": {"type": "string"}, "key_id": {"type": "string"}, "signature_base64": {"type": "string", "minLength": 1}}}, "correlation_id": {"type": "string"}, "producer": {"type": "string"}, "data_classification": {"enum": ["public", "internal", "confidential", "restricted"]}, "extensions": {"type": "object"}
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omsi.example/spec/0.1/operation-manifest.schema.json",
+  "title": "OMSI 0.1 Operation Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "tenant_id", "correlation_id", "created_at", "requested_by", "target", "action", "preconditions", "authorization", "idempotency_key"],
+  "properties": {
+    "schema": {"const": "org.omsi.operation-manifest/0.1"},
+    "id": {"type": "string", "minLength": 1},
+    "tenant_id": {"type": "string", "minLength": 1},
+    "correlation_id": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "requested_by": {"type": "object", "additionalProperties": false, "required": ["principal_id", "principal_type"], "properties": {"principal_id": {"type": "string", "minLength": 1}, "principal_type": {"enum": ["human", "service", "agent"]}}},
+    "target": {"type": "object", "additionalProperties": false, "required": ["resource_id", "tenant_id"], "properties": {"resource_id": {"type": "string", "minLength": 1}, "tenant_id": {"type": "string", "minLength": 1}, "identity_namespace": {"type": "string"}}},
+    "action": {"type": "object", "additionalProperties": false, "required": ["profile", "verb", "arguments", "arguments_digest"], "properties": {"profile": {"type": "string", "minLength": 1}, "verb": {"type": "string", "minLength": 1}, "arguments": {"type": "object"}, "arguments_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "desired_state_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}},
+    "preconditions": {"type": "object", "additionalProperties": false, "required": ["observed_state_digest", "observed_at", "max_age_seconds"], "properties": {"observed_state_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "observed_at": {"type": "string", "format": "date-time"}, "max_age_seconds": {"type": "integer", "minimum": 0}}},
+    "authorization": {"type": "object", "additionalProperties": false, "required": ["policy_ref", "audience", "expires_at", "nonce", "approval_refs", "authorized_principal"], "properties": {"policy_ref": {"type": "string", "minLength": 1}, "audience": {"type": "string", "minLength": 1}, "expires_at": {"type": "string", "format": "date-time"}, "nonce": {"type": "string", "minLength": 16}, "approval_refs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}, "authorized_principal": {"type": "string", "minLength": 1}}},
+    "idempotency_key": {"type": "string", "minLength": 1},
+    "recovery": {"type": "object"},
+    "data_classification": {"enum": ["public", "internal", "confidential", "restricted"]},
+    "extensions": {"type": "object"},
+    "producer": {"type": "string"}
+  }
+}
