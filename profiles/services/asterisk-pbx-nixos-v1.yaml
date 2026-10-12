@@ -1,0 +1,141 @@
+# Proposed service profile. This is a declaration fixture, not an install-ready PBX configuration.
+schema: luminous.self-hosted-service-profile/v1
+metadata:
+  id: luminous.service.asterisk-nixos
+  version: 0.1.0
+  status: proposed
+  owner: Luminous Dynamics
+  description: >
+    Proposed native NixOS Asterisk profile for a private-network PBX.
+    It deliberately excludes public SIP exposure, web administration,
+    and call recording by default. No runtime qualification is implied.
+  documentation_uri: https://docs.asterisk.org/Deployment/Important-Security-Considerations/
+application:
+  name: Asterisk
+  category: communications
+  upstream_homepage: https://www.asterisk.org/
+  source_repository: https://github.com/asterisk/asterisk
+  upstream_release: Resolved from the target host's locked nixpkgs input; not fixed by this generic profile
+  license: GPL-2.0-only
+  purpose: Private-network SIP PBX, call routing, voicemail, and controlled trunk connectivity.
+runtime:
+  kind: nixos-native
+  operating_system: NixOS
+  architectures:
+    - x86_64-linux
+  source_pin:
+    mode: host-flake-lock
+    reference: The deploying host must pin nixpkgs in flake.lock and record the exact revision and Asterisk derivation/store-path digest in the deployment receipt.
+    digest: null
+  update_strategy: rebuild-from-pinned-inputs
+authority:
+  default_action: deny
+  authorization_required_for_mutations: true
+  platform_manager_required_for_runtime: false
+  local_recovery_without_coordinator: true
+  control_authority: Local operator and Nixward authorization; Mycelix and the control plane are not runtime dependencies.
+network:
+  public_exposure_default: prohibited
+  public_exposure_approved: false
+  firewall_policy: deny-unspecified
+  endpoints:
+    - id: sip-udp
+      protocol: udp
+      port: 5060
+      exposure: private-network
+      enabled: true
+      purpose: Illustrative private-LAN SIP signaling endpoint; the rendered PJSIP configuration and effective bind address must be verified before qualification.
+    - id: sip-tls
+      protocol: tcp
+      port: 5061
+      exposure: disabled
+      enabled: false
+      purpose: Disabled until TLS certificates, endpoint authentication, and client compatibility are configured and tested.
+    - id: rtp-media
+      protocol: udp
+      port_range:
+        - 10000
+        - 20000
+      exposure: private-network
+      enabled: true
+      purpose: Illustrative bounded RTP media range only; the range must be explicitly matched to rtp.conf and firewall rules, then tested for one-way/no-audio failures.
+    - id: http-management
+      protocol: tcp
+      port: 8088
+      exposure: disabled
+      enabled: false
+      purpose: HTTP/ARI management is not exposed by this profile; enable only with an explicit access-control and authentication review.
+data:
+  classification: confidential
+  stateful: true
+  persistent_paths:
+    - /var/lib/asterisk
+    - /var/spool/asterisk
+    - /var/log/asterisk
+  backup_policy: application-consistent-periodic-and-before-upgrade
+  restore_test: required-before-production
+  call_recording: disabled-by-default
+  telemetry_export: operator-approved-only
+  retention_owner: Deploying organization; define voicemail, call-detail, diagnostic-log, and any future recording retention before use.
+secrets:
+  values_in_profile: false
+  backend: sops-nix
+  references:
+    - asterisk/sip-endpoints
+    - asterisk/sip-trunks
+  rotation_policy: Use unique credentials per endpoint and trunk; rotate on suspected disclosure and during a documented operational review. Never place credential values in this profile, Nix store plaintext, command arguments, or evidence receipts.
+lifecycle:
+  installation: declarative
+  upgrade: rebuild-from-pinned-inputs
+  rollback: manual-recovery-only
+  uninstall: documented-with-data-retention-choice
+  data_migration: unknown
+health:
+  checks:
+    - id: process-running
+      class: process
+      expected_observation: Asterisk service is active and restart failures are surfaced.
+    - id: pjsip-ready
+      class: readiness
+      expected_observation: Configured test endpoints register from the permitted private test network; no public bind is inferred from process health.
+    - id: synthetic-call-flow
+      class: functional
+      expected_observation: A controlled lab test completes bidirectional audio, call teardown, and negative authorization cases using synthetic endpoints and a pinned SIPp scenario.
+    - id: unauthorized-call-refusal
+      class: security
+      expected_observation: Guest/unknown endpoints and prohibited dialplan contexts cannot place unauthorized calls or reach privileged features.
+    - id: backup-restore
+      class: backup
+      expected_observation: A versioned backup is restored in an isolated test instance and configuration, voicemail/state expectations, and permissions are checked.
+    - id: host-recovery-independent
+      class: recovery
+      expected_observation: PBX startup, local diagnosis, and the documented out-of-band recovery path do not require Mycelix, Symthaea, or a remote coordinator.
+qualification:
+  maturity: M0_PROPOSED
+  required_checks:
+    - validate-profile-schema-and-semantics
+    - evaluate-locked-nixos-configuration
+    - record-exact-nixpkgs-revision-and-derivation
+    - verify-effective-bind-addresses-and-firewall
+    - reject-unauthenticated-and-unauthorized-call-flows
+    - pass-private-lab-sipp-call-and-bidirectional-media-scenarios
+    - exercise-service-restart-and-network-loss
+    - restore-application-consistent-backup-in-isolated-vm
+    - verify-runtime-with-control-plane-absent
+  qualified_capabilities: []
+  unqualified_capabilities:
+    - production-telephony
+    - public-sip-exposure
+    - emergency-calling
+    - carrier-trunk-interoperability
+    - high-availability-and-failover
+    - regulatory-compliance
+    - call-recording-and-retention
+    - verified-backup-restoration
+  evidence_refs: []
+  limitations:
+    - Proposed profile fixture only; no NixOS evaluation, build, test call, deployment, or restore has been run for this revision.
+    - The actual host nixpkgs revision and Asterisk derivation must be frozen before a qualification run.
+    - Port examples are not a firewall implementation; effective listeners and packet paths must be observed on the exact target.
+    - SIPp simulation proves only the exercised synthetic scenario, not carrier interoperability or production telephony quality.
+    - Public exposure is prohibited by default; no ISP, NAT, TLS/SRTP, emergency-calling, or jurisdiction-specific deployment assumptions are made.
