@@ -212,7 +212,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                     for prior_id, prior_ingress, prior_bind, prior_protocol, prior_start, prior_end, prior_hosts in active_ingress_claims:
                         if (
                             prior_ingress == ingress_id
-                            and prior_bind == endpoint["bind_address"]
+                            and prior_bind == bind_key
                             and prior_protocol == endpoint["protocol"]
                             and start_port <= prior_end
                             and prior_start <= end_port
