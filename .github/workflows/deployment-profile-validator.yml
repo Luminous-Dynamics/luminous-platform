@@ -114,12 +114,24 @@ jobs:
           python tools/validate_deployment_profile.py profiles/examples/local-nixos-pilot.yaml > profile-validation.json
           cat profile-validation.json
 
+      - name: Validate self-hosted service profile fixtures
+        run: |
+          set -euo pipefail
+          python tools/validate_self_hosted_service_profile.py profiles/services/asterisk-pbx-nixos-v1.yaml > asterisk-service-profile-validation.json
+          python tools/validate_self_hosted_service_profile.py profiles/services/nextcloud-nixos-v1.yaml > nextcloud-service-profile-validation.json
+          jq -e '.result == "VALID_DECLARATION" and .qualification_evaluated == false' asterisk-service-profile-validation.json > /dev/null
+          jq -e '.result == "VALID_DECLARATION" and .qualification_evaluated == false' nextcloud-service-profile-validation.json > /dev/null
+          cat asterisk-service-profile-validation.json
+          cat nextcloud-service-profile-validation.json
+
       - name: Upload declaration validation report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: deployment-profile-validation-${{ github.sha }}
           path: |
             profile-validation.json
+            asterisk-service-profile-validation.json
+            nextcloud-service-profile-validation.json
             cooperative-offer-zar-validation.json
             cooperative-offer-eur-validation.json
             cooperative-purchase-intent-validation.json
