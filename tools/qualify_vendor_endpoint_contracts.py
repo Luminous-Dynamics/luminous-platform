@@ -170,6 +170,10 @@ def manifest_file_sha256(root: Path, relative: str) -> str | None:
                 break
             digest.update(chunk)
             bytes_read += len(chunk)
+            # Enforce the limit during streaming too, because a concurrent writer
+            # can grow an inode after the initial fstat.
+            if bytes_read > MAX_MANIFEST_FILE_BYTES:
+                return None
 
         after = os.fstat(file_fd)
         stable_fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns")
