@@ -3,7 +3,7 @@
 **Status:** implementation design note; not a stable adapter contract  
 **Repository inspected:** `Luminous-Dynamics/nixward`, default branch `main`, inspection date 2026-10-12.
 
-This mapping is grounded in Nixward's existing `src/action/system_transaction.rs` and `SystemTransaction` API. The intent is to reuse Nixward's existing evidence-bound transaction, not create a parallel privileged executor inside OMSI.
+This mapping is grounded in Nixward's existing `src/action/system_transaction.rs`, `src/action/change_covenant.rs`, `src/action/executor.rs` and `src/bin/nixward.rs`. The intent is to reuse Nixward's existing evidence-bound authorization and actuator, not create a parallel privileged executor inside OMSI. **Integration gap:** the current CLI `cmd_execute` path constructs a `ChangePlan`, `ChangeAuthorization` and `ExecutionAuthorization` and calls `NixOSExecutor::execute_authorized`; it does not instantiate `SystemTransaction`. Treat the latter as a lifecycle envelope/API, not as an already-wired runtime transaction record.
 
 ## Existing Nixward transaction envelope
 
@@ -20,7 +20,12 @@ Nixward already exposes a versioned `SystemTransaction` with:
 
 The source documents that this envelope wraps the existing `ChangePlan` and `ChangeAuthorization`; it does not introduce a second authorization mechanism. `authorize()` calls `authorization.validate_plan(plan)` and is only permitted after validation evidence exists.
 
-Relevant source: https://github.com/Luminous-Dynamics/nixward/blob/main/src/action/system_transaction.rs
+Relevant sources:
+- https://github.com/Luminous-Dynamics/nixward/blob/main/src/action/system_transaction.rs
+- https://github.com/Luminous-Dynamics/nixward/blob/main/src/action/executor.rs
+- https://github.com/Luminous-Dynamics/nixward/blob/main/src/bin/nixward.rs
+
+`record_application()` records metadata about an already executed command (command digest, timestamps and exit status); it does not execute the command. The authorized actuator is `NixOSExecutor::execute_authorized()`. A VM experiment that only advances `SystemTransaction` fields or runs its unit tests would not prove real actuator behavior. Qualification must connect the actual `ExecutionResult` to the lifecycle envelope and separately observe the VM after application/recovery.
 
 ## Digest separation is mandatory
 
@@ -62,11 +67,11 @@ Reference: https://github.com/Luminous-Dynamics/nixward/blob/main/tests/network-
 
 Recommended staged evidence:
 
-1. Test the OMSI↔Nixward mapping in pure/unit fixtures with exact digests and negative subject-substitution cases.
-2. Add a separate NixOS VM test check that exercises the existing transaction lifecycle with a test-only executor/authority fixture; keep that fixture unselectable in production.
-3. Once the fixture path is proven, extend the VM test to a tightly scoped declarative NixOS change and real recovery.
-4. Inject timeout-after-acceptance and process loss. Require read-only reconciliation before retry.
-5. Verify recovery by observing actual post-recovery state; a `Recovered` phase alone is not enough for an OMSI verified-recovery receipt.
+1. Add a small adapter/orchestrator around the existing `NixOSExecutor::execute_authorized()` path that binds the exact OMSI manifest digest, Nixward plan digest, target-machine digest, transaction ID and correlation ID without merging their digest namespaces.
+2. Unit-test adapter transitions and failure mapping with explicit test fixtures. This tests lifecycle mapping only; it is not VM or actuator evidence.
+3. Add a separate `pkgs.testers.runNixOSTest` check that invokes the shared adapter and actual Nixward actuator against a harmless declarative test change in a disposable VM. The test authority must be isolated and impossible to select from production configuration.
+4. Inject timeout-after-acceptance, nonzero command exit and post-apply verification failure. Require read-only reconciliation before retry.
+5. Verify restoration by observing actual post-recovery VM state; a `Recovered` phase alone is not enough for an OMSI verified-recovery receipt.
 
 All mutation tests run only inside a disposable VM. The production host, real customer resources and real secrets are out of scope.
 
@@ -77,3 +82,4 @@ All mutation tests run only inside a disposable VM. The production host, real cu
 - Nixward and OMSI use distinct digest formats/algorithms; cross-binding should be explicit, not implicit.
 - A proof-shaped OMSI grant is not the same as a cryptographically verified `ChangeAuthorization`.
 - Existing Rust unit tests for `SystemTransaction` are not the same evidence as an executed disposable-VM test.
+- The current CLI's real authorized-execution path is not yet wired to emit `SystemTransaction` lifecycle records; the adapter/orchestrator seam is prerequisite integration work, not an existing end-to-end capability.
