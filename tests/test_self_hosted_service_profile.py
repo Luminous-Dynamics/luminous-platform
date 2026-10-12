@@ -97,6 +97,21 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
             for error in report["errors"]
         ))
 
+    def test_ingress_collision_cannot_hide_behind_different_backend_address(self):
+        profile = copy.deepcopy(NEXTCLOUD)
+        first = profile["network"]["endpoints"][0]
+        duplicate = copy.deepcopy(first)
+        duplicate["id"] = "private-https-same-host-different-backend"
+        duplicate["bind_address"] = "192.168.50.21"
+        profile["network"]["endpoints"].append(duplicate)
+
+        report = validate_profile_data(profile, SCHEMA, "unit-test")
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any(
+            "ingress hostname/port overlaps" in error["message"]
+            for error in report["errors"]
+        ))
+
     def test_duplicate_ingress_hostname_on_same_proxy_is_rejected(self):
         profile = copy.deepcopy(NEXTCLOUD)
         endpoint = copy.deepcopy(profile["network"]["endpoints"][0])
