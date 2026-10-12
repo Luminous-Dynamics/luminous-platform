@@ -153,6 +153,16 @@ class QualificationRunnerContractTests(unittest.TestCase):
             expected = hashlib.sha256(b'{"synthetic":true}\n').hexdigest()
             self.assertEqual(actual, {"fixture.json": expected})
 
+    def test_manifest_hashing_rejects_non_regular_fifo_without_blocking(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fifo = root / "input.fifo"
+            os.mkfifo(fifo)
+            self.assertEqual(
+                qualification.input_hashes(root, ("input.fifo",)),
+                {"input.fifo": None},
+            )
+
     def test_input_tree_freeze_removes_write_bits_and_restores_modes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
