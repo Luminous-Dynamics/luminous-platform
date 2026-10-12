@@ -124,9 +124,29 @@ def canonical_json_bytes(value: object) -> bytes:
     ).encode("utf-8")
 
 
+def regular_manifest_file(root: Path, relative: str) -> bool:
+    """Reject path traversal, symlinked parents, symlink files and non-regular inputs."""
+    candidate = Path(relative)
+    if candidate.is_absolute() or not candidate.parts or ".." in candidate.parts:
+        return False
+    parent = root
+    for part in candidate.parts[:-1]:
+        parent = parent / part
+        if parent.is_symlink() or not parent.is_dir():
+            return False
+    path = parent / candidate.parts[-1]
+    try:
+        return not path.is_symlink() and stat.S_ISREG(path.lstat().st_mode)
+    except OSError:
+        return False
+
+
 def input_hashes(root: Path, paths: tuple[str, ...] = INPUT_PATHS) -> dict[str, str | None]:
     result: dict[str, str | None] = {}
     for relative in sorted(paths):
+        if not regular_manifest_file(root, relative):
+            result[relative] = None
+            continue
         try:
             result[relative] = hashlib.sha256((root / relative).read_bytes()).hexdigest()
         except OSError:
