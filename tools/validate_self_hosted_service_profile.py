@@ -385,11 +385,21 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                                 "message": "private-network exposure accepts only explicit private source CIDRs, not wildcard ranges",
                             })
                 elif endpoint["exposure"] == "public-network":
-                    if bind_address is not None and (bind_address.is_loopback or bind_address.is_link_local):
-                        errors.append({
-                            "path": path + "/bind_address",
-                            "message": "public-network endpoints cannot bind to loopback or link-local addresses",
-                        })
+                    if bind_address is not None:
+                        bind_network = ipaddress.ip_network(
+                            f"{bind_address}/{bind_address.max_prefixlen}", strict=True
+                        )
+                        if _is_private_address(bind_address):
+                            if not endpoint.get("public_edge_mapping_ref"):
+                                errors.append({
+                                    "path": path + "/public_edge_mapping_ref",
+                                    "message": "public endpoints bound to RFC1918/IPv6 ULA addresses require an explicit edge/NAT mapping reference",
+                                })
+                        elif not _is_acceptable_public_source_network(bind_network):
+                            errors.append({
+                                "path": path + "/bind_address",
+                                "message": "public-network endpoints must bind to a globally routable unicast address or an RFC1918/IPv6 ULA address with an explicit edge/NAT mapping reference",
+                            })
                     if not source_networks:
                         errors.append({
                             "path": path + "/allowed_source_cidrs",
