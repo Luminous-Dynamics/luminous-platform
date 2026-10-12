@@ -150,7 +150,7 @@ def manifest_file_sha256(root: Path, relative: str) -> str | None:
             descriptors.append(current)
         file_fd = os.open(
             candidate.parts[-1],
-            os.O_RDONLY | os.O_NOFOLLOW,
+            os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_NONBLOCK", 0),
             dir_fd=current,
         )
         descriptors.append(file_fd)
