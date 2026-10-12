@@ -268,6 +268,29 @@ def source_tree_clean(
     return not bool(observed.difference(allowed_untracked))
 
 
+def child_execution_integrity_errors(
+    root: Path,
+    expected_head: str,
+    expected_hashes: Mapping[str, str | None],
+    allowed_untracked: tuple[str, ...] = (),
+) -> list[str]:
+    """Re-bind each completed child to the original Git revision and source state."""
+    errors: list[str] = []
+    current_head = checked_out_sha(root)
+    if current_head is None:
+        errors.append("CHECKED_OUT_HEAD_UNAVAILABLE")
+    elif current_head != expected_head:
+        errors.append("REVISION_MISMATCH")
+    tree_state = source_tree_clean(root, allowed_untracked=allowed_untracked)
+    if tree_state is False:
+        errors.append("SOURCE_TREE_DIRTY")
+    elif tree_state is None:
+        errors.append("SOURCE_TREE_STATE_UNAVAILABLE")
+    if not input_manifest_unchanged(root, expected_hashes):
+        errors.append("INPUT_DIGEST_CHANGED")
+    return sorted(set(errors))
+
+
 class InputFreezeError(RuntimeError):
     """Raised when a failed freeze cannot fully restore original permissions."""
 
@@ -708,21 +731,29 @@ def main(argv: list[str] | None = None) -> int:
                 "script": script,
                 "return_code": None,
                 "timed_out": False,
-                "state": "blocked_input_digest_changed",
+                "state": "blocked_execution_integrity_lost",
             }
             continue
         result = run_validator(root, script)
-        if not input_manifest_unchanged(root, before_hashes):
-            blockers.append("INPUT_DIGEST_CHANGED")
+        integrity_errors = child_execution_integrity_errors(
+            root, observed_sha or "", before_hashes, allowed_untracked
+        )
+        if integrity_errors:
+            blockers.extend(integrity_errors)
             input_drift_detected = True
-            # The current validator ran across an observed input-digest change;
-            # do not preserve its return code as successful validation evidence.
-            validators[name] = {**result, "state": "input_drift_detected"}
+            # Do not preserve the child's result when the revision or source fence moved.
+            result_state = (
+                "input_drift_detected"
+                if integrity_errors == ["INPUT_DIGEST_CHANGED"]
+                else "execution_integrity_lost"
+            )
+            validators[name] = {**result, "state": result_state}
         else:
             validators[name] = result
 
     stopped_validator_states = {
-        "input_drift_detected", "blocked_input_digest_changed", "blocked_source_integrity"
+        "input_drift_detected", "execution_integrity_lost",
+        "blocked_execution_integrity_lost", "blocked_source_integrity"
     }
     if validators["endpoint_profile"]["state"] not in ({"passed"} | stopped_validator_states):
         blockers.append("PROFILE_VALIDATOR_FAILED")
@@ -739,14 +770,22 @@ def main(argv: list[str] | None = None) -> int:
             test_suites.append({"pattern": pattern, "state": "blocked_source_integrity"})
             continue
         if input_drift_detected:
-            test_suites.append({"pattern": pattern, "state": "blocked_input_digest_changed"})
+            test_suites.append({"pattern": pattern, "state": "blocked_execution_integrity_lost"})
             continue
         summary, failed = run_test_suite(root, pattern)
-        if not input_manifest_unchanged(root, before_hashes):
-            blockers.append("INPUT_DIGEST_CHANGED")
+        integrity_errors = child_execution_integrity_errors(
+            root, observed_sha or "", before_hashes, allowed_untracked
+        )
+        if integrity_errors:
+            blockers.extend(integrity_errors)
             input_drift_detected = True
             # Invalidate this suite's own result as well as all remaining suites.
-            test_suites.append({"pattern": pattern, "state": "input_drift_detected"})
+            result_state = (
+                "input_drift_detected"
+                if integrity_errors == ["INPUT_DIGEST_CHANGED"]
+                else "execution_integrity_lost"
+            )
+            test_suites.append({"pattern": pattern, "state": result_state})
             continue
         test_suites.append(summary)
         if failed:
