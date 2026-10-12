@@ -1,0 +1,79 @@
+name: Public Source Catalogue V1
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/public-source-catalogue-v1/**'
+      - 'docs/LANGUAGE_AND_RUNTIME_POLICY.md'
+  push:
+    branches:
+      - main
+      - docs/public-service-operations-profile-rfc-001
+    paths:
+      - 'contracts/public-source-catalogue-v1/**'
+      - 'docs/LANGUAGE_AND_RUNTIME_POLICY.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-source-catalogue-v1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Rust contract and fixture validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact event revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.96.0 --profile minimal --component rustfmt --component clippy
+          rustc +1.96.0 --version
+          cargo +1.96.0 --version
+
+      - name: Reject handwritten JavaScript and TypeScript in this contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          if find contracts/public-source-catalogue-v1 \
+            -type f \
+            \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.ts' -o -name '*.tsx' \) \
+            -print -quit | grep -q .; then
+            echo 'Unexpected JS/TS source in the Rust-only public-source contract.' >&2
+            exit 1
+          fi
+
+      - name: Test contract validator on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 test --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --all-targets
+
+      - name: Validate canonical catalogue fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- catalogue contracts/public-source-catalogue-v1/examples/catalogue.json
+
+      - name: Validate synthetic observation fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- observation contracts/public-source-catalogue-v1/examples/observation-v1.json
+
+      - name: Report qualification boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'PASS only means the Rust contract/fixture checks passed at GITHUB_SHA.'
+          echo 'This does not qualify network ingestion, legal access, production readiness or municipal integrations.'
