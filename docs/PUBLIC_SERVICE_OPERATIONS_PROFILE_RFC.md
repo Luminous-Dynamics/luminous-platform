@@ -60,6 +60,8 @@ This separation is intentional: a civic deployment should still support ordinary
 
 The civic profile follows [`LANGUAGE_AND_RUNTIME_POLICY.md`](LANGUAGE_AND_RUNTIME_POLICY.md): the first release has no client-side WASM application, JavaScript loader, handwritten JavaScript/TypeScript or Node.js runtime. Use Rust/Leptos server-rendered HTML, standard links and HTTP forms. A future client-side WASM proposal requires separate review, and must not become a requirement for the core workflow. Acceptance must include a no-JavaScript workflow check.
 
+A separate but related finding: Symthaea's current `symthaea-browser` is a Rust browser agent over Chromium/CDP, not a browser engine. Its current CDP wrapper still sends authored JavaScript strings into page contexts for some observations and actions. This has not yet been removed. The planned removal of routine page-evaluation helpers is tracked in [Symthaea Browser pure-Rust strategy PR #7427](https://github.com/Luminous-Dynamics/symthaea/pull/7427) and [implementation issue #7426](https://github.com/Luminous-Dynamics/symthaea/issues/7426). The civic UI may claim zero JavaScript runtime requirement; the wider Luminous stack must not claim zero authored/injected JavaScript until that separate controller work has been implemented and qualified.
+
 ## 4. Deployment and data-flow model
 
 The first deployment should be read-only from source systems and should not require access to an internal municipal network.
