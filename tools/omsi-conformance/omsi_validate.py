@@ -194,11 +194,17 @@ def validate_grant(op: dict[str, Any], grant: dict[str, Any], now: datetime | No
     # Intentional limitation: proof shape is schema-checked, but signature bytes,
     # issuer trust, key status and revocation are NOT verified by this starter.
 
-def validate_receipt(receipt: dict[str, Any], expected: dict[str, Any] | None = None) -> None:
+def validate_receipt(
+    receipt: dict[str, Any],
+    expected: dict[str, Any] | None = None,
+    events: list[dict[str, Any]] | None = None,
+) -> None:
     validate_schema("receipt", receipt)
     _reject_secrets(receipt)
     if receipt["tenant_id"] != receipt["target"]["tenant_id"]:
         raise ConformanceError("receipt target is in another tenant")
+    if events is not None and expected is None:
+        raise ConformanceError("event-bound receipt validation requires the operation manifest")
     if expected is not None:
         validate_operation(expected)
         expected_values = [
@@ -211,26 +217,49 @@ def validate_receipt(receipt: dict[str, Any], expected: dict[str, Any] | None = 
         for key, actual, want in expected_values:
             if actual != want:
                 raise ConformanceError(f"receipt {key} mismatch")
+    if events is not None:
+        # Validate and bind the full event chain before using its timestamps.
+        validate_events(events, expected)
+
     issued = parse_time(receipt["issued_at"])
-    if expected is not None and issued < parse_time(expected["created_at"]):
+    manifest_created = parse_time(expected["created_at"]) if expected is not None else None
+    if manifest_created is not None and issued < manifest_created:
         raise ConformanceError("receipt cannot predate the operation manifest")
+
     ver = receipt["verification"]
-    if receipt["outcome"] == "verified" and ver["result"] != "verified":
-        raise ConformanceError("verified outcome needs verified evidence")
-    if receipt["outcome"] != "verified" and ver["result"] == "verified":
-        raise ConformanceError("non-verified outcome cannot claim verified evidence")
-    if ver["result"] == "verified":
-        if not ver.get("observed_at") or not ver.get("post_state_digest"):
+    observed_raw = ver.get("observed_at")
+    observed = parse_time(observed_raw) if observed_raw is not None else None
+    if observed is not None and observed > issued:
+        raise ConformanceError("verification observation cannot follow receipt issuance")
+    if manifest_created is not None and observed is not None and observed < manifest_created:
+        raise ConformanceError("verification observation cannot predate the operation manifest")
+
+    if receipt["outcome"] == "verified":
+        if ver["result"] != "verified":
+            raise ConformanceError("verified outcome needs verified evidence")
+        if observed is None or not ver.get("post_state_digest"):
             raise ConformanceError("verified receipt requires observation time and post-state digest")
-        if parse_time(ver["observed_at"]) > issued:
-            raise ConformanceError("verification observation cannot follow receipt issuance")
+        if events is not None:
+            applied = [event for event in events if event["to_state"] == "applied"]
+            if not applied:
+                raise ConformanceError("verified receipt requires an applied event")
+            if not events or events[-1]["to_state"] != "verified":
+                raise ConformanceError("verified receipt requires a terminal verified event")
+            applied_at = parse_time(applied[-1]["occurred_at"])
+            verified_at = parse_time(events[-1]["occurred_at"])
+            if observed < applied_at:
+                raise ConformanceError("verification observation predates operation application")
+            if verified_at < observed:
+                raise ConformanceError("verified event predates verification observation")
+            if issued < verified_at:
+                raise ConformanceError("receipt issuance predates verified event")
         if ver.get("independent_verifier_required"):
             if not ver.get("verifier_identity") or ver.get("verifier_identity") == receipt["executor"]:
                 raise ConformanceError("independent verifier must be identified separately from executor")
             if not ver.get("executor_authority_domain") or not ver.get("verifier_authority_domain") or ver["executor_authority_domain"] == ver["verifier_authority_domain"]:
                 raise ConformanceError("independent verification requires distinct declared authority domains")
-    elif receipt["outcome"] == "verified":
-        raise ConformanceError("receipt outcome contradicts verification result")
+    elif ver["result"] == "verified":
+        raise ConformanceError("non-verified outcome cannot claim verified evidence")
 
 def validate_events(events: list[dict[str, Any]], operation: dict[str, Any] | None = None) -> None:
     if not isinstance(events, list) or not events:
