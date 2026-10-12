@@ -544,6 +544,33 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "VALID_DECLARATION")
         self.assertFalse(report["qualification_evaluated"])
 
+    def test_oci_digest_pin_requires_explicit_registry_and_repository(self):
+        digest = "sha256:" + "e" * 64
+        invalid_references = (
+            digest,
+            "@" + digest,
+            "service@" + digest,
+            "registry.example.invalid/@" + digest,
+            "registry.example.invalid/example/service @" + digest,
+            "registry.example.invalid/example/service@sha256:" + "f" * 64,
+        )
+        for reference in invalid_references:
+            with self.subTest(reference=reference):
+                profile = copy.deepcopy(BASE)
+                profile["runtime"]["kind"] = "oci-container"
+                profile["runtime"]["source_pin"] = {
+                    "mode": "oci-digest",
+                    "reference": reference,
+                    "digest": digest,
+                }
+                profile["runtime"]["update_strategy"] = "digest-refresh-reviewed"
+                report = self.validate(profile)
+                self.assertEqual(report["result"], "INVALID")
+                self.assertTrue(any(
+                    "explicit registry/repository locator" in error["message"]
+                    for error in report["errors"]
+                ))
+
     def test_oci_reference_digest_must_match_declared_digest(self):
         profile = copy.deepcopy(BASE)
         profile["runtime"]["kind"] = "oci-container"
