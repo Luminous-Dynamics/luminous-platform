@@ -40,6 +40,11 @@ def _binding_inputs(transaction: dict[str, Any]) -> dict[str, str]:
     """Extract namespaced IDs together from one versioned transaction envelope."""
     if not isinstance(transaction, dict):
         raise validator.ConformanceError("Nixward transaction envelope must be an object")
+    if transaction.get("phase") not in {
+        "planned", "authorized", "validated", "snapshotted", "applied",
+        "verified", "promoted", "recovered", "failed",
+    }:
+        raise validator.ConformanceError("unsupported or missing Nixward transaction phase")
     return {
         "nixward_plan_digest": _tag_nixward_digest("plan_digest", transaction),
         "nixward_target_machine_digest": _tag_nixward_digest(
