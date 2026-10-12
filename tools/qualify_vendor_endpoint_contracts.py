@@ -16,9 +16,9 @@ import os
 import platform
 import subprocess
 import sys
+import stat
 import tempfile
 import unittest
-import stat
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping, TextIO
@@ -221,7 +221,6 @@ def make_input_tree_read_only(
         for relative in sorted(directories, key=lambda item: item.count("/"), reverse=True):
             path = root / relative
             os.chmod(path, modes[relative][0] & ~0o222)
-            changed.append(relative)
     except OSError:
         restore_input_tree_permissions(root, modes)
         return None
