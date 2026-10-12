@@ -62,6 +62,10 @@ class TestOMSI(unittest.TestCase):
         with self.assertRaisesRegex(v.ConformanceError, "post-state digest"): v.validate_receipt(x, op())
     def test_verified_receipt_fixture_has_consistent_event_chronology(self):
         v.validate_receipt(receipt(), op(), load_fixture("events.json"))
+    def test_nonverified_receipt_cannot_bind_verified_event_chain(self):
+        x=receipt(); x["outcome"]="failed"; x["verification"]["result"]="failed"
+        with self.assertRaisesRegex(v.ConformanceError, "non-verified receipt conflicts with verified event sequence"):
+            v.validate_receipt(x, op(), load_fixture("events.json"))
     def test_verification_observation_cannot_predate_manifest(self):
         x=receipt(); x["verification"]["observed_at"]="2026-10-12T11:59:00Z"
         with self.assertRaisesRegex(v.ConformanceError, "observation cannot predate the operation manifest"):
