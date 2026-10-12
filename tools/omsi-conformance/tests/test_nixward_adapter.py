@@ -56,7 +56,7 @@ def lifecycle_transaction(phase, recovered_from="failed"):
     tx["authorization"] = {
         "issuer": "test-owner",
         "evidence_digest": "b" * 64,
-        "evidence_kind": "explicit_approval",
+        "evidence_kind": "GeneralChange",
         "expires_at_ms": 1791807300000,
         "signer_key_id": None,
         "challenge_blake3": None,
@@ -358,6 +358,13 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         tx = lifecycle_transaction("verified")
         tx["verification"]["post_state_digest"] = "0" * 64
         with self.assertRaisesRegex(v.ConformanceError, "verification post-state digest must be non-zero"):
+            binding(tx)
+
+
+    def test_unknown_nixward_approval_evidence_kind_rejected(self):
+        tx = lifecycle_transaction("authorized")
+        tx["authorization"]["evidence_kind"] = "explicit_approval"
+        with self.assertRaisesRegex(v.ConformanceError, "schema error"):
             binding(tx)
 
 
