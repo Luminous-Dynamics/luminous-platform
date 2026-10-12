@@ -27,6 +27,8 @@ from typing import Mapping, TextIO
 ROOT = Path(__file__).resolve().parents[1]
 REPORT_SCHEMA_VERSION = "luminous.vendor-endpoint-qualification-report.v1"
 EXPECTED_PYTHON_VERSION = "3.13.7"
+EXPECTED_PYTHON_IMPLEMENTATION = "CPython"
+EXPECTED_PLATFORM_SYSTEM = "Linux"
 EXPECTED_JSONSCHEMA_VERSION = "4.26.0"
 EXPECTED_CRYPTOGRAPHY_VERSION = "50.0.2"
 MAX_MANIFEST_FILE_BYTES = 4 * 1024 * 1024
@@ -95,6 +97,8 @@ FAILURE_CODES = {
     "INPUT_DIGEST_CHANGED",
     "REVISION_MISMATCH",
     "PYTHON_VERSION_MISMATCH",
+    "PYTHON_IMPLEMENTATION_MISMATCH",
+    "PLATFORM_SYSTEM_MISMATCH",
     "JSONSCHEMA_VERSION_MISMATCH",
     "CRYPTOGRAPHY_VERSION_MISMATCH",
     "PROFILE_VALIDATOR_FAILED",
@@ -797,10 +801,17 @@ def main(argv: list[str] | None = None) -> int:
         blockers.append("REVISION_MISMATCH")
 
     python_version = platform.python_version()
+    python_implementation = platform.python_implementation()
+    platform_system = platform.system()
+    platform_machine = platform.machine()
     jsonschema_version = dependency_version("jsonschema")
     cryptography_version = dependency_version("cryptography")
     if python_version != EXPECTED_PYTHON_VERSION:
         blockers.append("PYTHON_VERSION_MISMATCH")
+    if python_implementation != EXPECTED_PYTHON_IMPLEMENTATION:
+        blockers.append("PYTHON_IMPLEMENTATION_MISMATCH")
+    if platform_system != EXPECTED_PLATFORM_SYSTEM:
+        blockers.append("PLATFORM_SYSTEM_MISMATCH")
     if jsonschema_version is None:
         blockers.append("JSONSCHEMA_VERSION_UNAVAILABLE")
     elif jsonschema_version != EXPECTED_JSONSCHEMA_VERSION:
@@ -814,6 +825,8 @@ def main(argv: list[str] | None = None) -> int:
     # do not run validators/tests against a different interpreter or dependency set.
     runtime_valid = (
         python_version == EXPECTED_PYTHON_VERSION
+        and python_implementation == EXPECTED_PYTHON_IMPLEMENTATION
+        and platform_system == EXPECTED_PLATFORM_SYSTEM
         and jsonschema_version == EXPECTED_JSONSCHEMA_VERSION
         and cryptography_version == EXPECTED_CRYPTOGRAPHY_VERSION
     )
@@ -975,8 +988,10 @@ def main(argv: list[str] | None = None) -> int:
         "runtime": {
             "python_version": python_version,
             "expected_python_version": EXPECTED_PYTHON_VERSION,
-            "implementation": platform.python_implementation(),
-            "platform": platform.system() + "-" + platform.machine(),
+            "implementation": python_implementation,
+            "expected_implementation": EXPECTED_PYTHON_IMPLEMENTATION,
+            "platform": platform_system + "-" + platform_machine,
+            "expected_platform_system": EXPECTED_PLATFORM_SYSTEM,
             "jsonschema_version": jsonschema_version,
             "expected_jsonschema_version": EXPECTED_JSONSCHEMA_VERSION,
             "cryptography_version": cryptography_version,
