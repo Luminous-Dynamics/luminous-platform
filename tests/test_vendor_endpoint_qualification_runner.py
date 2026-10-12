@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -82,6 +83,69 @@ class QualificationRunnerContractTests(unittest.TestCase):
             self.assertTrue(qualification.restore_input_tree_permissions(root, modes or {}))
             self.assertEqual(item.stat().st_mode & 0o777, original_file_mode)
             self.assertEqual(item.parent.stat().st_mode & 0o777, original_directory_mode)
+
+    def test_input_tree_freeze_rejects_symlinked_manifest_input(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "actual.json"
+            target.write_text("{}\\n", encoding="utf-8")
+            link = root / "input.json"
+            link.symlink_to(target)
+            self.assertIsNone(
+                qualification.make_input_tree_read_only(root, ("input.json",))
+            )
+
+    def test_input_tree_freeze_rolls_back_partial_permission_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            item = root / "nested" / "input.json"
+            item.parent.mkdir()
+            item.write_text("{}\\n", encoding="utf-8")
+            original_file_mode = item.stat().st_mode & 0o777
+            original_directory_mode = item.parent.stat().st_mode & 0o777
+            real_chmod = os.chmod
+            calls = 0
+
+            def fail_once(path: str | os.PathLike[str], mode: int) -> None:
+                nonlocal calls
+                calls += 1
+                if calls == 2:
+                    raise OSError("synthetic permission failure")
+                real_chmod(path, mode)
+
+            with patch.object(qualification.os, "chmod", side_effect=fail_once):
+                result = qualification.make_input_tree_read_only(root, ("nested/input.json",))
+            self.assertIsNone(result)
+            self.assertEqual(item.stat().st_mode & 0o777, original_file_mode)
+            self.assertEqual(item.parent.stat().st_mode & 0o777, original_directory_mode)
+
+    def test_source_tree_clean_detects_tracked_and_untracked_source_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tracked = root / "tools" / "tracked.py"
+            tracked.parent.mkdir()
+            tracked.write_text("VALUE = 1\\n", encoding="utf-8")
+            commands = (
+                ["git", "init", "-q"],
+                ["git", "config", "user.email", "qualification-test@example.invalid"],
+                ["git", "config", "user.name", "Qualification Test"],
+                ["git", "add", "tools/tracked.py"],
+                ["git", "commit", "-q", "-m", "synthetic fixture"],
+            )
+            for command in commands:
+                subprocess.run(
+                    command, cwd=root, check=True,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            self.assertTrue(qualification.source_tree_clean(root))
+            tracked.write_text("VALUE = 2\\n", encoding="utf-8")
+            self.assertFalse(qualification.source_tree_clean(root))
+            tracked.write_text("VALUE = 1\\n", encoding="utf-8")
+            self.assertTrue(qualification.source_tree_clean(root))
+            untracked = root / "tests" / "injected.py"
+            untracked.parent.mkdir()
+            untracked.write_text("VALUE = 3\\n", encoding="utf-8")
+            self.assertFalse(qualification.source_tree_clean(root))
 
     def test_input_manifest_fence_detects_changed_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
