@@ -48,6 +48,14 @@ def load_schema(path: Path) -> dict[str, Any]:
     return schema
 
 
+def _safe_profile_digest(profile: Any) -> str | None:
+    """Return a canonical digest when input is JSON-compatible; invalid input must not crash reporting."""
+    try:
+        return profile_digest(profile)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
 def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> dict[str, Any]:
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
     schema_errors = sorted(
@@ -211,26 +219,56 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
             })
 
         mode = source_pin["mode"]
-        if runtime["kind"] == "oci-container":
-            if mode != "oci-digest" or not source_pin.get("digest"):
+        expected_pin_mode = {
+            "nixos-native": "host-flake-lock",
+            "oci-container": "oci-digest",
+            "virtual-machine": "guest-image-digest",
+        }[runtime["kind"]]
+
+        if mode not in {expected_pin_mode, "unresolved"}:
+            errors.append({
+                "path": "/runtime/source_pin/mode",
+                "message": (
+                    f"runtime kind {runtime['kind']!r} requires source-pin mode "
+                    f"{expected_pin_mode!r} or 'unresolved'"
+                ),
+            })
+
+        if mode == "unresolved":
+            if source_pin.get("digest") is not None:
                 errors.append({
-                    "path": "/runtime/source_pin",
-                    "message": "OCI workloads require an immutable OCI digest; mutable tags are insufficient",
+                    "path": "/runtime/source_pin/digest",
+                    "message": "an unresolved source pin must not claim a resolved digest",
+                })
+            if qualification["maturity"] not in {"M0_PROPOSED", "M1_DECLARATION_VALID"}:
+                blockers.append("runtime source pin is unresolved for the claimed maturity")
+        elif mode == "oci-digest":
+            if not source_pin.get("digest"):
+                errors.append({
+                    "path": "/runtime/source_pin/digest",
+                    "message": "OCI workloads require an immutable SHA-256 digest; mutable tags are insufficient",
                 })
             elif source_pin["reference"].rsplit("@", 1)[-1] != source_pin["digest"]:
                 errors.append({
                     "path": "/runtime/source_pin/reference",
                     "message": "OCI reference must embed the same @sha256 digest declared in source_pin.digest",
                 })
-        elif mode == "oci-digest" and not source_pin.get("digest"):
+        elif mode == "guest-image-digest" and not source_pin.get("digest"):
             errors.append({
                 "path": "/runtime/source_pin/digest",
-                "message": "oci-digest mode requires a concrete sha256 digest",
+                "message": "VM appliance profiles require a concrete guest-image SHA-256 digest",
             })
-        if mode == "unresolved" and qualification["maturity"] not in {
-            "M0_PROPOSED", "M1_DECLARATION_VALID"
-        }:
-            blockers.append("runtime source pin is unresolved for the claimed maturity")
+
+        if (
+            mode == "host-flake-lock"
+            and not source_pin.get("digest")
+            and qualification["maturity"] in {
+                "M2_SANDBOX_TESTED", "M3_CONTROLLED_DEPLOYMENT", "M4_INDEPENDENT_ASSESSMENT"
+            }
+        ):
+            blockers.append(
+                "NixOS runtime maturity above declaration-only requires the built derivation/closure digest"
+            )
 
         advanced_claim = (
             qualification["maturity"] in {
@@ -268,7 +306,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
         "source": source,
         "result": result,
         "qualification_evaluated": False,
-        "profile_digest_sha256": profile_digest(profile) if isinstance(profile, (dict, list)) else None,
+        "profile_digest_sha256": _safe_profile_digest(profile) if isinstance(profile, (dict, list)) else None,
         "schema_digest_sha256": schema_digest,
         "errors": errors,
         "blockers": sorted(set(blockers)),
