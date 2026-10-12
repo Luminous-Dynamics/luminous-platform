@@ -8,6 +8,19 @@ fn main() -> ExitCode {
         return ExitCode::from(2);
     }
 
+    const MAX_INPUT_BYTES: u64 = 8 * 1024 * 1024;
+    let metadata = match fs::metadata(&args[2]) {
+        Ok(metadata) => metadata,
+        Err(error) => {
+            eprintln!("cannot stat {}: {error}", args[2]);
+            return ExitCode::from(2);
+        }
+    };
+    if !metadata.is_file() || metadata.len() > MAX_INPUT_BYTES {
+        eprintln!("input must be a regular file no larger than {MAX_INPUT_BYTES} bytes");
+        return ExitCode::from(2);
+    }
+
     let input = match fs::read_to_string(&args[2]) {
         Ok(input) => input,
         Err(error) => {
