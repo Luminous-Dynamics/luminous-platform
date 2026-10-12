@@ -177,7 +177,13 @@ def safe_report_destination(
     root_abs = Path(os.path.abspath(root))
     target = Path(os.path.abspath(requested if requested.is_absolute() else root_abs / requested))
     try:
+        # Reject final or ancestor symlinks even when the lexical path is outside
+        # the checkout but resolves back into it.
+        if target.resolve(strict=False) != target:
+            return None
         relative = target.relative_to(root_abs)
+    except OSError:
+        return None
     except ValueError:
         # A caller-selected destination outside the checkout is outside source state.
         return target, None
