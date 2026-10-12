@@ -31,11 +31,29 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - name: Checkout exact event revision
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-          fetch-depth: 1
+      - name: Checkout exact event revision without an external action
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            test -n "${PR_NUMBER}"
+            test -n "${PR_HEAD_SHA}"
+            git fetch --no-tags --depth=1 origin "refs/pull/${PR_NUMBER}/head"
+            git checkout --detach FETCH_HEAD
+            expected_sha="${PR_HEAD_SHA}"
+          else
+            git fetch --no-tags --depth=1 origin "${GITHUB_SHA}"
+            git checkout --detach FETCH_HEAD
+            expected_sha="${GITHUB_SHA}"
+          fi
+          actual_sha="$(git rev-parse HEAD)"
+          test "${actual_sha}" = "${expected_sha}"
+          printf 'Qualified source revision: %s\n' "${actual_sha}"
 
       - name: Install pinned Rust toolchain
         shell: bash
