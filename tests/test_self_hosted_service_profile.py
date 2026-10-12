@@ -82,12 +82,39 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("periodic backups" in error["message"] for error in report["errors"]))
 
-    def test_recording_requires_policy_reference_when_enabled(self):
+    def test_sensitive_capture_requires_policy_reference_when_enabled(self):
         profile = copy.deepcopy(BASE)
-        profile["data"]["call_recording"] = "explicit-opt-in-with-notice"
+        profile["data"]["sensitive_capture"]["default_state"] = "explicit-opt-in-with-notice"
         report = self.validate(profile)
         self.assertEqual(report["result"], "INVALID")
-        self.assertTrue(any("recording requires" in error["message"] for error in report["errors"]))
+        self.assertTrue(any("sensitive capture requires" in error["message"] for error in report["errors"]))
+
+    def test_coordination_service_cannot_be_required_for_runtime_start(self):
+        profile = copy.deepcopy(BASE)
+        profile["dependencies"]["items"] = [{
+            "id": "mycelix-coordinator",
+            "role": "coordination-service",
+            "required_for_start": True,
+            "failure_policy": "stop-service-safely",
+            "data_shared": "metadata-only",
+        }]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("cannot be required for service startup" in error["message"] for error in report["errors"]))
+
+    def test_duplicate_dependency_ids_are_rejected(self):
+        profile = copy.deepcopy(BASE)
+        dependency = {
+            "id": "local-db",
+            "role": "data-store",
+            "required_for_start": True,
+            "failure_policy": "stop-service-safely",
+            "data_shared": "application-state",
+        }
+        profile["dependencies"]["items"] = [copy.deepcopy(dependency), copy.deepcopy(dependency)]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("dependency IDs must be unique" in error["message"] for error in report["errors"]))
 
     def test_oci_container_must_be_pinned_by_digest(self):
         profile = copy.deepcopy(BASE)
@@ -144,6 +171,14 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
             "digest": digest,
         }
         profile["runtime"]["update_strategy"] = "guest-os-managed-reviewed"
+        profile["data"].pop("sensitive_capture", None)
+        profile["dependencies"]["items"] = [{
+            "id": "guest-virtualization-host",
+            "role": "application",
+            "required_for_start": True,
+            "failure_policy": "stop-service-safely",
+            "data_shared": "none",
+        }]
         profile["lifecycle"]["installation"] = "appliance-provisioning"
         profile["lifecycle"]["upgrade"] = "guest-os-managed"
         profile["lifecycle"]["rollback"] = "snapshot-restore"
