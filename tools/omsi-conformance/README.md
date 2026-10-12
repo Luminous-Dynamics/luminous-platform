@@ -1,6 +1,6 @@
 # OMSI 0.1 — executable conformance seed
 
-This is a deliberately small, reviewable reference validator for the OMSI pre-RFC. It validates JSON Schemas and selected semantic invariants for operation manifests, authority grants, lifecycle event sequences and evidence receipts.
+This is a deliberately small, reviewable reference validator for the OMSI pre-RFC. It validates JSON Schemas and selected semantic invariants for operation manifests, authority grants, lifecycle event sequences, evidence receipts and a prototype OMSI-to-Nixward identity-binding record.
 
 ## Run
 
@@ -26,6 +26,12 @@ See [CANONICALIZATION.md](CANONICALIZATION.md) for the exact prototype framing a
 
 The seed accepts a deliberately restricted JSON value set for digest-bearing contract documents: duplicate object keys, negative zero, floating-point numbers, unsafe-range integers and strings/keys that cannot be represented as valid Unicode scalar values are rejected. Object member names are ordered by UTF-16 code units; arrays retain order; canonical bytes are hashed with SHA-256 using an explicit semantic domain prefix. This is a constrained accepted-input profile designed to avoid ambiguous cross-language encodings, **not a claim of full RFC 8785/JCS conformance**. The exact algorithm and test vectors must receive independent cross-language review before a stable protocol version. The `interop` target uses a small independent JavaScript implementation to check fixed basic/Unicode vectors and the action/manifest/grant/receipt digest bindings; it is a prototype, not a second fully conforming implementation.
 
+## Nixward identity-binding prototype
+
+The pure helper in `nixward_adapter.py` binds an already validated OMSI operation manifest to three externally obtained Nixward identities: the ChangePlan digest, target-machine digest and SystemTransaction ID. Its schema keeps the OMSI SHA-256 manifest digest tagged separately from Nixward BLAKE3 identities. The helper fails closed on manifest, tenant, resource, correlation or supplied Nixward identity mismatch.
+
+This is only a deterministic identity-binding contract. It does not create or verify Nixward ChangePlan/ChangeAuthorization objects, call `NixOSExecutor::execute_authorized()`, persist nonces, attest the source of Nixward digest arguments, observe a real machine, or verify recovery. Callers must pass those identities from the authoritative Nixward objects being used, not copy values back out of an untrusted binding record. Passing the unit tests is not a Nixward integration or VM qualification result.
+
 ## Security boundary
 
 The prototype only accepts `secret_refs` and `credential_refs` as arrays of opaque URI-shaped references, and rejects whitespace, userinfo and query-bearing reference strings. This is structural hygiene, not discovery of every possible secret and not proof that the referenced vault/resource is trustworthy. Raw secret material still belongs in a separate secret-delivery mechanism.
@@ -38,4 +44,4 @@ A successful validator result means only that a document met these local schema 
 
 ## Intended next gate
 
-Add an independently reviewed cryptographic grant-verification interface, durable nonce/idempotency state, HTTP integration tests, and a disposable-VM NixOS operation/recovery test before any real machine mutations or production claim.
+Add an independently reviewed cryptographic grant-verification interface, durable nonce/idempotency state, HTTP integration tests, wire the binding to Nixward's real authorized-execution result, and run the disposable-VM NixOS operation/recovery test before any real machine mutations or production claim.
