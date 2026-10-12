@@ -9,7 +9,7 @@ schemas:
 validate-fixtures:
 	python omsi_validate.py operation fixtures/operation.json --now 2026-10-12T12:05:00Z
 	python omsi_validate.py grant fixtures/grant.json --manifest fixtures/operation.json --now 2026-10-12T12:05:00Z
-	python omsi_validate.py receipt fixtures/receipt.json --manifest fixtures/operation.json
+	python omsi_validate.py receipt fixtures/receipt.json --manifest fixtures/operation.json --events fixtures/events.json
 	python omsi_validate.py events fixtures/events.json --manifest fixtures/operation.json
 
 interop:
