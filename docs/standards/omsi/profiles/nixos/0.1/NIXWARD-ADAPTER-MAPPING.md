@@ -42,6 +42,10 @@ OMSI and Nixward digest values answer different questions. They MUST NOT be subs
 
 The adapter record should bind the OMSI manifest digest, Nixward plan digest, Nixward target-machine digest, Nixward transaction ID, profile version and correlation ID together. The mapping must be deterministic and testable. Changes to either side invalidate that binding and require a new validation/authorization decision.
 
+A first pure binding prototype is included in [PR #32](https://github.com/Luminous-Dynamics/luminous-platform/pull/32): `tools/omsi-conformance/nixward_adapter.py` and `schemas/0.1/nixward-adapter-binding.schema.json`. It explicitly tags the OMSI manifest digest as `sha256:<hex>` and the three Nixward identities as `blake3:<hex>`, and checks the supplied operation/tenant/resource/correlation against the Nixward identity values a caller provides during validation. Twelve unit tests cover manifest mutation and identity substitution. They have not yet been executed on the exact PR head because its CI runs are queued.
+
+This prototype is only a binding record and checker. It does not instantiate Nixward types, independently authenticate the Nixward identity arguments, call the live executor, record durable replay state or observe a VM. It must not be described as end-to-end integration.
+
 ## Lifecycle mapping proposal
 
 | OMSI conceptual state | Nixward state/operation | Constraint |
