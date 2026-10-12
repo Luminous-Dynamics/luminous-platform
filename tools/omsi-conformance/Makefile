@@ -1,4 +1,4 @@
-.PHONY: test schemas validate-fixtures
+.PHONY: test schemas validate-fixtures interop
 
 test:
 	python -m unittest discover -s tests -v
@@ -11,3 +11,6 @@ validate-fixtures:
 	python omsi_validate.py grant fixtures/grant.json --manifest fixtures/operation.json --now 2026-10-12T12:05:00Z
 	python omsi_validate.py receipt fixtures/receipt.json --manifest fixtures/operation.json
 	python omsi_validate.py events fixtures/events.json --manifest fixtures/operation.json
+
+interop:
+	node interop/verify-digests.mjs
