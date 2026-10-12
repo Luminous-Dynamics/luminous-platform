@@ -127,33 +127,68 @@ def canonical_json_bytes(value: object) -> bytes:
     ).encode("utf-8")
 
 
-def regular_manifest_file(root: Path, relative: str) -> bool:
-    """Reject path traversal, symlinked parents, symlink files and non-regular inputs."""
+def manifest_file_sha256(root: Path, relative: str) -> str | None:
+    """Hash a regular manifest file through no-follow directory descriptors.
+
+    The qualification workflow is Ubuntu-only. If the host lacks the descriptor
+    flags required to prevent symlink traversal, fail closed rather than falling
+    back to a check-then-open pathname race.
+    """
     candidate = Path(relative)
     if candidate.is_absolute() or not candidate.parts or ".." in candidate.parts:
-        return False
-    parent = root
-    for part in candidate.parts[:-1]:
-        parent = parent / part
-        if parent.is_symlink() or not parent.is_dir():
-            return False
-    path = parent / candidate.parts[-1]
+        return None
+    if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
+        return None
+
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    descriptors: list[int] = []
     try:
-        return not path.is_symlink() and stat.S_ISREG(path.lstat().st_mode)
+        current = os.open(root, directory_flags)
+        descriptors.append(current)
+        for part in candidate.parts[:-1]:
+            current = os.open(part, directory_flags, dir_fd=current)
+            descriptors.append(current)
+        file_fd = os.open(
+            candidate.parts[-1],
+            os.O_RDONLY | os.O_NOFOLLOW,
+            dir_fd=current,
+        )
+        descriptors.append(file_fd)
+        before = os.fstat(file_fd)
+        if not stat.S_ISREG(before.st_mode):
+            return None
+
+        digest = hashlib.sha256()
+        bytes_read = 0
+        while True:
+            chunk = os.read(file_fd, 1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+            bytes_read += len(chunk)
+
+        after = os.fstat(file_fd)
+        stable_fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns")
+        if (
+            bytes_read != before.st_size
+            or any(getattr(before, field) != getattr(after, field) for field in stable_fields)
+        ):
+            return None
+        return digest.hexdigest()
     except OSError:
-        return False
+        return None
+    finally:
+        for descriptor in reversed(descriptors):
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
 
 
 def input_hashes(root: Path, paths: tuple[str, ...] = INPUT_PATHS) -> dict[str, str | None]:
     result: dict[str, str | None] = {}
     for relative in sorted(paths):
-        if not regular_manifest_file(root, relative):
-            result[relative] = None
-            continue
-        try:
-            result[relative] = hashlib.sha256((root / relative).read_bytes()).hexdigest()
-        except OSError:
-            result[relative] = None
+        result[relative] = manifest_file_sha256(root, relative)
     return result
 
 
