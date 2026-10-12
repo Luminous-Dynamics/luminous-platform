@@ -30,6 +30,47 @@ class QualificationRunnerContractTests(unittest.TestCase):
         summary.update(overrides)
         return summary
 
+    def test_report_destination_only_allows_safe_artifact_json(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            expected = root / "artifacts" / "report.json"
+            self.assertEqual(
+                qualification.safe_report_destination(root, Path("artifacts/report.json")),
+                (expected, "artifacts/report.json"),
+            )
+            self.assertIsNone(
+                qualification.safe_report_destination(
+                    root, Path("tools/qualify_vendor_endpoint_contracts.py")
+                )
+            )
+            self.assertIsNone(
+                qualification.safe_report_destination(root, Path("artifacts/report.txt"))
+            )
+
+            expected.parent.mkdir()
+            expected.write_text('{"not_a_report":true}\\n', encoding="utf-8")
+            self.assertIsNone(
+                qualification.safe_report_destination(root, Path("artifacts/report.json"))
+            )
+            expected.write_text(
+                json.dumps({"report_schema_version": qualification.REPORT_SCHEMA_VERSION}),
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                qualification.safe_report_destination(root, Path("artifacts/report.json")),
+                (expected, "artifacts/report.json"),
+            )
+
+    def test_report_destination_rejects_symlinked_artifact_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            outside = root / "outside"
+            outside.mkdir()
+            (root / "artifacts").symlink_to(outside, target_is_directory=True)
+            self.assertIsNone(
+                qualification.safe_report_destination(root, Path("artifacts/report.json"))
+            )
+
     def test_manifest_digest_is_stable_across_mapping_order(self) -> None:
         left = {"b": "22", "a": "11"}
         right = {"a": "11", "b": "22"}
