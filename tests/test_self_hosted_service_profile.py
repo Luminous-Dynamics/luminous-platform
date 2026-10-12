@@ -97,6 +97,60 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("immutable OCI digest" in error["message"] for error in report["errors"]))
 
+    def test_digest_pinned_oci_reference_is_valid_declaration(self):
+        profile = copy.deepcopy(BASE)
+        digest = "sha256:" + "a" * 64
+        profile["metadata"]["id"] = "org.example.synthetic-oci-fixture"
+        profile["application"]["name"] = "Synthetic OCI conformance fixture"
+        profile["application"]["upstream_homepage"] = "https://example.invalid/"
+        profile["application"]["source_repository"] = "https://example.invalid/source"
+        profile["runtime"]["kind"] = "oci-container"
+        profile["runtime"]["operating_system"] = "Linux OCI image"
+        profile["runtime"]["source_pin"] = {
+            "mode": "oci-digest",
+            "reference": "registry.example.invalid/example/service@" + digest,
+            "digest": digest,
+        }
+        profile["runtime"]["update_strategy"] = "digest-refresh-reviewed"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "VALID_DECLARATION")
+        self.assertFalse(report["qualification_evaluated"])
+
+    def test_oci_reference_digest_must_match_declared_digest(self):
+        profile = copy.deepcopy(BASE)
+        profile["runtime"]["kind"] = "oci-container"
+        profile["runtime"]["source_pin"] = {
+            "mode": "oci-digest",
+            "reference": "registry.example.invalid/example/service:latest",
+            "digest": "sha256:" + "b" * 64,
+        }
+        profile["runtime"]["update_strategy"] = "digest-refresh-reviewed"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("must embed the same @sha256 digest" in error["message"] for error in report["errors"]))
+
+    def test_vm_appliance_profile_can_be_declared_without_qualification(self):
+        profile = copy.deepcopy(BASE)
+        digest = "sha256:" + "c" * 64
+        profile["metadata"]["id"] = "org.example.synthetic-vm-fixture"
+        profile["application"]["name"] = "Synthetic VM appliance fixture"
+        profile["application"]["upstream_homepage"] = "https://example.invalid/"
+        profile["application"]["source_repository"] = "https://example.invalid/source"
+        profile["runtime"]["kind"] = "virtual-machine"
+        profile["runtime"]["operating_system"] = "Debian guest"
+        profile["runtime"]["source_pin"] = {
+            "mode": "guest-image-digest",
+            "reference": "debian-guest-image",
+            "digest": digest,
+        }
+        profile["runtime"]["update_strategy"] = "guest-os-managed-reviewed"
+        profile["lifecycle"]["installation"] = "appliance-provisioning"
+        profile["lifecycle"]["upgrade"] = "guest-os-managed"
+        profile["lifecycle"]["rollback"] = "snapshot-restore"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "VALID_DECLARATION")
+        self.assertFalse(report["qualification_evaluated"])
+
     def test_validator_never_qualifies_runtime_even_with_references(self):
         profile = copy.deepcopy(BASE)
         profile["metadata"]["status"] = "qualified"
