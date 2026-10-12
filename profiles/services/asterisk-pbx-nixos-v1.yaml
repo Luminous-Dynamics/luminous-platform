@@ -47,12 +47,17 @@ network:
       port: 5060
       exposure: private-network
       enabled: true
-      purpose: Illustrative private-LAN SIP signaling endpoint; the rendered PJSIP configuration and effective bind address must be verified before qualification.
+      bind_address: 192.168.50.10
+      allowed_source_cidrs:
+        - 192.168.50.0/24
+      purpose: Illustrative RFC1918 lab address and subnet; replace with the exact approved host address and client CIDRs, then verify the rendered PJSIP configuration and effective bind address before qualification.
     - id: sip-tls
       protocol: tcp
       port: 5061
       exposure: disabled
       enabled: false
+      bind_address: 127.0.0.1
+      allowed_source_cidrs: []
       purpose: Disabled until TLS certificates, endpoint authentication, and client compatibility are configured and tested.
     - id: rtp-media
       protocol: udp
@@ -61,12 +66,17 @@ network:
         - 20000
       exposure: private-network
       enabled: true
-      purpose: Illustrative bounded RTP media range only; the range must be explicitly matched to rtp.conf and firewall rules, then tested for one-way/no-audio failures.
+      bind_address: 192.168.50.10
+      allowed_source_cidrs:
+        - 192.168.50.0/24
+      purpose: Illustrative RFC1918 lab address and subnet; replace with the exact approved host address/client CIDRs. The range must be explicitly matched to rtp.conf and firewall rules, then tested for one-way/no-audio failures.
     - id: http-management
       protocol: tcp
       port: 8088
       exposure: disabled
       enabled: false
+      bind_address: 127.0.0.1
+      allowed_source_cidrs: []
       purpose: HTTP/ARI management is not exposed by this profile; enable only with an explicit access-control and authentication review.
 data:
   classification: confidential
