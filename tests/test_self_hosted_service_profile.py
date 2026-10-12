@@ -24,8 +24,10 @@ from validate_self_hosted_service_profile import (  # noqa: E402
 
 SCHEMA_PATH = ROOT / "schemas" / "self-hosted-service-profile-v1.schema.json"
 FIXTURE = ROOT / "profiles" / "services" / "asterisk-pbx-nixos-v1.yaml"
+NEXTCLOUD_FIXTURE = ROOT / "profiles" / "services" / "nextcloud-nixos-v1.yaml"
 SCHEMA = load_schema(SCHEMA_PATH)
 BASE = parse_profile_yaml(FIXTURE.read_text(encoding="utf-8"))
+NEXTCLOUD = parse_profile_yaml(NEXTCLOUD_FIXTURE.read_text(encoding="utf-8"))
 
 
 class SelfHostedServiceProfileTests(unittest.TestCase):
@@ -41,6 +43,19 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(BASE["qualification"]["maturity"], "M0_PROPOSED")
         self.assertEqual(BASE["qualification"]["qualified_capabilities"], [])
         self.assertTrue(report["profile_digest_sha256"].startswith("sha256:"))
+
+    def test_nextcloud_profile_is_valid_and_declares_stateful_dependencies(self):
+        report = validate_profile_data(copy.deepcopy(NEXTCLOUD), SCHEMA, "nextcloud-fixture")
+        self.assertEqual(report["result"], "VALID_DECLARATION")
+        self.assertFalse(report["qualification_evaluated"])
+        self.assertTrue(NEXTCLOUD["data"]["stateful"])
+        self.assertNotIn("sensitive_capture", NEXTCLOUD["data"])
+        self.assertEqual(
+            {item["role"] for item in NEXTCLOUD["dependencies"]["items"]},
+            {"data-store", "reverse-proxy", "backup-service"},
+        )
+        self.assertEqual(NEXTCLOUD["qualification"]["maturity"], "M0_PROPOSED")
+        self.assertEqual(NEXTCLOUD["qualification"]["qualified_capabilities"], [])
 
     def test_unknown_top_level_field_is_rejected(self):
         profile = copy.deepcopy(BASE)
