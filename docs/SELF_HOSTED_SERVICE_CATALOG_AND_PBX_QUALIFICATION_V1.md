@@ -69,6 +69,12 @@ python -m unittest discover -s tests -p 'test_*.py' -v
 python tools/validate_self_hosted_service_profile.py profiles/services/asterisk-pbx-nixos-v1.yaml
 ```
 
+## Second workload: Nextcloud (stateful collaboration)
+
+`profiles/services/nextcloud-nixos-v1.yaml` exercises a different failure surface: user files are not enough to restore a service when configuration and database state are inconsistent. The profile declares a database, a data filesystem, a reverse-proxy/TLS path, and an optional backup agent as separate dependencies, with the database/filesystem required for startup but the platform control plane not required. Its public exposure remains prohibited and its status remains M0.
+
+This is grounded in the NixOS Nextcloud module (which exposes a native `services.nextcloud` service) and Nextcloud's administration guidance: a complete backup must account for configuration, relevant custom apps/themes, data, and the database, while restoration needs the matching configuration/data/database set. A filesystem-only snapshot must not be treated as a valid restoration test. Exact paths, database engine, version, trusted domains, TLS termination, and migration behavior must be resolved against the pinned module before activation.
+
 ## Asterisk qualification sequence
 
 | Gate | Evidence required | Does not prove |
@@ -107,5 +113,7 @@ Mycelix can later exchange minimized, consent-scoped provenance/attestation for 
 - FreePBX 17 installation prerequisites: https://www.freepbx.org/get-started/
 - Podman Quadlet/systemd integration: https://docs.podman.io/en/stable/markdown/podman-systemd.unit.5.html
 - SIPp project and scenario/performance test documentation: https://github.com/SIPp/sipp and https://sipp.readthedocs.io/en/latest/
+- NixOS Nextcloud module and manual: https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/services/web-apps/nextcloud.nix and https://nixos.org/manual/nixos/stable/
+- Nextcloud backup and restore guidance: https://docs.nextcloud.com/server/stable/admin_manual/maintenance/backup.html and https://docs.nextcloud.com/server/stable/admin_manual/maintenance/restore.html
 
 **Evidence status at authoring:** current upstream documents and Nixpkgs source were inspected. The new profile/validator files have been committed to a proposal branch, but test execution, Nix evaluation/build, SIP call-flow behavior, physical deployment, restore, and independent review have not been run in this session.
