@@ -446,7 +446,7 @@ fn validate_observation(observation: &SourceObservation) -> ValidationErrors {
         .as_str()
         .is_some_and(valid_sha256)
     {
-        errors.push("source_snapshot_sha256 must be null for a fixture or sha256:<64 lowercase hex digits>");
+        errors.push("source_snapshot_sha256 must be null only for a fixture, or sha256:<64 lowercase hex digits>");
     }
 
     errors
