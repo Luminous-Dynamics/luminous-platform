@@ -18,6 +18,7 @@ OMSI proposes to standardize that boundary and reuse existing domain standards i
 - [Scope and gap register](SCOPE-AND-GAP-REGISTER.md)
 - [Research notes](RESEARCH-NOTES.md)
 - [IT Service Core prior-art mapping](profiles/it-service-core/0.1/PRIOR-ART-MAPPING.md)
+- [Nixward adapter mapping](profiles/nixos/0.1/NIXWARD-ADAPTER-MAPPING.md)
 - [Local conformance report and limits](CONFORMANCE-REPORT.md)
 
 ## Architecture in one sentence
