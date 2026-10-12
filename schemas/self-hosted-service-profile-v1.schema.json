@@ -262,7 +262,9 @@
         "public_exposure_assessment_ref": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 1000
+          "maxLength": 1000,
+          "pattern": "^[A-Za-z][A-Za-z0-9+.-]{0,31}:[^\\s:][^\\s]*$",
+          "description": "Scheme-qualified reference to a public-exposure assessment (for example, https://... or review:identifier). Syntax is checked here; resolution, scope, and approval must be verified independently."
         },
         "firewall_policy": {
           "enum": [
@@ -339,7 +341,8 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 1000,
-                "description": "Reviewable reference to the public edge/NAT mapping required when a public endpoint binds to an RFC1918/IPv6 ULA address."
+                "description": "Scheme-qualified reference to reviewable public edge/NAT mapping evidence (for example, https://... or edge-review:identifier). Syntax is checked here; the mapping and effective forwarding/firewall behavior must be verified independently.",
+                "pattern": "^[A-Za-z][A-Za-z0-9+.-]{0,31}:[^\\s:][^\\s]*$"
               },
               "allowed_source_cidrs": {
                 "type": "array",
