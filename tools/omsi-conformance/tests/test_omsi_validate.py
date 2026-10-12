@@ -44,7 +44,7 @@ class TestOMSI(unittest.TestCase):
         with self.assertRaisesRegex(v.ConformanceError, "floating-point"): v.validate_grant(op(), x, NOW)
     def test_empty_grant_issuer_rejected(self):
         x=grant(); x["issued_by"]=""
-        with self.assertRaisesRegex(v.ConformanceError, "minLength"): v.validate_grant(op(), x, NOW)
+        with self.assertRaisesRegex(v.ConformanceError, "schema error at /issued_by"): v.validate_grant(op(), x, NOW)
     def test_receipt_binds_exact_operation(self): v.validate_receipt(receipt(), op())
     def test_receipt_tenant_spoofing_rejected(self):
         x=receipt(); x["target"]["tenant_id"]="tenant-b"
