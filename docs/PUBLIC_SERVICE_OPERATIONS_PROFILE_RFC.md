@@ -56,6 +56,10 @@ If the Work Case or Operations Event contract has not passed its current exact-h
 
 This separation is intentional: a civic deployment should still support ordinary manual operation if Symthaea, Mycelix, an optional map or a remote-support service is unavailable.
 
+## 3A. Language and runtime rule
+
+The civic profile follows [`LANGUAGE_AND_RUNTIME_POLICY.md`](LANGUAGE_AND_RUNTIME_POLICY.md): no handwritten JavaScript/TypeScript in first-party production logic, no JavaScript requirement for core workflows, and a preference for Rust/Leptos server-rendered HTML with ordinary HTTP forms. WebAssembly and generated loader glue are optional, documented exceptions for a bounded enhancement—not a basis for browser-side authority. Acceptance must include a no-JavaScript workflow check.
+
 ## 4. Deployment and data-flow model
 
 The first deployment should be read-only from source systems and should not require access to an internal municipal network.
