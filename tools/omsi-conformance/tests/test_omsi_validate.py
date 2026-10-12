@@ -102,7 +102,7 @@ class TestOMSI(unittest.TestCase):
     def test_digest_basic_golden_vector(self):
         self.assertEqual(v.digest({"a":1,"b":2}, "org.omsi.test/0.1"), "sha256:ff23c8a29d8a7bfc4f2a70040ff3c208b5a28318980c3f45072858e015515533")
     def test_digest_unicode_and_escaping_golden_vector(self):
-        value={"\\ue000":1,"\\U00010000":2,"escaped":"line\\nquote\\\"slash/é\\u2028"}
+        value={"\ue000":1,"\U00010000":2,"escaped":"line\nquote\"slash/é\u2028"}
         self.assertEqual(v.digest(value, "org.omsi.unicode/0.1"), "sha256:4bfca28a0e227704c6be8799f6a087df5cc02fffd92a376de59de2c4fcd84f13")
     def test_digest_separates_semantic_domains(self):
         obj={"a":1}
