@@ -147,6 +147,10 @@ Minimum safeguards:
 
 For the first phase, the safest person-level record is no person-level record at all.
 
+### Source catalogue contract
+
+The source inventory is now drafted under [`contracts/public-source-catalogue-v1/`](../tree/docs/public-service-operations-profile-rfc-001/contracts/public-source-catalogue-v1/). Its JSON Schema and examples are intentionally metadata-only: each source is marked `catalogue_only` with ingestion disabled. The catalogue records the Municipal Finance API's conflicting HTTP/HTTPS endpoint descriptions, the eTender publication-coverage limitation, and the absence of an established Johannesburg Water machine-readable case feed. Future adapters must keep zero, raw null, absent rows, invalid values, and stale data distinct; preserve source revision and retrieval provenance; enforce HTTPS; and fail visibly on incomplete pagination. See the [conformance requirements](../blob/docs/public-service-operations-profile-rfc-001/contracts/public-source-catalogue-v1/CONFORMANCE.md). This is a contract proposal, not a tested connector.
+
 ## 8. Symthaea and Symtropy qualification plan
 
 Do not start by measuring whether an LLM's summary sounds plausible. Use a separate deterministic baseline and an oracle based on independently specified expected outcomes.
