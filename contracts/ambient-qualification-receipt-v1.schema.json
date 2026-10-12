@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:ambient-qualification-receipt:v1",
+  "title": "Luminous Ambient Qualification Evidence Receipt v1",
+  "description": "Machine-readable record of evidence observed for one exact source revision. Contract validation is not renderer qualification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "receiptKind",
+    "createdAtUtc",
+    "subject",
+    "adapter",
+    "inputs",
+    "workflow",
+    "toolchain",
+    "gates",
+    "derivedEvidenceLevel",
+    "declaredRendererQualificationState",
+    "nonClaims"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "receiptKind": {
+      "const": "ambient-qualification-evidence"
+    },
+    "createdAtUtc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit"
+      ],
+      "properties": {
+        "repository": {
+          "const": "Luminous-Dynamics/luminous-platform"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "profileId",
+        "rendererRepository",
+        "rendererCommit",
+        "sourceFiles"
+      ],
+      "properties": {
+        "id": {
+          "enum": [
+            "browser-wasm-demo",
+            "wasi-cli",
+            "wit-component-guest",
+            "wasmtime-conformance-host",
+            "native-drm-boot"
+          ]
+        },
+        "profileId": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 64
+        },
+        "rendererRepository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rendererCommit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "sourceFiles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "blobSha"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "blobSha": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenePackSchema",
+        "rendererProfileSchema",
+        "manifestFixture",
+        "rendererProfile"
+      ],
+      "properties": {
+        "scenePackSchema": {
+          "$ref": "#/$defs/inputDigest"
+        },
+        "rendererProfileSchema": {
+          "$ref": "#/$defs/inputDigest"
+        },
+        "manifestFixture": {
+          "$ref": "#/$defs/inputDigest"
+        },
+        "rendererProfile": {
+          "$ref": "#/$defs/inputDigest"
+        }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runId",
+        "runAttempt",
+        "url"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "runAttempt": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runnerOs",
+        "pythonVersion",
+        "jsonschemaVersion"
+      ],
+      "properties": {
+        "runnerOs": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pythonVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jsonschemaVersion": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exactHead",
+        "schemaValidation",
+        "contractTests",
+        "rendererBuild",
+        "deterministicReplay",
+        "resourceChecks",
+        "lifecycleChecks",
+        "visualCapture"
+      ],
+      "properties": {
+        "exactHead": {
+          "$ref": "#/$defs/gate"
+        },
+        "schemaValidation": {
+          "$ref": "#/$defs/gate"
+        },
+        "contractTests": {
+          "$ref": "#/$defs/gate"
+        },
+        "rendererBuild": {
+          "$ref": "#/$defs/gate"
+        },
+        "deterministicReplay": {
+          "$ref": "#/$defs/gate"
+        },
+        "resourceChecks": {
+          "$ref": "#/$defs/gate"
+        },
+        "lifecycleChecks": {
+          "$ref": "#/$defs/gate"
+        },
+        "visualCapture": {
+          "$ref": "#/$defs/gate"
+        }
+      }
+    },
+    "derivedEvidenceLevel": {
+      "enum": [
+        "insufficient",
+        "contract-validated",
+        "compile-qualified",
+        "runtime-qualified"
+      ]
+    },
+    "declaredRendererQualificationState": {
+      "enum": [
+        "source-inspection-only",
+        "compile-qualified",
+        "runtime-qualified"
+      ]
+    },
+    "nonClaims": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "inputDigest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "detail",
+        "evidenceUrl"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "not-run",
+            "queued",
+            "cancelled",
+            "stale-head"
+          ]
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "evidenceUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        }
+      }
+    }
+  }
+}

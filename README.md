@@ -1,5 +1,7 @@
 # Luminous Platform
 
+[Contributing](CONTRIBUTING.md) · [Ambient Scene Pack v1](docs/architecture/AMBIENT_SCENE_PACK_V1.md)
+
 The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, fail-open, consciousness-aware runtime for NixOS hosts.
 
 ## Architecture

@@ -1,0 +1,57 @@
+# Ambient Scene Pack validation and renderer compatibility
+
+## Scene Pack schema validator
+
+The CLI validates the manifest schema as JSON Schema Draft 2020-12, applies format checks, then checks cross-field invariants and packaged asset files. It rejects duplicate object keys, invalid UTF-8, non-standard numeric constants, unresolved local schema references, unsupported legacy recursive-reference keywords, and external or relative schema-resource loading.
+
+Run from the repository root:
+
+    python -m pip install -r tools/ambient_validation/requirements.txt
+    python tools/ambient_validation/validate_scene_pack.py contracts/examples/first-germination.scene.json
+    python tools/ambient_validation/test_validate_scene_pack.py
+
+For asset-bearing packs, pass --asset-root with the unpacked package root. Renderer capabilities must be explicitly declared with repeated --supports-capability options; unsupported requirements fail closed.
+
+The validator checks unique asset/input IDs, normalized safe-region containment, static fallback rules, FPS/branch budgets, explicit capabilities, package path containment, symlink escape, and SHA-256 asset integrity. It is not a filesystem sandbox against concurrent mutation. It verifies each asset's hash and per-asset license identifier, but Scene Pack v1 still lacks a separate attribution-manifest schema; full attribution-manifest completeness is therefore not claimed for packs with assets. Package extraction, signatures, and distribution trust are separate concerns.
+
+Schema references are resolved only within the supplied schema document: local JSON Pointers, anchor references, and dynamic-anchor references are supported; unresolved references and external/relative resource loading are rejected. Legacy recursive-reference keywords fail closed under the Draft 2020-12 profile.
+
+## Renderer compatibility audit
+
+This audit keeps schema validity separate from renderer compatibility and target qualification. Adapter scope is part of the report; the checked-in profile covers only the browser-WASM demo, not every host in Sovereign Boot. Profile validation also binds each adapter ID to required entrypoint paths and rejects duplicate paths even when blob IDs differ, so a browser-only source list cannot be relabeled as native boot. See [the adapter qualification matrix](../../docs/architecture/AMBIENT_ADAPTER_QUALIFICATION_MATRIX.md).
+
+Run:
+
+    python tools/ambient_validation/check_renderer_compatibility.py contracts/examples/first-germination.scene.json
+    python tools/ambient_validation/check_renderer_compatibility.py contracts/examples/first-germination.scene.json --json
+    python -m unittest discover -s tools/ambient_validation -p 'test_*.py' -v
+
+The compatibility CLI returns exit code 0 when the supplied profile declares support for every checked setting, 1 when the valid Scene Pack is incompatible, and 2 when input/schema/profile validation fails. Therefore the checked-in Sovereign Visual Core profile is expected to return exit code 1: it records the current blockers, not a supported renderer.
+
+The checked-in profile is explicitly scoped to `browser-wasm-demo` and pins source snapshot `ab6eac9641e0673cf2de36018a35986c122b36a8`; its adapter paths and Git blob IDs are recorded in the profile. It remains `source-inspection-only`. This pinned source contains a duplicate-key-aware Scene Pack v1 parser and maps supported settings into the renderer. The app pauses its render loop when `document.hidden`; that source supports the browser's hidden-page pause promise, not display-sleep or OS lifecycle guarantees. Do not use this profile to qualify WASI, WIT guest, Wasmtime host, or native DRM boot. See [the adapter qualification matrix](../../docs/architecture/AMBIENT_ADAPTER_QUALIFICATION_MATRIX.md).
+
+The parser explicitly validates the fixture's `engineVersion` against `1.0.0`, and the capability profile now records that implementation plus the implemented strict manifest-to-settings mapping. That does not make the whole Scene Pack compatible: the current browser/WASI rendering adapters support only centered-network motion and gradient-only `staticFallback`, reject non-empty `safeRegions`, and do not implement the fixture's edge-biased/minimal compositions. Asset bytes still require a safe host resolver and actual SHA-256 verification; signed-pack/attribution policy is separate. Browser reduced-motion and document-visibility handling exist, but OS lock/suspend/wake behavior and whole-process memory accounting remain unqualified. The profile therefore continues to fail closed for those unsupported capabilities.
+
+The audit checks `accessibility.reducedMotionPresentation` as a selected variant, not just whether static-gradient pixels can be generated. A `staticFallback` primitive does not automatically implement a manifest preference for `idle` or `lockedBackground`; the chosen variant must be declared supported, or the compatibility report emits `accessibility.reduced_motion_variant.unsupported`. It also records supported motion modes and composition values separately from variant names: declaring `desktop` as a variant does not imply support for `edge-biased-network`, just as declaring a `motion` field configurable does not mean every mode is implemented.
+
+The resource-budget flags `pauseWhenHidden` and `pauseWhenDisplayAsleep` are audited independently from `lifecycle.onSuspend`. Visibility throttling does not prove display-sleep handling, and an OS suspend policy does not by itself prove either behavior. Host profiles must explicitly declare `onHidden:pause` and `onDisplayAsleep:pause` when those promises are actually implemented.
+
+A compatibility pass from a future profile still requires exact-head compile/runtime tests, effective-settings checks, golden RGBA output, resource enforcement, and host lifecycle evidence. This checker does not render images or qualify runtime behavior.
+
+
+The compatibility checker distinguishes renderer-owned memory estimates from an operating-system-enforced whole-process memory ceiling, and separately checks scene-requested versus resource-budget branch ceilings. These contracts are not interchangeable.
+
+## Qualification evidence receipts
+
+The contract workflow writes and uploads `ambient-qualification-receipt.json` for each run that reaches validation. The receipt binds the checked-out exact commit, renderer adapter ID and pinned source blobs, SHA-256 digests of the Scene Pack schema, profile schema, manifest fixture and renderer profile, workflow run/attempt, Python/jsonschema versions, and individual gate outcomes. The job deliberately continues through the contract test step after a test failure so that a failure receipt can still be uploaded; a final enforcement step then keeps the workflow failed when validation, tests, receipt generation or upload fails.
+
+Run locally after a checkout and validation/test run:
+
+    python tools/ambient_validation/qualification_receipt.py create \
+      --expected-commit "$(git rev-parse HEAD)" \
+      --schema-outcome success \
+      --tests-outcome success \
+      --run-id 1 --run-attempt 1 \
+      --output artifacts/ambient-qualification-receipt.json
+
+The CLI refuses a mismatched HEAD and validates each generated receipt against `contracts/ambient-qualification-receipt-v1.schema.json`. Its derived evidence level is fail-closed: passing contract checks yields `contract-validated`, which does **not** upgrade the profile's declared `source-inspection-only` renderer qualification. `compile-qualified` requires a renderer build gate; `runtime-qualified` additionally requires deterministic replay, resource checks, lifecycle checks and visual capture to pass. Gates not exercised by this workflow are recorded as `not-run`. The receipt's hashes provide input identity, not a cryptographic signature or trusted attestation.
