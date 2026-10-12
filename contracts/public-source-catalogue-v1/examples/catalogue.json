@@ -1,7 +1,6 @@
 {
   "schema_version": "public-source-catalogue-v1",
   "catalogue_revision": "public-service-operations-profile-rfc-001",
-  "reviewed_at": "2026-10-12T00:00:00Z",
   "sources": [
     {
       "source_id": "za-treasury-municipal-finance",
@@ -148,5 +147,6 @@
         "reason": "Public page catalogue only; no scraping, polling or work-order integration is implemented."
       }
     }
-  ]
+  ],
+  "reviewed_on": "2026-10-12"
 }
