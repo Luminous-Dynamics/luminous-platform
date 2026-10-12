@@ -159,6 +159,31 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("requires a loopback bind address" in error["message"] for error in report["errors"]))
 
+    def test_public_endpoint_rejects_loopback_and_link_local_binds(self):
+        for bind_address in ("127.0.0.1", "fe80::1"):
+            with self.subTest(bind_address=bind_address):
+                profile = copy.deepcopy(BASE)
+                profile["network"]["public_exposure_approved"] = True
+                profile["network"]["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+                endpoint = profile["network"]["endpoints"][0]
+                endpoint["exposure"] = "public-network"
+                endpoint["bind_address"] = bind_address
+                endpoint["allowed_source_cidrs"] = ["0.0.0.0/0"]
+                report = self.validate(profile)
+                self.assertEqual(report["result"], "INVALID")
+                self.assertTrue(any("cannot bind to loopback or link-local" in error["message"] for error in report["errors"]))
+
+    def test_public_exposure_can_use_private_bind_behind_an_explicit_edge(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["public_exposure_approved"] = True
+        profile["network"]["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+        endpoint = profile["network"]["endpoints"][0]
+        endpoint["exposure"] = "public-network"
+        endpoint["bind_address"] = "192.168.50.10"
+        endpoint["allowed_source_cidrs"] = ["0.0.0.0/0"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "VALID_DECLARATION")
+
     def test_public_approval_must_target_a_declared_public_endpoint(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["public_exposure_approved"] = True
