@@ -295,7 +295,7 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         for bad_reference in (
             "not-a-reference",
             "review:synthetic-public-edge ",
-            "review:synthetic-public-edge\\n",
+            "review:synthetic-public-edge\n",
             " review:synthetic-public-edge",
         ):
             with self.subTest(reference=bad_reference):
@@ -319,7 +319,7 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
     def test_public_edge_mapping_reference_requires_qualified_locator(self):
         for bad_reference in (
             "not-a-reference",
-            "edge-review:pbx-public-sip\\n",
+            "edge-review:pbx-public-sip\n",
             "edge-review:pbx public sip",
         ):
             with self.subTest(reference=bad_reference):
