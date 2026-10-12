@@ -56,7 +56,32 @@ jobs:
         run: python -m pip install --disable-pip-version-check --requirement requirements-profile-validator.txt
 
       - name: Run validator regression corpus
-        run: python -m unittest discover -s tests -p 'test_*.py' -v
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | tee python-regression-tests.log
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          output = Path("python-regression-tests.log").read_text(encoding="utf-8")
+          service_cases = [
+              line
+              for line in output.splitlines()
+              if re.match(
+                  r"^test_[^( ]+ \\((?:tests\\.)?test_self_hosted_service_profile\\.",
+                  line,
+              )
+          ]
+          minimum = 65
+          print(
+              "self-hosted service-profile test executions: "
+              f"{len(service_cases)} (required minimum: {minimum})"
+          )
+          if len(service_cases) < minimum:
+              raise SystemExit(
+                  "service-profile test discovery fell below its required floor"
+              )
+          PY
 
       - name: Validate cooperative offer fixtures
         run: |
