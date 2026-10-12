@@ -25,6 +25,12 @@ def nixward_transaction(**overrides):
         "target_machine_digest": "2" * 64,
         "plan_digest": "1" * 64,
         "phase": "planned",
+        "authorization": None,
+        "validation": None,
+        "snapshot": None,
+        "application": None,
+        "verification": None,
+        "outcome": None,
     }
     record.update(overrides)
     return record
