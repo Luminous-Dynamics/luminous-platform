@@ -28,9 +28,9 @@ The seed accepts a deliberately restricted JSON value set for digest-bearing con
 
 ## Nixward identity-binding prototype
 
-The pure helper in `nixward_adapter.py` binds an already validated OMSI operation manifest to three externally obtained Nixward identities: the ChangePlan digest, target-machine digest and SystemTransaction ID. Its schema keeps the OMSI SHA-256 manifest digest tagged separately from Nixward BLAKE3 identities. The helper fails closed on manifest, tenant, resource, correlation or supplied Nixward identity mismatch.
+The pure helper in `nixward_adapter.py` binds an already validated OMSI operation manifest to the plan digest, target-machine digest and transaction ID carried by one versioned Nixward SystemTransaction envelope. It refuses unsupported envelope schema/version values and malformed digest shapes. Its schema keeps the OMSI SHA-256 manifest digest tagged separately from Nixward BLAKE3 identities. The helper fails closed on manifest, tenant, resource, correlation or supplied transaction-identity mismatch.
 
-This is only a deterministic identity-binding contract. It does not create or verify Nixward ChangePlan/ChangeAuthorization objects, call `NixOSExecutor::execute_authorized()`, persist nonces, attest the source of Nixward digest arguments, observe a real machine, or verify recovery. Callers must pass those identities from the authoritative Nixward objects being used, not copy values back out of an untrusted binding record. Passing the unit tests is not a Nixward integration or VM qualification result.
+This is only a deterministic identity-binding contract. It does not create or verify Nixward ChangePlan/ChangeAuthorization objects, call `NixOSExecutor::execute_authorized()`, persist nonces, attest the source of Nixward digest arguments, observe a real machine, or verify recovery. Callers must pass the authoritative Nixward transaction envelope being used, not synthesize a lookalike object or copy values back out of an untrusted binding record. This Python checker still cannot prove the envelope was produced by Nixward's Rust implementation. Passing the unit tests is not a Nixward integration or VM qualification result.
 
 ## Security boundary
 
