@@ -9,7 +9,7 @@
 1. **Production services and domain logic are Rust-first.** APIs, adapters, policy enforcement, state machines, schema validation, workflow engines, background jobs, source ingestion, evidence verification, and privileged execution boundaries must be implemented in Rust unless an explicit, reviewed exception names the capability that Rust cannot reasonably provide.
 2. **No handwritten JavaScript or TypeScript for first-party production application logic.** No Node.js backend, npm-based business logic, TypeScript SPA, JavaScript policy engine, browser-side authority checks, or JS-only connector.
 3. **The civic profile's core workflows must work with JavaScript disabled.** Prefer Leptos server-side rendering that delivers meaningful HTML, conventional links, GET search/filter forms and POST form submissions. Do not require hydration or a JavaScript SPA for source provenance, case review, export, correction, or audit access.
-4. **WebAssembly is optional, not the default.** Use Rust/WASM only for a bounded client-side capability that materially benefits from local computation or responsiveness. It must not own authority, durable state, or a security decision that is not independently rechecked on the server.
+4. **No client-side WASM/JavaScript loader in the civic profile's first release.** The public-data demonstrator and initial civic workflow must ship without a client-side WebAssembly application or generated JavaScript loader. Any later proposal for a Rust/WASM enhancement requires a separate review and must leave the complete core workflow usable with JavaScript disabled. WASM must never own authority, durable state, or a security decision that is not independently rechecked on the server.
 5. **Generated browser glue is distinct from authored application logic.** If a chosen Leptos/WASM build emits JavaScript glue, treat it as a build artifact: pin toolchains, produce reproducible artifacts where possible, inspect the emitted bundle, maintain an SBOM, and document why WASM is necessary. Do not add handwritten glue or JavaScript libraries by convenience.
 6. **CSS, HTML templates, SVG, and static assets are allowed.** They are presentation formats, not a second domain-logic language. Avoid client-side scripting embedded in templates.
 7. **No JS-driven deployment or authority.** A browser runtime must never determine tenant identity, authorise a mutation, validate a privileged plan as its final gate, sign a trusted receipt without the relevant key boundary, or bypass server-side validation.
@@ -33,10 +33,10 @@ If a later visualisation requires WebAssembly, make it an isolated Rust-built en
 
 Browsers natively expose DOM and many web APIs through JavaScript-facing interfaces. Rust/WASM toolchains such as wasm-bindgen can generate a small JavaScript loader/binding layer even when all authored application code is Rust. That generated glue should not be confused with a handwritten JavaScript application, but it is still an artifact that can affect delivered runtime behavior.
 
-The target for this platform is therefore:
-- **zero handwritten JS/TS in production application logic;**
-- **zero JS requirement for civic core workflows;**
-- **only reviewed, generated glue for an explicitly justified WASM enhancement;**
+The target is therefore:
+- **zero handwritten JS/TS in first-party production application logic;**
+- **zero JavaScript/WebAssembly runtime requirement for the initial civic demonstrator and core workflows;**
+- **no generated JS glue in the civic first release; any later exception requires separate approval;**
 - **no opaque npm/Node domain or privileged runtime.**
 
 Source references:
