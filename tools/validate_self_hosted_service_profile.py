@@ -287,6 +287,11 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                                 "message": "private-network exposure accepts only explicit private source CIDRs, not wildcard ranges",
                             })
                 elif endpoint["exposure"] == "public-network":
+                    if bind_address is not None and (bind_address.is_loopback or bind_address.is_link_local):
+                        errors.append({
+                            "path": path + "/bind_address",
+                            "message": "public-network endpoints cannot bind to loopback or link-local addresses",
+                        })
                     if not source_networks:
                         errors.append({
                             "path": path + "/allowed_source_cidrs",
