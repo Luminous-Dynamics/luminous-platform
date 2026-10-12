@@ -99,6 +99,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                     "message": "control-plane, coordination, and telemetry dependencies cannot be required for service startup",
                 })
 
+        active_socket_claims: list[tuple[str, str, int, int, int]] = []
         for index, endpoint in enumerate(endpoints):
             path = f"/network/endpoints/{index}"
             if "port_range" in endpoint and endpoint["port_range"][0] > endpoint["port_range"][1]:
@@ -107,6 +108,30 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                 errors.append({"path": path, "message": "an enabled endpoint cannot have disabled exposure"})
             if not endpoint["enabled"] and endpoint["exposure"] != "disabled":
                 errors.append({"path": path, "message": "a disabled endpoint must declare exposure=disabled"})
+
+            if endpoint["enabled"] and ("port" in endpoint or "port_range" in endpoint):
+                start_port, end_port = (
+                    (endpoint["port_range"][0], endpoint["port_range"][1])
+                    if "port_range" in endpoint
+                    else (endpoint["port"], endpoint["port"])
+                )
+                for prior_id, prior_bind, prior_version, prior_start, prior_end in active_socket_claims:
+                    if (
+                        prior_bind == endpoint["bind_address"]
+                        and prior_version == endpoint["protocol"]
+                        and start_port <= prior_end
+                        and prior_start <= end_port
+                    ):
+                        errors.append({
+                            "path": path,
+                            "message": (
+                                f"enabled endpoint overlaps ports/protocol with endpoint {prior_id!r} "
+                                "on the same bind address"
+                            ),
+                        })
+                active_socket_claims.append((
+                    endpoint["id"], endpoint["bind_address"], endpoint["protocol"], start_port, end_port
+                ))
 
             try:
                 bind_address = ipaddress.ip_address(endpoint["bind_address"])
