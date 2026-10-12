@@ -173,10 +173,24 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
                 self.assertEqual(report["result"], "INVALID")
                 self.assertTrue(any("cannot bind to loopback or link-local" in error["message"] for error in report["errors"]))
 
+    def test_public_approval_cannot_silently_expand_to_new_endpoint(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["public_exposure_approved"] = True
+        profile["network"]["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+        profile["network"]["public_exposure_approved_endpoint_ids"] = ["sip-udp"]
+        profile["network"]["endpoints"][0]["exposure"] = "public-network"
+        profile["network"]["endpoints"][0]["allowed_source_cidrs"] = ["0.0.0.0/0"]
+        profile["network"]["endpoints"][2]["exposure"] = "public-network"
+        profile["network"]["endpoints"][2]["allowed_source_cidrs"] = ["0.0.0.0/0"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("scope must exactly match" in error["message"] for error in report["errors"]))
+
     def test_public_exposure_can_use_private_bind_behind_an_explicit_edge(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["public_exposure_approved"] = True
         profile["network"]["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+        profile["network"]["public_exposure_approved_endpoint_ids"] = ["sip-udp"]
         endpoint = profile["network"]["endpoints"][0]
         endpoint["exposure"] = "public-network"
         endpoint["bind_address"] = "192.168.50.10"
