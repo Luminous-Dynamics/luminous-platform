@@ -220,6 +220,29 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 {"oversized.json": None},
             )
 
+    def test_manifest_hashing_stops_if_file_grows_during_read(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = root / "growing.json"
+            fixture.write_bytes(b"x")
+            real_read = os.read
+            appended = False
+
+            def read_then_grow(descriptor: int, length: int) -> bytes:
+                nonlocal appended
+                chunk = real_read(descriptor, length)
+                if not appended:
+                    appended = True
+                    with fixture.open("ab") as output:
+                        output.write(b"x" * (qualification.MAX_MANIFEST_FILE_BYTES + 1))
+                return chunk
+
+            with patch.object(qualification.os, "read", side_effect=read_then_grow):
+                self.assertEqual(
+                    qualification.input_hashes(root, ("growing.json",)),
+                    {"growing.json": None},
+                )
+
     def test_manifest_hashing_rejects_non_regular_fifo_without_blocking(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
