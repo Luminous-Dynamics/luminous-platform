@@ -182,6 +182,47 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("explicit exposure approval" in error["message"] for error in report["errors"]))
 
+    def test_public_exposure_rejects_special_use_and_overbroad_source_ranges(self):
+        invalid_ranges = (
+            "127.0.0.0/8",       # loopback
+            "169.254.0.0/16",    # link-local
+            "224.0.0.0/4",       # multicast
+            "192.0.2.0/24",      # documentation-only
+            "100.64.0.0/10",     # shared carrier-grade NAT space
+            "240.0.0.0/4",       # reserved
+            "128.0.0.0/1",       # over-broad aggregate
+            "8000::/1",           # over-broad IPv6 aggregate
+            "2001:db8::/32",     # IPv6 documentation-only
+        )
+        for source_cidr in invalid_ranges:
+            with self.subTest(source_cidr=source_cidr):
+                profile = copy.deepcopy(BASE)
+                network = profile["network"]
+                network["public_exposure_approved"] = True
+                network["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+                network["public_exposure_approved_endpoint_ids"] = ["sip-udp"]
+                endpoint = network["endpoints"][0]
+                endpoint["exposure"] = "public-network"
+                endpoint["allowed_source_cidrs"] = [source_cidr]
+                report = self.validate(profile)
+                self.assertEqual(report["result"], "INVALID")
+                self.assertTrue(any(
+                    "special-purpose and over-broad non-default ranges are rejected" in error["message"]
+                    for error in report["errors"]
+                ))
+
+    def test_public_exposure_accepts_explicit_public_wide_default_route(self):
+        profile = copy.deepcopy(BASE)
+        network = profile["network"]
+        network["public_exposure_approved"] = True
+        network["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+        network["public_exposure_approved_endpoint_ids"] = ["sip-udp"]
+        endpoint = network["endpoints"][0]
+        endpoint["exposure"] = "public-network"
+        endpoint["allowed_source_cidrs"] = ["0.0.0.0/0"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "VALID_DECLARATION")
+
     def test_public_exposure_rejects_private_only_source_ranges_even_with_approval(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["public_exposure_approved"] = True
