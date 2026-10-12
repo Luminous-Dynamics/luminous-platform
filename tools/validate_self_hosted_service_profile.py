@@ -176,10 +176,17 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                         hostname_is_ip_literal = False
                     else:
                         hostname_is_ip_literal = True
-                    if not _DNS_HOSTNAME_RE.fullmatch(hostname) or hostname_is_ip_literal:
+                    hostname_is_ambiguous_numeric_name = bool(hostname) and all(
+                        label.isdigit() for label in hostname.split(".")
+                    )
+                    if (
+                        not _DNS_HOSTNAME_RE.fullmatch(hostname)
+                        or hostname_is_ip_literal
+                        or hostname_is_ambiguous_numeric_name
+                    ):
                         errors.append({
                             "path": f"{path}/ingress_hostnames/{host_index}",
-                            "message": "ingress hostnames must be valid ASCII DNS names using IDNA A-labels, without spaces, underscores, wildcards, or IP literals",
+                            "message": "ingress hostnames must be valid ASCII DNS names using IDNA A-labels, not IP literals or all-numeric dotted names, and without spaces, underscores, or wildcards",
                         })
                 if len(normalized_hosts) != len(endpoint["ingress_hostnames"]):
                     errors.append({
