@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import stat
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Mapping, TextIO
@@ -82,6 +83,9 @@ INPUT_PATHS = (
 )
 FAILURE_CODES = {
     "INPUT_MISSING",
+    "SOURCE_TREE_DIRTY",
+    "INPUT_FREEZE_FAILED",
+    "INPUT_FREEZE_RESTORE_FAILED",
     "INPUT_DIGEST_CHANGED",
     "REVISION_MISMATCH",
     "PYTHON_VERSION_MISMATCH",
@@ -96,6 +100,7 @@ FAILURE_CODES = {
     "INPUT_MANIFEST_INCOMPLETE",
 }
 INCOMPLETE_CODES = {
+    "SOURCE_TREE_STATE_UNAVAILABLE",
     "CHECKED_OUT_HEAD_UNAVAILABLE",
     "COMMIT_SHA_UNAVAILABLE",
     "JSONSCHEMA_VERSION_UNAVAILABLE",
@@ -139,6 +144,112 @@ def input_manifest_unchanged(
 ) -> bool:
     """Fence tracked inputs at subprocess boundaries, not only at finalization."""
     return input_hashes(root) == dict(expected_hashes)
+
+
+def source_tree_clean(root: Path) -> bool | None:
+    """Return whether tracked files and unignored source additions match the commit."""
+    try:
+        tracked = subprocess.run(
+            ["git", "diff", "--quiet", "HEAD", "--"],
+            cwd=root,
+            env=child_environment(),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+            check=False,
+        )
+        if tracked.returncode == 1:
+            return False
+        if tracked.returncode != 0:
+            return None
+        untracked = subprocess.run(
+            [
+                "git", "ls-files", "--others", "--exclude-standard", "--",
+                ".github", "docs", "hardware", "profiles",
+                "requirements-hardware-portfolio.txt", "schemas", "security",
+                "tests", "tools",
+            ],
+            cwd=root,
+            env=child_environment(),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=10,
+            check=False,
+            text=True,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if untracked.returncode != 0:
+        return None
+    return not bool(untracked.stdout.strip())
+
+
+def make_input_tree_read_only(
+    root: Path,
+    paths: tuple[str, ...] = INPUT_PATHS,
+) -> dict[str, tuple[int, bool]] | None:
+    """Remove write bits from manifest files and their parent directories."""
+    modes: dict[str, tuple[int, bool]] = {}
+    directories: set[str] = set()
+    for relative in paths:
+        path = root / relative
+        if path.is_symlink() or not path.is_file():
+            return None
+        try:
+            modes[relative] = (stat.S_IMODE(path.stat().st_mode), False)
+        except OSError:
+            return None
+        parent = path.parent
+        while parent != root:
+            if parent.is_symlink() or not parent.is_dir():
+                return None
+            key = parent.relative_to(root).as_posix()
+            directories.add(key)
+            parent = parent.parent
+    for relative in directories:
+        try:
+            modes[relative] = (stat.S_IMODE((root / relative).stat().st_mode), True)
+        except OSError:
+            return None
+
+    changed: list[str] = []
+    try:
+        for relative in sorted(paths):
+            path = root / relative
+            os.chmod(path, modes[relative][0] & ~0o222)
+            changed.append(relative)
+        for relative in sorted(directories, key=lambda item: item.count("/"), reverse=True):
+            path = root / relative
+            os.chmod(path, modes[relative][0] & ~0o222)
+            changed.append(relative)
+    except OSError:
+        restore_input_tree_permissions(root, modes)
+        return None
+    return modes
+
+
+def restore_input_tree_permissions(
+    root: Path,
+    modes: Mapping[str, tuple[int, bool]],
+) -> bool:
+    """Restore original permission bits after all child processes have stopped."""
+    ok = True
+    entries = sorted(
+        modes.items(),
+        key=lambda item: (item[1][1], item[0].count("/")),
+    )
+    for relative, (mode, _is_directory) in entries:
+        path = root / relative
+        try:
+            if path.is_symlink() or not path.exists():
+                ok = False
+                continue
+            os.chmod(path, mode)
+        except OSError:
+            ok = False
+    return ok
 
 
 def manifest_coverage_gaps(
@@ -461,9 +572,37 @@ def main(argv: list[str] | None = None) -> int:
         blockers.append("INPUT_MISSING")
     before_manifest_digest = manifest_digest(before_hashes)
 
+    source_tree_state = source_tree_clean(root)
+    if source_tree_state is False:
+        blockers.append("SOURCE_TREE_DIRTY")
+    elif source_tree_state is None:
+        blockers.append("SOURCE_TREE_STATE_UNAVAILABLE")
+
+    revision_valid = observed_sha is not None and (not expected_sha or expected_sha == observed_sha)
+    execution_ready = (
+        source_tree_state is True
+        and revision_valid
+        and not manifest_gaps
+        and not missing_inputs
+    )
+    input_modes: dict[str, tuple[int, bool]] | None = None
+    if execution_ready:
+        input_modes = make_input_tree_read_only(root)
+        if input_modes is None:
+            blockers.append("INPUT_FREEZE_FAILED")
+            execution_ready = False
+
     validators: dict[str, dict[str, object]] = {}
     input_drift_detected = False
     for name, script in VALIDATORS.items():
+        if not execution_ready:
+            validators[name] = {
+                "script": script,
+                "return_code": None,
+                "timed_out": False,
+                "state": "blocked_source_integrity",
+            }
+            continue
         if input_drift_detected:
             validators[name] = {
                 "script": script,
@@ -482,7 +621,9 @@ def main(argv: list[str] | None = None) -> int:
         else:
             validators[name] = result
 
-    stopped_validator_states = {"input_drift_detected", "blocked_input_digest_changed"}
+    stopped_validator_states = {
+        "input_drift_detected", "blocked_input_digest_changed", "blocked_source_integrity"
+    }
     if validators["endpoint_profile"]["state"] not in ({"passed"} | stopped_validator_states):
         blockers.append("PROFILE_VALIDATOR_FAILED")
     if validators["endpoint_approval_binding"]["state"] not in ({"passed"} | stopped_validator_states):
@@ -494,6 +635,9 @@ def main(argv: list[str] | None = None) -> int:
 
     test_suites: list[dict[str, object]] = []
     for pattern in TEST_SUITE_PATTERNS:
+        if not execution_ready:
+            test_suites.append({"pattern": pattern, "state": "blocked_source_integrity"})
+            continue
         if input_drift_detected:
             test_suites.append({"pattern": pattern, "state": "blocked_input_digest_changed"})
             continue
@@ -511,6 +655,8 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 blockers.append("TEST_SUITE_FAILED")
 
+    if input_modes is not None and not restore_input_tree_permissions(root, input_modes):
+        blockers.append("INPUT_FREEZE_RESTORE_FAILED")
     after_hashes = input_hashes(root)
     if before_hashes != after_hashes:
         blockers.append("INPUT_DIGEST_CHANGED")
