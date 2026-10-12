@@ -93,6 +93,24 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("assessment reference" in error["message"] for error in report["errors"]))
 
+    def test_overlapping_enabled_listener_claims_are_rejected(self):
+        profile = copy.deepcopy(BASE)
+        duplicate = copy.deepcopy(profile["network"]["endpoints"][0])
+        duplicate["id"] = "sip-udp-duplicate"
+        profile["network"]["endpoints"].append(duplicate)
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("overlaps ports/protocol" in error["message"] for error in report["errors"]))
+
+    def test_same_port_on_distinct_protocols_is_allowed(self):
+        profile = copy.deepcopy(BASE)
+        tcp_endpoint = copy.deepcopy(profile["network"]["endpoints"][0])
+        tcp_endpoint["id"] = "sip-tcp-lab"
+        tcp_endpoint["protocol"] = "tcp"
+        profile["network"]["endpoints"].append(tcp_endpoint)
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "VALID_DECLARATION")
+
     def test_inverted_port_range_is_rejected(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["endpoints"][2]["port_range"] = [20000, 10000]
