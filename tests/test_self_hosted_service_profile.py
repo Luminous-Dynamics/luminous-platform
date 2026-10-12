@@ -159,6 +159,13 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("valid ASCII DNS names" in error["message"] for error in report["errors"]))
 
+    def test_ingress_route_rejects_multiple_trailing_dots(self):
+        profile = copy.deepcopy(NEXTCLOUD)
+        profile["network"]["endpoints"][0]["ingress_hostnames"] = ["cloud.example.invalid.."]
+        report = validate_profile_data(profile, SCHEMA, "unit-test")
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("valid ASCII DNS names" in error["message"] for error in report["errors"]))
+
     def test_ingress_route_accepts_valid_dns_hostname_with_normalized_trailing_dot(self):
         profile = copy.deepcopy(NEXTCLOUD)
         profile["network"]["endpoints"][0]["ingress_hostnames"] = ["CLOUD.EXAMPLE.INVALID."]
@@ -553,6 +560,10 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
             "registry.example.invalid/@" + digest,
             "registry.example.invalid/example/service @" + digest,
             "registry.example.invalid/example/service@sha256:" + "f" * 64,
+            "registry.example.invalid:/example/service@sha256:" + "e" * 64,
+            "127.1/example/service@sha256:" + "e" * 64,
+            "999.999.999.999/example/service@sha256:" + "e" * 64,
+            "123:5000/example/service@sha256:" + "e" * 64,
         )
         for reference in invalid_references:
             with self.subTest(reference=reference):

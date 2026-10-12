@@ -159,7 +159,14 @@ def _valid_oci_digest_reference(reference: str, digest: str) -> bool:
         return False
 
     registry, separator, repository = image_name.partition("/")
-    if not separator or not registry or not repository:
+    if (
+        not separator
+        or not registry
+        or not repository
+        # urlsplit reports an empty explicit port as port=None, just like
+        # an omitted port. Do not silently accept that malformed authority.
+        or registry.endswith(":")
+    ):
         return False
 
     try:
@@ -188,6 +195,13 @@ def _valid_oci_digest_reference(reference: str, digest: str) -> bool:
         is_ip_literal = False
 
     if not is_ip_literal:
+        # Reject abbreviated/noncanonical numeric hosts such as "127.1",
+        # "123", or "999.999.999.999". Clients may interpret these as
+        # non-DNS IPv4 forms. Valid IP literals have already been accepted by
+        # ipaddress.ip_address above.
+        if normalized_hostname and all(label.isdigit() for label in normalized_hostname.split(".")):
+            return False
+
         # Allow localhost and single-label internal registries only when the
         # port makes the registry authority explicit. Public DNS names must be
         # syntactically valid ASCII A-label hostnames.
@@ -226,6 +240,13 @@ def load_schema(path: Path) -> dict[str, Any]:
     except Exception as exc:
         raise ProfileInputError(f"invalid service-profile JSON Schema: {exc}") from exc
     return schema
+
+
+def _normalize_ingress_hostname(hostname: str) -> str:
+    """Lowercase a DNS name, removing at most one terminal root dot."""
+    if hostname.endswith(".") and not hostname.endswith(".."):
+        hostname = hostname[:-1]
+    return hostname.lower()
 
 
 def _safe_profile_digest(profile: Any) -> str | None:
@@ -313,7 +334,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                         "message": "ingress route dependency must have role='reverse-proxy'",
                     })
                 normalized_hosts = {
-                    hostname.rstrip(".").lower()
+                    _normalize_ingress_hostname(hostname)
                     for hostname in endpoint["ingress_hostnames"]
                 }
                 if "" in normalized_hosts:
@@ -322,7 +343,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                         "message": "ingress hostnames must not be blank",
                     })
                 for host_index, raw_hostname in enumerate(endpoint["ingress_hostnames"]):
-                    hostname = raw_hostname.rstrip(".").lower()
+                    hostname = _normalize_ingress_hostname(raw_hostname)
                     try:
                         ipaddress.ip_address(hostname)
                     except ValueError:
