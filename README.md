@@ -33,6 +33,10 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 └─────────────────────────────────────────────────────────┘
 ```
 
+## Government & Regulated Infrastructure (proposed)
+
+The product architecture and initial hardware survey are tracked in [RFC 001](docs/architecture/government-network-platform-rfc-001.md), the [open-hardware qualification ledger](docs/hardware/open-hardware-inventory.md), the [machine-readable hardware catalog](hardware/catalog.yaml), the [OpenWrt One lab evaluation plan](docs/hardware/plans/openwrt-one-evaluation-plan.md), and the [small-site reference bill of functional materials](docs/hardware/profiles/small-site-reference-bom.md), and the [site segmentation and allowed-flow contract](docs/architecture/site-segmentation-profile-v1.md). These are research and planning artifacts, not a finalized product catalog, qualified bill of materials, or accreditation claim. Follow [issue #19](https://github.com/Luminous-Dynamics/luminous-platform/issues/19) for the open work.
+
 ## Platform Components
 
 | Repo | Role | Flake? | Status |
