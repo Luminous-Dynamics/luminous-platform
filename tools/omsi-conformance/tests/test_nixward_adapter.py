@@ -368,5 +368,30 @@ class TestNixwardAdapterBinding(unittest.TestCase):
             binding(tx)
 
 
+    def test_authorization_issuer_uses_utf8_byte_limit(self):
+        tx = lifecycle_transaction("authorized")
+        tx["authorization"]["issuer"] = "é" * 129
+        with self.assertRaisesRegex(v.ConformanceError, "issuer has invalid byte length"):
+            binding(tx)
+
+    def test_empty_signer_key_id_rejected(self):
+        tx = lifecycle_transaction("authorized")
+        tx["authorization"]["signer_key_id"] = ""
+        with self.assertRaisesRegex(v.ConformanceError, "signer key ID has invalid byte length"):
+            binding(tx)
+
+    def test_validation_summary_uses_utf8_byte_limit(self):
+        tx = lifecycle_transaction("validated")
+        tx["validation"]["summary"] = "é" * 2049
+        with self.assertRaisesRegex(v.ConformanceError, "validation summary exceeds byte limit"):
+            binding(tx)
+
+    def test_outcome_reason_uses_utf8_byte_limit(self):
+        tx = lifecycle_transaction("recovered")
+        tx["outcome"]["reason"] = "é" * 2049
+        with self.assertRaisesRegex(v.ConformanceError, "outcome reason exceeds byte limit"):
+            binding(tx)
+
+
 if __name__ == "__main__":
     unittest.main()
