@@ -839,14 +839,14 @@ def main(argv: list[str] | None = None) -> int:
         input_modes_restored = restore_input_tree_permissions(root, input_modes)
         if not input_modes_restored:
             blockers.append("INPUT_FREEZE_RESTORE_FAILED")
+    final_integrity_errors: list[str] = []
     if execution_ready:
         # Final fence after permission restoration, before the report itself is written.
         # Catch source/head drift during cleanup as well as during child execution.
-        blockers.extend(
-            child_execution_integrity_errors(
-                root, observed_sha or "", before_hashes, allowed_untracked
-            )
+        final_integrity_errors = child_execution_integrity_errors(
+            root, observed_sha or "", before_hashes, allowed_untracked
         )
+        blockers.extend(final_integrity_errors)
     after_hashes = input_hashes(root)
     if before_hashes != after_hashes:
         blockers.append("INPUT_DIGEST_CHANGED")
@@ -888,6 +888,7 @@ def main(argv: list[str] | None = None) -> int:
                 and input_modes is not None
                 and input_modes_restored is True
                 and not input_drift_detected
+                and not final_integrity_errors
                 and before_hashes == after_hashes
             ),
         },
