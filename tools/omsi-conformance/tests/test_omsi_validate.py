@@ -36,6 +36,9 @@ class TestOMSI(unittest.TestCase):
     def test_grant_cannot_outlive_manifest(self):
         x=grant(); x["expires_at"]="2026-10-12T12:20:00Z"
         with self.assertRaisesRegex(v.ConformanceError, "exceeds manifest expiry"): v.validate_grant(op(), x, NOW)
+    def test_grant_cannot_predate_manifest(self):
+        x=grant(); x["issued_at"]="2026-10-12T11:59:00Z"; x["expires_at"]="2026-10-12T12:14:00Z"
+        with self.assertRaisesRegex(v.ConformanceError, "cannot predate"): v.validate_grant(op(), x, NOW)
     def test_receipt_binds_exact_operation(self): v.validate_receipt(receipt(), op())
     def test_receipt_tenant_spoofing_rejected(self):
         x=receipt(); x["target"]["tenant_id"]="tenant-b"
@@ -43,6 +46,12 @@ class TestOMSI(unittest.TestCase):
     def test_verified_receipt_requires_post_state(self):
         x=receipt(); del x["verification"]["post_state_digest"]
         with self.assertRaisesRegex(v.ConformanceError, "post-state digest"): v.validate_receipt(x, op())
+    def test_nonverified_outcome_cannot_claim_verified_result(self):
+        x=receipt(); x["outcome"]="indeterminate"
+        with self.assertRaisesRegex(v.ConformanceError, "non-verified outcome"): v.validate_receipt(x, op())
+    def test_receipt_operation_substitution_rejected(self):
+        x=receipt(); x["operation_id"]="op-other"
+        with self.assertRaisesRegex(v.ConformanceError, "operation ID mismatch"): v.validate_receipt(x, op())
     def test_same_authority_domain_is_not_independent(self):
         x=receipt(); x["verification"]["verifier_authority_domain"]="control-a"
         with self.assertRaisesRegex(v.ConformanceError, "distinct declared authority domains"): v.validate_receipt(x, op())
@@ -53,6 +62,9 @@ class TestOMSI(unittest.TestCase):
     def test_event_replay_rejected(self):
         x=load_fixture("events.json"); x[1]["event_id"]=x[0]["event_id"]
         with self.assertRaisesRegex(v.ConformanceError, "duplicate event id"): v.validate_events(x)
+    def test_event_sequence_cannot_mix_tenants(self):
+        x=load_fixture("events.json"); x[1]["tenant_id"]="tenant-b"
+        with self.assertRaisesRegex(v.ConformanceError, "mixes tenant_id"): v.validate_events(x)
     def test_duplicate_json_key_rejected(self):
         with self.assertRaisesRegex(v.ConformanceError, "duplicate JSON key"): v.strict_loads('{"a":1,"a":2}')
     def test_negative_zero_rejected(self):
