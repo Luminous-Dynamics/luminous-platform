@@ -157,11 +157,17 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                                 "path": f"{path}/allowed_source_cidrs/{source_index}",
                                 "message": "private-network exposure accepts only explicit private source CIDRs, not wildcard ranges",
                             })
-                elif endpoint["exposure"] == "public-network" and not source_networks:
-                    errors.append({
-                        "path": path + "/allowed_source_cidrs",
-                        "message": "public-network exposure requires an explicit source policy, including an explicit public-wide CIDR if intended",
-                    })
+                elif endpoint["exposure"] == "public-network":
+                    if not source_networks:
+                        errors.append({
+                            "path": path + "/allowed_source_cidrs",
+                            "message": "public-network exposure requires an explicit source policy, including an explicit public-wide CIDR if intended",
+                        })
+                    elif all(source_network.is_private for source_network in source_networks):
+                        errors.append({
+                            "path": path + "/allowed_source_cidrs",
+                            "message": "public-network exposure must declare at least one explicitly routed/public source range; private CIDRs alone contradict public exposure",
+                        })
 
         public_endpoints = [
             endpoint["id"] for endpoint in endpoints
