@@ -10,6 +10,7 @@ build, observe, or qualify an application runtime.
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import sys
 from pathlib import Path
@@ -76,6 +77,10 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
         if len(endpoint_ids) != len(set(endpoint_ids)):
             errors.append({"path": "/network/endpoints", "message": "endpoint IDs must be unique"})
 
+        health_ids = [check["id"] for check in profile["health"]["checks"]]
+        if len(health_ids) != len(set(health_ids)):
+            errors.append({"path": "/health/checks", "message": "health-check IDs must be unique"})
+
         dependency_ids = [dependency["id"] for dependency in dependencies]
         if len(dependency_ids) != len(set(dependency_ids)):
             errors.append({"path": "/dependencies/items", "message": "dependency IDs must be unique"})
@@ -94,6 +99,69 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                 errors.append({"path": path, "message": "an enabled endpoint cannot have disabled exposure"})
             if not endpoint["enabled"] and endpoint["exposure"] != "disabled":
                 errors.append({"path": path, "message": "a disabled endpoint must declare exposure=disabled"})
+
+            try:
+                bind_address = ipaddress.ip_address(endpoint["bind_address"])
+            except ValueError:
+                errors.append({"path": path + "/bind_address", "message": "bind_address must be a literal IPv4 or IPv6 address"})
+                bind_address = None
+
+            source_networks = []
+            for source_index, source_cidr in enumerate(endpoint["allowed_source_cidrs"]):
+                try:
+                    source_networks.append(ipaddress.ip_network(source_cidr, strict=False))
+                except ValueError:
+                    errors.append({
+                        "path": f"{path}/allowed_source_cidrs/{source_index}",
+                        "message": "allowed source must be a valid IPv4 or IPv6 CIDR",
+                    })
+
+            if endpoint["enabled"]:
+                if bind_address is None:
+                    pass  # The malformed address is already reported above.
+                elif bind_address.is_unspecified or bind_address.is_multicast:
+                    errors.append({
+                        "path": path + "/bind_address",
+                        "message": "enabled endpoints cannot bind to wildcard or multicast addresses",
+                    })
+
+                if endpoint["exposure"] == "loopback":
+                    if bind_address is not None and not bind_address.is_loopback:
+                        errors.append({
+                            "path": path + "/bind_address",
+                            "message": "loopback exposure requires a loopback bind address",
+                        })
+                    if endpoint["allowed_source_cidrs"]:
+                        errors.append({
+                            "path": path + "/allowed_source_cidrs",
+                            "message": "loopback endpoints do not use remote source CIDRs",
+                        })
+                elif endpoint["exposure"] == "private-network":
+                    if bind_address is not None and not bind_address.is_private:
+                        errors.append({
+                            "path": path + "/bind_address",
+                            "message": "private-network exposure requires an explicitly private bind address",
+                        })
+                    if not source_networks:
+                        errors.append({
+                            "path": path + "/allowed_source_cidrs",
+                            "message": "private-network exposure requires explicit allowed source CIDRs",
+                        })
+                    for source_index, source_network in enumerate(source_networks):
+                        if (
+                            not source_network.is_private
+                            or source_network.is_unspecified
+                            or source_network.prefixlen == 0
+                        ):
+                            errors.append({
+                                "path": f"{path}/allowed_source_cidrs/{source_index}",
+                                "message": "private-network exposure accepts only explicit private source CIDRs, not wildcard ranges",
+                            })
+                elif endpoint["exposure"] == "public-network" and not source_networks:
+                    errors.append({
+                        "path": path + "/allowed_source_cidrs",
+                        "message": "public-network exposure requires an explicit source policy, including an explicit public-wide CIDR if intended",
+                    })
 
         public_endpoints = [
             endpoint["id"] for endpoint in endpoints
