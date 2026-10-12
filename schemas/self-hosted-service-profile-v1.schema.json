@@ -175,7 +175,6 @@
             "mode": {
               "enum": [
                 "host-flake-lock",
-                "source-revision",
                 "oci-digest",
                 "guest-image-digest",
                 "unresolved"
