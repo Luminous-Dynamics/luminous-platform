@@ -579,7 +579,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                     "path": "/runtime/source_pin/reference",
                     "message": (
                         "OCI reference must include a valid explicit registry/repository locator "
-                        "and embed the same @sha256 digest declared in source_pin.digest"
+                        "and must embed the same @sha256 digest declared in source_pin.digest"
                     ),
                 })
         elif mode == "guest-image-digest" and not source_pin.get("digest"):
