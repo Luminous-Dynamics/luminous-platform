@@ -128,11 +128,12 @@ The required lifecycle is:
 1. **Observe** target-side state and label provenance.
 2. **Plan** deterministically without mutation.
 3. **Validate** schema, capabilities, ownership, invariants, and recovery feasibility.
-4. **Authorize** the exact target and plan through the established Nixward authority path.
-5. **Re-observe** immediately before application; reject stale pre-state rather than silently replanning after authorization.
-6. **Apply** only the previously authorized operations, through a narrow adapter.
-7. **Verify** by querying the resulting kernel/device state and applicable reachability invariants; exit code alone is insufficient.
-8. **Promote or recover** with an explicit terminal state.
+4. **Recompute and compare** the candidate plan from the exact snapshot and desired-state inputs. Structural validation and a supplied digest do not prove that a serialized plan is derived from those inputs.
+5. **Authorize** the exact target and recomputed plan through the established Nixward authority path.
+6. **Re-observe** immediately before application; reject stale pre-state rather than silently replanning after authorization.
+7. **Apply** only the previously authorized operations, through a narrow adapter.
+8. **Verify** by querying the resulting kernel/device state and applicable reachability invariants; exit code alone is insufficient.
+9. **Promote or recover** with an explicit terminal state.
 
 A multi-step network mutation is **not automatically atomic** just because a planner calls it a transaction. The implementation must classify operations as batch-atomic where the underlying API supports it, otherwise use ordered operations and bounded compensation. If rollback fails, concurrent changes make recovery unsafe, or post-state is ambiguous, report `Indeterminate/RecoveryRequired`; never claim success.
 
@@ -224,6 +225,6 @@ Before moving beyond Phase 1, map the exact Nixward transaction/authorization/re
 - The first deliverable is a read-only inventory plus pure planner, not a production router.
 - No physical-host networking mutation is reachable from the Phase 1 build.
 - Every planned resource has explicit configuration authority and runtime owner, capability, observed pre-state, intended state, and postcondition.
-- Deterministic tests demonstrate stale-state rejection, conflict detection, stable plan digests, and explicit unknown/indeterminate outcomes.
+- Deterministic tests demonstrate stale-state rejection, conflict detection, stable plan digests, candidate-plan tamper detection by recomputation, and explicit unknown/indeterminate outcomes.
 - A Phase 2 actuator cannot target outside the test harness's owned namespace/resources.
 - No integration is described as implemented or qualified until its exact-head evidence is available.
