@@ -249,7 +249,8 @@
         "public_exposure_default",
         "public_exposure_approved",
         "firewall_policy",
-        "endpoints"
+        "endpoints",
+        "public_exposure_approved_endpoint_ids"
       ],
       "properties": {
         "public_exposure_default": {
@@ -439,6 +440,17 @@
               }
             ]
           }
+        },
+        "public_exposure_approved_endpoint_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[a-z0-9][a-z0-9._-]*$"
+          },
+          "description": "Exact endpoint IDs covered by the public-exposure approval and assessment. Must equal the set of endpoints currently declared public."
         }
       }
     },
