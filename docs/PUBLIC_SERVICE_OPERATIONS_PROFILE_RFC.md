@@ -56,7 +56,7 @@ If the Work Case or Operations Event contract has not passed its current exact-h
 
 This separation is intentional: a civic deployment should still support ordinary manual operation if Symthaea, Mycelix, an optional map or a remote-support service is unavailable.
 
-## 3A. Language and runtime rule
+### Language and runtime rule
 
 The civic profile follows [`LANGUAGE_AND_RUNTIME_POLICY.md`](LANGUAGE_AND_RUNTIME_POLICY.md): no handwritten JavaScript/TypeScript in first-party production logic, no JavaScript requirement for core workflows, and a preference for Rust/Leptos server-rendered HTML with ordinary HTTP forms. WebAssembly and generated loader glue are optional, documented exceptions for a bounded enhancement—not a basis for browser-side authority. Acceptance must include a no-JavaScript workflow check.
 
@@ -76,6 +76,10 @@ The first deployment should be read-only from source systems and should not requ
 **Authority invariant:** observation, model output, case state and evidence are separate from permission to act. Any eventual write-capable adapter must use server-established tenant context, a narrow capability, a typed command, a current expected revision, idempotency, a named authoriser and postcondition verification. If authorisation or current-state evidence is missing, refuse the write and preserve the existing manual route.
 
 **Availability invariant:** when the Luminous platform or AI is offline, people must still be able to use existing emergency, customer-service and municipal channels. Fail closed for privileged actions; fail safe for service availability.
+
+### Source catalogue contract
+
+The source inventory is now drafted under [`contracts/public-source-catalogue-v1/`](https://github.com/Luminous-Dynamics/luminous-platform/tree/docs/public-service-operations-profile-rfc-001/contracts/public-source-catalogue-v1/). Its JSON Schema and examples are intentionally metadata-only: each source is marked `catalogue_only` with ingestion disabled. The catalogue records the Municipal Finance API's conflicting HTTP/HTTPS endpoint descriptions, the eTender publication-coverage limitation, and the absence of an established Johannesburg Water machine-readable case feed. Future adapters must keep zero, raw null, absent rows, invalid values, and stale data distinct; preserve source revision and retrieval provenance; enforce HTTPS; and fail visibly on incomplete pagination. See the [conformance requirements](https://github.com/Luminous-Dynamics/luminous-platform/blob/docs/public-service-operations-profile-rfc-001/contracts/public-source-catalogue-v1/CONFORMANCE.md). This is a contract proposal, not a tested connector.
 
 ## 5. Practical South African data starting points
 
@@ -152,10 +156,6 @@ Minimum safeguards:
 - **Procurement neutrality:** define interfaces and export formats so a city is not locked into Luminous. Make source code, licences, operating costs, limitations and migration paths reviewable.
 
 For the first phase, the safest person-level record is no person-level record at all.
-
-### Source catalogue contract
-
-The source inventory is now drafted under [`contracts/public-source-catalogue-v1/`](https://github.com/Luminous-Dynamics/luminous-platform/tree/docs/public-service-operations-profile-rfc-001/contracts/public-source-catalogue-v1/). Its JSON Schema and examples are intentionally metadata-only: each source is marked `catalogue_only` with ingestion disabled. The catalogue records the Municipal Finance API's conflicting HTTP/HTTPS endpoint descriptions, the eTender publication-coverage limitation, and the absence of an established Johannesburg Water machine-readable case feed. Future adapters must keep zero, raw null, absent rows, invalid values, and stale data distinct; preserve source revision and retrieval provenance; enforce HTTPS; and fail visibly on incomplete pagination. See the [conformance requirements](https://github.com/Luminous-Dynamics/luminous-platform/blob/docs/public-service-operations-profile-rfc-001/contracts/public-source-catalogue-v1/CONFORMANCE.md). This is a contract proposal, not a tested connector.
 
 ## 8. Symthaea and Symtropy qualification plan
 
