@@ -28,6 +28,7 @@ REPORT_SCHEMA_VERSION = "luminous.vendor-endpoint-qualification-report.v1"
 EXPECTED_PYTHON_VERSION = "3.13.7"
 EXPECTED_JSONSCHEMA_VERSION = "4.26.0"
 EXPECTED_CRYPTOGRAPHY_VERSION = "50.0.2"
+MAX_MANIFEST_FILE_BYTES = 4 * 1024 * 1024
 VALIDATOR_TIMEOUT_SECONDS = 20
 TEST_WORKER_TIMEOUT_SECONDS = 30
 MAX_CHILD_EXECUTION_BUDGET_SECONDS = 300
@@ -156,6 +157,9 @@ def manifest_file_sha256(root: Path, relative: str) -> str | None:
         descriptors.append(file_fd)
         before = os.fstat(file_fd)
         if not stat.S_ISREG(before.st_mode):
+            return None
+        # Bound work even when a checkout path is replaced with a huge regular file.
+        if before.st_size > MAX_MANIFEST_FILE_BYTES:
             return None
 
         digest = hashlib.sha256()
@@ -909,6 +913,7 @@ def main(argv: list[str] | None = None) -> int:
             "no revocation or authorization-at-use verification",
             "no fresh target inventory binding, tested-capability scope, or adapter qualification",
             "manifest files and parent directories have write bits removed during child checks; this is not an OS-enforced sandbox, and a same-user child may defeat mode bits (persistent changes are caught by digest fences)",
+            f"manifest inputs larger than {MAX_MANIFEST_FILE_BYTES} bytes are rejected",
         ],
         "diagnostics_policy": "raw stdout, stderr, test identifiers and traceback text are not persisted",
     }
