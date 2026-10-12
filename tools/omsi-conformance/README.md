@@ -26,6 +26,8 @@ The seed accepts a deliberately restricted JSON value set for digest-bearing con
 
 ## Security boundary
 
+The prototype only accepts `secret_refs` and `credential_refs` as arrays of opaque URI-shaped references, and rejects whitespace, userinfo and query-bearing reference strings. This is structural hygiene, not discovery of every possible secret and not proof that the referenced vault/resource is trustworthy. Raw secret material still belongs in a separate secret-delivery mechanism.
+
 This is not an executor, identity provider, authorization service or cryptographic verifier. It does not authenticate principals; verify proof/signature bytes; resolve issuer trust; check key revocation; provide replay persistence across processes; establish tenant isolation in deployment; prove declared verifier independence; or execute/rollback a host change. The grant signature is shape-checked only. Tests use deterministic sample data and do not prove production security.
 
 A successful validator result means only that a document met these local schema and semantic checks. It must not be advertised as OMSI certification or complete MSP compliance.
