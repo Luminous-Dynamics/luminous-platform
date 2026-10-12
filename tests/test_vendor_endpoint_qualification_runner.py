@@ -145,11 +145,13 @@ class QualificationRunnerContractTests(unittest.TestCase):
             tracked = root / "tools" / "tracked.py"
             tracked.parent.mkdir()
             tracked.write_text("VALUE = 1\\n", encoding="utf-8")
+            gitignore = root / ".gitignore"
+            gitignore.write_text("ignored-source.py\\n", encoding="utf-8")
             commands = (
                 ["git", "init", "-q"],
                 ["git", "config", "user.email", "qualification-test@example.invalid"],
                 ["git", "config", "user.name", "Qualification Test"],
-                ["git", "add", "tools/tracked.py"],
+                ["git", "add", ".gitignore", "tools/tracked.py"],
                 ["git", "commit", "-q", "-m", "synthetic fixture"],
             )
             for command in commands:
@@ -170,6 +172,19 @@ class QualificationRunnerContractTests(unittest.TestCase):
             root_untracked = root / "unexpected.py"
             root_untracked.write_text("VALUE = 4\\n", encoding="utf-8")
             self.assertFalse(qualification.source_tree_clean(root))
+            root_untracked.unlink()
+            ignored = root / "ignored-source.py"
+            ignored.write_text("VALUE = 5\\n", encoding="utf-8")
+            self.assertFalse(qualification.source_tree_clean(root))
+            ignored.unlink()
+            report = root / "artifacts" / "qualification-report.json"
+            report.parent.mkdir()
+            report.write_text("{}\\n", encoding="utf-8")
+            self.assertTrue(
+                qualification.source_tree_clean(root, ("artifacts/qualification-report.json",))
+            )
+            report.write_text('{"extra":true}\\n', encoding="utf-8")
+            self.assertFalse(qualification.source_tree_clean(root, ()))
 
     def test_input_manifest_fence_detects_changed_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
