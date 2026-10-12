@@ -291,6 +291,43 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("scope must exactly match" in error["message"] for error in report["errors"]))
 
+    def test_public_exposure_assessment_reference_requires_qualified_locator(self):
+        profile = copy.deepcopy(BASE)
+        network = profile["network"]
+        network["public_exposure_approved"] = True
+        network["public_exposure_assessment_ref"] = "not-a-reference"
+        network["public_exposure_approved_endpoint_ids"] = ["sip-udp"]
+        endpoint = network["endpoints"][0]
+        endpoint["exposure"] = "public-network"
+        endpoint["allowed_source_cidrs"] = ["0.0.0.0/0"]
+        endpoint["public_edge_mapping_ref"] = "edge-review:synthetic-map"
+
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any(
+            error["path"] == "/network/public_exposure_assessment_ref"
+            for error in report["errors"]
+        ))
+
+    def test_public_edge_mapping_reference_requires_qualified_locator(self):
+        profile = copy.deepcopy(BASE)
+        network = profile["network"]
+        network["public_exposure_approved"] = True
+        network["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+        network["public_exposure_approved_endpoint_ids"] = ["sip-udp"]
+        endpoint = network["endpoints"][0]
+        endpoint["exposure"] = "public-network"
+        endpoint["bind_address"] = "192.168.50.10"
+        endpoint["allowed_source_cidrs"] = ["0.0.0.0/0"]
+        endpoint["public_edge_mapping_ref"] = "not-a-reference"
+
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any(
+            error["path"].endswith("/public_edge_mapping_ref")
+            for error in report["errors"]
+        ))
+
     def test_public_exposure_can_use_private_bind_behind_an_explicit_edge(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["public_exposure_approved"] = True
