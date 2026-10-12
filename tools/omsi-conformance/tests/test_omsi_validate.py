@@ -45,6 +45,14 @@ class TestOMSI(unittest.TestCase):
     def test_empty_grant_issuer_rejected(self):
         x=grant(); x["issued_by"]=""
         with self.assertRaisesRegex(v.ConformanceError, "schema error at /issued_by"): v.validate_grant(op(), x, NOW)
+    def test_raw_secret_cannot_hide_in_reference_field(self):
+        with self.assertRaisesRegex(v.ConformanceError, "invalid secret/credential reference"):
+            v._reject_secrets({"secret_refs": ["TopSecretValue"]})
+    def test_opaque_secret_reference_is_allowed(self):
+        v._reject_secrets({"secret_refs": ["vault://kv/tenant-a/app/password"]})
+    def test_reference_uri_rejects_userinfo_and_query(self):
+        with self.assertRaisesRegex(v.ConformanceError, "invalid secret/credential reference"):
+            v._reject_secrets({"credential_refs": ["https://user@host/secret?token=value"]})
     def test_receipt_binds_exact_operation(self): v.validate_receipt(receipt(), op())
     def test_receipt_tenant_spoofing_rejected(self):
         x=receipt(); x["target"]["tenant_id"]="tenant-b"
