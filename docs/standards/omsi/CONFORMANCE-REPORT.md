@@ -13,7 +13,9 @@
 
 ## Important limitation for this PR
 
-The executable starter kit itself is not included in this RFC-only PR. The results above are prior local results for a companion working directory/archive, not checks run from this PR checkout. The implementation and fixtures should be contributed in a follow-up PR so they can be reviewed and rerun from the repository.
+The larger companion starter and its 68-test report were built locally during proposal development. They are design evidence only, have not been independently reviewed, and are not a certification. This RFC-only PR does not include that larger companion kit.
+
+A smaller, reviewable initial implementation seed with four JSON Schemas, a Python validator/CLI, fixtures and a 25-test suite is now proposed separately in [PR #32](https://github.com/Luminous-Dynamics/luminous-platform/pull/32). Its local tests passed, while its GitHub Actions run is pending. The 25-test seed and the 68-test companion kit are different scopes; do not combine their counts.
 
 ## Reported security-relevant cases covered locally
 
