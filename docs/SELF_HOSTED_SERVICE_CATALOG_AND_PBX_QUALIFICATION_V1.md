@@ -49,8 +49,9 @@ The versioned schema requires:
 - Stable service identity and upstream provenance.
 - Explicit runtime kind, architecture, update strategy, and source pin.
 - Authority and control-plane independence assertions.
+- Explicit dependencies, whether each is required to start, data shared with it, and a declared unknown-dependency policy. A platform control plane, coordination service, or telemetry exporter cannot be required for workload startup.
 - Per-endpoint protocol, port or range, exposure, enablement, and purpose.
-- Data classification, persistent paths, backup policy, restore-test requirement, recording default, telemetry export, and retention owner.
+- Data classification, persistent paths, backup policy, restore-test requirement, optional sensitive-capture policy, telemetry export, and retention owner.
 - Secret backend and reference names, with `values_in_profile: false`.
 - Installation, upgrade, rollback, uninstall, and data-migration declarations.
 - Health checks across process, readiness, functional, security, backup, and recovery behaviors.
@@ -58,7 +59,7 @@ The versioned schema requires:
 
 The schema rejects unknown fields. The Python validator reuses the existing strict deployment-profile YAML parser (duplicate keys, aliases, anchors, and explicit tags are rejected) and canonical profile digest implementation. It additionally rejects unsafe or internally inconsistent declarations, including unapproved public endpoints, inverted port ranges, missing periodic backup/restore expectations for stateful services, and OCI workloads without immutable SHA-256 image digests.
 
-The declaration validator can emit `VALID_DECLARATION`, `INVALID`, or `QUALIFICATION_BLOCKED`. It always sets `qualification_evaluated: false`. It is not allowed to emit a runtime-qualified verdict; that requires a separate adapter- and environment-specific evidence evaluator.
+The declaration validator can emit `VALID_DECLARATION`, `INVALID`, or `QUALIFICATION_BLOCKED`. It always sets `qualification_evaluated: false`. It is not allowed to emit a runtime-qualified verdict; that requires a separate adapter- and environment-specific evidence evaluator. The schema remains workload-neutral: communication recording is an optional `sensitive_capture` policy, not a mandatory field imposed on file, identity, or developer services.
 
 Run locally:
 
