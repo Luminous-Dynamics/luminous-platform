@@ -201,7 +201,7 @@ No phase automatically authorises the next. A failed gate means remain in the cu
 ## 11. Proposed next actions
 
 1. **Stabilise shared contracts first.** Resolve the exact-head CI/runner assignment blocker already tracked in [issue #14](https://github.com/Luminous-Dynamics/luminous-platform/issues/14) and qualify Work Case V1 plus Operations Event V1. Do not stack an operational civic integration on an unqualified base.
-2. **Build the public-data slice.** Start with Municipal Finance Data and a versioned set of Johannesburg Water public service standards/notices. Use synthetic cases for assignment, escalation, corrections and evidence-linked closure.
+2. **Build the public-data slice.** The executable follow-on is tracked in [issue #35](https://github.com/Luminous-Dynamics/luminous-platform/issues/35). Start with the source catalogue and observation contract, then validate synthetic Municipal Finance observations and published Johannesburg Water service guidance. Keep all ingestion disabled until the endpoint/terms gates pass.
 3. **Publish a small evidence pack.** Include fixture data, source inventory, deterministic baseline results, adversarial tests, screenshots or CLI output, limitations and exact source revisions.
 4. **Map each later connector to an owner.** Before accessing live case-management, billing, procurement or infrastructure systems, obtain written data-use authority and define least-privilege read/write scope.
 5. **Only then approach a municipal pilot sponsor.** Propose a bounded shadow-mode evaluation with a named service owner and clear exit criteria; do not pitch “automating government” or promise savings before data supports them.
