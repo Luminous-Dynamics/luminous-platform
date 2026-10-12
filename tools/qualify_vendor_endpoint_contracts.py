@@ -28,6 +28,9 @@ REPORT_SCHEMA_VERSION = "luminous.vendor-endpoint-qualification-report.v1"
 EXPECTED_PYTHON_VERSION = "3.13.7"
 EXPECTED_JSONSCHEMA_VERSION = "4.26.0"
 EXPECTED_CRYPTOGRAPHY_VERSION = "50.0.2"
+VALIDATOR_TIMEOUT_SECONDS = 30
+TEST_WORKER_TIMEOUT_SECONDS = 45
+MAX_CHILD_EXECUTION_BUDGET_SECONDS = 420
 VALIDATORS = {
     "endpoint_profile": "tools/validate_vendor_management_endpoint_profile.py",
     "endpoint_approval_binding": "tools/validate_vendor_management_endpoint_approval.py",
@@ -526,7 +529,7 @@ def run_test_suite(root: Path, pattern: str) -> tuple[dict[str, object], bool]:
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                timeout=240,
+                timeout=TEST_WORKER_TIMEOUT_SECONDS,
                 check=False,
             )
         except subprocess.TimeoutExpired:
@@ -553,7 +556,7 @@ def run_validator(root: Path, relative_script: str) -> dict[str, object]:
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-            timeout=60,
+            timeout=VALIDATOR_TIMEOUT_SECONDS,
             check=False,
         )
         return {
