@@ -37,8 +37,11 @@ def _rgb_from_hex(value: Any, field: str) -> tuple[int, int, int]:
 
 
 def _to_f32(value: float) -> float:
-    """Match the f32 precision used by the Rust Scene Pack parser."""
-    return struct.unpack("!f", struct.pack("!f", float(value)))[0]
+    """Match Rust f32 precision, converting overflows into a typed preview error."""
+    try:
+        return struct.unpack("!f", struct.pack("!f", float(value)))[0]
+    except (OverflowError, struct.error) as exc:
+        raise PreviewError("staticFallback.brightness is outside the finite f32 range") from exc
 
 
 def validate_dimensions(width: int, height: int) -> None:
@@ -199,19 +202,28 @@ def main(argv: list[str] | None = None) -> int:
 
         output = args.output.resolve()
         protected_inputs = {args.manifest.resolve(), args.schema.resolve()}
+        for asset in manifest.get("assets", []):
+            if isinstance(asset, dict) and isinstance(asset.get("path"), str):
+                protected_inputs.add((package_root / asset["path"]).resolve())
         if output in protected_inputs:
-            raise PreviewError("output path must not overwrite the manifest or schema")
+            raise PreviewError("output path must not overwrite the manifest, schema, or a declared asset")
 
         png = _preview_from_manifest(manifest, args.width, args.height)
         output.parent.mkdir(parents=True, exist_ok=True)
-        # Replace atomically so interruption cannot leave a partial PNG.
-        temporary = output.with_name(output.name + ".tmp")
+        # Use a unique temporary file, then replace atomically. Parallel preview
+        # invocations cannot clobber one another's intermediate output.
+        temporary_path: Path | None = None
         try:
-            temporary.write_bytes(png)
-            temporary.replace(output)
+            with tempfile.NamedTemporaryFile(
+                mode="wb", dir=output.parent, prefix=output.name + ".", suffix=".tmp", delete=False
+            ) as stream:
+                temporary_path = Path(stream.name)
+                stream.write(png)
+                stream.flush()
+            temporary_path.replace(output)
         finally:
-            if temporary.exists():
-                temporary.unlink()
+            if temporary_path is not None and temporary_path.exists():
+                temporary_path.unlink()
 
         digest = hashlib.sha256(png).hexdigest()
         print(
