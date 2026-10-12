@@ -30,6 +30,14 @@ class QualificationRunnerContractTests(unittest.TestCase):
         summary.update(overrides)
         return summary
 
+    def test_child_execution_budget_leaves_workflow_headroom(self) -> None:
+        worst_case = (
+            len(qualification.VALIDATORS) * qualification.VALIDATOR_TIMEOUT_SECONDS
+            + len(qualification.TEST_SUITE_PATTERNS) * qualification.TEST_WORKER_TIMEOUT_SECONDS
+        )
+        self.assertLessEqual(worst_case, qualification.MAX_CHILD_EXECUTION_BUDGET_SECONDS)
+        self.assertLess(qualification.MAX_CHILD_EXECUTION_BUDGET_SECONDS, 600)
+
     def test_report_destination_only_allows_safe_artifact_json(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
