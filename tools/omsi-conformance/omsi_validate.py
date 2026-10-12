@@ -87,8 +87,19 @@ def canonical_bytes(value: Any) -> bytes:
             raise
         raise ConformanceError(f"not canonically serializable: {exc}") from exc
 
-def digest(value: Any) -> str:
-    return "sha256:" + hashlib.sha256(canonical_bytes(value)).hexdigest()
+def digest(value: Any, domain: str) -> str:
+    """Hash canonical JSON with a fixed, explicit semantic domain separator."""
+    try:
+        domain_bytes = domain.encode("ascii", errors="strict")
+    except (AttributeError, UnicodeEncodeError) as exc:
+        raise ConformanceError("digest domain must be a stable ASCII identifier") from exc
+    if not domain_bytes or b"\\x00" in domain_bytes:
+        raise ConformanceError("digest domain must be non-empty and cannot contain NUL")
+    payload = b"OMSI-DIGEST/0.1\\x00" + domain_bytes + b"\\x00" + canonical_bytes(value)
+    return "sha256:" + hashlib.sha256(payload).hexdigest()
+
+ACTION_ARGUMENTS_DOMAIN = "org.omsi.action-arguments/0.1"
+OPERATION_MANIFEST_DOMAIN = "org.omsi.operation-manifest/0.1"
 
 def _reject_secrets(value: Any, path: str = "/") -> None:
     bad = {"password", "passwd", "passphrase", "secret", "privatekey", "accesstoken", "refreshtoken", "apikey", "clientsecret", "credential", "credentials"}
@@ -126,7 +137,7 @@ def validate_operation(op: dict[str, Any], now: datetime | None = None) -> None:
     _reject_secrets(op)
     if op["tenant_id"] != op["target"]["tenant_id"]:
         raise ConformanceError("operation and target tenant differ")
-    if op["action"]["arguments_digest"] != digest(op["action"]["arguments"]):
+    if op["action"]["arguments_digest"] != digest(op["action"]["arguments"], ACTION_ARGUMENTS_DOMAIN):
         raise ConformanceError("action argument digest mismatch")
     created = parse_time(op["created_at"])
     observed = parse_time(op["preconditions"]["observed_at"])
@@ -147,7 +158,7 @@ def validate_grant(op: dict[str, Any], grant: dict[str, Any], now: datetime | No
     pairs = {
         "tenant_id": (grant["tenant_id"], op["tenant_id"]),
         "target_resource_id": (grant["target_resource_id"], op["target"]["resource_id"]),
-        "subject_manifest_digest": (grant["subject_manifest_digest"], digest(op)),
+        "subject_manifest_digest": (grant["subject_manifest_digest"], digest(op, OPERATION_MANIFEST_DOMAIN)),
         "action_profile": (grant["action_profile"], op["action"]["profile"]),
         "action_verb": (grant["action_verb"], op["action"]["verb"]),
         "authorized_principal": (grant["authorized_principal"], op["authorization"]["authorized_principal"]),
@@ -182,7 +193,7 @@ def validate_receipt(receipt: dict[str, Any], expected: dict[str, Any] | None = 
     if expected is not None:
         validate_operation(expected)
         expected_values = [
-            ("manifest digest", receipt["subject_manifest_digest"], digest(expected)),
+            ("manifest digest", receipt["subject_manifest_digest"], digest(expected, OPERATION_MANIFEST_DOMAIN)),
             ("tenant", receipt["tenant_id"], expected["tenant_id"]),
             ("operation ID", receipt["operation_id"], expected["id"]),
             ("target", receipt["target"]["resource_id"], expected["target"]["resource_id"]),
