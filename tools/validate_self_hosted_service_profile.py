@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import ipaddress
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,8 @@ from validate_deployment_profile import (  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SCHEMA = ROOT / "schemas" / "self-hosted-service-profile-v1.schema.json"
 VALIDATOR_VERSION = "0.1.0"
+_DNS_LABEL = r"(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)"
+_DNS_HOSTNAME_RE = re.compile(rf"^(?=.{1,253}$){_DNS_LABEL}(?:\\.{_DNS_LABEL})+$")
 
 
 def load_schema(path: Path) -> dict[str, Any]:
@@ -133,6 +136,12 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                         "path": path + "/ingress_hostnames",
                         "message": "ingress hostnames must not be blank",
                     })
+                for host_index, hostname in enumerate(normalized_hosts):
+                    if not _DNS_HOSTNAME_RE.fullmatch(hostname):
+                        errors.append({
+                            "path": f"{path}/ingress_hostnames/{host_index}",
+                            "message": "ingress hostnames must be valid ASCII DNS names using IDNA A-labels, without spaces, underscores, wildcards, or IP literals",
+                        })
                 if len(normalized_hosts) != len(endpoint["ingress_hostnames"]):
                     errors.append({
                         "path": path + "/ingress_hostnames",
