@@ -146,7 +146,7 @@ class QualificationRunnerContractTests(unittest.TestCase):
             tracked.parent.mkdir()
             tracked.write_text("VALUE = 1\\n", encoding="utf-8")
             gitignore = root / ".gitignore"
-            gitignore.write_text("ignored-source.py\\n", encoding="utf-8")
+            gitignore.write_text("ignored-source.py\n", encoding="utf-8")
             commands = (
                 ["git", "init", "-q"],
                 ["git", "config", "user.email", "qualification-test@example.invalid"],
@@ -175,6 +175,11 @@ class QualificationRunnerContractTests(unittest.TestCase):
             root_untracked.unlink()
             ignored = root / "ignored-source.py"
             ignored.write_text("VALUE = 5\\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "check-ignore", "-q", "ignored-source.py"],
+                cwd=root, check=True,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
             self.assertFalse(qualification.source_tree_clean(root))
             ignored.unlink()
             report = root / "artifacts" / "qualification-report.json"
