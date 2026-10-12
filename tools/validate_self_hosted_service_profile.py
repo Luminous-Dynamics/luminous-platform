@@ -15,6 +15,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 from typing import Any
 
 try:
@@ -142,6 +143,75 @@ def _is_acceptable_public_source_network(
         and not network.is_reserved
     )
 
+
+
+_OCI_REPOSITORY_COMPONENT_RE = re.compile(r"^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$")
+_OCI_TAG_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$")
+
+
+def _valid_oci_digest_reference(reference: str, digest: str) -> bool:
+    """Require a fully qualified registry/repository reference pinned to this digest."""
+    if reference.count("@") != 1 or any(character.isspace() for character in reference):
+        return False
+
+    image_name, embedded_digest = reference.rsplit("@", 1)
+    if not image_name or embedded_digest != digest:
+        return False
+
+    registry, separator, repository = image_name.partition("/")
+    if not separator or not registry or not repository:
+        return False
+
+    try:
+        parsed_registry = urlsplit("//" + registry)
+        hostname = parsed_registry.hostname
+        port = parsed_registry.port
+    except ValueError:
+        return False
+
+    if (
+        not hostname
+        or parsed_registry.username is not None
+        or parsed_registry.password is not None
+        or parsed_registry.path
+        or parsed_registry.query
+        or parsed_registry.fragment
+        or (port is not None and not 1 <= port <= 65535)
+    ):
+        return False
+
+    normalized_hostname = hostname.lower()
+    try:
+        ipaddress.ip_address(normalized_hostname)
+        is_ip_literal = True
+    except ValueError:
+        is_ip_literal = False
+
+    if not is_ip_literal:
+        # Allow localhost and single-label internal registries only when the
+        # port makes the registry authority explicit. Public DNS names must be
+        # syntactically valid ASCII A-label hostnames.
+        if normalized_hostname == "localhost":
+            pass
+        elif port is not None and re.fullmatch(_DNS_LABEL, normalized_hostname):
+            pass
+        elif not _DNS_HOSTNAME_RE.fullmatch(normalized_hostname):
+            return False
+
+    repository_name, tag_separator, tag = repository.rpartition(":")
+    if tag_separator:
+        if not tag or not _OCI_TAG_RE.fullmatch(tag):
+            return False
+    else:
+        repository_name = repository
+
+    components = repository_name.split("/")
+    if not components or any(not _OCI_REPOSITORY_COMPONENT_RE.fullmatch(part) for part in components):
+        return False
+
+    # Avoid references that are syntactically ambiguous or exceed the common
+    # registry name limit described by the OCI Distribution Specification.
+    return len(registry + "/" + repository_name) <= 255
 
 
 def load_schema(path: Path) -> dict[str, Any]:
@@ -504,10 +574,13 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                     "path": "/runtime/source_pin/digest",
                     "message": "OCI workloads require an immutable SHA-256 digest; mutable tags are insufficient",
                 })
-            elif source_pin["reference"].rsplit("@", 1)[-1] != source_pin["digest"]:
+            elif not _valid_oci_digest_reference(source_pin["reference"], source_pin["digest"]):
                 errors.append({
                     "path": "/runtime/source_pin/reference",
-                    "message": "OCI reference must embed the same @sha256 digest declared in source_pin.digest",
+                    "message": (
+                        "OCI reference must include a valid explicit registry/repository locator "
+                        "and embed the same @sha256 digest declared in source_pin.digest"
+                    ),
                 })
         elif mode == "guest-image-digest" and not source_pin.get("digest"):
             errors.append({
