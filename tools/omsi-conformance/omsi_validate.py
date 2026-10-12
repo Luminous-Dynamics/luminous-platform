@@ -93,9 +93,9 @@ def digest(value: Any, domain: str) -> str:
         domain_bytes = domain.encode("ascii", errors="strict")
     except (AttributeError, UnicodeEncodeError) as exc:
         raise ConformanceError("digest domain must be a stable ASCII identifier") from exc
-    if not domain_bytes or b"\\x00" in domain_bytes:
+    if not domain_bytes or b"\x00" in domain_bytes:
         raise ConformanceError("digest domain must be non-empty and cannot contain NUL")
-    payload = b"OMSI-DIGEST/0.1\\x00" + domain_bytes + b"\\x00" + canonical_bytes(value)
+    payload = b"OMSI-DIGEST/0.1\x00" + domain_bytes + b"\x00" + canonical_bytes(value)
     return "sha256:" + hashlib.sha256(payload).hexdigest()
 
 ACTION_ARGUMENTS_DOMAIN = "org.omsi.action-arguments/0.1"
