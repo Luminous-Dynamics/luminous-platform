@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import struct
 import sys
 import tempfile
@@ -123,6 +125,32 @@ class StaticFallbackPreviewTests(unittest.TestCase):
             "--output", str(EXAMPLE_PATH),
         ])
         self.assertEqual(status, 2)
+ 
+    def test_cli_refuses_to_overwrite_a_declared_asset(self):
+        with tempfile.TemporaryDirectory() as directory:
+            package = Path(directory)
+            manifest_path = package / "scene.json"
+            asset_path = package / "preview.svg"
+            manifest = json.loads(EXAMPLE_PATH.read_text(encoding="utf-8"))
+            asset_bytes = b"<svg xmlns='http://www.w3.org/2000/svg'/>"
+            asset_path.write_bytes(asset_bytes)
+            manifest["assets"] = [{
+                "assetId": "preview-image",
+                "path": "preview.svg",
+                "sha256": hashlib.sha256(asset_bytes).hexdigest(),
+                "mediaType": "image/svg+xml",
+                "license": {"spdxId": "MIT"},
+            }]
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            status = main([
+                str(manifest_path),
+                "--asset-root", str(package),
+                "--width", "2",
+                "--height", "2",
+                "--output", str(asset_path),
+            ])
+            self.assertEqual(status, 2)
+            self.assertEqual(asset_path.read_bytes(), asset_bytes)
 
 
 if __name__ == "__main__":
