@@ -69,6 +69,22 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("explicit exposure approval" in error["message"] for error in report["errors"]))
 
+    def test_public_exposure_rejects_private_only_source_ranges_even_with_approval(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["public_exposure_approved"] = True
+        profile["network"]["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+        profile["network"]["endpoints"][0]["exposure"] = "public-network"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("private CIDRs alone contradict public exposure" in error["message"] for error in report["errors"]))
+
+    def test_loopback_exposure_requires_loopback_bind(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["endpoints"][0]["exposure"] = "loopback"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("requires a loopback bind address" in error["message"] for error in report["errors"]))
+
     def test_public_approval_requires_review_reference(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["public_exposure_approved"] = True
