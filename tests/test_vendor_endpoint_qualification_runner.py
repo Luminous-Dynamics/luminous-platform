@@ -375,7 +375,7 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 with (
                     patch.object(qualification, "ROOT", root),
                     patch.object(qualification, "checked_out_sha", return_value="a" * 40),
-                    patch.object(qualification, "source_tree_clean", side_effect=[True, False]),
+                    patch.object(qualification, "source_tree_clean", side_effect=[True, False, False]),
                     patch.object(qualification.platform, "python_version", return_value="3.13.7"),
                     patch.object(
                         qualification,
