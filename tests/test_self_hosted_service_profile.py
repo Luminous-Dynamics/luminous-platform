@@ -8,6 +8,7 @@ import copy
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -360,6 +361,28 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
     def test_profile_digest_is_independent_of_mapping_key_order(self):
         reversed_profile = dict(reversed(list(BASE.items())))
         self.assertEqual(profile_digest(BASE), profile_digest(reversed_profile))
+
+    def test_cli_reports_malformed_yaml_in_stable_json_shape(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            bad_profile = Path(temp_dir) / "duplicate-key.yaml"
+            bad_profile.write_text(
+                "schema: luminous.self-hosted-service-profile/v1\\nschema: duplicate\\n",
+                encoding="utf-8",
+            )
+            proc = subprocess.run(
+                [sys.executable, str(ROOT / "tools" / "validate_self_hosted_service_profile.py"), str(bad_profile)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+        self.assertEqual(proc.returncode, 2, msg=proc.stderr + proc.stdout)
+        report = json.loads(proc.stdout)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertFalse(report["qualification_evaluated"])
+        self.assertIsNone(report["profile_digest_sha256"])
+        self.assertTrue(report["schema_digest_sha256"].startswith("sha256:"))
+        self.assertTrue(report["errors"])
 
     def test_cli_emits_valid_declaration_without_qualifying_runtime(self):
         proc = subprocess.run(
