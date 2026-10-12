@@ -219,5 +219,134 @@ class TestNixwardAdapterBinding(unittest.TestCase):
             )
 
 
+    def test_all_coherent_nixward_lifecycle_phases_bind(self):
+        cases = [
+            lifecycle_transaction("planned"),
+            lifecycle_transaction("validated"),
+            lifecycle_transaction("authorized"),
+            lifecycle_transaction("snapshotted"),
+            lifecycle_transaction("applied"),
+            lifecycle_transaction("verified"),
+            lifecycle_transaction("promoted"),
+            lifecycle_transaction("failed"),
+            lifecycle_transaction("recovered", recovered_from="failed"),
+            lifecycle_transaction("recovered", recovered_from="verified"),
+        ]
+        for tx in cases:
+            with self.subTest(phase=tx["phase"], application=tx["application"]):
+                v.validate_schema("nixward_transaction", tx)
+                record = binding(tx)
+                validate_adapter_binding(
+                    record, operation(), nixward_transaction=tx, now=NOW,
+                )
+
+    def test_planned_phase_rejects_future_validation_receipt(self):
+        tx = lifecycle_transaction("planned")
+        tx["validation"] = {"evidence_digest": "a" * 64, "summary": "unexpected"}
+        with self.assertRaisesRegex(v.ConformanceError, "must not contain validation evidence"):
+            binding(tx)
+
+    def test_validated_phase_requires_validation_receipt(self):
+        tx = lifecycle_transaction("validated")
+        tx["validation"] = None
+        with self.assertRaisesRegex(v.ConformanceError, "requires validation evidence"):
+            binding(tx)
+
+    def test_authorized_phase_requires_authorization_receipt(self):
+        tx = lifecycle_transaction("authorized")
+        tx["authorization"] = None
+        with self.assertRaisesRegex(v.ConformanceError, "requires authorization evidence"):
+            binding(tx)
+
+    def test_snapshotted_phase_requires_snapshot_receipt(self):
+        tx = lifecycle_transaction("snapshotted")
+        tx["snapshot"] = None
+        with self.assertRaisesRegex(v.ConformanceError, "requires snapshot evidence"):
+            binding(tx)
+
+    def test_applied_phase_requires_application_receipt(self):
+        tx = lifecycle_transaction("applied")
+        tx["application"] = None
+        with self.assertRaisesRegex(v.ConformanceError, "requires application evidence"):
+            binding(tx)
+
+    def test_applied_phase_rejects_nonzero_exit_status(self):
+        tx = lifecycle_transaction("applied")
+        tx["application"]["exit_status"] = 1
+        with self.assertRaisesRegex(v.ConformanceError, "applied phase requires exit status zero"):
+            binding(tx)
+
+    def test_verified_phase_requires_verification_receipt(self):
+        tx = lifecycle_transaction("verified")
+        tx["verification"] = None
+        with self.assertRaisesRegex(v.ConformanceError, "requires verification evidence"):
+            binding(tx)
+
+    def test_verified_phase_rejects_nonzero_application(self):
+        tx = lifecycle_transaction("verified")
+        tx["application"]["exit_status"] = 1
+        with self.assertRaisesRegex(v.ConformanceError, "verified phase requires exit status zero"):
+            binding(tx)
+
+    def test_promoted_phase_requires_promoted_outcome(self):
+        tx = lifecycle_transaction("promoted")
+        tx["outcome"]["phase"] = "recovered"
+        with self.assertRaisesRegex(v.ConformanceError, "promoted outcome is inconsistent"):
+            binding(tx)
+
+    def test_promoted_phase_rejects_unhealthy_boot(self):
+        tx = lifecycle_transaction("promoted")
+        tx["verification"]["boot_healthy"] = False
+        with self.assertRaisesRegex(v.ConformanceError, "unhealthy boot cannot be promoted"):
+            binding(tx)
+
+    def test_failed_phase_requires_nonzero_exit_status(self):
+        tx = lifecycle_transaction("failed")
+        tx["application"]["exit_status"] = 0
+        with self.assertRaisesRegex(v.ConformanceError, "failed phase requires nonzero exit status"):
+            binding(tx)
+
+    def test_failed_phase_requires_failed_outcome(self):
+        tx = lifecycle_transaction("failed")
+        tx["outcome"] = None
+        with self.assertRaisesRegex(v.ConformanceError, "requires outcome evidence"):
+            binding(tx)
+
+    def test_failed_phase_rejects_mismatched_outcome_phase(self):
+        tx = lifecycle_transaction("failed")
+        tx["outcome"]["phase"] = "promoted"
+        with self.assertRaisesRegex(v.ConformanceError, "failed outcome is inconsistent"):
+            binding(tx)
+
+    def test_recovered_successful_apply_requires_verification(self):
+        tx = lifecycle_transaction("recovered", recovered_from="verified")
+        tx["verification"] = None
+        with self.assertRaisesRegex(v.ConformanceError, "requires verification evidence"):
+            binding(tx)
+
+    def test_recovered_failed_apply_rejects_success_verification(self):
+        tx = lifecycle_transaction("recovered", recovered_from="failed")
+        tx["verification"] = {
+            "post_state_digest": "f" * 64,
+            "evidence_digest": "0" * 64,
+            "boot_healthy": True,
+        }
+        with self.assertRaisesRegex(v.ConformanceError, "must not contain verification evidence"):
+            binding(tx)
+
+    def test_application_timestamps_must_be_ordered(self):
+        tx = lifecycle_transaction("applied")
+        tx["application"]["started_at_ms"] = 1200
+        tx["application"]["finished_at_ms"] = 1100
+        with self.assertRaisesRegex(v.ConformanceError, "timestamp interval is invalid"):
+            binding(tx)
+
+    def test_transaction_envelope_rejects_unexpected_fields(self):
+        tx = lifecycle_transaction("planned")
+        tx["administrator_approved"] = True
+        with self.assertRaisesRegex(v.ConformanceError, "schema error"):
+            binding(tx)
+
+
 if __name__ == "__main__":
     unittest.main()
