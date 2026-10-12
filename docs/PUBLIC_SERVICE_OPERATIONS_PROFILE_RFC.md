@@ -21,6 +21,8 @@ The system must **complement** South Africa's Digital Transformation Roadmap and
 
 This RFC defines a proposed integration profile, not a claim that any municipality has endorsed it, that private municipal systems are accessible, or that current Luminous components are ready for government deployment.
 
+**Engagement posture:** the MyMzansi roadmap describes real-time operational data exchange and bulk anonymised data access as government digital-infrastructure initiatives. Its initiative page lists non-government access to experiment with agency models as an *indicative* Phase 2 milestone for Q2 2027. Treat this as a possible future engagement pathway through the Digital Services Unit—not an access entitlement, a guaranteed milestone, or permission to use administrative data. Until an official access process and its terms are published and approved, this project stays on public aggregate data and synthetic records. Reference: https://www.mymzansi.gov.za/roadmap/initiative-2
+
 ## 2. Why this profile fits the existing platform
 
 The existing platform architecture already describes the right general model: a work case connects a request or detected need to a tenant, people, resources, workflow, authority decisions, planned work, observations, evidence and outcome. The civic profile should add jurisdiction-specific constraints and workflows to that model, not fork a second operational kernel.
