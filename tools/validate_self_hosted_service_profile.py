@@ -160,7 +160,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                         "message": "ingress route dependency must have role='reverse-proxy'",
                     })
                 normalized_hosts = {
-                    hostname.strip().rstrip(".").lower()
+                    hostname.rstrip(".").lower()
                     for hostname in endpoint["ingress_hostnames"]
                 }
                 if "" in normalized_hosts:
@@ -169,8 +169,14 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                         "message": "ingress hostnames must not be blank",
                     })
                 for host_index, raw_hostname in enumerate(endpoint["ingress_hostnames"]):
-                    hostname = raw_hostname.strip().rstrip(".").lower()
-                    if not _DNS_HOSTNAME_RE.fullmatch(hostname):
+                    hostname = raw_hostname.rstrip(".").lower()
+                    try:
+                        ipaddress.ip_address(hostname)
+                    except ValueError:
+                        hostname_is_ip_literal = False
+                    else:
+                        hostname_is_ip_literal = True
+                    if not _DNS_HOSTNAME_RE.fullmatch(hostname) or hostname_is_ip_literal:
                         errors.append({
                             "path": f"{path}/ingress_hostnames/{host_index}",
                             "message": "ingress hostnames must be valid ASCII DNS names using IDNA A-labels, without spaces, underscores, wildcards, or IP literals",
