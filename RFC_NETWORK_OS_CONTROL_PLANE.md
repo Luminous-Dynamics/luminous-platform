@@ -101,6 +101,10 @@ The initial lab uses isolated network namespaces and virtual Ethernet devices cr
 
 A later appliance profile must explicitly define how NixOS declarative configuration and runtime reconciliation divide ownership. Two independent controllers must never continually reconcile the same resource.
 
+### Observation consistency is a first-class proof obligation
+
+Linux does not promise one atomic snapshot across all networking objects. A Netlink dump can be interrupted while the kernel's fast path updates objects; an adapter must inspect dump flags, detect message loss/truncation, and either retry under a bounded policy or mark that resource family incomplete. A successful socket read or zero exit code is not completeness evidence. Completeness evidence must bind the exact target/namespace, resource family, collector build, request/reply boundaries, and loss/interruption indicators. The M0 planner therefore requires per-kind completeness-evidence digests and refuses to infer resource absence unless the caller marks that kind complete. The planner binds the digest only; a separate verifier must check the artifact before any future write-capable adapter can rely on it.
+
 ## Transaction and safety contract
 
 Every write-capable operation must bind to an immutable transaction intent containing at least:
@@ -135,8 +139,8 @@ The daemon should run with the narrowest feasible privileges and a small privile
 
 These links are initial evaluation inputs, not blanket endorsements. Pin dependencies and review their licenses, MSRV, release history, feature coverage, and transitive dependencies before implementation.
 
-- [Linux Netlink introduction](https://docs.kernel.org/userspace-api/netlink/intro.html) explains the kernel/userspace protocol and its message model.
-- [Linux Netlink protocol specifications](https://docs.kernel.org/userspace-api/netlink/specs.html) documents machine-readable YAML protocol specifications and generated interfaces.
+- [Linux Netlink introduction](https://docs.kernel.org/userspace-api/netlink/intro.html) explains the kernel/userspace protocol and its message model. Its dump-consistency section warns that a dump can be interrupted and inconsistent (including missing objects); userspace must detect `NLM_F_DUMP_INTR` and retry rather than mark the inventory complete.
+- [Linux Netlink protocol specifications](https://docs.kernel.org/userspace-api/netlink/specs.html) documents machine-readable YAML protocol specifications and generated interfaces. Where a mature crate does not cover a needed family, evaluate the kernel's published YAML spec and generated/YNL approach instead of inventing wire layouts.
 - [Linux nftables Netlink specification](https://docs.kernel.org/netlink/specs/nftables.html) documents batch-begin/batch-end and rule/table operations.
 - [Linux WireGuard Netlink specification](https://docs.kernel.org/netlink/specs/wireguard.html) documents the device and peer control interface.
 - [`rtnetlink` on docs.rs](https://docs.rs/crate/rtnetlink/0.23.0) listed v0.23.0 (released 2026-08-18) at research time and covers links, addresses, neighbours, and routes. Its published changelog reports Rust 1.75 as the minimum supported version; Luminous should still test and pin a known-good version.
