@@ -166,6 +166,10 @@ class QualificationRunnerContractTests(unittest.TestCase):
             untracked.parent.mkdir()
             untracked.write_text("VALUE = 3\\n", encoding="utf-8")
             self.assertFalse(qualification.source_tree_clean(root))
+            untracked.unlink()
+            root_untracked = root / "unexpected.py"
+            root_untracked.write_text("VALUE = 4\\n", encoding="utf-8")
+            self.assertFalse(qualification.source_tree_clean(root))
 
     def test_input_manifest_fence_detects_changed_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
