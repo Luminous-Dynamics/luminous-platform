@@ -209,6 +209,17 @@ class QualificationRunnerContractTests(unittest.TestCase):
                     {"input.json": None},
                 )
 
+    def test_manifest_hashing_rejects_oversized_regular_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            oversized = root / "oversized.json"
+            with oversized.open("wb") as output:
+                output.truncate(qualification.MAX_MANIFEST_FILE_BYTES + 1)
+            self.assertEqual(
+                qualification.input_hashes(root, ("oversized.json",)),
+                {"oversized.json": None},
+            )
+
     def test_manifest_hashing_rejects_non_regular_fifo_without_blocking(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
