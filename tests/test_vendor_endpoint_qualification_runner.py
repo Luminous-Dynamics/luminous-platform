@@ -69,6 +69,17 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 (expected, "artifacts/report.json"),
             )
 
+    def test_report_destination_rejects_external_symlink_into_checkout(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            root = parent / "checkout"
+            (root / "artifacts").mkdir(parents=True)
+            alias = parent / "external-alias"
+            alias.symlink_to(root / "artifacts", target_is_directory=True)
+            self.assertIsNone(
+                qualification.safe_report_destination(root, alias / "report.json")
+            )
+
     def test_report_destination_rejects_tracked_artifact_overwrite(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
