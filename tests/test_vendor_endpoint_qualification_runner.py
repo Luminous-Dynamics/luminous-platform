@@ -326,6 +326,30 @@ class QualificationRunnerContractTests(unittest.TestCase):
             self.assertFalse(qualification.source_tree_clean(root))
             tracked.write_text("VALUE = 1\\n", encoding="utf-8")
             self.assertTrue(qualification.source_tree_clean(root))
+            subprocess.run(
+                ["git", "update-index", "--assume-unchanged", "tools/tracked.py"],
+                cwd=root, check=True,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            self.assertFalse(qualification.source_tree_clean(root))
+            subprocess.run(
+                ["git", "update-index", "--no-assume-unchanged", "tools/tracked.py"],
+                cwd=root, check=True,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            self.assertTrue(qualification.source_tree_clean(root))
+            subprocess.run(
+                ["git", "update-index", "--skip-worktree", "tools/tracked.py"],
+                cwd=root, check=True,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            self.assertFalse(qualification.source_tree_clean(root))
+            subprocess.run(
+                ["git", "update-index", "--no-skip-worktree", "tools/tracked.py"],
+                cwd=root, check=True,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            )
+            self.assertTrue(qualification.source_tree_clean(root))
             untracked = root / "tests" / "injected.py"
             untracked.parent.mkdir()
             untracked.write_text("VALUE = 3\\n", encoding="utf-8")
