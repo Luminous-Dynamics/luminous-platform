@@ -292,9 +292,47 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         endpoint = profile["network"]["endpoints"][0]
         endpoint["exposure"] = "public-network"
         endpoint["bind_address"] = "192.168.50.10"
+        endpoint["public_edge_mapping_ref"] = "edge-review:pbx-public-sip"
         endpoint["allowed_source_cidrs"] = ["0.0.0.0/0"]
         report = self.validate(profile)
         self.assertEqual(report["result"], "VALID_DECLARATION")
+
+    def test_private_bind_for_public_endpoint_requires_edge_mapping_reference(self):
+        profile = copy.deepcopy(BASE)
+        network = profile["network"]
+        network["public_exposure_approved"] = True
+        network["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+        network["public_exposure_approved_endpoint_ids"] = ["sip-udp"]
+        endpoint = network["endpoints"][0]
+        endpoint["exposure"] = "public-network"
+        endpoint["bind_address"] = "192.168.50.10"
+        endpoint["allowed_source_cidrs"] = ["0.0.0.0/0"]
+
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any(
+            "explicit edge/NAT mapping reference" in error["message"]
+            for error in report["errors"]
+        ))
+
+    def test_public_bind_rejects_documentation_reserved_and_mapped_addresses(self):
+        for bind_address in ("192.0.2.10", "240.0.0.1", "255.255.255.255", "::ffff:8.8.8.8"):
+            with self.subTest(bind_address=bind_address):
+                profile = copy.deepcopy(BASE)
+                network = profile["network"]
+                network["public_exposure_approved"] = True
+                network["public_exposure_assessment_ref"] = "review:synthetic-public-edge"
+                network["public_exposure_approved_endpoint_ids"] = ["sip-udp"]
+                endpoint = network["endpoints"][0]
+                endpoint["exposure"] = "public-network"
+                endpoint["bind_address"] = bind_address
+                endpoint["allowed_source_cidrs"] = ["0.0.0.0/0"]
+                report = self.validate(profile)
+                self.assertEqual(report["result"], "INVALID")
+                self.assertTrue(any(
+                    "globally routable unicast address" in error["message"]
+                    for error in report["errors"]
+                ))
 
     def test_public_approval_must_target_a_declared_public_endpoint(self):
         profile = copy.deepcopy(BASE)
