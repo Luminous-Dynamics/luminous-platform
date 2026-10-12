@@ -92,6 +92,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
         dependency_ids = [dependency["id"] for dependency in dependencies]
         if len(dependency_ids) != len(set(dependency_ids)):
             errors.append({"path": "/dependencies/items", "message": "dependency IDs must be unique"})
+        dependencies_by_id = {dependency["id"]: dependency for dependency in dependencies}
         for index, dependency in enumerate(dependencies):
             if dependency["role"] in {"platform-control-plane", "coordination-service", "telemetry-export"} and dependency["required_for_start"]:
                 errors.append({
@@ -100,6 +101,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                 })
 
         active_socket_claims: list[tuple[str, str, str, int, int]] = []
+        active_ingress_claims: list[tuple[str, str, str, str, int, int, set[str]]] = []
         for index, endpoint in enumerate(endpoints):
             path = f"/network/endpoints/{index}"
             if "port_range" in endpoint and endpoint["port_range"][0] > endpoint["port_range"][1]:
@@ -109,29 +111,82 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
             if not endpoint["enabled"] and endpoint["exposure"] != "disabled":
                 errors.append({"path": path, "message": "a disabled endpoint must declare exposure=disabled"})
 
+            if endpoint["kind"] == "ingress-route":
+                ingress_id = endpoint["ingress_dependency_id"]
+                ingress_dependency = dependencies_by_id.get(ingress_id)
+                if ingress_dependency is None:
+                    errors.append({
+                        "path": path + "/ingress_dependency_id",
+                        "message": "ingress route must reference a declared dependency",
+                    })
+                elif ingress_dependency["role"] != "reverse-proxy":
+                    errors.append({
+                        "path": path + "/ingress_dependency_id",
+                        "message": "ingress route dependency must have role='reverse-proxy'",
+                    })
+                normalized_hosts = {
+                    hostname.strip().rstrip(".").lower()
+                    for hostname in endpoint["ingress_hostnames"]
+                }
+                if "" in normalized_hosts:
+                    errors.append({
+                        "path": path + "/ingress_hostnames",
+                        "message": "ingress hostnames must not be blank",
+                    })
+                if len(normalized_hosts) != len(endpoint["ingress_hostnames"]):
+                    errors.append({
+                        "path": path + "/ingress_hostnames",
+                        "message": "ingress hostnames must be unique after case and trailing-dot normalization",
+                    })
+            else:
+                normalized_hosts = set()
+
             if endpoint["enabled"] and ("port" in endpoint or "port_range" in endpoint):
                 start_port, end_port = (
                     (endpoint["port_range"][0], endpoint["port_range"][1])
                     if "port_range" in endpoint
                     else (endpoint["port"], endpoint["port"])
                 )
-                for prior_id, prior_bind, prior_version, prior_start, prior_end in active_socket_claims:
-                    if (
-                        prior_bind == endpoint["bind_address"]
-                        and prior_version == endpoint["protocol"]
-                        and start_port <= prior_end
-                        and prior_start <= end_port
-                    ):
-                        errors.append({
-                            "path": path,
-                            "message": (
-                                f"enabled endpoint overlaps ports/protocol with endpoint {prior_id!r} "
-                                "on the same bind address"
-                            ),
-                        })
-                active_socket_claims.append((
-                    endpoint["id"], endpoint["bind_address"], endpoint["protocol"], start_port, end_port
-                ))
+                if endpoint["kind"] == "listener":
+                    for prior_id, prior_bind, prior_version, prior_start, prior_end in active_socket_claims:
+                        if (
+                            prior_bind == endpoint["bind_address"]
+                            and prior_version == endpoint["protocol"]
+                            and start_port <= prior_end
+                            and prior_start <= end_port
+                        ):
+                            errors.append({
+                                "path": path,
+                                "message": (
+                                    f"enabled listener overlaps ports/protocol with endpoint {prior_id!r} "
+                                    "on the same bind address"
+                                ),
+                            })
+                    active_socket_claims.append((
+                        endpoint["id"], endpoint["bind_address"], endpoint["protocol"], start_port, end_port
+                    ))
+                else:
+                    ingress_id = endpoint["ingress_dependency_id"]
+                    for prior_id, prior_ingress, prior_bind, prior_protocol, prior_start, prior_end, prior_hosts in active_ingress_claims:
+                        if (
+                            prior_ingress == ingress_id
+                            and prior_bind == endpoint["bind_address"]
+                            and prior_protocol == endpoint["protocol"]
+                            and start_port <= prior_end
+                            and prior_start <= end_port
+                            and normalized_hosts.intersection(prior_hosts)
+                        ):
+                            errors.append({
+                                "path": path,
+                                "message": (
+                                    f"ingress hostname/port overlaps endpoint {prior_id!r} "
+                                    "on the same declared reverse proxy"
+                                ),
+                            })
+                    active_ingress_claims.append((
+                        endpoint["id"], ingress_id, endpoint["bind_address"], endpoint["protocol"],
+                        start_port, end_port, normalized_hosts
+                    ))
 
             try:
                 bind_address = ipaddress.ip_address(endpoint["bind_address"])
