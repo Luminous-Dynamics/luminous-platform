@@ -206,6 +206,35 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("only explicit private source CIDRs" in error["message"] for error in report["errors"]))
 
+    def test_documentation_network_is_not_accepted_as_private_source(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["endpoints"][0]["allowed_source_cidrs"] = ["192.0.2.0/24"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("only explicit private source CIDRs" in error["message"] for error in report["errors"]))
+
+    def test_noncanonical_cidr_with_host_bits_is_rejected(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["endpoints"][0]["allowed_source_cidrs"] = ["192.168.50.1/24"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("valid IPv4 or IPv6 CIDR" in error["message"] for error in report["errors"]))
+
+    def test_private_ipv6_ula_bind_and_source_are_supported(self):
+        profile = copy.deepcopy(BASE)
+        endpoint = profile["network"]["endpoints"][0]
+        endpoint["bind_address"] = "fd12:3456:789a::10"
+        endpoint["allowed_source_cidrs"] = ["fd12:3456:789a::/64"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "VALID_DECLARATION")
+
+    def test_private_source_cidr_family_must_match_bind_address(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["endpoints"][0]["allowed_source_cidrs"] = ["fd12:3456:789a::/64"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("family must match" in error["message"] for error in report["errors"]))
+
     def test_invalid_source_cidr_is_rejected(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["endpoints"][0]["allowed_source_cidrs"] = ["not-a-cidr"]
