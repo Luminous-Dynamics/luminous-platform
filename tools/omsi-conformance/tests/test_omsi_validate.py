@@ -79,7 +79,7 @@ class TestOMSI(unittest.TestCase):
         with self.assertRaisesRegex(v.ConformanceError, "receipt issuance predates verified event"):
             v.validate_receipt(receipt(), op(), events)
     def test_verified_receipt_requires_applied_event(self):
-        events=load_fixture("events.json"); events=[event for event in events if event["to_state"] != "applied"]
+        events=load_fixture("events.json")[:5]
         with self.assertRaisesRegex(v.ConformanceError, "requires an applied event"):
             v.validate_receipt(receipt(), op(), events)
     def test_verified_receipt_requires_terminal_verified_event(self):
