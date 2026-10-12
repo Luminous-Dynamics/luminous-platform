@@ -281,7 +281,9 @@
               "protocol",
               "exposure",
               "enabled",
-              "purpose"
+              "purpose",
+              "bind_address",
+              "allowed_source_cidrs"
             ],
             "properties": {
               "id": {
@@ -327,6 +329,22 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 500
+              },
+              "bind_address": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120,
+                "description": "Explicit IP address to bind. Runtime observation must confirm the actual listener uses this address."
+              },
+              "allowed_source_cidrs": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "description": "Explicit source CIDRs permitted to reach this endpoint. Empty is only acceptable when disabled or loopback-only."
               }
             },
             "oneOf": [
