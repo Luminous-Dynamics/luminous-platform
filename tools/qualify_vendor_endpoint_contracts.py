@@ -720,6 +720,16 @@ def run_bounded_process(
         if group_kill_failed:
             raise OSError("timed-out child process group could not be terminated") from None
         raise subprocess.TimeoutExpired(args, timeout) from None
+    # A worker can exit successfully after launching a background descendant.
+    # Kill any remaining members of its dedicated process group before returning
+    # a result, otherwise a delayed child could mutate inputs after the fence.
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    except OSError:
+        raise OSError("completed worker process group could not be terminated") from None
+
     return subprocess.CompletedProcess(
         args, process.returncode, captured_stdout, captured_stderr
     )
@@ -1075,7 +1085,7 @@ def main(argv: list[str] | None = None) -> int:
             "no revocation or authorization-at-use verification",
             "no fresh target inventory binding, tested-capability scope, or adapter qualification",
             "manifest files and parent directories have write bits removed during child checks; this is not an OS-enforced sandbox, and a same-user child may defeat mode bits (persistent changes are caught by digest fences)",
-            "timed-out validator/test workers run in dedicated process groups that are killed on timeout; this bounded cleanup is not an OS-enforced sandbox",
+            "validator/test worker process groups are killed on normal exit or timeout; a descendant that creates a separate session can escape, so this is not an OS-enforced sandbox",
             f"manifest inputs larger than {MAX_MANIFEST_FILE_BYTES} bytes are rejected",
         ],
         "diagnostics_policy": "raw stdout, stderr, test identifiers and traceback text are not persisted",

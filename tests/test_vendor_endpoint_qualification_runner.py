@@ -92,6 +92,40 @@ class QualificationRunnerContractTests(unittest.TestCase):
         self.assertLessEqual(worst_case, qualification.MAX_CHILD_EXECUTION_BUDGET_SECONDS)
         self.assertLess(qualification.MAX_CHILD_EXECUTION_BUDGET_SECONDS, 600)
 
+    def test_successful_worker_exit_kills_background_descendants(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            child_started = root / "child-started.txt"
+            marker = root / "surviving-child.txt"
+            child_code = (
+                "import time; from pathlib import Path; "
+                f"Path({str(child_started)!r}).write_text('started', encoding='utf-8'); "
+                "time.sleep(0.8); "
+                f"Path({str(marker)!r}).write_text('survived', encoding='utf-8')"
+            )
+            parent_code = (
+                "import subprocess, sys, time; from pathlib import Path; "
+                "subprocess.Popen([sys.executable, '-c', sys.argv[1]]); "
+                f"deadline = time.monotonic() + 2; "
+                f"started = Path({str(child_started)!r}); "
+                "while not started.exists() and time.monotonic() < deadline: time.sleep(0.01); "
+                "assert started.exists(), 'descendant failed to start'; "
+                "sys.exit(0)"
+            )
+            result = qualification.run_bounded_process(
+                [sys.executable, "-c", parent_code, child_code],
+                cwd=root,
+                env=qualification.child_environment({"PATH": os.environ.get("PATH", "")}),
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=3.0,
+            )
+            self.assertEqual(result.returncode, 0)
+            self.assertTrue(child_started.is_file(), "descendant was not running before parent exit")
+            time.sleep(1.0)
+            self.assertFalse(marker.exists(), "a background descendant survived worker exit")
+
     def test_child_timeout_kills_spawned_process_group(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
