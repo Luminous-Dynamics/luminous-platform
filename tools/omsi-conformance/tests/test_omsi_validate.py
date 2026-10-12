@@ -39,6 +39,12 @@ class TestOMSI(unittest.TestCase):
     def test_grant_cannot_predate_manifest(self):
         x=grant(); x["issued_at"]="2026-10-12T11:59:00Z"; x["expires_at"]="2026-10-12T12:14:00Z"
         with self.assertRaisesRegex(v.ConformanceError, "cannot predate"): v.validate_grant(op(), x, NOW)
+    def test_float_in_grant_extension_rejected(self):
+        x=grant(); x["extensions"]={"approximation":1.5}
+        with self.assertRaisesRegex(v.ConformanceError, "floating-point"): v.validate_grant(op(), x, NOW)
+    def test_empty_grant_issuer_rejected(self):
+        x=grant(); x["issued_by"]=""
+        with self.assertRaisesRegex(v.ConformanceError, "minLength"): v.validate_grant(op(), x, NOW)
     def test_receipt_binds_exact_operation(self): v.validate_receipt(receipt(), op())
     def test_receipt_tenant_spoofing_rejected(self):
         x=receipt(); x["target"]["tenant_id"]="tenant-b"
@@ -52,10 +58,19 @@ class TestOMSI(unittest.TestCase):
     def test_receipt_operation_substitution_rejected(self):
         x=receipt(); x["operation_id"]="op-other"
         with self.assertRaisesRegex(v.ConformanceError, "operation ID mismatch"): v.validate_receipt(x, op())
+    def test_receipt_cannot_predate_manifest(self):
+        x=receipt(); x["issued_at"]="2026-10-12T12:00:00Z"
+        with self.assertRaisesRegex(v.ConformanceError, "cannot predate"): v.validate_receipt(x, op())
     def test_same_authority_domain_is_not_independent(self):
         x=receipt(); x["verification"]["verifier_authority_domain"]="control-a"
         with self.assertRaisesRegex(v.ConformanceError, "distinct declared authority domains"): v.validate_receipt(x, op())
-    def test_event_sequence_fixture_passes(self): v.validate_events(load_fixture("events.json"))
+    def test_event_sequence_fixture_passes(self): v.validate_events(load_fixture("events.json"), op())
+    def test_event_sequence_cannot_predate_manifest(self):
+        x=load_fixture("events.json"); x[0]["occurred_at"]="2026-10-12T12:00:00Z"
+        with self.assertRaisesRegex(v.ConformanceError, "cannot predate"): v.validate_events(x, op())
+    def test_event_sequence_must_bind_operation(self):
+        x=load_fixture("events.json"); x[0]["operation_id"]="op-other"
+        with self.assertRaisesRegex(v.ConformanceError, "operation_id does not match"): v.validate_events(x, op())
     def test_invalid_transition_rejected(self):
         x=load_fixture("events.json"); x[1]["from_state"]="running"
         with self.assertRaises(v.ConformanceError): v.validate_events(x)
