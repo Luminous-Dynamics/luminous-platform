@@ -117,7 +117,7 @@ The companion conformance seed now uses distinct digest domains for action argum
 
 The seed also prototypes a constrained canonical JSON accepted-input profile: duplicate keys, negative zero, floating-point values, out-of-safe-range integers and invalid Unicode are rejected. This is **not declared full RFC 8785/JCS conformance**, and it is not frozen as normative OMSI behavior. The choice between adopting RFC 8785 without restriction and defining a formally constrained subset remains open. Cross-language golden vectors and independent review must precede any stable digest contract.
 
-The implementation follow-up is tracked in [draft PR #32](https://github.com/Luminous-Dynamics/luminous-platform/pull/32). The larger companion kit passed 68 tests locally. A local mirror of the compact seed's current 36-test source also passed all tests, schema self-validation and four CLI fixture checks. GitHub Actions for the current branch is still queued; no remote CI pass is claimed. Neither result constitutes security certification or proof of production readiness.
+The implementation follow-up is tracked in [draft PR #32](https://github.com/Luminous-Dynamics/luminous-platform/pull/32). The larger companion kit passed 68 tests locally. A local mirror of the compact seed's current 38-test source also passed all tests, schema self-validation, four CLI fixture checks and a separate JavaScript digest probe with basic and Unicode golden vectors. GitHub Actions for the current branch is still queued; no remote CI pass is claimed. Neither result constitutes security certification or proof of production readiness.
 
 ## Open questions
 
