@@ -9,6 +9,7 @@ python -m pip install -r tools/omsi-conformance/requirements.txt
 make -C tools/omsi-conformance schemas
 make -C tools/omsi-conformance test
 make -C tools/omsi-conformance validate-fixtures
+make -C tools/omsi-conformance interop
 python tools/omsi-conformance/omsi_validate.py operation tools/omsi-conformance/fixtures/operation.json --now 2026-10-12T12:05:00Z
 python tools/omsi-conformance/omsi_validate.py grant tools/omsi-conformance/fixtures/grant.json --manifest tools/omsi-conformance/fixtures/operation.json --now 2026-10-12T12:05:00Z
 python tools/omsi-conformance/omsi_validate.py receipt tools/omsi-conformance/fixtures/receipt.json --manifest tools/omsi-conformance/fixtures/operation.json
@@ -23,7 +24,7 @@ The files in this conformance seed are released under the MIT License. This lice
 
 See [CANONICALIZATION.md](CANONICALIZATION.md) for the exact prototype framing and registered digest domains. Action-argument and operation-manifest digests are intentionally domain-separated and are not interchangeable.
 
-The seed accepts a deliberately restricted JSON value set for digest-bearing contract documents: duplicate object keys, negative zero, floating-point numbers, unsafe-range integers and strings/keys that cannot be represented as valid Unicode scalar values are rejected. Object member names are ordered by UTF-16 code units; arrays retain order; canonical bytes are hashed with SHA-256 using an explicit semantic domain prefix. This is a constrained accepted-input profile designed to avoid ambiguous cross-language encodings, **not a claim of full RFC 8785/JCS conformance**. The exact algorithm and test vectors must receive independent cross-language review before a stable protocol version.
+The seed accepts a deliberately restricted JSON value set for digest-bearing contract documents: duplicate object keys, negative zero, floating-point numbers, unsafe-range integers and strings/keys that cannot be represented as valid Unicode scalar values are rejected. Object member names are ordered by UTF-16 code units; arrays retain order; canonical bytes are hashed with SHA-256 using an explicit semantic domain prefix. This is a constrained accepted-input profile designed to avoid ambiguous cross-language encodings, **not a claim of full RFC 8785/JCS conformance**. The exact algorithm and test vectors must receive independent cross-language review before a stable protocol version. The `interop` target uses a small independent JavaScript implementation to check fixed basic/Unicode vectors and the action/manifest/grant/receipt digest bindings; it is a prototype, not a second fully conforming implementation.
 
 ## Security boundary
 
