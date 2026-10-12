@@ -116,6 +116,16 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         changed = nixward_transaction(version=2)
         with self.assertRaisesRegex(v.ConformanceError, "unsupported Nixward transaction version"):
             binding(changed)
+    def test_missing_nixward_transaction_phase_rejected(self):
+        changed = nixward_transaction()
+        del changed["phase"]
+        with self.assertRaisesRegex(v.ConformanceError, "unsupported or missing Nixward transaction phase"):
+            binding(changed)
+
+    def test_unknown_nixward_transaction_phase_rejected(self):
+        changed = nixward_transaction(phase="indeterminate")
+        with self.assertRaisesRegex(v.ConformanceError, "unsupported or missing Nixward transaction phase"):
+            binding(changed)
 
     def test_digest_algorithm_namespace_substitution_rejected(self):
         record = binding()
