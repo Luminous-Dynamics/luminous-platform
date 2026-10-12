@@ -24,3 +24,4 @@ jobs:
       - run: make -C tools/omsi-conformance schemas
       - run: make -C tools/omsi-conformance test
       - run: make -C tools/omsi-conformance validate-fixtures
+      - run: make -C tools/omsi-conformance interop
