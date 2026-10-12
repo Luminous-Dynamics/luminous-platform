@@ -89,7 +89,13 @@ class TestOMSI(unittest.TestCase):
     def test_float_in_canonical_json_rejected(self):
         with self.assertRaisesRegex(v.ConformanceError, "floating-point"): v.canonical_bytes({"n": 1.25})
     def test_digest_independent_of_key_order(self):
-        self.assertEqual(v.digest({"a":1,"b":2}), v.digest({"b":2,"a":1}))
+        domain="org.omsi.test/0.1"
+        self.assertEqual(v.digest({"a":1,"b":2}, domain), v.digest({"b":2,"a":1}, domain))
+    def test_digest_separates_semantic_domains(self):
+        obj={"a":1}
+        self.assertNotEqual(v.digest(obj, "org.omsi.action-arguments/0.1"), v.digest(obj, "org.omsi.operation-manifest/0.1"))
+    def test_digest_rejects_nul_in_domain(self):
+        with self.assertRaisesRegex(v.ConformanceError, "cannot contain NUL"): v.digest({"a":1}, "org.omsi.bad/0.1\\x00x")
     def test_signature_shape_is_not_signature_verification(self):
         x=grant(); x["proof"]["signature_base64"]="AA=="
         v.validate_grant(op(), x, NOW)
