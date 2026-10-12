@@ -114,7 +114,7 @@ Linux does not promise one atomic snapshot across all networking objects. A Netl
 
 ### Direct answer
 
-**Linux can be the foundation for globally deployed networking, but “global hub capacity” is not a single server-size number.** Linux has mature multi-queue packet distribution (RSS/RPS/RFS/XPS), network namespaces and VRFs, eBPF/XDP, and interfaces for hardware forwarding offload. Linux-based SONiC is an existence proof that Linux software can participate in cloud data-center switching, with a switch ASIC/device doing the line-rate forwarding. These precedents establish feasibility of the platform family, not performance of this project.
+**Linux can be the foundation for globally deployed networking, but “global hub capacity” is not a single server-size number.** Linux has mature [multi-queue packet distribution (RSS/RPS/RFS/XPS)](https://docs.kernel.org/networking/scaling.html), [network namespaces and VRFs](https://docs.kernel.org/networking/vrf.html), [eBPF/XDP and AF_XDP](https://docs.kernel.org/networking/af_xdp.html), and [interfaces for hardware forwarding offload](https://docs.kernel.org/networking/switchdev.html). Linux-based [SONiC](https://github.com/sonic-net/SONiC) is an existence proof that Linux software can participate in cloud data-center switching, with supported switch ASICs doing line-rate forwarding. These precedents establish feasibility of the platform family, not performance of this project.
 
 We should design for global-scale *fleet management* without routing every customer's packet through one global software hub. Keep forwarding local to each appliance or switch, use distributed routing and local policy enforcement, and build regional/federated management. Global operation is a topology, redundancy, and operations problem as much as a packet-processing problem.
 
@@ -161,11 +161,13 @@ Bandwidth hides a crucial variable: packets per second. Assuming ordinary Ethern
 
 This is **the offered on-wire packet rate**, not measured Linux forwarding performance. Real workloads vary by packet size, flow distribution, offloads, tunnel encryption, firewall/NAT rules, route lookups, and hardware. It illustrates why one throughput benchmark using large packets is not a credible global-scale qualification.
 
-Linux networking scales through complementary mechanisms: NIC multi-queue/RSS distributes receives, RPS/RFS/XPS can steer work in software, and AF_XDP can provide specialized high-performance userspace paths when driver support and workload justify them. For switch hardware, switchdev can offload supported bridge/FIB operations into the device. Each feature is capability- and device-dependent; none is an automatic speed switch.
+Linux networking scales through complementary mechanisms: NIC multi-queue/RSS distributes receives, RPS/RFS/XPS can steer work in software, and [AF_XDP](https://docs.kernel.org/networking/af_xdp.html) can provide specialized high-performance userspace paths when driver support and workload justify them. For switch hardware, [switchdev](https://docs.kernel.org/networking/switchdev.html) can offload supported bridge/FIB operations into the device. [FRRouting](https://frrouting.org/doc/) provides an established routing suite; its documentation describes route reflectors and the use of multiple reflectors to avoid a single point of failure. Each feature is capability- and device-dependent; none is an automatic speed switch.
 
 ### Benchmark and qualification protocol
 
 Use a test stack with deliberately different roles:
+
+- [RFC 2544](https://www.rfc-editor.org/rfc/rfc2544) provides a recognized baseline for forwarding throughput, frame loss, and latency measurements; adapt its methodology to the tested environment and newer applicable benchmarking guidance.
 
 - **Correctness/failure:** NixOS VM and namespace labs, deterministic synthetic topology, property tests for planner invariants, fault injection, restart and recovery tests.
 - **Basic TCP/UDP throughput:** iperf3 or equivalent, clearly separating endpoint throughput from forwarding benchmarks.
