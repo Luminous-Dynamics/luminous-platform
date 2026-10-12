@@ -176,6 +176,36 @@ fn observation_rejects_normalization_without_rule_identity() {
 }
 
 #[test]
+fn omitted_or_not_retrieved_rows_cannot_be_normalized() {
+    for state in ["row_omitted", "not_retrieved"] {
+        let mut value = parse_observation_fixture();
+        value["raw_value"] = Value::Null;
+        value["raw_value_state"] = json!(state);
+        value["normalization"] = json!({
+            "applied": true,
+            "rule_id": "incorrect-null-conversion",
+            "rule_version": "1",
+            "normalized_value": 0,
+            "reason": "A missing observation is not a reported value."
+        });
+        let error = validate_observation_json(&encoded(&value))
+            .expect_err("missing observations must not be normalized");
+        assert!(error.to_string().contains("cannot be applied"));
+    }
+}
+
+#[test]
+fn non_fixture_observation_accepts_only_a_sha256_digest() {
+    let mut value = parse_observation_fixture();
+    value["fixture_only"] = json!(false);
+    value["source_snapshot_sha256"] = json!(format!("sha256:{}", "a".repeat(64)));
+    assert!(validate_observation_json(&encoded(&value)).is_ok());
+
+    value["source_snapshot_sha256"] = json!(format!("sha256:{}", "G".repeat(64)));
+    assert!(validate_observation_json(&encoded(&value)).is_err());
+}
+
+#[test]
 fn observation_rejects_rewriting_values_without_a_rule() {
     let mut value = parse_observation_fixture();
     value["raw_value"] = json!(8);
