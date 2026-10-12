@@ -32,6 +32,7 @@ EXPECTED_CRYPTOGRAPHY_VERSION = "50.0.2"
 MAX_MANIFEST_FILE_BYTES = 4 * 1024 * 1024
 VALIDATOR_TIMEOUT_SECONDS = 20
 TEST_WORKER_TIMEOUT_SECONDS = 30
+PROCESS_CLEANUP_TIMEOUT_SECONDS = 2
 MAX_CHILD_EXECUTION_BUDGET_SECONDS = 300
 VALIDATORS = {
     "endpoint_profile": "tools/validate_vendor_management_endpoint_profile.py",
@@ -633,27 +634,41 @@ def run_bounded_process(
     try:
         captured_stdout, captured_stderr = process.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
+        group_kill_failed = False
         try:
             # start_new_session makes the worker a process-group leader. Kill any
             # descendants it spawned as well as the direct process before reaping it.
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
-            # Usually a race with process exit. Do not wait unboundedly if the
-            # direct worker deliberately left its original process group.
+            # The group may have exited between the deadline and cleanup.
             if process.poll() is None:
                 try:
                     process.kill()
-                except ProcessLookupError:
+                except OSError:
                     pass
         except OSError:
-            # Best-effort direct-child cleanup, then fail closed at the caller.
+            # Killing only the direct child cannot establish process-tree cleanup.
+            group_kill_failed = True
             try:
                 process.kill()
             except OSError:
                 pass
-            process.communicate()
-            raise
-        process.communicate()
+
+        try:
+            process.communicate(timeout=PROCESS_CLEANUP_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired:
+            # Never wait without a deadline while reaping after the initial timeout.
+            try:
+                process.kill()
+            except OSError:
+                pass
+            try:
+                process.communicate(timeout=PROCESS_CLEANUP_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                raise OSError("timed-out child could not be reaped after termination") from None
+
+        if group_kill_failed:
+            raise OSError("timed-out child process group could not be terminated") from None
         raise subprocess.TimeoutExpired(args, timeout) from None
     return subprocess.CompletedProcess(
         args, process.returncode, captured_stdout, captured_stderr

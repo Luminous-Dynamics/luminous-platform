@@ -70,6 +70,48 @@ class QualificationRunnerContractTests(unittest.TestCase):
             time.sleep(1.2)
             self.assertFalse(marker.exists(), "a child survived its worker's timeout")
 
+    def test_timeout_cleanup_never_waits_without_a_deadline(self) -> None:
+        class UnreapableProcess:
+            pid = 4321
+            returncode = None
+
+            def __init__(self) -> None:
+                self.communicate_timeouts: list[float | None] = []
+                self.kill_calls = 0
+
+            def communicate(self, timeout: float | None = None) -> tuple[None, None]:
+                self.communicate_timeouts.append(timeout)
+                raise subprocess.TimeoutExpired(["fake-child"], timeout)
+
+            def poll(self) -> None:
+                return None
+
+            def kill(self) -> None:
+                self.kill_calls += 1
+
+        fake = UnreapableProcess()
+        with (
+            patch.object(qualification.subprocess, "Popen", return_value=fake),
+            patch.object(qualification.os, "killpg", side_effect=PermissionError("denied")),
+        ):
+            with self.assertRaisesRegex(OSError, "could not be reaped"):
+                qualification.run_bounded_process(
+                    ["fake-child"],
+                    cwd=Path("."),
+                    env={},
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=0.1,
+                )
+
+        self.assertEqual(
+            fake.communicate_timeouts,
+            [0.1, qualification.PROCESS_CLEANUP_TIMEOUT_SECONDS,
+             qualification.PROCESS_CLEANUP_TIMEOUT_SECONDS],
+        )
+        self.assertGreaterEqual(fake.kill_calls, 2)
+
     def test_report_destination_only_allows_safe_artifact_json(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
