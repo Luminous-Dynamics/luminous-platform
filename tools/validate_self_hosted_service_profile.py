@@ -348,6 +348,8 @@ def main() -> int:
     parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA, help="schema path")
     args = parser.parse_args()
 
+    schema: dict[str, Any] | None = None
+    profile: dict[str, Any] | None = None
     try:
         schema = load_schema(args.schema)
         profile = parse_profile_yaml(args.profile.read_text(encoding="utf-8"))
@@ -359,6 +361,8 @@ def main() -> int:
             "source": str(args.profile),
             "result": "INVALID",
             "qualification_evaluated": False,
+            "profile_digest_sha256": _safe_profile_digest(profile) if profile is not None else None,
+            "schema_digest_sha256": _safe_profile_digest(schema) if schema is not None else None,
             "errors": [{"path": "/", "message": str(exc)}],
             "blockers": [],
             "notice": "Invalid input is rejected before runtime qualification.",
