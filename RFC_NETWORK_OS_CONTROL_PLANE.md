@@ -93,13 +93,18 @@ These are proposed boundaries, not claims that the crates exist.
 - **Symthaea:** initially consume telemetry and propose explanations or plans. It is advisory only. No cognitive output is mutation authority.
 - **Xenia:** retain its separate transport/peer responsibilities; use authenticated, versioned interfaces rather than coupling the network daemon to internal transport implementation details.
 
-### 4. Resource ownership is mandatory
+### 4. Configuration authority and runtime ownership are separate
 
-Each managed resource must have one declared writer/owner. The controller must detect, not silently fight, configurations owned by NixOS-generated units, systemd-networkd, NetworkManager, another agent, or an operator. If ownership cannot be established, operate read-only and report a conflict.
+Every managed resource carries two distinct ownership facts:
+
+- **Configuration authority:** which source is entitled to define the desired configuration (for example, NixOS declarative configuration, Nixward's explicit runtime intent, or an identified external authority).
+- **Runtime owner:** which process/controller currently maintains the effective kernel state (for example, systemd-networkd, NetworkManager, or a Nixward-owned runtime adapter).
+
+These must not be collapsed into one field. NixOS declarative intent may legitimately be realized by systemd-networkd or NetworkManager. A runtime controller may not infer configuration authority merely because it can observe or mutate the kernel. The M0 planner records the intended and observed values independently and blocks an update when either does not match. Matching state must not hide a controller conflict.
 
 The initial lab uses isolated network namespaces and virtual Ethernet devices created and owned by the test harness. It must not mutate the host's default route, physical interfaces, global firewall policy, or production WireGuard devices.
 
-A later appliance profile must explicitly define how NixOS declarative configuration and runtime reconciliation divide ownership. Two independent controllers must never continually reconcile the same resource.
+A later appliance profile must explicitly define the allowed configuration-authority/runtime-owner pair for each resource family and device profile. Two independent controllers must never continually reconcile the same resource. Ownership migration must be an explicit transaction, not an implicit side effect of reconciliation.
 
 ### Observation consistency is a first-class proof obligation
 
@@ -218,7 +223,7 @@ Before moving beyond Phase 1, map the exact Nixward transaction/authorization/re
 
 - The first deliverable is a read-only inventory plus pure planner, not a production router.
 - No physical-host networking mutation is reachable from the Phase 1 build.
-- Every planned resource has explicit owner, capability, observed pre-state, intended state, and postcondition.
+- Every planned resource has explicit configuration authority and runtime owner, capability, observed pre-state, intended state, and postcondition.
 - Deterministic tests demonstrate stale-state rejection, conflict detection, stable plan digests, and explicit unknown/indeterminate outcomes.
 - A Phase 2 actuator cannot target outside the test harness's owned namespace/resources.
 - No integration is described as implemented or qualified until its exact-head evidence is available.
