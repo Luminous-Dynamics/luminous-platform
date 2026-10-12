@@ -254,18 +254,10 @@ def safe_report_destination(
             if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
                 return None
 
-    # Never overwrite an arbitrary existing file. A prior output must identify
-    # itself as this runner's report, even when the chosen path is outside root.
+    # Publication is no-clobber: callers must move aside any prior report before
+    # reusing a destination. This closes the preflight-to-write target race.
     if target.exists():
-        try:
-            existing = json.loads(target.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return None
-        if (
-            not isinstance(existing, dict)
-            or existing.get("report_schema_version") != REPORT_SCHEMA_VERSION
-        ):
-            return None
+        return None
 
     # Refuse overwriting tracked files even if they are not in INPUT_PATHS.
     if relative is not None and (root_abs / ".git").exists():
@@ -285,6 +277,61 @@ def safe_report_destination(
         if tracked.returncode != 1:
             return None
     return target, relative.as_posix() if relative is not None else None
+
+
+def write_json_report_no_replace(report_path: Path, report: Mapping[str, object]) -> None:
+    """Atomically create a report without following path symlinks or replacing a target."""
+    if not report_path.is_absolute() or report_path.name in ("", ".", ".."):
+        raise OSError("unsafe report path")
+
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    directory_fd = os.open(os.sep, directory_flags)
+    temporary_name: str | None = None
+    try:
+        # Traverse from an anchored root descriptor. Directory-relative no-follow
+        # opens keep later path changes from redirecting writes through a symlink.
+        for component in report_path.parent.parts[1:]:
+            try:
+                next_fd = os.open(component, directory_flags, dir_fd=directory_fd)
+            except FileNotFoundError:
+                try:
+                    os.mkdir(component, 0o755, dir_fd=directory_fd)
+                except FileExistsError:
+                    pass
+                next_fd = os.open(component, directory_flags, dir_fd=directory_fd)
+            os.close(directory_fd)
+            directory_fd = next_fd
+
+        payload = (
+            json.dumps(report, sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+        ).encode("utf-8")
+        temporary_name = f".{report_path.name}.{os.urandom(16).hex()}.tmp"
+        file_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+        file_fd = os.open(temporary_name, file_flags, 0o600, dir_fd=directory_fd)
+        with os.fdopen(file_fd, "wb") as output:
+            output.write(payload)
+            output.flush()
+            os.fsync(output.fileno())
+
+        # link() fails if the destination appeared after preflight. Unlike replace(),
+        # it cannot overwrite that destination.
+        os.link(
+            temporary_name,
+            report_path.name,
+            src_dir_fd=directory_fd,
+            dst_dir_fd=directory_fd,
+            follow_symlinks=False,
+        )
+        os.unlink(temporary_name, dir_fd=directory_fd)
+        temporary_name = None
+        os.fsync(directory_fd)
+    finally:
+        if temporary_name is not None:
+            try:
+                os.unlink(temporary_name, dir_fd=directory_fd)
+            except OSError:
+                pass
+        os.close(directory_fd)
 
 
 def source_tree_clean(
@@ -1092,15 +1139,7 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     try:
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(
-            mode="w", encoding="utf-8", newline="\n", dir=report_path.parent,
-            prefix=".vendor-endpoint-qualification-", suffix=".tmp", delete=False,
-        ) as temporary:
-            json.dump(report, temporary, sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False)
-            temporary.write("\n")
-            temporary_path = Path(temporary.name)
-        os.replace(temporary_path, report_path)
+        write_json_report_no_replace(report_path, report)
     except OSError:
         print("ERROR: unable to write qualification report")
         return 2

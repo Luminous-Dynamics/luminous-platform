@@ -200,6 +200,43 @@ class QualificationRunnerContractTests(unittest.TestCase):
         )
         self.assertGreaterEqual(fake.kill_calls, 2)
 
+    def test_report_writer_atomically_creates_new_json(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "artifacts" / "report.json"
+            report = {"report_schema_version": qualification.REPORT_SCHEMA_VERSION, "status": "incomplete"}
+            qualification.write_json_report_no_replace(target, report)
+            self.assertEqual(json.loads(target.read_text(encoding="utf-8")), report)
+            self.assertTrue(target.read_bytes().endswith(b"\n"))
+            self.assertEqual(target.stat().st_mode & 0o777, 0o600)
+
+    def test_report_writer_does_not_overwrite_target_created_after_preflight(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "artifacts" / "report.json"
+            target.parent.mkdir()
+            target.write_text("preserve this unrelated file", encoding="utf-8")
+            with self.assertRaises(FileExistsError):
+                qualification.write_json_report_no_replace(
+                    target,
+                    {"report_schema_version": qualification.REPORT_SCHEMA_VERSION},
+                )
+            self.assertEqual(target.read_text(encoding="utf-8"), "preserve this unrelated file")
+
+    def test_report_writer_rejects_parent_symlink_swap_after_preflight(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            outside = root / "outside"
+            outside.mkdir()
+            link = root / "artifacts"
+            link.symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(OSError):
+                qualification.write_json_report_no_replace(
+                    link / "report.json",
+                    {"report_schema_version": qualification.REPORT_SCHEMA_VERSION},
+                )
+            self.assertFalse((outside / "report.json").exists())
+
     def test_report_destination_only_allows_safe_artifact_json(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -246,7 +283,7 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 qualification.safe_report_destination(root, parent / "notes.txt")
             )
 
-    def test_external_report_destination_allows_only_new_or_existing_runner_json(self) -> None:
+    def test_external_report_destination_rejects_reuse_of_existing_report(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             parent = Path(directory)
             root = parent / "checkout"
@@ -260,10 +297,7 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 json.dumps({"report_schema_version": qualification.REPORT_SCHEMA_VERSION}),
                 encoding="utf-8",
             )
-            self.assertEqual(
-                qualification.safe_report_destination(root, output),
-                (output, None),
-            )
+            self.assertIsNone(qualification.safe_report_destination(root, output))
 
     def test_report_destination_rejects_external_symlink_into_checkout(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
