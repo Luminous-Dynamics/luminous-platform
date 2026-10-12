@@ -245,6 +245,54 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "VALID_DECLARATION")
         self.assertFalse(report["qualification_evaluated"])
 
+    def test_native_nixos_runtime_rejects_oci_pin_mode(self):
+        profile = copy.deepcopy(BASE)
+        digest = "sha256:" + "d" * 64
+        profile["runtime"]["source_pin"] = {
+            "mode": "oci-digest",
+            "reference": "registry.example.invalid/example/service@" + digest,
+            "digest": digest,
+        }
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("runtime kind 'nixos-native' requires source-pin mode 'host-flake-lock'" in error["message"] for error in report["errors"]))
+
+    def test_vm_runtime_rejects_host_flake_pin_mode(self):
+        profile = copy.deepcopy(BASE)
+        profile["runtime"]["kind"] = "virtual-machine"
+        profile["runtime"]["source_pin"]["mode"] = "host-flake-lock"
+        profile["runtime"]["update_strategy"] = "guest-os-managed-reviewed"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("runtime kind 'virtual-machine' requires source-pin mode 'guest-image-digest'" in error["message"] for error in report["errors"]))
+
+    def test_vm_guest_image_pin_requires_digest(self):
+        profile = copy.deepcopy(BASE)
+        profile["runtime"]["kind"] = "virtual-machine"
+        profile["runtime"]["source_pin"] = {
+            "mode": "guest-image-digest",
+            "reference": "debian-guest-image",
+            "digest": None,
+        }
+        profile["runtime"]["update_strategy"] = "guest-os-managed-reviewed"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("concrete guest-image SHA-256 digest" in error["message"] for error in report["errors"]))
+
+    def test_nixos_advanced_maturity_requires_derivation_digest(self):
+        profile = copy.deepcopy(BASE)
+        profile["qualification"]["maturity"] = "M2_SANDBOX_TESTED"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "QUALIFICATION_BLOCKED")
+        self.assertTrue(any("built derivation/closure digest" in blocker for blocker in report["blockers"]))
+
+    def test_non_finite_invalid_value_does_not_crash_digest_reporting(self):
+        profile = copy.deepcopy(BASE)
+        profile["metadata"]["description"] = float("nan")
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertIsNone(report["profile_digest_sha256"])
+
     def test_validator_never_qualifies_runtime_even_with_references(self):
         profile = copy.deepcopy(BASE)
         profile["metadata"]["status"] = "qualified"
