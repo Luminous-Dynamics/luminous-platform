@@ -36,15 +36,135 @@ def _tag_nixward_digest(field: str, transaction: dict[str, Any]) -> str:
     return f"blake3:{value}"
 
 
+def _validate_transaction_semantics(transaction: dict[str, Any]) -> None:
+    """Check cross-field invariants from the currently inspected Rust lifecycle."""
+    phase = transaction["phase"]
+    validation = transaction["validation"]
+    authorization = transaction["authorization"]
+    snapshot = transaction["snapshot"]
+    application = transaction["application"]
+    verification = transaction["verification"]
+    outcome = transaction["outcome"]
+
+    def require_present(field: str, value: Any) -> None:
+        if value is None:
+            raise validator.ConformanceError(
+                f"Nixward phase {phase} requires {field} evidence"
+            )
+
+    def require_absent(field: str, value: Any) -> None:
+        if value is not None:
+            raise validator.ConformanceError(
+                f"Nixward phase {phase} must not contain {field} evidence"
+            )
+
+    if phase == "planned":
+        for field, value in (
+            ("validation", validation), ("authorization", authorization),
+            ("snapshot", snapshot), ("application", application),
+            ("verification", verification), ("outcome", outcome),
+        ):
+            require_absent(field, value)
+        return
+
+    require_present("validation", validation)
+
+    if phase == "validated":
+        for field, value in (
+            ("authorization", authorization), ("snapshot", snapshot),
+            ("application", application), ("verification", verification),
+            ("outcome", outcome),
+        ):
+            require_absent(field, value)
+        return
+
+    require_present("authorization", authorization)
+    if phase == "authorized":
+        for field, value in (
+            ("snapshot", snapshot), ("application", application),
+            ("verification", verification), ("outcome", outcome),
+        ):
+            require_absent(field, value)
+        return
+
+    require_present("snapshot", snapshot)
+    if phase == "snapshotted":
+        for field, value in (
+            ("application", application), ("verification", verification),
+            ("outcome", outcome),
+        ):
+            require_absent(field, value)
+        return
+
+    require_present("application", application)
+    if application["finished_at_ms"] < application["started_at_ms"]:
+        raise validator.ConformanceError("Nixward application timestamp interval is invalid")
+
+    exit_status = application["exit_status"]
+    if phase == "applied":
+        if exit_status != 0:
+            raise validator.ConformanceError("Nixward applied phase requires exit status zero")
+        require_absent("verification", verification)
+        require_absent("outcome", outcome)
+        return
+
+    if phase == "verified":
+        if exit_status != 0:
+            raise validator.ConformanceError("Nixward verified phase requires exit status zero")
+        require_present("verification", verification)
+        require_absent("outcome", outcome)
+        return
+
+    if phase == "promoted":
+        if exit_status != 0:
+            raise validator.ConformanceError("Nixward promoted phase requires exit status zero")
+        require_present("verification", verification)
+        require_present("outcome", outcome)
+        if outcome["phase"] != "promoted" or outcome["reason"] is not None:
+            raise validator.ConformanceError("Nixward promoted outcome is inconsistent with phase")
+        if verification["boot_healthy"] is False:
+            raise validator.ConformanceError("Nixward unhealthy boot cannot be promoted")
+        return
+
+    if phase == "failed":
+        if exit_status == 0:
+            raise validator.ConformanceError("Nixward failed phase requires nonzero exit status")
+        require_absent("verification", verification)
+        require_present("outcome", outcome)
+        if outcome["phase"] != "failed" or outcome["reason"] is None:
+            raise validator.ConformanceError("Nixward failed outcome is inconsistent with phase")
+        return
+
+    if phase == "recovered":
+        require_present("outcome", outcome)
+        if outcome["phase"] != "recovered" or outcome["reason"] is None:
+            raise validator.ConformanceError("Nixward recovered outcome is inconsistent with phase")
+        if exit_status == 0:
+            require_present("verification", verification)
+        else:
+            require_absent("verification", verification)
+        return
+
+    # The allowed phase set and current schema should make this unreachable.
+    raise validator.ConformanceError("unsupported Nixward transaction phase")
+
+
 def _binding_inputs(transaction: dict[str, Any]) -> dict[str, str]:
     """Extract namespaced IDs together from one versioned transaction envelope."""
     if not isinstance(transaction, dict):
         raise validator.ConformanceError("Nixward transaction envelope must be an object")
+    if transaction.get("schema") != NIXWARD_TRANSACTION_SCHEMA:
+        raise validator.ConformanceError("unsupported Nixward transaction schema")
+    version = transaction.get("version")
+    if type(version) is not int or version != 1:
+        raise validator.ConformanceError("unsupported Nixward transaction version")
     if transaction.get("phase") not in {
         "planned", "authorized", "validated", "snapshotted", "applied",
         "verified", "promoted", "recovered", "failed",
     }:
         raise validator.ConformanceError("unsupported or missing Nixward transaction phase")
+    validator.validate_schema("nixward_transaction", transaction)
+    _validate_transaction_semantics(transaction)
     return {
         "nixward_plan_digest": _tag_nixward_digest("plan_digest", transaction),
         "nixward_target_machine_digest": _tag_nixward_digest(
@@ -52,7 +172,6 @@ def _binding_inputs(transaction: dict[str, Any]) -> dict[str, str]:
         ),
         "nixward_transaction_id": _tag_nixward_digest("transaction_id", transaction),
     }
-
 
 def build_adapter_binding(
     operation: dict[str, Any],
