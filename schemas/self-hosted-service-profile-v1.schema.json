@@ -294,9 +294,7 @@
                 "enum": [
                   "tcp",
                   "udp",
-                  "sctp",
-                  "icmp",
-                  "other"
+                  "sctp"
                 ]
               },
               "port": {
@@ -388,22 +386,6 @@
                 "not": {
                   "required": [
                     "port"
-                  ]
-                }
-              },
-              {
-                "not": {
-                  "anyOf": [
-                    {
-                      "required": [
-                        "port"
-                      ]
-                    },
-                    {
-                      "required": [
-                        "port_range"
-                      ]
-                    }
                   ]
                 }
               }
