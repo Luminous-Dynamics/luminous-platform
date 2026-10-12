@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omsi.example/spec/0.1/nixward-adapter-binding.schema.json",
+  "title": "OMSI to Nixward adapter binding (prototype)",
+  "description": "A cross-reference record. It does not authorize, execute, or attest a Nixward change.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "operation_id",
+    "tenant_id",
+    "resource_id",
+    "correlation_id",
+    "omsi_manifest_digest",
+    "nixward_plan_digest",
+    "nixward_target_machine_digest",
+    "nixward_transaction_id"
+  ],
+  "properties": {
+    "schema": {
+      "const": "org.omsi.nixward-adapter-binding/0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resource_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "omsi_manifest_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "nixward_plan_digest": {
+      "type": "string",
+      "pattern": "^blake3:[0-9a-f]{64}$"
+    },
+    "nixward_target_machine_digest": {
+      "type": "string",
+      "pattern": "^blake3:[0-9a-f]{64}$"
+    },
+    "nixward_transaction_id": {
+      "type": "string",
+      "pattern": "^blake3:[0-9a-f]{64}$"
+    }
+  }
+}
