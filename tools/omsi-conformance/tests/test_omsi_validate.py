@@ -95,7 +95,7 @@ class TestOMSI(unittest.TestCase):
         obj={"a":1}
         self.assertNotEqual(v.digest(obj, "org.omsi.action-arguments/0.1"), v.digest(obj, "org.omsi.operation-manifest/0.1"))
     def test_digest_rejects_nul_in_domain(self):
-        with self.assertRaisesRegex(v.ConformanceError, "cannot contain NUL"): v.digest({"a":1}, "org.omsi.bad/0.1\\x00x")
+        with self.assertRaisesRegex(v.ConformanceError, "cannot contain NUL"): v.digest({"a":1}, "org.omsi.bad/0.1\x00x")
     def test_signature_shape_is_not_signature_verification(self):
         x=grant(); x["proof"]["signature_base64"]="AA=="
         v.validate_grant(op(), x, NOW)
