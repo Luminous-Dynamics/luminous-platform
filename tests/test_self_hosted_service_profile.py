@@ -80,6 +80,23 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         report = validate_profile_data(profile, SCHEMA, "unit-test")
         self.assertEqual(report["result"], "VALID_DECLARATION")
 
+    def test_ingress_collision_canonicalizes_equivalent_ipv6_bind_addresses(self):
+        profile = copy.deepcopy(NEXTCLOUD)
+        endpoint = profile["network"]["endpoints"][0]
+        endpoint["bind_address"] = "fd00::1"
+        endpoint["allowed_source_cidrs"] = ["fd00::/64"]
+        duplicate = copy.deepcopy(endpoint)
+        duplicate["id"] = "private-https-ipv6-alias"
+        duplicate["bind_address"] = "fd00:0:0:0:0:0:0:1"
+        profile["network"]["endpoints"].append(duplicate)
+
+        report = validate_profile_data(profile, SCHEMA, "unit-test")
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any(
+            "ingress hostname/port overlaps" in error["message"]
+            for error in report["errors"]
+        ))
+
     def test_duplicate_ingress_hostname_on_same_proxy_is_rejected(self):
         profile = copy.deepcopy(NEXTCLOUD)
         endpoint = copy.deepcopy(profile["network"]["endpoints"][0])
