@@ -71,6 +71,8 @@ class TestOMSI(unittest.TestCase):
     def test_event_sequence_must_bind_operation(self):
         x=load_fixture("events.json"); x[0]["operation_id"]="op-other"
         with self.assertRaisesRegex(v.ConformanceError, "operation_id does not match"): v.validate_events(x, op())
+    def test_malformed_event_shape_fails_as_conformance_error(self):
+        with self.assertRaisesRegex(v.ConformanceError, "schema error"): v.validate_events([{"schema":"org.omsi.operation-event/0.1"}])
     def test_invalid_transition_rejected(self):
         x=load_fixture("events.json"); x[1]["from_state"]="running"
         with self.assertRaises(v.ConformanceError): v.validate_events(x)
