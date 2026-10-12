@@ -307,6 +307,12 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
             endpoint["id"] for endpoint in endpoints
             if endpoint["exposure"] == "public-network"
         ]
+        approved_public_endpoint_ids = set(network["public_exposure_approved_endpoint_ids"])
+        if approved_public_endpoint_ids != set(public_endpoints):
+            errors.append({
+                "path": "/network/public_exposure_approved_endpoint_ids",
+                "message": "public exposure approval scope must exactly match the currently declared public endpoint IDs",
+            })
         if public_endpoints and not network["public_exposure_approved"]:
             errors.append({
                 "path": "/network/public_exposure_approved",
