@@ -214,6 +214,10 @@ class QualificationRunnerContractTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             target = root / "artifacts" / "report.json"
+            self.assertEqual(
+                qualification.safe_report_destination(root, Path("artifacts/report.json")),
+                (target, "artifacts/report.json"),
+            )
             target.parent.mkdir()
             target.write_text("preserve this unrelated file", encoding="utf-8")
             with self.assertRaises(FileExistsError):
@@ -237,7 +241,7 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 )
             self.assertFalse((outside / "report.json").exists())
 
-    def test_report_destination_only_allows_safe_artifact_json(self) -> None:
+    def test_report_destination_only_allows_safe_new_artifact_json(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             expected = root / "artifacts" / "report.json"
@@ -263,9 +267,8 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 json.dumps({"report_schema_version": qualification.REPORT_SCHEMA_VERSION}),
                 encoding="utf-8",
             )
-            self.assertEqual(
-                qualification.safe_report_destination(root, Path("artifacts/report.json")),
-                (expected, "artifacts/report.json"),
+            self.assertIsNone(
+                qualification.safe_report_destination(root, Path("artifacts/report.json"))
             )
 
     def test_external_report_destination_cannot_overwrite_arbitrary_file(self) -> None:
