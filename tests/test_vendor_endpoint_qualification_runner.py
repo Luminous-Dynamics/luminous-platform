@@ -372,6 +372,89 @@ class QualificationRunnerContractTests(unittest.TestCase):
             finally:
                 os.chdir(old_cwd)
 
+    def test_final_fence_detects_source_drift_during_permission_restoration(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in qualification.INPUT_PATHS:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"baseline input\\n")
+            readme = root / "README.md"
+            readme.write_text("baseline documentation\\n", encoding="utf-8")
+            for command in (
+                ["git", "init", "-q"],
+                ["git", "config", "user.email", "qualification-test@example.invalid"],
+                ["git", "config", "user.name", "Qualification Test"],
+                ["git", "add", "."],
+                ["git", "commit", "-q", "-m", "clean qualification fixture"],
+            ):
+                subprocess.run(
+                    command, cwd=root, check=True,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            expected_head = qualification.checked_out_sha(root)
+            self.assertIsNotNone(expected_head)
+            report_path = root / "artifacts" / "qualification-report.json"
+            old_cwd = Path.cwd()
+            real_restore = qualification.restore_input_tree_permissions
+
+            def restore_then_mutate(
+                restore_root: Path,
+                modes: dict[str, tuple[int, bool]],
+            ) -> bool:
+                restored = real_restore(restore_root, modes)
+                readme.write_text("changed documentation\\n", encoding="utf-8")
+                return restored
+
+            def passed_validator(_root: Path, relative_script: str) -> dict[str, object]:
+                return {
+                    "script": relative_script,
+                    "return_code": 0,
+                    "timed_out": False,
+                    "state": "passed",
+                }
+
+            def passed_suite(_root: Path, pattern: str) -> tuple[dict[str, object], bool]:
+                return ({
+                    "pattern": pattern,
+                    "state": "passed",
+                    "tests_run": 1,
+                    "failures": 0,
+                    "errors": 0,
+                    "skipped": 0,
+                    "expected_failures": 0,
+                    "unexpected_successes": 0,
+                    "discovery_errors": 0,
+                    "worker_exit_code": 0,
+                }, False)
+
+            try:
+                with (
+                    patch.object(qualification, "ROOT", root),
+                    patch.object(qualification.platform, "python_version", return_value="3.13.7"),
+                    patch.object(
+                        qualification,
+                        "dependency_version",
+                        side_effect={"jsonschema": "4.26.0", "cryptography": "50.0.2"}.get,
+                    ),
+                    patch.dict(os.environ, {"GITHUB_SHA": expected_head or ""}),
+                    patch.object(qualification, "run_validator", side_effect=passed_validator),
+                    patch.object(qualification, "run_test_suite", side_effect=passed_suite),
+                    patch.object(
+                        qualification,
+                        "restore_input_tree_permissions",
+                        side_effect=restore_then_mutate,
+                    ),
+                ):
+                    return_code = qualification.main(["--report", str(report_path)])
+                    report = json.loads(report_path.read_text(encoding="utf-8"))
+                    self.assertEqual(return_code, 1)
+                    self.assertEqual(report["blocker_codes"], ["SOURCE_TREE_DIRTY"])
+                    self.assertTrue(report["source_integrity"]["original_permissions_restored"])
+                    self.assertFalse(report["source_integrity"]["execution_integrity_preserved"])
+            finally:
+                os.chdir(old_cwd)
+
     def test_unmanifested_source_drift_invalidates_child_result(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
