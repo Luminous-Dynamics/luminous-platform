@@ -98,10 +98,11 @@ on:
 permissions:
   contents: read
 
-# Isolate runs by exact revision: delayed pull_request events must not cancel
-# the newest commit's pending qualification run.
+# Coalesce pending updates by ref instead of queueing one run per commit.
+# An active run may finish; a newer pending run replaces obsolete pending runs.
+# The live-head preflight rejects delayed pull_request events after a newer push.
 concurrency:
-  group: hardware-portfolio-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+  group: hardware-portfolio-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -118,6 +119,19 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+
+      - name: Reject superseded pull request revision
+        if: github.event_name == 'pull_request'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          current_head="$(git ls-remote origin "refs/pull/${PR_NUMBER}/head" | awk 'NR == 1 { print $1 }')"
+          if [ -z "$current_head" ] || [ "$current_head" != "$EVENT_PR_HEAD" ]; then
+            echo "::error::Pull request head has changed since this event; refusing stale qualification."
+            exit 1
+          fi
 
       - name: Set up pinned Python runtime
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
