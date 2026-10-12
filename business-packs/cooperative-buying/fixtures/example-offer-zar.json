@@ -1,0 +1,111 @@
+{
+  "schema": "luminous.cooperative-offer/v1",
+  "metadata": {
+    "offer_id": "fixture:za:packaging-cartons-001",
+    "revision": 1,
+    "status": "draft",
+    "fixture_only": true
+  },
+  "supplier": {
+    "party_id": "fixture:supplier:za-001",
+    "display_name": "Synthetic South African Supplier",
+    "seller_country_code": "ZA"
+  },
+  "product": {
+    "name": "Shipping carton, 300 x 200 x 150 mm (synthetic fixture)",
+    "supplier_sku": "FIXTURE-CARTON-25",
+    "category": "packaging",
+    "specification": "Single-wall corrugated carton; exact dimensions are fixture data and do not describe a real supplier product.",
+    "identifiers": [],
+    "pack": {
+      "order_unit_code": "case",
+      "units_per_pack": "25",
+      "each_unit_code": "carton",
+      "each_quantity": "1",
+      "each_quantity_unit_code": "carton",
+      "order_unit_code_system": "urn:fixture:unit-system:order-unit:v1",
+      "each_unit_code_system": "urn:fixture:unit-system:each-unit:v1",
+      "each_quantity_unit_code_system": "urn:fixture:unit-system:each-unit:v1"
+    },
+    "substitution_policy": "buyer_must_approve"
+  },
+  "terms": {
+    "unit_price": {
+      "amount": "250.00",
+      "currency": "ZAR",
+      "per_quantity": "1",
+      "per_unit_code": "case",
+      "per_unit_code_system": "urn:fixture:unit-system:order-unit:v1"
+    },
+    "price_breaks": [
+      {
+        "minimum_quantity": "10",
+        "unit_price_amount": "235.00",
+        "currency": "ZAR"
+      }
+    ],
+    "minimum_order_quantity": "2",
+    "tax_treatment": "unknown",
+    "tax_description": "Not reviewed; this synthetic offer cannot be used for a real transaction.",
+    "payment_terms": "Synthetic fixture only; no payment terms offered.",
+    "return_warranty_terms": "Not specified; synthetic fixture only.",
+    "charges": [
+      {
+        "kind": "freight",
+        "value": "unknown",
+        "currency": "ZAR",
+        "basis": "per_order",
+        "payable_by": "buyer"
+      }
+    ],
+    "rebate_policy_ref": ""
+  },
+  "availability": {
+    "status": "unknown",
+    "quantity": "unknown",
+    "observed_at": "2026-10-09T00:00:00Z",
+    "lead_time_min": 1,
+    "lead_time_max": 4,
+    "lead_time_unit": "days"
+  },
+  "fulfillment": {
+    "methods": [
+      "pickup",
+      "delivery"
+    ],
+    "available_country_codes": [
+      "ZA"
+    ],
+    "origin_country_code": "ZA",
+    "cross_border_supported": false,
+    "shipping_terms": "Synthetic local fulfillment example; actual availability and delivered cost are unknown."
+  },
+  "jurisdiction": {
+    "required_profile_refs": [
+      "ZA:commerce:proposed-v0"
+    ],
+    "transaction_mode": "domestic",
+    "additional_local_requirements": [
+      "Not legally reviewed; example only."
+    ]
+  },
+  "validity": {
+    "created_at": "2026-10-09T00:00:00Z",
+    "valid_from": "2026-10-09T00:00:00Z",
+    "expires_at": "2026-12-31T23:59:59Z"
+  },
+  "evidence": {
+    "source_type": "manual_entry",
+    "source_reference": "fixture:synthetic-offer-zar",
+    "captured_at": "2026-10-09T00:00:00Z",
+    "asserted_by": "fixture:author",
+    "verification_level": "unverified",
+    "limitations": [
+      "Synthetic fixture; no real supplier, price, stock, tax, or delivery claim."
+    ]
+  },
+  "limitations": [
+    "Not a purchasable offer.",
+    "A schema-valid declaration is not proof of truth, seller authority, tax compliance, or realized savings."
+  ]
+}

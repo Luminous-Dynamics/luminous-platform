@@ -1,0 +1,465 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:code-list-snapshot-manifest:v1",
+  "title": "Luminous Code-list Snapshot Manifest v1",
+  "description": "Versioned declaration for an imported authoritative code list. A manifest cannot prove the source is authentic or that a code is valid at transaction time; a separately reviewed importer and validator must verify the retained bytes, code uniqueness, effective dates and registry freshness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "metadata",
+    "code_list",
+    "source",
+    "snapshot",
+    "validation",
+    "limitations"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous.code-list-snapshot-manifest/v1"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manifest_id",
+        "revision",
+        "status",
+        "fixture_only",
+        "created_at",
+        "review_due_at"
+      ],
+      "properties": {
+        "manifest_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 240
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "enum": [
+            "illustrative",
+            "proposed",
+            "active",
+            "stale",
+            "deprecated"
+          ]
+        },
+        "fixture_only": {
+          "type": "boolean"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "review_due_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "supersedes_manifest_id": {
+          "type": "string",
+          "maxLength": 240
+        }
+      }
+    },
+    "code_list": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code_list_id",
+        "domain",
+        "scheme_uri",
+        "version_label",
+        "record_effectivity"
+      ],
+      "properties": {
+        "code_list_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,159}$"
+        },
+        "domain": {
+          "enum": [
+            "currency",
+            "country",
+            "unit_of_measure",
+            "packaging_type",
+            "tax_category",
+            "identifier_scheme",
+            "payment_method",
+            "invoice_type",
+            "other"
+          ]
+        },
+        "scheme_uri": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 1000
+        },
+        "version_label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "description": "Source-published version/release if supplied; never infer a version solely from retrieval time."
+        },
+        "record_effectivity": {
+          "enum": [
+            "current_and_historical",
+            "current_only",
+            "effective_dated",
+            "not_provided"
+          ]
+        },
+        "jurisdiction_codes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        },
+        "superseded_codes_retained": {
+          "type": "boolean"
+        },
+        "license_or_terms_uri": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 1000
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority_name",
+        "source_uri",
+        "retrieval_status"
+      ],
+      "properties": {
+        "authority_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "source_uri": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2000
+        },
+        "source_version_uri": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2000
+        },
+        "published_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retrieved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "retrieval_status": {
+          "enum": [
+            "not_retrieved",
+            "retrieved",
+            "verified_against_authority",
+            "withdrawn"
+          ]
+        },
+        "source_media_type": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "source_payload_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "retained_source_reference": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "license_or_terms_summary": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "record_count",
+        "duplicate_code_count",
+        "parser_id"
+      ],
+      "properties": {
+        "format": {
+          "enum": [
+            "json",
+            "csv",
+            "xml",
+            "rdf",
+            "other"
+          ]
+        },
+        "record_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "duplicate_code_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "normalized_payload_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "retained_payload_reference": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "schema_or_mapping_version": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "parser_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "build_or_source_digest_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "effective_from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "effective_until": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "content_format_version": {
+          "type": "string",
+          "maxLength": 240
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "checks",
+        "reviewed_at",
+        "limitations"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_run",
+            "passed",
+            "failed",
+            "stale"
+          ]
+        },
+        "checks": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "source_digest_checked",
+              "source_authority_checked",
+              "schema_validated",
+              "duplicate_codes_checked",
+              "effective_dates_checked",
+              "required_fields_checked",
+              "cross_reference_checked",
+              "sampled_against_source",
+              "independent_review"
+            ]
+          }
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewer_id": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "review_report_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "review_report_reference": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 2000
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "fixture_only"
+            ],
+            "properties": {
+              "fixture_only": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "status": {
+                "const": "illustrative"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "status"
+            ],
+            "properties": {
+              "status": {
+                "const": "active"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "fixture_only": {
+                "const": false
+              }
+            }
+          },
+          "source": {
+            "required": [
+              "retrieved_at",
+              "source_payload_sha256",
+              "retained_source_reference"
+            ],
+            "properties": {
+              "retrieval_status": {
+                "enum": [
+                  "retrieved",
+                  "verified_against_authority"
+                ]
+              }
+            }
+          },
+          "snapshot": {
+            "required": [
+              "normalized_payload_sha256",
+              "retained_payload_reference",
+              "build_or_source_digest_sha256"
+            ],
+            "properties": {
+              "record_count": {
+                "minimum": 1
+              },
+              "duplicate_code_count": {
+                "const": 0
+              }
+            }
+          },
+          "validation": {
+            "required": [
+              "reviewer_id",
+              "review_report_sha256",
+              "review_report_reference"
+            ],
+            "properties": {
+              "status": {
+                "const": "passed"
+              },
+              "checks": {
+                "contains": {
+                  "const": "source_digest_checked"
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "const": "schema_validated"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "duplicate_codes_checked"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "effective_dates_checked"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "source_authority_checked"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "sampled_against_source"
+                    }
+                  },
+                  {
+                    "contains": {
+                      "const": "independent_review"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

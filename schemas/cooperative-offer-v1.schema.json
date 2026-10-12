@@ -1,0 +1,722 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:cooperative-offer:v1",
+  "title": "Luminous Cooperative Supplier Offer v1",
+  "description": "Proposed structural contract for a supplier offer in a global cooperative-buying network. Schema validation does not verify identity, price truth, tax treatment, product equivalence, legal compliance, availability, or qualification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "metadata",
+    "supplier",
+    "product",
+    "terms",
+    "availability",
+    "fulfillment",
+    "jurisdiction",
+    "validity",
+    "evidence",
+    "limitations"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous.cooperative-offer/v1"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offer_id",
+        "revision",
+        "status",
+        "fixture_only"
+      ],
+      "properties": {
+        "offer_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "published",
+            "withdrawn",
+            "expired"
+          ]
+        },
+        "fixture_only": {
+          "type": "boolean",
+          "description": "True for synthetic documentation/test data; fixture data must never be mistaken for a real purchasable offer."
+        }
+      }
+    },
+    "supplier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "party_id",
+        "display_name",
+        "seller_country_code"
+      ],
+      "properties": {
+        "party_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 240,
+          "description": "Stable local/platform party reference. It is not itself proof of legal identity."
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "seller_country_code": {
+          "$ref": "#/$defs/countryCode"
+        },
+        "establishment_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "external_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/externalIdentifier"
+          }
+        }
+      }
+    },
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "supplier_sku",
+        "specification",
+        "pack"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "supplier_sku": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "specification": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "identifiers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/productIdentifier"
+          },
+          "description": "May be empty when no recognized global or sector identifier exists. Identifier presence does not prove catalog access rights or product equivalence."
+        },
+        "pack": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "order_unit_code",
+            "order_unit_code_system",
+            "units_per_pack",
+            "each_unit_code",
+            "each_unit_code_system"
+          ],
+          "properties": {
+            "order_unit_code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "units_per_pack": {
+              "$ref": "#/$defs/decimalString"
+            },
+            "each_unit_code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "each_quantity": {
+              "$ref": "#/$defs/decimalString"
+            },
+            "each_quantity_unit_code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "order_unit_code_system": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "format": "uri",
+              "description": "URI identifying the unit/package code system; use a stable public code-list URI or a controlled supplier namespace URI."
+            },
+            "each_unit_code_system": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "format": "uri",
+              "description": "URI identifying the unit code system for the contents of a pack."
+            },
+            "each_quantity_unit_code_system": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "format": "uri",
+              "description": "Required with each_quantity_unit_code when each_quantity is supplied."
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "required": [
+                  "each_quantity_unit_code"
+                ]
+              },
+              "then": {
+                "required": [
+                  "each_quantity_unit_code_system",
+                  "each_quantity"
+                ]
+              }
+            },
+            {
+              "if": {
+                "required": [
+                  "each_quantity"
+                ]
+              },
+              "then": {
+                "required": [
+                  "each_quantity_unit_code",
+                  "each_quantity_unit_code_system"
+                ]
+              }
+            }
+          ]
+        },
+        "substitution_policy": {
+          "enum": [
+            "none_without_consent",
+            "buyer_must_approve",
+            "preauthorized_equivalents"
+          ]
+        }
+      }
+    },
+    "terms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unit_price",
+        "minimum_order_quantity",
+        "tax_treatment",
+        "payment_terms"
+      ],
+      "properties": {
+        "unit_price": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "amount",
+            "currency",
+            "per_quantity",
+            "per_unit_code",
+            "per_unit_code_system"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/$defs/decimalString"
+            },
+            "currency": {
+              "$ref": "#/$defs/currencyCode"
+            },
+            "per_quantity": {
+              "$ref": "#/$defs/decimalString"
+            },
+            "per_unit_code": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "per_unit_code_system": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "format": "uri",
+              "description": "Code system for per_unit_code; must match the product order unit code system unless an explicit reviewed conversion exists."
+            }
+          }
+        },
+        "price_breaks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "minimum_quantity",
+              "unit_price_amount",
+              "currency"
+            ],
+            "properties": {
+              "minimum_quantity": {
+                "$ref": "#/$defs/decimalString"
+              },
+              "unit_price_amount": {
+                "$ref": "#/$defs/decimalString"
+              },
+              "currency": {
+                "$ref": "#/$defs/currencyCode"
+              }
+            }
+          }
+        },
+        "minimum_order_quantity": {
+          "$ref": "#/$defs/decimalString"
+        },
+        "tax_treatment": {
+          "enum": [
+            "included",
+            "excluded",
+            "exempt",
+            "not_applicable",
+            "unknown"
+          ]
+        },
+        "tax_description": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "payment_terms": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "return_warranty_terms": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "charges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "value",
+              "currency",
+              "basis",
+              "payable_by"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "freight",
+                  "handling",
+                  "insurance",
+                  "duty",
+                  "payment",
+                  "storage",
+                  "other"
+                ]
+              },
+              "value": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/decimalString"
+                  },
+                  {
+                    "const": "unknown"
+                  }
+                ],
+                "description": "Use 'unknown' when not yet quoted; do not substitute zero."
+              },
+              "currency": {
+                "$ref": "#/$defs/currencyCode"
+              },
+              "basis": {
+                "enum": [
+                  "per_order",
+                  "per_order_unit",
+                  "per_pack",
+                  "percentage",
+                  "conditional",
+                  "unknown"
+                ]
+              },
+              "payable_by": {
+                "enum": [
+                  "buyer",
+                  "supplier",
+                  "shared",
+                  "conditional",
+                  "unknown"
+                ]
+              },
+              "condition": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            }
+          }
+        },
+        "rebate_policy_ref": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Reference to a disclosed rebate/discount allocation policy; never treat an undisclosed rebate as a buyer saving."
+        }
+      }
+    },
+    "availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "observed_at"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "in_stock",
+            "limited",
+            "backorder",
+            "made_to_order",
+            "unknown"
+          ]
+        },
+        "quantity": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/decimalString"
+            },
+            {
+              "const": "unknown"
+            }
+          ]
+        },
+        "quantity_unit_code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lead_time_min": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lead_time_max": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lead_time_unit": {
+          "enum": [
+            "hours",
+            "days",
+            "weeks"
+          ]
+        },
+        "quantity_unit_code_system": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "format": "uri",
+          "description": "Code system for quantity_unit_code."
+        }
+      }
+    },
+    "fulfillment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "methods",
+        "available_country_codes",
+        "cross_border_supported",
+        "shipping_terms"
+      ],
+      "properties": {
+        "methods": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "delivery",
+              "pickup",
+              "carrier",
+              "digital"
+            ]
+          }
+        },
+        "available_country_codes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/countryCode"
+          }
+        },
+        "origin_country_code": {
+          "$ref": "#/$defs/countryCode"
+        },
+        "cross_border_supported": {
+          "type": "boolean"
+        },
+        "shipping_terms": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "incoterm": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "estimated_delivery_days_min": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimated_delivery_days_max": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "jurisdiction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_profile_refs",
+        "transaction_mode"
+      ],
+      "properties": {
+        "required_profile_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "description": "Versioned profile references to evaluate before a regulated transaction; a reference alone is not evidence that a profile is reviewed or active."
+        },
+        "transaction_mode": {
+          "enum": [
+            "domestic",
+            "cross_border",
+            "not_yet_determined"
+          ]
+        },
+        "additional_local_requirements": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      }
+    },
+    "validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "created_at",
+        "valid_from",
+        "expires_at"
+      ],
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_type",
+        "captured_at",
+        "asserted_by",
+        "verification_level"
+      ],
+      "properties": {
+        "source_type": {
+          "enum": [
+            "supplier_direct",
+            "supplier_feed",
+            "manual_entry",
+            "imported_catalog",
+            "partner_api"
+          ]
+        },
+        "source_reference": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "captured_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "asserted_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "verification_level": {
+          "enum": [
+            "unverified",
+            "supplier_attested",
+            "independently_checked"
+          ]
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      }
+    }
+  },
+  "$defs": {
+    "decimalString": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+      "description": "Exact non-negative decimal string. Binary floating-point values are not accepted. Currency-specific scale/rounding remains a separate validation rule."
+    },
+    "currencyCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "Syntactic ISO 4217-style code. Pattern validation does not prove that a code is assigned, current, or permitted for settlement."
+    },
+    "countryCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "Syntactic ISO 3166-1 alpha-2 code. Pattern validation does not prove that a code is currently assigned."
+    },
+    "externalIdentifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheme",
+        "value",
+        "issuer"
+      ],
+      "properties": {
+        "scheme": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "issuer": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      }
+    },
+    "productIdentifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scheme",
+        "value"
+      ],
+      "properties": {
+        "scheme": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "issuer": {
+          "type": "string",
+          "maxLength": 240
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "fixture_only"
+            ],
+            "properties": {
+              "fixture_only": {
+                "const": true
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "status": {
+                "const": "draft"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

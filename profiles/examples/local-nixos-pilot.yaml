@@ -1,0 +1,99 @@
+# Illustrative fixture for schemas/deployment-profile-v1.schema.json.
+# Proposal only: this is not a ready-to-apply NixOS configuration or proof of qualification.
+schema: luminous.deployment-profile/v1
+metadata:
+  id: org.example.local-nixos-pilot
+  version: 0.1.0
+  status: proposed
+  owner: customer-organization
+  description: Local-only pilot with no remote privileged control plane.
+
+target:
+  os: nixos
+  architectures:
+    - x86_64-linux
+  execution_mode: local
+  supported_hardware:
+    - virtual-machine
+  unsupported_hardware:
+    - unqualified-physical-host
+  adapter_ids:
+    - nixos-host-observer
+  tested_platform_revisions: []
+
+authority:
+  default_action: deny
+  privileged_execution: false
+  require_fresh_authorization: true
+  require_target_binding: true
+  require_operation_binding: true
+  require_attempt_identity: true
+  reject_replay: true
+  break_glass:
+    enabled: false
+    documented_out_of_band_recovery: required
+
+services:
+  coordinator:
+    required_for_boot: false
+    required_for_local_recovery: false
+  remote_control:
+    enabled: false
+    network_exposure: disabled
+  telemetry_export:
+    enabled: false
+    destination_classes: []
+    approval_required: true
+
+data:
+  raw_telemetry: local-only
+  evidence_export: operator-approved
+  retention_policy: customer-defined
+  secrets_in_browser_storage: prohibited
+  customer_key_custody: customer-controlled
+
+lifecycle:
+  installation: documented
+  upgrade: pinned-inputs-and-rollback-plan
+  rollback: required
+  uninstall: documented
+  export_exit_path: documented
+
+evidence:
+  required_fields:
+    - schema_version
+    - target_identity
+    - operation_id
+    - attempt_id
+    - source_revision
+    - build_digest
+    - policy_revision
+    - authorization_reference
+    - observed_result
+    - limitations
+  unknown_evidence: unproven
+  simulation_as_live_evidence: prohibited
+  command_success_as_recovery_proof: prohibited
+  schema_versions:
+    - operation-evidence/v1
+  independent_verifier_required_for:
+    - privileged-operation-receipt
+    - recovery-receipt
+
+qualification:
+  claimed_level: M0
+  required_checks:
+    - clean-install
+    - local-boot-with-coordinator-absent
+    - unauthorized-action-refusal
+    - stale-authorization-refusal
+    - evidence-export-and-independent-parse
+  qualified_capabilities: []
+  unqualified_capabilities:
+    - production-host-actuation
+    - destructive-recovery
+    - cross-organization-federation
+  evidence_refs: []
+  limitations:
+    - Proposed fixture only; no runtime conformance is implied.
+    - Required adapters and schema identifiers must be frozen before qualification.

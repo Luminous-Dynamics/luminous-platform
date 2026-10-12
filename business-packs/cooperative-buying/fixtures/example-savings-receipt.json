@@ -1,0 +1,177 @@
+{
+  "schema": "luminous.cooperative-savings-receipt/v1",
+  "metadata": {
+    "receipt_id": "fixture:savings:za:001",
+    "revision": 1,
+    "status": "illustrative",
+    "fixture_only": true,
+    "created_at": "2026-10-09T00:00:00Z",
+    "algorithm": {
+      "name": "cooperative-commerce-core",
+      "version": "0.1.0"
+    }
+  },
+  "comparison_currency": "ZAR",
+  "source_snapshot": {
+    "baseline": {
+      "lines": [
+        {
+          "product": {
+            "identifier_scheme": "urn:fixture:product:v1",
+            "identifier": "carton-case-001",
+            "specification_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "unit_code": "case",
+            "unit_code_system": "urn:fixture:packaging-unit:v1"
+          },
+          "quantity": "10",
+          "line_total": "1200.00",
+          "currency": "ZAR",
+          "evidence": {
+            "id": "fixture:baseline-line",
+            "source_reference": "fixture:baseline-quote",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "captured_at": "2026-10-09T00:00:00Z",
+            "kind": "PublicListPriceEstimate"
+          }
+        }
+      ],
+      "other_costs": [
+        {
+          "category": "freight",
+          "direction": "Charge",
+          "amount": "50.00",
+          "currency": "ZAR",
+          "evidence": {
+            "id": "fixture:baseline-freight",
+            "source_reference": "fixture:baseline-delivery-estimate",
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "captured_at": "2026-10-09T00:00:00Z",
+            "kind": "PublicListPriceEstimate"
+          }
+        }
+      ],
+      "cost_coverage": {
+        "declared_complete": true,
+        "considered_categories": [
+          "freight"
+        ],
+        "unresolved_costs": [],
+        "evidence": {
+          "id": "fixture:baseline-coverage",
+          "source_reference": "fixture:baseline-cost-summary",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "captured_at": "2026-10-09T00:00:00Z",
+          "kind": "PublicListPriceEstimate"
+        }
+      }
+    },
+    "actual": {
+      "lines": [
+        {
+          "product": {
+            "identifier_scheme": "urn:fixture:product:v1",
+            "identifier": "carton-case-001",
+            "specification_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "unit_code": "case",
+            "unit_code_system": "urn:fixture:packaging-unit:v1"
+          },
+          "quantity": "10",
+          "line_total": "1050.00",
+          "currency": "ZAR",
+          "evidence": {
+            "id": "fixture:actual-line",
+            "source_reference": "fixture:supplier-invoice",
+            "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "captured_at": "2026-10-09T00:00:00Z",
+            "kind": "SupplierInvoice"
+          }
+        }
+      ],
+      "other_costs": [
+        {
+          "category": "freight",
+          "direction": "Charge",
+          "amount": "70.00",
+          "currency": "ZAR",
+          "evidence": {
+            "id": "fixture:actual-freight",
+            "source_reference": "fixture:freight-invoice",
+            "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "captured_at": "2026-10-09T00:00:00Z",
+            "kind": "CostInvoice"
+          }
+        }
+      ],
+      "cost_coverage": {
+        "declared_complete": true,
+        "considered_categories": [
+          "freight"
+        ],
+        "unresolved_costs": [],
+        "evidence": {
+          "id": "fixture:actual-coverage",
+          "source_reference": "fixture:invoice-cost-summary",
+          "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "captured_at": "2026-10-09T00:00:00Z",
+          "kind": "SupplierInvoice"
+        }
+      },
+      "delivery_lines": [
+        {
+          "product": {
+            "identifier_scheme": "urn:fixture:product:v1",
+            "identifier": "carton-case-001",
+            "specification_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "unit_code": "case",
+            "unit_code_system": "urn:fixture:packaging-unit:v1"
+          },
+          "quantity": "10",
+          "evidence": {
+            "id": "fixture:delivery-line",
+            "source_reference": "fixture:delivery-note",
+            "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "captured_at": "2026-10-09T00:00:00Z",
+            "kind": "DeliveryReceipt"
+          }
+        }
+      ]
+    },
+    "participation_costs": [
+      {
+        "category": "network-fee",
+        "direction": "Charge",
+        "amount": "10.00",
+        "currency": "ZAR",
+        "evidence": {
+          "id": "fixture:participation-fee",
+          "source_reference": "fixture:fee-invoice",
+          "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "captured_at": "2026-10-09T00:00:00Z",
+          "kind": "ParticipationFeeInvoice"
+        }
+      }
+    ]
+  },
+  "calculation": {
+    "currency": "ZAR",
+    "baseline_merchandise": "1200",
+    "baseline_other_costs": "50",
+    "actual_merchandise": "1050",
+    "actual_other_costs": "70",
+    "participation_costs": "10",
+    "baseline_total": "1250",
+    "actual_total": "1130",
+    "net_difference": "120"
+  },
+  "claim": {
+    "class": "Estimate",
+    "evidence_authenticated_by_calculator": false,
+    "notes": [
+      "Illustrative arithmetic only; all records and prices are synthetic."
+    ],
+    "limitations": [
+      "Not real suppliers, quotes, invoices, delivery, or savings.",
+      "A third-party verifier must recompute the arithmetic and validate source evidence before any claim is made."
+    ]
+  }
+}
