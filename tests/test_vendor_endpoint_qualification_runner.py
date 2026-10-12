@@ -274,16 +274,15 @@ class QualificationRunnerContractTests(unittest.TestCase):
 
     def test_manifest_hashing_rejects_path_traversal(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            outside = root.parent / "outside-qualification-input.json"
+            parent = Path(directory)
+            root = parent / "root"
+            root.mkdir()
+            outside = parent / "outside-qualification-input.json"
             outside.write_text("not part of the manifest\\n", encoding="utf-8")
-            try:
-                self.assertEqual(
-                    qualification.input_hashes(root, ("../outside-qualification-input.json",)),
-                    {"../outside-qualification-input.json": None},
-                )
-            finally:
-                outside.unlink(missing_ok=True)
+            self.assertEqual(
+                qualification.input_hashes(root, ("../outside-qualification-input.json",)),
+                {"../outside-qualification-input.json": None},
+            )
 
     def test_missing_input_is_explicit_not_silently_omitted(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
