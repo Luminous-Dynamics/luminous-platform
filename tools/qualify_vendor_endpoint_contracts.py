@@ -695,7 +695,11 @@ def main(argv: list[str] | None = None) -> int:
             "original_permissions_restored": input_modes_restored,
             "preflight_execution_gate_passed": execution_ready,
             "execution_integrity_preserved": (
-                execution_ready and not input_drift_detected and before_hashes == after_hashes
+                execution_ready
+                and input_modes is not None
+                and input_modes_restored is True
+                and not input_drift_detected
+                and before_hashes == after_hashes
             ),
         },
         "missing_inputs": missing_inputs,
