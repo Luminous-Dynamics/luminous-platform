@@ -40,6 +40,7 @@ dependencies:
 network:
   public_exposure_default: prohibited
   public_exposure_approved: false
+  public_exposure_approved_endpoint_ids: []
   firewall_policy: deny-unspecified
   endpoints:
     - id: sip-udp
