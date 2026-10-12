@@ -1,1 +1,7 @@
-jsonschema>=4.21,<5
+# Direct and transitive runtime dependencies pinned to the locally tested set.
+# Versions are exact; wheel hashes should be added before treating this as a supply-chain lock.
+attrs==26.1.0
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+referencing==0.37.0
+rpds-py==2026.5.1
