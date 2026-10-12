@@ -1,0 +1,644 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:self-hosted-service-profile:v1",
+  "title": "Luminous Self-Hosted Service Profile v1",
+  "description": "A declarative contract for one self-hosted application workload. Schema validity is not deployment or runtime qualification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "metadata",
+    "application",
+    "runtime",
+    "authority",
+    "network",
+    "data",
+    "secrets",
+    "lifecycle",
+    "health",
+    "qualification"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous.self-hosted-service-profile/v1"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "status",
+        "owner",
+        "description"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)([-+][0-9A-Za-z.-]+)?$"
+        },
+        "status": {
+          "enum": [
+            "proposed",
+            "experimental",
+            "qualified",
+            "deprecated"
+          ]
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "documentation_uri": {
+          "type": "string",
+          "format": "uri"
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "application": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "category",
+        "upstream_homepage",
+        "source_repository",
+        "upstream_release",
+        "license",
+        "purpose"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "category": {
+          "enum": [
+            "communications",
+            "collaboration",
+            "storage",
+            "identity",
+            "observability",
+            "developer-tools",
+            "security",
+            "automation",
+            "business-application",
+            "infrastructure"
+          ]
+        },
+        "upstream_homepage": {
+          "type": "string",
+          "format": "uri"
+        },
+        "source_repository": {
+          "type": "string",
+          "format": "uri"
+        },
+        "upstream_release": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "description": "Declared release or an explicit statement that the version is resolved from the locked package set."
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "operating_system",
+        "architectures",
+        "source_pin",
+        "update_strategy"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "nixos-native",
+            "oci-container",
+            "virtual-machine"
+          ]
+        },
+        "operating_system": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "architectures": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "source_pin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode",
+            "reference",
+            "digest"
+          ],
+          "properties": {
+            "mode": {
+              "enum": [
+                "host-flake-lock",
+                "source-revision",
+                "oci-digest",
+                "guest-image-digest",
+                "unresolved"
+              ]
+            },
+            "reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "digest": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "update_strategy": {
+          "enum": [
+            "rebuild-from-pinned-inputs",
+            "digest-refresh-reviewed",
+            "guest-os-managed-reviewed",
+            "manual-pinned-update"
+          ]
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "default_action",
+        "authorization_required_for_mutations",
+        "platform_manager_required_for_runtime",
+        "local_recovery_without_coordinator",
+        "control_authority"
+      ],
+      "properties": {
+        "default_action": {
+          "const": "deny"
+        },
+        "authorization_required_for_mutations": {
+          "const": true
+        },
+        "platform_manager_required_for_runtime": {
+          "const": false
+        },
+        "local_recovery_without_coordinator": {
+          "const": true
+        },
+        "control_authority": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "break_glass_procedure_uri": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "public_exposure_default",
+        "public_exposure_approved",
+        "firewall_policy",
+        "endpoints"
+      ],
+      "properties": {
+        "public_exposure_default": {
+          "const": "prohibited"
+        },
+        "public_exposure_approved": {
+          "type": "boolean"
+        },
+        "public_exposure_assessment_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "firewall_policy": {
+          "enum": [
+            "deny-unspecified",
+            "host-only",
+            "explicitly-declared"
+          ]
+        },
+        "endpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "protocol",
+              "exposure",
+              "enabled",
+              "purpose"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9._-]+$"
+              },
+              "protocol": {
+                "enum": [
+                  "tcp",
+                  "udp",
+                  "sctp",
+                  "icmp",
+                  "other"
+                ]
+              },
+              "port": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "port_range": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535
+                }
+              },
+              "exposure": {
+                "enum": [
+                  "disabled",
+                  "loopback",
+                  "private-network",
+                  "public-network"
+                ]
+              },
+              "enabled": {
+                "type": "boolean"
+              },
+              "purpose": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "port"
+                ],
+                "not": {
+                  "required": [
+                    "port_range"
+                  ]
+                }
+              },
+              {
+                "required": [
+                  "port_range"
+                ],
+                "not": {
+                  "required": [
+                    "port"
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "required": [
+                    "port_range"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "stateful",
+        "persistent_paths",
+        "backup_policy",
+        "restore_test",
+        "call_recording",
+        "telemetry_export",
+        "retention_owner"
+      ],
+      "properties": {
+        "classification": {
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted"
+          ]
+        },
+        "stateful": {
+          "type": "boolean"
+        },
+        "persistent_paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "backup_policy": {
+          "enum": [
+            "none",
+            "before-upgrade",
+            "periodic-and-before-upgrade",
+            "application-consistent-periodic-and-before-upgrade"
+          ]
+        },
+        "restore_test": {
+          "enum": [
+            "not-required",
+            "required-in-sandbox",
+            "required-before-production"
+          ]
+        },
+        "call_recording": {
+          "enum": [
+            "disabled-by-default",
+            "explicit-opt-in-with-notice",
+            "enabled-with-jurisdiction-review"
+          ]
+        },
+        "recording_policy_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "telemetry_export": {
+          "enum": [
+            "disabled",
+            "operator-approved-only"
+          ]
+        },
+        "retention_owner": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      }
+    },
+    "secrets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "values_in_profile",
+        "backend",
+        "references",
+        "rotation_policy"
+      ],
+      "properties": {
+        "values_in_profile": {
+          "const": false
+        },
+        "backend": {
+          "enum": [
+            "sops-nix",
+            "systemd-creds",
+            "external-vault",
+            "customer-managed",
+            "none"
+          ]
+        },
+        "references": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "rotation_policy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "installation",
+        "upgrade",
+        "rollback",
+        "uninstall",
+        "data_migration"
+      ],
+      "properties": {
+        "installation": {
+          "enum": [
+            "declarative",
+            "documented-manual",
+            "appliance-provisioning",
+            "unknown"
+          ]
+        },
+        "upgrade": {
+          "enum": [
+            "rebuild-from-pinned-inputs",
+            "reviewed-in-place",
+            "guest-os-managed",
+            "unknown"
+          ]
+        },
+        "rollback": {
+          "enum": [
+            "configuration-only",
+            "configuration-and-compatible-state",
+            "snapshot-restore",
+            "manual-recovery-only",
+            "not-defined"
+          ]
+        },
+        "uninstall": {
+          "enum": [
+            "documented-with-data-retention-choice",
+            "preserve-data-only",
+            "not-defined"
+          ]
+        },
+        "data_migration": {
+          "enum": [
+            "not-applicable",
+            "reversible",
+            "forward-only-with-restore-plan",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "health": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checks"
+      ],
+      "properties": {
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "class",
+              "expected_observation"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9._-]+$"
+              },
+              "class": {
+                "enum": [
+                  "process",
+                  "readiness",
+                  "functional",
+                  "security",
+                  "backup",
+                  "recovery",
+                  "performance"
+                ]
+              },
+              "expected_observation": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            }
+          }
+        }
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maturity",
+        "required_checks",
+        "qualified_capabilities",
+        "unqualified_capabilities",
+        "evidence_refs",
+        "limitations"
+      ],
+      "properties": {
+        "maturity": {
+          "enum": [
+            "M0_PROPOSED",
+            "M1_DECLARATION_VALID",
+            "M2_SANDBOX_TESTED",
+            "M3_CONTROLLED_DEPLOYMENT",
+            "M4_INDEPENDENT_ASSESSMENT"
+          ]
+        },
+        "required_checks": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "qualified_capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "unqualified_capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "evidence_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        }
+      }
+    }
+  }
+}
