@@ -84,6 +84,14 @@ class StaticFallbackPreviewTests(unittest.TestCase):
         rgba = render_static_fallback_rgba(1, 1, "#0A100E", "#1A2E22", 1.0)
         self.assertEqual(rgba, bytes([10, 16, 14, 255]))
 
+    def test_png_multiple_stored_deflate_blocks_round_trip(self):
+        width, height = 200, 100
+        rgba = bytes([17, 23, 31, 255]) * (width * height)
+        png = encode_png_rgba(width, height, rgba)
+        decoded_width, decoded_height, decoded_rgba, _ = decode_png(png)
+        self.assertEqual((decoded_width, decoded_height), (width, height))
+        self.assertEqual(decoded_rgba, rgba)
+
     def test_invalid_brightness_and_dimensions_fail_closed(self):
         for brightness in (float("nan"), float("inf"), -0.1, 1.1):
             with self.subTest(brightness=brightness):
