@@ -1,0 +1,24 @@
+{
+  "schema_version": "public-observation-v1",
+  "observation_id": "synthetic-observation-0001",
+  "source_id": "za-treasury-municipal-finance",
+  "source_uri": "https://municipaldata.treasury.gov.za/docs",
+  "retrieved_at": "2026-10-12T00:00:00Z",
+  "source_period": {
+    "financial_year_end": 2026,
+    "period_label": "SYNTHETIC-EXAMPLE"
+  },
+  "dataset_id": "repmaint_v2",
+  "field_path": "facts[0].value",
+  "raw_value": null,
+  "raw_value_state": "reported_null",
+  "normalization": {
+    "applied": false,
+    "rule_id": null,
+    "rule_version": null,
+    "normalized_value": null,
+    "reason": "Synthetic fixture only: preserve the raw source state and do not infer a numeric value without an explicit dataset-specific rule."
+  },
+  "source_snapshot_sha256": null,
+  "fixture_only": true
+}
