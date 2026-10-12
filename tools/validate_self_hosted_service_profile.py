@@ -130,6 +130,11 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                     "path": "/runtime/source_pin",
                     "message": "OCI workloads require an immutable OCI digest; mutable tags are insufficient",
                 })
+            elif source_pin["reference"].rsplit("@", 1)[-1] != source_pin["digest"]:
+                errors.append({
+                    "path": "/runtime/source_pin/reference",
+                    "message": "OCI reference must embed the same @sha256 digest declared in source_pin.digest",
+                })
         elif mode == "oci-digest" and not source_pin.get("digest"):
             errors.append({
                 "path": "/runtime/source_pin/digest",
