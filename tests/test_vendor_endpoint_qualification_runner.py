@@ -67,6 +67,22 @@ class QualificationRunnerContractTests(unittest.TestCase):
             expected = hashlib.sha256(b'{"synthetic":true}\n').hexdigest()
             self.assertEqual(actual, {"fixture.json": expected})
 
+    def test_input_tree_freeze_removes_write_bits_and_restores_modes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            item = root / "nested" / "input.json"
+            item.parent.mkdir()
+            item.write_text("{}\\n", encoding="utf-8")
+            original_file_mode = item.stat().st_mode & 0o777
+            original_directory_mode = item.parent.stat().st_mode & 0o777
+            modes = qualification.make_input_tree_read_only(root, ("nested/input.json",))
+            self.assertIsNotNone(modes)
+            self.assertEqual(item.stat().st_mode & 0o222, 0)
+            self.assertEqual(item.parent.stat().st_mode & 0o222, 0)
+            self.assertTrue(qualification.restore_input_tree_permissions(root, modes or {}))
+            self.assertEqual(item.stat().st_mode & 0o777, original_file_mode)
+            self.assertEqual(item.parent.stat().st_mode & 0o777, original_directory_mode)
+
     def test_input_manifest_fence_detects_changed_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -76,6 +92,43 @@ class QualificationRunnerContractTests(unittest.TestCase):
             self.assertTrue(qualification.input_manifest_unchanged(root, baseline))
             fixture.write_bytes(b'{"frozen":false}\\n')
             self.assertFalse(qualification.input_manifest_unchanged(root, baseline))
+
+    def test_dirty_worktree_blocks_all_child_checks(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in qualification.INPUT_PATHS:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"baseline input\\n")
+            report_path = root / "artifacts" / "qualification-report.json"
+            old_cwd = Path.cwd()
+            try:
+                with (
+                    patch.object(qualification, "ROOT", root),
+                    patch.object(qualification, "checked_out_sha", return_value="a" * 40),
+                    patch.object(qualification, "source_tree_clean", return_value=False),
+                    patch.object(qualification.platform, "python_version", return_value="3.13.7"),
+                    patch.object(
+                        qualification,
+                        "dependency_version",
+                        side_effect={"jsonschema": "4.26.0", "cryptography": "50.0.2"}.get,
+                    ),
+                    patch.dict(os.environ, {"GITHUB_SHA": "a" * 40}),
+                    patch.object(qualification, "run_validator") as run_validator,
+                    patch.object(qualification, "run_test_suite") as run_test_suite,
+                ):
+                    return_code = qualification.main(["--report", str(report_path)])
+                    report = json.loads(report_path.read_text(encoding="utf-8"))
+                    self.assertEqual(return_code, 1)
+                    self.assertEqual(report["blocker_codes"], ["SOURCE_TREE_DIRTY"])
+                    run_validator.assert_not_called()
+                    run_test_suite.assert_not_called()
+                    self.assertTrue(all(
+                        validator["state"] == "blocked_source_integrity"
+                        for validator in report["validators"].values()
+                    ))
+            finally:
+                os.chdir(old_cwd)
 
     def test_manifest_drift_stops_later_checks_and_discards_current_result(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -89,6 +142,8 @@ class QualificationRunnerContractTests(unittest.TestCase):
             old_cwd = Path.cwd()
 
             def mutating_validator(_root: Path, relative_script: str) -> dict[str, object]:
+                # Simulate a child bypassing ordinary read-only mode bits.
+                os.chmod(changed_path, 0o644)
                 changed_path.write_bytes(b"mutated input\\n")
                 return {
                     "script": relative_script,
@@ -101,6 +156,7 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 with (
                     patch.object(qualification, "ROOT", root),
                     patch.object(qualification, "checked_out_sha", return_value="a" * 40),
+                    patch.object(qualification, "source_tree_clean", return_value=True),
                     patch.object(qualification.platform, "python_version", return_value="3.13.7"),
                     patch.object(
                         qualification,
