@@ -55,7 +55,7 @@ class ScenePackValidationTests(unittest.TestCase):
                 issues = validate_manifest(
                     self.schema, candidate, package_root=EXAMPLE_PATH.parent
                 )
-                self.assertEqual([], issues, f"{version}: " + "\\n".join(map(str, issues)))
+                self.assertEqual([], issues, f"{version}: " + "\n".join(map(str, issues)))
 
         invalid_versions = (
             "1.2.3-",
