@@ -12,7 +12,7 @@ make -C tools/omsi-conformance validate-fixtures
 make -C tools/omsi-conformance interop
 python tools/omsi-conformance/omsi_validate.py operation tools/omsi-conformance/fixtures/operation.json --now 2026-10-12T12:05:00Z
 python tools/omsi-conformance/omsi_validate.py grant tools/omsi-conformance/fixtures/grant.json --manifest tools/omsi-conformance/fixtures/operation.json --now 2026-10-12T12:05:00Z
-python tools/omsi-conformance/omsi_validate.py receipt tools/omsi-conformance/fixtures/receipt.json --manifest tools/omsi-conformance/fixtures/operation.json
+python tools/omsi-conformance/omsi_validate.py receipt tools/omsi-conformance/fixtures/receipt.json --manifest tools/omsi-conformance/fixtures/operation.json --events tools/omsi-conformance/fixtures/events.json
 python tools/omsi-conformance/omsi_validate.py events tools/omsi-conformance/fixtures/events.json --manifest tools/omsi-conformance/fixtures/operation.json
 ```
 
@@ -31,6 +31,8 @@ The seed accepts a deliberately restricted JSON value set for digest-bearing con
 The prototype only accepts `secret_refs` and `credential_refs` as arrays of opaque URI-shaped references, and rejects whitespace, userinfo and query-bearing reference strings. This is structural hygiene, not discovery of every possible secret and not proof that the referenced vault/resource is trustworthy. Raw secret material still belongs in a separate secret-delivery mechanism.
 
 This is not an executor, identity provider, authorization service or cryptographic verifier. It does not authenticate principals; verify proof/signature bytes; resolve issuer trust; check key revocation; provide replay persistence across processes; establish tenant isolation in deployment; prove declared verifier independence; or execute/rollback a host change. The grant signature is shape-checked only. Tests use deterministic sample data and do not prove production security.
+
+When `receipt` validation is supplied both `--manifest` and `--events`, a verified receipt is cross-checked against the operation-bound lifecycle sequence: the post-state observation cannot predate application, the terminal `verified` event cannot predate the observation, and the receipt cannot predate that event. Without `--events`, the validator can only enforce chronology fields present in the receipt and manifest; it cannot infer when execution occurred. These checks validate declared timestamps and event structure, not signed provenance or actual host state.
 
 A successful validator result means only that a document met these local schema and semantic checks. It must not be advertised as OMSI certification or complete MSP compliance.
 
