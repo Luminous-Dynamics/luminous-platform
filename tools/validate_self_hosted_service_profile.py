@@ -307,6 +307,11 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                 "path": "/network/public_exposure_approved",
                 "message": "public-network endpoints require explicit exposure approval",
             })
+        if network["public_exposure_approved"] and not public_endpoints:
+            errors.append({
+                "path": "/network/public_exposure_approved",
+                "message": "public exposure approval must be scoped to at least one currently declared public endpoint",
+            })
         if network["public_exposure_approved"] and not network.get("public_exposure_assessment_ref"):
             errors.append({
                 "path": "/network/public_exposure_assessment_ref",
