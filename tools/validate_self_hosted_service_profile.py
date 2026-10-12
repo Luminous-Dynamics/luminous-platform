@@ -131,6 +131,14 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
         active_ingress_claims: list[tuple[str, str, str, str, int, int, set[str]]] = []
         for index, endpoint in enumerate(endpoints):
             path = f"/network/endpoints/{index}"
+            try:
+                bind_address = ipaddress.ip_address(endpoint["bind_address"])
+                bind_key = str(bind_address)
+            except ValueError:
+                errors.append({"path": path + "/bind_address", "message": "bind_address must be a literal IPv4 or IPv6 address"})
+                bind_address = None
+                bind_key = None
+
             if "port_range" in endpoint and endpoint["port_range"][0] > endpoint["port_range"][1]:
                 errors.append({"path": path + "/port_range", "message": "port range start must not exceed end"})
             if endpoint["enabled"] and endpoint["exposure"] == "disabled":
@@ -175,7 +183,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
             else:
                 normalized_hosts = set()
 
-            if endpoint["enabled"] and ("port" in endpoint or "port_range" in endpoint):
+            if endpoint["enabled"] and bind_key is not None and ("port" in endpoint or "port_range" in endpoint):
                 start_port, end_port = (
                     (endpoint["port_range"][0], endpoint["port_range"][1])
                     if "port_range" in endpoint
@@ -184,7 +192,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                 if endpoint["kind"] == "listener":
                     for prior_id, prior_bind, prior_version, prior_start, prior_end in active_socket_claims:
                         if (
-                            prior_bind == endpoint["bind_address"]
+                            prior_bind == bind_key
                             and prior_version == endpoint["protocol"]
                             and start_port <= prior_end
                             and prior_start <= end_port
@@ -197,7 +205,7 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                                 ),
                             })
                     active_socket_claims.append((
-                        endpoint["id"], endpoint["bind_address"], endpoint["protocol"], start_port, end_port
+                        endpoint["id"], bind_key, endpoint["protocol"], start_port, end_port
                     ))
                 else:
                     ingress_id = endpoint["ingress_dependency_id"]
@@ -218,15 +226,9 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                                 ),
                             })
                     active_ingress_claims.append((
-                        endpoint["id"], ingress_id, endpoint["bind_address"], endpoint["protocol"],
+                        endpoint["id"], ingress_id, bind_key, endpoint["protocol"],
                         start_port, end_port, normalized_hosts
                     ))
-
-            try:
-                bind_address = ipaddress.ip_address(endpoint["bind_address"])
-            except ValueError:
-                errors.append({"path": path + "/bind_address", "message": "bind_address must be a literal IPv4 or IPv6 address"})
-                bind_address = None
 
             source_networks = []
             for source_index, source_cidr in enumerate(endpoint["allowed_source_cidrs"]):
