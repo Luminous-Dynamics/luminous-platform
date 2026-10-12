@@ -43,6 +43,43 @@ _PRIVATE_NETWORKS = (
     ipaddress.ip_network("fc00::/7"),
 )
 
+# Special-purpose source space that must not be smuggled into a broader CIDR
+# merely because the first/last address of that broader network is_global.
+# Snapshot derived from IANA's IPv4/IPv6 Special-Purpose Address Registries;
+# keep the source policy conservative and review updates to those registries.
+_NON_GENERAL_PUBLIC_SOURCE_NETWORKS = tuple(
+    ipaddress.ip_network(cidr)
+    for cidr in (
+        # IPv4 special-purpose ranges that are not general public source space.
+        "0.0.0.0/8",
+        "100.64.0.0/10",
+        "127.0.0.0/8",
+        "169.254.0.0/16",
+        "192.0.0.0/24",
+        "192.0.2.0/24",
+        "192.88.99.0/24",  # Deprecated 6to4 relay anycast.
+        "198.18.0.0/15",
+        "198.51.100.0/24",
+        "203.0.113.0/24",
+        "240.0.0.0/4",
+        "255.255.255.255/32",
+        # IPv6 special-purpose ranges not intended as general public sources.
+        "::/128",
+        "::1/128",
+        "::ffff:0:0/96",
+        "64:ff9b:1::/48",
+        "100::/64",
+        "100:0:0:1::/64",
+        "2001::/23",
+        "2001:2::/48",
+        "2001:db8::/32",
+        "2002::/16",
+        "3fff::/20",
+        "5f00::/16",
+        "fe80::/10",
+    )
+)
+
 
 def _is_private_address(address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
     """Recognize RFC1918 IPv4 and IPv6 ULA only—not every special-purpose range."""
@@ -85,6 +122,12 @@ def _is_acceptable_public_source_network(
         and network.overlaps(private)
         and not network.subnet_of(private)
         for private in _PRIVATE_NETWORKS
+    ):
+        return False
+
+    if any(
+        network.version == special.version and network.overlaps(special)
+        for special in _NON_GENERAL_PUBLIC_SOURCE_NETWORKS
     ):
         return False
 
