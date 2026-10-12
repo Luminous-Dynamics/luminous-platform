@@ -190,6 +190,9 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
             "192.0.2.0/24",      # documentation-only
             "100.64.0.0/10",     # shared carrier-grade NAT space
             "240.0.0.0/4",       # reserved
+            "192.88.99.0/24",    # deprecated 6to4 relay anycast; endpoints look global
+            "192.88.98.0/23",    # endpoints look global but range overlaps deprecated special-use space
+            "198.0.0.0/8",       # endpoints look global but range includes benchmarking space
             "128.0.0.0/1",       # over-broad aggregate
             "8000::/1",           # over-broad IPv6 aggregate
             "2001:db8::/32",     # IPv6 documentation-only
