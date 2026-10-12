@@ -33,7 +33,7 @@ def nixward_transaction(**overrides):
 def binding(transaction=None):
     return build_adapter_binding(
         operation(),
-        nixward_transaction=transaction or nixward_transaction(),
+        nixward_transaction=transaction if transaction is not None else nixward_transaction(),
         now=NOW,
     )
 
