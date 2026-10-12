@@ -16,6 +16,7 @@ SCHEMAS = {
     "event": ROOT / "schemas/0.1/operation-event.schema.json",
     "receipt": ROOT / "schemas/0.1/evidence-receipt.schema.json",
     "nixward_adapter_binding": ROOT / "schemas/0.1/nixward-adapter-binding.schema.json",
+    "nixward_transaction": ROOT / "schemas/0.1/nixward-system-transaction-v1.schema.json",
 }
 TRANSITIONS = {
     "none": {"proposed"}, "proposed": {"validated", "rejected", "cancelled", "expired"},
