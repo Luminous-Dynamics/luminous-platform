@@ -1,0 +1,152 @@
+{
+  "schema_version": "public-source-catalogue-v1",
+  "catalogue_revision": "public-service-operations-profile-rfc-001",
+  "reviewed_at": "2026-10-12T00:00:00Z",
+  "sources": [
+    {
+      "source_id": "za-treasury-municipal-finance",
+      "display_name": "National Treasury Municipal Finance Data",
+      "jurisdiction": "ZA",
+      "publisher": {
+        "name": "National Treasury of South Africa / OpenUp",
+        "url": "https://www.treasury.gov.za/"
+      },
+      "source_url": "https://municipaldata.treasury.gov.za/",
+      "documentation_url": "https://municipaldata.treasury.gov.za/docs",
+      "source_type": "municipal_finance_api",
+      "access": {
+        "mode": "public_api",
+        "documented_methods": [
+          "GET"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "blocked_pending_source_confirmation",
+        "pagination_note": "The official overview links an HTTPS API base, but the API guide's usage section lists an HTTP endpoint. Do not silently downgrade transport. Confirm HTTPS behavior with the publisher before implementing an adapter. Documentation states pagination uses pagesize/page and defaults to at most 10,000 items per page."
+      },
+      "terms": {
+        "policy_url": "https://municipaldata.treasury.gov.za/docs",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "The API documentation links separate Terms of Use. Review and record applicable terms before caching or redistributing extracts."
+      },
+      "data_scope": {
+        "granularity": "aggregate_financial",
+        "personal_data_expectation": "aggregate_no_personal_data_expected",
+        "datasets_or_content": [
+          "repmaint_v2 (repairs and maintenance from 2019-20 onwards)",
+          "income_and_expenditure_v2",
+          "capital_acquisition_v2",
+          "aged_creditor_v2"
+        ],
+        "collection_policy": "Use narrowly filtered queries for the City of Johannesburg and required periods only. Preserve the source value, amount type, financial year/period, units, source response digest and source-specific interpretation separately. Do not treat an absent row as zero."
+      },
+      "known_limitations": [
+        "Publisher says completeness and trustworthiness depend on municipal submissions; the site currently warns that 2026 Q2 figures are being verified for completeness and integrity.",
+        "Dataset versions differ before and after mSCOA-era changes; v2 datasets replace older cubes for periods from 2019-20 onwards where documented.",
+        "API documentation says monetary measures are integer South African rand values with no cents.",
+        "The API base URL scheme is inconsistent between the overview and usage sections; HTTPS behavior is not marked verified.",
+        "The API documentation's null semantics must be preserved as source-reported information and handled by an explicit, dataset-specific normalization rule. Do not globally rewrite raw nulls to zero.",
+        "Aggregate spending measures do not establish whether a particular asset was repaired, a supplier was paid, or an individual acted improperly."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Metadata only. No API requests, periodic jobs, caching or redistribution are implemented by this contract."
+      }
+    },
+    {
+      "source_id": "za-treasury-etender-ocds",
+      "display_name": "National Treasury Transparency Portal / eTender published data",
+      "jurisdiction": "ZA",
+      "publisher": {
+        "name": "National Treasury of South Africa, Office of the Chief Procurement Officer",
+        "url": "https://www.treasury.gov.za/"
+      },
+      "source_url": "https://data.etenders.gov.za/",
+      "documentation_url": "https://ocds-api.etenders.gov.za/Home/LearnMore",
+      "source_type": "procurement_open_data",
+      "access": {
+        "mode": "public_bulk_download",
+        "documented_methods": [
+          "GET",
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "Bulk CSV/JSON downloads and a versioned OCDS JSON API are documented. Resolve API paths and the current OpenAPI specification from publisher-controlled documentation before authoring a connector."
+      },
+      "terms": {
+        "policy_url": "https://ocds-api.etenders.gov.za/Home/LearnMore",
+        "reuse_status": "cc-by-4.0_documented",
+        "must_recheck_before_ingestion": true,
+        "notes": "The portal states published data is licensed under CC BY 4.0 and asks republishers to link to the original source. Reconfirm terms on the exact dataset consumed."
+      },
+      "data_scope": {
+        "granularity": "procurement_records",
+        "personal_data_expectation": "unknown",
+        "datasets_or_content": [
+          "Monthly OCDS release data from May 2021",
+          "Procurement plans, tendering, awards and contracting stages where published"
+        ],
+        "collection_policy": "Retain OCID/release identity and source publication time where available. Use published fields only. Do not merge records across suppliers or buyers using name similarity alone; preserve unresolved matches."
+      },
+      "known_limitations": [
+        "Publisher states this portal includes only a subset of eTender data and only information shared with National Treasury; absence is not evidence of non-existence.",
+        "Published data may be incomplete, inaccurate, delayed or not independently verified by the portal.",
+        "Procurement anomalies are review leads, not findings of fraud, corruption, conflict of interest or misconduct.",
+        "Personal information may be excluded when publication has not been consented to, according to the portal's policy; this does not mean every published record is safe to combine with other datasets."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Metadata only. API path, OpenAPI version and downstream redistribution behavior remain to be verified against current publisher documentation."
+      }
+    },
+    {
+      "source_id": "za-gp-jhb-johannesburg-water-public",
+      "display_name": "Johannesburg Water published service information",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "Johannesburg Water",
+        "url": "https://www.johannesburgwater.co.za/"
+      },
+      "source_url": "https://www.johannesburgwater.co.za/services/",
+      "documentation_url": "https://www.johannesburgwater.co.za/contact-us/",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "https_confirmed",
+        "pagination_note": "This entry catalogues public webpages and service guidance only. No machine-readable API or internal work-order feed has been established."
+      },
+      "terms": {
+        "policy_url": "https://www.johannesburgwater.co.za/",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "A publicly available webpage does not itself establish a licence for bulk scraping or redistribution. Check applicable site terms and robots guidance before automated collection."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Published service standards and public notices",
+          "Publicly documented customer fault-logging channels"
+        ],
+        "collection_policy": "Use manual review for a prototype and extract only public service guidance needed for synthetic tests. Do not harvest resident submissions, account details, private staff details or case-level records."
+      },
+      "known_limitations": [
+        "Published service standards are not proof of current internal queue state or resolution of an individual fault.",
+        "Public notices may change; keep capture time and original URL with each observation.",
+        "Internal work-order, dispatch or customer-case feeds require explicit authorisation and a separate adapter contract."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Public page catalogue only; no scraping, polling or work-order integration is implemented."
+      }
+    }
+  ]
+}
