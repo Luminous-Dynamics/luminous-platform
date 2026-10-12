@@ -166,8 +166,11 @@ def input_manifest_unchanged(
     return input_hashes(root) == dict(expected_hashes)
 
 
-def source_tree_clean(root: Path) -> bool | None:
-    """Return whether tracked files and unignored source additions match the commit."""
+def source_tree_clean(
+    root: Path,
+    allowed_untracked: tuple[str, ...] = (),
+) -> bool | None:
+    """Require a clean HEAD checkout except for explicitly permitted output paths."""
     try:
         tracked = subprocess.run(
             ["git", "diff", "--quiet", "HEAD", "--"],
@@ -184,7 +187,7 @@ def source_tree_clean(root: Path) -> bool | None:
         if tracked.returncode != 0:
             return None
         untracked = subprocess.run(
-            ["git", "ls-files", "--others", "--exclude-standard", "--"],
+            ["git", "ls-files", "--others", "--"],
             cwd=root,
             env=child_environment(),
             stdin=subprocess.DEVNULL,
@@ -198,7 +201,8 @@ def source_tree_clean(root: Path) -> bool | None:
         return None
     if untracked.returncode != 0:
         return None
-    return not bool(untracked.stdout.strip())
+    observed = set(untracked.stdout.splitlines())
+    return not bool(observed.difference(allowed_untracked))
 
 
 class InputFreezeError(RuntimeError):
@@ -553,6 +557,15 @@ def main(argv: list[str] | None = None) -> int:
 
     root = ROOT
     os.chdir(root)
+    report_path = args.report if args.report.is_absolute() else root / args.report
+    relative_report = os.path.relpath(report_path, root)
+    allowed_untracked = (
+        (Path(relative_report).as_posix(),)
+        if relative_report != os.pardir
+        and not relative_report.startswith(os.pardir + os.sep)
+        and not os.path.isabs(relative_report)
+        else ()
+    )
     started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     expected_sha = os.environ.get("GITHUB_SHA")
     observed_sha = checked_out_sha(root)
@@ -589,7 +602,7 @@ def main(argv: list[str] | None = None) -> int:
         blockers.append("INPUT_MISSING")
     before_manifest_digest = manifest_digest(before_hashes)
 
-    source_tree_state = source_tree_clean(root)
+    source_tree_state = source_tree_clean(root, allowed_untracked=allowed_untracked)
     if source_tree_state is False:
         blockers.append("SOURCE_TREE_DIRTY")
     elif source_tree_state is None:
@@ -748,7 +761,6 @@ def main(argv: list[str] | None = None) -> int:
         "diagnostics_policy": "raw stdout, stderr, test identifiers and traceback text are not persisted",
     }
 
-    report_path = args.report if args.report.is_absolute() else root / args.report
     try:
         report_path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(
