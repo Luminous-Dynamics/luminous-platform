@@ -6,7 +6,8 @@ This directory defines a machine-readable source inventory for the proposed Sout
 
 ## Contents
 
-- `schema.json` — JSON Schema Draft 2020-12 for the catalogue.
+- `schema.json` — JSON Schema Draft 2020-12 for the source catalogue.
+- `observation.schema.json` — JSON Schema Draft 2020-12 for provenance-preserving source observations.
 - `examples/catalogue.json` — three official-source entries for initial discovery.
 - `examples/observation-v1.json` — synthetic observation fixture showing how provenance and missing-value semantics should be retained.
 - `CONFORMANCE.md` — requirements for future implementations and their tests.
@@ -27,4 +28,4 @@ The eTender Transparency Portal documents CC BY 4.0 for published data, but it a
 
 ## Validation
 
-Validate the catalogue against `schema.json` using a Draft 2020-12-compliant JSON Schema validator. Validate that `source_id` is unique across the catalogue; JSON Schema uniqueItems cannot enforce uniqueness of just one property. A future production contract crate should be Rust-first and integrated into the repository's qualified contract test workflow. No runtime test pass is claimed in this documentation change.
+Validate the catalogue against `schema.json` and the synthetic observation against `observation.schema.json`, using a Draft 2020-12-compliant JSON Schema validator. Validate that `source_id` is unique across the catalogue; JSON Schema uniqueItems cannot enforce uniqueness of just one property. A future production contract crate should be Rust-first and integrated into the repository's qualified contract test workflow. No runtime test pass is claimed in this documentation change.
