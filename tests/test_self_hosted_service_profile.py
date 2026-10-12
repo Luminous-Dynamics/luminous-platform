@@ -84,6 +84,34 @@ class SelfHostedServiceProfileTests(unittest.TestCase):
         self.assertEqual(report["result"], "INVALID")
         self.assertTrue(any("must not exceed" in error["message"] for error in report["errors"]))
 
+    def test_private_endpoint_cannot_bind_to_wildcard_address(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["endpoints"][0]["bind_address"] = "0.0.0.0"
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("wildcard or multicast" in error["message"] for error in report["errors"]))
+
+    def test_private_endpoint_requires_restricted_private_source_cidrs(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["endpoints"][0]["allowed_source_cidrs"] = ["0.0.0.0/0"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("only explicit private source CIDRs" in error["message"] for error in report["errors"]))
+
+    def test_invalid_source_cidr_is_rejected(self):
+        profile = copy.deepcopy(BASE)
+        profile["network"]["endpoints"][0]["allowed_source_cidrs"] = ["not-a-cidr"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("valid IPv4 or IPv6 CIDR" in error["message"] for error in report["errors"]))
+
+    def test_duplicate_health_check_ids_are_rejected(self):
+        profile = copy.deepcopy(BASE)
+        profile["health"]["checks"][1]["id"] = profile["health"]["checks"][0]["id"]
+        report = self.validate(profile)
+        self.assertEqual(report["result"], "INVALID")
+        self.assertTrue(any("health-check IDs must be unique" in error["message"] for error in report["errors"]))
+
     def test_enabled_endpoint_cannot_be_marked_disabled(self):
         profile = copy.deepcopy(BASE)
         profile["network"]["endpoints"][0]["exposure"] = "disabled"
