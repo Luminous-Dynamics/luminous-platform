@@ -11,23 +11,31 @@ import omsi_validate as v
 from nixward_adapter import build_adapter_binding, validate_adapter_binding
 
 NOW = datetime.fromisoformat("2026-10-12T12:05:00+00:00")
-PLAN = "1" * 64
-TARGET = "2" * 64
-TRANSACTION = "3" * 64
 
 
 def operation():
     return v.load(ROOT / "fixtures" / "operation.json")
 
 
-def binding(**overrides):
-    ids = {
-        "nixward_plan_digest": PLAN,
-        "nixward_target_machine_digest": TARGET,
-        "nixward_transaction_id": TRANSACTION,
+def nixward_transaction(**overrides):
+    record = {
+        "schema": "luminous-nixward-system-transaction-v1",
+        "version": 1,
+        "transaction_id": "3" * 64,
+        "target_machine_digest": "2" * 64,
+        "plan_digest": "1" * 64,
+        "phase": "planned",
     }
-    ids.update(overrides)
-    return build_adapter_binding(operation(), now=NOW, **ids)
+    record.update(overrides)
+    return record
+
+
+def binding(transaction=None):
+    return build_adapter_binding(
+        operation(),
+        nixward_transaction=transaction or nixward_transaction(),
+        now=NOW,
+    )
 
 
 class TestNixwardAdapterBinding(unittest.TestCase):
@@ -39,11 +47,10 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         self.assertTrue(record["nixward_target_machine_digest"].startswith("blake3:"))
         self.assertTrue(record["nixward_transaction_id"].startswith("blake3:"))
 
-    def test_exact_operation_and_nixward_identities_validate(self):
+    def test_exact_operation_and_transaction_envelope_validate(self):
         validate_adapter_binding(
-            binding(), operation(), nixward_plan_digest=PLAN,
-            nixward_target_machine_digest=TARGET,
-            nixward_transaction_id=TRANSACTION, now=NOW,
+            binding(), operation(),
+            nixward_transaction=nixward_transaction(), now=NOW,
         )
 
     def test_manifest_mutation_invalidates_binding(self):
@@ -55,33 +62,28 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         )
         with self.assertRaisesRegex(v.ConformanceError, "omsi_manifest_digest"):
             validate_adapter_binding(
-                record, changed, nixward_plan_digest=PLAN,
-                nixward_target_machine_digest=TARGET,
-                nixward_transaction_id=TRANSACTION, now=NOW,
+                record, changed, nixward_transaction=nixward_transaction(), now=NOW,
             )
 
     def test_wrong_nixward_plan_rejected(self):
+        changed = nixward_transaction(plan_digest="4" * 64)
         with self.assertRaisesRegex(v.ConformanceError, "nixward_plan_digest"):
             validate_adapter_binding(
-                binding(), operation(), nixward_plan_digest="4" * 64,
-                nixward_target_machine_digest=TARGET,
-                nixward_transaction_id=TRANSACTION, now=NOW,
+                binding(), operation(), nixward_transaction=changed, now=NOW,
             )
 
     def test_wrong_machine_binding_rejected(self):
+        changed = nixward_transaction(target_machine_digest="4" * 64)
         with self.assertRaisesRegex(v.ConformanceError, "nixward_target_machine_digest"):
             validate_adapter_binding(
-                binding(), operation(), nixward_plan_digest=PLAN,
-                nixward_target_machine_digest="4" * 64,
-                nixward_transaction_id=TRANSACTION, now=NOW,
+                binding(), operation(), nixward_transaction=changed, now=NOW,
             )
 
     def test_wrong_transaction_identity_rejected(self):
+        changed = nixward_transaction(transaction_id="4" * 64)
         with self.assertRaisesRegex(v.ConformanceError, "nixward_transaction_id"):
             validate_adapter_binding(
-                binding(), operation(), nixward_plan_digest=PLAN,
-                nixward_target_machine_digest=TARGET,
-                nixward_transaction_id="4" * 64, now=NOW,
+                binding(), operation(), nixward_transaction=changed, now=NOW,
             )
 
     def test_binding_tenant_substitution_rejected(self):
@@ -89,9 +91,7 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         record["tenant_id"] = "tenant-b"
         with self.assertRaisesRegex(v.ConformanceError, "tenant_id"):
             validate_adapter_binding(
-                record, operation(), nixward_plan_digest=PLAN,
-                nixward_target_machine_digest=TARGET,
-                nixward_transaction_id=TRANSACTION, now=NOW,
+                record, operation(), nixward_transaction=nixward_transaction(), now=NOW,
             )
 
     def test_binding_correlation_substitution_rejected(self):
@@ -99,24 +99,30 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         record["correlation_id"] = "other-flow"
         with self.assertRaisesRegex(v.ConformanceError, "correlation_id"):
             validate_adapter_binding(
-                record, operation(), nixward_plan_digest=PLAN,
-                nixward_target_machine_digest=TARGET,
-                nixward_transaction_id=TRANSACTION, now=NOW,
+                record, operation(), nixward_transaction=nixward_transaction(), now=NOW,
             )
 
     def test_malformed_nixward_digest_rejected(self):
         for bad in ("A" * 64, "g" * 64, "1" * 63, "blake3:" + "1" * 64):
             with self.subTest(value=bad), self.assertRaises(v.ConformanceError):
-                binding(nixward_plan_digest=bad)
+                binding(nixward_transaction(plan_digest=bad))
+
+    def test_unsupported_nixward_transaction_schema_rejected(self):
+        changed = nixward_transaction(schema="other-transaction-schema")
+        with self.assertRaisesRegex(v.ConformanceError, "unsupported Nixward transaction schema"):
+            binding(changed)
+
+    def test_unsupported_nixward_transaction_version_rejected(self):
+        changed = nixward_transaction(version=2)
+        with self.assertRaisesRegex(v.ConformanceError, "unsupported Nixward transaction version"):
+            binding(changed)
 
     def test_digest_algorithm_namespace_substitution_rejected(self):
         record = binding()
         record["omsi_manifest_digest"] = "blake3:" + "1" * 64
         with self.assertRaisesRegex(v.ConformanceError, "schema error"):
             validate_adapter_binding(
-                record, operation(), nixward_plan_digest=PLAN,
-                nixward_target_machine_digest=TARGET,
-                nixward_transaction_id=TRANSACTION, now=NOW,
+                record, operation(), nixward_transaction=nixward_transaction(), now=NOW,
             )
 
     def test_additional_unbound_fields_rejected(self):
@@ -124,9 +130,7 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         record["authorized"] = True
         with self.assertRaisesRegex(v.ConformanceError, "schema error"):
             validate_adapter_binding(
-                record, operation(), nixward_plan_digest=PLAN,
-                nixward_target_machine_digest=TARGET,
-                nixward_transaction_id=TRANSACTION, now=NOW,
+                record, operation(), nixward_transaction=nixward_transaction(), now=NOW,
             )
 
     def test_operation_argument_tampering_rejected_before_binding(self):
@@ -134,9 +138,7 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         changed["action"]["arguments"]["mode"] = "different-mode"
         with self.assertRaisesRegex(v.ConformanceError, "argument digest mismatch"):
             build_adapter_binding(
-                changed, nixward_plan_digest=PLAN,
-                nixward_target_machine_digest=TARGET,
-                nixward_transaction_id=TRANSACTION, now=NOW,
+                changed, nixward_transaction=nixward_transaction(), now=NOW,
             )
 
 
