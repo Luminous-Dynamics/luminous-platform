@@ -136,7 +136,8 @@ def validate_profile_data(profile: Any, schema: dict[str, Any], source: str) -> 
                         "path": path + "/ingress_hostnames",
                         "message": "ingress hostnames must not be blank",
                     })
-                for host_index, hostname in enumerate(normalized_hosts):
+                for host_index, raw_hostname in enumerate(endpoint["ingress_hostnames"]):
+                    hostname = raw_hostname.strip().rstrip(".").lower()
                     if not _DNS_HOSTNAME_RE.fullmatch(hostname):
                         errors.append({
                             "path": f"{path}/ingress_hostnames/{host_index}",
