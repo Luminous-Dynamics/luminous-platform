@@ -166,6 +166,66 @@ def input_manifest_unchanged(
     return input_hashes(root) == dict(expected_hashes)
 
 
+def safe_report_destination(
+    root: Path,
+    requested: Path,
+) -> tuple[Path, str | None] | None:
+    """Prevent report writes from replacing source, Git metadata, or arbitrary files."""
+    root_abs = Path(os.path.abspath(root))
+    target = Path(os.path.abspath(requested if requested.is_absolute() else root_abs / requested))
+    try:
+        relative = target.relative_to(root_abs)
+    except ValueError:
+        # A caller-selected destination outside the checkout is outside source state.
+        return target, None
+
+    if (
+        not relative.parts
+        or relative.parts[0] != "artifacts"
+        or target.suffix.lower() != ".json"
+        or relative.as_posix() in INPUT_PATHS
+    ):
+        return None
+
+    parent = root_abs
+    for part in relative.parts[:-1]:
+        parent = parent / part
+        if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+            return None
+    if target.is_symlink() or (target.exists() and not target.is_file()):
+        return None
+
+    if target.exists():
+        try:
+            existing = json.loads(target.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        if (
+            not isinstance(existing, dict)
+            or existing.get("report_schema_version") != REPORT_SCHEMA_VERSION
+        ):
+            return None
+
+    # Refuse overwriting tracked files even if they are not in INPUT_PATHS.
+    if (root_abs / ".git").exists():
+        try:
+            tracked = subprocess.run(
+                ["git", "ls-files", "--error-unmatch", "--", relative.as_posix()],
+                cwd=root_abs,
+                env=child_environment(),
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        if tracked.returncode != 1:
+            return None
+    return target, relative.as_posix()
+
+
 def source_tree_clean(
     root: Path,
     allowed_untracked: tuple[str, ...] = (),
@@ -557,15 +617,12 @@ def main(argv: list[str] | None = None) -> int:
 
     root = ROOT
     os.chdir(root)
-    report_path = args.report if args.report.is_absolute() else root / args.report
-    relative_report = os.path.relpath(report_path, root)
-    allowed_untracked = (
-        (Path(relative_report).as_posix(),)
-        if relative_report != os.pardir
-        and not relative_report.startswith(os.pardir + os.sep)
-        and not os.path.isabs(relative_report)
-        else ()
-    )
+    resolved_report = safe_report_destination(root, args.report)
+    if resolved_report is None:
+        print("ERROR: unsafe report destination")
+        return 2
+    report_path, relative_report = resolved_report
+    allowed_untracked = (relative_report,) if relative_report is not None else ()
     started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     expected_sha = os.environ.get("GITHUB_SHA")
     observed_sha = checked_out_sha(root)
