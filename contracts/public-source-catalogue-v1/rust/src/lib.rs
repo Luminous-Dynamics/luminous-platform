@@ -136,9 +136,10 @@ pub enum AccessMode {
 }
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Hash)]
-#[serde(rename_all = "snake_case")]
 pub enum AccessMethod {
+    #[serde(rename = "GET")]
     Get,
+    #[serde(rename = "manual_review")]
     ManualReview,
 }
 
@@ -323,7 +324,7 @@ pub struct SourcePeriod {
     pub period_label: String,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "snake_case")]
 pub enum RawValueState {
     ReportedValue,
