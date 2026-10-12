@@ -111,6 +111,9 @@ def validate_schema(kind: str, value: Any) -> None:
     except KeyError as exc:
         raise ConformanceError(f"unknown document kind: {kind}") from exc
     Draft202012Validator.check_schema(schema)
+    # All contract documents must be serializable by the documented restricted
+    # canonical JSON profile; schema-valid floats/unsafe integers are not enough.
+    canonical_bytes(value)
     errors = sorted(Draft202012Validator(schema, format_checker=FormatChecker()).iter_errors(value), key=lambda e: list(map(str, e.absolute_path)))
     if errors:
         error = errors[0]
@@ -177,6 +180,7 @@ def validate_receipt(receipt: dict[str, Any], expected: dict[str, Any] | None = 
     if receipt["tenant_id"] != receipt["target"]["tenant_id"]:
         raise ConformanceError("receipt target is in another tenant")
     if expected is not None:
+        validate_operation(expected)
         expected_values = [
             ("manifest digest", receipt["subject_manifest_digest"], digest(expected)),
             ("tenant", receipt["tenant_id"], expected["tenant_id"]),
@@ -188,6 +192,8 @@ def validate_receipt(receipt: dict[str, Any], expected: dict[str, Any] | None = 
             if actual != want:
                 raise ConformanceError(f"receipt {key} mismatch")
     issued = parse_time(receipt["issued_at"])
+    if expected is not None and issued < parse_time(expected["created_at"]):
+        raise ConformanceError("receipt cannot predate the operation manifest")
     ver = receipt["verification"]
     if receipt["outcome"] == "verified" and ver["result"] != "verified":
         raise ConformanceError("verified outcome needs verified evidence")
@@ -206,11 +212,21 @@ def validate_receipt(receipt: dict[str, Any], expected: dict[str, Any] | None = 
     elif receipt["outcome"] == "verified":
         raise ConformanceError("receipt outcome contradicts verification result")
 
-def validate_events(events: list[dict[str, Any]]) -> None:
+def validate_events(events: list[dict[str, Any]], operation: dict[str, Any] | None = None) -> None:
     if not events:
         raise ConformanceError("event sequence cannot be empty")
+    if operation is not None:
+        validate_operation(operation)
     seen = set()
     first = events[0]
+    if operation is not None:
+        for key, actual, expected in (
+            ("operation_id", first["operation_id"], operation["id"]),
+            ("tenant_id", first["tenant_id"], operation["tenant_id"]),
+            ("correlation_id", first["correlation_id"], operation["correlation_id"]),
+        ):
+            if actual != expected:
+                raise ConformanceError(f"event sequence {key} does not match manifest")
     prev_state = None
     prev_time = None
     for seq, event in enumerate(events, 1):
@@ -225,6 +241,8 @@ def validate_events(events: list[dict[str, Any]]) -> None:
         if event["sequence"] != seq:
             raise ConformanceError("event sequence must be contiguous from 1")
         at = parse_time(event["occurred_at"])
+        if operation is not None and at < parse_time(operation["created_at"]):
+            raise ConformanceError("event cannot predate the operation manifest")
         if prev_time is not None and at < prev_time:
             raise ConformanceError("event timestamps must be nondecreasing")
         if prev_state is None and event["from_state"] != "none":
@@ -239,7 +257,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate OMSI 0.1 draft documents; no crypto verification")
     parser.add_argument("kind", choices=["operation", "grant", "receipt", "events"])
     parser.add_argument("document", help="JSON path")
-    parser.add_argument("--manifest", help="operation manifest for grant/receipt binding")
+    parser.add_argument("--manifest", help="operation manifest for grant/receipt/event binding")
     parser.add_argument("--now", help="explicit RFC3339 time for expiry checks")
     args = parser.parse_args()
     try:
@@ -256,7 +274,7 @@ def main() -> int:
         elif args.kind == "receipt":
             validate_receipt(doc, load(args.manifest) if args.manifest else None)
         else:
-            validate_events(doc)
+            validate_events(doc, load(args.manifest) if args.manifest else None)
         print(f"PASS: {args.kind} document passed OMSI 0.1 draft checks")
         return 0
     except (OSError, json.JSONDecodeError, ConformanceError) as exc:
