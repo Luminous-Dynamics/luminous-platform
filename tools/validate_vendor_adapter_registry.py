@@ -223,6 +223,17 @@ def registry_errors(
                 if controls.get("uncertain_outcome_policy") != "NEVER_AUTOMATIC_REPLAY":
                     errors.append(f"{op_prefix}: flashing must never automatically replay after an uncertain outcome")
 
+        # The registry is closed-world: an omitted capability is ambiguous and
+        # must not silently mean either supported or unsupported. Every adapter
+        # explicitly declares each catalog operation as planned or unsupported
+        # (with rationale), or later as implemented/tested with evidence.
+        missing_operations = set(catalog) - seen_operations
+        for missing_operation in sorted(missing_operations):
+            errors.append(
+                f"{prefix}.operations is missing explicit declaration for "
+                f"{missing_operation!r}; declare planned or unsupported with rationale"
+            )
+
         # A family-level discovery baseline must not imply that the adapter works.
         if maturity == "A0_DISCOVERED" and any(
             operation["state"] not in {"planned", "unsupported"}

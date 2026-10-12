@@ -127,6 +127,19 @@
         {
           "operation": "oem_firmware_recovery",
           "state": "planned"
+        },
+        {
+          "operation": "alternative_os_flash",
+          "state": "unsupported",
+          "rationale": "This family adapter does not implement a conversion installer; any future SONiC/OpenWrt path must be a separate exact-platform profile with independent boot and recovery qualification."
+        },
+        {
+          "operation": "entitlement_read",
+          "state": "planned"
+        },
+        {
+          "operation": "lifecycle_read",
+          "state": "planned"
         }
       ],
       "known_boundaries": [
@@ -186,7 +199,21 @@
           "state": "planned"
         },
         {
+          "operation": "oem_firmware_recovery",
+          "state": "unsupported",
+          "rationale": "Generic local firmware recovery is not part of the Dashboard adapter contract; use documented vendor support/recovery paths for the exact Meraki model."
+        },
+        {
+          "operation": "alternative_os_flash",
+          "state": "unsupported",
+          "rationale": "No generic alternative-OS conversion is supported by this adapter; cloud-managed Meraki hardware must not be treated as universally flashable."
+        },
+        {
           "operation": "entitlement_read",
+          "state": "planned"
+        },
+        {
+          "operation": "lifecycle_read",
           "state": "planned"
         }
       ],
@@ -250,7 +277,16 @@
           "state": "planned"
         },
         {
+          "operation": "alternative_os_flash",
+          "state": "unsupported",
+          "rationale": "No alternative-OS installer is supported by the PAN-OS/Panorama management adapter; use authorized vendor-native maintenance and recovery."
+        },
+        {
           "operation": "entitlement_read",
+          "state": "planned"
+        },
+        {
+          "operation": "lifecycle_read",
           "state": "planned"
         }
       ],
@@ -317,6 +353,19 @@
         {
           "operation": "oem_firmware_recovery",
           "state": "planned"
+        },
+        {
+          "operation": "alternative_os_flash",
+          "state": "unsupported",
+          "rationale": "This family-level NETGEAR adapter does not authorize conversion. Any future OpenWrt conversion must use a separate exact-model/revision allowlist and tested recovery route."
+        },
+        {
+          "operation": "entitlement_read",
+          "state": "planned"
+        },
+        {
+          "operation": "lifecycle_read",
+          "state": "planned"
         }
       ],
       "known_boundaries": [
@@ -381,6 +430,15 @@
         {
           "operation": "alternative_os_flash",
           "state": "planned"
+        },
+        {
+          "operation": "entitlement_read",
+          "state": "unsupported",
+          "rationale": "This adapter has no universal OEM licensing/entitlement interface; any original-manufacturer entitlement must be evaluated through a separate vendor-specific adapter."
+        },
+        {
+          "operation": "lifecycle_read",
+          "state": "planned"
         }
       ],
       "known_boundaries": [
@@ -441,6 +499,19 @@
         },
         {
           "operation": "oem_firmware_recovery",
+          "state": "planned"
+        },
+        {
+          "operation": "alternative_os_flash",
+          "state": "unsupported",
+          "rationale": "The SONiC runtime adapter does not install or convert an OEM switch to SONiC; conversion requires a separate exact-platform service and boot/recovery qualification."
+        },
+        {
+          "operation": "entitlement_read",
+          "state": "planned"
+        },
+        {
+          "operation": "lifecycle_read",
           "state": "planned"
         }
       ],
