@@ -11,6 +11,7 @@
     "application",
     "runtime",
     "authority",
+    "dependencies",
     "network",
     "data",
     "secrets",
@@ -352,8 +353,16 @@
               {
                 "not": {
                   "anyOf": [
-                    { "required": ["port"] },
-                    { "required": ["port_range"] }
+                    {
+                      "required": [
+                        "port"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "port_range"
+                      ]
+                    }
                   ]
                 }
               }
@@ -371,7 +380,6 @@
         "persistent_paths",
         "backup_policy",
         "restore_test",
-        "call_recording",
         "telemetry_export",
         "retention_owner"
       ],
@@ -411,18 +419,6 @@
             "required-before-production"
           ]
         },
-        "call_recording": {
-          "enum": [
-            "disabled-by-default",
-            "explicit-opt-in-with-notice",
-            "enabled-with-jurisdiction-review"
-          ]
-        },
-        "recording_policy_reference": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 1000
-        },
         "telemetry_export": {
           "enum": [
             "disabled",
@@ -433,6 +429,37 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 240
+        },
+        "sensitive_capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "default_state"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "call_recording",
+                "audio_capture",
+                "screen_capture",
+                "message_content_capture",
+                "other"
+              ]
+            },
+            "default_state": {
+              "enum": [
+                "disabled-by-default",
+                "explicit-opt-in-with-notice",
+                "enabled-with-jurisdiction-review"
+              ]
+            },
+            "policy_reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          }
         }
       }
     },
@@ -637,6 +664,77 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 1000
+          }
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unknown_dependency_policy",
+        "items"
+      ],
+      "properties": {
+        "unknown_dependency_policy": {
+          "const": "deny-activation"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "role",
+              "required_for_start",
+              "failure_policy",
+              "data_shared"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9._-]*$",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "role": {
+                "enum": [
+                  "application",
+                  "platform-control-plane",
+                  "coordination-service",
+                  "identity-provider",
+                  "data-store",
+                  "network-transport",
+                  "external-provider",
+                  "backup-service",
+                  "telemetry-export",
+                  "name-service",
+                  "reverse-proxy"
+                ]
+              },
+              "required_for_start": {
+                "type": "boolean"
+              },
+              "failure_policy": {
+                "enum": [
+                  "degrade-with-alert",
+                  "stop-affected-feature",
+                  "queue-locally",
+                  "stop-service-safely",
+                  "deny-dependent-action",
+                  "not-applicable"
+                ]
+              },
+              "data_shared": {
+                "enum": [
+                  "none",
+                  "metadata-only",
+                  "classified-data",
+                  "application-state"
+                ]
+              }
+            }
           }
         }
       }
