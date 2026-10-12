@@ -276,6 +276,23 @@ class QualificationRunnerContractTests(unittest.TestCase):
             report.write_text('{"extra":true}\\n', encoding="utf-8")
             self.assertFalse(qualification.source_tree_clean(root, ()))
 
+    def test_child_integrity_fence_rejects_head_change(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = root / "fixture.json"
+            fixture.write_text("{}\\n", encoding="utf-8")
+            hashes = qualification.input_hashes(root, ("fixture.json",))
+            with (
+                patch.object(qualification, "checked_out_sha", return_value="b" * 40),
+                patch.object(qualification, "source_tree_clean", return_value=True),
+            ):
+                self.assertEqual(
+                    qualification.child_execution_integrity_errors(
+                        root, "a" * 40, hashes
+                    ),
+                    ["REVISION_MISMATCH"],
+                )
+
     def test_input_manifest_fence_detects_changed_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
