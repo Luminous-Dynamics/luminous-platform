@@ -8,6 +8,10 @@ on:
     paths:
       - 'tools/omsi-conformance/**'
       - '.github/workflows/omsi-conformance.yml'
+concurrency:
+  group: omsi-conformance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 jobs:
