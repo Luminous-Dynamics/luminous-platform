@@ -13,6 +13,8 @@
 
 ## Value semantics
 
+Validate source observations against `observation.schema.json`. When `normalization.applied` is false, both `rule_id` and `rule_version` must be null. When normalization is applied, both must identify a non-empty, versioned rule.
+
 Preserve these source states independently:
 - numerical zero reported as zero;
 - `null` reported as null;
@@ -40,7 +42,7 @@ Do not rewrite raw values. A derived interpretation must retain the raw value an
 3. Reject HTTP downgrade and redirects to unapproved hosts.
 4. Prove pagination is complete or return an explicit incomplete/error result.
 5. Oversized responses, malformed JSON, timeouts, rate limits and changed schemas fail visibly rather than being reported as a complete dataset.
-6. Fixtures distinguish zero, null, omitted rows, invalid values, stale observations and provisional periods.
+6. The observation schema and fixtures distinguish zero, null, omitted rows, invalid values, stale observations and provisional periods.
 7. Reprocessing an identical source snapshot is idempotent; changed content yields a new observation linked to the old one.
 8. Missing procurement records do not trigger a finding that a procurement did not exist.
 9. Disabling a connector or AI leaves manual government channels usable.
