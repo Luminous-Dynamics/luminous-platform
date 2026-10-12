@@ -103,15 +103,17 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 "time.sleep(0.8); "
                 f"Path({str(marker)!r}).write_text('survived', encoding='utf-8')"
             )
-            parent_code = (
-                "import subprocess, sys, time; from pathlib import Path; "
-                "subprocess.Popen([sys.executable, '-c', sys.argv[1]]); "
-                f"deadline = time.monotonic() + 2; "
-                f"started = Path({str(child_started)!r}); "
-                "while not started.exists() and time.monotonic() < deadline: time.sleep(0.01); "
-                "assert started.exists(), 'descendant failed to start'; "
-                "sys.exit(0)"
-            )
+            parent_code = "\\n".join([
+                "import subprocess, sys, time",
+                "from pathlib import Path",
+                "subprocess.Popen([sys.executable, '-c', sys.argv[1]])",
+                "deadline = time.monotonic() + 2",
+                f"started = Path({str(child_started)!r})",
+                "while not started.exists() and time.monotonic() < deadline:",
+                "    time.sleep(0.01)",
+                "assert started.exists(), 'descendant failed to start'",
+                "sys.exit(0)",
+            ])
             result = qualification.run_bounded_process(
                 [sys.executable, "-c", parent_code, child_code],
                 cwd=root,
