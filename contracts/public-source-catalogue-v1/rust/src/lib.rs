@@ -528,8 +528,18 @@ fn valid_rfc3339_timestamp(value: &str) -> bool {
         return false;
     };
 
-    let time = &time_and_zone[..zone_start];
-    let time = time.split('.').next().unwrap_or(time);
+    let unzoned_time = &time_and_zone[..zone_start];
+    let time = if let Some((clock, fraction)) = unzoned_time.split_once('.') {
+        if fraction.is_empty() || !fraction.bytes().all(|byte| byte.is_ascii_digit()) {
+            return false;
+        }
+        if fraction.contains('.') {
+            return false;
+        }
+        clock
+    } else {
+        unzoned_time
+    };
     let parts: Vec<&str> = time.split(':').collect();
     if parts.len() != 3 || parts.iter().any(|part| part.len() != 2 || !part.bytes().all(|b| b.is_ascii_digit())) {
         return false;
