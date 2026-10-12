@@ -106,7 +106,7 @@ def _reject_secrets(value: Any, path: str = "/") -> None:
     bad = {"password", "passwd", "passphrase", "secret", "privatekey", "accesstoken", "refreshtoken", "apikey", "clientsecret", "credential", "credentials"}
     # Reference fields are not an exemption: only opaque URI-shaped references
     # are allowed. Reject raw values, userinfo, query strings and whitespace.
-    reference_uri = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://[^\\s/?#@][^\\s?#@]*$")
+    reference_uri = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://[^\s/?#@][^\s?#@]*$")
     if isinstance(value, dict):
         for key, child in value.items():
             norm = key.lower().replace("-", "_")
