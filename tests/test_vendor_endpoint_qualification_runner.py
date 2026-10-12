@@ -538,6 +538,49 @@ class QualificationRunnerContractTests(unittest.TestCase):
             finally:
                 os.chdir(old_cwd)
 
+    def test_runtime_version_mismatch_blocks_all_child_checks(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for relative in qualification.INPUT_PATHS:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"synthetic input\n")
+            report_path = root / "artifacts" / "qualification-report.json"
+            old_cwd = Path.cwd()
+            try:
+                with (
+                    patch.object(qualification, "ROOT", root),
+                    patch.object(qualification, "checked_out_sha", return_value="a" * 40),
+                    patch.object(qualification, "source_tree_clean", return_value=True),
+                    patch.object(qualification.platform, "python_version", return_value="3.13.8"),
+                    patch.object(
+                        qualification,
+                        "dependency_version",
+                        side_effect={"jsonschema": "4.26.0", "cryptography": "50.0.2"}.get,
+                    ),
+                    patch.dict(os.environ, {"GITHUB_SHA": "a" * 40}),
+                    patch.object(qualification, "run_validator") as run_validator,
+                    patch.object(qualification, "run_test_suite") as run_test_suite,
+                ):
+                    return_code = qualification.main(["--report", str(report_path)])
+                    report = json.loads(report_path.read_text(encoding="utf-8"))
+                    self.assertEqual(return_code, 1)
+                    self.assertEqual(report["blocker_codes"], ["PYTHON_VERSION_MISMATCH"])
+                    self.assertFalse(report["source_integrity"]["preflight_execution_gate_passed"])
+                    self.assertFalse(report["source_integrity"]["execution_integrity_preserved"])
+                    run_validator.assert_not_called()
+                    run_test_suite.assert_not_called()
+                    self.assertTrue(all(
+                        item["state"] == "blocked_runtime_environment"
+                        for item in report["validators"].values()
+                    ))
+                    self.assertTrue(all(
+                        item["state"] == "blocked_runtime_environment"
+                        for item in report["test_suites"]
+                    ))
+            finally:
+                os.chdir(old_cwd)
+
     def test_final_fence_detects_source_drift_during_permission_restoration(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

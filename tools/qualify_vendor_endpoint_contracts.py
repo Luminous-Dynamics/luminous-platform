@@ -810,6 +810,14 @@ def main(argv: list[str] | None = None) -> int:
     elif cryptography_version != EXPECTED_CRYPTOGRAPHY_VERSION:
         blockers.append("CRYPTOGRAPHY_VERSION_MISMATCH")
 
+    # Runtime identity is an execution precondition, not merely a report warning:
+    # do not run validators/tests against a different interpreter or dependency set.
+    runtime_valid = (
+        python_version == EXPECTED_PYTHON_VERSION
+        and jsonschema_version == EXPECTED_JSONSCHEMA_VERSION
+        and cryptography_version == EXPECTED_CRYPTOGRAPHY_VERSION
+    )
+
     manifest_gaps = manifest_coverage_gaps()
     if manifest_gaps:
         blockers.append("INPUT_MANIFEST_INCOMPLETE")
@@ -828,10 +836,14 @@ def main(argv: list[str] | None = None) -> int:
 
     revision_valid = observed_sha is not None and (not expected_sha or expected_sha == observed_sha)
     execution_ready = (
-        source_tree_state is True
+        runtime_valid
+        and source_tree_state is True
         and revision_valid
         and not manifest_gaps
         and not missing_inputs
+    )
+    execution_block_state = (
+        "blocked_runtime_environment" if not runtime_valid else "blocked_source_integrity"
     )
     input_modes: dict[str, tuple[int, bool]] | None = None
     input_modes_restored: bool | None = None
@@ -858,7 +870,7 @@ def main(argv: list[str] | None = None) -> int:
                 "script": script,
                 "return_code": None,
                 "timed_out": False,
-                "state": "blocked_source_integrity",
+                "state": execution_block_state,
             }
             continue
         if input_drift_detected:
@@ -888,7 +900,8 @@ def main(argv: list[str] | None = None) -> int:
 
     stopped_validator_states = {
         "input_drift_detected", "execution_integrity_lost",
-        "blocked_execution_integrity_lost", "blocked_source_integrity"
+        "blocked_execution_integrity_lost", "blocked_source_integrity",
+        "blocked_runtime_environment",
     }
     if validators["endpoint_profile"]["state"] not in ({"passed"} | stopped_validator_states):
         blockers.append("PROFILE_VALIDATOR_FAILED")
@@ -902,7 +915,7 @@ def main(argv: list[str] | None = None) -> int:
     test_suites: list[dict[str, object]] = []
     for pattern in TEST_SUITE_PATTERNS:
         if not execution_ready:
-            test_suites.append({"pattern": pattern, "state": "blocked_source_integrity"})
+            test_suites.append({"pattern": pattern, "state": execution_block_state})
             continue
         if input_drift_detected:
             test_suites.append({"pattern": pattern, "state": "blocked_execution_integrity_lost"})
