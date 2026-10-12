@@ -14,9 +14,9 @@ import importlib.metadata
 import json
 import os
 import platform
+import stat
 import subprocess
 import sys
-import stat
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -184,12 +184,7 @@ def source_tree_clean(root: Path) -> bool | None:
         if tracked.returncode != 0:
             return None
         untracked = subprocess.run(
-            [
-                "git", "ls-files", "--others", "--exclude-standard", "--",
-                ".github", "docs", "hardware", "profiles",
-                "requirements-hardware-portfolio.txt", "schemas", "security",
-                "tests", "tools",
-            ],
+            ["git", "ls-files", "--others", "--exclude-standard", "--"],
             cwd=root,
             env=child_environment(),
             stdin=subprocess.DEVNULL,
