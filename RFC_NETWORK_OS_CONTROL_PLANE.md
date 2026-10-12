@@ -110,6 +110,84 @@ A later appliance profile must explicitly define the allowed configuration-autho
 
 Linux does not promise one atomic snapshot across all networking objects. A Netlink dump can be interrupted while the kernel's fast path updates objects; an adapter must inspect dump flags, detect message loss/truncation, and either retry under a bounded policy or mark that resource family incomplete. A successful socket read or zero exit code is not completeness evidence. Completeness evidence must bind the exact target/namespace, resource family, collector build, request/reply boundaries, and loss/interruption indicators. The M0 planner therefore requires per-kind completeness-evidence digests and refuses to infer resource absence unless the caller marks that kind complete. The planner binds the digest only; a separate verifier must check the artifact before any future write-capable adapter can rely on it.
 
+## Scale envelope: from a local router to global network operations
+
+### Direct answer
+
+**Linux can be the foundation for globally deployed networking, but “global hub capacity” is not a single server-size number.** Linux has mature multi-queue packet distribution (RSS/RPS/RFS/XPS), network namespaces and VRFs, eBPF/XDP, and interfaces for hardware forwarding offload. Linux-based SONiC is an existence proof that Linux software can participate in cloud data-center switching, with a switch ASIC/device doing the line-rate forwarding. These precedents establish feasibility of the platform family, not performance of this project.
+
+We should design for global-scale *fleet management* without routing every customer's packet through one global software hub. Keep forwarding local to each appliance or switch, use distributed routing and local policy enforcement, and build regional/federated management. Global operation is a topology, redundancy, and operations problem as much as a packet-processing problem.
+
+### Three independent capacity dimensions
+
+Never describe capacity only as “devices supported” or “Gbps.” Qualification reports must separate:
+
+1. **Data plane:** throughput by frame size, packet rate, latency/jitter, loss, connection tracking/NAT cost, tunnel overhead, and the exact number/type of ports and NICs.
+2. **Routing/control plane:** number of routes/prefixes, peers and sessions, update/withdrawal churn, convergence and failover times, CPU/memory consumption, and forwarding information base (FIB) programming behavior.
+3. **Management/fleet plane:** managed appliances, sites, tenants, concurrent operators, telemetry/event rate, queued changes, change completion rate, audit retention, regional outage behavior, and coordinator recovery.
+
+A high-throughput forwarding appliance may manage only a few devices; a fleet controller may manage thousands of low-throughput routers without forwarding any user traffic itself. These are distinct capacity claims.
+
+### Proposed qualification ladder
+
+Every numeric band below is a **target for future qualification, not a current capability or benchmark result**. Support means a specific hardware, NIC/driver, kernel, configuration, and workload matrix has passed its evidence gates.
+
+| Tier | Target environment | Indicative profile | Architectural expectation | Evidence required before claiming support |
+|---|---|---|---|---|
+| N0 | Developer/CI lab | Network namespaces and QEMU; synthetic virtual links | Read-only inventory/planning first; then isolated namespace-only mutation | Exact-head unit/property tests, failure injection, host-isolation proof |
+| N1 | Home/small office/branch | 1/2.5/10-GbE-class interfaces; tens to hundreds of endpoints as a test profile | Linux IP stack, nftables, DHCP/DNS, VLANs, WireGuard, optional dual WAN | Named NIC/device matrix, packet-size sweep, VPN/firewall/NAT tests, rollback/reboot recovery |
+| N2 | Multi-site enterprise/campus | 10/25/100-GbE-class interfaces; hundreds to thousands of endpoints as a test profile | VRFs/segmentation, dual-stack policy, HA gateways, FRRouting for BGP/OSPF where required, centralized but locally enforced intent | Route/peer scale tests, convergence, failover, per-zone traffic, redundant-device tests |
+| N3 | Data-center/edge/colo | 25/100/400-GbE-class ports as hardware-qualified target profiles | NIC queue/NUMA tuning, RSS/RPS/RFS/XPS, XDP/AF_XDP only where useful, switchdev/ASIC offload where supported | Per-SKU hardware tests; throughput *and* minimum-frame packet-rate tests; offload parity, queue/drop counters, thermal/soak tests |
+| N4 | Carrier, exchange, or global edge | Multiple routers/locations; many BGP peers and externally learned routes | Multiple forwarding nodes, ECMP, redundant route reflectors/control services, local failover and explicitly bounded route policies | Routing-scale lab, churn/reconvergence, multi-failure tests, policy leak prevention, independent route/device qualification |
+| F1–F4 | Global management fleet | Proposed load tests at 10, 100, 1,000, and 10,000 managed nodes, with multiple regions and tenants | Local agents and regional coordinators; bounded queues, backpressure, idempotent jobs, tenant isolation, sharded telemetry and audit storage | Measured event/command rates, backlog recovery, coordinator loss/partition, duplicate/replay tests, fleet-wide staged rollout and rollback |
+
+**Important boundaries:**
+
+- N1–N4 are product/reference profiles to qualify, not commitments that the current M0 planner runs any of these environments. The current planner has no live adapter or executor.
+- A port labeled “100 GbE” does not prove 100-Gb/s application throughput, minimum-frame line rate, bidirectional throughput, or encrypted/NAT throughput.
+- Hardware-supported switching and routing offload can be essential at high rates. That is still a Linux-centered design, but it is not a claim that the general-purpose CPU forwards every packet in software.
+- For carrier/global deployments, integrate proven routing implementations such as FRRouting and qualified switching hardware rather than rewriting BGP or an ASIC's forwarding engine in Rust.
+
+### Why packet rate can be the real limit
+
+Bandwidth hides a crucial variable: packets per second. Assuming ordinary Ethernet accounting and 64-byte minimum frames (including FCS), plus 8 bytes of preamble/SFD and 12 bytes of inter-frame gap, line-rate traffic is approximately:
+
+| Link rate | Minimum-frame rate at line rate |
+|---:|---:|
+| 1 Gb/s | 1.49 million packets/s |
+| 10 Gb/s | 14.88 million packets/s |
+| 100 Gb/s | 148.81 million packets/s |
+| 400 Gb/s | 595.24 million packets/s |
+
+This is **the offered on-wire packet rate**, not measured Linux forwarding performance. Real workloads vary by packet size, flow distribution, offloads, tunnel encryption, firewall/NAT rules, route lookups, and hardware. It illustrates why one throughput benchmark using large packets is not a credible global-scale qualification.
+
+Linux networking scales through complementary mechanisms: NIC multi-queue/RSS distributes receives, RPS/RFS/XPS can steer work in software, and AF_XDP can provide specialized high-performance userspace paths when driver support and workload justify them. For switch hardware, switchdev can offload supported bridge/FIB operations into the device. Each feature is capability- and device-dependent; none is an automatic speed switch.
+
+### Benchmark and qualification protocol
+
+Use a test stack with deliberately different roles:
+
+- **Correctness/failure:** NixOS VM and namespace labs, deterministic synthetic topology, property tests for planner invariants, fault injection, restart and recovery tests.
+- **Basic TCP/UDP throughput:** iperf3 or equivalent, clearly separating endpoint throughput from forwarding benchmarks.
+- **High-rate packets and realistic flows:** evaluate TRex (DPDK-based) or equivalent hardware traffic generation; use kernel pktgen for targeted kernel-path tests where appropriate. A software generator must itself be shown not to be the bottleneck.
+- **Comparable device benchmarking:** adapt RFC 2544 test concepts for throughput, frame loss, and latency. Publish exact run configuration and repeat counts rather than selecting the best run.
+
+For each target SKU/profile, test IPv4 and IPv6, TCP and UDP, minimum/IMIX/jumbo frame mixes, routing-only, firewall, NAT/conntrack, WireGuard/IPsec if included, VLAN/VRF isolation, realistic concurrent flows, connection creation rate, route churn, and failures. Record sustained and burst throughput, packets/s, loss, latency distribution, CPU per core, IRQ/softirq utilization, memory, NIC/driver/kernel version, offload settings, queue drops, power/thermal state, and firmware. Include unidirectional and bidirectional tests.
+
+Pass criteria must be chosen before running the tests and tied to a specific product tier. Report p50/p95/p99 latency and loss at stated offered loads, not only a peak Gbit/s number. Add soak tests and failure/reconvergence tests appropriate to the tier. A benchmark pass qualifies only that tested hardware/software/workload envelope; it does not certify arbitrary Linux hardware.
+
+### Global fleet topology
+
+For F1–F4, do not make a single controller mandatory for live forwarding. Preferred shape:
+
+- **Device-local enforcement and recovery:** every device maintains last-known-good authorized policy and continues normal local forwarding during loss of the management path.
+- **Regional coordinators:** tenant-scoped desired state, bounded work queues, idempotent per-target changes, versioned rollout waves and regional observability.
+- **Federation/root coordination:** global inventory, policy distribution, trust relationships, conflict detection, and cross-region evidence aggregation; not a transit path for each user packet.
+- **Hierarchical failure policy:** partitioned regions stop unsafe writes or hold last-known-good state; they do not wait indefinitely for a global quorum to forward packets.
+- **Blast-radius controls:** canaries, maintenance windows, concurrent-change detection, rate limits, per-site rollback, and an independent recovery channel for gateway changes.
+
+The actual F1–F4 node counts, event rates, data retention, availability objectives, and region boundaries remain open design/qualification parameters. Do not promote the illustrative node-count ladder into a product SLA before a measured fleet simulation exists.
+
 ## Transaction and safety contract
 
 Every write-capable operation must bind to an immutable transaction intent containing at least:
