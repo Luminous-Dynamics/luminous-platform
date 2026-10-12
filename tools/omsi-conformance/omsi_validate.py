@@ -310,6 +310,7 @@ def main() -> int:
     parser.add_argument("kind", choices=["operation", "grant", "receipt", "events"])
     parser.add_argument("document", help="JSON path")
     parser.add_argument("--manifest", help="operation manifest for grant/receipt/event binding")
+    parser.add_argument("--events", help="lifecycle event JSON for cross-document receipt chronology checks")
     parser.add_argument("--now", help="explicit RFC3339 time for expiry checks")
     args = parser.parse_args()
     try:
@@ -324,7 +325,13 @@ def main() -> int:
                 raise ConformanceError("grant requires --manifest and --now")
             validate_grant(load(args.manifest), doc, now)
         elif args.kind == "receipt":
-            validate_receipt(doc, load(args.manifest) if args.manifest else None)
+            if args.events and not args.manifest:
+                raise ConformanceError("--events requires --manifest")
+            validate_receipt(
+                doc,
+                load(args.manifest) if args.manifest else None,
+                load(args.events) if args.events else None,
+            )
         else:
             validate_events(doc, load(args.manifest) if args.manifest else None)
         print(f"PASS: {args.kind} document passed OMSI 0.1 draft checks")
