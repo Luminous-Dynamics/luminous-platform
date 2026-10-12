@@ -13,7 +13,7 @@ Build an open, Rust-first network control plane and a NixOS-based appliance prof
 
 The first product milestone is a **read-only observer and deterministic planner**. The first mutation milestone must operate only inside an explicitly created virtual network lab. Physical-host writes remain disabled until safety evidence, rollback/recovery, ownership conflict detection, and a remotely recoverable test profile are qualified.
 
-Provisional service name: `luminous-networkd`. The name is not yet a reserved crate or repository name.
+Do not start by creating a second daemon. The first increment should be a read-only library/planner integrated with Nixward's existing transaction boundaries. A separate `luminous-networkd` process is a later option only if a stable API and a privilege-separation case justify it.
 
 ## Why this belongs in the platform
 
@@ -21,7 +21,19 @@ The Luminous Platform already describes a network layer containing `xenia-peer`,
 
 > observe → plan → validate → authorize → snapshot → apply → verify → promote/recover
 
-This RFC applies that existing transaction discipline to Linux network resources; it does not create a parallel authorization or transaction system. See [Nixward's canonical transaction architecture](https://github.com/Luminous-Dynamics/nixward/blob/main/docs/SYSTEM_TRANSACTION_ARCHITECTURE.md) and the [Luminous Platform architecture](https://github.com/Luminous-Dynamics/luminous-platform).
+**Repository inspection found existing Nixward networking work that this RFC must compose with, not duplicate:**
+
+- [`network_covenant.rs`](https://github.com/Luminous-Dynamics/nixward/blob/main/src/network_covenant.rs) defines workload-level network policy/capability contracts.
+- [`network_enforcement.rs`](https://github.com/Luminous-Dynamics/nixward/blob/main/src/network_enforcement.rs) builds cgroup/BPF workload enforcement plans and kernel/target proof structures.
+- [`network_runtime_lab.rs`](https://github.com/Luminous-Dynamics/nixward/blob/main/src/network_runtime_lab.rs) and the [runtime-lab harness](https://github.com/Luminous-Dynamics/nixward/tree/main/tests/network-runtime-lab) establish an isolated NixOS VM test/evidence path for that enforcement backend.
+- [`network_activation.rs`](https://github.com/Luminous-Dynamics/nixward/blob/main/src/network_activation.rs) binds plan/readiness/target artifacts to a separate owner-authorized activation intent.
+- [`network_telemetry.rs`](https://github.com/Luminous-Dynamics/nixward/blob/main/src/network_telemetry.rs) defines a metadata-only evidence stream and explicitly excludes payload capture and mutation authority.
+
+Those modules concern **workload/network-flow enforcement and its evidence**. This RFC concerns the complementary **device/topology reconciliation plane**: links, addresses, routes, VLANs/bridges, device-facing firewall policy, and eventual fleet-wide network intent. It must reuse shared authority/receipt contracts where appropriate, but must not re-label workload BPF evidence as proof of router/device qualification, duplicate the existing runtime lab, or create a second policy authority.
+
+The broader Luminous Platform also has draft proposals for [government/regulatory network architecture (PR #20)](https://github.com/Luminous-Dynamics/luminous-platform/pull/20), a [hardware portfolio and qualification package (PR #22)](https://github.com/Luminous-Dynamics/luminous-platform/pull/22), and [self-hosted workload/service contracts (PR #28)](https://github.com/Luminous-Dynamics/luminous-platform/pull/28). They remain drafts; the device-control design should align with them rather than duplicating product taxonomy, segmentation contracts, hardware qualification, or workload declarations.
+
+This RFC applies Nixward's existing transaction discipline to the new resource domain; it does not create a parallel authorization or transaction system. See [Nixward's canonical transaction architecture](https://github.com/Luminous-Dynamics/nixward/blob/main/docs/SYSTEM_TRANSACTION_ARCHITECTURE.md) and the [Luminous Platform architecture](https://github.com/Luminous-Dynamics/luminous-platform).
 
 ## Goals
 
@@ -73,7 +85,7 @@ These are proposed boundaries, not claims that the crates exist.
 
 ### 3. Responsibilities across Luminous components
 
-- **Nixward:** own the consequential transaction model, explicit authority checks, local execution boundary, and recovery discipline. Reuse its existing contracts instead of inventing a second authorization system.
+- **Nixward:** keep the existing workload-level cgroup/BPF enforcement path and its activation/evidence contracts authoritative for that domain. Add a distinct device/topology reconciliation module behind the existing transaction, authorization, and receipt boundary; do not fork a second transaction engine or create a second network policy authority.
 - **Luminous Platform / Luminous Edge:** package and compose the network modules into optional NixOS profiles only after qualification.
 - **Mycelix:** later provide federation, identity, delegated capabilities, and portable trust/evidence semantics. Local enforcement and recovery must work during disconnection; no remote quorum may be required to forward packets.
 - **Symthaea:** initially consume telemetry and propose explanations or plans. It is advisory only. No cognitive output is mutation authority.
@@ -139,17 +151,19 @@ No throughput or latency claims are made. No Rust networking dependency has been
 
 **Gate:** no production mutation is enabled by accepting this RFC.
 
-### Phase 1 — Read-only inventory and pure planner
+### Phase 1 — Existing-contract map, read-only inventory, and pure planner
 
-Build typed state and a deterministic planner. Collect observations from a controlled virtual lab; render proposed diffs. Repeated runs with identical inputs must yield the same normalized plan digest. Unknown or unsupported resources must remain explicit and must not be silently omitted.
+First map the exact public APIs and evidence contracts in Nixward's existing `network_covenant`, `network_enforcement`, `network_activation`, `network_runtime_lab`, and `network_telemetry` modules. Record which contracts are reusable and which are deliberately workload-scoped. Do not change their backend IDs or interpret their attestations as device-controller qualification.
 
-**Gate:** tests establish deterministic planning, provenance, stable normalization, schema rejection, and correct conflict reporting. No host mutation path is present.
+Then build a separate, read-only device/topology inventory and deterministic planner. Collect observations from a controlled virtual lab; render proposed diffs. Repeated runs with identical normalized inputs must yield the same plan digest. Unknown or unsupported resources must remain explicit and must not be silently omitted. The planner must identify an existing product/site segmentation schema only after its owning proposal is accepted, not invent a competing zone model.
 
-### Phase 2 — Namespace-only actuator
+**Gate:** a written integration map plus tests establish deterministic planning, provenance, stable normalization, schema rejection, and correct conflict reporting. No host mutation path is present.
 
-Add controlled apply and verification strictly within resources created by an isolated test harness. Start with link creation, address configuration, routes, and a dedicated nftables table/chain. Every mutation must be limited to the lab's namespace and owned resources.
+### Phase 2 — Separate device-runtime lab and namespace-only actuator
 
-**Gate:** fault-injection tests cover stale pre-state, duplicate/reordered notifications, rejected Netlink requests, partial apply, process kill at each lifecycle phase, failed rollback, and restart/recovery. Test that host interfaces/default routes/global firewall state remain unchanged.
+Do not reuse the existing workload BPF runtime-lab attestation for this new resource domain. Add a separately named and versioned device/topology lab contract and harness, using the existing NixOS VM test pattern where useful. Add controlled apply/verification strictly within resources created by that harness. Start with virtual link creation, addresses, routes, and an isolated nftables table/chain. Every mutation must be limited to the harness-owned namespace and resources.
+
+**Gate:** fault-injection tests cover stale pre-state, duplicate/reordered notifications, rejected Netlink requests, partial apply, process kill at each lifecycle phase, failed rollback, and restart/recovery. Test that host interfaces/default routes/global firewall state remain unchanged. The new report must have a distinct backend identity, schema, and verifier.
 
 ### Phase 3 — Narrow appliance profile in QEMU
 
@@ -192,7 +206,7 @@ All pass claims must be bound to the exact commit, configuration, kernel, and te
 5. **Hardware/driver variability:** support claims require per-profile evidence.
 6. **Evidence and privacy:** topology and telemetry can reveal sensitive operational details. Receipts should prove the required properties without exporting credentials or unnecessary packet contents.
 
-Before moving beyond Phase 1, confirm the initial deployment profile (recommended: NixOS-based small-office/home-office router in a virtual lab) and the exact existing Nixward authorization/receipt interfaces to consume.
+Before moving beyond Phase 1, map the exact Nixward transaction/authorization/receipt APIs and resolve overlaps with the open Luminous network segmentation and product-profile proposals. Recommended first profile: a NixOS-based small-office/home-office router in a virtual lab; it remains a proposed target, not a product commitment.
 
 ## Acceptance criteria for this RFC's first implementation milestone
 
