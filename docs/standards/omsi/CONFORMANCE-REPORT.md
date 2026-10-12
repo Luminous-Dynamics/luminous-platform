@@ -4,7 +4,7 @@
 
 ## Results recorded during development
 
-- Python unittest suite: 68 tests passed in the final local run reported by the development session.
+- Python unittest suite: reran the companion archive's `make test` locally on 2026-10-12; 68 tests passed in 2.017 seconds.
 - JSON Schema Draft 2020-12: four core schemas, one NixOS change-arguments schema and two optional IT Service Core incubation schemas passed schema self-validation.
 - OpenAPI: parsed as 3.1.1; local references resolved and operation IDs were unique. A dedicated OpenAPI validator and live server/client contract test were not run.
 - Canonicalization: Python and Node.js probes matched included vectors and the positive operation-manifest digest. This is not full RFC 8785 conformance.
@@ -13,7 +13,7 @@
 
 ## Important limitation for this PR
 
-The larger companion starter and its 68-test report were built locally during proposal development. They are design evidence only, have not been independently reviewed, and are not a certification. This RFC-only PR does not include that larger companion kit.
+The larger companion starter was extracted from the generated technical archive and its `make test` suite was rerun locally on 2026-10-12: 68 tests passed in 2.017 seconds. This is local design evidence only; the kit has not been independently reviewed, and these results are not a certification. This RFC-only PR does not include that larger companion kit.
 
 A smaller, reviewable initial implementation seed with four JSON Schemas, a Python validator/CLI, fixtures and a 25-test suite is now proposed separately in [PR #32](https://github.com/Luminous-Dynamics/luminous-platform/pull/32). Its local tests passed, while its GitHub Actions run is pending. The 25-test seed and the 68-test companion kit are different scopes; do not combine their counts.
 
