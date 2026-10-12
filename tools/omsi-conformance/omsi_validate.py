@@ -233,6 +233,10 @@ def validate_receipt(
         raise ConformanceError("verification observation cannot follow receipt issuance")
     if manifest_created is not None and observed is not None and observed < manifest_created:
         raise ConformanceError("verification observation cannot predate the operation manifest")
+    if events is not None and observed is not None:
+        applied_events = [event for event in events if event["to_state"] == "applied"]
+        if applied_events and observed < parse_time(applied_events[-1]["occurred_at"]):
+            raise ConformanceError("verification observation predates operation application")
 
     if receipt["outcome"] == "verified":
         if ver["result"] != "verified":
@@ -245,10 +249,7 @@ def validate_receipt(
                 raise ConformanceError("verified receipt requires an applied event")
             if not events or events[-1]["to_state"] != "verified":
                 raise ConformanceError("verified receipt requires a terminal verified event")
-            applied_at = parse_time(applied[-1]["occurred_at"])
             verified_at = parse_time(events[-1]["occurred_at"])
-            if observed < applied_at:
-                raise ConformanceError("verification observation predates operation application")
             if verified_at < observed:
                 raise ConformanceError("verified event predates verification observation")
             if issued < verified_at:
