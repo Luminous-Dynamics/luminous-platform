@@ -44,6 +44,67 @@ def binding(transaction=None):
     )
 
 
+def lifecycle_transaction(phase, recovered_from="failed"):
+    tx = nixward_transaction(phase=phase)
+    if phase == "planned":
+        return tx
+
+    tx["validation"] = {"evidence_digest": "a" * 64, "summary": "fixture validation"}
+    if phase == "validated":
+        return tx
+
+    tx["authorization"] = {
+        "issuer": "test-owner",
+        "evidence_digest": "b" * 64,
+        "evidence_kind": "explicit_approval",
+        "expires_at_ms": 1791807300000,
+        "signer_key_id": None,
+        "challenge_blake3": None,
+        "replay_key": None,
+    }
+    if phase == "authorized":
+        return tx
+
+    tx["snapshot"] = {
+        "pre_state_digest": "c" * 64,
+        "recovery_binding_digest": "d" * 64,
+    }
+    if phase == "snapshotted":
+        return tx
+
+    exit_status = 1 if phase == "failed" or (phase == "recovered" and recovered_from == "failed") else 0
+    tx["application"] = {
+        "command_digest": "e" * 64,
+        "started_at_ms": 1000,
+        "finished_at_ms": 1100,
+        "exit_status": exit_status,
+    }
+    if phase == "applied":
+        return tx
+    if phase == "failed":
+        tx["outcome"] = {"phase": "failed", "reason": "fixture command failure"}
+        return tx
+
+    needs_verification = phase in {"verified", "promoted"} or (
+        phase == "recovered" and recovered_from == "verified"
+    )
+    if needs_verification:
+        tx["verification"] = {
+            "post_state_digest": "f" * 64,
+            "evidence_digest": "0" * 64,
+            "boot_healthy": True,
+        }
+    if phase == "verified":
+        return tx
+    if phase == "promoted":
+        tx["outcome"] = {"phase": "promoted", "reason": None}
+        return tx
+    if phase == "recovered":
+        tx["outcome"] = {"phase": "recovered", "reason": "fixture recovery"}
+        return tx
+    raise ValueError(f"unsupported fixture phase: {phase}")
+
+
 class TestNixwardAdapterBinding(unittest.TestCase):
     def test_binding_schema_and_digest_namespaces_are_explicit(self):
         record = binding()
