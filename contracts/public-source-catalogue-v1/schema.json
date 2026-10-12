@@ -7,7 +7,7 @@
   "required": [
     "schema_version",
     "catalogue_revision",
-    "reviewed_at",
+    "reviewed_on",
     "sources"
   ],
   "properties": {
@@ -19,16 +19,16 @@
       "minLength": 1,
       "maxLength": 128
     },
-    "reviewed_at": {
-      "type": "string",
-      "format": "date-time"
-    },
     "sources": {
       "type": "array",
       "minItems": 1,
       "items": {
         "$ref": "#/$defs/source"
       }
+    },
+    "reviewed_on": {
+      "type": "string",
+      "format": "date"
     }
   },
   "$defs": {
