@@ -59,6 +59,17 @@ python -m unittest discover -s tools/ambient_validation -p 'test_*.py' -v
 
 These commands validate the canonical example and run the current contract tests; they do **not** automatically validate an arbitrary new file unless you pass that file to the validator, nor do they qualify a renderer. Add your own pack path to the command while developing.
 
+To create a reproducible PNG of a pack's declared static fallback (useful for quick palette/accessibility review), run:
+
+```sh
+python tools/ambient_validation/render_static_fallback.py \
+  path/to/my-theme/scene.json \
+  --asset-root path/to/my-theme \
+  --output out/my-theme-static-fallback.png
+```
+
+The preview command validates the manifest and local asset hashes first, then renders the contract's fixed-point canvas-to-substrate fallback with the declared brightness. It is intentionally standard-library-only for pixel generation/PNG encoding. The preview is **only the static fallback**: it does not reproduce the animated scene, prove the selected adapter supports the pack, or qualify runtime, lifecycle, compositor or physical-boot behavior. For packs with required host capabilities, pass each explicitly supported capability using `--supports-capability`; unsupported requirements fail closed.
+
 If you change the schema, validator, shared negative-fixture corpus, or pinned source snapshot, run all relevant checks. Update the contract tests and snapshot provenance deliberately; do not silently edit a vendored copy to make it diverge from the canonical source. A passing Python contract lane does not imply that Rust parsing, browser rendering, Wasmtime execution, compositor behavior, or physical boot has passed.
 
 ### 5. Test the experience, not just the JSON
