@@ -61,6 +61,31 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 (expected, "artifacts/report.json"),
             )
 
+    def test_report_destination_rejects_tracked_artifact_overwrite(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            tracked = root / "artifacts" / "report.json"
+            tracked.parent.mkdir()
+            tracked.write_text(
+                json.dumps({"report_schema_version": qualification.REPORT_SCHEMA_VERSION}),
+                encoding="utf-8",
+            )
+            commands = (
+                ["git", "init", "-q"],
+                ["git", "config", "user.email", "qualification-test@example.invalid"],
+                ["git", "config", "user.name", "Qualification Test"],
+                ["git", "add", "artifacts/report.json"],
+                ["git", "commit", "-q", "-m", "tracked report fixture"],
+            )
+            for command in commands:
+                subprocess.run(
+                    command, cwd=root, check=True,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            self.assertIsNone(
+                qualification.safe_report_destination(root, Path("artifacts/report.json"))
+            )
+
     def test_report_destination_rejects_symlinked_artifact_directory(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
