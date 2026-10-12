@@ -103,7 +103,7 @@ class QualificationRunnerContractTests(unittest.TestCase):
                 "time.sleep(0.8); "
                 f"Path({str(marker)!r}).write_text('survived', encoding='utf-8')"
             )
-            parent_code = "\\n".join([
+            parent_code = "\n".join([
                 "import subprocess, sys, time",
                 "from pathlib import Path",
                 "subprocess.Popen([sys.executable, '-c', sys.argv[1]])",
