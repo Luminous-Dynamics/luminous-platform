@@ -212,33 +212,36 @@ def safe_report_destination(
     root_abs = Path(os.path.abspath(root))
     target = Path(os.path.abspath(requested if requested.is_absolute() else root_abs / requested))
     try:
-        # Reject final or ancestor symlinks even when the lexical path is outside
-        # the checkout but resolves back into it.
+        # Reject final or ancestor symlinks, including paths that alias the checkout.
         if target.resolve(strict=False) != target:
             return None
         relative = target.relative_to(root_abs)
     except OSError:
         return None
     except ValueError:
-        # A caller-selected destination outside the checkout is outside source state.
-        return target, None
+        relative = None
 
-    if (
-        not relative.parts
-        or relative.parts[0] != "artifacts"
-        or target.suffix.lower() != ".json"
-        or relative.as_posix() in INPUT_PATHS
-    ):
+    # These constraints apply to destinations both inside and outside the checkout.
+    if target.suffix.lower() != ".json" or target.is_symlink():
+        return None
+    if target.exists() and not target.is_file():
         return None
 
-    parent = root_abs
-    for part in relative.parts[:-1]:
-        parent = parent / part
-        if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+    if relative is not None:
+        if (
+            not relative.parts
+            or relative.parts[0] != "artifacts"
+            or relative.as_posix() in INPUT_PATHS
+        ):
             return None
-    if target.is_symlink() or (target.exists() and not target.is_file()):
-        return None
+        parent = root_abs
+        for part in relative.parts[:-1]:
+            parent = parent / part
+            if parent.is_symlink() or (parent.exists() and not parent.is_dir()):
+                return None
 
+    # Never overwrite an arbitrary existing file. A prior output must identify
+    # itself as this runner's report, even when the chosen path is outside root.
     if target.exists():
         try:
             existing = json.loads(target.read_text(encoding="utf-8"))
@@ -251,7 +254,7 @@ def safe_report_destination(
             return None
 
     # Refuse overwriting tracked files even if they are not in INPUT_PATHS.
-    if (root_abs / ".git").exists():
+    if relative is not None and (root_abs / ".git").exists():
         try:
             tracked = subprocess.run(
                 ["git", "ls-files", "--error-unmatch", "--", relative.as_posix()],
@@ -267,7 +270,7 @@ def safe_report_destination(
             return None
         if tracked.returncode != 1:
             return None
-    return target, relative.as_posix()
+    return target, relative.as_posix() if relative is not None else None
 
 
 def source_tree_clean(
