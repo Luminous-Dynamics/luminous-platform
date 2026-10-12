@@ -160,6 +160,8 @@ def validate_grant(op: dict[str, Any], grant: dict[str, Any], now: datetime | No
     issued = parse_time(grant["issued_at"])
     not_before = parse_time(grant.get("not_before", grant["issued_at"]))
     expiry = parse_time(grant["expires_at"])
+    if issued < parse_time(op["created_at"]):
+        raise ConformanceError("grant cannot predate the operation manifest")
     if not_before < issued or expiry <= not_before:
         raise ConformanceError("invalid grant validity interval")
     if expiry > parse_time(op["authorization"]["expires_at"]):
@@ -189,6 +191,8 @@ def validate_receipt(receipt: dict[str, Any], expected: dict[str, Any] | None = 
     ver = receipt["verification"]
     if receipt["outcome"] == "verified" and ver["result"] != "verified":
         raise ConformanceError("verified outcome needs verified evidence")
+    if receipt["outcome"] != "verified" and ver["result"] == "verified":
+        raise ConformanceError("non-verified outcome cannot claim verified evidence")
     if ver["result"] == "verified":
         if not ver.get("observed_at") or not ver.get("post_state_digest"):
             raise ConformanceError("verified receipt requires observation time and post-state digest")
