@@ -1,0 +1,49 @@
+name: Civic jurisdiction-pack validation
+
+on:
+  pull_request:
+    paths:
+      - "schemas/**"
+      - "examples/jurisdiction-packs/**"
+      - "tools/civic-pack-validator/**"
+      - ".github/workflows/civic-pack-validation.yml"
+  push:
+    branches:
+      - main
+      - "research/civic-services-integration-2026-10-13"
+    paths:
+      - "schemas/**"
+      - "examples/jurisdiction-packs/**"
+      - "tools/civic-pack-validator/**"
+      - ".github/workflows/civic-pack-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-jurisdiction-packs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned validator dependency
+        run: python -m pip install -r tools/civic-pack-validator/requirements.txt
+      - name: Validate draft sample and emit evidence report
+        env:
+          PR_UPDATED_AT: ${{ github.event.pull_request.updated_at }}
+          COMMIT_TIMESTAMP: ${{ github.event.head_commit.timestamp }}
+        run: |
+          AS_OF="${PR_UPDATED_AT:-$COMMIT_TIMESTAMP}"
+          python tools/civic-pack-validator/validate_pack.py \
+            --schema schemas/jurisdiction-pack-v0.1.0.schema.json \
+            --pack examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json \
+            --as-of "$AS_OF" \
+            --report /tmp/jurisdiction-pack-validation-report.json
+          cat /tmp/jurisdiction-pack-validation-report.json
+      - name: Run adversarial regression tests
+        run: python -m unittest discover -s tools/civic-pack-validator/tests -v
