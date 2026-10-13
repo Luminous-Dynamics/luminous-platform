@@ -28,6 +28,8 @@ Container Manager availability is model- and DSM-version-dependent. Synology's c
 
 A containerized deployment is not equivalent to native DSM integration. It gives us useful NAS-resident services while preserving the appliance boundary, but does not by itself demonstrate DSM API, storage, or failover compatibility.
 
+The draft machine-readable starting contract is [`profiles/synology-dsm-snmpv3.yaml`](../profiles/synology-dsm-snmpv3.yaml). It is design-only—not a validated collector configuration—and requires exact model/DSM/MIB qualification before implementation claims. The profile deliberately omits serial numbers and SMART raw attributes by default.
+
 ## Product boundaries
 
 Do not turn every project into a cross-distro configuration manager.
