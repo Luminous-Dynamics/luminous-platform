@@ -50,15 +50,31 @@ def strict_loads(raw: str) -> Any:
 def load(path: str | Path) -> Any:
     return strict_loads(Path(path).read_text(encoding="utf-8"))
 
+RFC3339_TIMESTAMP = re.compile(
+    r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
+    r"(?:\.([0-9]+))?(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+)
+
 def parse_time(value: str) -> datetime:
     if not isinstance(value, str):
         raise ConformanceError("timestamp must be a string")
+    match = RFC3339_TIMESTAMP.fullmatch(value)
+    if match is None:
+        raise ConformanceError(
+            "timestamp must use the OMSI RFC3339 subset with an explicit timezone"
+        )
+    fractional = match.group(1)
+    # datetime stores microseconds. Reject excess precision rather than silently
+    # truncating timestamps and potentially changing event/receipt chronology.
+    if fractional is not None and len(fractional) > 6:
+        raise ConformanceError(
+            "timestamp has more than six fractional digits; precision cannot be preserved"
+        )
+    normalized = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(normalized)
     except ValueError as exc:
         raise ConformanceError(f"invalid timestamp: {value}") from exc
-    if parsed.tzinfo is None:
-        raise ConformanceError("timestamp must include a timezone")
     return parsed.astimezone(timezone.utc)
 
 def _normalise(value: Any, path: str = "/") -> Any:
