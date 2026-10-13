@@ -67,6 +67,46 @@ The normal path is:
 Failure, rejection, expiry, cancellation and indeterminate outcomes are typed states or terminal outcomes governed by profile rules. **Queued is not running; running is not applied; applied is not verified.** When connectivity is lost after acceptance, the client must reconcile target state before retrying. A non-idempotent action must not be blindly repeated.
 
 
+
+## Idempotency, retries, and unknown outcomes
+
+The manifest's `idempotency_key` is a stable identity for the intended operation
+within the profile-defined uniqueness scope; it is not a fresh random value for
+each attempt. The implementation must durably bind that key to the immutable
+operation-manifest digest and the resulting operation identity before any
+effect can be dispatched.
+
+- Same scoped key + same manifest commitment: return/reference the existing
+  operation and its current evidence; do not create a second semantic effect.
+- Same scoped key + different manifest commitment: reject as a conflict. Never
+  reinterpret a previously used key as a different operation.
+- Retry of one operation: preserve operation and manifest identity; give each
+  dispatch its own attempt identity. A new attempt is not a new intended effect.
+- A genuinely new intended effect requires a new operation identity, key, and
+  authorization over the new immutable manifest.
+- Timeout, transport loss, cancellation, or missing receipt after acceptance
+  MUST remain unknown/indeterminate until profile-sufficient reconciliation or
+  an exact domain-specific idempotency guarantee justifies another attempt.
+  Absence of a response is not evidence that no effect happened.
+- The profile must define the key's uniqueness scope, durable persistence,
+  retention horizon and behavior when an unknown operation outlives that
+  horizon. Expiring an idempotency record must not silently make an unresolved
+  non-idempotent effect safe to repeat; unresolved cases require reconciliation
+  or manual handling.
+
+Idempotency keys reduce duplicate effects only when the resource/adapter
+enforces the rule at the mutation boundary or has a qualified transaction
+protocol. Merely accepting a key in JSON, storing it in an event, or forwarding
+an HTTP header does not provide idempotency. The current seed's field validator
+does not implement a durable idempotency store, atomic admission, or
+cross-process concurrency control.
+
+The HTTP binding may map this semantic key to a suitable HTTP header where a
+stable adopted convention is available, but Core correctness MUST NOT depend on
+an unadopted or expired Internet-Draft. Wire binding and key syntax belong to
+the versioned HTTP profile; the operation identity and duplicate-submission
+semantics remain transport-independent.
+
 ## Recovery is a separate outcome dimension
 
 An operation outcome and a recovery outcome MUST NOT be collapsed into one
