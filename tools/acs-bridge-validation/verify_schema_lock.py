@@ -173,6 +173,9 @@ def verify_lock(root: Path | None = None) -> list[str]:
             continue
         source_paths.add(source_path)
         vendor_paths.add(vendor_path)
+        if vendor_path != f"{VENDOR_PREFIX}{source_path}":
+            errors.append(f"vendored path must mirror upstream path: {source_path} -> {vendor_path}")
+            continue
         if source_path not in {"LICENSE", "NOTICE"} and (
             not source_path.startswith(SPEC_PREFIX)
             or not source_path.endswith(".json")
@@ -233,8 +236,10 @@ def verify_lock(root: Path | None = None) -> list[str]:
                     schema_ids[schema_id] = source_path
             else:
                 errors.append(f"ACS schema is missing its resource $id: {vendor_path}")
-            if isinstance(document, dict) and "$schema" in document:
-                if document["$schema"] != "https://json-schema.org/draft/2020-12/schema":
+            if isinstance(document, dict):
+                if "$schema" not in document:
+                    errors.append(f"missing explicit JSON Schema dialect in {vendor_path}")
+                elif document["$schema"] != "https://json-schema.org/draft/2020-12/schema":
                     errors.append(f"unexpected JSON Schema dialect in {vendor_path}: {document['$schema']}")
                 else:
                     try:
