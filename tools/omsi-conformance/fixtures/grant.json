@@ -1,0 +1,8 @@
+{
+  "schema": "org.omsi.authority-grant/0.1", "id": "grant-1", "tenant_id": "tenant-a", "target_resource_id": "host-1",
+  "subject_manifest_digest": "sha256:3ad3e1f82c667acf6a3c7c8bb19154f1a652e2048f676e39ea500ed00b2c61b0", "action_profile": "org.omsi.nixos-change/0.1", "action_verb": "realize-declared-configuration",
+  "issued_by": "owner-1", "authorized_principal": "executor-1", "audience": "executor://host-1",
+  "issued_at": "2026-10-12T12:00:31Z", "expires_at": "2026-10-12T12:15:00Z", "nonce": "nonce-long-enough-001",
+  "approval_refs": ["approval-1"], "policy_ref": "policy://tenant-a/3",
+  "proof": {"format": "fixture-not-verified", "key_id": "fixture-key", "signature_base64": "AA=="}, "correlation_id": "flow-1"
+}

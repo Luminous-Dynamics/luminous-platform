@@ -1,0 +1,86 @@
+[
+  {
+    "schema": "org.omsi.operation-event/0.1",
+    "event_id": "e1",
+    "tenant_id": "tenant-a",
+    "operation_id": "op-1",
+    "sequence": 1,
+    "occurred_at": "2026-10-12T12:00:31Z",
+    "producer": "executor-1",
+    "from_state": "none",
+    "to_state": "proposed",
+    "correlation_id": "flow-1"
+  },
+  {
+    "schema": "org.omsi.operation-event/0.1",
+    "event_id": "e2",
+    "tenant_id": "tenant-a",
+    "operation_id": "op-1",
+    "sequence": 2,
+    "occurred_at": "2026-10-12T12:00:32Z",
+    "producer": "executor-1",
+    "from_state": "proposed",
+    "to_state": "validated",
+    "correlation_id": "flow-1"
+  },
+  {
+    "schema": "org.omsi.operation-event/0.1",
+    "event_id": "e3",
+    "tenant_id": "tenant-a",
+    "operation_id": "op-1",
+    "sequence": 3,
+    "occurred_at": "2026-10-12T12:00:33Z",
+    "producer": "executor-1",
+    "from_state": "validated",
+    "to_state": "authorized",
+    "correlation_id": "flow-1"
+  },
+  {
+    "schema": "org.omsi.operation-event/0.1",
+    "event_id": "e4",
+    "tenant_id": "tenant-a",
+    "operation_id": "op-1",
+    "sequence": 4,
+    "occurred_at": "2026-10-12T12:00:34Z",
+    "producer": "executor-1",
+    "from_state": "authorized",
+    "to_state": "accepted",
+    "correlation_id": "flow-1"
+  },
+  {
+    "schema": "org.omsi.operation-event/0.1",
+    "event_id": "e5",
+    "tenant_id": "tenant-a",
+    "operation_id": "op-1",
+    "sequence": 5,
+    "occurred_at": "2026-10-12T12:00:35Z",
+    "producer": "executor-1",
+    "from_state": "accepted",
+    "to_state": "running",
+    "correlation_id": "flow-1"
+  },
+  {
+    "schema": "org.omsi.operation-event/0.1",
+    "event_id": "e6",
+    "tenant_id": "tenant-a",
+    "operation_id": "op-1",
+    "sequence": 6,
+    "occurred_at": "2026-10-12T12:00:36Z",
+    "producer": "executor-1",
+    "from_state": "running",
+    "to_state": "applied",
+    "correlation_id": "flow-1"
+  },
+  {
+    "schema": "org.omsi.operation-event/0.1",
+    "event_id": "e7",
+    "tenant_id": "tenant-a",
+    "operation_id": "op-1",
+    "sequence": 7,
+    "occurred_at": "2026-10-12T12:02:59Z",
+    "producer": "verifier-1",
+    "from_state": "applied",
+    "to_state": "verified",
+    "correlation_id": "flow-1"
+  }
+]

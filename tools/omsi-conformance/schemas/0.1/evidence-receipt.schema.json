@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omsi.example/spec/0.1/evidence-receipt.schema.json",
+  "title": "OMSI 0.1 Evidence Receipt (claim format; trust verification is external)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "tenant_id",
+    "operation_id",
+    "subject_manifest_digest",
+    "target",
+    "outcome",
+    "issued_at",
+    "issuer",
+    "executor",
+    "verification",
+    "correlation_id"
+  ],
+  "properties": {
+    "schema": {
+      "const": "org.omsi.evidence-receipt/0.1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subject_manifest_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "minLength": 1
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resource_id",
+        "tenant_id"
+      ],
+      "properties": {
+        "resource_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "outcome": {
+      "enum": [
+        "applied",
+        "verified",
+        "indeterminate",
+        "failed"
+      ]
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "issuer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "executor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "result",
+        "independent_verifier_required"
+      ],
+      "properties": {
+        "result": {
+          "enum": [
+            "not_checked",
+            "verified",
+            "failed"
+          ]
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "post_state_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "independent_verifier_required": {
+          "type": "boolean"
+        },
+        "verifier_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "executor_authority_domain": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verifier_authority_domain": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "correlation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "extensions": {
+      "type": "object"
+    }
+  }
+}

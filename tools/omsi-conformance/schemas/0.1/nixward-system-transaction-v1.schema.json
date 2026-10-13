@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omsi.example/spec/0.1/nixward-system-transaction-v1.schema.json",
+  "title": "Nixward SystemTransaction v1 envelope shape (adapter prototype)",
+  "description": "Mirror of the currently inspected Nixward wire shape for adapter testing. This schema does not attest provenance, authorization, or host state.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "transaction_id",
+    "target_machine_digest",
+    "plan_digest",
+    "phase",
+    "authorization",
+    "validation",
+    "snapshot",
+    "application",
+    "verification",
+    "outcome"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-nixward-system-transaction-v1"
+    },
+    "version": {
+      "const": 1
+    },
+    "transaction_id": {
+      "$ref": "#/$defs/rawBlake3Digest"
+    },
+    "target_machine_digest": {
+      "$ref": "#/$defs/rawBlake3Digest"
+    },
+    "plan_digest": {
+      "$ref": "#/$defs/rawBlake3Digest"
+    },
+    "phase": {
+      "enum": [
+        "planned",
+        "authorized",
+        "validated",
+        "snapshotted",
+        "applied",
+        "verified",
+        "promoted",
+        "recovered",
+        "failed"
+      ]
+    },
+    "authorization": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "issuer",
+            "evidence_digest",
+            "evidence_kind",
+            "expires_at_ms",
+            "signer_key_id",
+            "challenge_blake3",
+            "replay_key"
+          ],
+          "properties": {
+            "issuer": { "type": "string", "minLength": 1, "maxLength": 256 },
+            "evidence_digest": { "$ref": "#/$defs/rawBlake3Digest" },
+            "evidence_kind": {
+              "enum": [
+                "GeneralChange",
+                "ExecutionIntent",
+                "AuthoritySignature",
+                "ExecutionIntentAuthority"
+              ]
+            },
+            "expires_at_ms": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "signer_key_id": { "type": ["string", "null"], "maxLength": 256 },
+            "challenge_blake3": { "anyOf": [{ "$ref": "#/$defs/rawBlake3Digest" }, { "type": "null" }] },
+            "replay_key": { "anyOf": [{ "$ref": "#/$defs/rawBlake3Digest" }, { "type": "null" }] }
+          }
+        }
+      ]
+    },
+    "validation": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["evidence_digest", "summary"],
+          "properties": {
+            "evidence_digest": { "$ref": "#/$defs/rawBlake3Digest" },
+            "summary": { "type": "string", "maxLength": 4096 }
+          }
+        }
+      ]
+    },
+    "snapshot": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pre_state_digest", "recovery_binding_digest"],
+          "properties": {
+            "pre_state_digest": { "$ref": "#/$defs/rawBlake3Digest" },
+            "recovery_binding_digest": { "$ref": "#/$defs/rawBlake3Digest" }
+          }
+        }
+      ]
+    },
+    "application": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["command_digest", "started_at_ms", "finished_at_ms", "exit_status"],
+          "properties": {
+            "command_digest": { "$ref": "#/$defs/rawBlake3Digest" },
+            "started_at_ms": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "finished_at_ms": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "exit_status": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647 }
+          }
+        }
+      ]
+    },
+    "verification": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["post_state_digest", "evidence_digest", "boot_healthy"],
+          "properties": {
+            "post_state_digest": { "$ref": "#/$defs/rawBlake3Digest" },
+            "evidence_digest": { "$ref": "#/$defs/rawBlake3Digest" },
+            "boot_healthy": { "type": ["boolean", "null"] }
+          }
+        }
+      ]
+    },
+    "outcome": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["phase", "reason"],
+          "properties": {
+            "phase": { "enum": ["promoted", "recovered", "failed"] },
+            "reason": { "type": ["string", "null"], "maxLength": 4096 }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "rawBlake3Digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

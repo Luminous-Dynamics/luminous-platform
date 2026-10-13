@@ -1,0 +1,15 @@
+{
+  "schema": "org.omsi.operation-manifest/0.1",
+  "id": "op-1",
+  "tenant_id": "tenant-a",
+  "correlation_id": "flow-1",
+  "created_at": "2026-10-12T12:00:30Z",
+  "requested_by": {"principal_id": "tech-1", "principal_type": "human"},
+  "target": {"resource_id": "host-1", "tenant_id": "tenant-a"},
+  "action": {"profile": "org.omsi.nixos-change/0.1", "verb": "realize-declared-configuration", "arguments": {"revision": "abc123", "mode": "test"}, "arguments_digest": "sha256:2bf0564b2a0b5d67a01c2f385dbf412c4926f3a73f739e3721a9032622029d27"},
+  "preconditions": {"observed_state_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "observed_at": "2026-10-12T12:00:00Z", "max_age_seconds": 60},
+  "authorization": {"policy_ref": "policy://tenant-a/3", "audience": "executor://host-1", "expires_at": "2026-10-12T12:15:00Z", "nonce": "nonce-long-enough-001", "approval_refs": ["approval-1"], "authorized_principal": "executor-1"},
+  "idempotency_key": "request-1",
+  "data_classification": "internal",
+  "extensions": {}
+}
