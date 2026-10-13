@@ -229,7 +229,7 @@ def verify_lock(root: Path | None = None) -> list[str]:
             errors.append(f"cannot resolve $ref without schema $id: {source_path} -> {ref}")
             continue
         parts = urlsplit(ref)
-        if ref.startswith("/") || "\\\\" in ref:
+        if ref.startswith("/") or chr(92) in ref:
             errors.append(f"unsafe $ref: {source_path} -> {ref}")
             continue
         resolved_uri = urljoin(base_id, ref)
