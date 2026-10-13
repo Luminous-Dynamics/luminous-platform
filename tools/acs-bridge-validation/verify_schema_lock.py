@@ -77,7 +77,7 @@ def verify_lock(root: Path | None = None) -> list[str]:
         return ["schema lock must be a JSON object"]
     required = {
         "lock_format", "status", "upstream_repository", "upstream_release_tag",
-        "upstream_release_commit", "upstream_commit_signature",
+        "upstream_release_commit", "upstream_tree_object", "upstream_commit_signature",
         "normative_specification_namespace", "expected_locked_file_count", "files",
     }
     missing = sorted(required - set(lock))
@@ -92,8 +92,10 @@ def verify_lock(root: Path | None = None) -> list[str]:
         errors.append("unexpected ACS upstream repository")
     if lock["upstream_release_tag"] != "v0.1.1" or lock["normative_specification_namespace"] != "v0.1.0":
         errors.append("ACS release/specification namespace mismatch")
-    if not isinstance(lock["upstream_release_commit"], str) or len(lock["upstream_release_commit"]) != 40:
-        errors.append("upstream release commit must be a 40-character immutable commit SHA")
+    for field in ("upstream_release_commit", "upstream_tree_object"):
+        value = lock.get(field)
+        if not isinstance(value, str) or len(value) != 40 or any(ch not in "0123456789abcdef" for ch in value):
+            errors.append(f"{field} must be a 40-character lowercase immutable Git SHA")
     signature = lock.get("upstream_commit_signature")
     if not isinstance(signature, dict) or "verified" not in signature or "reason" not in signature:
         errors.append("upstream signature-verification result must be explicit")
@@ -126,6 +128,17 @@ def verify_lock(root: Path | None = None) -> list[str]:
             continue
         source_paths.add(source_path)
         vendor_paths.add(vendor_path)
+        if source_path not in {"LICENSE", "NOTICE"} and (
+            not source_path.startswith(SPEC_PREFIX)
+            or not source_path.endswith(".json")
+            or ".." in Path(source_path).parts
+            or source_path.startswith("/")
+        ):
+            errors.append(f"unexpected or unsafe upstream path in lock: {source_path}")
+            continue
+        if len(expected_sha) != 40 or any(ch not in "0123456789abcdef" for ch in expected_sha):
+            errors.append(f"invalid Git blob SHA in lock: {source_path}")
+            continue
         if not vendor_path.startswith(VENDOR_PREFIX) or ".." in Path(vendor_path).parts:
             errors.append(f"unsafe vendor path in lock: {vendor_path}")
             continue
@@ -171,6 +184,11 @@ def verify_lock(root: Path | None = None) -> list[str]:
     expected_count = lock.get("expected_locked_file_count")
     if len(source_paths) != expected_count:
         errors.append("schema lock path count does not match expected count")
+    locked_schema_paths = {path for path in source_paths if path.startswith(SPEC_PREFIX) and path.endswith(".json")}
+    if len(locked_schema_paths) != 43:
+        errors.append("schema lock must include all 43 JSON files from specification/v0.1.0")
+    if not {"LICENSE", "NOTICE"}.issubset(source_paths):
+        errors.append("schema lock must include the upstream LICENSE and NOTICE")
 
     expected_bundle_files = vendor_paths | {VENDOR_README}
     vendor_root = root / "vendor/agent-control-standard"
