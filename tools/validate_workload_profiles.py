@@ -69,6 +69,7 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject repeated slash mount target": ("deployment", "target"),
     "reject microVM share path traversal": ("deployment", "target"),
     "reject unknown top-level authority field": ("hostBootMutation",),
+    "reject duplicated microVM source IDs": ("sourceId",),
 }
 
 
@@ -657,6 +658,17 @@ def main() -> int:
             ),
             "reject duplicate microVM share targets",
             "overlapping or duplicate mount targets in microVM shares",
+        ),
+        (
+            microvm,
+            lambda candidate: candidate["deployment"]["shares"].extend(
+                [
+                    {"sourceId": "same-share", "target": "/data/a", "access": "read_only", "protocol": "virtiofs"},
+                    {"sourceId": "same-share", "target": "/data/b", "access": "read_only", "protocol": "virtiofs"},
+                ]
+            ),
+            "reject duplicated microVM source IDs",
+            "duplicate mount sourceId in microVM shares",
         ),
         (
             oci,
