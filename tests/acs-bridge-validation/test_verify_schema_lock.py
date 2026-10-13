@@ -56,7 +56,21 @@ class VendoredSchemaLockTests(unittest.TestCase):
         finally:
             shutil.rmtree(temp)
 
-    def test_modified_byte_breaks_git_blob_lock(self) -> None:
+    def test_duplicate_schema_resource_ids_are_rejected(self) -> None:
+        temp = self._copy_fixture()
+        try:
+            request = temp / "vendor/agent-control-standard/specification/v0.1.0/request-envelope.json"
+            response = temp / "vendor/agent-control-standard/specification/v0.1.0/response-envelope.json"
+            request_schema = json.loads(request.read_text(encoding="utf-8"))
+            response_schema = json.loads(response.read_text(encoding="utf-8"))
+            request_schema["$id"] = response_schema["$id"]
+            request.write_text(json.dumps(request_schema), encoding="utf-8")
+            errors = verifier.verify_lock(temp)
+            self.assertTrue(any("duplicate schema resource ID" in error for error in errors), errors)
+        finally:
+            shutil.rmtree(temp)
+
+    def test_modified_byte_breaks_git_blob_lock(self) -> None
         temp = self._copy_fixture()
         try:
             target = temp / "vendor/agent-control-standard/specification/v0.1.0/request-envelope.json"
