@@ -65,6 +65,18 @@ class CorpusMutationTests(unittest.TestCase):
         errors = validator.validate_documents(SCHEMA, changed)
         self.assertTrue(any("BR-003 safety invariant" in error for error in errors))
 
+    def test_handshake_failure_requires_startup_refusal(self) -> None:
+        changed = copy.deepcopy(CORPUS)
+        changed["cases"][19]["pass_condition"] = "A handshake failure is denied."
+        errors = validator.validate_documents(SCHEMA, changed)
+        self.assertTrue(any("out-of-band startup posture=refuse" in error for error in errors))
+
+    def test_unsupported_required_disposition_cannot_claim_core_conformance(self) -> None:
+        changed = copy.deepcopy(CORPUS)
+        changed["cases"][20]["pass_condition"] = "The action does not proceed."
+        errors = validator.validate_documents(SCHEMA, changed)
+        self.assertTrue(any("ACS-Core conformance remains unclaimed" in error for error in errors))
+
     def test_ambiguous_effect_must_block_retry_until_reconciled(self) -> None:
         changed = copy.deepcopy(CORPUS)
         changed["cases"][22]["expected_bridge_outcome"] = "RECONCILE"  # BR-023
