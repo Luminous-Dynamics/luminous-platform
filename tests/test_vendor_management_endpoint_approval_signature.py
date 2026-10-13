@@ -355,6 +355,11 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "nesting"):
             verifier.strict_json_loads(raw)
 
+    def test_escaped_quotes_and_brackets_inside_strings_do_not_count_as_nesting(self) -> None:
+        value = '"' + ("[" * (verifier.MAX_JSON_NESTING + 1)) + '"'
+        raw = json.dumps({"value": value}).encode("utf-8")
+        self.assertEqual(verifier.strict_json_loads(raw), {"value": value})
+
     def test_signature_canonicalizer_rejects_excessive_programmatic_nesting(self) -> None:
         value: object = 0
         for _ in range(verifier.MAX_JSON_NESTING + 1):
