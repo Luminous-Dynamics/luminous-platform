@@ -54,6 +54,7 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject inline or embedded secret material": ("security.secrets.referencesOnly",),
     "reject undeclared broad host path": ("hostPath",),
     "reject public port exposure": ("deployment.ports", "exposure"),
+    "reject port without explicit host binding": ("hostPort",),
     "reject unknown microVM host-store field": ("guestStoreWritable",),
     "reject OCI volume without registry source ID": ("sourceId",),
     "reject arbitrary host path as OCI volume source": ("deployment.volumes", "source"),
@@ -192,9 +193,9 @@ def semantic_errors(profile: dict[str, Any]) -> list[str]:
 
         port_identities: set[tuple[int, str]] = set()
         for port in deployment["ports"]:
-            identity = (port["containerPort"], port["protocol"])
+            identity = (port["hostPort"], port["protocol"])
             if identity in port_identities:
-                errors.append("duplicate OCI published port/protocol")
+                errors.append("duplicate OCI hostPort/protocol binding")
                 break
             port_identities.add(identity)
 
@@ -369,9 +370,16 @@ def main() -> int:
         (
             oci,
             lambda candidate: candidate["deployment"]["ports"].append(
-                {"containerPort": 8080, "protocol": "tcp", "exposure": "public"}
+                {"containerPort": 8080, "hostPort": 18080, "protocol": "tcp", "exposure": "public"}
             ),
             "reject public port exposure",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["ports"].append(
+                {"containerPort": 8080, "protocol": "tcp", "exposure": "loopback_only"}
+            ),
+            "reject port without explicit host binding",
         ),
         (
             microvm,
@@ -687,12 +695,12 @@ def main() -> int:
             oci,
             lambda candidate: candidate["deployment"]["ports"].extend(
                 [
-                    {"containerPort": 8080, "protocol": "tcp", "exposure": "loopback_only"},
-                    {"containerPort": 8080, "protocol": "tcp", "exposure": "private_network"},
+                    {"containerPort": 8080, "hostPort": 18080, "protocol": "tcp", "exposure": "loopback_only"},
+                    {"containerPort": 8081, "hostPort": 18080, "protocol": "tcp", "exposure": "private_network"},
                 ]
             ),
-            "reject duplicate OCI published ports",
-            "duplicate OCI published port/protocol",
+            "reject duplicate OCI host port bindings",
+            "duplicate OCI hostPort/protocol binding",
         ),
     ]
     for profile, mutate, label, expected_fragment in semantic_negative_cases:
