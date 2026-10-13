@@ -141,6 +141,27 @@ def main() -> int:
         ),
         (
             full_vm,
+            lambda candidate: candidate["metadata"].update({"qualification": "ci_verified"}),
+            "reject CI qualification without matching evidence status",
+        ),
+        (
+            full_vm,
+            lambda candidate: (
+                candidate["metadata"].update({"qualification": "hardware_qualified"}),
+                candidate["evidence"].update({"status": "hardware_qualified", "testsPassed": ["guest_boot_shutdown"]}),
+            ),
+            "reject hardware qualification without evidence receipt",
+        ),
+        (
+            full_vm,
+            lambda candidate: (
+                candidate["metadata"].update({"qualification": "ci_verified"}),
+                candidate["evidence"].update({"status": "ci_verified"}),
+            ),
+            "reject CI qualification without passed tests and receipt",
+        ),
+        (
+            full_vm,
             lambda candidate: candidate.update({"hostBootMutation": True}),
             "reject unknown top-level authority field",
         ),
