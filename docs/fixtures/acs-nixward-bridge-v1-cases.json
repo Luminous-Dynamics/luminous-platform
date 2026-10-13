@@ -298,5 +298,25 @@
       "max_mutating_effects": 0,
       "pass_condition": "Host can boot/recover without optional services, while consequential mutations still require valid local authority."
     }
+  ],
+  "related_existing_work": [
+    {
+      "repository": "Luminous-Dynamics/nixward",
+      "issue": 75,
+      "url": "https://github.com/Luminous-Dynamics/nixward/issues/75",
+      "scope": "durable supervision, cancellation, indeterminate effect and read-only reconciliation"
+    },
+    {
+      "repository": "Luminous-Dynamics/nixward",
+      "issue": 63,
+      "url": "https://github.com/Luminous-Dynamics/nixward/issues/63",
+      "scope": "journal publication durability and recovery fault injection"
+    },
+    {
+      "repository": "Luminous-Dynamics/nixward",
+      "issue": 70,
+      "url": "https://github.com/Luminous-Dynamics/nixward/issues/70",
+      "scope": "deterministic no-production-mutation decision/receipt harness"
+    }
   ]
 }
