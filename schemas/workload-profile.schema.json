@@ -124,6 +124,7 @@
               "ubuntu",
               "debian",
               "fedora",
+              "fedora_bootc",
               "synology_dsm",
               "rocky_linux",
               "almalinux",
@@ -899,6 +900,10 @@
                 "ubuntu",
                 "debian",
                 "fedora",
+                "opensuse_microos",
+                "almalinux",
+                "rocky_linux",
+                "fedora_bootc",
                 "windows",
                 "other"
               ]
