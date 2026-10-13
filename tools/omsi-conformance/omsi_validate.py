@@ -279,8 +279,12 @@ def validate_receipt(
                 raise ConformanceError("independent verification requires distinct declared authority domains")
     elif ver["result"] == "verified":
         raise ConformanceError("non-verified outcome cannot claim verified evidence")
-    if events is not None and receipt["outcome"] != "verified" and events[-1]["to_state"] == "verified":
-        raise ConformanceError("non-verified receipt conflicts with verified event sequence")
+    if events is not None and receipt["outcome"] != "verified":
+        terminal_event_at = parse_time(events[-1]["occurred_at"])
+        if issued < terminal_event_at:
+            raise ConformanceError("receipt issuance predates referenced terminal event")
+        if events[-1]["to_state"] == "verified":
+            raise ConformanceError("non-verified receipt conflicts with verified event sequence")
 
 def validate_events(events: list[dict[str, Any]], operation: dict[str, Any] | None = None) -> None:
     if not isinstance(events, list) or not events:
