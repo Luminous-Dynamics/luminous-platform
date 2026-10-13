@@ -181,9 +181,20 @@ The first milestone is a demonstrator, not a claim of government readiness.
 
 **P5 — Reuse:** add one new municipality or one named US locality using the same engine but a separately reviewed pack. Expand only after the first pack shows reliable source maintenance.
 
+## Implementation contracts added for review
+
+The architecture proposal now has versioned review artifacts alongside this design:
+
+- [Jurisdiction-pack schema v0.1.0](../../schemas/jurisdiction-pack-v0.1.0.schema.json) defines the portable pack shape; JSON Schema shape checks must be supplemented by semantic validation.
+- [Johannesburg food-service pack v0.1.0](../../examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json) is a deliberately unpublished fixture. Its sources and requirements are marked unreviewed.
+- [Deterministic workflow-engine contract v0.1](jurisdiction-pack-engine-contract-v0.1.md) separates user progress from evidence review and official authority outcomes, and specifies adversarial tests.
+- [ADR-0001: licensing and content rights](adr/0001-licensing-and-content-rights.md) proposes a license split for the future public product and explains that this ADR does not itself relicense any existing files.
+
+These are design contracts and fixtures, not an implementation of the engine, a verified legal checklist, or evidence that CI has passed.
+
 ## Decisions still required before production
 
-- Choose a separate public-facing repository and explicitly select its license; the existing Luminous Platform repository is AGPL-3.0-or-later and references commercial licensing, so product licensing must be deliberate.
+- Create the separate public-facing repository only after reviewing ADR-0001, then add and verify the actual license files, notices, and dependency/source-rights inventory before the first public release.
 - Pick the first US locality only after the Johannesburg demonstrator proves the workflow engine.
 - Define who reviews and signs off source updates, and who owns responses to user-reported errors.
 - Decide hosting, retention windows, data residency, incident response, and accessibility conformance evidence for any real pilot.
