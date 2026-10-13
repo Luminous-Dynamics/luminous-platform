@@ -832,5 +832,171 @@
         }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "qualification": {
+                "const": "example_only"
+              }
+            },
+            "required": [
+              "qualification"
+            ]
+          }
+        },
+        "required": [
+          "metadata"
+        ]
+      },
+      "then": {
+        "properties": {
+          "evidence": {
+            "properties": {
+              "status": {
+                "const": "design_only"
+              },
+              "testsPassed": {
+                "maxItems": 0
+              }
+            },
+            "required": [
+              "status",
+              "testsPassed"
+            ]
+          }
+        },
+        "required": [
+          "evidence"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "qualification": {
+                "const": "unverified"
+              }
+            },
+            "required": [
+              "qualification"
+            ]
+          }
+        },
+        "required": [
+          "metadata"
+        ]
+      },
+      "then": {
+        "properties": {
+          "evidence": {
+            "properties": {
+              "status": {
+                "const": "unverified"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "evidence"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "qualification": {
+                "const": "ci_verified"
+              }
+            },
+            "required": [
+              "qualification"
+            ]
+          }
+        },
+        "required": [
+          "metadata"
+        ]
+      },
+      "then": {
+        "properties": {
+          "evidence": {
+            "properties": {
+              "status": {
+                "const": "ci_verified"
+              },
+              "testsPassed": {
+                "minItems": 1
+              },
+              "receiptReferences": {
+                "minItems": 1
+              }
+            },
+            "required": [
+              "status",
+              "testsPassed",
+              "receiptReferences"
+            ]
+          }
+        },
+        "required": [
+          "evidence"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "metadata": {
+            "properties": {
+              "qualification": {
+                "const": "hardware_qualified"
+              }
+            },
+            "required": [
+              "qualification"
+            ]
+          }
+        },
+        "required": [
+          "metadata"
+        ]
+      },
+      "then": {
+        "properties": {
+          "evidence": {
+            "properties": {
+              "status": {
+                "const": "hardware_qualified"
+              },
+              "testsPassed": {
+                "minItems": 1
+              },
+              "receiptReferences": {
+                "minItems": 1
+              }
+            },
+            "required": [
+              "status",
+              "testsPassed",
+              "receiptReferences"
+            ]
+          }
+        },
+        "required": [
+          "evidence"
+        ]
+      }
+    }
+  ]
 }
