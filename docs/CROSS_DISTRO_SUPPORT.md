@@ -10,6 +10,23 @@ The first non-NixOS target should be **Ubuntu Server 24.04 LTS in an isolated QE
 
 This order optimizes for a reproducible, general-purpose Linux test target first, then adds an image-based fleet target. It is a prioritization proposal, not a claim that one distribution is intrinsically more secure than another.
 
+## Synology DSM: a separate NAS appliance track
+
+Synology support is worth pursuing, but **DSM is not simply another Ubuntu/Fedora target**. Treat it as a version- and model-qualified appliance integration, with storage availability and vendor-managed lifecycle taking precedence over host customization.
+
+Recommended first profile: a NAS with a compatible DSM 7.x release and **Synology Container Manager** available for that exact model. Deploy selected Luminous services as ordinary, unprivileged containers using a documented Compose project and persistent data in a dedicated shared-folder path. Start with read-only status/health and a manually started service; do not install a native SPK package or change DSM boot behavior in the first milestone.
+
+Container Manager availability is model- and DSM-version-dependent. Synology's current product matrix lists supported models, and its release notes show changing minimum DSM versions across releases; therefore, qualification must record the exact NAS model, CPU architecture, DSM build, and Container Manager version rather than saying "all Synology NAS". See [Container Manager applied models](https://www.synology.com/en-in/dsm/packages/ContainerManager) and [Container Manager release notes](https://www.synology.com/en-us/releaseNote/ContainerManager).
+
+### Scope by component
+
+- **Good initial candidates:** headless Rust services that work in a container, read-only health/metrics endpoints, local-only administration, and optional Xenia network components after their headless service mode is validated.
+- **DSM API adapter:** use documented DSM Web APIs over HTTPS for narrowly scoped, read-only inventory where the required API exists. Discover API paths/versions through Synology's API-info mechanism; handle authentication tokens as secrets and redact them from logs. See the [DSM 7 Developer Guide](https://global.download.synology.com/download/Document/Software/DeveloperGuide/Os/DSM/All/enu/DSM_Developer_Guide_7_enu.pdf) and [DSM Login Web API Guide](https://global.download.synology.com/download/Document/Software/DeveloperGuide/Os/DSM/All/enu/DSM_Login_Web_API_Guide_enu.pdf).
+- **Not in the first milestone:** Sovereign Boot animation or recovery in DSM's boot path; Nixward mutation; bootloader/initramfs/kernel changes; DSM package replacement; privileged containers; broad host mounts; Docker socket access for a control-plane agent.
+- **Later option:** a native DSM `.spk` package only if Container Manager cannot meet a defined need. DSM package development has its own framework, architecture mapping, permission model, and privilege constraints. Require a separate threat model and package-lifecycle tests before pursuing it. See Synology's [DSM 7.2.2 Package Developer Guide](https://global.download.synology.com/download/Document/Software/DeveloperGuide/Os/DSM/All/enu/DSM_Developer_Guide_7_enu.pdf).
+
+A containerized deployment is not equivalent to native DSM integration. It gives us useful NAS-resident services while preserving the appliance boundary, but does not by itself demonstrate DSM API, storage, or failover compatibility.
+
 ## Product boundaries
 
 Do not turn every project into a cross-distro configuration manager.
@@ -47,6 +64,7 @@ This is an architectural target, not an existing cross-distro API. Do not extrac
 | Fedora Workstation/Server | Add an RPM/service integration profile and independent VM evidence. | That RPM-family support automatically qualifies Fedora bootc. |
 | Fedora bootc | Separate image-based profile: immutable/managed filesystem assumptions, booted deployment identity, deployment promotion, and rollback verification. | That package installation or mutation works like a traditional mutable host. |
 | Debian Stable | Add after the common contract stabilizes; test independently even when an Ubuntu adapter can be reused. | That Ubuntu results establish Debian support. |
+| Synology DSM 7.x (exact model/build) | Separate appliance profile: only supported Container Manager + Compose, unprivileged containers, dedicated persistent directory, read-only health/status, and optional least-privilege DSM API reads. | Generic Linux support, native boot/recovery integration, Nixward management, or support for all NAS models/architectures. |
 | Other operating systems | Explicitly out of scope until a named profile, owner, and test lane exist. | Generic Linux claims, or implied macOS/Windows support. |
 
 ### Report support by capability
@@ -105,6 +123,20 @@ Each cell should be one of **not implemented**, **implemented but unverified**, 
 - Evaluate Fedora bootc as a separate immutable, image-based profile with explicit deployment identity and rollback semantics.
 - Require proof of the actual booted deployment and resulting health before any promotion claim.
 
+### Separate Gate S — Synology NAS container profile
+
+- Select one real target NAS only after confirming exact model, CPU architecture, DSM version/build, storage configuration, and Container Manager availability.
+- Build a multi-architecture image only for the architecture actually needed; pin image digests and software versions. Do not assume an x86_64 build will run on ARM models.
+- Supply a minimal Compose project: non-root UID/GID, explicit resource limits, restart policy, no privileged mode, no host PID/network namespaces, no Docker socket, and no device access.
+- Mount only one dedicated application data directory; make the application binary and configuration read-only where practical. Never mount NAS data shares wholesale.
+- Start with local-only health/status endpoints and outbound connections. Expose ports only after documenting the network threat model and firewall requirements.
+- If DSM APIs are needed, use HTTPS, a dedicated least-privilege account, minimum required API scopes, token redaction, and a bounded read-only API allowlist. Treat API absence/permission errors as unknown, not as healthy.
+- Test container restart, crash loops, full disk, permission denial, unavailable share, NAS reboot, DSM update/restart, image rollback, backup/restore, and uninstall without data loss in a disposable/test environment.
+- Keep container management separate from the agent's authority: never give the Luminous control plane access to the Docker socket or an unrestricted SSH/root credential.
+- Publish qualification only for the tested model, DSM build, architecture, Container Manager version, and test evidence.
+
+Do not pursue an SPK installer, root-privileged package, or automatic DSM modification until a concrete requirement cannot be met by this container profile and the DSM package threat model has been reviewed.
+
 ## CI and qualification contract
 
 Every distro lane should record:
@@ -136,5 +168,8 @@ Fail closed for authorization and evidence validation, but fail open for optiona
 - [Nixward](https://github.com/Luminous-Dynamics/nixward)
 - [bootc project and documentation](https://github.com/bootc-dev/bootc)
 - [Ubuntu autoinstall reference](https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html)
+- [Synology Container Manager supported models](https://www.synology.com/en-in/dsm/packages/ContainerManager)
+- [Synology Container Manager release notes](https://www.synology.com/en-us/releaseNote/ContainerManager)
+- [Synology DSM Developer Guide](https://global.download.synology.com/download/Document/Software/DeveloperGuide/Os/DSM/All/enu/DSM_Developer_Guide_7_enu.pdf)
 
 The next implementation PR after this design should be the smallest evidence-backed extraction: first inventory the current Sovereign Boot boundaries and add a non-NixOS QEMU build/test lane. Do not start by generalizing all Nixward mutation paths.
