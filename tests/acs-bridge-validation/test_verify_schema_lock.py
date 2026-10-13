@@ -80,6 +80,18 @@ class VendoredSchemaLockTests(unittest.TestCase):
         finally:
             shutil.rmtree(temp)
 
+    def test_missing_json_pointer_fragment_is_rejected(self) -> None:
+        temp = self._copy_fixture()
+        try:
+            target = temp / "vendor/agent-control-standard/specification/v0.1.0/response-envelope.json"
+            document = json.loads(target.read_text(encoding="utf-8"))
+            document["$defs"]["AcsResult"]["properties"]["signature"]["$ref"] = "#/$defs/DefinitelyMissing"
+            target.write_text(json.dumps(document), encoding="utf-8")
+            errors = verifier.verify_lock(temp)
+            self.assertTrue(any("unresolved JSON Pointer/anchor fragment" in error for error in errors), errors)
+        finally:
+            shutil.rmtree(temp)
+
     def test_missing_transitive_schema_is_rejected(self) -> None:
         temp = self._copy_fixture()
         try:
