@@ -26,6 +26,12 @@
 | Industrial semantic and device interface | OPC UA (IEC 62541 family) | Use OPC UA information models, services and applicable companion specifications to identify/observe/control industrial assets. OMSI should wrap authorized operation intent, evidence and recovery semantics around qualified adapters, not replace plant-control protocols or safety functions. https://reference.opcfoundation.org/specs/OPC-10000-1/full |
 | Server hardware management | DMTF Redfish | Map server/chassis/firmware operations through standard resource/action semantics and tested interoperability profiles where supported; do not assume a Redfish task accepted or completed equals verified host health. Redfish 2025.4 was listed by DMTF as published 16 Jan 2026 during this research check. https://www.dmtf.org/standards/redfish |
 
+
+| HTTP API description | OpenAPI Specification 3.2.1 (published 10 Sep 2026) | Use OpenAPI for the HTTP binding's machine-readable interface contract, pinned to an exact version; it describes the API but does not define authorization, async completion, idempotency persistence, or target-state truth. The older companion starter's 3.1.1 parsing result is not evidence for a 3.2.1 binding. https://spec.openapis.org/oas/v3.2.1.html |
+| HTTP retry/idempotency header | IETF `draft-ietf-httpapi-idempotency-key-header-07` | The version surfaced by the IETF Datatracker expired 18 Apr 2026 and is not an RFC. Do not call this an adopted standard or make OMSI correctness depend on that header. Define operation-level idempotency/replay semantics in OMSI Core and treat any HTTP header mapping as a versioned optional binding subject to future status review. https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/ |
+| Async job errors | RFC 9457 plus OMSI operation resource/status contract | RFC 9457 gives a standard HTTP error envelope, not an operation lifecycle or retry-safety theorem. An async-job-specific IETF draft found in this review had expired 30 Aug 2026; don't rely on it as a stable standard. OMSI should expose a durable operation reference/status model and report whether the outcome is pending or indeterminate separately from the error body. https://www.rfc-editor.org/rfc/rfc9457.html |
+
+
 ## Integration rule: reuse envelopes, preserve OMSI semantics
 
 The standards above should be layered, not merged into a single universal schema:
