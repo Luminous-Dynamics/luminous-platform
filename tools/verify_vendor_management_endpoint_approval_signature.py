@@ -12,7 +12,9 @@ import base64
 import binascii
 import hashlib
 import json
+import os
 import re
+import stat
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -37,6 +39,8 @@ TRUST_SCHEMA_PATH = ROOT / "schemas/vendor-management-approval-trust-store-v1.sc
 SIGNATURE_SCHEME = "ed25519-rfc8032-luminous-approval-v1"
 SIGNING_DOMAIN = b"LUMINOUS:VENDOR-MANAGEMENT-ENDPOINT-APPROVAL:V1\x00"
 SIGNATURE_BYTES = 64
+MAX_JSON_INPUT_BYTES = 4 * 1024 * 1024
+MAX_SIGNATURE_INPUT_BYTES = SIGNATURE_BYTES
 MAX_SAFE_JSON_INTEGER = 9_007_199_254_740_991
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 EXCLUDED_PAYLOAD_FIELDS = frozenset({"signed_payload_digest", "signature_evidence_ref"})
@@ -53,6 +57,44 @@ def _ensure_safe_json_integer_domain(value: Any) -> None:
     elif isinstance(value, list):
         for nested in value:
             _ensure_safe_json_integer_domain(nested)
+
+
+def read_bounded_file(path: Path, max_bytes: int = MAX_JSON_INPUT_BYTES) -> bytes:
+    """Read a small regular file without following its final symlink or trusting its size."""
+    if type(max_bytes) is not int or max_bytes < 0:
+        raise ValueError("invalid input byte limit")
+    if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_NONBLOCK"):
+        raise OSError("safe bounded file reads are unsupported on this platform")
+
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | getattr(os, "O_CLOEXEC", 0)
+    descriptor = os.open(path, flags)
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode):
+            raise ValueError("input is not a regular file")
+        if before.st_size > max_bytes:
+            raise ValueError("input exceeds configured byte limit")
+
+        chunks: list[bytes] = []
+        bytes_read = 0
+        while True:
+            chunk = os.read(descriptor, min(64 * 1024, max_bytes + 1 - bytes_read))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            bytes_read += len(chunk)
+            if bytes_read > max_bytes:
+                raise ValueError("input exceeds configured byte limit")
+
+        after = os.fstat(descriptor)
+        stable_fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns")
+        if bytes_read != before.st_size or any(
+            getattr(before, field) != getattr(after, field) for field in stable_fields
+        ):
+            raise ValueError("input changed during bounded read")
+        return b"".join(chunks)
+    finally:
+        os.close(descriptor)
 
 
 def _parse_integer(value: str) -> int:
@@ -129,7 +171,7 @@ def _trust_store_errors(store: Any) -> list[str]:
     if not isinstance(store, dict):
         return ["TRUST_STORE_SCHEMA_INVALID"]
     try:
-        schema = strict_json_loads(TRUST_SCHEMA_PATH.read_bytes())
+        schema = strict_json_loads(read_bounded_file(TRUST_SCHEMA_PATH))
         Draft202012Validator.check_schema(schema)
         validator = Draft202012Validator(schema, format_checker=FormatChecker())
         if any(validator.iter_errors(store)):
@@ -369,18 +411,23 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        approval = strict_json_loads(args.approval.read_bytes())
-        profile = strict_json_loads(args.profile.read_bytes())
-        approval_schema = strict_json_loads(args.approval_schema.read_bytes())
-        profile_schema = strict_json_loads(args.profile_schema.read_bytes())
-        signature = args.signature_file.read_bytes()
-        trust_store_raw = args.trust_store.read_bytes()
-        capability_registry_raw = args.capability_registry.read_bytes()
-        capability_schema = strict_json_loads(args.capability_schema.read_bytes())
+        approval = strict_json_loads(read_bounded_file(args.approval))
+        profile = strict_json_loads(read_bounded_file(args.profile))
+        approval_schema = strict_json_loads(read_bounded_file(args.approval_schema))
+        profile_schema = strict_json_loads(read_bounded_file(args.profile_schema))
+        trust_store_raw = read_bounded_file(args.trust_store)
+        capability_registry_raw = read_bounded_file(args.capability_registry)
+        capability_schema = strict_json_loads(read_bounded_file(args.capability_schema))
         capability_registry = strict_json_loads(capability_registry_raw)
         binding_errors = approval_errors(approval, approval_schema, profile, profile_schema)
     except (OSError, UnicodeDecodeError, ValueError, TypeError):
         print("FAIL: INPUT_INVALID")
+        return 2
+
+    try:
+        signature = read_bounded_file(args.signature_file, MAX_SIGNATURE_INPUT_BYTES)
+    except (OSError, ValueError):
+        print("FAIL: SIGNATURE_FILE_INVALID")
         return 2
 
     if binding_errors:

@@ -5,6 +5,7 @@ import base64
 import copy
 import hashlib
 import json
+import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -347,6 +348,28 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
     def test_duplicate_json_members_are_rejected(self) -> None:
         with self.assertRaises(ValueError):
             verifier.strict_json_loads(b'{"state":"pending","state":"approved"}')
+
+    def test_bounded_reader_accepts_exact_limit_and_rejects_oversize(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "input.json"
+            path.write_bytes(b"1234")
+            self.assertEqual(verifier.read_bounded_file(path, 4), b"1234")
+            path.write_bytes(b"12345")
+            with self.assertRaisesRegex(ValueError, "byte limit"):
+                verifier.read_bounded_file(path, 4)
+
+    def test_bounded_reader_rejects_symlinks_and_non_regular_files(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "target.json"
+            target.write_bytes(b"{}")
+            link = root / "link.json"
+            link.symlink_to(target)
+            with self.assertRaises(OSError):
+                verifier.read_bounded_file(link)
+
+            with self.assertRaises(ValueError):
+                verifier.read_bounded_file(root)
 
     def test_negative_zero_json_integer_is_rejected_before_canonicalization(self) -> None:
         with self.assertRaisesRegex(ValueError, "negative zero"):
