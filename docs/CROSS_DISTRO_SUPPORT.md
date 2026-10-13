@@ -30,6 +30,8 @@ A containerized deployment is not equivalent to native DSM integration. It gives
 
 The draft machine-readable starting contract is [`profiles/synology-dsm-snmpv3.yaml`](../profiles/synology-dsm-snmpv3.yaml). It is design-only—not a validated collector configuration—and requires exact model/DSM/MIB qualification before implementation claims. The profile deliberately omits serial numbers and SMART raw attributes by default.
 
+The implementation rationale, Rust client-library evaluation, strict parsing policy, and first CI test gates are recorded in [ADR: Synology DSM monitoring starts with read-only SNMPv3](SYNOLOGY_MONITOR_ADR.md).
+
 ## Product boundaries
 
 Do not turn every project into a cross-distro configuration manager.
