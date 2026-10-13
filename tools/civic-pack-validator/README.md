@@ -29,7 +29,7 @@ python tools/civic-pack-validator/validate_pack.py \
   --pack examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json \
   --as-of 2026-10-13T15:00:00Z \
   --report /tmp/jurisdiction-pack-report.json
-python -m unittest discover -s tools/civic-pack-validator/tests -v
+PYTHONPATH=tools/civic-pack-validator python -m unittest discover -s tools/civic-pack-validator/tests -v
 ```
 
 Use a frozen, timezone-aware `--as-of` instant when generating evidence that must be reproducible. Different timestamps may legitimately change freshness outcomes. The report includes hashes of the exact pack and schema bytes so a reviewer can identify the validated inputs.
