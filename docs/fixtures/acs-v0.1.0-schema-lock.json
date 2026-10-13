@@ -10,7 +10,7 @@
   },
   "normative_specification_namespace": "v0.1.0",
   "upstream_license_note": "ACS v0.1.1 release notes state machine-readable schemas/code are Apache-2.0; exact upstream LICENSE and NOTICE are vendored.",
-  "upstream_tree_object": "queried from exact commit",
+  "upstream_tree_object": "66d08a7133b44711f26c3c1a162c3624f04aed44",
   "expected_locked_file_count": 45,
   "files": [
     {
