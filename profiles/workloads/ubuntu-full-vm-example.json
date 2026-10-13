@@ -1,0 +1,83 @@
+{
+  "apiVersion": "luminousdynamics.org/v1alpha1",
+  "kind": "WorkloadProfile",
+  "metadata": {
+    "name": "ubuntu-full-vm-example",
+    "version": "0.1.0",
+    "qualification": "example_only",
+    "purpose": "Schema fixture for an isolated Ubuntu compatibility-test VM; guest image is a placeholder.",
+    "owner": "Luminous Dynamics"
+  },
+  "placement": {
+    "allowedHosts": [
+      "nixos"
+    ],
+    "architectures": [
+      "x86_64"
+    ],
+    "placementClass": "compatibility_test",
+    "notes": "The artifact URI uses example.invalid and must not be fetched. Pin an official verified image before any runtime test."
+  },
+  "deployment": {
+    "kind": "full_vm",
+    "guestOs": {
+      "family": "ubuntu",
+      "release": "24.04",
+      "architecture": "x86_64"
+    },
+    "image": {
+      "sourceUri": "artifact://example.invalid/ubuntu-server-24.04.qcow2",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "format": "qcow2"
+    },
+    "hypervisor": "qemu_kvm",
+    "vcpus": 2,
+    "memoryMiB": 2048,
+    "diskGiB": 20,
+    "bootMode": "uefi",
+    "isolatedNetwork": true
+  },
+  "security": {
+    "trustZone": "compatibility_test",
+    "hostDataAccess": "none",
+    "hostControl": "none",
+    "network": {
+      "ingress": "deny",
+      "egress": "deny",
+      "rules": []
+    },
+    "secrets": {
+      "referencesOnly": true,
+      "provider": "none",
+      "references": []
+    }
+  },
+  "resources": {
+    "cpuMilli": 2000,
+    "memoryMiB": 2048,
+    "diskMiB": 20480,
+    "pidsMax": 4096,
+    "startupTimeoutSeconds": 300
+  },
+  "lifecycle": {
+    "startPolicy": "manual",
+    "restartPolicy": "never",
+    "upgradeStrategy": "replace_by_digest",
+    "changesRequireAuthorization": true,
+    "stopTimeoutSeconds": 30,
+    "healthGraceSeconds": 60
+  },
+  "evidence": {
+    "status": "design_only",
+    "claimScope": "Schema fixture only; no VM image was fetched or booted.",
+    "testsRequired": [
+      "json_schema_validation",
+      "verify_guest_image_sha256",
+      "network_isolation",
+      "guest_boot_and_shutdown",
+      "host_survival_after_guest_failure"
+    ],
+    "testsPassed": [],
+    "receiptReferences": []
+  }
+}
