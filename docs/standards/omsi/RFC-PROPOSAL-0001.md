@@ -84,10 +84,22 @@ claims:
   independently observed, and verified against its own declared recovery
   postconditions.
 
+Recovery MUST NOT be defined universally as an inverse operation or a
+literal rollback. Some profiles can restore a prior configuration; other
+profiles require quarantine, safe isolation, manual reconciliation, or a new
+forward compensating effect. In particular, where an external effect is
+irreversible, compensation does not erase the original effect or rewrite its
+history. The domain profile owns the meaning and permitted scope of recovery.
+
 A recovery result MUST be linked to the operation it compensates for and to a
 specific recovery plan/intent. It must carry its own target binding, authority
 reference, pre-recovery observation, expected recovery postconditions,
 execution evidence, post-recovery observation, verifier result and limitations.
+Where a profile permits multiple recovery attempts or compensating effects,
+the recovery lineage MUST bind the root operation/effect and exact prior
+recovery receipts, with profile-bounded generation/depth and explicit
+duplicate/cycle handling. Unknown outcome must not permit a second
+non-idempotent compensation merely because the first result was not received.
 The recovery's authorization is separate from the original grant unless that
 grant explicitly and narrowly authorizes the exact recovery plan. A generic
 `recovery` object or an executor label such as `recovered` is not, by itself,
