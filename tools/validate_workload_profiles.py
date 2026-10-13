@@ -46,6 +46,7 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject custom seccomp profile without an identified policy artifact": ("deployment.seccompProfile",),
     "reject wildcard hostname peer": ("peer",),
     "reject malformed IPv4 network peer": ("peer",),
+    "reject network peer without justification": ("justification",),
     "reject workload host-control authority": ("security.hostControl",),
     "reject inline or embedded secret material": ("security.secrets.referencesOnly",),
     "reject undeclared broad host path": ("hostPath",),
@@ -309,6 +310,24 @@ def main() -> int:
                 }
             ),
             "reject malformed IPv4 network peer",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["security"]["network"].update(
+                {
+                    "egress": "allowlisted",
+                    "rules": [
+                        {
+                            "direction": "egress",
+                            "protocol": "tcp",
+                            "peerType": "hostname",
+                            "peer": "service.example.org",
+                            "port": 443,
+                        }
+                    ],
+                }
+            ),
+            "reject network peer without justification",
         ),
         (
             oci,
