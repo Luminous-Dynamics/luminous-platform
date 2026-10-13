@@ -86,7 +86,7 @@ class VendoredSchemaLockTests(unittest.TestCase):
             (temp / "vendor/agent-control-standard/specification/v0.1.0/ask-details.json").unlink()
             errors = verifier.verify_lock(temp)
             self.assertTrue(any("missing or unreadable" in error for error in errors), errors)
-            self.assertTrue(any("unresolved/off-package $ref" in error for error in errors), errors)
+            self.assertTrue(any("unresolved/off-package URI $ref" in error for error in errors), errors)
         finally:
             shutil.rmtree(temp)
 
@@ -98,7 +98,7 @@ class VendoredSchemaLockTests(unittest.TestCase):
             document["$ref"] = "https://example.invalid/untrusted.json"
             target.write_text(json.dumps(document), encoding="utf-8")
             errors = verifier.verify_lock(temp)
-            self.assertTrue(any("external $ref prohibited" in error for error in errors), errors)
+            self.assertTrue(any("unresolved/off-package URI $ref" in error for error in errors), errors)
         finally:
             shutil.rmtree(temp)
 
