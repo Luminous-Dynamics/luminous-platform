@@ -70,6 +70,14 @@ class CorpusMutationTests(unittest.TestCase):
         changed["related_existing_work"] = [
             item for item in changed["related_existing_work"] if item["issue"] != 75
         ]
+        # Keep the schema's minimum item count so this exercises the cross-record
+        # invariant rather than only the structural minItems constraint.
+        changed["related_existing_work"].append({
+            "repository": "Luminous-Dynamics/nixward",
+            "issue": 70,
+            "url": "https://github.com/Luminous-Dynamics/nixward/issues/70",
+            "scope": "duplicate reference does not satisfy the missing issue #75 dependency",
+        })
         errors = validator.validate_documents(SCHEMA, changed)
         self.assertTrue(any("issues #63, #70, and #75" in error for error in errors))
 
