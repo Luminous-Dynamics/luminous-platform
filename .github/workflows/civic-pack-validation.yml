@@ -16,6 +16,11 @@ on:
       - "tools/civic-pack-validator/**"
       - ".github/workflows/civic-pack-validation.yml"
 
+# Keep one validation run per ref; new commits supersede stale queued runs.
+concurrency:
+  group: civic-pack-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
