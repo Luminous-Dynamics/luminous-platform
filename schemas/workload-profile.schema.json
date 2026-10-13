@@ -164,6 +164,7 @@
       "required": [
         "direction",
         "protocol",
+        "destinationType",
         "destination",
         "port"
       ],
@@ -180,11 +181,17 @@
             "udp"
           ]
         },
+        "destinationType": {
+          "enum": [
+            "hostname",
+            "ipv4",
+            "ipv6"
+          ]
+        },
         "destination": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 253,
-          "pattern": "^[^\\s/]+$"
+          "maxLength": 253
         },
         "port": {
           "type": "integer",
@@ -196,7 +203,66 @@
           "minLength": 1,
           "maxLength": 240
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "destinationType": {
+                "const": "hostname"
+              }
+            },
+            "required": [
+              "destinationType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "destination": {
+                "pattern": "^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "destinationType": {
+                "const": "ipv4"
+              }
+            },
+            "required": [
+              "destinationType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "destination": {
+                "format": "ipv4"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "destinationType": {
+                "const": "ipv6"
+              }
+            },
+            "required": [
+              "destinationType"
+            ]
+          },
+          "then": {
+            "properties": {
+              "destination": {
+                "format": "ipv6"
+              }
+            }
+          }
+        }
+      ]
     },
     "security": {
       "type": "object",
