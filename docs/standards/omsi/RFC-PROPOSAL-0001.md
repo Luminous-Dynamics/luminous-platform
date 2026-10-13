@@ -107,6 +107,52 @@ an unadopted or expired Internet-Draft. Wire binding and key syntax belong to
 the versioned HTTP profile; the operation identity and duplicate-submission
 semantics remain transport-independent.
 
+
+## Operation identity versus attempt identity
+
+One immutable **operation** may have zero or more bounded **attempts**. The
+operation identity binds the requested semantic effect; an attempt identity
+binds one concrete dispatch/execution effort. They are related but not
+interchangeable:
+
+```
+Operation (immutable manifest / authority subject)
+  ├── Attempt A (dispatch, observations, reconciliation)
+  ├── Attempt B (only after profile-qualified retry admission)
+  └── Operation disposition (derived from the bounded attempt history)
+```
+
+A retry MUST preserve the operation ID and manifest commitment while using a
+new attempt ID. An attempt ID MUST NOT be used as a substitute idempotency key
+or used to make a changed manifest appear to be the same operation. Every
+attempt receipt and attempt-specific lifecycle event must bind both identities;
+the operation-level result must reference the attempt evidence from which it
+was derived.
+
+The current 0.1 event model describes one linear `from_state → to_state`
+chain and does not carry an `attempt_id`. Its transition table also makes
+`failed` and `indeterminate` terminal; it cannot faithfully express several
+dispatch attempts under one operation without inventing a new operation or
+rewriting history. The current receipt schema has no typed attempt collection.
+Therefore the retry semantics above are a **design requirement, not currently
+implemented by the 0.1 event/receipt schemas**.
+
+Before freezing a wire format, choose and test a versioned representation:
+either a per-operation append-only event stream with explicitly identified
+attempt branches, or a separate attempt resource/event stream referenced by
+the immutable operation. Do not simply permit `failed → running` in the
+existing linear state machine; that would blur the difference between one
+attempt failing and the operation's eventual disposition. A late observation
+from an earlier attempt must remain linked to that attempt and must not be
+mistaken for evidence from a newer attempt.
+
+The conformance model must cover at least two attempts under one operation,
+attempt identity substitution, a late response from attempt A after attempt B
+starts, attempt A remaining indeterminate while a retry is requested, and
+reconciliation that establishes A had no effect before a second attempt is
+admitted. The profile owns when a retry is safe; the core only preserves the
+identity/evidence lineage needed to enforce that decision.
+
 ## Recovery is a separate outcome dimension
 
 An operation outcome and a recovery outcome MUST NOT be collapsed into one
