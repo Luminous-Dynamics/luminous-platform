@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema.exceptions import FormatError
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -139,7 +140,20 @@ def semantic_errors(profile: dict[str, Any]) -> list[str]:
 def main() -> int:
     schema = load_json(SCHEMA_PATH)
     Draft202012Validator.check_schema(schema)
-    validator = Draft202012Validator(schema, format_checker=FormatChecker())
+    format_checker = FormatChecker()
+    # Fail closed if this environment cannot assert the IP formats used by the schema.
+    for invalid_address, address_format in (
+        ("999.1.1.1", "ipv4"),
+        ("2001:db8::not-ip", "ipv6"),
+    ):
+        try:
+            format_checker.check(invalid_address, address_format)
+        except FormatError:
+            continue
+        raise RuntimeError(
+            f"required {address_format} format checker failed to reject malformed address"
+        )
+    validator = Draft202012Validator(schema, format_checker=format_checker)
 
     profiles = sorted(PROFILE_DIR.glob("*.json"))
     if not profiles:
