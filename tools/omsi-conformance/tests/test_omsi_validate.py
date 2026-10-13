@@ -49,6 +49,17 @@ class TestOMSI(unittest.TestCase):
     def test_raw_secret_cannot_hide_in_reference_field(self):
         with self.assertRaisesRegex(v.ConformanceError, "invalid secret/credential reference"):
             v._reject_secrets({"secret_refs": ["TopSecretValue"]})
+
+    def test_secret_like_camel_case_and_compound_keys_rejected(self):
+        for key in ("databasePassword", "oauthAccessToken", "APIKey",
+                    "privateKeyPath", "service-client-secret"):
+            with self.subTest(key=key), self.assertRaisesRegex(
+                v.ConformanceError, "secret-like field"
+            ):
+                v._reject_secrets({key: "must-not-be-inline"})
+
+    def test_secret_key_screen_does_not_reject_unrelated_words(self):
+        v._reject_secrets({"secretary_name": "Ada", "credential_count": 0})
     def test_opaque_secret_reference_is_allowed(self):
         v._reject_secrets({"secret_refs": ["vault://kv/tenant-a/app/password"]})
     def test_reference_uri_rejects_userinfo_and_query(self):
