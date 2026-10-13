@@ -17,91 +17,106 @@
       "upstream_path": "LICENSE",
       "vendored_path": "vendor/agent-control-standard/LICENSE",
       "git_blob_sha": "d645695673349e3947e8e5ae42332d0ac3164cd7",
-      "upstream_size_bytes": 11358
+      "upstream_size_bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
     },
     {
       "upstream_path": "NOTICE",
       "vendored_path": "vendor/agent-control-standard/NOTICE",
       "git_blob_sha": "8ab0503d87a414f3b84f70d27cc10b9aa73ec3ef",
-      "upstream_size_bytes": 791
+      "upstream_size_bytes": 791,
+      "sha256": "592f23bcc48e7693b67625e44bb0a58495173ec6617b5728942ac0a5e897a542"
     },
     {
       "upstream_path": "specification/v0.1.0/agbom/component.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/agbom/component.json",
       "git_blob_sha": "d6746cc9427035c953dd962e946c22858254e183",
-      "upstream_size_bytes": 9972
+      "upstream_size_bytes": 9972,
+      "sha256": "35151936afae272ffd02d462ef5cb0ef09aa25db05dc534b3cfa4866994bb45e"
     },
     {
       "upstream_path": "specification/v0.1.0/agbom/document.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/agbom/document.json",
       "git_blob_sha": "2322cda7ba11c33544fa404f0be525949f071dd8",
-      "upstream_size_bytes": 2009
+      "upstream_size_bytes": 2009,
+      "sha256": "fdba62622562c398fa52cecf951135957416dc34bcbd7ae704c7a2f31a16e60a"
     },
     {
       "upstream_path": "specification/v0.1.0/ask-details.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/ask-details.json",
       "git_blob_sha": "3cc2ceab2b9cea3e713b5ecd14e67dfa225a7a7b",
-      "upstream_size_bytes": 3223
+      "upstream_size_bytes": 3223,
+      "sha256": "3f1a4174b559486a84129eb5462995f7a2f2563467b0f41545cbb37f61e39fd6"
     },
     {
       "upstream_path": "specification/v0.1.0/context-entry.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/context-entry.json",
       "git_blob_sha": "ebee864e6666b3803414e0f05922603be3387e5c",
-      "upstream_size_bytes": 3583
+      "upstream_size_bytes": 3583,
+      "sha256": "945acf001b350f815a7912302540bd14406bbf3dd86ee6e8657d4a61f7c1491d"
     },
     {
       "upstream_path": "specification/v0.1.0/defer-details.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/defer-details.json",
       "git_blob_sha": "a2026dce5badd1e2365d12a4c03c2ceab368d88b",
-      "upstream_size_bytes": 1055
+      "upstream_size_bytes": 1055,
+      "sha256": "6f17785243ea8ed3730b4dc9e04f8a695102996e7b1cb4f32bf3bbd619dea70e"
     },
     {
       "upstream_path": "specification/v0.1.0/handshake.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/handshake.json",
       "git_blob_sha": "8ccfc4e2f0b3e441bbc0618549b5d71b70dfa458",
-      "upstream_size_bytes": 11114
+      "upstream_size_bytes": 11114,
+      "sha256": "ffb64af4ed0f094acb413c44d1798fb40d602d63e77628540785e5fb47e7cb30"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/agbom-changed.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/agbom-changed.json",
       "git_blob_sha": "38ae39f5dea99b802a1ab04afea518eeb82353b5",
-      "upstream_size_bytes": 2784
+      "upstream_size_bytes": 2784,
+      "sha256": "7daedc753dfca8545bd0de9228f6ca0af724a796d4164ab1da54b1aeb5baffbf"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/agbom-snapshot.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/agbom-snapshot.json",
       "git_blob_sha": "2629426170147dff51f4edbec3ae4eb5ef50e070",
-      "upstream_size_bytes": 1351
+      "upstream_size_bytes": 1351,
+      "sha256": "7271daa9abdc7250997d0d54f8ae53107294a8084ddf88f6d5adcd81f38544bd"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/agent-response.acs-provenance.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/agent-response.acs-provenance.json",
       "git_blob_sha": "86f63b99355688b804817aac5d68947c0969700f",
-      "upstream_size_bytes": 645
+      "upstream_size_bytes": 645,
+      "sha256": "a720fa88c593d3fc55756951a231011096978d4e0bcf1043e518ef0947e54893"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/agent-response.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/agent-response.json",
       "git_blob_sha": "374231eb96e027f240f207e2fba624c0ca864360",
-      "upstream_size_bytes": 1135
+      "upstream_size_bytes": 1135,
+      "sha256": "867c764ea4a5fd1c93145b72c04350c023352c23ae794e80bcb07f48216f41a6"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/agent-trigger.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/agent-trigger.json",
       "git_blob_sha": "dbcc2ed6cdd12a5170b956857a662d9549ef2118",
-      "upstream_size_bytes": 1385
+      "upstream_size_bytes": 1385,
+      "sha256": "114ddf42d656898d3def0176f4223f68b65c8bf24497a118874b1b20aa7bd157"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/knowledge-retrieval.acs-provenance.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/knowledge-retrieval.acs-provenance.json",
       "git_blob_sha": "7b91082ca78442d307a755c14d974d4d5763a832",
-      "upstream_size_bytes": 719
+      "upstream_size_bytes": 719,
+      "sha256": "f4845d0a0f228fbe887352aa295192352cf42b19973b04510de3277c6de11b8b"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/knowledge-retrieval.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/knowledge-retrieval.json",
       "git_blob_sha": "51f45193144c149d6a336e300d4f8c7852b8eaf3",
-      "upstream_size_bytes": 1779
+      "upstream_size_bytes": 1779,
+      "sha256": "b151b0ba9dd973b4bbd4d3fb23f412bb9a9c9ece4fcb4dfaf6395b4fa16c2479"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/memory-context-retrieval.acs-provenance.json",
