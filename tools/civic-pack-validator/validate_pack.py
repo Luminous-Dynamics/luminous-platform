@@ -253,16 +253,17 @@ def validate_pack(
 
     source_problems = sorted(set(source_problems))
     blockers = sorted(set(blockers + source_problems))
+    add(
+        "publication.evidence_gates",
+        "BLOCKED" if blockers else "PASS",
+        "Publication blockers: " + ("; ".join(blockers) if blockers else "none."),
+    )
     publication_state = pack.get("publication_state", "draft")
     eligible_state = publication_state in {"candidate", "published"}
     publication_eligible = bool(
         eligible_state
         and not blockers
-        and all(
-            check["status"] == "PASS"
-            for check in checks
-            if check["check_id"] not in {"publication.gate"}
-        )
+        and all(check["status"] != "FAIL" for check in checks)
     )
 
     if publication_eligible:
