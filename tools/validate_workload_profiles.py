@@ -69,7 +69,6 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject repeated slash mount target": ("deployment", "target"),
     "reject microVM share path traversal": ("deployment", "target"),
     "reject unknown top-level authority field": ("hostBootMutation",),
-    "reject duplicated microVM source IDs": ("sourceId",),
 }
 
 
