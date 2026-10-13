@@ -110,6 +110,30 @@ class TestOMSI(unittest.TestCase):
     def test_nonverified_outcome_cannot_claim_verified_result(self):
         x=receipt(); x["outcome"]="indeterminate"
         with self.assertRaisesRegex(v.ConformanceError, "non-verified outcome"): v.validate_receipt(x, op())
+
+    def test_failed_receipt_cannot_predate_its_terminal_event(self):
+        x = receipt()
+        x["outcome"] = "failed"
+        x["issued_at"] = "2026-10-12T12:00:39Z"
+        x["verification"]["result"] = "failed"
+        x["verification"].pop("observed_at", None)
+        events = load_fixture("events.json")[:5]
+        events.append({
+            "schema": "org.omsi.operation-event/0.1",
+            "event_id": "e6-failed",
+            "tenant_id": "tenant-a",
+            "operation_id": "op-1",
+            "sequence": 6,
+            "occurred_at": "2026-10-12T12:00:40Z",
+            "producer": "executor-1",
+            "from_state": "running",
+            "to_state": "failed",
+            "correlation_id": "flow-1",
+        })
+        with self.assertRaisesRegex(
+            v.ConformanceError, "receipt issuance predates referenced terminal event"
+        ):
+            v.validate_receipt(x, op(), events)
     def test_receipt_operation_substitution_rejected(self):
         x=receipt(); x["operation_id"]="op-other"
         with self.assertRaisesRegex(v.ConformanceError, "operation ID mismatch"): v.validate_receipt(x, op())
