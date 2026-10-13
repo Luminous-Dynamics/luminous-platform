@@ -188,7 +188,7 @@
       "expected_bridge_outcome": "DENY_OR_DISABLE_MUTATION_CAPABILITY",
       "expected_transaction": "none_or_rejected",
       "max_mutating_effects": 0,
-      "pass_condition": "The host does not advertise unimplemented capability or expose guarded mutation tools."
+      "pass_condition": "The host's out-of-band startup posture is configured to refuse new unguarded sessions; if handshake fails, no mutation-capable session starts, and the posture is demonstrated on the actual selected host."
     },
     {
       "id": "BR-021",
@@ -197,7 +197,7 @@
       "expected_bridge_outcome": "DENY_UNSUPPORTED_MODIFY",
       "expected_transaction": "none_or_rejected",
       "max_mutating_effects": 0,
-      "pass_condition": "No content change is silently ignored while the original action proceeds."
+      "pass_condition": "No MODIFY action is silently ignored while the original action proceeds. If the host cannot implement MODIFY safely, it denies the operation and ACS-Core conformance remains unclaimed."
     },
     {
       "id": "BR-022",
