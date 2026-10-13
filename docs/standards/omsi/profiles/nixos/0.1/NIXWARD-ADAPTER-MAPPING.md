@@ -27,6 +27,18 @@ Relevant sources:
 
 `record_application()` records metadata about an already executed command (command digest, timestamps and exit status); it does not execute the command. The authorized actuator is `NixOSExecutor::execute_authorized()`. A VM experiment that only advances `SystemTransaction` fields or runs its unit tests would not prove real actuator behavior. Qualification must connect the actual `ExecutionResult` to the lifecycle envelope and separately observe the VM after application/recovery.
 
+### Execution-result fidelity is a separate blocker (source audit 2026-10-13)
+
+The current public `ExecutionResult` cannot be mapped losslessly into `ApplicationReceipt`:
+
+- `Success` carries output and elapsed milliseconds, but not the numeric process exit status or absolute start/finish timestamps.
+- `NixOSExecutor::with_dry_run(true)` returns `ExecutionResult::Success` even though no command is spawned. A `Success` variant alone therefore does not prove application occurred.
+- `RolledBack` and `FailedNoRollback` describe executor-side rollback handling, but do not include the original/rollback process exit statuses or a fresh independently observed post-state.
+- `Blocked` and `PendingConfirmation` describe paths where application has not been authorized/performed; they must not be represented as a successful or failed application receipt.
+- `SystemTransaction::ApplicationReceipt.exit_status: i32` cannot by itself distinguish a process exit code from spawn failure or signal termination.
+
+Do not synthesize exit status `1` for every failure, infer wall-clock timestamps from elapsed duration, or map a dry-run `Success` to `Applied`. Before wiring the runtime adapter, Nixward needs a typed execution observation that preserves whether an invocation actually occurred, the exact command digest, absolute start/finish times, process disposition (exit code vs spawn/signal outcome), and rollback attempt/result. If these change the public wire representation, version the wire schema deliberately. `RolledBack` remains an executor claim about its path, not proof that the pre-state was restored; recovery verification still requires a fresh read-only observation of the VM.
+
 ## Digest separation is mandatory
 
 OMSI and Nixward digest values answer different questions. They MUST NOT be substituted for each other.
