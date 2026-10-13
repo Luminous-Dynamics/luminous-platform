@@ -94,6 +94,7 @@ def validate_pack(
             "FAIL",
             " | ".join(messages[:50]),
         )
+        return _report(schema, pack, schema_bytes, pack_bytes, evaluated_at, checks)
     else:
         add(
             "pack.schema_validation",
@@ -200,8 +201,12 @@ def validate_pack(
             issues.append(f"review_state={state}")
         if checked is None:
             issues.append("checked_at missing or invalid")
+        elif checked > as_of:
+            issues.append("checked_at is in the future relative to --as-of")
         if reviewed is None:
             issues.append("reviewed_at missing or invalid")
+        elif reviewed > as_of:
+            issues.append("reviewed_at is in the future relative to --as-of")
         if not isinstance(source.get("reviewer_role"), str) or not source.get("reviewer_role", "").strip():
             issues.append("reviewer_role missing")
         if next_review is None:
