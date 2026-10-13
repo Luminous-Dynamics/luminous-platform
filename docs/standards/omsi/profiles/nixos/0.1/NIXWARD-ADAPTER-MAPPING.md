@@ -1,7 +1,7 @@
 # OMSI Nixward adapter mapping — 0.1 draft
 
 **Status:** implementation design note; not a stable adapter contract  
-**Repository inspected:** `Luminous-Dynamics/nixward`, default branch `main`, inspection date 2026-10-12.
+**Repository inspected:** `Luminous-Dynamics/nixward`, default branch `main`, re-inspected 2026-10-13.
 
 This mapping is grounded in Nixward's existing `src/action/system_transaction.rs`, `src/action/change_covenant.rs`, `src/action/executor.rs` and `src/bin/nixward.rs`. The intent is to reuse Nixward's existing evidence-bound authorization and actuator, not create a parallel privileged executor inside OMSI. **Integration gap:** the current CLI `cmd_execute` path constructs a `ChangePlan`, `ChangeAuthorization` and `ExecutionAuthorization` and calls `NixOSExecutor::execute_authorized`; it does not instantiate `SystemTransaction`. Treat the latter as a lifecycle envelope/API, not as an already-wired runtime transaction record.
 
