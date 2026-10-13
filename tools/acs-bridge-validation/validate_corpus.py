@@ -11,51 +11,70 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema import Draft202012Validator, FormatChecker, SchemaError
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = ROOT / "docs/schemas/acs-nixward-bridge-test-corpus-v1.schema.json"
 CORPUS_PATH = ROOT / "docs/fixtures/acs-nixward-bridge-v1-cases.json"
 
 
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Reject ambiguous JSON objects instead of silently keeping the last key."""
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON object key: {key!r}")
+        result[key] = value
+    return result
+
+
+def loads_strict(text: str, *, source: str = "<input>") -> Any:
+    """Parse UTF-8-decoded JSON while rejecting duplicate keys and non-JSON constants."""
+    def reject_constant(value: str) -> None:
+        raise ValueError(f"non-standard JSON numeric constant {value!r} in {source}")
+
+    try:
+        return json.loads(
+            text,
+            object_pairs_hook=_unique_object,
+            parse_constant=reject_constant,
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise ValueError(f"{source}: invalid strict JSON: {exc}") from exc
+
+
 def load_json(path: Path) -> Any:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
         raise ValueError(f"{path.relative_to(ROOT)}: unable to read strict UTF-8 JSON: {exc}") from exc
+    return loads_strict(text, source=str(path.relative_to(ROOT)))
 
 
-def main() -> int:
-    try:
-        schema = load_json(SCHEMA_PATH)
-        corpus = load_json(CORPUS_PATH)
-    except ValueError as exc:
-        print(f"FAIL: {exc}", file=sys.stderr)
-        return 1
-
+def validate_documents(schema: Any, corpus: Any) -> list[str]:
+    """Return deterministic error messages for schema, corpus, and frozen safety invariants."""
+    errors: list[str] = []
     try:
         Draft202012Validator.check_schema(schema)
-    except Exception as exc:  # jsonschema exposes several schema-validation exception subclasses
-        print(f"FAIL: corpus schema is not valid Draft 2020-12: {exc}", file=sys.stderr)
-        return 1
+    except SchemaError as exc:
+        return [f"corpus schema is not valid Draft 2020-12: {exc.message}"]
 
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
-    errors = sorted(
+    schema_errors = sorted(
         validator.iter_errors(corpus),
         key=lambda err: (list(map(str, err.absolute_path)), err.message),
     )
+    for err in schema_errors:
+        path = "$" + "".join(f"[{part}]" if isinstance(part, int) else f".{part}" for part in err.absolute_path)
+        errors.append(f"{path}: {err.message}")
     if errors:
-        for err in errors:
-            path = "$" + "".join(f"[{part}]" if isinstance(part, int) else f".{part}" for part in err.absolute_path)
-            print(f"FAIL: {path}: {err.message}", file=sys.stderr)
-        return 1
+        return errors
 
     cases = corpus["cases"]
     ids = [case["id"] for case in cases]
     expected_ids = [f"BR-{number:03d}" for number in range(1, 33)]
     if ids != expected_ids:
-        print("FAIL: case IDs must be unique and ordered BR-001 through BR-032", file=sys.stderr)
-        return 1
+        errors.append("case IDs must be unique and ordered BR-001 through BR-032")
 
     by_id = {case["id"]: case for case in cases}
     must_not_mutate = {
@@ -66,10 +85,15 @@ def main() -> int:
         "BR-022", "BR-024", "BR-027", "BR-029", "BR-030",
         "BR-031", "BR-032",
     }
-    violating = [case_id for case_id in sorted(must_not_mutate) if by_id[case_id]["max_mutating_effects"] != 0]
+    violating = [
+        case_id for case_id in sorted(must_not_mutate)
+        if by_id[case_id]["max_mutating_effects"] != 0
+    ]
     if violating:
-        print(f"FAIL: negative/control case must cap mutating effects at zero: {', '.join(violating)}", file=sys.stderr)
-        return 1
+        errors.append(
+            "negative/control case must cap mutating effects at zero: "
+            + ", ".join(violating)
+        )
 
     required_outcomes = {
         "BR-003": ("ALLOW_AT_HOOK_ONLY", "not_authorized"),
@@ -82,17 +106,33 @@ def main() -> int:
         case = by_id[case_id]
         actual = (case["expected_bridge_outcome"], case["expected_transaction"])
         if actual != expected:
-            print(f"FAIL: {case_id} safety invariant: expected {expected!r}, got {actual!r}", file=sys.stderr)
-            return 1
+            errors.append(
+                f"{case_id} safety invariant: expected {expected!r}, got {actual!r}"
+            )
 
     related_issues = {entry["issue"] for entry in corpus["related_existing_work"]}
     if not {63, 70, 75}.issubset(related_issues):
-        print("FAIL: corpus must retain links to Nixward issues #63, #70, and #75", file=sys.stderr)
+        errors.append("corpus must retain links to Nixward issues #63, #70, and #75")
+    return errors
+
+
+def main() -> int:
+    try:
+        schema = load_json(SCHEMA_PATH)
+        corpus = load_json(CORPUS_PATH)
+    except ValueError as exc:
+        print(f"FAIL: {exc}", file=sys.stderr)
         return 1
 
-    print(f"PASS: Draft 2020-12 schema and corpus structure validated ({len(cases)} cases).")
+    errors = validate_documents(schema, corpus)
+    if errors:
+        for error in errors:
+            print(f"FAIL: {error}", file=sys.stderr)
+        return 1
+
+    print(f"PASS: Draft 2020-12 schema and corpus structure validated ({len(corpus['cases'])} cases).")
     print("PASS: case IDs, required no-effect controls, and critical safety invariants validated.")
-    print("LIMIT: this is corpus validation only; no product, ACS wire, host-hook, Nixward, VM, or security qualification was performed.")
+    print("LIMIT: corpus validation only; no product, ACS wire, host-hook, Nixward, VM, or security qualification was performed.")
     return 0
 
 
