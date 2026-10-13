@@ -10,6 +10,12 @@ The first non-NixOS target should be **Ubuntu Server 24.04 LTS in an isolated QE
 
 This order optimizes for a reproducible, general-purpose Linux test target first, then adds an image-based fleet target. It is a prioritization proposal, not a claim that one distribution is intrinsically more secure than another.
 
+## Host operating system versus guest operating systems
+
+Do not conflate native host support with guest availability. **NixOS is the preferred reference host for machines we control; OCI containers and VMs are complementary workload mechanisms, not a substitute for native host qualification.** A tested Ubuntu guest running on NixOS does not prove that Luminous host services support Ubuntu natively.
+
+The proposed runtime layering and workload-placement policy are documented in [Host and Workload Strategy](HOST_AND_WORKLOAD_STRATEGY.md). Initial recommendation: a declared NixOS host, rootless OCI containers for suitable services, and one microvm.nix NixOS guest proof. Use a general KVM/QEMU manager for heterogeneous OS guests. Do not introduce multiple VM control planes until the workload needs are proven.
+
 ## Synology DSM: a separate NAS appliance track
 
 Synology support is worth pursuing, but **DSM is not simply another Ubuntu/Fedora target**. Treat it as a version- and model-qualified appliance integration, with storage availability and vendor-managed lifecycle taking precedence over host customization.
@@ -71,6 +77,10 @@ This is an architectural target, not an existing cross-distro API. Do not extrac
 | Debian Stable | Add after the common contract stabilizes; test independently even when an Ubuntu adapter can be reused. | That Ubuntu results establish Debian support. |
 | Synology DSM (exact model/build) | First: remote read-only SNMPv3 monitor using documented Synology MIBs. Optional second step: narrow DSM Web API adapter. Optional third step: supported Container Manager + Compose, unprivileged containers, and dedicated persistent directory. | Generic Linux support, native boot/recovery integration, Nixward management, or support for all NAS models/architectures. |
 | Other operating systems | Explicitly out of scope until a named profile, owner, and test lane exist. | Generic Linux claims, or implied macOS/Windows support. |
+
+### Keep host and guest support separate
+
+Publish two support matrices. The **host matrix** records which native OS release/hardware profiles qualify each Luminous component. The **guest matrix** records OCI image architecture/digest and VM guest OS/image/version plus the tested runtime/VMM. OCI image portability, a VM starting, a guest OS booting, and full Luminous native integration are separate capability claims.
 
 ### Report support by capability
 
@@ -193,6 +203,12 @@ Fail closed for authorization and evidence validation, but fail open for optiona
 - [Sovereign Boot](https://github.com/Luminous-Dynamics/sovereign-boot)
 - [Nixward](https://github.com/Luminous-Dynamics/nixward)
 - [bootc project and documentation](https://github.com/bootc-dev/bootc)
+- [Host and Workload Strategy](HOST_AND_WORKLOAD_STRATEGY.md)
+- [NixOS Manual: VM versus container trade-offs](https://nixos.org/manual/nixos/stable/)
+- [microvm.nix](https://github.com/microvm-nix/microvm.nix)
+- [Podman Quadlet](https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html)
+- [Incus](https://github.com/lxc/incus)
+- [Firecracker design](https://github.com/firecracker-microvm/firecracker/blob/main/docs/design.md)
 - [Ubuntu autoinstall reference](https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html)
 - [Synology Container Manager supported models](https://www.synology.com/en-in/dsm/packages/ContainerManager)
 - [Synology Container Manager release notes](https://www.synology.com/en-us/releaseNote/ContainerManager)
