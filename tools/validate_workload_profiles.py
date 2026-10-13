@@ -61,6 +61,10 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject allowlisted egress without explicit rules": ("security.network.rules",),
     "reject egress rule while egress policy is deny": ("security.network.rules",),
     "reject writable read-only configuration mount": ("deployment", "access"),
+    "reject root mount target": ("deployment", "target"),
+    "reject path traversal mount target": ("deployment", "target"),
+    "reject repeated slash mount target": ("deployment", "target"),
+    "reject microVM share path traversal": ("deployment", "target"),
     "reject unknown top-level authority field": ("hostBootMutation",),
 }
 
@@ -403,6 +407,39 @@ def main() -> int:
                 {"source": "readonly_config", "target": "/etc/example", "access": "read_write"}
             ),
             "reject writable read-only configuration mount",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["volumes"].append(
+                {"source": "dedicated_state", "target": "/", "access": "read_write"}
+            ),
+            "reject root mount target",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["volumes"].append(
+                {"source": "dedicated_state", "target": "/etc/../run", "access": "read_write"}
+            ),
+            "reject path traversal mount target",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["volumes"].append(
+                {"source": "dedicated_state", "target": "/var//lib", "access": "read_write"}
+            ),
+            "reject repeated slash mount target",
+        ),
+        (
+            microvm,
+            lambda candidate: candidate["deployment"]["shares"].append(
+                {
+                    "sourceId": "shared-data",
+                    "target": "/data/../../run",
+                    "access": "read_write",
+                    "protocol": "virtiofs",
+                }
+            ),
+            "reject microVM share path traversal",
         ),
         (
             full_vm,
