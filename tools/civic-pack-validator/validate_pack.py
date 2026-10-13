@@ -11,9 +11,9 @@ import argparse
 import hashlib
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any\nfrom urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator, FormatChecker, SchemaError
 
@@ -170,6 +170,32 @@ def validate_pack(
         ),
     )
 
+    unsafe_urls: list[str] = []
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        source_id = source.get("source_id", "<unknown>")
+        parsed = urlsplit(source.get("canonical_url", ""))
+        if parsed.scheme != "https" or not parsed.hostname:
+            unsafe_urls.append(f"source:{source_id}")
+    for requirement in requirements:
+        if not isinstance(requirement, dict):
+            continue
+        req_id = requirement.get("requirement_id", "<unknown>")
+        for action in requirement.get("user_actions", []):
+            if not isinstance(action, dict) or not action.get("url"):
+                continue
+            parsed = urlsplit(action["url"])
+            if parsed.scheme != "https" or not parsed.hostname:
+                unsafe_urls.append(f"action:{req_id}:{action.get('action_id', '<unknown>')}")
+    unsafe_urls.sort()
+    add(
+        "security.https_only",
+        "FAIL" if unsafe_urls else "PASS",
+        "All source and action URLs must be absolute HTTPS URLs. Unsafe entries: "
+        + (", ".join(unsafe_urls) if unsafe_urls else "none."),
+    )
+
     contract = pack.get("decision_contract", {})
     contract_ok = (
         contract.get("guidance_only") is True
@@ -207,12 +233,19 @@ def validate_pack(
             issues.append("reviewed_at missing or invalid")
         elif reviewed > as_of:
             issues.append("reviewed_at is in the future relative to --as-of")
+        if checked is not None and reviewed is not None and reviewed < checked:
+            issues.append("review predates last source check")
         if not isinstance(source.get("reviewer_role"), str) or not source.get("reviewer_role", "").strip():
             issues.append("reviewer_role missing")
         if next_review is None:
             issues.append("next_review_at missing or invalid")
-        elif next_review <= as_of:
-            issues.append("review deadline reached")
+        else:
+            if next_review <= as_of:
+                issues.append("review deadline reached")
+            policy = pack.get("review_policy", {})
+            interval_days = policy.get("review_interval_days")
+            if reviewed is not None and isinstance(interval_days, int) and next_review > reviewed + timedelta(days=interval_days):
+                issues.append("next_review_at exceeds configured review interval")
         if effective is not None and effective > as_of:
             issues.append("source not yet effective")
         if source.get("reuse") in {"not_assessed", "link_only"} and (
