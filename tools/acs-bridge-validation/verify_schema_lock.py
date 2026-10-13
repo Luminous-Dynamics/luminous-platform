@@ -87,9 +87,9 @@ def _json_pointer_exists(document: Any, fragment: str) -> bool:
 
     current = document
     for encoded in fragment[1:].split("/"):
-        token = encoded.replace("~1", "/").replace("~0", "~")
-        if "~" in token.replace("~0", "").replace("~1", ""):
+        if any(encoded[index] == "~" and (index + 1 >= len(encoded) or encoded[index + 1] not in "01") for index in range(len(encoded))):
             return False
+        token = encoded.replace("~1", "/").replace("~0", "~")
         if isinstance(current, dict):
             if token not in current:
                 return False
