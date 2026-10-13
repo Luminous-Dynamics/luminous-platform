@@ -197,6 +197,43 @@ def main() -> int:
     if oci is None or microvm is None or full_vm is None:
         raise RuntimeError("required OCI, NixOS microVM, and Ubuntu full-VM fixtures must all exist")
 
+    valid_mount_profiles = [
+        (
+            copy.deepcopy(oci),
+            {
+                "source": "dedicated_state",
+                "target": "/var/lib/example",
+                "access": "read_write",
+            },
+            "OCI absolute mount target",
+        ),
+        (
+            copy.deepcopy(microvm),
+            {
+                "sourceId": "shared-data",
+                "target": "/data",
+                "access": "read_write",
+                "protocol": "virtiofs",
+            },
+            "microVM absolute share target",
+        ),
+    ]
+    for candidate, mount, label in valid_mount_profiles:
+        candidate["security"]["hostDataAccess"] = "declared_mounts_only"
+        if candidate["deployment"]["kind"] == "oci_container":
+            candidate["deployment"]["volumes"].append(mount)
+        else:
+            candidate["deployment"]["shares"].append(mount)
+        valid_errors = list(validator.iter_errors(candidate))
+        if valid_errors:
+            raise AssertionError(
+                f"valid mount target rejected ({label}):\\n{describe_errors(valid_errors)}"
+            )
+        semantic = semantic_errors(candidate)
+        if semantic:
+            raise AssertionError(f"valid mount target failed semantic checks ({label}): {semantic!r}")
+        print(f"PASS mount target: {label}")
+
     valid_network_peers = [
         ("hostname", "api.example.org"),
         ("ipv4", "1.1.1.1"),
