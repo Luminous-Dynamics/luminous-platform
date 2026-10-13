@@ -49,6 +49,25 @@ Selected public documentation was read for Luminous Platform, Nixward, Luminous 
 - Mycelix identifies itself as pre-alpha and says maturity and multi-agent integration coverage vary by cluster; federation is not a Core 0.1 dependency.
 - Symthaea documents important distinctions between working implementation evidence and regulatory compliance claims; OMSI should maintain the same discipline.
 
+
+## Cross-repository design lessons: effect and receipt algebra
+
+The Mycelix repositories contain closely related semantic work that OMSI should map to rather than duplicate:
+
+- [MYC-EFFECT-CONVERGE-001](https://github.com/Luminous-Dynamics/mycelix/issues/2687) explicitly separates intent, dispatch attempt, provider acceptance, domain mutation/commit, durable receipt, reconciliation, external finality, and legal/obligation discharge. It warns against extracting a generic effect core or a universal `Success`/`Committed`/`Finalized` enum before independent domain families are qualified. Its candidate common layer is a weak coordination envelope of typed references, while domains keep their own meaning of effect and finality.
+- [LEX-NET-028](https://github.com/Luminous-Dynamics/mycelix/issues/1215) defines anti-receipt-laundering rules: a transport receipt is not a recognition receipt, a valid signature is not issuer authority, an execution attempt is not effect confirmation, and one receipt type cannot be silently relabeled as a stronger type. It recommends immutable, typed receipt lineage and explicit qualified transitions.
+- [FIN-SYNC-002C](https://github.com/Luminous-Dynamics/mycelix/issues/2521) separates recovery/compensation classification from authority and execution. Compensation is a new forward effect, not deletion of the original effect. Recovery lineage should bind the root effect and prior recovery receipts, with profile-bounded generations/depth and duplicate/cycle handling.
+
+### OMSI design consequences
+
+1. Keep the Core outcome vocabulary deliberately weak. Shared words such as `accepted`, `applied`, `verified`, or `recovered` require profile-specific definitions and typed evidence; they must not imply generic external finality.
+2. Give distinct receipt types distinct schema identifiers and subject commitments. A signed or schema-valid weaker receipt does not become a stronger receipt without an explicit qualified transition.
+3. Use linked, append-only operation and recovery records. Do not make every domain's recovery mean rollback; some changes can be reverted, while others require quarantine, safe isolation, manual reconciliation or a new compensating effect.
+4. Bind retry and compensation to stable semantic operation/effect identity, not wall-clock time or attempt identity. An unknown result after dispatch is not proof of no effect and cannot by itself authorize another attempt.
+5. Preserve the authority ceiling: OMSI may validate identity and lifecycle bindings, but it must not create recovery/compensation authority, execute effects, or claim provider/domain finality.
+
+This is an architectural mapping, not evidence that the separate Mycelix mechanisms are already unified, qualified, or production-ready. The Mycelix issue explicitly says the common effect layer should not be extracted until domain-owned effect theorems are reconciled and qualified.
+
 ## Unanswered research questions
 
 - Do independent MSPs agree this operation/evidence boundary is their highest-value interoperability gap?
