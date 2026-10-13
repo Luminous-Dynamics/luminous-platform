@@ -1,0 +1,833 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.org/schemas/workload-profile/v1alpha1",
+  "title": "Luminous Workload Profile v1alpha1",
+  "description": "A declarative, unqualified-by-default description of an OCI workload, NixOS microVM, or full VM. This schema does not itself authorize execution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "placement",
+    "deployment",
+    "security",
+    "resources",
+    "lifecycle",
+    "evidence"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": "luminousdynamics.org/v1alpha1"
+    },
+    "kind": {
+      "const": "WorkloadProfile"
+    },
+    "metadata": {
+      "$ref": "#/$defs/metadata"
+    },
+    "placement": {
+      "$ref": "#/$defs/placement"
+    },
+    "deployment": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ociContainer"
+        },
+        {
+          "$ref": "#/$defs/nixosMicrovm"
+        },
+        {
+          "$ref": "#/$defs/fullVm"
+        }
+      ]
+    },
+    "security": {
+      "$ref": "#/$defs/security"
+    },
+    "resources": {
+      "$ref": "#/$defs/resources"
+    },
+    "lifecycle": {
+      "$ref": "#/$defs/lifecycle"
+    },
+    "evidence": {
+      "$ref": "#/$defs/evidence"
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "profileName": {
+      "type": "string",
+      "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version",
+        "qualification",
+        "purpose"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/profileName"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?$"
+        },
+        "qualification": {
+          "enum": [
+            "example_only",
+            "unverified",
+            "ci_verified",
+            "hardware_qualified"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      }
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowedHosts",
+        "architectures",
+        "placementClass"
+      ],
+      "properties": {
+        "allowedHosts": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "nixos",
+              "ubuntu",
+              "debian",
+              "fedora",
+              "synology_dsm",
+              "other_linux"
+            ]
+          }
+        },
+        "architectures": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "x86_64",
+              "aarch64"
+            ]
+          }
+        },
+        "placementClass": {
+          "enum": [
+            "service",
+            "isolation_guest",
+            "compatibility_test",
+            "untrusted_workload"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      }
+    },
+    "networkRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "direction",
+        "protocol",
+        "destination",
+        "port"
+      ],
+      "properties": {
+        "direction": {
+          "enum": [
+            "ingress",
+            "egress"
+          ]
+        },
+        "protocol": {
+          "enum": [
+            "tcp",
+            "udp"
+          ]
+        },
+        "destination": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 253,
+          "pattern": "^[^\\s/]+$"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "justification": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trustZone",
+        "hostDataAccess",
+        "hostControl",
+        "network",
+        "secrets"
+      ],
+      "properties": {
+        "trustZone": {
+          "enum": [
+            "trusted_service",
+            "restricted_service",
+            "untrusted_workload",
+            "compatibility_test"
+          ]
+        },
+        "hostDataAccess": {
+          "enum": [
+            "none",
+            "declared_mounts_only",
+            "explicitly_reviewed"
+          ]
+        },
+        "hostControl": {
+          "const": "none"
+        },
+        "network": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ingress",
+            "egress",
+            "rules"
+          ],
+          "properties": {
+            "ingress": {
+              "enum": [
+                "deny",
+                "allowlisted"
+              ]
+            },
+            "egress": {
+              "enum": [
+                "deny",
+                "allowlisted"
+              ]
+            },
+            "rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/networkRule"
+              },
+              "uniqueItems": true
+            }
+          }
+        },
+        "secrets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "referencesOnly",
+            "provider"
+          ],
+          "properties": {
+            "referencesOnly": {
+              "const": true
+            },
+            "provider": {
+              "enum": [
+                "none",
+                "os_secret_store",
+                "approved_secret_manager"
+              ]
+            },
+            "references": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,127}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cpuMilli",
+        "memoryMiB",
+        "pidsMax"
+      ],
+      "properties": {
+        "cpuMilli": {
+          "type": "integer",
+          "minimum": 50,
+          "maximum": 1048576
+        },
+        "memoryMiB": {
+          "type": "integer",
+          "minimum": 32,
+          "maximum": 1048576
+        },
+        "diskMiB": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16777216
+        },
+        "pidsMax": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 1048576
+        },
+        "startupTimeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startPolicy",
+        "restartPolicy",
+        "upgradeStrategy",
+        "changesRequireAuthorization",
+        "stopTimeoutSeconds"
+      ],
+      "properties": {
+        "startPolicy": {
+          "enum": [
+            "manual",
+            "on_host_boot",
+            "on_demand"
+          ]
+        },
+        "restartPolicy": {
+          "enum": [
+            "never",
+            "on_failure",
+            "always"
+          ]
+        },
+        "upgradeStrategy": {
+          "const": "replace_by_digest"
+        },
+        "changesRequireAuthorization": {
+          "const": true
+        },
+        "stopTimeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        },
+        "healthGraceSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "claimScope",
+        "testsRequired",
+        "testsPassed"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "design_only",
+            "unverified",
+            "ci_verified",
+            "hardware_qualified"
+          ]
+        },
+        "claimScope": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "testsRequired": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        },
+        "testsPassed": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          }
+        },
+        "receiptReferences": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^https://[^\\s]+$"
+          }
+        }
+      }
+    },
+    "ociContainer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "image",
+        "command",
+        "user",
+        "readOnlyRootFilesystem",
+        "noNewPrivileges",
+        "privileged",
+        "hostNamespaces",
+        "capabilities",
+        "seccompProfile",
+        "volumes",
+        "ports"
+      ],
+      "properties": {
+        "kind": {
+          "const": "oci_container"
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "ref",
+            "pullPolicy"
+          ],
+          "properties": {
+            "ref": {
+              "type": "string",
+              "pattern": "^\\S+@sha256:[a-f0-9]{64}$"
+            },
+            "pullPolicy": {
+              "enum": [
+                "never",
+                "if_not_present",
+                "always"
+              ]
+            }
+          }
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "maxLength": 2048
+          }
+        },
+        "user": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "uid",
+            "gid"
+          ],
+          "properties": {
+            "uid": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            },
+            "gid": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          }
+        },
+        "readOnlyRootFilesystem": {
+          "const": true
+        },
+        "noNewPrivileges": {
+          "const": true
+        },
+        "privileged": {
+          "const": false
+        },
+        "hostNamespaces": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pid",
+            "network",
+            "ipc"
+          ],
+          "properties": {
+            "pid": {
+              "const": false
+            },
+            "network": {
+              "const": false
+            },
+            "ipc": {
+              "const": false
+            }
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "CHOWN",
+              "DAC_OVERRIDE",
+              "FOWNER",
+              "NET_BIND_SERVICE",
+              "SETGID",
+              "SETUID"
+            ]
+          }
+        },
+        "seccompProfile": {
+          "enum": [
+            "runtime_default",
+            "custom_pinned"
+          ]
+        },
+        "volumes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source",
+              "target",
+              "access"
+            ],
+            "properties": {
+              "source": {
+                "enum": [
+                  "dedicated_state",
+                  "readonly_config",
+                  "readonly_artifact"
+                ]
+              },
+              "target": {
+                "type": "string",
+                "pattern": "^/(?:[A-Za-z0-9._-]+/?)*$"
+              },
+              "access": {
+                "enum": [
+                  "read_only",
+                  "read_write"
+                ]
+              }
+            }
+          }
+        },
+        "ports": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "containerPort",
+              "protocol",
+              "exposure"
+            ],
+            "properties": {
+              "containerPort": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "protocol": {
+                "enum": [
+                  "tcp",
+                  "udp"
+                ]
+              },
+              "exposure": {
+                "enum": [
+                  "loopback_only",
+                  "private_network"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "nixosMicrovm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "microvmNixRevision",
+        "guestSystem",
+        "guestConfigurationDigest",
+        "rootArtifact",
+        "hypervisor",
+        "vcpus",
+        "memoryMiB",
+        "shares",
+        "devices"
+      ],
+      "properties": {
+        "kind": {
+          "const": "nixos_microvm"
+        },
+        "microvmNixRevision": {
+          "$ref": "#/$defs/gitSha"
+        },
+        "guestSystem": {
+          "enum": [
+            "x86_64-linux",
+            "aarch64-linux"
+          ]
+        },
+        "guestConfigurationDigest": {
+          "$ref": "#/$defs/digest"
+        },
+        "rootArtifact": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "format",
+            "sha256",
+            "readOnly"
+          ],
+          "properties": {
+            "format": {
+              "enum": [
+                "erofs",
+                "squashfs",
+                "raw"
+              ]
+            },
+            "sha256": {
+              "$ref": "#/$defs/digest"
+            },
+            "readOnly": {
+              "const": true
+            }
+          }
+        },
+        "hypervisor": {
+          "enum": [
+            "qemu",
+            "cloud-hypervisor",
+            "firecracker",
+            "kvmtool"
+          ]
+        },
+        "vcpus": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "memoryMiB": {
+          "type": "integer",
+          "minimum": 64,
+          "maximum": 1048576
+        },
+        "shares": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "sourceId",
+              "target",
+              "access",
+              "protocol"
+            ],
+            "properties": {
+              "sourceId": {
+                "$ref": "#/$defs/profileName"
+              },
+              "target": {
+                "type": "string",
+                "pattern": "^/(?:[A-Za-z0-9._-]+/?)*$"
+              },
+              "access": {
+                "enum": [
+                  "read_only",
+                  "read_write"
+                ]
+              },
+              "protocol": {
+                "enum": [
+                  "9p",
+                  "virtiofs"
+                ]
+              }
+            }
+          }
+        },
+        "devices": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "enum": [
+              "virtio_block",
+              "virtio_net",
+              "virtio_console",
+              "vsock"
+            ]
+          }
+        }
+      }
+    },
+    "fullVm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "guestOs",
+        "image",
+        "hypervisor",
+        "vcpus",
+        "memoryMiB",
+        "diskGiB",
+        "bootMode",
+        "isolatedNetwork"
+      ],
+      "properties": {
+        "kind": {
+          "const": "full_vm"
+        },
+        "guestOs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "family",
+            "release",
+            "architecture"
+          ],
+          "properties": {
+            "family": {
+              "enum": [
+                "ubuntu",
+                "debian",
+                "fedora",
+                "windows",
+                "other"
+              ]
+            },
+            "release": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "architecture": {
+              "enum": [
+                "x86_64",
+                "aarch64"
+              ]
+            }
+          }
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "sourceUri",
+            "sha256",
+            "format"
+          ],
+          "properties": {
+            "sourceUri": {
+              "type": "string",
+              "pattern": "^(https://|artifact://)[^\\s]+$"
+            },
+            "sha256": {
+              "$ref": "#/$defs/digest"
+            },
+            "format": {
+              "enum": [
+                "qcow2",
+                "raw",
+                "iso"
+              ]
+            }
+          }
+        },
+        "hypervisor": {
+          "enum": [
+            "qemu_kvm",
+            "libvirt_qemu",
+            "incus"
+          ]
+        },
+        "vcpus": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 256
+        },
+        "memoryMiB": {
+          "type": "integer",
+          "minimum": 256,
+          "maximum": 1048576
+        },
+        "diskGiB": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65536
+        },
+        "bootMode": {
+          "enum": [
+            "uefi",
+            "bios"
+          ]
+        },
+        "isolatedNetwork": {
+          "const": true
+        }
+      }
+    }
+  }
+}
