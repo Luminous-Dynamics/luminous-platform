@@ -28,11 +28,13 @@ class VendorAdapterRegistryTests(unittest.TestCase):
         self.assertEqual(self.registry["registry_state"], "design_baseline_not_implemented")
         self.assertTrue(all(adapter["maturity"] == "A0_DISCOVERED" for adapter in self.registry["adapters"]))
         self.assertTrue(all(adapter["implementation_state"] == "NOT_IMPLEMENTED" for adapter in self.registry["adapters"]))
-        self.assertTrue(all(
-            operation["state"] == "planned"
-            for adapter in self.registry["adapters"]
-            for operation in adapter["operations"]
-        ))
+        # The closed-world registry distinguishes planned work from an
+        # explicitly unsupported capability; unsupported entries must explain why.
+        for adapter in self.registry["adapters"]:
+            for operation in adapter["operations"]:
+                self.assertIn(operation["state"], {"planned", "unsupported"})
+                if operation["state"] == "unsupported":
+                    self.assertGreaterEqual(len(operation.get("rationale", "").strip()), 8)
 
     def test_duplicate_adapter_ids_fail(self) -> None:
         payload = copy.deepcopy(self.registry)
@@ -83,8 +85,20 @@ class VendorAdapterRegistryTests(unittest.TestCase):
             },
         })
         errors = self.errors(payload)
-        self.assertTrue(any("A0_DISCOVERED permits planned" in error for error in errors))
-        self.assertTrue(any("A0_DISCOVERED must remain NOT_IMPLEMENTED" in error for error in errors))
+        self.assertTrue(any(
+            "implemented state contradicts NOT_IMPLEMENTED" in error
+            for error in errors
+        ))
+
+        # Independently reject an A0 adapter that advertises an implementation
+        # state, even if the individual operation list is otherwise unchanged.
+        payload = copy.deepcopy(self.registry)
+        payload["adapters"][0]["implementation_state"] = "LAB_TESTED"
+        errors = self.errors(payload)
+        self.assertTrue(any(
+            "A0_DISCOVERED must remain NOT_IMPLEMENTED" in error
+            for error in errors
+        ))
 
     def test_tested_operation_requires_exact_scope_revision_and_evidence(self) -> None:
         payload = copy.deepcopy(self.registry)
@@ -104,7 +118,7 @@ class VendorAdapterRegistryTests(unittest.TestCase):
             "evidence_refs": ["evidence:test-run-1"],
             "tested_revision": "a" * 40,
             "tested_scope": {
-                "model": "*",
+                "model": "any",
                 "product_family": "IOS XE",
                 "hardware_revision": "Rev A",
                 "software_version": "1.2.3",
