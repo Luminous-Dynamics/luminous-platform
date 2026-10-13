@@ -8,6 +8,7 @@ on:
       - "docs/fixtures/acs-nixward-bridge-v1-cases.json"
       - "docs/schemas/acs-nixward-bridge-test-corpus-v1.schema.json"
       - "tools/acs-bridge-validation/**"
+      - "tests/acs-bridge-validation/**"
   push:
     branches: [main, "planning/**"]
     paths:
@@ -16,6 +17,7 @@ on:
       - "docs/fixtures/acs-nixward-bridge-v1-cases.json"
       - "docs/schemas/acs-nixward-bridge-test-corpus-v1.schema.json"
       - "tools/acs-bridge-validation/**"
+      - "tests/acs-bridge-validation/**"
   workflow_dispatch:
 
 permissions:
@@ -50,6 +52,9 @@ jobs:
 
       - name: Install pinned validator dependencies
         run: python -m pip install --disable-pip-version-check --no-input -r tools/acs-bridge-validation/requirements.txt
+
+      - name: Run validator negative and mutation tests
+        run: python -m unittest discover -s tests/acs-bridge-validation -v
 
       - name: Validate corpus schema and invariants
         run: python tools/acs-bridge-validation/validate_corpus.py
