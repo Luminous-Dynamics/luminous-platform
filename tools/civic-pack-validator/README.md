@@ -28,6 +28,10 @@ Use a frozen, timezone-aware `--as-of` instant when generating evidence that mus
 
 A draft pack can therefore be a structurally valid fixture while being explicitly **not publishable**. The Johannesburg example intentionally behaves this way: its source records are unreviewed, requirements remain draft, and no legal-completion claim can be made from it.
 
+## Dependency reproducibility
+
+The runtime packages are pinned to exact versions in `requirements.txt`, including the `jsonschema` transitive dependency graph. This constrains version resolution but does **not** provide pip artifact-hash locking or a fully offline supply chain. Before production use, generate and review a platform-specific hash-locked requirements file (or equivalent lockfile) and retain provenance for the downloaded wheels.
+
 ## What is checked
 
 - JSON Schema Draft 2020-12, including URI/date-time format checks;
