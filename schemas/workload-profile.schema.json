@@ -788,11 +788,17 @@
             "additionalProperties": false,
             "required": [
               "containerPort",
+              "hostPort",
               "protocol",
               "exposure"
             ],
             "properties": {
               "containerPort": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 65535
+              },
+              "hostPort": {
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 65535
