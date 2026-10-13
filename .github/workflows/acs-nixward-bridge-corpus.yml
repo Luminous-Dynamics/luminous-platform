@@ -1,0 +1,55 @@
+name: ACS-Nixward Bridge Corpus
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/acs-nixward-bridge-corpus.yml"
+      - "docs/ACS_NIXWARD_VERIFIABLE_OPERATIONS_BRIDGE.md"
+      - "docs/fixtures/acs-nixward-bridge-v1-cases.json"
+      - "docs/schemas/acs-nixward-bridge-test-corpus-v1.schema.json"
+      - "tools/acs-bridge-validation/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/acs-nixward-bridge-corpus.yml"
+      - "docs/ACS_NIXWARD_VERIFIABLE_OPERATIONS_BRIDGE.md"
+      - "docs/fixtures/acs-nixward-bridge-v1-cases.json"
+      - "docs/schemas/acs-nixward-bridge-test-corpus-v1.schema.json"
+      - "tools/acs-bridge-validation/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acs-nixward-bridge-corpus-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-corpus:
+    name: Validate pinned schema and corpus
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact triggering revision
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up Python 3.13.16
+        uses: actions/setup-python@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          python-version: "3.13.16"
+          check-latest: false
+
+      - name: Record validation environment
+        run: |
+          python --version
+          python -m pip --version
+
+      - name: Install pinned validator dependencies
+        run: python -m pip install --disable-pip-version-check --no-input -r tools/acs-bridge-validation/requirements.txt
+
+      - name: Validate corpus schema and invariants
+        run: python tools/acs-bridge-validation/validate_corpus.py
