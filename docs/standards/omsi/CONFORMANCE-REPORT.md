@@ -23,6 +23,9 @@ Tenant/resource mismatch; manifest expiry with explicit evaluation time; stale/f
 
 ## Explicit limitations
 
+8. The current operation-event schema does not model attempt identity or multiple dispatch attempts under one operation. The pre-RFC defines this as a pre-freeze design requirement; no multi-attempt wire conformance is claimed.
+9. The reference timestamp parser narrows RFC3339 to explicit timezone and at most six fractional digits to avoid Python microsecond truncation. This does not establish source-clock quality, synchronization, or causality.
+
 1. No cryptographic signature verification or trusted issuer validation.
 2. No trust store, key rotation, revocation system or identity-provider integration.
 3. The JavaScript probe covers a deliberately smaller subset and is not a full independent validator.
