@@ -1,6 +1,6 @@
 # OMSI scope and gap register — 0.1
 
-**Status:** design note; not adopted. Updated 2026-10-12.
+**Status:** design note; not adopted. Updated 2026-10-14.
 
 ## Proposed core
 
@@ -11,6 +11,8 @@ The initial core is a transaction/authority/evidence kernel, not an end-to-end M
 | Operation manifest | Tenant/target binding, action profile, immutable intent, preconditions, expiry, recovery reference | Draft record and semantic checks exist in the local starter kit; no live executor |
 | Authority grant | Exact manifest digest, issuer, executor, tenant/resource, audience, policy, approvals, nonce and validity | Local checks cover key binding; no signature/trust-store/revocation implementation |
 | Lifecycle events | Stable event ID, sequence, correlation, timestamp and legal transitions | Local state-machine checks; no durable event store or production delivery service |
+| Operation vs attempt | One immutable operation may have multiple attempts, each with its own dispatch and evidence identity | **Gap:** the current event stream is linear and has no `attempt_id`; multi-attempt retries cannot yet be represented faithfully |
+| Timestamp precision | Explicit timezone, RFC3339 subset and lossless timestamp comparison | **Gap/constraint:** reference implementation rejects precision beyond six fractional digits; timestamp validity does not prove clock trust or event causality |
 | Evidence receipt | Operation/target binding, post-state observations, verifier, method, time and limits | Local checks require post-state evidence for verified outcome; cannot prove observation truth |
 | NixOS change profile | Pinned source/lock, host target, mode, desired closure and recovery reference | Schema-only draft; no VM application/recovery test |
 | IT service profile | Tenant-scoped resource inventory and minimal case handoff | Incubation only; no live asset synchronization, PSA connector or complete ITSM semantics |
