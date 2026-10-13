@@ -352,6 +352,18 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "negative zero"):
             verifier.strict_json_loads(b'{"profile_revision":-0}')
 
+    def test_floating_point_json_numbers_are_rejected_before_canonicalization(self) -> None:
+        for raw in (b'{"value":1.0}', b'{"value":1e-7}', b'{"value":-0.0}'):
+            with self.subTest(raw=raw):
+                with self.assertRaisesRegex(ValueError, "floating-point"):
+                    verifier.strict_json_loads(raw)
+
+    def test_non_finite_json_numbers_are_rejected_before_canonicalization(self) -> None:
+        for raw in (b'{"value":NaN}', b'{"value":Infinity}', b'{"value":-Infinity}'):
+            with self.subTest(raw=raw):
+                with self.assertRaisesRegex(ValueError, "non-finite"):
+                    verifier.strict_json_loads(raw)
+
     def test_signature_payload_excludes_only_circular_fields(self) -> None:
         original = verifier.signature_message_bytes(self.approval)
         changed_references = copy.deepcopy(self.approval)
