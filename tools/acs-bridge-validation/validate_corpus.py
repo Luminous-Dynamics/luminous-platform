@@ -100,6 +100,8 @@ def validate_documents(schema: Any, corpus: Any) -> list[str]:
     required_outcomes = {
         "BR-003": ("ALLOW_AT_HOOK_ONLY", "not_authorized"),
         "BR-018": ("DENY_ON_FAILURE", "none_or_rejected"),
+        "BR-020": ("DENY_OR_DISABLE_MUTATION_CAPABILITY", "none_or_rejected"),
+        "BR-021": ("DENY_UNSUPPORTED_MODIFY", "none_or_rejected"),
         "BR-023": ("BLOCK_RETRY_UNTIL_RECONCILED", "indeterminate_requires_explicit_semantics"),
         "BR-031": ("QUALIFICATION_BLOCKED", "no_pass_claim"),
         "BR-032": ("HOST_BOOT_RECOVERY_CONTINUES", "no_authority_expansion"),
@@ -111,6 +113,11 @@ def validate_documents(schema: Any, corpus: Any) -> list[str]:
             errors.append(
                 f"{case_id} safety invariant: expected {expected!r}, got {actual!r}"
             )
+
+    if "startup posture" not in by_id["BR-020"]["pass_condition"].lower() or "refuse" not in by_id["BR-020"]["pass_condition"].lower():
+        errors.append("BR-020 must require out-of-band startup posture=refuse for handshake failure")
+    if "acs-core conformance remains unclaimed" not in by_id["BR-021"]["pass_condition"].lower():
+        errors.append("BR-021 must not claim ACS-Core conformance when a required disposition is unsupported")
 
     related_issues = {entry["issue"] for entry in corpus["related_existing_work"]}
     if not {63, 70, 75}.issubset(related_issues):
