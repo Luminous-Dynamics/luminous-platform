@@ -91,7 +91,14 @@ At minimum, the conformance review must cover:
 
 ### 5.1 Failure posture
 
-ACS v0.1.0 defines a default `on_decision_failure=proceed` posture, i.e. a silent/transport failure can be fail-open unless the deployment configures otherwise. **This product profile MUST explicitly configure and verify `deny` for every tool or hook that can initiate a consequential mutation.** The configuration and behavior must be demonstrated in tests; a config string in a file is not proof that the selected host honors it.
+ACS v0.1.0 has **two distinct fail-open controls** that must not be conflated:
+
+1. **Handshake/startup posture.** Since `on_decision_failure` is negotiated only after a successful handshake, it cannot govern a failed handshake. ACS v0.1.0 defaults startup posture to `proceed`, which can start a session unguarded. For this MVP, the host must be configured **out of band with startup posture `refuse`** for the mutation-capable integration. If the handshake does not produce a valid negotiated ServerHello, the host must not start a mutation-capable guarded session or expose its mutation tools.
+2. **In-session decision failure.** ACS v0.1.0 defaults `on_decision_failure=proceed`, i.e. a silent/transport failure can be fail-open unless configured otherwise. The Guardian must negotiate `on_decision_failure=deny` for every tool/hook that can initiate a consequential mutation. The host must enforce that posture when the Guardian times out or returns an unusable response.
+
+Both controls must be demonstrated against the actual selected host, not merely asserted in configuration or simulated with a mock. A host integration whose startup behavior cannot be forced to refuse unguarded mutation-capable sessions is not qualified for this MVP.
+
+ACS-Core also requires all five dispositions (ALLOW, DENY, MODIFY, ASK, DEFER). A fail-safe refusal is preferable to silently ignoring an unsupported disposition, but **a host adapter that cannot implement a required ACS-Core disposition must not claim ACS-Core conformance**. Either implement and test the disposition's required behavior or declare the profile non-conformant and disable the affected integration.
 
 For the MVP, also deny/defer if:
 - handshake is absent, mismatched, or unverified;
