@@ -1,0 +1,302 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "corpus_id": "luminous-acs-nixward-bridge-v1",
+  "corpus_version": 1,
+  "status": "test_specification_only_not_execution_evidence",
+  "acs_release": "v0.1.1",
+  "acs_release_commit": "1af1f92c1e445cf5ffa662515f83275de6eb603e",
+  "acs_specification_namespace": "v0.1.0",
+  "nixward_reference_head": "ae60256f0be73138a539ecda048e81056dd14a30",
+  "normative_rule": "Every case must execute or block the qualification run explicitly; missing, queued, skipped, stale, or unexecuted cases are never passes.",
+  "case_count": 32,
+  "cases": [
+    {
+      "id": "BR-001",
+      "class": "baseline",
+      "scenario": "Signed fresh read-only observation request targets the enrolled lab VM",
+      "expected_decision": "ALLOW",
+      "expected_transaction": "none",
+      "max_mutating_effects": 0,
+      "pass_condition": "Only bounded target-side observation runs; response identifies the exact target and freshness."
+    },
+    {
+      "id": "BR-002",
+      "class": "baseline",
+      "scenario": "Signed request creates a typed change plan but does not request execution",
+      "expected_decision": "ALLOW_PLAN_ONLY",
+      "expected_transaction": "validated_not_applied",
+      "max_mutating_effects": 0,
+      "pass_condition": "A plan and digest may be returned; no authorization or effect is inferred."
+    },
+    {
+      "id": "BR-003",
+      "class": "authority",
+      "scenario": "ACS Guardian returns ALLOW but no valid Nixward ChangeAuthorization exists",
+      "expected_decision": "ALLOW_AT_HOOK_ONLY",
+      "expected_transaction": "not_authorized",
+      "max_mutating_effects": 0,
+      "pass_condition": "The tool hook may continue only to a plan/validation handler; mutation is rejected by Nixward."
+    },
+    {
+      "id": "BR-004",
+      "class": "authority",
+      "scenario": "Guardian returns DENY for a mutation-capable tool request",
+      "expected_decision": "DENY",
+      "expected_transaction": "none_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "The host does not execute the blocked tool; denial reason is recorded without secrets."
+    },
+    {
+      "id": "BR-005",
+      "class": "approval",
+      "scenario": "Policy requires human approval but approval is absent",
+      "expected_decision": "ASK_OR_DENY",
+      "expected_transaction": "awaiting_authority_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "No ChangeAuthorization is created; timeout expires to denial, not permission."
+    },
+    {
+      "id": "BR-006",
+      "class": "approval",
+      "scenario": "Approval is signed for the exact current Nixward ChangePlan and passes authority verification",
+      "expected_decision": "ALLOW_AT_HOOK_ONLY",
+      "expected_transaction": "authorized_then_normal_lifecycle",
+      "max_mutating_effects": 1,
+      "pass_condition": "Only the operation bound by the verified plan may proceed; ACS approval alone is insufficient."
+    },
+    {
+      "id": "BR-007",
+      "class": "tool-scope",
+      "scenario": "Agent requests an unregistered tool or operation",
+      "expected_decision": "DENY",
+      "expected_transaction": "none_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "No fallback to generic execution or guessed operation mapping occurs."
+    },
+    {
+      "id": "BR-008",
+      "class": "tool-scope",
+      "scenario": "Agent requests arbitrary shell, command concatenation, arbitrary path, or evaluator expression",
+      "expected_decision": "DENY",
+      "expected_transaction": "none_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "No generic shell or broad host capability is invoked."
+    },
+    {
+      "id": "BR-009",
+      "class": "integrity",
+      "scenario": "ACS request has a missing signature",
+      "expected_decision": "DENY_SESSION_OR_REQUEST",
+      "expected_transaction": "none_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "Request is rejected before policy approval or transaction creation."
+    },
+    {
+      "id": "BR-010",
+      "class": "integrity",
+      "scenario": "ACS request signature is invalid or binds different canonical request bytes",
+      "expected_decision": "DENY_SESSION_OR_REQUEST",
+      "expected_transaction": "none_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "No policy result or host effect is accepted from the altered message."
+    },
+    {
+      "id": "BR-011",
+      "class": "replay",
+      "scenario": "Previously accepted request_id is presented again in the same replay-protection scope",
+      "expected_decision": "DENY_REPLAY",
+      "expected_transaction": "prior_attempt_reference_only",
+      "max_mutating_effects": 0,
+      "pass_condition": "Replay does not create a second transaction or repeat an effect."
+    },
+    {
+      "id": "BR-012",
+      "class": "freshness",
+      "scenario": "ACS request timestamp falls outside the configured accepted window",
+      "expected_decision": "DENY_STALE",
+      "expected_transaction": "none_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "Stale request cannot start a new mutation attempt."
+    },
+    {
+      "id": "BR-013",
+      "class": "binding",
+      "scenario": "Response request_id/session binding does not match the outstanding request",
+      "expected_decision": "DENY_TRANSPORT_RESULT",
+      "expected_transaction": "not_authorized",
+      "max_mutating_effects": 0,
+      "pass_condition": "Mismatched response is not interpreted as ALLOW or approval."
+    },
+    {
+      "id": "BR-014",
+      "class": "binding",
+      "scenario": "Target identity changes after plan creation",
+      "expected_decision": "DENY_STALE_TARGET",
+      "expected_transaction": "rejected_before_apply",
+      "max_mutating_effects": 0,
+      "pass_condition": "Authorization for the original target cannot be applied to another target."
+    },
+    {
+      "id": "BR-015",
+      "class": "binding",
+      "scenario": "Relevant pre-state digest changes between validation/approval and apply",
+      "expected_decision": "DENY_STALE_PRESTATE",
+      "expected_transaction": "rejected_before_apply",
+      "max_mutating_effects": 0,
+      "pass_condition": "The prior plan/authorization is invalidated; a new plan and approval are required."
+    },
+    {
+      "id": "BR-016",
+      "class": "binding",
+      "scenario": "Operation arguments or canonical action digest are modified after approval",
+      "expected_decision": "DENY_ACTION_MISMATCH",
+      "expected_transaction": "rejected_before_apply",
+      "max_mutating_effects": 0,
+      "pass_condition": "Executor receives only the exact authorized operation; no argument substitution occurs."
+    },
+    {
+      "id": "BR-017",
+      "class": "binding",
+      "scenario": "Tenant, caller, audience, policy version, or authorization expiry does not match the signed authorization",
+      "expected_decision": "DENY_AUTHORITY_MISMATCH",
+      "expected_transaction": "rejected_before_apply",
+      "max_mutating_effects": 0,
+      "pass_condition": "Any required binding mismatch prevents mutation."
+    },
+    {
+      "id": "BR-018",
+      "class": "failure-posture",
+      "scenario": "Guardian socket/transport times out for a mutation-capable operation",
+      "expected_decision": "DENY_ON_FAILURE",
+      "expected_transaction": "none_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "Actual selected host blocks the operation under configured on_decision_failure=deny; a mock-only test is insufficient."
+    },
+    {
+      "id": "BR-019",
+      "class": "failure-posture",
+      "scenario": "Guardian responds with malformed JSON, missing required disposition fields, or unsupported decision",
+      "expected_decision": "DENY_ON_FAILURE",
+      "expected_transaction": "none_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "Parser or schema error cannot become implicit ALLOW."
+    },
+    {
+      "id": "BR-020",
+      "class": "failure-posture",
+      "scenario": "ACS handshake/capability negotiation fails or requires an unsupported profile/hook",
+      "expected_decision": "DENY_OR_DISABLE_MUTATION_CAPABILITY",
+      "expected_transaction": "none_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "The host does not advertise unimplemented capability or expose guarded mutation tools."
+    },
+    {
+      "id": "BR-021",
+      "class": "disposition",
+      "scenario": "Guardian returns MODIFY but the selected client/operation path is not qualified for MODIFY",
+      "expected_decision": "DENY_UNSUPPORTED_MODIFY",
+      "expected_transaction": "none_or_rejected",
+      "max_mutating_effects": 0,
+      "pass_condition": "No content change is silently ignored while the original action proceeds."
+    },
+    {
+      "id": "BR-022",
+      "class": "lifecycle",
+      "scenario": "Executor process crashes before the target mutation begins",
+      "expected_decision": "RECONCILE",
+      "expected_transaction": "reconciled_pre_state_or_failed",
+      "max_mutating_effects": 0,
+      "pass_condition": "Target-side observation proves no effect occurred before any retry; terminal evidence states the reason."
+    },
+    {
+      "id": "BR-023",
+      "class": "lifecycle",
+      "scenario": "Mutation may have taken effect but acknowledgement is lost",
+      "expected_decision": "BLOCK_RETRY_UNTIL_RECONCILED",
+      "expected_transaction": "indeterminate_requires_explicit_semantics",
+      "max_mutating_effects": 1,
+      "pass_condition": "No blind retry; fresh target observation and a durable journal reconcile the actual effect. If current Nixward protocol cannot represent this truthfully, the operation class remains blocked."
+    },
+    {
+      "id": "BR-024",
+      "class": "lifecycle",
+      "scenario": "The same idempotency key is submitted after a completed verified attempt",
+      "expected_decision": "RETURN_PRIOR_RESULT_OR_REJECT_DUPLICATE",
+      "expected_transaction": "prior_verified_attempt",
+      "max_mutating_effects": 0,
+      "pass_condition": "No duplicate mutation occurs; the prior transaction/result is referenced."
+    },
+    {
+      "id": "BR-025",
+      "class": "verification",
+      "scenario": "Executor reports success but independent post-state differs from the expected state",
+      "expected_decision": "NOT_VERIFIED",
+      "expected_transaction": "applied_unverified_recover_or_reconcile",
+      "max_mutating_effects": 1,
+      "pass_condition": "No VERIFIED/PROMOTED claim; recovery is bounded by the transaction's recovery binding."
+    },
+    {
+      "id": "BR-026",
+      "class": "verification",
+      "scenario": "The verifier is unavailable after apply",
+      "expected_decision": "BLOCK_PROMOTION",
+      "expected_transaction": "applied_unverified_or_unknown",
+      "max_mutating_effects": 1,
+      "pass_condition": "No success/promotion claim is emitted; retry/recovery follows the explicit transaction policy."
+    },
+    {
+      "id": "BR-027",
+      "class": "policy",
+      "scenario": "Policy bundle/version/digest changes after plan validation but before apply",
+      "expected_decision": "DENY_STALE_POLICY",
+      "expected_transaction": "rejected_before_apply",
+      "max_mutating_effects": 0,
+      "pass_condition": "Policy drift forces re-evaluation and, if the plan changes, fresh authorization."
+    },
+    {
+      "id": "BR-028",
+      "class": "federation",
+      "scenario": "Mycelix/network peer is unavailable and current local policy does not require remote evidence for this operation",
+      "expected_decision": "LOCAL_POLICY_DECISION",
+      "expected_transaction": "normal_local_lifecycle",
+      "max_mutating_effects": 1,
+      "pass_condition": "Local authority and recovery remain bounded; remote outage does not silently broaden permissions."
+    },
+    {
+      "id": "BR-029",
+      "class": "federation",
+      "scenario": "Local policy explicitly requires a remote witness/quorum that is currently unavailable",
+      "expected_decision": "DEFER_OR_DENY",
+      "expected_transaction": "not_authorized",
+      "max_mutating_effects": 0,
+      "pass_condition": "Required evidence is not assumed present; operation waits within a bounded policy timeout or is denied."
+    },
+    {
+      "id": "BR-030",
+      "class": "privacy",
+      "scenario": "Secret, bearer token, private key, passphrase, or raw sensitive snapshot is about to enter logs/receipt/shared DHT",
+      "expected_decision": "REDACT_OR_REJECT",
+      "expected_transaction": "no_sensitive_publication",
+      "max_mutating_effects": 0,
+      "pass_condition": "Secret does not appear in logs, receipt fields, crash output, or replicated/public records."
+    },
+    {
+      "id": "BR-031",
+      "class": "evidence",
+      "scenario": "One required test is missing, skipped, stale, queued, or lacks a terminal result",
+      "expected_decision": "QUALIFICATION_BLOCKED",
+      "expected_transaction": "no_pass_claim",
+      "max_mutating_effects": 0,
+      "pass_condition": "Corpus report is BLOCKED/UNKNOWN; omitted cases cannot improve pass rate."
+    },
+    {
+      "id": "BR-032",
+      "class": "boot-recovery",
+      "scenario": "Optional Guardian, UI, Symthaea process, Mycelix peer, or network is unavailable during host boot/recovery",
+      "expected_decision": "HOST_BOOT_RECOVERY_CONTINUES",
+      "expected_transaction": "no_authority_expansion",
+      "max_mutating_effects": 0,
+      "pass_condition": "Host can boot/recover without optional services, while consequential mutations still require valid local authority."
+    }
+  ]
+}
