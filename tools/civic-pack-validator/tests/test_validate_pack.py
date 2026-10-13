@@ -102,5 +102,30 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         self.assertEqual(first, second)
 
 
+    def test_malformed_nested_shape_fails_without_crashing(self):
+        pack = copy.deepcopy(PACK)
+        pack["workflow"] = None
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertEqual(check_status(report, "pack.schema_validation"), "FAIL")
+
+    def test_future_review_timestamp_blocks_publication(self):
+        pack = copy.deepcopy(PACK)
+        source = pack["sources"][0]
+        source.update({
+            "review_state": "current",
+            "checked_at": "2026-10-13T16:00:00Z",
+            "reviewed_at": "2026-10-13T16:00:00Z",
+            "reviewer_role": "qualified-source-reviewer",
+            "next_review_at": "2026-11-13T16:00:00Z",
+        })
+        pack["publication_state"] = "candidate"
+        pack["requirements"][0]["review_state"] = "verified"
+        report = report_for(pack)
+        self.assertTrue(report["validation_passed"])
+        self.assertFalse(report["publication_eligible"])
+        self.assertIn("in the future relative to --as-of", " ".join(report["publication_blockers"]))
+
+
 if __name__ == "__main__":
     unittest.main()
