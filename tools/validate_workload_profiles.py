@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, FormatChecker
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,6 +44,8 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject host PID namespace": ("deployment.hostNamespaces.pid",),
     "reject mutable image tag without digest": ("deployment.image.ref",),
     "reject custom seccomp profile without an identified policy artifact": ("deployment.seccompProfile",),
+    "reject wildcard hostname destination": ("destination",),
+    "reject malformed IPv4 network destination": ("destination",),
     "reject workload host-control authority": ("security.hostControl",),
     "reject inline or embedded secret material": ("security.secrets.referencesOnly",),
     "reject undeclared broad host path": ("hostPath",),
@@ -135,7 +137,7 @@ def semantic_errors(profile: dict[str, Any]) -> list[str]:
 def main() -> int:
     schema = load_json(SCHEMA_PATH)
     Draft202012Validator.check_schema(schema)
-    validator = Draft202012Validator(schema)
+    validator = Draft202012Validator(schema, format_checker=FormatChecker())
 
     profiles = sorted(PROFILE_DIR.glob("*.json"))
     if not profiles:
@@ -262,12 +264,51 @@ def main() -> int:
                 {
                     "direction": "egress",
                     "protocol": "tcp",
+                    "destinationType": "hostname",
                     "destination": "example.org",
                     "port": 443,
                     "justification": "deliberately inconsistent fixture",
                 }
             ),
             "reject egress rule while egress policy is deny",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["security"]["network"].update(
+                {
+                    "egress": "allowlisted",
+                    "rules": [
+                        {
+                            "direction": "egress",
+                            "protocol": "tcp",
+                            "destinationType": "hostname",
+                            "destination": "*",
+                            "port": 443,
+                            "justification": "wildcards must not be accepted as hostnames",
+                        }
+                    ],
+                }
+            ),
+            "reject wildcard hostname destination",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["security"]["network"].update(
+                {
+                    "egress": "allowlisted",
+                    "rules": [
+                        {
+                            "direction": "egress",
+                            "protocol": "tcp",
+                            "destinationType": "ipv4",
+                            "destination": "999.1.1.1",
+                            "port": 443,
+                            "justification": "invalid address must be rejected",
+                        }
+                    ],
+                }
+            ),
+            "reject malformed IPv4 network destination",
         ),
         (
             oci,
