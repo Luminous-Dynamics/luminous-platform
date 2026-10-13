@@ -1,6 +1,6 @@
 # OMSI research notes
 
-**Research checkpoint:** 2026-10-12. Partial desk research, not a novelty study, legal review or independent stakeholder validation.
+**Research checkpoint:** 2026-10-13. Partial desk research, not a novelty study, legal review or independent stakeholder validation.
 
 ## Standards to reuse or map
 
@@ -18,6 +18,25 @@
 | Incident handling | TM Forum TMF724 — https://www.tmforum.org/open-digital-architecture/open-apis/incident-management-api-TMF724/v4.0 | Avoid a competing universal case API; document loss-aware mapping. |
 | MSP assurance | MSPAlliance UCS — https://mspalliance.com/ | Technical receipts can support audit, not replace organizational controls or certification. |
 | MSP/RMM risk | CISA JCDC RMM Plan — https://www.cisa.gov/topics/partnerships-and-collaboration/joint-cyber-defense-collaborative/jcdc-remote-monitoring-and-management-cyber-defense-plan | Make tenant isolation, least privilege and blast-radius control foundational. |
+
+
+| Event envelope | CloudEvents 1.0 | Reuse `id`, `source`, `type`, `subject`, `time` and `dataschema` when publishing OMSI events through event buses/webhooks. CloudEvents is an envelope, not the OMSI state-transition or truth-verification model. https://github.com/cloudevents/spec/blob/main/cloudevents/spec.md |
+| Trace correlation | W3C Trace Context | Propagate `traceparent`/`tracestate` for distributed diagnostics. A trace ID is not an operation ID, idempotency key, authorization subject, or durable audit sequence. https://www.w3.org/TR/trace-context/ |
+| HTTP error body | RFC 9457 Problem Details | Use `application/problem+json` for HTTP API errors instead of inventing a competing generic error envelope; define OMSI-specific problem type URIs and do not leak secrets or privileged implementation details. https://www.rfc-editor.org/rfc/rfc9457.html |
+| Industrial semantic and device interface | OPC UA (IEC 62541 family) | Use OPC UA information models, services and applicable companion specifications to identify/observe/control industrial assets. OMSI should wrap authorized operation intent, evidence and recovery semantics around qualified adapters, not replace plant-control protocols or safety functions. https://reference.opcfoundation.org/specs/OPC-10000-1/full |
+| Server hardware management | DMTF Redfish | Map server/chassis/firmware operations through standard resource/action semantics and tested interoperability profiles where supported; do not assume a Redfish task accepted or completed equals verified host health. Redfish 2025.4 was listed by DMTF as published 16 Jan 2026 during this research check. https://www.dmtf.org/standards/redfish |
+
+## Integration rule: reuse envelopes, preserve OMSI semantics
+
+The standards above should be layered, not merged into a single universal schema:
+
+- **CloudEvents** is a portable event envelope. OMSI owns operation identity, legal lifecycle transitions, idempotency, authority binding and the meaning of applied/verified/indeterminate.
+- **W3C Trace Context / OpenTelemetry** provides diagnostic correlation and telemetry conventions. Trace context can be missing, restarted, sampled or forwarded across trust boundaries; it MUST NOT establish authority or be the only durable audit link.
+- **RFC 9457** standardizes HTTP error representation. It MUST NOT be used to imply that an asynchronous operation has stopped or that a retry is safe. Return a separate operation reference and current state when work was accepted but is still running or indeterminate.
+- **OPC UA and Redfish** are candidate domain-facing interfaces. Their success responses, events, task states and telemetry must be mapped to OMSI's profile-specific observations and independently evaluated postconditions. OMSI should not become a competing industrial control or hardware-management protocol.
+- Conformance claims should be scoped to exact protocol versions, profiles, adapter revisions, and executed test vectors. A standards mapping table is not proof of adapter conformance.
+
+A particularly important distinction for asynchronous APIs is that transport/HTTP acceptance, event publication, process completion and target-state verification are different propositions. Loss of a response after acceptance MUST trigger idempotency/reconciliation behavior, not an automatic repeat of a potentially non-idempotent mutation.
 
 ## Public repository documentation inspected
 
