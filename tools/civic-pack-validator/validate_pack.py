@@ -176,7 +176,12 @@ def validate_pack(
             continue
         source_id = source.get("source_id", "<unknown>")
         parsed = urlsplit(source.get("canonical_url", ""))
-        if parsed.scheme != "https" or not parsed.hostname:
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
             unsafe_urls.append(f"source:{source_id}")
     for requirement in requirements:
         if not isinstance(requirement, dict):
@@ -186,7 +191,12 @@ def validate_pack(
             if not isinstance(action, dict) or not action.get("url"):
                 continue
             parsed = urlsplit(action["url"])
-            if parsed.scheme != "https" or not parsed.hostname:
+            if (
+                parsed.scheme != "https"
+                or not parsed.hostname
+                or parsed.username is not None
+                or parsed.password is not None
+            ):
                 unsafe_urls.append(f"action:{req_id}:{action.get('action_id', '<unknown>')}")
     unsafe_urls.sort()
     add(
