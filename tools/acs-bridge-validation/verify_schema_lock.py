@@ -105,6 +105,7 @@ def verify_lock(root: Path | None = None) -> list[str]:
         errors.append("expected exactly 45 locked upstream files (43 specification JSON files plus LICENSE and NOTICE)")
 
     source_paths: set[str] = set()
+    present_source_paths: set[str] = set()
     vendor_paths: set[str] = set()
     parsed_documents: dict[str, Any] = {}
     for item in files:
@@ -142,6 +143,7 @@ def verify_lock(root: Path | None = None) -> list[str]:
         except OSError:
             errors.append(f"vendored file is missing or unreadable: {vendor_path}")
             continue
+        present_source_paths.add(source_path)
         if not isinstance(expected_size, int) or len(raw) != expected_size:
             errors.append(f"vendored byte size differs from upstream lock: {vendor_path}")
         actual_sha = _git_blob_sha(raw)
@@ -203,7 +205,7 @@ def verify_lock(root: Path | None = None) -> list[str]:
             errors.append(f"unsafe relative $ref: {source_path} -> {ref}")
             continue
         target = posixpath.normpath(posixpath.join(posixpath.dirname(source_path), ref_path))
-        if not target.startswith(SPEC_PREFIX) or target not in source_paths:
+        if not target.startswith(SPEC_PREFIX) or target not in present_source_paths:
             errors.append(f"unresolved/off-package $ref: {source_path} -> {ref} (resolved {target})")
 
     return errors
