@@ -46,6 +46,7 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject custom seccomp profile without an identified policy artifact": ("deployment.seccompProfile",),
     "reject wildcard hostname peer": ("peer",),
     "reject malformed IPv4 network peer": ("peer",),
+    "reject malformed IPv6 network peer": ("peer",),
     "reject network peer without justification": ("justification",),
     "reject workload host-control authority": ("security.hostControl",),
     "reject inline or embedded secret material": ("security.secrets.referencesOnly",),
@@ -177,6 +178,40 @@ def main() -> int:
     full_vm = loaded.get("ubuntu-full-vm-example.json")
     if oci is None or microvm is None or full_vm is None:
         raise RuntimeError("required OCI, NixOS microVM, and Ubuntu full-VM fixtures must all exist")
+
+    valid_network_peers = [
+        ("hostname", "api.example.org"),
+        ("ipv4", "1.1.1.1"),
+        ("ipv6", "2606:4700:4700::1111"),
+    ]
+    for peer_type, peer_value in valid_network_peers:
+        candidate = copy.deepcopy(oci)
+        candidate["security"]["network"].update(
+            {
+                "egress": "allowlisted",
+                "rules": [
+                    {
+                        "direction": "egress",
+                        "protocol": "tcp",
+                        "peerType": peer_type,
+                        "peer": peer_value,
+                        "port": 443,
+                        "justification": "schema-only positive fixture; never launched",
+                    }
+                ],
+            }
+        )
+        valid_errors = list(validator.iter_errors(candidate))
+        if valid_errors:
+            raise AssertionError(
+                f"valid {peer_type} network peer rejected:\n{describe_errors(valid_errors)}"
+            )
+        semantic = semantic_errors(candidate)
+        if semantic:
+            raise AssertionError(
+                f"valid {peer_type} network peer failed semantic checks: {semantic!r}"
+            )
+        print(f"PASS network peer: {peer_type}")
 
     negative_cases = [
         (
@@ -310,6 +345,25 @@ def main() -> int:
                 }
             ),
             "reject malformed IPv4 network peer",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["security"]["network"].update(
+                {
+                    "egress": "allowlisted",
+                    "rules": [
+                        {
+                            "direction": "egress",
+                            "protocol": "tcp",
+                            "peerType": "ipv6",
+                            "peer": "2001:db8::not-ip",
+                            "port": 443,
+                            "justification": "invalid address must be rejected",
+                        }
+                    ],
+                }
+            ),
+            "reject malformed IPv6 network peer",
         ),
         (
             oci,
