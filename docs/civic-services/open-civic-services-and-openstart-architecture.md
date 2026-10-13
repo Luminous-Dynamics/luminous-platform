@@ -188,6 +188,8 @@ The architecture proposal now has versioned review artifacts alongside this desi
 - [Jurisdiction-pack schema v0.1.0](../../schemas/jurisdiction-pack-v0.1.0.schema.json) defines the portable pack shape; JSON Schema shape checks must be supplemented by semantic validation.
 - [Johannesburg food-service pack v0.1.0](../../examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json) is a deliberately unpublished fixture. Its sources and requirements are marked unreviewed.
 - [Deterministic workflow-engine contract v0.1](jurisdiction-pack-engine-contract-v0.1.md) separates user progress from evidence review and official authority outcomes, and specifies adversarial tests.
+- [Deterministic pack validator](../../tools/civic-pack-validator/README.md) runs JSON Schema and semantic checks, enforces HTTPS links and review deadlines, constrains applicability to the declared workflow scope, and emits a hash-bound JSON report. Its regression suite includes malformed inputs, source-reference failures, duplicate IDs, expired/future review evidence, unsafe links, and attempted AI authority escalation.
+- [CI workflow](../../.github/workflows/civic-pack-validation.yml) runs the validator and unit tests when the schema, pack, or validator changes; workflow actions are pinned to full commit SHAs.
 - [ADR-0001: licensing and content rights](adr/0001-licensing-and-content-rights.md) proposes a license split for the future public product and explains that this ADR does not itself relicense any existing files.
 
 These are design contracts and fixtures, not an implementation of the engine, a verified legal checklist, or evidence that CI has passed.
