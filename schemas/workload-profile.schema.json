@@ -164,8 +164,8 @@
       "required": [
         "direction",
         "protocol",
-        "destinationType",
-        "destination",
+        "peerType",
+        "peer",
         "port"
       ],
       "properties": {
@@ -181,14 +181,14 @@
             "udp"
           ]
         },
-        "destinationType": {
+        "peerType": {
           "enum": [
             "hostname",
             "ipv4",
             "ipv6"
           ]
         },
-        "destination": {
+        "peer": {
           "type": "string",
           "minLength": 1,
           "maxLength": 253
@@ -208,18 +208,18 @@
         {
           "if": {
             "properties": {
-              "destinationType": {
+              "peerType": {
                 "const": "hostname"
               }
             },
             "required": [
-              "destinationType"
+              "peerType"
             ]
           },
           "then": {
             "properties": {
-              "destination": {
-                "pattern": "^(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*$"
+              "peer": {
+                "pattern": "^(?![0-9.]+$)(?=.{1,253}$)(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)(?:\\.(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?))*$"
               }
             }
           }
@@ -227,17 +227,17 @@
         {
           "if": {
             "properties": {
-              "destinationType": {
+              "peerType": {
                 "const": "ipv4"
               }
             },
             "required": [
-              "destinationType"
+              "peerType"
             ]
           },
           "then": {
             "properties": {
-              "destination": {
+              "peer": {
                 "format": "ipv4"
               }
             }
@@ -246,17 +246,17 @@
         {
           "if": {
             "properties": {
-              "destinationType": {
+              "peerType": {
                 "const": "ipv6"
               }
             },
             "required": [
-              "destinationType"
+              "peerType"
             ]
           },
           "then": {
             "properties": {
-              "destination": {
+              "peer": {
                 "format": "ipv6"
               }
             }
