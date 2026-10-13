@@ -108,6 +108,31 @@ the versioned HTTP profile; the operation identity and duplicate-submission
 semantics remain transport-independent.
 
 
+
+## Timestamp representation
+
+OMSI 0.1's reference validator uses a deliberately constrained RFC 3339 timestamp
+profile: a full date, uppercase `T` separator, full seconds, an explicit
+`Z` or colon-separated numeric offset, and at most six fractional-second
+digits. Implementations MUST reject local/naive timestamps, alternate ISO 8601
+spellings, and greater fractional precision rather than silently truncate or
+round it. Comparisons MUST be performed on normalized instants, not timestamp
+strings.
+
+This six-digit bound is a reference-implementation constraint, not a claim that
+RFC 3339 itself is limited to microseconds. It exists because the current Python
+reference uses `datetime`, whose precision is microseconds; accepting extra
+digits and silently discarding them can make distinct observations compare
+equal and weaken chronology checks. A future profile that needs nanosecond or
+higher precision must introduce an exact representation and independent
+cross-language vectors before relaxing the restriction.
+
+The timestamp format is still only one part of evidence quality: it does not
+prove clock synchronization, trustworthy time sources, event causality, or
+that a claimed observation was actually made. Where clock uncertainty or skew
+matters, the profile must specify time-source provenance and an uncertainty
+bound instead of treating serialized wall-clock order as infallible causal proof.
+
 ## Operation identity versus attempt identity
 
 One immutable **operation** may have zero or more bounded **attempts**. The
