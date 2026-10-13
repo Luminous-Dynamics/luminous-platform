@@ -10,7 +10,7 @@ on:
       - "tools/acs-bridge-validation/**"
       - "tests/acs-bridge-validation/**"
   push:
-    branches: [main, "planning/**"]
+    branches: [main]
     paths:
       - ".github/workflows/acs-nixward-bridge-corpus.yml"
       - "docs/ACS_NIXWARD_VERIFIABLE_OPERATIONS_BRIDGE.md"
@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: acs-nixward-bridge-corpus-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: acs-nixward-bridge-corpus-${{ github.workflow }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
 jobs:
