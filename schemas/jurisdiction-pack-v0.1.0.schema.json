@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Civic Services Jurisdiction Pack",
+  "description": "Versioned, source-grounded requirements and next-step guidance. This schema validates shape; a separate semantic validator must enforce source references, freshness, jurisdiction scope, and publication gates.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pack_id",
+    "pack_version",
+    "publication_state",
+    "jurisdiction",
+    "workflow",
+    "review_policy",
+    "sources",
+    "requirements",
+    "decision_contract",
+    "notices"
+  ],
+  "properties": {
+    "schema_version": { "const": "0.1.0" },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+    },
+    "pack_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "publication_state": {
+      "enum": ["draft", "candidate", "published", "suspended", "retired"]
+    },
+    "jurisdiction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["jurisdiction_id", "name", "country_code", "administrative_area"],
+      "properties": {
+        "jurisdiction_id": { "type": "string", "minLength": 3 },
+        "name": { "type": "string", "minLength": 1 },
+        "country_code": { "type": "string", "pattern": "^[A-Z]{2}$" },
+        "administrative_area": { "type": ["string", "null"] },
+        "locality": { "type": ["string", "null"] }
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workflow_id", "title", "goal", "business_types", "scope_notes"],
+      "properties": {
+        "workflow_id": { "type": "string", "minLength": 3 },
+        "title": { "type": "string", "minLength": 1 },
+        "goal": { "type": "string", "minLength": 1 },
+        "business_types": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "scope_notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "review_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["owner_role", "review_interval_days", "human_review_required", "stale_evidence_behavior"],
+      "properties": {
+        "owner_role": { "type": "string", "minLength": 1 },
+        "review_interval_days": { "type": "integer", "minimum": 1, "maximum": 365 },
+        "human_review_required": { "const": true },
+        "stale_evidence_behavior": {
+          "enum": ["downgrade_claim_and_block_completion", "suspend_pack"]
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/requirement" }
+    },
+    "decision_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "guidance_only",
+        "ai_may_create_requirements",
+        "stale_evidence_blocks_completion_claims",
+        "authority_outcome_requires_verifiable_receipt",
+        "user_checkbox_is_not_legal_evidence"
+      ],
+      "properties": {
+        "guidance_only": { "const": true },
+        "ai_may_create_requirements": { "const": false },
+        "stale_evidence_blocks_completion_claims": { "const": true },
+        "authority_outcome_requires_verifiable_receipt": { "const": true },
+        "user_checkbox_is_not_legal_evidence": { "const": true }
+      }
+    },
+    "notices": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "nullableDateTime": {
+      "oneOf": [
+        { "type": "string", "format": "date-time" },
+        { "type": "null" }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "authority",
+        "title",
+        "canonical_url",
+        "evidence_kind",
+        "review_state",
+        "published_at",
+        "effective_from",
+        "checked_at",
+        "reviewed_at",
+        "next_review_at",
+        "reviewer_role",
+        "reuse",
+        "rights_notes"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+        },
+        "authority": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "canonical_url": { "type": "string", "format": "uri" },
+        "section": { "type": ["string", "null"] },
+        "evidence_kind": {
+          "enum": ["statute_or_regulation", "official_policy", "official_guidance", "official_service", "model_code", "other"]
+        },
+        "review_state": {
+          "enum": ["unreviewed", "current", "changed", "stale", "unavailable", "disputed", "withdrawn"]
+        },
+        "published_at": { "$ref": "#/$defs/nullableDateTime" },
+        "effective_from": { "$ref": "#/$defs/nullableDateTime" },
+        "checked_at": { "$ref": "#/$defs/nullableDateTime" },
+        "reviewed_at": { "$ref": "#/$defs/nullableDateTime" },
+        "next_review_at": { "$ref": "#/$defs/nullableDateTime" },
+        "reviewer_role": { "type": ["string", "null"] },
+        "snapshot_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "reuse": {
+          "enum": ["not_assessed", "link_only", "public_domain", "licensed", "permission_granted"]
+        },
+        "source_license_url": { "type": ["string", "null"], "format": "uri" },
+        "attribution": { "type": ["string", "null"] },
+        "rights_notes": { "type": "string" }
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requirement_id",
+        "title",
+        "claim_type",
+        "review_state",
+        "summary",
+        "applicability",
+        "source_refs",
+        "user_actions",
+        "completion_effect"
+      ],
+      "properties": {
+        "requirement_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "claim_type": {
+          "enum": ["official_requirement", "official_guidance", "verification_step", "derived_step", "informational"]
+        },
+        "review_state": {
+          "enum": ["draft", "verified", "stale", "disputed", "withdrawn"]
+        },
+        "summary": { "type": "string", "minLength": 1 },
+        "applicability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["business_types", "conditions", "unknowns"],
+          "properties": {
+            "business_types": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "conditions": { "type": "array", "items": { "type": "string" } },
+            "unknowns": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "user_actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["action_id", "label", "action_kind"],
+            "properties": {
+              "action_id": { "type": "string", "minLength": 1 },
+              "label": { "type": "string", "minLength": 1 },
+              "action_kind": {
+                "enum": ["read_source", "contact_authority", "prepare_information", "visit_official_service", "review_with_authority"]
+              },
+              "url": { "type": ["string", "null"], "format": "uri" }
+            }
+          }
+        },
+        "completion_effect": {
+          "enum": ["informational_only", "must_resolve_before_guidance_complete", "must_confirm_with_authority", "external_decision_required"]
+        }
+      }
+    }
+  }
+}
