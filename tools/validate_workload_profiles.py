@@ -44,8 +44,8 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject host PID namespace": ("deployment.hostNamespaces.pid",),
     "reject mutable image tag without digest": ("deployment.image.ref",),
     "reject custom seccomp profile without an identified policy artifact": ("deployment.seccompProfile",),
-    "reject wildcard hostname destination": ("destination",),
-    "reject malformed IPv4 network destination": ("destination",),
+    "reject wildcard hostname peer": ("peer",),
+    "reject malformed IPv4 network peer": ("peer",),
     "reject workload host-control authority": ("security.hostControl",),
     "reject inline or embedded secret material": ("security.secrets.referencesOnly",),
     "reject undeclared broad host path": ("hostPath",),
@@ -264,8 +264,8 @@ def main() -> int:
                 {
                     "direction": "egress",
                     "protocol": "tcp",
-                    "destinationType": "hostname",
-                    "destination": "example.org",
+                    "peerType": "hostname",
+                    "peer": "example.org",
                     "port": 443,
                     "justification": "deliberately inconsistent fixture",
                 }
@@ -281,15 +281,15 @@ def main() -> int:
                         {
                             "direction": "egress",
                             "protocol": "tcp",
-                            "destinationType": "hostname",
-                            "destination": "*",
+                            "peerType": "hostname",
+                            "peer": "*",
                             "port": 443,
                             "justification": "wildcards must not be accepted as hostnames",
                         }
                     ],
                 }
             ),
-            "reject wildcard hostname destination",
+            "reject wildcard hostname peer",
         ),
         (
             oci,
@@ -300,15 +300,15 @@ def main() -> int:
                         {
                             "direction": "egress",
                             "protocol": "tcp",
-                            "destinationType": "ipv4",
-                            "destination": "999.1.1.1",
+                            "peerType": "ipv4",
+                            "peer": "999.1.1.1",
                             "port": 443,
                             "justification": "invalid address must be rejected",
                         }
                     ],
                 }
             ),
-            "reject malformed IPv4 network destination",
+            "reject malformed IPv4 network peer",
         ),
         (
             oci,
