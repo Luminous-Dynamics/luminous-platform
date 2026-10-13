@@ -6,6 +6,8 @@
 
 ## Context
 
+**Current-repository note:** This ADR does not itself relicense any file. The existing Luminous Platform README declares AGPL-3.0-or-later; files added to this repository remain governed by the repository's current terms unless an explicit, approved path-specific notice says otherwise. The Apache-2.0 recommendation for the schema is intended for the future public specification/product distribution and must be made effective there with the actual license text and a clear notice.
+
 The product direction is to keep public-service guidance freely accessible and portable across governments. Sustainable revenue should pay for hosting, operations, integrations, training, support, and maintenance—not a franchise fee, a royalty on each restaurant sale, or a charge for reaching a civic outcome.
 
 The existing Luminous Platform README declares AGPL-3.0-or-later and points to a separate commercial-licensing contact. That is useful precedent, but a public-facing product needs explicit file-level and repository-level licensing; it must not inherit assumptions accidentally.
