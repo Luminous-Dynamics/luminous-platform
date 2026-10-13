@@ -9,7 +9,7 @@ on:
       - "docs/schemas/acs-nixward-bridge-test-corpus-v1.schema.json"
       - "tools/acs-bridge-validation/**"
   push:
-    branches: [main]
+    branches: [main, "planning/**"]
     paths:
       - ".github/workflows/acs-nixward-bridge-corpus.yml"
       - "docs/ACS_NIXWARD_VERIFIABLE_OPERATIONS_BRIDGE.md"
