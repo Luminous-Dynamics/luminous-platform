@@ -9,7 +9,7 @@ from pathlib import Path
 
 from validate_pack import validate_pack
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_PATH = ROOT / "schemas" / "jurisdiction-pack-v0.1.0.schema.json"
 PACK_PATH = ROOT / "examples" / "jurisdiction-packs" / "za-city-of-johannesburg-food-service-0.1.0.json"
 SCHEMA_BYTES = SCHEMA_PATH.read_bytes()
