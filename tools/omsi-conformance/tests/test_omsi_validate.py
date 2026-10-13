@@ -18,6 +18,34 @@ class TestOMSI(unittest.TestCase):
     def test_schema_files_are_valid(self):
         for path in v.SCHEMAS.values():
             v.Draft202012Validator.check_schema(v.load(path))
+
+    def test_parse_time_rejects_fractional_precision_it_cannot_preserve(self):
+        for value in (
+            "2026-10-14T12:00:00.1234567Z",
+            "2026-10-14T12:00:00.123456789+00:00",
+        ):
+            with self.subTest(value=value), self.assertRaisesRegex(
+                v.ConformanceError, "more than six fractional digits"
+            ):
+                v.parse_time(value)
+
+    def test_parse_time_rejects_non_rfc3339_iso_variants(self):
+        for value in (
+            "2026-10-14 12:00:00Z",
+            "2026-10-14T12:00:00",
+            "2026-10-14T12:00:00+0000",
+            "2026-10-14T12:00:00,25Z",
+        ):
+            with self.subTest(value=value), self.assertRaisesRegex(
+                v.ConformanceError, "RFC3339 subset"
+            ):
+                v.parse_time(value)
+
+    def test_parse_time_normalizes_valid_explicit_offsets(self):
+        self.assertEqual(
+            v.parse_time("2026-10-14T14:00:00.123456+02:00"),
+            v.parse_time("2026-10-14T12:00:00.123456Z"),
+        )
     def test_operation_fixture_passes(self): v.validate_operation(op(), NOW)
     def test_argument_digest_tampering_rejected(self):
         x=op(); x["action"]["arguments"]["mode"]="switch"
