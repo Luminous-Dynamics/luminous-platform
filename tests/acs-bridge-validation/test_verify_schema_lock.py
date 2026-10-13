@@ -31,6 +31,31 @@ class VendoredSchemaLockTests(unittest.TestCase):
         shutil.copy2(ROOT / verifier.LOCK_PATH, lock_target)
         return temp
 
+    def test_unsigned_upstream_pin_cannot_be_marked_verified(self) -> None:
+        temp = self._copy_fixture()
+        try:
+            lock_path = temp / verifier.LOCK_PATH
+            lock = json.loads(lock_path.read_text(encoding="utf-8"))
+            lock["upstream_commit_signature"]["verified"] = True
+            lock_path.write_text(json.dumps(lock), encoding="utf-8")
+            errors = verifier.verify_lock(temp)
+            self.assertTrue(any("unsigned/unverified" in error for error in errors), errors)
+        finally:
+            shutil.rmtree(temp)
+
+    def test_lock_must_cover_all_upstream_schema_files(self) -> None:
+        temp = self._copy_fixture()
+        try:
+            lock_path = temp / verifier.LOCK_PATH
+            lock = json.loads(lock_path.read_text(encoding="utf-8"))
+            lock["files"].pop()
+            lock_path.write_text(json.dumps(lock), encoding="utf-8")
+            errors = verifier.verify_lock(temp)
+            self.assertTrue(any("exactly 45 locked upstream files" in error for error in errors), errors)
+            self.assertTrue(any("all 43 JSON files" in error for error in errors), errors)
+        finally:
+            shutil.rmtree(temp)
+
     def test_modified_byte_breaks_git_blob_lock(self) -> None:
         temp = self._copy_fixture()
         try:
