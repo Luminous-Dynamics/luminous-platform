@@ -26,6 +26,20 @@ _READ_ONLY_OPERATIONS = {
     "entitlement_read",
     "lifecycle_read",
 }
+MAX_SAFE_JSON_INTEGER = 9_007_199_254_740_991
+
+
+def _ensure_safe_json_integer_domain(value: Any) -> None:
+    """Keep profile digest inputs exactly interoperable across JSON runtimes."""
+    if type(value) is int:
+        if abs(value) > MAX_SAFE_JSON_INTEGER:
+            raise ValueError("integer outside safe interoperable JSON integer range")
+    elif isinstance(value, dict):
+        for nested in value.values():
+            _ensure_safe_json_integer_domain(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            _ensure_safe_json_integer_domain(nested)
 
 
 def parse_time(value: str, label: str, errors: list[str]) -> datetime | None:
@@ -48,6 +62,7 @@ def canonical_profile_digest(profile: dict[str, Any]) -> str:
     Keep this routine version-pinned and covered by fixtures before using it as part of a
     cryptographic verifier.
     """
+    _ensure_safe_json_integer_domain(profile)
     canonical = json.dumps(
         profile,
         sort_keys=True,

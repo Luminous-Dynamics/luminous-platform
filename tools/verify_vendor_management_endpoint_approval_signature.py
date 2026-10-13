@@ -37,8 +37,22 @@ TRUST_SCHEMA_PATH = ROOT / "schemas/vendor-management-approval-trust-store-v1.sc
 SIGNATURE_SCHEME = "ed25519-rfc8032-luminous-approval-v1"
 SIGNING_DOMAIN = b"LUMINOUS:VENDOR-MANAGEMENT-ENDPOINT-APPROVAL:V1\x00"
 SIGNATURE_BYTES = 64
+MAX_SAFE_JSON_INTEGER = 9_007_199_254_740_991
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 EXCLUDED_PAYLOAD_FIELDS = frozenset({"signed_payload_digest", "signature_evidence_ref"})
+
+
+def _ensure_safe_json_integer_domain(value: Any) -> None:
+    """Reject integers outside the exactly interoperable JSON integer range."""
+    if type(value) is int:
+        if abs(value) > MAX_SAFE_JSON_INTEGER:
+            raise ValueError("integer outside safe interoperable JSON integer range")
+    elif isinstance(value, dict):
+        for nested in value.values():
+            _ensure_safe_json_integer_domain(nested)
+    elif isinstance(value, list):
+        for nested in value:
+            _ensure_safe_json_integer_domain(nested)
 
 
 def _parse_integer(value: str) -> int:
@@ -46,7 +60,9 @@ def _parse_integer(value: str) -> int:
     # be rejected at parse time to prevent ambiguity with unparsed source bytes.
     if value == "-0":
         raise ValueError("negative zero is outside the canonical contract")
-    return int(value)
+    parsed = int(value)
+    _ensure_safe_json_integer_domain(parsed)
+    return parsed
 
 
 def _reject_float(value: str) -> None:
@@ -78,6 +94,7 @@ def strict_json_loads(data: bytes | str) -> Any:
 
 
 def canonical_json_bytes(value: Any) -> bytes:
+    _ensure_safe_json_integer_domain(value)
     return json.dumps(
         value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
     ).encode("utf-8", errors="strict")

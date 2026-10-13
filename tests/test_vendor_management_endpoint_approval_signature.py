@@ -364,6 +364,28 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "non-finite"):
                     verifier.strict_json_loads(raw)
 
+    def test_safe_json_integer_boundaries_are_accepted(self) -> None:
+        for raw, expected in (
+            (b'{"value":9007199254740991}', 9007199254740991),
+            (b'{"value":-9007199254740991}', -9007199254740991),
+        ):
+            with self.subTest(raw=raw):
+                self.assertEqual(verifier.strict_json_loads(raw), {"value": expected})
+
+    def test_integers_outside_safe_interoperable_range_are_rejected(self) -> None:
+        for raw in (
+            b'{"value":9007199254740992}',
+            b'{"value":-9007199254740992}',
+            b'{"value":999999999999999999999999999999999}',
+        ):
+            with self.subTest(raw=raw):
+                with self.assertRaisesRegex(ValueError, "safe interoperable JSON integer range"):
+                    verifier.strict_json_loads(raw)
+
+    def test_signature_canonicalizer_rejects_programmatic_unsafe_integer(self) -> None:
+        with self.assertRaisesRegex(ValueError, "safe interoperable JSON integer range"):
+            verifier.canonical_json_bytes({"profile_revision": 9007199254740992})
+
     def test_signature_payload_excludes_only_circular_fields(self) -> None:
         original = verifier.signature_message_bytes(self.approval)
         changed_references = copy.deepcopy(self.approval)

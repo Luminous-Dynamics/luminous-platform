@@ -64,6 +64,21 @@ class VendorManagementEndpointApprovalTests(unittest.TestCase):
         reverse_top = dict(reversed(list(profile.items())))
         self.assertEqual(canonical_profile_digest(profile), canonical_profile_digest(reverse_top))
 
+    def test_profile_digest_accepts_safe_integer_boundaries(self) -> None:
+        for value in (9007199254740991, -9007199254740991):
+            with self.subTest(value=value):
+                profile = copy.deepcopy(self.profile)
+                profile["profile_revision"] = value
+                self.assertEqual(len(canonical_profile_digest(profile)), 64)
+
+    def test_profile_digest_rejects_integer_outside_safe_interoperable_range(self) -> None:
+        for value in (9007199254740992, -9007199254740992):
+            with self.subTest(value=value):
+                profile = copy.deepcopy(self.profile)
+                profile["profile_revision"] = value
+                with self.assertRaisesRegex(ValueError, "safe interoperable JSON integer range"):
+                    canonical_profile_digest(profile)
+
     def test_unsupported_digest_scheme_is_rejected(self) -> None:
         approval = copy.deepcopy(self.approval)
         approval["profile_digest_scheme"] = "unspecified"
