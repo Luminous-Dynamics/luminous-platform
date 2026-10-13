@@ -8,6 +8,7 @@ create VMs, fetch guest images, or qualify a runtime on physical hardware.
 from __future__ import annotations
 
 import copy
+import ipaddress
 import json
 import sys
 from pathlib import Path
@@ -103,6 +104,38 @@ def expect_invalid(
     print(f"PASS negative: {name}")
 
 
+def mount_layout_errors(mounts: list[dict[str, Any]], label: str) -> list[str]:
+    """Reject ambiguous source reuse and duplicate/nested mount destinations."""
+    errors: list[str] = []
+    source_ids = [mount["sourceId"] for mount in mounts if "sourceId" in mount]
+    if len(source_ids) != len(set(source_ids)):
+        errors.append(f"duplicate mount sourceId in {label}")
+
+    targets = [mount["target"] for mount in mounts]
+    for index, left in enumerate(targets):
+        for right in targets[index + 1 :]:
+            if (
+                left == right
+                or left.startswith(right.rstrip("/") + "/")
+                or right.startswith(left.rstrip("/") + "/")
+            ):
+                errors.append(f"overlapping or duplicate mount targets in {label}")
+                return errors
+    return errors
+
+
+def canonical_peer(rule: dict[str, Any]) -> str:
+    peer_type = rule["peerType"]
+    peer = rule["peer"]
+    if peer_type == "hostname":
+        return peer.rstrip(".").lower()
+    try:
+        return ipaddress.ip_address(peer).compressed
+    except ValueError:
+        # The schema's format checker reports malformed literals before semantic checks.
+        return peer.lower()
+
+
 def semantic_errors(profile: dict[str, Any]) -> list[str]:
     """Check cross-field invariants JSON Schema cannot express portably."""
     errors: list[str] = []
@@ -110,6 +143,21 @@ def semantic_errors(profile: dict[str, Any]) -> list[str]:
     kind = deployment["kind"]
     security = profile["security"]
     resources = profile["resources"]
+
+    network = security["network"]
+    rule_identities: set[tuple[str, str, str, str, int]] = set()
+    for rule in network["rules"]:
+        identity = (
+            rule["direction"],
+            rule["protocol"],
+            rule["peerType"],
+            canonical_peer(rule),
+            rule["port"],
+        )
+        if identity in rule_identities:
+            errors.append("duplicate network rule identity after peer normalization")
+            break
+        rule_identities.add(identity)
 
     if kind == "nixos_microvm":
         if set(profile["placement"]["allowedHosts"]) != {"nixos"}:
@@ -122,6 +170,7 @@ def semantic_errors(profile: dict[str, Any]) -> list[str]:
             errors.append("hostDataAccess=none forbids microVM host shares")
         if security["hostDataAccess"] == "declared_mounts_only" and not deployment["shares"]:
             errors.append("declared_mounts_only requires at least one declared microVM share")
+        errors.extend(mount_layout_errors(deployment["shares"], "microVM shares"))
 
     elif kind == "full_vm":
         if resources["cpuMilli"] < deployment["vcpus"] * 1000:
@@ -137,9 +186,17 @@ def semantic_errors(profile: dict[str, Any]) -> list[str]:
             errors.append("hostDataAccess=none forbids OCI host/data volumes")
         if security["hostDataAccess"] == "declared_mounts_only" and not volumes:
             errors.append("declared_mounts_only requires at least one declared OCI volume")
+        errors.extend(mount_layout_errors(volumes, "OCI volumes"))
+
+        port_identities: set[tuple[int, str]] = set()
+        for port in deployment["ports"]:
+            identity = (port["containerPort"], port["protocol"])
+            if identity in port_identities:
+                errors.append("duplicate OCI published port/protocol")
+                break
+            port_identities.add(identity)
 
     return errors
-
 
 def main() -> int:
     schema = load_json(SCHEMA_PATH)
@@ -201,6 +258,7 @@ def main() -> int:
         (
             copy.deepcopy(oci),
             {
+                "sourceId": "app-state",
                 "source": "dedicated_state",
                 "target": "/var/lib/example",
                 "access": "read_write",
@@ -441,28 +499,28 @@ def main() -> int:
         (
             oci,
             lambda candidate: candidate["deployment"]["volumes"].append(
-                {"source": "readonly_config", "target": "/etc/example", "access": "read_write"}
+                {"sourceId": "example-config", "source": "readonly_config", "target": "/etc/example", "access": "read_write"}
             ),
             "reject writable read-only configuration mount",
         ),
         (
             oci,
             lambda candidate: candidate["deployment"]["volumes"].append(
-                {"source": "dedicated_state", "target": "/", "access": "read_write"}
+                {"sourceId": "root-state", "source": "dedicated_state", "target": "/", "access": "read_write"}
             ),
             "reject root mount target",
         ),
         (
             oci,
             lambda candidate: candidate["deployment"]["volumes"].append(
-                {"source": "dedicated_state", "target": "/etc/../run", "access": "read_write"}
+                {"sourceId": "traversal-state", "source": "dedicated_state", "target": "/etc/../run", "access": "read_write"}
             ),
             "reject path traversal mount target",
         ),
         (
             oci,
             lambda candidate: candidate["deployment"]["volumes"].append(
-                {"source": "dedicated_state", "target": "/var//lib", "access": "read_write"}
+                {"sourceId": "repeated-state", "source": "dedicated_state", "target": "/var//lib", "access": "read_write"}
             ),
             "reject repeated slash mount target",
         ),
@@ -536,6 +594,7 @@ def main() -> int:
             oci,
             lambda candidate: candidate["deployment"]["volumes"].append(
                 {
+                    "sourceId": "state-data",
                     "source": "dedicated_state",
                     "target": "/var/lib/example",
                     "access": "read_write",
@@ -549,6 +608,64 @@ def main() -> int:
             lambda candidate: candidate["security"].update({"hostDataAccess": "declared_mounts_only"}),
             "reject OCI declared-mounts policy without a volume",
             "declared_mounts_only requires at least one declared OCI volume",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["volumes"].extend(
+                [
+                    {"sourceId": "same-source", "source": "dedicated_state", "target": "/var/lib/a", "access": "read_write"},
+                    {"sourceId": "same-source", "source": "dedicated_state", "target": "/var/lib/b", "access": "read_write"},
+                ]
+            ),
+            "reject duplicated OCI source IDs",
+            "duplicate mount sourceId in OCI volumes",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["volumes"].extend(
+                [
+                    {"sourceId": "state-parent", "source": "dedicated_state", "target": "/var/lib", "access": "read_write"},
+                    {"sourceId": "state-child", "source": "dedicated_state", "target": "/var/lib/example", "access": "read_write"},
+                ]
+            ),
+            "reject overlapping OCI mount targets",
+            "overlapping or duplicate mount targets in OCI volumes",
+        ),
+        (
+            microvm,
+            lambda candidate: candidate["deployment"]["shares"].extend(
+                [
+                    {"sourceId": "share-a", "target": "/data", "access": "read_only", "protocol": "virtiofs"},
+                    {"sourceId": "share-b", "target": "/data", "access": "read_only", "protocol": "virtiofs"},
+                ]
+            ),
+            "reject duplicate microVM share targets",
+            "overlapping or duplicate mount targets in microVM shares",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["security"]["network"].update(
+                {
+                    "egress": "allowlisted",
+                    "rules": [
+                        {"direction": "egress", "protocol": "tcp", "peerType": "hostname", "peer": "api.example.org", "port": 443, "justification": "first declaration"},
+                        {"direction": "egress", "protocol": "tcp", "peerType": "hostname", "peer": "API.EXAMPLE.ORG", "port": 443, "justification": "case-variant duplicate"},
+                    ],
+                }
+            ),
+            "reject duplicate normalized network rules",
+            "duplicate network rule identity",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["ports"].extend(
+                [
+                    {"containerPort": 8080, "protocol": "tcp", "exposure": "loopback_only"},
+                    {"containerPort": 8080, "protocol": "tcp", "exposure": "private_network"},
+                ]
+            ),
+            "reject duplicate OCI published ports",
+            "duplicate OCI published port/protocol",
         ),
     ]
     for profile, mutate, label, expected_fragment in semantic_negative_cases:
