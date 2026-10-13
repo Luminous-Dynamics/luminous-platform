@@ -97,6 +97,8 @@ def verify_lock(root: Path | None = None) -> list[str]:
     signature = lock.get("upstream_commit_signature")
     if not isinstance(signature, dict) or "verified" not in signature or "reason" not in signature:
         errors.append("upstream signature-verification result must be explicit")
+    elif signature.get("verified") is not False or "unsigned" not in str(signature.get("reason", "")).lower():
+        errors.append("this pinned ACS commit is unsigned/unverified; do not upgrade its authenticity status without independent signature verification and a reviewed pin update")
 
     files = lock.get("files")
     if not isinstance(files, list):
