@@ -227,91 +227,106 @@
       "upstream_path": "specification/v0.1.0/hooks/tool-call-request.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/tool-call-request.json",
       "git_blob_sha": "28240442375b39c42d36a020cb458a671e7f85ca",
-      "upstream_size_bytes": 1965
+      "upstream_size_bytes": 1965,
+      "sha256": "25398db16282c4304d7aa7510a24a8d534839df93707c1a5d4351a94141b5d32"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/tool-call-result.acs-provenance.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/tool-call-result.acs-provenance.json",
       "git_blob_sha": "8de3dd0fc96ccd8f698127ec8ddf42a6d9f6be32",
-      "upstream_size_bytes": 643
+      "upstream_size_bytes": 643,
+      "sha256": "f0ed204054cbd62a237a8f2d1e9e3d1eac99da293a606367b031a56949fc6039"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/tool-call-result.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/tool-call-result.json",
       "git_blob_sha": "6ab04fb637dc4f1e39dd63982ff63fed541501dd",
-      "upstream_size_bytes": 1511
+      "upstream_size_bytes": 1511,
+      "sha256": "8076f3240ce1495d1526aa695901a284a0054e5b3a56be957580a63ad90cd2e4"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/turn-end.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/turn-end.json",
       "git_blob_sha": "026a5ec3f6b72a97247bf1dd2b4d418900ee727f",
-      "upstream_size_bytes": 2798
+      "upstream_size_bytes": 2798,
+      "sha256": "7e1ac962815fa5a384ee2dc61dde9c29dcc690730e64f67dd7a9508f21993e74"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/turn-start.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/turn-start.json",
       "git_blob_sha": "dc0814f90ece28267b6affff269b9618ee13c9d2",
-      "upstream_size_bytes": 2510
+      "upstream_size_bytes": 2510,
+      "sha256": "a90d5a08b18900e9f1e5dfb84f118dac0f430e446a4a1d5ffa9cd60d3750c4f4"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/user-message.acs-provenance.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/user-message.acs-provenance.json",
       "git_blob_sha": "e97361e4aea4062e1ed7b6c10212cc385e5408c9",
-      "upstream_size_bytes": 637
+      "upstream_size_bytes": 637,
+      "sha256": "1c0c36e8bc84c2d7bac3d82f977f9117354e90f0d5c18f0dabcdc67a3acf92cf"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/user-message.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/user-message.json",
       "git_blob_sha": "95b7a28f61d3f11e09cbaa5f2328457d5e412f61",
-      "upstream_size_bytes": 981
+      "upstream_size_bytes": 981,
+      "sha256": "a8b9c6106c9f81a8d54e98f94ba2ccd01825f389bb575c079c4a793682cc7b3e"
     },
     {
       "upstream_path": "specification/v0.1.0/inspect/format-mapping.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/inspect/format-mapping.json",
       "git_blob_sha": "2188ff23307d6fbd3d3f9d46b000601cdf1afd9a",
-      "upstream_size_bytes": 3454
+      "upstream_size_bytes": 3454,
+      "sha256": "6b897fc0f51cbf66751fd7958269adea56d42c5bf12bf0ae7dd1316cdb83afb4"
     },
     {
       "upstream_path": "specification/v0.1.0/modifications.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/modifications.json",
       "git_blob_sha": "0d6c73132812d4bee4e8441cf97c7529e26b98d7",
-      "upstream_size_bytes": 2187
+      "upstream_size_bytes": 2187,
+      "sha256": "5462cdbfcd731a771ccdef084c3a6325563700b7220a76af48d2e9bdd9ab742d"
     },
     {
       "upstream_path": "specification/v0.1.0/provenance-summary.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/provenance-summary.json",
       "git_blob_sha": "620fc857507bcd78ab7e7535479a4b3073f8b50b",
-      "upstream_size_bytes": 2969
+      "upstream_size_bytes": 2969,
+      "sha256": "48b8f9f2b146ac4566763c9999fd6c81d34d938925564fab1e5801ec83f632fe"
     },
     {
       "upstream_path": "specification/v0.1.0/provenance.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/provenance.json",
       "git_blob_sha": "e559449ae3555124d161067abcf4fbcfd34a2678",
-      "upstream_size_bytes": 1789
+      "upstream_size_bytes": 1789,
+      "sha256": "13426e36a05d3570ac0c40e920c283e25118e196e06caa4aee3a81b3ad2a1787"
     },
     {
       "upstream_path": "specification/v0.1.0/request-envelope.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/request-envelope.json",
       "git_blob_sha": "b7ce18e779b52c77fd0cabd6abb887357fbecbf5",
-      "upstream_size_bytes": 6839
+      "upstream_size_bytes": 6839,
+      "sha256": "5ef2573b3069a04f7f5ff344444abe6ad07f7629898b7d2971fd8a117e2cb2af"
     },
     {
       "upstream_path": "specification/v0.1.0/response-envelope.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/response-envelope.json",
       "git_blob_sha": "c0883020f6a345a21fa38a2a24403e0a3b08b00f",
-      "upstream_size_bytes": 9299
+      "upstream_size_bytes": 9299,
+      "sha256": "eea137b424414c5ca58fef3810de50c14717c490b8aedd3de5535989bcb04182"
     },
     {
       "upstream_path": "specification/v0.1.0/trace/ocsf-mapping.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/trace/ocsf-mapping.json",
       "git_blob_sha": "12837e207bc7c84f459a748b664f8744b50f4dc3",
-      "upstream_size_bytes": 4987
+      "upstream_size_bytes": 4987,
+      "sha256": "26c8d54e034298b3ddb17e30168feab34be6a2bc10d63697e956becf5d9c1a47"
     },
     {
       "upstream_path": "specification/v0.1.0/trace/otel-mapping.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/trace/otel-mapping.json",
       "git_blob_sha": "03dba46d52bcfb96ae38c109c2e6586d7204b091",
-      "upstream_size_bytes": 6282
+      "upstream_size_bytes": 6282,
+      "sha256": "5d5105645a2d56a090ab8b10ead1fe365b11b9d981eea1318d28c0a3fc7fef9c"
     }
   ]
 }
