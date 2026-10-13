@@ -21,6 +21,11 @@ The CLI requires `--manifest` for receipt and lifecycle-event validation. This i
 
 The secret-field check is defense in depth: it rejects common secret-like key tokens across snake_case, kebab-case, and CamelCase, and constrains explicit secret/credential references to opaque URI-shaped values. It cannot prove that arbitrary values are not secrets. Domain profiles must still define allowed action arguments, keep secret delivery out of portable manifests/receipts, and use a separate secret-delivery mechanism.
 
+
+## Timestamp profile
+
+The reference validator accepts an OMSI RFC3339 subset with an explicit timezone, an uppercase `T` separator, seconds, and at most six fractional-second digits. It rejects excess precision because Python `datetime` would otherwise silently truncate it, which can corrupt chronology comparisons. This is a documented 0.1 reference-profile restriction, not a limit imposed by RFC3339 itself. Timestamps are normalized to UTC for comparison. This does not prove source-clock accuracy or event causality.
+
 ## License
 
 The files in this conformance seed are released under the MIT License. This license does not establish governance or licensing for the broader OMSI standard.
