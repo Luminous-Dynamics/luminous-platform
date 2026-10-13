@@ -96,16 +96,25 @@ The NixOS host owns the declared baseline. The workload controller receives narr
 - A failed observer or cognitive process must not stop normal host boot. Authorization/evidence failures block mutations.
 - Treat a timeout during create/start/stop as indeterminate until observed state resolves it; never blindly repeat a non-idempotent operation.
 
+## Machine-readable profile contract
+
+A first draft contract now lives at [`schemas/workload-profile.schema.json`](../schemas/workload-profile.schema.json), with three schema fixtures under [`profiles/workloads/`](../profiles/workloads/): OCI container, NixOS microVM, and Ubuntu full VM. The fixtures deliberately use example-only image/artifact identifiers and must not be launched or fetched.
+
+The schema constrains common workload properties (identity/qualification, allowed host and architecture, runtime kind, resource budgets, network policy, secrets by reference, lifecycle authorization, and evidence status). It makes the first OCI path require digest-pinned images, non-root UID/GID, read-only root filesystem, no-new-privileges, no privileged mode, no host namespaces, an explicit seccomp policy, bounded resources, and no public port exposure. VM examples require a digest-identified guest artifact and an isolated network.
+
+[The profile validator](../tools/validate_workload_profiles.py) checks the schema, validates all examples, and uses negative cases to prove that selected dangerous configurations are rejected. A dedicated GitHub Actions workflow runs those checks on matching pull-request and main-branch changes. Schema validation only proves the contract and fixtures match; it does not start runtimes, verify the VMM, or qualify performance/security on a real host. A CI result counts as passed only after the workflow completes successfully.
+
 ## Proposed milestones
 
-1. **Inventory:** document hardware virtualization availability and the current NixOS host's memory/storage/network budgets. No machine changes.
-2. **OCI baseline:** create one harmless, non-root test service with pinned digest, read-only filesystem where possible, resource limits, no privileged mode, and a bounded health check.
-3. **MicroVM proof:** run one minimal, non-sensitive NixOS guest with pinned configuration, no host-store write access, explicit networking, and a verified clean shutdown/restart.
-4. **Cross-OS proof:** launch an official, pinned Ubuntu Server image in an isolated KVM/QEMU test network. Verify SSH/login readiness, package provenance, shutdown, image identity, and host survival; no host bootloader changes.
-5. **Benchmarks:** compare container, microVM, and full VM under the exact same workload; capture evidence before choosing defaults.
-6. **Control-plane contract:** implement observation-only inventory first. Add mutations only after policy, authorization, independent verification, and failure/recovery tests are in place.
-7. **Host distro expansion:** continue Ubuntu native-host validation, then Fedora and Debian. The host support sequence remains separate from guest VM availability.
-8. **Optional scale track:** evaluate Incus or Firecracker only for a concrete need not covered by the first stack.
+1. **Contract and CI:** validate the profile schema and its positive/negative fixtures in CI. This contract stage exists in the proposal branch; wait for the CI result and fix issues before calling it passed.
+2. **Inventory:** document hardware virtualization availability and the current NixOS host's memory/storage/network budgets. No machine changes.
+3. **OCI baseline:** create one harmless, non-root test service with pinned digest, read-only filesystem where possible, resource limits, no privileged mode, and a bounded health check.
+4. **MicroVM proof:** run one minimal, non-sensitive NixOS guest with pinned configuration, no host-store write access, explicit networking, and a verified clean shutdown/restart.
+5. **Cross-OS proof:** launch an official, pinned Ubuntu Server image in an isolated KVM/QEMU test network. Verify SSH/login readiness, package provenance, shutdown, image identity, and host survival; no host bootloader changes.
+6. **Benchmarks:** compare container, microVM, and full VM under the exact same workload; capture evidence before choosing defaults.
+7. **Control-plane contract:** implement observation-only inventory first. Add mutations only after policy, authorization, independent verification, and failure/recovery tests are in place.
+8. **Host distro expansion:** continue Ubuntu native-host validation, then Fedora and Debian. The host support sequence remains separate from guest VM availability.
+9. **Optional scale track:** evaluate Incus or Firecracker only for a concrete need not covered by the first stack.
 
 ## Research references
 
