@@ -147,6 +147,8 @@ The exact first operation is conditional on a source audit showing that the cand
 
 ## 8. Required evidence packet
 
+The proposed baseline and adversarial cases live in [the 32-case corpus](fixtures/acs-nixward-bridge-v1-cases.json), governed by [its Draft 2020-12 schema](schemas/acs-nixward-bridge-test-corpus-v1.schema.json). This is a **test specification only**. The implementation work must validate the corpus against the schema in CI, then execute the cases through the existing Nixward test/receipt harness; fixture presence or successful schema validation is not a runtime pass.
+
 Each qualification run must bind:
 - test/fixture corpus id, version, digest, and all expected cases;
 - exact Symthaea, platform, Nixward, host-adapter, and policy revisions;
