@@ -349,6 +349,19 @@ class DetachedApprovalSignatureTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verifier.strict_json_loads(b'{"state":"pending","state":"approved"}')
 
+    def test_excessive_json_nesting_is_rejected_before_standard_parser_recursion(self) -> None:
+        depth = verifier.MAX_JSON_NESTING + 1
+        raw = ("[" * depth + "0" + "]" * depth).encode("utf-8")
+        with self.assertRaisesRegex(ValueError, "nesting"):
+            verifier.strict_json_loads(raw)
+
+    def test_signature_canonicalizer_rejects_excessive_programmatic_nesting(self) -> None:
+        value: object = 0
+        for _ in range(verifier.MAX_JSON_NESTING + 1):
+            value = [value]
+        with self.assertRaisesRegex(ValueError, "nesting"):
+            verifier.canonical_json_bytes(value)
+
     def test_bounded_reader_accepts_exact_limit_and_rejects_oversize(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "input.json"

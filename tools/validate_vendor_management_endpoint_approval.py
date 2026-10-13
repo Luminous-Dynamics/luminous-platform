@@ -27,19 +27,25 @@ _READ_ONLY_OPERATIONS = {
     "lifecycle_read",
 }
 MAX_SAFE_JSON_INTEGER = 9_007_199_254_740_991
+MAX_JSON_NESTING = 128
 
 
 def _ensure_safe_json_integer_domain(value: Any) -> None:
-    """Keep profile digest inputs exactly interoperable across JSON runtimes."""
-    if type(value) is int:
-        if abs(value) > MAX_SAFE_JSON_INTEGER:
-            raise ValueError("integer outside safe interoperable JSON integer range")
-    elif isinstance(value, dict):
-        for nested in value.values():
-            _ensure_safe_json_integer_domain(nested)
-    elif isinstance(value, list):
-        for nested in value:
-            _ensure_safe_json_integer_domain(nested)
+    """Enforce numeric and nesting limits without recursive traversal."""
+    pending: list[tuple[Any, int]] = [(value, 0)]
+    while pending:
+        current, depth = pending.pop()
+        if type(current) is int:
+            if abs(current) > MAX_SAFE_JSON_INTEGER:
+                raise ValueError("integer outside safe interoperable JSON integer range")
+        elif isinstance(current, dict):
+            if depth >= MAX_JSON_NESTING:
+                raise ValueError("JSON nesting exceeds configured limit")
+            pending.extend((nested, depth + 1) for nested in current.values())
+        elif isinstance(current, list):
+            if depth >= MAX_JSON_NESTING:
+                raise ValueError("JSON nesting exceeds configured limit")
+            pending.extend((nested, depth + 1) for nested in current)
 
 
 def parse_time(value: str, label: str, errors: list[str]) -> datetime | None:
@@ -63,13 +69,16 @@ def canonical_profile_digest(profile: dict[str, Any]) -> str:
     cryptographic verifier.
     """
     _ensure_safe_json_integer_domain(profile)
-    canonical = json.dumps(
-        profile,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    ).encode("utf-8", errors="strict")
+    try:
+        canonical = json.dumps(
+            profile,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+            allow_nan=False,
+        ).encode("utf-8", errors="strict")
+    except RecursionError:
+        raise ValueError("JSON nesting exceeds canonicalization limits") from None
     return hashlib.sha256(canonical).hexdigest()
 
 

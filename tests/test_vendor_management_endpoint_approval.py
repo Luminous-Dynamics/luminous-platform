@@ -79,6 +79,15 @@ class VendorManagementEndpointApprovalTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "safe interoperable JSON integer range"):
                     canonical_profile_digest(profile)
 
+    def test_profile_digest_rejects_excessive_programmatic_nesting(self) -> None:
+        profile = copy.deepcopy(self.profile)
+        value: object = 0
+        for _ in range(130):
+            value = [value]
+        profile["unmodeled"] = value
+        with self.assertRaisesRegex(ValueError, "nesting"):
+            canonical_profile_digest(profile)
+
     def test_unsupported_digest_scheme_is_rejected(self) -> None:
         approval = copy.deepcopy(self.approval)
         approval["profile_digest_scheme"] = "unspecified"

@@ -41,22 +41,28 @@ SIGNING_DOMAIN = b"LUMINOUS:VENDOR-MANAGEMENT-ENDPOINT-APPROVAL:V1\x00"
 SIGNATURE_BYTES = 64
 MAX_JSON_INPUT_BYTES = 4 * 1024 * 1024
 MAX_SIGNATURE_INPUT_BYTES = SIGNATURE_BYTES
+MAX_JSON_NESTING = 128
 MAX_SAFE_JSON_INTEGER = 9_007_199_254_740_991
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 EXCLUDED_PAYLOAD_FIELDS = frozenset({"signed_payload_digest", "signature_evidence_ref"})
 
 
 def _ensure_safe_json_integer_domain(value: Any) -> None:
-    """Reject integers outside the exactly interoperable JSON integer range."""
-    if type(value) is int:
-        if abs(value) > MAX_SAFE_JSON_INTEGER:
-            raise ValueError("integer outside safe interoperable JSON integer range")
-    elif isinstance(value, dict):
-        for nested in value.values():
-            _ensure_safe_json_integer_domain(nested)
-    elif isinstance(value, list):
-        for nested in value:
-            _ensure_safe_json_integer_domain(nested)
+    """Enforce numeric and nesting limits without recursive traversal."""
+    pending: list[tuple[Any, int]] = [(value, 0)]
+    while pending:
+        current, depth = pending.pop()
+        if type(current) is int:
+            if abs(current) > MAX_SAFE_JSON_INTEGER:
+                raise ValueError("integer outside safe interoperable JSON integer range")
+        elif isinstance(current, dict):
+            if depth >= MAX_JSON_NESTING:
+                raise ValueError("JSON nesting exceeds configured limit")
+            pending.extend((nested, depth + 1) for nested in current.values())
+        elif isinstance(current, list):
+            if depth >= MAX_JSON_NESTING:
+                raise ValueError("JSON nesting exceeds configured limit")
+            pending.extend((nested, depth + 1) for nested in current)
 
 
 def read_bounded_file(path: Path, max_bytes: int = MAX_JSON_INPUT_BYTES) -> bytes:
@@ -124,22 +130,56 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _enforce_json_nesting_limit(data: bytes | str) -> None:
+    """Reject excessive structural nesting before the standard parser recurses."""
+    text = data.decode("utf-8", errors="strict") if isinstance(data, bytes) else data
+    depth = 0
+    in_string = False
+    escaped = False
+    for char in text:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char in "[{":
+            depth += 1
+            if depth > MAX_JSON_NESTING:
+                raise ValueError("JSON nesting exceeds configured limit")
+        elif char in "]}":
+            # Malformed closing delimiters are left to json.loads; keep this
+            # preflight scanner from underflowing on invalid input.
+            depth = max(0, depth - 1)
+
+
 def strict_json_loads(data: bytes | str) -> Any:
-    """Reject duplicate keys, floating-point values and non-finite numbers."""
-    return json.loads(
-        data,
-        object_pairs_hook=_unique_object,
-        parse_int=_parse_integer,
-        parse_float=_reject_float,
-        parse_constant=_reject_constant,
-    )
+    """Reject duplicate keys, unsafe numbers, and excessive JSON nesting."""
+    _enforce_json_nesting_limit(data)
+    try:
+        return json.loads(
+            data,
+            object_pairs_hook=_unique_object,
+            parse_int=_parse_integer,
+            parse_float=_reject_float,
+            parse_constant=_reject_constant,
+        )
+    except RecursionError:
+        raise ValueError("JSON nesting exceeds parser limits") from None
 
 
 def canonical_json_bytes(value: Any) -> bytes:
     _ensure_safe_json_integer_domain(value)
-    return json.dumps(
-        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
-    ).encode("utf-8", errors="strict")
+    try:
+        return json.dumps(
+            value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+        ).encode("utf-8", errors="strict")
+    except RecursionError:
+        raise ValueError("JSON nesting exceeds canonicalization limits") from None
 
 
 def signature_message_bytes(approval: dict[str, Any]) -> bytes:
@@ -261,7 +301,7 @@ def verify_approval_signature(
 
     try:
         message = signature_message_bytes(approval)
-    except (UnicodeEncodeError, TypeError, ValueError):
+    except (UnicodeEncodeError, TypeError, ValueError, RecursionError):
         return "SIGNED_PAYLOAD_CANONICALIZATION_FAILED"
     if approval.get("signed_payload_digest") != hashlib.sha256(message).hexdigest():
         return "SIGNED_PAYLOAD_DIGEST_MISMATCH"
