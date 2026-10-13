@@ -110,6 +110,8 @@ def _reject_secrets(value: Any, path: str = "/") -> None:
     # APIKey, oauthAccessToken, and service-client-secret cannot evade simple checks.
     forbidden_tokens = {
         "password", "passwd", "passphrase", "secret", "credential", "credentials",
+        # Also reject common collapsed spellings without separators.
+        "privatekey", "accesstoken", "refreshtoken", "apikey", "clientsecret",
     }
     forbidden_pairs = {
         ("private", "key"), ("access", "token"), ("refresh", "token"),
