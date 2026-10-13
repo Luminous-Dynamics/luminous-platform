@@ -28,7 +28,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: acs-nixward-bridge-corpus-${{ github.workflow }}-${{ github.event.pull_request.head.sha || github.sha }}
+  group: acs-nixward-bridge-corpus-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
