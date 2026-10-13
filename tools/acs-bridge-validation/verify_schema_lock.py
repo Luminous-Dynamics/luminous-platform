@@ -13,7 +13,7 @@ import posixpath
 import sys
 from pathlib import Path
 from typing import Any
-from urllib.parse import urldefrag, urljoin, urlsplit
+from urllib.parse import unquote, urldefrag, urljoin, urlsplit
 
 from jsonschema import Draft202012Validator, SchemaError
 
@@ -61,6 +61,49 @@ def _collect_refs(value: Any, source: str, refs: list[tuple[str, str]]) -> None:
     elif isinstance(value, list):
         for child in value:
             _collect_refs(child, source, refs)
+
+
+def _json_pointer_exists(document: Any, fragment: str) -> bool:
+    """Check a decoded RFC 6901 JSON Pointer without coercing malformed segments."""
+    if fragment == "":
+        return True
+    if not fragment.startswith("/"):
+        anchors: set[str] = set()
+
+        def collect_anchors(value: Any) -> None:
+            if isinstance(value, dict):
+                for key in ("$anchor", "$dynamicAnchor"):
+                    anchor = value.get(key)
+                    if isinstance(anchor, str):
+                        anchors.add(anchor)
+                for child in value.values():
+                    collect_anchors(child)
+            elif isinstance(value, list):
+                for child in value:
+                    collect_anchors(child)
+
+        collect_anchors(document)
+        return fragment in anchors
+
+    current = document
+    for encoded in fragment[1:].split("/"):
+        token = encoded.replace("~1", "/").replace("~0", "~")
+        if "~" in token.replace("~0", "").replace("~1", ""):
+            return False
+        if isinstance(current, dict):
+            if token not in current:
+                return False
+            current = current[token]
+        elif isinstance(current, list):
+            if not token.isdigit() or (len(token) > 1 and token.startswith("0")):
+                return False
+            index = int(token)
+            if index >= len(current):
+                return False
+            current = current[index]
+        else:
+            return False
+    return True
 
 
 def verify_lock(root: Path | None = None) -> list[str]:
@@ -233,10 +276,14 @@ def verify_lock(root: Path | None = None) -> list[str]:
             errors.append(f"unsafe $ref: {source_path} -> {ref}")
             continue
         resolved_uri = urljoin(base_id, ref)
-        target_uri, _fragment = urldefrag(resolved_uri)
+        target_uri, fragment = urldefrag(resolved_uri)
         target_source = schema_ids.get(target_uri)
         if target_source is None or target_source not in present_source_paths:
             errors.append(f"unresolved/off-package URI $ref: {source_path} -> {ref} (resolved {resolved_uri})")
+            continue
+        target_document = parsed_documents.get(target_source)
+        if not isinstance(target_document, dict) or not _json_pointer_exists(target_document, unquote(fragment)):
+            errors.append(f"unresolved JSON Pointer/anchor fragment: {source_path} -> {ref} (resolved {resolved_uri})")
             continue
         ref_path = ref.split("#", 1)[0]
         if ref_path and not (parts.scheme or parts.netloc):
