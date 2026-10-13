@@ -10,7 +10,6 @@ on:
   push:
     branches:
       - main
-      - "research/civic-services-integration-2026-10-13"
     paths:
       - "schemas/**"
       - "examples/jurisdiction-packs/**"
