@@ -1,0 +1,84 @@
+{
+  "apiVersion": "luminousdynamics.org/v1alpha1",
+  "kind": "WorkloadProfile",
+  "metadata": {
+    "name": "nixos-microvm-example",
+    "version": "0.1.0",
+    "qualification": "example_only",
+    "purpose": "Schema fixture for a pinned NixOS microVM; artifacts and revision are placeholders.",
+    "owner": "Luminous Dynamics"
+  },
+  "placement": {
+    "allowedHosts": [
+      "nixos"
+    ],
+    "architectures": [
+      "x86_64"
+    ],
+    "placementClass": "isolation_guest",
+    "notes": "Not a runnable profile; replace placeholder revision and digests only with generated and independently verified artifacts."
+  },
+  "deployment": {
+    "kind": "nixos_microvm",
+    "microvmNixRevision": "0000000000000000000000000000000000000000",
+    "guestSystem": "x86_64-linux",
+    "guestConfigurationDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+    "rootArtifact": {
+      "format": "erofs",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "readOnly": true
+    },
+    "hypervisor": "qemu",
+    "vcpus": 2,
+    "memoryMiB": 512,
+    "shares": [],
+    "devices": [
+      "virtio_block",
+      "virtio_net",
+      "virtio_console"
+    ]
+  },
+  "security": {
+    "trustZone": "restricted_service",
+    "hostDataAccess": "none",
+    "hostControl": "none",
+    "network": {
+      "ingress": "deny",
+      "egress": "deny",
+      "rules": []
+    },
+    "secrets": {
+      "referencesOnly": true,
+      "provider": "none",
+      "references": []
+    }
+  },
+  "resources": {
+    "cpuMilli": 2000,
+    "memoryMiB": 512,
+    "diskMiB": 512,
+    "pidsMax": 1024,
+    "startupTimeoutSeconds": 60
+  },
+  "lifecycle": {
+    "startPolicy": "manual",
+    "restartPolicy": "on_failure",
+    "upgradeStrategy": "replace_by_digest",
+    "changesRequireAuthorization": true,
+    "stopTimeoutSeconds": 20,
+    "healthGraceSeconds": 30
+  },
+  "evidence": {
+    "status": "design_only",
+    "claimScope": "Schema fixture only; no guest was built or booted.",
+    "testsRequired": [
+      "json_schema_validation",
+      "verify_microvm_revision",
+      "verify_guest_configuration_digest",
+      "verify_root_artifact_digest",
+      "guest_boot_and_shutdown"
+    ],
+    "testsPassed": [],
+    "receiptReferences": []
+  }
+}
