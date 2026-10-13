@@ -48,7 +48,7 @@ def _load_json_bytes(raw: bytes, source: str) -> Any:
 
 
 def _git_blob_sha(raw: bytes) -> str:
-    header = f"blob {len(raw)}\\0".encode("ascii")
+    header = f"blob {len(raw)}\0".encode("ascii")
     return hashlib.sha1(header + raw).hexdigest()
 
 
