@@ -229,14 +229,20 @@ class QualificationRunnerContractTests(unittest.TestCase):
 
     def test_report_writer_rejects_parent_symlink_swap_after_preflight(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(directory) / "checkout"
+            root.mkdir()
             outside = root / "outside"
             outside.mkdir()
-            link = root / "artifacts"
-            link.symlink_to(outside, target_is_directory=True)
+            target = root / "artifacts" / "report.json"
+            self.assertEqual(
+                qualification.safe_report_destination(root, Path("artifacts/report.json")),
+                (target, "artifacts/report.json"),
+            )
+            # Simulate an attacker swapping in a parent symlink after preflight.
+            (root / "artifacts").symlink_to(outside, target_is_directory=True)
             with self.assertRaises(OSError):
                 qualification.write_json_report_no_replace(
-                    link / "report.json",
+                    target,
                     {"report_schema_version": qualification.REPORT_SCHEMA_VERSION},
                 )
             self.assertFalse((outside / "report.json").exists())
