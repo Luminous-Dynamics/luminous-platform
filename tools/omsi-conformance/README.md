@@ -16,6 +16,9 @@ python tools/omsi-conformance/omsi_validate.py receipt tools/omsi-conformance/fi
 python tools/omsi-conformance/omsi_validate.py events tools/omsi-conformance/fixtures/events.json --manifest tools/omsi-conformance/fixtures/operation.json
 ```
 
+
+The CLI requires `--manifest` for receipt and lifecycle-event validation. This is intentional: a structurally valid receipt or event list without the immutable operation manifest cannot establish cross-document binding, so the CLI must not print a conformance pass for it. These checks still do not verify signatures, issuer trust, or the truth of target observations.
+
 ## License
 
 The files in this conformance seed are released under the MIT License. This license does not establish governance or licensing for the broader OMSI standard.
