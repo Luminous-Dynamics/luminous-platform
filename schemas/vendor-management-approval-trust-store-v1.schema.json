@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/vendor-management-approval-trust-store-v1.schema.json",
+  "title": "Luminous Vendor Management Approval Trust Store v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "trust_store_id", "revision", "purpose", "principals", "keys"],
+  "properties": {
+    "schema_version": {"const": "luminous.vendor-management-approval-trust-store.v1"},
+    "trust_store_id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "revision": {"type": "integer", "minimum": 1},
+    "purpose": {"const": "vendor_management_endpoint_approval"},
+    "principals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["principal_ref", "key_refs", "roles", "state", "valid_from", "valid_until", "revoked_at"],
+        "properties": {
+          "principal_ref": {"type": "string", "minLength": 8, "maxLength": 256},
+          "key_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 8, "maxLength": 256}},
+          "roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["endpoint_approval_signer"]}},
+          "state": {"enum": ["active", "revoked"]},
+          "valid_from": {"type": "string", "format": "date-time"},
+          "valid_until": {"type": "string", "format": "date-time"},
+          "revoked_at": {"type": ["string", "null"], "format": "date-time"}
+        },
+        "allOf": [
+          {"if": {"properties": {"state": {"const": "active"}}, "required": ["state"]}, "then": {"properties": {"revoked_at": {"type": "null"}}}},
+          {"if": {"properties": {"state": {"const": "revoked"}}, "required": ["state"]}, "then": {"properties": {"revoked_at": {"type": "string", "format": "date-time"}}}}
+        ]
+      }
+    },
+    "keys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key_ref", "algorithm", "public_key_base64", "state", "valid_from", "valid_until", "revoked_at"],
+        "properties": {
+          "key_ref": {"type": "string", "minLength": 8, "maxLength": 256},
+          "algorithm": {"const": "ed25519"},
+          "public_key_base64": {"type": "string", "pattern": "^[A-Za-z0-9+/]{43}=$"},
+          "state": {"enum": ["active", "revoked"]},
+          "valid_from": {"type": "string", "format": "date-time"},
+          "valid_until": {"type": "string", "format": "date-time"},
+          "revoked_at": {"type": ["string", "null"], "format": "date-time"}
+        },
+        "allOf": [
+          {"if": {"properties": {"state": {"const": "active"}}, "required": ["state"]}, "then": {"properties": {"revoked_at": {"type": "null"}}}},
+          {"if": {"properties": {"state": {"const": "revoked"}}, "required": ["state"]}, "then": {"properties": {"revoked_at": {"type": "string", "format": "date-time"}}}}
+        ]
+      }
+    }
+  }
+}
