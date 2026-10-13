@@ -33,6 +33,10 @@ def _tag_nixward_digest(field: str, transaction: dict[str, Any]) -> str:
         raise validator.ConformanceError(
             f"Nixward transaction {field} must be 64 lowercase hexadecimal characters"
         )
+    if value == "0" * 64:
+        raise validator.ConformanceError(
+            f"Nixward transaction {field} digest must be non-zero"
+        )
     return f"blake3:{value}"
 
 
@@ -69,6 +73,14 @@ def _validate_transaction_semantics(transaction: dict[str, Any]) -> None:
             signer_bytes = len(signer_key_id.encode("utf-8"))
             if signer_bytes == 0 or signer_bytes > 256:
                 raise validator.ConformanceError("Nixward signer key ID has invalid byte length")
+        for label, digest in (
+            ("challenge", authorization["challenge_blake3"]),
+            ("replay key", authorization["replay_key"]),
+        ):
+            if digest == "0" * 64:
+                raise validator.ConformanceError(
+                    f"Nixward authorization {label} digest must be non-zero"
+                )
     if validation is not None and len(validation["summary"].encode("utf-8")) > 4096:
         raise validator.ConformanceError("Nixward validation summary exceeds byte limit")
     if outcome is not None and outcome["reason"] is not None:
