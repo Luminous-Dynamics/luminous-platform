@@ -14,14 +14,15 @@ This order optimizes for a reproducible, general-purpose Linux test target first
 
 Synology support is worth pursuing, but **DSM is not simply another Ubuntu/Fedora target**. Treat it as a version- and model-qualified appliance integration, with storage availability and vendor-managed lifecycle taking precedence over host customization.
 
-Recommended order has two layers. **First, add a remote, read-only DSM adapter** that runs on an already-supported Luminous host and calls documented DSM Web APIs over HTTPS. This covers useful NAS inventory/status without installing code on DSM and can be useful even on models without Container Manager. **Second, optionally run a headless Luminous service on the NAS** through Container Manager/Compose, but only on a model/version where Synology explicitly supports it. Do not install a native SPK package or change DSM boot behavior in the first milestone.
+Recommended order has three layers. **First, add remote, read-only SNMPv3 monitoring** from an already-supported Luminous host, using Synology's documented MIBs with authentication and privacy enabled. This provides system, disk, RAID, and optional UPS health without installing code on DSM or requiring DSM API credentials. **Second, optionally add a narrow DSM Web API adapter** only for fields unavailable through documented MIBs; it must discover the API catalog and use documented, allowlisted operations rather than assuming private `SYNO.Core.*` APIs are stable. **Third, optionally run a headless Luminous service on the NAS** through Container Manager/Compose, but only on a model/version where Synology explicitly supports it. Do not install a native SPK package or change DSM boot behavior in the first milestone.
 
 Container Manager availability is model- and DSM-version-dependent. Synology's current product matrix lists supported models, and its release notes show changing minimum DSM versions across releases; therefore, qualification must record the exact NAS model, CPU architecture, DSM build, and Container Manager version rather than saying "all Synology NAS". See [Container Manager applied models](https://www.synology.com/en-in/dsm/packages/ContainerManager) and [Container Manager release notes](https://www.synology.com/en-us/releaseNote/ContainerManager).
 
 ### Scope by component
 
 - **Good initial candidates:** headless Rust services that work in a container, read-only health/metrics endpoints, local-only administration, and optional Xenia network components after their headless service mode is validated.
-- **DSM API adapter (first implementation):** run outside DSM, query only documented APIs needed for model/version and permitted health/inventory, discover API paths/versions through Synology's API-info mechanism, and handle authentication tokens as secrets. Use HTTPS, a dedicated least-privilege account, request timeouts, bounded retries, and redacted logs. Unsupported APIs or denied permissions are `unknown`, not a healthy status. See the [DSM 7 Developer Guide](https://global.download.synology.com/download/Document/Software/DeveloperGuide/Os/DSM/All/enu/DSM_Developer_Guide_7_enu.pdf) and [DSM Login Web API Guide](https://global.download.synology.com/download/Document/Software/DeveloperGuide/Os/DSM/All/enu/DSM_Login_Web_API_Guide_enu.pdf).
+- **SNMPv3 monitor (first implementation):** use Synology's documented SNMP MIBs from an external collector. Require SNMPv3 with both authentication and privacy (authPriv), restrict UDP/161 at the NAS firewall to the collector, keep credentials in a secret store, and use a bounded OID allowlist with read-only operations. Synology explicitly recommends SNMPv3 for security and documents its system, disk, RAID, and UPS MIBs. See the [DSM SNMP guide](https://kb.synology.com/en-ca/DSM/help/DSM/AdminCenter/system_snmp?version=7) and [Synology MIB guide](https://kb.synology.com/en-af/DG/Synology_DiskStation_MIB_Guide/5).
+- **DSM Web API adapter (second, optional):** run outside DSM and use it only for fields that cannot be obtained through documented MIBs. Discover paths and version ranges through `SYNO.API.Info`; do not hard-code CGI paths or assume private `SYNO.Core.*` APIs are stable. Use HTTPS, a dedicated least-privilege account, request timeouts, bounded retries, and redacted logs. Missing APIs or denied permissions are `unknown`, not healthy. See the [DSM Login Web API Guide](https://kb.synology.com/en-global/DG/DSM_Login_Web_API_Guide/2).
 - **Not in the first milestone:** Sovereign Boot animation or recovery in DSM's boot path; Nixward mutation; bootloader/initramfs/kernel changes; DSM package replacement; privileged containers; broad host mounts; Docker socket access for a control-plane agent.
 - **Later option:** a native DSM `.spk` package only if Container Manager cannot meet a defined need. DSM package development has its own framework, architecture mapping, permission model, and privilege constraints. Require a separate threat model and package-lifecycle tests before pursuing it. See Synology's [DSM 7.2.2 Package Developer Guide](https://global.download.synology.com/download/Document/Software/DeveloperGuide/Os/DSM/All/enu/DSM_Developer_Guide_7_enu.pdf).
 
@@ -64,7 +65,7 @@ This is an architectural target, not an existing cross-distro API. Do not extrac
 | Fedora Workstation/Server | Add an RPM/service integration profile and independent VM evidence. | That RPM-family support automatically qualifies Fedora bootc. |
 | Fedora bootc | Separate image-based profile: immutable/managed filesystem assumptions, booted deployment identity, deployment promotion, and rollback verification. | That package installation or mutation works like a traditional mutable host. |
 | Debian Stable | Add after the common contract stabilizes; test independently even when an Ubuntu adapter can be reused. | That Ubuntu results establish Debian support. |
-| Synology DSM (exact model/build) | First: remote read-only Web API adapter on an existing Luminous host. Optional second step: supported Container Manager + Compose, unprivileged containers, dedicated persistent directory, and health/status on the NAS. | Generic Linux support, native boot/recovery integration, Nixward management, or support for all NAS models/architectures. |
+| Synology DSM (exact model/build) | First: remote read-only SNMPv3 monitor using documented Synology MIBs. Optional second step: narrow DSM Web API adapter. Optional third step: supported Container Manager + Compose, unprivileged containers, and dedicated persistent directory. | Generic Linux support, native boot/recovery integration, Nixward management, or support for all NAS models/architectures. |
 | Other operating systems | Explicitly out of scope until a named profile, owner, and test lane exist. | Generic Linux claims, or implied macOS/Windows support. |
 
 ### Report support by capability
@@ -123,22 +124,35 @@ Each cell should be one of **not implemented**, **implemented but unverified**, 
 - Evaluate Fedora bootc as a separate immutable, image-based profile with explicit deployment identity and rollback semantics.
 - Require proof of the actual booted deployment and resulting health before any promotion claim.
 
-### Separate Gate S0 — remote Synology DSM adapter
+### Separate Gate S0 — read-only Synology SNMPv3 monitor
 
-- Run the adapter on an existing Luminous host; install nothing on the NAS.
-- Query DSM API metadata first and record the exact model and DSM build where permitted.
-- Limit API operations to a documented read-only allowlist; authenticate over HTTPS with a dedicated least-privilege account and never log credentials or session tokens.
-- Test unsupported API versions, missing permissions, expired sessions, slow responses, connection loss, and malformed responses. Unknown data stays unknown; auth failure must not be turned into healthy status.
-- Capture request outcome and returned-field provenance in verifiable receipts without storing secrets.
+- Run the collector on an already-supported Luminous host; install nothing on the NAS.
+- Require SNMPv3 authPriv (authentication plus privacy); explicitly reject SNMPv1, SNMPv2c, noAuthNoPriv, and authNoPriv in the supported configuration.
+- Restrict UDP/161 at the NAS firewall to the collector source address and prefer a management VLAN/VPN; do not expose SNMP to the public internet.
+- Start with a fixed allowlist: standard SNMP system identity/uptime, Synology system status/temperature/fan/CPU/memory utilization, disk status/health/temperature, RAID/storage status and capacity. Do not collect serial numbers or SMART raw attributes by default.
+- Use a poll interval of at least 60 seconds, bounded retries/timeouts, a row cap for table walks, and strict limits on OID subtree traversal.
+- Map numeric values using the Synology MIB definitions for the qualified DSM family; do not treat unknown enum values or missing OIDs as healthy.
+- Test timeout, bad credentials, auth/privacy failure, unsupported OID, malformed/truncated responses, table index changes, and partial observations.
+- Record target address/identity alias, poll timestamp, source MIB/profile version, OIDs read, raw typed values (excluding secrets), and normalized status in a receipt. Never record SNMP auth/privacy passwords.
+- Keep serial numbers, SMART raw attributes, installed-package inventory, and network/user details out of the initial profile unless a specific need and data-minimization review justify them.
 
-### Separate Gate S1 — optional Synology NAS container profile
+### Separate Gate S1 — optional DSM Web API adapter
+
+- Run outside DSM; use only for fields unavailable through the documented MIB allowlist.
+- Discover the API catalog and version/path metadata first through `SYNO.API.Info`; do not hard-code `entry.cgi` versus `auth.cgi` or assume private `SYNO.Core.*` APIs are portable.
+- Require HTTPS with certificate validation; do not quietly accept a self-signed certificate without an explicit, pinned trust configuration.
+- Use a dedicated least-privilege account and a narrow documented read-only API allowlist. Sessions and tokens are secrets; scrub them from logs and evidence.
+- Missing APIs, permission denial, unsupported schema, expired sessions, and partial responses become unknown/error, not healthy.
+- Do not introduce Web API login credentials until SNMPv3 cannot satisfy a defined requirement.
+
+### Separate Gate S2 — optional Synology NAS container profile
 
 - Select one real target NAS only after confirming exact model, CPU architecture, DSM version/build, storage configuration, and Container Manager availability.
 - Build a multi-architecture image only for the architecture actually needed; pin image digests and software versions. Do not assume an x86_64 build will run on ARM models.
 - Supply a minimal Compose project: non-root UID/GID, explicit resource limits, restart policy, no privileged mode, no host PID/network namespaces, no Docker socket, and no device access.
 - Mount only one dedicated application data directory; make the application binary and configuration read-only where practical. Never mount NAS data shares wholesale.
 - Start with local-only health/status endpoints and outbound connections. Expose ports only after documenting the network threat model and firewall requirements.
-- If DSM APIs are needed, use HTTPS, a dedicated least-privilege account, minimum required API scopes, token redaction, and a bounded read-only API allowlist. Treat API absence/permission errors as unknown, not as healthy.
+- If DSM APIs are needed, use HTTPS with certificate validation, a dedicated least-privilege account, minimum required documented read-only API operations, token redaction, and an API catalog discovered from the NAS. Treat API absence/permission errors as unknown, not as healthy.
 - Test container restart, crash loops, full disk, permission denial, unavailable share, NAS reboot, DSM update/restart, image rollback, backup/restore, and uninstall without data loss in a disposable/test environment.
 - Keep container management separate from the agent's authority: never give the Luminous control plane access to the Docker socket or an unrestricted SSH/root credential.
 - Publish qualification only for the tested model, DSM build, architecture, Container Manager version, and test evidence.
@@ -178,6 +192,9 @@ Fail closed for authorization and evidence validation, but fail open for optiona
 - [Ubuntu autoinstall reference](https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html)
 - [Synology Container Manager supported models](https://www.synology.com/en-in/dsm/packages/ContainerManager)
 - [Synology Container Manager release notes](https://www.synology.com/en-us/releaseNote/ContainerManager)
+- [Synology DSM SNMP settings and security](https://kb.synology.com/en-ca/DSM/help/DSM/AdminCenter/system_snmp?version=7)
+- [Synology SNMP MIB Guide](https://kb.synology.com/en-af/DG/Synology_DiskStation_MIB_Guide/5)
+- [DSM Login Web API Guide](https://kb.synology.com/en-global/DG/DSM_Login_Web_API_Guide/2)
 - [Synology DSM Developer Guide](https://global.download.synology.com/download/Document/Software/DeveloperGuide/Os/DSM/All/enu/DSM_Developer_Guide_7_enu.pdf)
 
 The next implementation PR after this design should be the smallest evidence-backed extraction: first inventory the current Sovereign Boot boundaries and add a non-NixOS QEMU build/test lane. Do not start by generalizing all Nixward mutation paths.
