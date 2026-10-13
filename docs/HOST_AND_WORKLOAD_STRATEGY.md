@@ -19,7 +19,7 @@ NixOS should provide a declarative base, pinned build and configuration inputs, 
 
 ### Baseline: NixOS + OCI containers
 
-Use NixOS for host configuration and use OCI images for services that do not need their own kernel. Begin with Podman and rootless containers where feasible; manage persistent services declaratively and avoid mutating containers as a substitute for versioned images. Pin image digests and resource/permission policy. Rootless alone does not establish strong isolation: still use least privilege, namespaces, seccomp/LSM policy when available, bounded mounts, and explicit network policy.
+Use NixOS for host configuration and use OCI images for services that do not need their own kernel. Begin with Podman and rootless containers where feasible; manage persistent services declaratively and avoid mutating containers as a substitute for versioned images. Pin image digests and resource/permission policy. Rootless alone does not establish strong isolation: still use least privilege, namespaces, seccomp/LSM policy when available, bounded mounts, and explicit network policy. The v1alpha1 profile contract currently permits only the runtime-default seccomp profile: custom policies remain rejected until the profile can bind them to an immutable, digest-identified artifact and a runtime adapter can prove it applied that exact artifact.
 
 This is the simplest path to run many application services while preserving a deterministic NixOS host. It is also the most portable workload format across qualified Linux hosts.
 
