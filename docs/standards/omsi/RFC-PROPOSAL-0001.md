@@ -66,6 +66,69 @@ The normal path is:
 
 Failure, rejection, expiry, cancellation and indeterminate outcomes are typed states or terminal outcomes governed by profile rules. **Queued is not running; running is not applied; applied is not verified.** When connectivity is lost after acceptance, the client must reconcile target state before retrying. A non-idempotent action must not be blindly repeated.
 
+
+## Recovery is a separate outcome dimension
+
+An operation outcome and a recovery outcome MUST NOT be collapsed into one
+success/failure value. If an operation fails after partially changing a target,
+a later recovery may succeed; that does not make the original operation
+successful. Conversely, a recovery command may exit successfully while the
+target remains outside its required recovery state.
+
+The interoperable model must preserve at least two independently evaluated
+claims:
+
+- **Primary operation outcome:** whether the requested action was applied and
+  whether its declared postconditions were verified.
+- **Recovery outcome:** whether recovery was required, authorized, attempted,
+  independently observed, and verified against its own declared recovery
+  postconditions.
+
+A recovery result MUST be linked to the operation it compensates for and to a
+specific recovery plan/intent. It must carry its own target binding, authority
+reference, pre-recovery observation, expected recovery postconditions,
+execution evidence, post-recovery observation, verifier result and limitations.
+The recovery's authorization is separate from the original grant unless that
+grant explicitly and narrowly authorizes the exact recovery plan. A generic
+`recovery` object or an executor label such as `recovered` is not, by itself,
+evidence that recovery occurred or succeeded.
+
+For interoperability, prefer a separately identifiable recovery operation or
+typed recovery subreceipt linked to the original operation, rather than forcing
+both lifecycles into one linear `from_state → to_state` chain. The original
+receipt must retain its primary outcome (for example, `failed`) while linked
+recovery evidence may independently report `verified`, `failed` or
+`indeterminate`. An absent recovery record must not be interpreted as
+"recovery was not needed"; "not required", "not started", "attempted",
+"verified", "failed" and "indeterminate" are different states.
+
+This is a semantic requirement for the proposal, **not a claim that the current
+0.1 seed already implements it**. The current draft has a recovery reference
+on the operation manifest, but the event and receipt schemas do not yet define
+a complete portable recovery lifecycle. Before freezing those schemas, either
+add a versioned recovery record/receipt and linked-operation semantics, or
+explicitly defer the feature without claiming that a generic extension is
+interoperable.
+
+The conformance corpus must include at least these cases:
+
+1. The primary action fails before mutation and recovery is not required.
+2. The primary action partially mutates state; recovery is attempted and the
+   restored postcondition is independently verified.
+3. The recovery process exits zero but the observed target state is not restored.
+4. The primary action applies, but its postcondition verification fails.
+5. Recovery loses its response or is interrupted; the state remains
+   indeterminate until read-only reconciliation supplies sufficient evidence.
+6. A recovery attempt is substituted or exceeds the authority bound to its
+   recovery plan; the actuator is not invoked.
+
+These cases are domain-neutral. A deployment may restore a prior system
+generation; a factory may isolate a failed batch; a utility may enter a safe
+operating configuration; a clinical logistics system may quarantine stock.
+Each profile defines what recovery means and what may be observed, while Core
+preserves the distinction between attempted compensation and verified
+postconditions.
+
 ## Security requirements
 
 - The URL tenant, body tenant, target tenant and authenticated principal's permitted tenant must agree. Client-supplied tenant ID is never sufficient evidence of authorization.
