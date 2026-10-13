@@ -1,6 +1,6 @@
 # Luminous Platform
 
-The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, fail-open, consciousness-aware runtime for NixOS hosts.
+The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, fail-open, consciousness-aware runtime for NixOS hosts, with a planned path toward explicitly qualified support for additional Linux distributions.
 
 ## Architecture
 
@@ -53,6 +53,14 @@ Every platform component follows the same core safety rule:
 - `sovereign-boot` — disabled by default; QEMU-gated before any host enable
 - `nixward` — read-only diagnosis by default; actuation requires explicit operator receipt
 - `sovereign-ops` — intent-only; never directly mutates NixOS configuration
+
+## Cross-Distribution Roadmap
+
+NixOS remains the reference integration. Additional distribution support is a planned, capability-by-capability effort—not a claim that the current releases already support every Linux distribution.
+
+The proposed sequence is **Ubuntu Server 24.04 LTS in QEMU → Ubuntu 26.04 LTS / desktop qualification → Fedora → Fedora bootc as a separate image-based profile → Debian Stable**. The first milestone is limited to reproducible build/service integration and optional boot visuals. It does not authorize bootloader mutation, automated OS upgrades, or generalized Nixward mutation on other distributions.
+
+See [Cross-Distribution Support Strategy](docs/CROSS_DISTRO_SUPPORT.md) for the support matrix, architecture boundaries, staged acceptance gates, and required evidence. Distribution support will be reported per capability and exact tested profile; a queued workflow is not a pass.
 
 ## Quick Start: NixOS Integration
 
