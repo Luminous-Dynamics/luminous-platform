@@ -127,5 +127,30 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         self.assertIn("in the future relative to --as-of", " ".join(report["publication_blockers"]))
 
 
+    def test_non_https_action_url_fails(self):
+        pack = copy.deepcopy(PACK)
+        pack["requirements"][0]["user_actions"][0]["url"] = "javascript:alert(1)"
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertEqual(check_status(report, "security.https_only"), "FAIL")
+
+    def test_review_interval_cannot_be_extended_by_metadata(self):
+        pack = copy.deepcopy(PACK)
+        source = pack["sources"][0]
+        source.update({
+            "review_state": "current",
+            "checked_at": "2026-10-01T12:00:00Z",
+            "reviewed_at": "2026-10-01T12:00:00Z",
+            "reviewer_role": "qualified-source-reviewer",
+            "next_review_at": "2026-12-01T12:00:00Z",
+        })
+        pack["publication_state"] = "candidate"
+        pack["requirements"][0]["review_state"] = "verified"
+        report = report_for(pack)
+        self.assertTrue(report["validation_passed"])
+        self.assertFalse(report["publication_eligible"])
+        self.assertIn("exceeds configured review interval", " ".join(report["publication_blockers"]))
+
+
 if __name__ == "__main__":
     unittest.main()
