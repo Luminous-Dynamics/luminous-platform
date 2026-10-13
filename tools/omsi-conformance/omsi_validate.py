@@ -332,15 +332,17 @@ def main() -> int:
                 raise ConformanceError("grant requires --manifest and --now")
             validate_grant(load(args.manifest), doc, now)
         elif args.kind == "receipt":
-            if args.events and not args.manifest:
-                raise ConformanceError("--events requires --manifest")
+            if not args.manifest:
+                raise ConformanceError("receipt requires --manifest for operation binding")
             validate_receipt(
                 doc,
-                load(args.manifest) if args.manifest else None,
+                load(args.manifest),
                 load(args.events) if args.events else None,
             )
         else:
-            validate_events(doc, load(args.manifest) if args.manifest else None)
+            if not args.manifest:
+                raise ConformanceError("events requires --manifest for operation binding")
+            validate_events(doc, load(args.manifest))
         print(f"PASS: {args.kind} document passed OMSI 0.1 draft checks")
         return 0
     except (OSError, json.JSONDecodeError, ConformanceError) as exc:
