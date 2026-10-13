@@ -13,7 +13,7 @@ import posixpath
 import sys
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import urldefrag, urljoin, urlsplit
 
 from jsonschema import Draft202012Validator, SchemaError
 
@@ -112,6 +112,7 @@ def verify_lock(root: Path | None = None) -> list[str]:
     present_source_paths: set[str] = set()
     vendor_paths: set[str] = set()
     parsed_documents: dict[str, Any] = {}
+    schema_ids: dict[str, str] = {}
     for item in files:
         if not isinstance(item, dict):
             errors.append("each schema lock entry must be an object")
@@ -172,6 +173,16 @@ def verify_lock(root: Path | None = None) -> list[str]:
                 errors.append(str(exc))
                 continue
             parsed_documents[source_path] = document
+            if isinstance(document, dict) and "$id" in document:
+                schema_id = document["$id"]
+                if not isinstance(schema_id, str) or not schema_id.startswith("https://acs.org/schema/v0.1.0/"):
+                    errors.append(f"unexpected ACS schema resource ID in {vendor_path}: {schema_id!r}")
+                elif schema_id in schema_ids:
+                    errors.append(f"duplicate schema resource ID {schema_id}: {schema_ids[schema_id]} and {source_path}")
+                else:
+                    schema_ids[schema_id] = source_path
+            else:
+                errors.append(f"ACS schema is missing its resource $id: {vendor_path}")
             if isinstance(document, dict) and "$schema" in document:
                 if document["$schema"] != "https://json-schema.org/draft/2020-12/schema":
                     errors.append(f"unexpected JSON Schema dialect in {vendor_path}: {document['$schema']}")
@@ -212,21 +223,26 @@ def verify_lock(root: Path | None = None) -> list[str]:
     for source_path, document in parsed_documents.items():
         _collect_refs(document, source_path, all_refs)
     for source_path, ref in all_refs:
-        if ref.startswith("#"):
+        base_document = parsed_documents.get(source_path)
+        base_id = base_document.get("$id") if isinstance(base_document, dict) else None
+        if not isinstance(base_id, str):
+            errors.append(f"cannot resolve $ref without schema $id: {source_path} -> {ref}")
             continue
         parts = urlsplit(ref)
-        if parts.scheme or parts.netloc:
-            errors.append(f"external $ref prohibited in offline schema bundle: {source_path} -> {ref}")
+        if ref.startswith("/") || "\\\\" in ref:
+            errors.append(f"unsafe $ref: {source_path} -> {ref}")
+            continue
+        resolved_uri = urljoin(base_id, ref)
+        target_uri, _fragment = urldefrag(resolved_uri)
+        target_source = schema_ids.get(target_uri)
+        if target_source is None or target_source not in present_source_paths:
+            errors.append(f"unresolved/off-package URI $ref: {source_path} -> {ref} (resolved {resolved_uri})")
             continue
         ref_path = ref.split("#", 1)[0]
-        if not ref_path:
-            continue
-        if ref_path.startswith("/") or "\\\\" in ref_path:
-            errors.append(f"unsafe relative $ref: {source_path} -> {ref}")
-            continue
-        target = posixpath.normpath(posixpath.join(posixpath.dirname(source_path), ref_path))
-        if not target.startswith(SPEC_PREFIX) or target not in present_source_paths:
-            errors.append(f"unresolved/off-package $ref: {source_path} -> {ref} (resolved {target})")
+        if ref_path and not (parts.scheme or parts.netloc):
+            target = posixpath.normpath(posixpath.join(posixpath.dirname(source_path), ref_path))
+            if not target.startswith(SPEC_PREFIX) or target not in present_source_paths:
+                errors.append(f"unresolved/off-package relative $ref: {source_path} -> {ref} (resolved {target})")
 
     return errors
 
