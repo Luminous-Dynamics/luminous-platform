@@ -54,6 +54,10 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject inline or embedded secret material": ("security.secrets.referencesOnly",),
     "reject undeclared broad host path": ("hostPath",),
     "reject public port exposure": ("deployment.ports", "exposure"),
+    "reject OCI volume when hostDataAccess is none": ("deployment", "volumes"),
+    "reject microVM share when hostDataAccess is none": ("deployment", "shares"),
+    "reject OCI declared-mount policy without a volume": ("deployment", "volumes"),
+    "reject microVM declared-mount policy without a share": ("deployment", "shares"),
     "reject port without explicit host binding": ("hostPort",),
     "reject unknown microVM host-store field": ("guestStoreWritable",),
     "reject OCI volume without registry source ID": ("sourceId",),
@@ -385,6 +389,40 @@ def main() -> int:
             microvm,
             lambda candidate: candidate["deployment"].update({"guestStoreWritable": True}),
             "reject unknown microVM host-store field",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["volumes"].append(
+                {
+                    "sourceId": "state-data",
+                    "source": "dedicated_state",
+                    "target": "/var/lib/example",
+                    "access": "read_write",
+                }
+            ),
+            "reject OCI volume when hostDataAccess is none",
+        ),
+        (
+            microvm,
+            lambda candidate: candidate["deployment"]["shares"].append(
+                {
+                    "sourceId": "shared-data",
+                    "target": "/data",
+                    "access": "read_write",
+                    "protocol": "virtiofs",
+                }
+            ),
+            "reject microVM share when hostDataAccess is none",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["security"].update({"hostDataAccess": "declared_mounts_only"}),
+            "reject OCI declared-mount policy without a volume",
+        ),
+        (
+            microvm,
+            lambda candidate: candidate["security"].update({"hostDataAccess": "declared_mounts_only"}),
+            "reject microVM declared-mount policy without a share",
         ),
         (
             oci,
