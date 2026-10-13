@@ -75,7 +75,7 @@ class CorpusMutationTests(unittest.TestCase):
         changed = copy.deepcopy(CORPUS)
         changed["cases"][20]["pass_condition"] = "The action does not proceed."
         errors = validator.validate_documents(SCHEMA, changed)
-        self.assertTrue(any("ACS-Core conformance remains unclaimed" in error for error in errors))
+        self.assertTrue(any("BR-021 must not claim ACS-Core conformance" in error for error in errors))
 
     def test_ambiguous_effect_must_block_retry_until_reconciled(self) -> None:
         changed = copy.deepcopy(CORPUS)
