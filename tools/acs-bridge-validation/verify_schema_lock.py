@@ -163,8 +163,9 @@ def verify_lock(root: Path | None = None) -> list[str]:
         source_path = item.get("upstream_path")
         vendor_path = item.get("vendored_path")
         expected_sha = item.get("git_blob_sha")
+        expected_sha256 = item.get("sha256")
         expected_size = item.get("upstream_size_bytes")
-        if not all(isinstance(value, str) and value for value in (source_path, vendor_path, expected_sha)):
+        if not all(isinstance(value, str) and value for value in (source_path, vendor_path, expected_sha, expected_sha256)):
             errors.append("schema lock entry is missing a path or blob SHA")
             continue
         if source_path in source_paths or vendor_path in vendor_paths:
@@ -182,6 +183,9 @@ def verify_lock(root: Path | None = None) -> list[str]:
             continue
         if len(expected_sha) != 40 or any(ch not in "0123456789abcdef" for ch in expected_sha):
             errors.append(f"invalid Git blob SHA in lock: {source_path}")
+            continue
+        if len(expected_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in expected_sha256):
+            errors.append(f"invalid SHA-256 digest in lock: {source_path}")
             continue
         if not vendor_path.startswith(VENDOR_PREFIX) or ".." in Path(vendor_path).parts:
             errors.append(f"unsafe vendor path in lock: {vendor_path}")
@@ -208,6 +212,9 @@ def verify_lock(root: Path | None = None) -> list[str]:
         actual_sha = _git_blob_sha(raw)
         if actual_sha != expected_sha:
             errors.append(f"Git blob SHA mismatch: {vendor_path}; expected {expected_sha}, got {actual_sha}")
+        actual_sha256 = hashlib.sha256(raw).hexdigest()
+        if actual_sha256 != expected_sha256:
+            errors.append(f"SHA-256 mismatch: {vendor_path}; expected {expected_sha256}, got {actual_sha256}")
 
         if source_path.startswith(SPEC_PREFIX) and source_path.endswith(".json"):
             try:
@@ -303,7 +310,7 @@ def main() -> int:
 
     lock = _load_json_bytes((ROOT / LOCK_PATH).read_bytes(), str(LOCK_PATH))
     signature = lock["upstream_commit_signature"]
-    print(f"PASS: {len(lock['files'])} vendored upstream files match the locked Git blob IDs and byte sizes.")
+    print(f"PASS: {len(lock['files'])} vendored upstream files match locked Git blob IDs, SHA-256 digests, and byte sizes.")
     print(f"PASS: all vendored JSON parses strictly; local references and declared JSON Schemas validate offline.")
     if signature.get("verified") is False:
         print("WARNING: upstream commit is unsigned/unverified; byte identity does not authenticate publisher provenance.")
