@@ -50,7 +50,7 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject public port exposure": ("deployment.ports", "exposure"),
     "reject unknown microVM host-store field": ("guestStoreWritable",),
     "reject non-isolated compatibility VM": ("deployment.isolatedNetwork",),
-    "reject CI qualification without matching evidence status": ("evidence.status",),
+    "reject qualification/evidence status mismatch": ("evidence.status",),
     "reject hardware qualification without evidence receipt": ("receiptReferences",),
     "reject CI qualification without passed tests and receipt": ("testsPassed",),
     "reject allowlisted egress without explicit rules": ("security.network.rules",),
@@ -229,8 +229,8 @@ def main() -> int:
         ),
         (
             full_vm,
-            lambda candidate: candidate["metadata"].update({"qualification": "ci_verified"}),
-            "reject CI qualification without matching evidence status",
+            lambda candidate: candidate["metadata"].update({"qualification": "unverified"}),
+            "reject qualification/evidence status mismatch",
         ),
         (
             full_vm,
@@ -288,28 +288,73 @@ def main() -> int:
             full_vm,
             lambda candidate: candidate["resources"].update({"memoryMiB": 1024}),
             "reject VM memory above its resource budget",
+            "resource memory budget",
         ),
         (
             full_vm,
             lambda candidate: candidate["resources"].update({"cpuMilli": 1000}),
             "reject VM vCPUs above its resource CPU budget",
+            "resource CPU budget",
         ),
         (
             full_vm,
             lambda candidate: candidate["resources"].update({"diskMiB": 1024}),
             "reject VM disk capacity above its resource disk budget",
+            "resource disk budget",
         ),
         (
             microvm,
             lambda candidate: candidate["placement"].update({"allowedHosts": ["nixos", "ubuntu"]}),
             "reject microVM placement on an unqualified host",
+            "NixOS microVM profile must be limited",
+        ),
+        (
+            microvm,
+            lambda candidate: candidate["deployment"]["shares"].append(
+                {
+                    "sourceId": "shared-data",
+                    "target": "/data",
+                    "access": "read_write",
+                    "protocol": "virtiofs",
+                }
+            ),
+            "reject microVM share when hostDataAccess is none",
+            "hostDataAccess=none forbids microVM host shares",
+        ),
+        (
+            microvm,
+            lambda candidate: candidate["security"].update({"hostDataAccess": "declared_mounts_only"}),
+            "reject microVM declared-mounts policy without a share",
+            "declared_mounts_only requires at least one declared microVM share",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["volumes"].append(
+                {
+                    "source": "dedicated_state",
+                    "target": "/var/lib/example",
+                    "access": "read_write",
+                }
+            ),
+            "reject OCI volume when hostDataAccess is none",
+            "hostDataAccess=none forbids OCI host/data volumes",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["security"].update({"hostDataAccess": "declared_mounts_only"}),
+            "reject OCI declared-mounts policy without a volume",
+            "declared_mounts_only requires at least one declared OCI volume",
         ),
     ]
-    for profile, mutate, label in semantic_negative_cases:
+    for profile, mutate, label, expected_fragment in semantic_negative_cases:
         candidate = copy.deepcopy(profile)
         mutate(candidate)
-        if not semantic_errors(candidate):
-            raise AssertionError(f"semantic negative unexpectedly accepted: {label}")
+        errors = semantic_errors(candidate)
+        if not any(expected_fragment in error for error in errors):
+            raise AssertionError(
+                f"semantic negative failed its intended invariant: {label}; "
+                f"expected {expected_fragment!r}; actual errors: {errors!r}"
+            )
         print(f"PASS semantic negative: {label}")
 
     print(
