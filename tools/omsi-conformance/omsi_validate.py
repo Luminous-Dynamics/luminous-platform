@@ -105,22 +105,38 @@ ACTION_ARGUMENTS_DOMAIN = "org.omsi.action-arguments/0.1"
 OPERATION_MANIFEST_DOMAIN = "org.omsi.operation-manifest/0.1"
 
 def _reject_secrets(value: Any, path: str = "/") -> None:
-    bad = {"password", "passwd", "passphrase", "secret", "privatekey", "accesstoken", "refreshtoken", "apikey", "clientsecret", "credential", "credentials"}
-    # Reference fields are not an exemption: only opaque URI-shaped references
-    # are allowed. Reject raw values, userinfo, query strings and whitespace.
-    reference_uri = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://[^\s/?#@][^\s?#@]*$")
+    # Field-name screening is defense in depth, not a general secret detector.
+    # Split separators and CamelCase before token matching so e.g. databasePassword,
+    # APIKey, oauthAccessToken, and service-client-secret cannot evade simple checks.
+    forbidden_tokens = {
+        "password", "passwd", "passphrase", "secret", "credential", "credentials",
+    }
+    forbidden_pairs = {
+        ("private", "key"), ("access", "token"), ("refresh", "token"),
+        ("api", "key"), ("client", "secret"),
+    }
+    reference_uri = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://[^\\s/?#@][^\\s?#@]*$")
+
+    def key_tokens(key: str) -> list[str]:
+        separated = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\\1_\\2", key)
+        separated = re.sub(r"([a-z0-9])([A-Z])", r"\\1_\\2", separated)
+        return [part for part in re.split(r"[^A-Za-z0-9]+", separated.lower()) if part]
+
     if isinstance(value, dict):
         for key, child in value.items():
-            norm = key.lower().replace("-", "_")
-            compact = norm.replace("_", "")
-            if norm in {"secret_refs", "credential_refs"}:
+            tokens = key_tokens(key)
+            normal = "_".join(tokens)
+            if normal in {"secret_refs", "credential_refs"}:
                 if not isinstance(child, list):
                     raise ConformanceError(f"reference field at {path}{key} must be an array of opaque URIs")
                 for i, ref in enumerate(child):
                     if not isinstance(ref, str) or not reference_uri.fullmatch(ref):
                         raise ConformanceError(f"invalid secret/credential reference at {path}{key}[{i}]")
                 continue
-            if compact in bad or norm.endswith(("_password", "_private_key", "_access_token", "_refresh_token", "_api_key", "_client_secret")):
+            if forbidden_tokens.intersection(tokens) or any(
+                any(tuple(tokens[i:i + 2]) == pair for i in range(max(0, len(tokens) - 1)))
+                for pair in forbidden_pairs
+            ):
                 raise ConformanceError(f"secret-like field at {path}{key}; use an out-of-band reference")
             _reject_secrets(child, f"{path}{key}/")
     elif isinstance(value, list):
