@@ -53,6 +53,44 @@ def expect_invalid(
     print(f"PASS negative: {name}")
 
 
+def semantic_errors(profile: dict[str, Any]) -> list[str]:
+    """Check cross-field invariants JSON Schema cannot express portably."""
+    errors: list[str] = []
+    deployment = profile["deployment"]
+    kind = deployment["kind"]
+    security = profile["security"]
+    resources = profile["resources"]
+
+    if kind == "nixos_microvm":
+        if set(profile["placement"]["allowedHosts"]) != {"nixos"}:
+            errors.append("NixOS microVM profile must be limited to the NixOS reference host")
+        if resources["cpuMilli"] < deployment["vcpus"] * 1000:
+            errors.append("resource CPU budget must cover configured microVM vCPUs")
+        if resources["memoryMiB"] < deployment["memoryMiB"]:
+            errors.append("resource memory budget must cover configured microVM memory")
+        if security["hostDataAccess"] == "none" and deployment["shares"]:
+            errors.append("hostDataAccess=none forbids microVM host shares")
+        if security["hostDataAccess"] == "declared_mounts_only" and not deployment["shares"]:
+            errors.append("declared_mounts_only requires at least one declared microVM share")
+
+    elif kind == "full_vm":
+        if resources["cpuMilli"] < deployment["vcpus"] * 1000:
+            errors.append("resource CPU budget must cover configured full-VM vCPUs")
+        if resources["memoryMiB"] < deployment["memoryMiB"]:
+            errors.append("resource memory budget must cover configured full-VM memory")
+        if resources.get("diskMiB", 0) < deployment["diskGiB"] * 1024:
+            errors.append("resource disk budget must cover configured full-VM disk capacity")
+
+    elif kind == "oci_container":
+        volumes = deployment["volumes"]
+        if security["hostDataAccess"] == "none" and volumes:
+            errors.append("hostDataAccess=none forbids OCI host/data volumes")
+        if security["hostDataAccess"] == "declared_mounts_only" and not volumes:
+            errors.append("declared_mounts_only requires at least one declared OCI volume")
+
+    return errors
+
+
 def main() -> int:
     schema = load_json(SCHEMA_PATH)
     Draft202012Validator.check_schema(schema)
@@ -79,6 +117,13 @@ def main() -> int:
             raise AssertionError(
                 f"{path.relative_to(ROOT)} is an example fixture and must stay design_only"
             )
+
+        semantic = semantic_errors(profile)
+        if semantic:
+            print(f"FAIL semantic constraints: {path.relative_to(ROOT)}")
+            for error in semantic:
+                print(f"  {error}")
+            return 1
 
         loaded[path.name] = profile
         print(f"PASS profile: {path.relative_to(ROOT)}")
@@ -161,6 +206,31 @@ def main() -> int:
             "reject CI qualification without passed tests and receipt",
         ),
         (
+            oci,
+            lambda candidate: candidate["security"]["network"].update({"egress": "allowlisted"}),
+            "reject allowlisted egress without explicit rules",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["security"]["network"]["rules"].append(
+                {
+                    "direction": "egress",
+                    "protocol": "tcp",
+                    "destination": "example.org",
+                    "port": 443,
+                    "justification": "deliberately inconsistent fixture",
+                }
+            ),
+            "reject egress rule while egress policy is deny",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["volumes"].append(
+                {"source": "readonly_config", "target": "/etc/example", "access": "read_write"}
+            ),
+            "reject writable read-only configuration mount",
+        ),
+        (
             full_vm,
             lambda candidate: candidate.update({"hostBootMutation": True}),
             "reject unknown top-level authority field",
@@ -170,9 +240,38 @@ def main() -> int:
     for profile, mutate, label in negative_cases:
         expect_invalid(validator, profile, mutate, label)
 
+    semantic_negative_cases = [
+        (
+            full_vm,
+            lambda candidate: candidate["resources"].update({"memoryMiB": 1024}),
+            "reject VM memory above its resource budget",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["resources"].update({"cpuMilli": 1000}),
+            "reject VM vCPUs above its resource CPU budget",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["resources"].update({"diskMiB": 1024}),
+            "reject VM disk capacity above its resource disk budget",
+        ),
+        (
+            microvm,
+            lambda candidate: candidate["placement"].update({"allowedHosts": ["nixos", "ubuntu"]}),
+            "reject microVM placement on an unqualified host",
+        ),
+    ]
+    for profile, mutate, label in semantic_negative_cases:
+        candidate = copy.deepcopy(profile)
+        mutate(candidate)
+        if not semantic_errors(candidate):
+            raise AssertionError(f"semantic negative unexpectedly accepted: {label}")
+        print(f"PASS semantic negative: {label}")
+
     print(
         f"PASS: schema valid; {len(profiles)} profiles accepted; "
-        f"{len(negative_cases)} security-negative cases rejected."
+        f"{len(negative_cases)} schema-negative and {len(semantic_negative_cases)} semantic-negative cases rejected."
     )
     print("NOTE: schema validation is not a runtime, security, or hardware qualification.")
     return 0
