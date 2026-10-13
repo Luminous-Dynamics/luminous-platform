@@ -44,5 +44,18 @@ jobs:
             --as-of "$AS_OF" \
             --report /tmp/jurisdiction-pack-validation-report.json
           cat /tmp/jurisdiction-pack-validation-report.json
+      - name: Evaluate unpublished example without exposing live guidance
+        run: |
+          python tools/civic-pack-validator/evaluate_workflow.py \
+            --schema schemas/jurisdiction-pack-v0.1.0.schema.json \
+            --pack examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json \
+            --as-of 2026-10-13T15:00:00Z \
+            --jurisdiction za/gauteng/city-of-johannesburg \
+            --workflow business.restaurant-launch \
+            --business-type sit_down_restaurant \
+            --report /tmp/jurisdiction-pack-evaluation.json
+          python -c 'import json; r=json.load(open("/tmp/jurisdiction-pack-evaluation.json", encoding="utf-8")); assert r["execution_state"] == "pack_not_published", r; assert r["requirements"] == [], r'
       - name: Run adversarial regression tests
+        env:
+          PYTHONPATH: tools/civic-pack-validator
         run: python -m unittest discover -s tools/civic-pack-validator/tests -v
