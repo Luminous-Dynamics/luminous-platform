@@ -5,6 +5,7 @@ These tests do not verify real signatures or authorize connections.
 
 from __future__ import annotations
 
+import ast
 import copy
 import sys
 import unittest
@@ -217,6 +218,25 @@ class VendorManagementEndpointApprovalTests(unittest.TestCase):
         source = (ROOT / "tools/validate_vendor_management_endpoint_approval.py").read_text()
         self.assertIn("does not authenticate a signer", source)
         self.assertIn("signature authentication, signer trust", source)
+
+    def test_unittest_method_names_are_unique_in_this_class(self) -> None:
+        source = Path(__file__).read_text(encoding="utf-8")
+        module = ast.parse(source, filename=str(Path(__file__)))
+        class_nodes = [
+            node for node in module.body
+            if isinstance(node, ast.ClassDef) and node.name == self.__class__.__name__
+        ]
+        self.assertEqual(len(class_nodes), 1, "expected exactly one test class in this module")
+        method_names = [
+            node.name for node in class_nodes[0].body
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name.startswith("test_")
+        ]
+        self.assertEqual(
+            len(method_names),
+            len(set(method_names)),
+            "duplicate test names silently shadow earlier unittest methods",
+        )
 
 
 if __name__ == "__main__":
