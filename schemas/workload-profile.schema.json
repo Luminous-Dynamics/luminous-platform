@@ -254,7 +254,125 @@
               },
               "uniqueItems": true
             }
-          }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "ingress": {
+                    "const": "deny"
+                  }
+                },
+                "required": [
+                  "ingress"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "rules": {
+                    "not": {
+                      "contains": {
+                        "properties": {
+                          "direction": {
+                            "const": "ingress"
+                          }
+                        },
+                        "required": [
+                          "direction"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "ingress": {
+                    "const": "allowlisted"
+                  }
+                },
+                "required": [
+                  "ingress"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "rules": {
+                    "contains": {
+                      "properties": {
+                        "direction": {
+                          "const": "ingress"
+                        }
+                      },
+                      "required": [
+                        "direction"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "egress": {
+                    "const": "deny"
+                  }
+                },
+                "required": [
+                  "egress"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "rules": {
+                    "not": {
+                      "contains": {
+                        "properties": {
+                          "direction": {
+                            "const": "egress"
+                          }
+                        },
+                        "required": [
+                          "direction"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "egress": {
+                    "const": "allowlisted"
+                  }
+                },
+                "required": [
+                  "egress"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "rules": {
+                    "contains": {
+                      "properties": {
+                        "direction": {
+                          "const": "egress"
+                        }
+                      },
+                      "required": [
+                        "direction"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          ]
         },
         "secrets": {
           "type": "object",
@@ -566,7 +684,31 @@
                   "read_write"
                 ]
               }
-            }
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "source": {
+                      "enum": [
+                        "readonly_config",
+                        "readonly_artifact"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "source"
+                  ]
+                },
+                "then": {
+                  "properties": {
+                    "access": {
+                      "const": "read_only"
+                    }
+                  }
+                }
+              }
+            ]
           }
         },
         "ports": {
