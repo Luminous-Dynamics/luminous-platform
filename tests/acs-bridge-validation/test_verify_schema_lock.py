@@ -70,7 +70,20 @@ class VendoredSchemaLockTests(unittest.TestCase):
         finally:
             shutil.rmtree(temp)
 
-    def test_modified_byte_breaks_git_blob_lock(self) -> None
+    def test_sha256_digest_is_enforced_independently(self) -> None:
+        temp = self._copy_fixture()
+        try:
+            lock_path = temp / verifier.LOCK_PATH
+            lock = json.loads(lock_path.read_text(encoding="utf-8"))
+            digest = lock["files"][0]["sha256"]
+            lock["files"][0]["sha256"] = ("0" if digest[0] != "0" else "1") + digest[1:]
+            lock_path.write_text(json.dumps(lock), encoding="utf-8")
+            errors = verifier.verify_lock(temp)
+            self.assertTrue(any("SHA-256 mismatch" in error for error in errors), errors)
+        finally:
+            shutil.rmtree(temp)
+
+    def test_modified_byte_breaks_git_blob_lock(self) -> None:
         temp = self._copy_fixture()
         try:
             target = temp / "vendor/agent-control-standard/specification/v0.1.0/request-envelope.json"
