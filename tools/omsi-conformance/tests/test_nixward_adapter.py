@@ -360,6 +360,25 @@ class TestNixwardAdapterBinding(unittest.TestCase):
         with self.assertRaisesRegex(v.ConformanceError, "verification post-state digest must be non-zero"):
             binding(tx)
 
+    def test_zero_nixward_identity_digests_rejected(self):
+        for field in ("transaction_id", "target_machine_digest", "plan_digest"):
+            with self.subTest(field=field):
+                tx = nixward_transaction(**{field: "0" * 64})
+                with self.assertRaisesRegex(
+                    v.ConformanceError, f"Nixward transaction {field} digest must be non-zero"
+                ):
+                    binding(tx)
+
+    def test_zero_authority_challenge_and_replay_digests_rejected(self):
+        for field, label in (("challenge_blake3", "challenge"), ("replay_key", "replay key")):
+            with self.subTest(field=field):
+                tx = lifecycle_transaction("authorized")
+                tx["authorization"][field] = "0" * 64
+                with self.assertRaisesRegex(
+                    v.ConformanceError, f"Nixward authorization {label} digest must be non-zero"
+                ):
+                    binding(tx)
+
 
     def test_unknown_nixward_approval_evidence_kind_rejected(self):
         tx = lifecycle_transaction("authorized")
