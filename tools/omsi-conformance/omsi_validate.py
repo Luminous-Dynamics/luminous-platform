@@ -126,14 +126,17 @@ def _reject_secrets(value: Any, path: str = "/") -> None:
     # APIKey, oauthAccessToken, and service-client-secret cannot evade simple checks.
     forbidden_tokens = {
         "password", "passwords", "passwd", "passphrase", "passphrases",
-        "secret", "secrets", "credential", "credentials", "token", "tokens",
-        "cookie", "cookies", "bearer", "jwt",
+        "secret", "secrets", "credential", "credentials",
         # Also reject common collapsed spellings without separators.
         "privatekey", "accesstoken", "refreshtoken", "apikey", "clientsecret",
     }
+    sensitive_suffixes = {"token", "tokens", "cookie", "cookies", "bearer", "jwt"}
     forbidden_pairs = {
-        ("private", "key"), ("access", "token"), ("refresh", "token"),
-        ("api", "key"), ("client", "secret"),
+        ("private", "key"), ("access", "token"), ("access", "tokens"),
+        ("refresh", "token"), ("refresh", "tokens"), ("api", "key"),
+        ("api", "token"), ("api", "tokens"), ("oauth", "token"),
+        ("oauth", "tokens"), ("auth", "token"), ("auth", "tokens"),
+        ("session", "token"), ("session", "tokens"), ("client", "secret"),
     }
     reference_uri = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://[^\s/?#@][^\s?#@]*$")
 
@@ -153,7 +156,8 @@ def _reject_secrets(value: Any, path: str = "/") -> None:
                     if not isinstance(ref, str) or not reference_uri.fullmatch(ref):
                         raise ConformanceError(f"invalid secret/credential reference at {path}{key}[{i}]")
                 continue
-            if forbidden_tokens.intersection(tokens) or any(
+            sensitive_field = bool(tokens and tokens[-1] in sensitive_suffixes)
+            if forbidden_tokens.intersection(tokens) or sensitive_field or any(
                 any(tuple(tokens[i:i + 2]) == pair for i in range(max(0, len(tokens) - 1)))
                 for pair in forbidden_pairs
             ):
