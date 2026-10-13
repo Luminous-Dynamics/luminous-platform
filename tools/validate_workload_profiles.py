@@ -39,6 +39,27 @@ def describe_errors(errors: list[Any]) -> str:
     return "\n".join(lines)
 
 
+EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
+    "reject privileged OCI container": ("deployment.privileged",),
+    "reject host PID namespace": ("deployment.hostNamespaces.pid",),
+    "reject mutable image tag without digest": ("deployment.image.ref",),
+    "reject custom seccomp profile without an identified policy artifact": ("deployment.seccompProfile",),
+    "reject workload host-control authority": ("security.hostControl",),
+    "reject inline or embedded secret material": ("security.secrets.referencesOnly",),
+    "reject undeclared broad host path": ("hostPath",),
+    "reject public port exposure": ("deployment.ports", "exposure"),
+    "reject unknown microVM host-store field": ("guestStoreWritable",),
+    "reject non-isolated compatibility VM": ("deployment.isolatedNetwork",),
+    "reject CI qualification without matching evidence status": ("evidence.status",),
+    "reject hardware qualification without evidence receipt": ("receiptReferences",),
+    "reject CI qualification without passed tests and receipt": ("testsPassed",),
+    "reject allowlisted egress without explicit rules": ("security.network.rules",),
+    "reject egress rule while egress policy is deny": ("security.network.rules",),
+    "reject writable read-only configuration mount": ("deployment", "access"),
+    "reject unknown top-level authority field": ("hostBootMutation",),
+}
+
+
 def expect_invalid(
     validator: Draft202012Validator,
     source_profile: dict[str, Any],
@@ -50,6 +71,23 @@ def expect_invalid(
     errors = list(validator.iter_errors(candidate))
     if not errors:
         raise AssertionError(f"negative test unexpectedly accepted: {name}")
+
+    expected_fragments = EXPECTED_SCHEMA_ERROR_FRAGMENTS.get(name)
+    if expected_fragments is None:
+        raise AssertionError(f"negative test has no expected diagnostic target: {name}")
+
+    relevant_errors = []
+    for error in errors:
+        error_path = ".".join(str(part) for part in error.absolute_path)
+        if any(fragment in error_path or fragment in error.message for fragment in expected_fragments):
+            relevant_errors.append(error)
+    if not relevant_errors:
+        details = describe_errors(errors)
+        raise AssertionError(
+            f"negative test rejected for an unrelated reason: {name}; "
+            f"expected one of {expected_fragments!r}; actual errors:\n{details}"
+        )
+
     print(f"PASS negative: {name}")
 
 
@@ -144,6 +182,11 @@ def main() -> int:
             oci,
             lambda candidate: candidate["deployment"]["hostNamespaces"].update({"pid": True}),
             "reject host PID namespace",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"].update({"seccompProfile": "custom_pinned"}),
+            "reject custom seccomp profile without an identified policy artifact",
         ),
         (
             oci,
