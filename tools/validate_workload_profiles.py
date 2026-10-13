@@ -55,6 +55,8 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject undeclared broad host path": ("hostPath",),
     "reject public port exposure": ("deployment.ports", "exposure"),
     "reject unknown microVM host-store field": ("guestStoreWritable",),
+    "reject OCI volume without registry source ID": ("sourceId",),
+    "reject arbitrary host path as OCI volume source": ("deployment.volumes", "source"),
     "reject non-isolated compatibility VM": ("deployment.isolatedNetwork",),
     "reject qualification/evidence status mismatch": ("evidence.status",),
     "reject hardware qualification without evidence receipt": ("receiptReferences",),
@@ -375,6 +377,20 @@ def main() -> int:
             microvm,
             lambda candidate: candidate["deployment"].update({"guestStoreWritable": True}),
             "reject unknown microVM host-store field",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["volumes"].append(
+                {"source": "dedicated_state", "target": "/var/lib/example", "access": "read_write"}
+            ),
+            "reject OCI volume without registry source ID",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["volumes"].append(
+                {"sourceId": "untrusted-path", "source": "/etc", "target": "/config", "access": "read_only"}
+            ),
+            "reject arbitrary host path as OCI volume source",
         ),
         (
             full_vm,
