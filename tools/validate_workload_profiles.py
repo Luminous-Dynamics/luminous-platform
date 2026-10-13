@@ -79,7 +79,10 @@ def expect_invalid(
     relevant_errors = []
     for error in errors:
         error_path = ".".join(str(part) for part in error.absolute_path)
-        if any(fragment in error_path or fragment in error.message for fragment in expected_fragments):
+        if (
+            all(fragment in error_path for fragment in expected_fragments)
+            or all(fragment in error.message for fragment in expected_fragments)
+        ):
             relevant_errors.append(error)
     if not relevant_errors:
         details = describe_errors(errors)
