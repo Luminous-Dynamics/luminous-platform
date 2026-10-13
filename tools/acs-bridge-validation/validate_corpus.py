@@ -74,7 +74,9 @@ def validate_documents(schema: Any, corpus: Any) -> list[str]:
     ids = [case["id"] for case in cases]
     expected_ids = [f"BR-{number:03d}" for number in range(1, 33)]
     if ids != expected_ids:
-        errors.append("case IDs must be unique and ordered BR-001 through BR-032")
+        # Guard the fixed-ID invariant before looking up safety-critical cases;
+        # a malformed corpus must produce a validation error, never a KeyError.
+        return ["case IDs must be unique and ordered BR-001 through BR-032"]
 
     by_id = {case["id"]: case for case in cases}
     must_not_mutate = {
