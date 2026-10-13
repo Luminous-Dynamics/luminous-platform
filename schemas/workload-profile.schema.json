@@ -727,11 +727,15 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
+              "sourceId",
               "source",
               "target",
               "access"
             ],
             "properties": {
+              "sourceId": {
+                "$ref": "#/$defs/profileName"
+              },
               "source": {
                 "enum": [
                   "dedicated_state",
