@@ -19,6 +19,8 @@ python tools/omsi-conformance/omsi_validate.py events tools/omsi-conformance/fix
 
 The CLI requires `--manifest` for receipt and lifecycle-event validation. This is intentional: a structurally valid receipt or event list without the immutable operation manifest cannot establish cross-document binding, so the CLI must not print a conformance pass for it. These checks still do not verify signatures, issuer trust, or the truth of target observations.
 
+The secret-field check is defense in depth: it rejects common secret-like key tokens across snake_case, kebab-case, and CamelCase, and constrains explicit secret/credential references to opaque URI-shaped values. It cannot prove that arbitrary values are not secrets. Domain profiles must still define allowed action arguments, keep secret delivery out of portable manifests/receipts, and use a separate secret-delivery mechanism.
+
 ## License
 
 The files in this conformance seed are released under the MIT License. This license does not establish governance or licensing for the broader OMSI standard.
