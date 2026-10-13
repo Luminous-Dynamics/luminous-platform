@@ -60,6 +60,8 @@ NixOS remains the reference integration. Additional distribution support is a pl
 
 The proposed sequence is **Ubuntu Server 24.04 LTS in QEMU → Ubuntu 26.04 LTS / desktop qualification → Fedora → Fedora bootc as a separate image-based profile → Debian Stable**. The first milestone is limited to reproducible build/service integration and optional boot visuals. It does not authorize bootloader mutation, automated OS upgrades, or generalized Nixward mutation on other distributions.
 
+Synology DSM is a separate NAS appliance track, initially targeting unprivileged Container Manager/Compose deployment on one explicitly qualified model; it is not treated as generic Linux support. The first Synology profile will not touch DSM boot/recovery, install a privileged SPK, or give a control-plane agent Docker-socket/root authority.
+
 See [Cross-Distribution Support Strategy](docs/CROSS_DISTRO_SUPPORT.md) for the support matrix, architecture boundaries, staged acceptance gates, and required evidence. Distribution support will be reported per capability and exact tested profile; a queued workflow is not a pass.
 
 ## Quick Start: NixOS Integration
