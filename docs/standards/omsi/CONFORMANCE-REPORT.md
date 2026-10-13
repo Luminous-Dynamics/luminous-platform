@@ -28,7 +28,7 @@ Tenant/resource mismatch; manifest expiry with explicit evaluation time; stale/f
 3. The JavaScript probe covers a deliberately smaller subset and is not a full independent validator.
 4. Two local language implementations are not two independent vendor implementations.
 5. Verifier independence is based on declared identity/domain labels, not externally attested deployment facts.
-6. No disposable-VM NixOS change/recovery experiment or actual endpoint execution. The pure adapter-binding prototype is not wired into Nixward's live authorized-execution path and does not authenticate the origin of its transaction envelope.
+6. No disposable-VM NixOS change/recovery experiment or actual endpoint execution. The pure adapter-binding prototype is not wired into Nixward's live authorized-execution path and does not authenticate the origin of its transaction envelope. Nixward PR #73 proposes an additive typed execution-observation API but has not yet been verified or wired into the CLI/transaction protocol.
 7. No dedicated OpenAPI validator or live API server/client test.
 8. No evidence of fleet reliability, SLA compliance, backups/restores, EDR coverage or complete MSP replacement.
 
