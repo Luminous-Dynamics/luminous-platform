@@ -43,6 +43,20 @@ Decision gate: start with Podman/OCI and a minimal microvm.nix proof of concept.
 
 Firecracker may be worth a later high-density Linux microVM experiment. It requires KVM and its production guidance calls for using the jailer. Its constrained device model makes it appropriate for isolated Linux services, not a universal replacement for desktop or general-purpose VMs. Do not make it the first platform-wide default.
 
+## Further native-host candidates
+
+After the first Ubuntu server and cross-OS guest gates, prioritize targets by distinct integration value rather than raw OS count:
+
+| Candidate | Why it adds coverage | Required independent profile |
+|---|---|---|
+| Debian Stable 13 (Trixie) | A conservative Debian-family host target with its own release/update cadence and package/service lifecycle. Debian's release documentation identifies Trixie as the stable release; pin the exact point-release image for each run. | Debian base image digest, architecture, package manifest, service behavior and upgrade test. |
+| Fedora Server | Exercises RPM/DNF and SELinux while remaining a conventional host. | Fedora release/image digest, enforcing SELinux mode, permissions/labels, systemd lifecycle, and RPM packaging evidence. |
+| Rocky Linux 10 | Adds a long-lifecycle RHEL-compatible host profile materially different from Fedora's faster-moving release. Rocky's release table lists 10.2 as a supported minor as of May 2026, with security support through May 2035; qualification must record the actual minor and be re-evaluated as releases change. | Exact minor release, architecture, DNF/RPM behavior, SELinux enforcement, security policy, and update maintenance window. |
+| AlmaLinux 10 | A second Enterprise Linux compatibility target only if users, CI, or a product requirement need it. | Its own image/digest and package/kernel/security behavior; do not inherit Rocky's support result. |
+| openSUSE MicroOS | Tests a transactional, read-only-oriented host model. Upstream's transactional-update design applies changes to a new snapshot and switches on reboot, with rollback semantics; this changes update and recovery handling. | Image/snapshot identity, pending versus booted deployment identity, reboot/promotion, health confirmation, rollback, and separation of app/config/user data. |
+
+MicroOS must not use the same mutation path as Ubuntu or Rocky. Its integration should observe the candidate snapshot, authorize the exact transaction, verify the actually booted snapshot after reboot, and record an indeterminate state whenever promotion or rollback has not been proven. References: [openSUSE MicroOS](https://microos.opensuse.org/) and [transactional-update](https://github.com/openSUSE/transactional-update).
+
 ## Workload placement policy
 
 | Requirement | Default placement | Rationale and constraint |
