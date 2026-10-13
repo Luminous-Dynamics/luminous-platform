@@ -26,7 +26,7 @@ ACS references:
 - [ACS v0.1.0 conformance definition at the pinned release](https://github.com/GenAI-Security-Project/agent-control-standard/blob/1af1f92c1e445cf5ffa662515f83275de6eb603e/docs/spec/conformance.md)
 - [ACS instrument specification at the pinned release](https://github.com/GenAI-Security-Project/agent-control-standard/blob/1af1f92c1e445cf5ffa662515f83275de6eb603e/docs/spec/instrument/specification.md)
 
-The ACS v0.1.1 repository release explicitly says the normative schema namespace and specification package remain v0.1.0. Pin both the release commit and schema namespace; never refer merely to a moving `main` or `integration` branch. The 43 JSON files in that machine-readable package, plus its `LICENSE` and `NOTICE`, are vendored under [`vendor/agent-control-standard`](../vendor/agent-control-standard/) with exact upstream Git blob IDs in [`acs-v0.1.0-schema-lock.json`](fixtures/acs-v0.1.0-schema-lock.json). The source commit is reported unsigned/unverified by GitHub: byte locking makes runs reproducible but does **not** authenticate the publisher. Any pin upgrade requires separate provenance review.
+The ACS v0.1.1 repository release explicitly says the normative schema namespace and specification package remain v0.1.0. Pin both the release commit and schema namespace; never refer merely to a moving `main` or `integration` branch. The 43 JSON files in that machine-readable package, plus its `LICENSE` and `NOTICE`, are vendored under [`vendor/agent-control-standard`](../vendor/agent-control-standard/) with exact upstream Git blob IDs, independent SHA-256 digests, and byte sizes in [`acs-v0.1.0-schema-lock.json`](fixtures/acs-v0.1.0-schema-lock.json). The source commit is reported unsigned/unverified by GitHub: byte locking makes runs reproducible but does **not** authenticate the publisher. Any pin upgrade requires separate provenance review.
 
 **Reuse existing reliability work:** Nixward [#75](https://github.com/Luminous-Dynamics/nixward/issues/75) owns command-task cancellation, durable supervision, and indeterminate-effect reconciliation; [#63](https://github.com/Luminous-Dynamics/nixward/issues/63) owns journal-publication/recovery fault injection; [#70](https://github.com/Luminous-Dynamics/nixward/issues/70) tracks a deterministic no-production-mutation decision/receipt harness. The bridge and its 32-case corpus add ACS integration expectations only. They do not replace these implementation owners or justify duplicating their journals, harnesses, or recovery state machines.
 
@@ -78,7 +78,7 @@ The evaluator must be logically and capability-separated from the executor. Code
 This adapter targets the pinned ACS v0.1.0 wire/schema contract distributed by repository release v0.1.1. It must implement and test all ACS-Core requirements relevant to the selected host integration before claiming ACS-Core conformance.
 
 At minimum, the conformance review must cover:
-- Offline validation of the vendored schema package against its lock file and exact Git blob identities; no network schema resolution is permitted during policy/host execution.
+- Offline validation of the vendored schema package against its lock file and exact Git blob IDs + SHA-256 digests; no network schema resolution is permitted during policy/host execution.
 - capability handshake and negotiated timeout/failure posture;
 - JSON-RPC request/response envelopes and published schemas;
 - the required hook set for the actual host, including `subagentStart` when the framework can spawn subagents;
