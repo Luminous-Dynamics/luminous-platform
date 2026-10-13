@@ -31,6 +31,30 @@ class VendoredSchemaLockTests(unittest.TestCase):
         shutil.copy2(ROOT / verifier.LOCK_PATH, lock_target)
         return temp
 
+    def test_schema_dialect_must_be_explicit(self) -> None:
+        temp = self._copy_fixture()
+        try:
+            target = temp / "vendor/agent-control-standard/specification/v0.1.0/request-envelope.json"
+            document = json.loads(target.read_text(encoding="utf-8"))
+            document.pop("$schema", None)
+            target.write_text(json.dumps(document), encoding="utf-8")
+            errors = verifier.verify_lock(temp)
+            self.assertTrue(any("missing explicit JSON Schema dialect" in error for error in errors), errors)
+        finally:
+            shutil.rmtree(temp)
+
+    def test_upstream_and_vendored_paths_must_match(self) -> None:
+        temp = self._copy_fixture()
+        try:
+            lock_path = temp / verifier.LOCK_PATH
+            lock = json.loads(lock_path.read_text(encoding="utf-8"))
+            lock["files"][0]["vendored_path"] = "vendor/agent-control-standard/renamed-LICENSE"
+            lock_path.write_text(json.dumps(lock), encoding="utf-8")
+            errors = verifier.verify_lock(temp)
+            self.assertTrue(any("vendored path must mirror upstream path" in error for error in errors), errors)
+        finally:
+            shutil.rmtree(temp)
+
     def test_unsigned_upstream_pin_cannot_be_marked_verified(self) -> None:
         temp = self._copy_fixture()
         try:
