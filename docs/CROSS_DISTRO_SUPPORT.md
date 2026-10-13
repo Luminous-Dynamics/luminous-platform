@@ -6,9 +6,9 @@
 
 Build one Luminous Platform with explicit operating-system integration adapters. Keep NixOS the reference implementation, and add non-NixOS support by capability and component rather than by a single, ambiguous "Linux supported" label.
 
-The first non-NixOS target should be **Ubuntu Server 24.04 LTS in an isolated QEMU test lane**. Advance to Ubuntu 26.04 LTS and Ubuntu Desktop only after the first lane passes. Fedora is the next target; assess Fedora bootc as a separate image-based deployment profile. Debian Stable follows once the adapter and test contract are proven.
+The first non-NixOS native-host target is **Ubuntu Server 24.04 LTS in an isolated QEMU test lane**. After its common service contract is proven, add **Debian Stable 13 (Trixie)**, then **Fedora Server**, and then one **RHEL-compatible profile starting with Rocky Linux 10**. Add Ubuntu 26.04 LTS and desktop graphics as separate compatibility lanes. Treat **openSUSE MicroOS** and **Fedora bootc** as distinct transactional/image-based host profiles, not as ordinary package-managed distributions. Evaluate AlmaLinux 10 after the Rocky profile if there is a concrete compatibility or deployment requirement; do not run two near-identical enterprise Linux matrices without a reason.
 
-This order optimizes for a reproducible, general-purpose Linux test target first, then adds an image-based fleet target. It is a prioritization proposal, not a claim that one distribution is intrinsically more secure than another.
+The rationale is coverage of distinct integration semantics in stages: Debian-family packaging, RPM plus SELinux, long-lifecycle Enterprise Linux, graphical session/DRM, then immutable/transactional host updates. These are proposed qualification priorities, not claims that any listed profile is already supported. Ubuntu 24.04 is the first validation fixture, not permission to modify a physical host.
 
 ## Host operating system versus guest operating systems
 
@@ -75,6 +75,9 @@ This is an architectural target, not an existing cross-distro API. Do not extrac
 | Fedora Workstation/Server | Add an RPM/service integration profile and independent VM evidence. | That RPM-family support automatically qualifies Fedora bootc. |
 | Fedora bootc | Separate image-based profile: immutable/managed filesystem assumptions, booted deployment identity, deployment promotion, and rollback verification. | That package installation or mutation works like a traditional mutable host. |
 | Debian Stable | Add after the common contract stabilizes; test independently even when an Ubuntu adapter can be reused. | That Ubuntu results establish Debian support. |
+| Rocky Linux 10 | Separate RHEL-compatible profile: RPM/DNF, systemd, SELinux, supported CPU architecture, and current minor-release evidence. | That Fedora results qualify Enterprise Linux or every Rocky minor release. |
+| AlmaLinux 10 | Optional RHEL-compatible compatibility lane after Rocky only if a named requirement justifies a second enterprise distribution. | That Rocky qualification automatically establishes AlmaLinux qualification. |
+| openSUSE MicroOS | Separate transactional host profile: update/snapshot/reboot/promotion/rollback and separation of application, configuration, and user data. | Ordinary mutable-host package semantics or support for every openSUSE edition. |
 | Synology DSM (exact model/build) | First: remote read-only SNMPv3 monitor using documented Synology MIBs. Optional second step: narrow DSM Web API adapter. Optional third step: supported Container Manager + Compose, unprivileged containers, and dedicated persistent directory. | Generic Linux support, native boot/recovery integration, Nixward management, or support for all NAS models/architectures. |
 | Other operating systems | Explicitly out of scope until a named profile, owner, and test lane exist. | Generic Linux claims, or implied macOS/Windows support. |
 
@@ -210,6 +213,11 @@ Fail closed for authorization and evidence validation, but fail open for optiona
 - [Incus](https://github.com/lxc/incus)
 - [Firecracker design](https://github.com/firecracker-microvm/firecracker/blob/main/docs/design.md)
 - [Ubuntu autoinstall reference](https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html)
+- [Debian Releases](https://www.debian.org/releases/index.en.html)
+- [Rocky Linux release lifecycle](https://docs.rockylinux.org/latest/releases/)
+- [AlmaLinux release notes](https://wiki.almalinux.org/release-notes/)
+- [openSUSE MicroOS](https://microos.opensuse.org/)
+- [openSUSE transactional-update](https://github.com/openSUSE/transactional-update)
 - [Synology Container Manager supported models](https://www.synology.com/en-in/dsm/packages/ContainerManager)
 - [Synology Container Manager release notes](https://www.synology.com/en-us/releaseNote/ContainerManager)
 - [Synology DSM SNMP settings and security](https://kb.synology.com/en-ca/DSM/help/DSM/AdminCenter/system_snmp?version=7)
