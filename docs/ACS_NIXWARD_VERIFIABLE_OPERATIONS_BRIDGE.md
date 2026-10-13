@@ -28,6 +28,8 @@ ACS references:
 
 The ACS v0.1.1 repository release explicitly says the normative schema namespace and specification package remain v0.1.0. Pin both the release commit and schema namespace; never refer merely to a moving `main` or `integration` branch.
 
+**Reuse existing reliability work:** Nixward [#75](https://github.com/Luminous-Dynamics/nixward/issues/75) owns command-task cancellation, durable supervision, and indeterminate-effect reconciliation; [#63](https://github.com/Luminous-Dynamics/nixward/issues/63) owns journal-publication/recovery fault injection; [#70](https://github.com/Luminous-Dynamics/nixward/issues/70) tracks a deterministic no-production-mutation decision/receipt harness. The bridge and its 32-case corpus add ACS integration expectations only. They do not replace these implementation owners or justify duplicating their journals, harnesses, or recovery state machines.
+
 ## 2. Security invariant
 
 **An ACS `allow` means only that the observed agent may continue through the applicable host hook. It is not Nixward mutation authority.**
@@ -122,7 +124,7 @@ Required resolution:
 3. If not, propose a Nixward-owned, versioned, backward-compatible schema/state migration. Preserve historical evidence and never silently map old failures into successful effects.
 4. Until the gap is resolved, block operations whose timeout/crash behavior could have an ambiguous effect; do not add a competing state store in Luminous Platform to conceal the gap.
 
-This is a hard blocker for non-idempotent or ambiguous effects, not an excuse to mark unexecuted tests as passed.
+This is a hard blocker for non-idempotent or ambiguous effects, not an excuse to mark unexecuted tests as passed. It is already tracked by Nixward #75 (especially request-task cancellation after launch and supervisor/reboot recovery) and #63 (post-rename durability uncertainty). Reuse and link their exact-head results. A successful unit/model test or a queued PR check is not evidence that the required supervisor or durable journal behavior is qualified.
 
 ## 7. Scope and non-scope
 
@@ -206,3 +208,6 @@ A queued, pending, cancelled, skipped, stale, missing, or unexecuted result is n
 - [ACS issue documenting reference Guardian signature gap](https://github.com/GenAI-Security-Project/agent-control-standard/issues/70) — use as a reference-implementation finding, not as a claim about every ACS deployment.
 - [NIST SP 800-204D: supply-chain security in DevSecOps pipelines](https://csrc.nist.gov/pubs/sp/800/204/d/final)
 - [Nixward System Transaction Architecture](https://github.com/Luminous-Dynamics/nixward/blob/ae60256f0be73138a539ecda048e81056dd14a30/docs/SYSTEM_TRANSACTION_ARCHITECTURE.md)
+- [Nixward #75 — journal and reconcile command execution across task cancellation](https://github.com/Luminous-Dynamics/nixward/issues/75)
+- [Nixward #63 — fault-inject transaction-journal publication and recovery](https://github.com/Luminous-Dynamics/nixward/issues/63)
+- [Nixward #70 — deterministic no-production-mutation decision/receipt harness](https://github.com/Luminous-Dynamics/nixward/issues/70)
