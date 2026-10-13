@@ -47,6 +47,12 @@ class CorpusMutationTests(unittest.TestCase):
         changed["cases"][1]["id"] = changed["cases"][0]["id"]
         self.assertTrue(validator.validate_documents(SCHEMA, changed))
 
+    def test_misnamed_required_case_returns_validation_error_not_exception(self) -> None:
+        changed = copy.deepcopy(CORPUS)
+        changed["cases"][17]["id"] = "BR-999"  # replaces required BR-018
+        errors = validator.validate_documents(SCHEMA, changed)
+        self.assertTrue(any("case IDs must be unique and ordered" in error for error in errors))
+
     def test_no_effect_control_cannot_allow_mutation(self) -> None:
         changed = copy.deepcopy(CORPUS)
         changed["cases"][17]["max_mutating_effects"] = 1  # BR-018
