@@ -122,91 +122,106 @@
       "upstream_path": "specification/v0.1.0/hooks/memory-context-retrieval.acs-provenance.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/memory-context-retrieval.acs-provenance.json",
       "git_blob_sha": "73aee48014203f944b417c2c2e7fbadfac8e172b",
-      "upstream_size_bytes": 670
+      "upstream_size_bytes": 670,
+      "sha256": "7238196c4d9f881aac8d6bdae459451202f370adc43f5410be7f35d00e6971ad"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/memory-context-retrieval.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/memory-context-retrieval.json",
       "git_blob_sha": "5c1c5440b4203ae2bee6908080da8cb4f231f944",
-      "upstream_size_bytes": 1397
+      "upstream_size_bytes": 1397,
+      "sha256": "2d1290812f4476589846f4142959b8442d609b4ba654cb606c0136a13829c6d3"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/memory-store.acs-provenance.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/memory-store.acs-provenance.json",
       "git_blob_sha": "9e9649e0945700e38027fef1a60de59da3934de2",
-      "upstream_size_bytes": 584
+      "upstream_size_bytes": 584,
+      "sha256": "978fa7626c9bd8eb0c304c02f7e6ccaf41c0e9c2753ab9129f72a144f94e2bf7"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/memory-store.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/memory-store.json",
       "git_blob_sha": "450e36e41b2ad8857c67fbafdf4f3b85c6c28311",
-      "upstream_size_bytes": 1296
+      "upstream_size_bytes": 1296,
+      "sha256": "3b9724cd2777af4fba0dce30c0639fa5f7f5cbd394b52cb267e8085dc7d98b4f"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/post-compact.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/post-compact.json",
       "git_blob_sha": "dacd0ff3d2f9635000a87cc0788fa299ae328895",
-      "upstream_size_bytes": 3533
+      "upstream_size_bytes": 3533,
+      "sha256": "944d77753b651169883769e1493ed184d3f1d08579b412783c01d5d9a2d4d38b"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/pre-compact.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/pre-compact.json",
       "git_blob_sha": "55aabf9c6b09278a8f7f0d660ca70b9e74c26c3b",
-      "upstream_size_bytes": 2892
+      "upstream_size_bytes": 2892,
+      "sha256": "712687670a5905e078eb79ef04080b2b62715e89e5c2d842c0137d06e390e674"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/session-end.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/session-end.json",
       "git_blob_sha": "a76c30281205aab3cff48c9cb5d8b0435faaac38",
-      "upstream_size_bytes": 1018
+      "upstream_size_bytes": 1018,
+      "sha256": "e3bdb1ccd8fd5abd0a051abaab71a47cab4303c45f4e2b3b704e04c30eb55484"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/session-start.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/session-start.json",
       "git_blob_sha": "18a595d3e34f79fb438412ca45e513c294ee3e06",
-      "upstream_size_bytes": 2896
+      "upstream_size_bytes": 2896,
+      "sha256": "13909ee8fc1b5995822295e94e1fcb03fcee218524758e801379038f39fc1d78"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/skill-load.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/skill-load.json",
       "git_blob_sha": "98c8eb6f905bbe672f5b64269b723c706280c343",
-      "upstream_size_bytes": 4864
+      "upstream_size_bytes": 4864,
+      "sha256": "3cd774b07eac95a5d467c0b46367df968effab2866d5f2d7f3274ed7b0ea9310"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/skill-register.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/skill-register.json",
       "git_blob_sha": "8636e029db3649b155f5b86131fa42f5537b3d19",
-      "upstream_size_bytes": 5492
+      "upstream_size_bytes": 5492,
+      "sha256": "6780bf04f5d255a97104ab1b90a7942b251224fbbb10dd1afa607f1a47a4f740"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/skill-unload.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/skill-unload.json",
       "git_blob_sha": "7cc610be5d42d7138e521e494a3794b2319c6574",
-      "upstream_size_bytes": 1363
+      "upstream_size_bytes": 1363,
+      "sha256": "6db467df4cce9b088c320210765e2879590e842be5729404457b328be0a4d7a3"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/subagent-start.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/subagent-start.json",
       "git_blob_sha": "f17f78a8c34718040e43e1f70385fc7fb209fc32",
-      "upstream_size_bytes": 4115
+      "upstream_size_bytes": 4115,
+      "sha256": "801893600414455a8e678bd125b63f4f3ec70fcf4aaaa014545dc0d31a5fa9de"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/subagent-stop.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/subagent-stop.json",
       "git_blob_sha": "e4dc1b72a6082be7d6d46eae7ec6b78972f39cc4",
-      "upstream_size_bytes": 2618
+      "upstream_size_bytes": 2618,
+      "sha256": "ce34e8a519625dce981d82979aeefa38d29cd7e68689365c3e53ee4eca63c971"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/system-ping.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/system-ping.json",
       "git_blob_sha": "e776bc2799d6cf77d302a83aae2a3e34012b723c",
-      "upstream_size_bytes": 1083
+      "upstream_size_bytes": 1083,
+      "sha256": "38d44858b4a33a0c70be19bced57614fe550f698fecdbb39db6ab8705b2bf499"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/tool-call-request.acs-provenance.json",
       "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/tool-call-request.acs-provenance.json",
       "git_blob_sha": "ec3be615378725c52b585481442a65ca1be55ebc",
-      "upstream_size_bytes": 676
+      "upstream_size_bytes": 676,
+      "sha256": "9a2fa1066158bcd90308aecc14346a7f9a04ab778d2652e1d589291a833d3425"
     },
     {
       "upstream_path": "specification/v0.1.0/hooks/tool-call-request.json",
