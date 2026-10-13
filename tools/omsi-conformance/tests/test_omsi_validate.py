@@ -52,7 +52,8 @@ class TestOMSI(unittest.TestCase):
 
     def test_secret_like_camel_case_and_compound_keys_rejected(self):
         for key in ("databasePassword", "oauthAccessToken", "APIKey",
-                    "privateKeyPath", "service-client-secret"):
+                    "privateKeyPath", "service-client-secret", "apikey",
+                    "privatekey", "accesstoken", "refreshtoken", "clientsecret"):
             with self.subTest(key=key), self.assertRaisesRegex(
                 v.ConformanceError, "secret-like field"
             ):
