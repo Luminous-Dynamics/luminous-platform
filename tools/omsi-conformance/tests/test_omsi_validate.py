@@ -1,4 +1,5 @@
 import copy
+import subprocess
 import sys
 import unittest
 from datetime import datetime
@@ -147,5 +148,45 @@ class TestOMSI(unittest.TestCase):
     def test_signature_shape_is_not_signature_verification(self):
         x=grant(); x["proof"]["signature_base64"]="AA=="
         v.validate_grant(op(), x, NOW)
+
+
+    def test_receipt_cli_requires_manifest_for_binding(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "omsi_validate.py"), "receipt",
+             str(ROOT / "fixtures" / "receipt.json")],
+            cwd=ROOT, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("receipt requires --manifest for operation binding", result.stdout)
+
+    def test_events_cli_requires_manifest_for_binding(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "omsi_validate.py"), "events",
+             str(ROOT / "fixtures" / "events.json")],
+            cwd=ROOT, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("events requires --manifest for operation binding", result.stdout)
+
+    def test_receipt_cli_passes_with_manifest_and_event_chain(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "omsi_validate.py"), "receipt",
+             str(ROOT / "fixtures" / "receipt.json"),
+             "--manifest", str(ROOT / "fixtures" / "operation.json"),
+             "--events", str(ROOT / "fixtures" / "events.json")],
+            cwd=ROOT, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("PASS: receipt document", result.stdout)
+
+    def test_events_cli_passes_with_manifest(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "omsi_validate.py"), "events",
+             str(ROOT / "fixtures" / "events.json"),
+             "--manifest", str(ROOT / "fixtures" / "operation.json")],
+            cwd=ROOT, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("PASS: events document", result.stdout)
 
 if __name__ == "__main__": unittest.main()
