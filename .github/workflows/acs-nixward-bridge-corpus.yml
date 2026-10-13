@@ -6,7 +6,9 @@ on:
       - ".github/workflows/acs-nixward-bridge-corpus.yml"
       - "docs/ACS_NIXWARD_VERIFIABLE_OPERATIONS_BRIDGE.md"
       - "docs/fixtures/acs-nixward-bridge-v1-cases.json"
+      - "docs/fixtures/acs-v0.1.0-schema-lock.json"
       - "docs/schemas/acs-nixward-bridge-test-corpus-v1.schema.json"
+      - "vendor/agent-control-standard/**"
       - "tools/acs-bridge-validation/**"
       - "tests/acs-bridge-validation/**"
   push:
@@ -15,7 +17,9 @@ on:
       - ".github/workflows/acs-nixward-bridge-corpus.yml"
       - "docs/ACS_NIXWARD_VERIFIABLE_OPERATIONS_BRIDGE.md"
       - "docs/fixtures/acs-nixward-bridge-v1-cases.json"
+      - "docs/fixtures/acs-v0.1.0-schema-lock.json"
       - "docs/schemas/acs-nixward-bridge-test-corpus-v1.schema.json"
+      - "vendor/agent-control-standard/**"
       - "tools/acs-bridge-validation/**"
       - "tests/acs-bridge-validation/**"
   workflow_dispatch:
@@ -55,6 +59,9 @@ jobs:
 
       - name: Run validator negative and mutation tests
         run: python -m unittest discover -s tests/acs-bridge-validation -v
+
+      - name: Verify pinned ACS schema bundle and offline references
+        run: python tools/acs-bridge-validation/verify_schema_lock.py
 
       - name: Validate corpus schema and invariants
         run: python tools/acs-bridge-validation/validate_corpus.py
