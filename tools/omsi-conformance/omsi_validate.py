@@ -125,7 +125,9 @@ def _reject_secrets(value: Any, path: str = "/") -> None:
     # Split separators and CamelCase before token matching so e.g. databasePassword,
     # APIKey, oauthAccessToken, and service-client-secret cannot evade simple checks.
     forbidden_tokens = {
-        "password", "passwd", "passphrase", "secret", "credential", "credentials",
+        "password", "passwords", "passwd", "passphrase", "passphrases",
+        "secret", "secrets", "credential", "credentials", "token", "tokens",
+        "cookie", "cookies", "bearer", "jwt",
         # Also reject common collapsed spellings without separators.
         "privatekey", "accesstoken", "refreshtoken", "apikey", "clientsecret",
     }
