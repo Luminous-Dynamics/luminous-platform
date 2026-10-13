@@ -93,6 +93,66 @@
       "source_license_url": null,
       "attribution": "Companies and Intellectual Property Commission (CIPC)",
       "rights_notes": "Direct users to the official service. Do not imply that this app submits a company registration."
+    },
+    {
+      "source_id": "joburg.business-licensing-policy",
+      "authority": "City of Johannesburg",
+      "title": "The City's policy on business licences",
+      "canonical_url": "https://joburg.org.za/work_/BusinessLicences/Pages/The-City%27s-policy-on-business-licences.aspx",
+      "section": "Annexure A1: Schedule 1 (businesses requiring a licence)",
+      "evidence_kind": "official_policy",
+      "review_state": "unreviewed",
+      "published_at": null,
+      "effective_from": null,
+      "checked_at": null,
+      "reviewed_at": null,
+      "next_review_at": null,
+      "reviewer_role": null,
+      "snapshot_sha256": null,
+      "reuse": "not_assessed",
+      "source_license_url": null,
+      "attribution": "City of Johannesburg",
+      "rights_notes": "Use this page to locate the City's published policy and schedule. Confirm the operative version and applicable business classification before publication; do not redistribute annexure text without rights assessment."
+    },
+    {
+      "source_id": "joburg.business-licensing-enquiries",
+      "authority": "City of Johannesburg",
+      "title": "Business Licences — Enquiries",
+      "canonical_url": "https://joburg.org.za/work_/BusinessLicences/Pages/Enquiries.aspx",
+      "section": "Business Licence Officer and Environmental Health Services",
+      "evidence_kind": "official_guidance",
+      "review_state": "unreviewed",
+      "published_at": null,
+      "effective_from": null,
+      "checked_at": null,
+      "reviewed_at": null,
+      "next_review_at": null,
+      "reviewer_role": null,
+      "snapshot_sha256": null,
+      "reuse": "not_assessed",
+      "source_license_url": null,
+      "attribution": "City of Johannesburg",
+      "rights_notes": "Contact details may change. Resolve the live page and confirm the correct office for the proposed business type before displaying contact details as current."
+    },
+    {
+      "source_id": "za.department-health-food-control",
+      "authority": "National Department of Health, South Africa",
+      "title": "Food Control — Regulations",
+      "canonical_url": "https://www.health.gov.za/food-control-regulations/",
+      "section": "Regulations governing general hygiene requirements for food premises, the transport of food and related matters (R638 of 22 June 2018)",
+      "evidence_kind": "official_guidance",
+      "review_state": "unreviewed",
+      "published_at": null,
+      "effective_from": null,
+      "checked_at": null,
+      "reviewed_at": null,
+      "next_review_at": null,
+      "reviewer_role": null,
+      "snapshot_sha256": null,
+      "reuse": "not_assessed",
+      "source_license_url": null,
+      "attribution": "National Department of Health, South Africa",
+      "rights_notes": "This is an official index, not a replacement for reviewing the applicable current regulation and amendments. Do not treat a page listing alone as legal approval."
     }
   ],
   "requirements": [
@@ -119,13 +179,22 @@
           "Any exemptions or additional local conditions"
         ]
       },
-      "source_refs": ["joburg.business-licences"],
+      "source_refs": [
+        "joburg.business-licences",
+        "joburg.business-licensing-policy"
+      ],
       "user_actions": [
         {
           "action_id": "contact-city",
           "label": "Confirm applicability with the City of Johannesburg",
           "action_kind": "contact_authority",
-          "url": "https://joburg.org.za/work_/InvestInJoburg/Pages/Business-Licences.aspx"
+          "url": "https://joburg.org.za/work_/BusinessLicences/Pages/Enquiries.aspx"
+        },
+        {
+          "action_id": "read-city-policy",
+          "label": "Read the City's published licensing policy and Schedule 1",
+          "action_kind": "read_source",
+          "url": "https://joburg.org.za/work_/BusinessLicences/Pages/The-City%27s-policy-on-business-licences.aspx"
         }
       ],
       "completion_effect": "must_confirm_with_authority"
@@ -153,13 +222,16 @@
           "Any activity-specific exceptions"
         ]
       },
-      "source_refs": ["za.food-premises-hygiene"],
+      "source_refs": [
+        "za.food-premises-hygiene",
+        "za.department-health-food-control"
+      ],
       "user_actions": [
         {
           "action_id": "confirm-food-premises",
           "label": "Ask the responsible local authority about the applicable process",
           "action_kind": "contact_authority",
-          "url": "https://www.gov.za/documents/notices/foodstuffs-cosmetics-and-disinfectants-act-regulations-general-hygiene-0"
+          "url": "https://www.health.gov.za/food-control-regulations/"
         }
       ],
       "completion_effect": "must_confirm_with_authority"
@@ -187,7 +259,9 @@
           "Tax and other registration obligations"
         ]
       },
-      "source_refs": ["cipc.bizportal"],
+      "source_refs": [
+        "cipc.bizportal"
+      ],
       "user_actions": [
         {
           "action_id": "open-cipc",
@@ -210,6 +284,7 @@
     "Draft research fixture: not ready for public use or legal reliance.",
     "All source records are intentionally unreviewed in this fixture. Human source review and current applicability checks are required before publication.",
     "A user marking a task complete records their own progress only; it does not prove that a licence, registration, inspection, or approval has been granted.",
-    "Official portals linked here remain the responsible authorities. This prototype is not an official government service."
+    "Official portals linked here remain the responsible authorities. This prototype is not an official government service.",
+    "Official source links were rechecked during research on 2026-10-13, but source records remain unreviewed until a named maintainer verifies the current text, applicability, version, and review deadline."
   ]
 }
