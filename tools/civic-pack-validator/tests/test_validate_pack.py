@@ -134,6 +134,32 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         self.assertFalse(report["validation_passed"])
         self.assertEqual(check_status(report, "security.https_only"), "FAIL")
 
+    def test_credentialed_https_url_fails(self):
+        pack = copy.deepcopy(PACK)
+        pack["requirements"][0]["user_actions"][0]["url"] = "https://trusted.example@attacker.example/path"
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertEqual(check_status(report, "security.https_only"), "FAIL")
+
+    def test_fully_reviewed_candidate_can_pass_publication_gate(self):
+        pack = copy.deepcopy(PACK)
+        pack["publication_state"] = "candidate"
+        for source in pack["sources"]:
+            source.update({
+                "review_state": "current",
+                "checked_at": "2026-10-01T12:00:00Z",
+                "reviewed_at": "2026-10-01T12:00:00Z",
+                "reviewer_role": "qualified-source-reviewer",
+                "next_review_at": "2026-10-20T12:00:00Z",
+            })
+        for requirement in pack["requirements"]:
+            requirement["review_state"] = "verified"
+        report = report_for(pack)
+        self.assertTrue(report["validation_passed"])
+        self.assertTrue(report["publication_eligible"])
+        self.assertEqual(check_status(report, "publication.evidence_gates"), "PASS")
+        self.assertEqual(check_status(report, "publication.gate"), "PASS")
+
     def test_review_interval_cannot_be_extended_by_metadata(self):
         pack = copy.deepcopy(PACK)
         source = pack["sources"][0]
