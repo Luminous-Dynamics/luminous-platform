@@ -1218,6 +1218,170 @@
           "evidence"
         ]
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "security": {
+            "properties": {
+              "hostDataAccess": {
+                "const": "none"
+              }
+            },
+            "required": [
+              "hostDataAccess"
+            ]
+          },
+          "deployment": {
+            "properties": {
+              "kind": {
+                "const": "oci_container"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "security",
+          "deployment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "deployment": {
+            "properties": {
+              "volumes": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security": {
+            "properties": {
+              "hostDataAccess": {
+                "const": "none"
+              }
+            },
+            "required": [
+              "hostDataAccess"
+            ]
+          },
+          "deployment": {
+            "properties": {
+              "kind": {
+                "const": "nixos_microvm"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "security",
+          "deployment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "deployment": {
+            "properties": {
+              "shares": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security": {
+            "properties": {
+              "hostDataAccess": {
+                "const": "declared_mounts_only"
+              }
+            },
+            "required": [
+              "hostDataAccess"
+            ]
+          },
+          "deployment": {
+            "properties": {
+              "kind": {
+                "const": "oci_container"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "security",
+          "deployment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "deployment": {
+            "properties": {
+              "volumes": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "security": {
+            "properties": {
+              "hostDataAccess": {
+                "const": "declared_mounts_only"
+              }
+            },
+            "required": [
+              "hostDataAccess"
+            ]
+          },
+          "deployment": {
+            "properties": {
+              "kind": {
+                "const": "nixos_microvm"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "security",
+          "deployment"
+        ]
+      },
+      "then": {
+        "properties": {
+          "deployment": {
+            "properties": {
+              "shares": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }
