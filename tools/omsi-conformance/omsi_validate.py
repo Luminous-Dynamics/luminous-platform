@@ -115,11 +115,11 @@ def _reject_secrets(value: Any, path: str = "/") -> None:
         ("private", "key"), ("access", "token"), ("refresh", "token"),
         ("api", "key"), ("client", "secret"),
     }
-    reference_uri = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://[^\\s/?#@][^\\s?#@]*$")
+    reference_uri = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://[^\s/?#@][^\s?#@]*$")
 
     def key_tokens(key: str) -> list[str]:
-        separated = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\\1_\\2", key)
-        separated = re.sub(r"([a-z0-9])([A-Z])", r"\\1_\\2", separated)
+        separated = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+        separated = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", separated)
         return [part for part in re.split(r"[^A-Za-z0-9]+", separated.lower()) if part]
 
     if isinstance(value, dict):
