@@ -13,14 +13,17 @@
       "nixos",
       "ubuntu",
       "debian",
-      "fedora"
+      "fedora",
+      "rocky_linux",
+      "almalinux",
+      "opensuse_microos"
     ],
     "architectures": [
       "x86_64",
       "aarch64"
     ],
     "placementClass": "service",
-    "notes": "Placeholder fixture only. Replace the .invalid image and example digest only after publishing and reviewing a real image."
+    "notes": "Schema-only fixture for the runtime contract. This does not claim native support on any host, and the .invalid image plus placeholder digest must never be fetched or launched."
   },
   "deployment": {
     "kind": "oci_container",
