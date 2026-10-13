@@ -4,6 +4,20 @@ This tool validates versioned jurisdiction packs and emits a deterministic JSON 
 
 ## Run locally
 
+Run the deterministic workflow evaluator separately to verify exact jurisdiction/workflow/business-type matching. On the intentionally unpublished Johannesburg fixture it must return `pack_not_published` with no executable requirement cards:
+
+```sh
+python tools/civic-pack-validator/evaluate_workflow.py \
+  --schema schemas/jurisdiction-pack-v0.1.0.schema.json \
+  --pack examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json \
+  --as-of 2026-10-13T15:00:00Z \
+  --jurisdiction za/gauteng/city-of-johannesburg \
+  --workflow business.restaurant-launch \
+  --business-type sit_down_restaurant
+```
+
+
+
 From the repository root:
 
 ```sh
