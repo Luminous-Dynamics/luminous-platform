@@ -42,9 +42,9 @@ JSON Schema validation is necessary but not sufficient: cross-record references,
 
 ## Source review receipts and append-only provenance
 
-The [source review protocol v0.1](source-review-protocol-v0.1.md) defines the receipt format and its limits. A non-`unreviewed` source must point to its latest receipt; active metadata must match that receipt. Each receipt records the snapshot digest, review times/deadline, reviewer ID/role, decision, reuse-rights metadata, and five explicit review dimensions.
+The [source review protocol v0.1](source-review-protocol-v0.1.md) defines both source and claim receipt formats and their limits. A non-`unreviewed` source must point to its latest source receipt; active metadata must match that receipt. A non-`draft` requirement must point to its latest claim review receipt, whose SHA-256 binds the exact title, claim type, summary, applicability, source references, user actions, and completion effect. A verified claim receipt must identify every current source receipt it relied on and explicitly check source support, jurisdiction, applicability, user-facing language, and completion effect.
 
-Pull-request CI rejects editing, removing, or reordering receipts already present in the base pack. This does not authenticate an identity, prevent an administrator rewriting history, or prove a review occurred. Repository branch protection and independent human approval remain release controls. Captured source bytes need a lawful, access-controlled evidence store; a digest alone cannot reproduce the capture. The Johannesburg fixture deliberately contains no receipts and remains unpublished.
+Pull-request CI rejects editing, removing, or reordering either receipt ledger already present in the base pack. This does not authenticate an identity, prevent an administrator rewriting history, or prove a review occurred. Repository branch protection and independent human approval remain release controls. Captured source bytes need a lawful, access-controlled evidence store; a digest alone cannot reproduce the capture. The Johannesburg fixture deliberately contains no receipts and remains unpublished.
 
 ## Applicability predicates
 
