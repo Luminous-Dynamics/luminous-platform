@@ -1,4 +1,4 @@
-.PHONY: test schemas validate-fixtures interop
+.PHONY: test schemas validate-fixtures interop field-service
 
 test:
 	python -m unittest discover -s tests -v
@@ -14,3 +14,6 @@ validate-fixtures:
 
 interop:
 	node interop/verify-digests.mjs
+
+field-service:
+	python -c 'import sys,unittest; suite=unittest.defaultTestLoader.discover("tests", pattern="test_field_service.py"); result=unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(0 if result.wasSuccessful() and result.testsRun >= 5 else 1)'
