@@ -58,10 +58,35 @@ jobs:
         run: python -m pip install --disable-pip-version-check --no-input -r tools/acs-bridge-validation/requirements.txt
 
       - name: Run validator negative and mutation tests
-        run: python -m unittest discover -s tests/acs-bridge-validation -v
+        id: unit-tests
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests/acs-bridge-validation -v 2>&1 | tee "$RUNNER_TEMP/acs-nixward-unit-tests.log"
 
       - name: Verify pinned ACS schema bundle and offline references
+        id: schema-lock
         run: python tools/acs-bridge-validation/verify_schema_lock.py
 
       - name: Validate corpus schema and invariants
+        id: corpus-validation
         run: python tools/acs-bridge-validation/validate_corpus.py
+
+      - name: Emit machine-readable validation receipt
+        id: validation-receipt
+        if: always()
+        env:
+          ACS_UNIT_TESTS_OUTCOME: ${{ steps.unit-tests.outcome }}
+          ACS_SCHEMA_LOCK_OUTCOME: ${{ steps.schema-lock.outcome }}
+          ACS_CORPUS_OUTCOME: ${{ steps.corpus-validation.outcome }}
+          ACS_TEST_LOG: ${{ runner.temp }}/acs-nixward-unit-tests.log
+          ACS_RECEIPT_OUTPUT: ${{ runner.temp }}/acs-nixward-validation-receipt-v1.json
+        run: python tools/acs-bridge-validation/emit_validation_receipt.py
+
+      - name: Upload machine-readable validation receipt
+        if: always() && steps.validation-receipt.outcome != 'skipped'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: acs-nixward-validation-receipt-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/acs-nixward-validation-receipt-v1.json
+          if-no-files-found: error
+          retention-days: 30
