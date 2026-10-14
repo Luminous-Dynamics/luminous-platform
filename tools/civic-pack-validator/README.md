@@ -60,6 +60,20 @@ Use a frozen, timezone-aware `--as-of` instant when generating evidence that mus
 
 A draft pack can therefore be a structurally valid fixture while being explicitly **not publishable**. The Johannesburg example intentionally behaves this way: its source records are unreviewed, requirements remain draft, and no legal-completion claim can be made from it.
 
+## Source review receipts and history
+
+Read the [source review and receipt protocol v0.1](../../docs/civic-services/source-review-protocol-v0.1.md). A source cannot claim a non-unreviewed state without a latest receipt matching its URL, snapshot digest, reviewer metadata, and reuse-rights fields. A `current` receipt requires all five review-scope fields to be true.
+
+The fixture intentionally keeps `source_review_receipts: []` and null receipt pointers: no source has been reviewed. Pull-request CI compares the base pack's receipt array against the head pack and rejects editing, removing, or reordering old receipts. This is append-only history relative to the base; it does not authenticate reviewer identity or prove legal accuracy. Require independent human review and approved repository rules before publication.
+
+For a local baseline comparison:
+
+```sh
+python tools/civic-pack-validator/check_review_history.py \\
+  --baseline-pack /path/to/base-pack.json \\
+  --pack examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json
+```
+
 ## Applicability predicate contract
 
 Read the normative [Applicability predicate contract v0.1](../../docs/civic-services/applicability-predicate-contract-v0.1.md) for the allow-listed fields, strict typing, three-valued conjunction semantics, and regression requirements.
