@@ -119,6 +119,12 @@ def validate_pack(
         for req in requirements if isinstance(req, dict)
         for action in req.get("user_actions", []) if isinstance(action, dict)
     ]
+    predicate_ids = [
+        predicate.get("predicate_id", "")
+        for req in requirements if isinstance(req, dict)
+        for predicate in req.get("applicability", {}).get("predicates", [])
+        if isinstance(predicate, dict)
+    ]
 
     all_unique = (
         len(source_ids) == len(sources)
@@ -127,14 +133,19 @@ def validate_pack(
             len(req.get("user_actions", []))
             for req in requirements if isinstance(req, dict)
         )
+        and len(predicate_ids) == sum(
+            len(req.get("applicability", {}).get("predicates", []))
+            for req in requirements if isinstance(req, dict)
+        )
         and _unique_check(source_ids)
         and _unique_check(requirement_ids)
         and _unique_check(action_ids)
+        and _unique_check(predicate_ids)
     )
     add(
         "pack.unique_identifiers",
         "PASS" if all_unique else "FAIL",
-        "Source, requirement, and action identifiers must be present and unique within the pack.",
+        "Source, requirement, action, and predicate identifiers must be present and unique within the pack.",
     )
 
     source_by_id = {
