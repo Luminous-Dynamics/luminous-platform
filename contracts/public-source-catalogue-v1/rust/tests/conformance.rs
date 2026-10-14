@@ -3,6 +3,7 @@ use serde_json::{json, Value};
 
 const CATALOGUE: &str = include_str!("../../examples/catalogue.json");
 const OBSERVATION: &str = include_str!("../../examples/observation-v1.json");
+const OBSERVATION_SCHEMA: &str = include_str!("../../observation.schema.json");
 const JHB_POWER_WATER_STATEMENT: &str =
     include_str!("../../examples/johannesburg-power-water-statement-v1.synthetic.json");
 
@@ -116,6 +117,46 @@ fn catalogue_rejects_duplicate_access_methods() {
     value["sources"][0]["access"]["documented_methods"] = json!(["GET", "GET"]);
     let error = validate_catalogue_json(&encoded(&value)).expect_err("duplicate methods must fail");
     assert!(error.to_string().contains("duplicate method"));
+}
+
+#[test]
+fn observation_json_schema_binds_fixture_and_capture_provenance_consistently() {
+    let schema: Value =
+        serde_json::from_str(OBSERVATION_SCHEMA).expect("observation schema must be valid JSON");
+    let required = schema["required"]
+        .as_array()
+        .expect("schema must require an array of fields");
+    for key in ["retrieved_at", "source_snapshot_sha256", "fixture_only"] {
+        assert!(
+            required.iter().any(|value| value.as_str() == Some(key)),
+            "{key} must be present even when its value is nullable"
+        );
+    }
+
+    let guards = schema["allOf"]
+        .as_array()
+        .expect("schema must express source-provenance conditional rules");
+    let fixture_guard = guards
+        .iter()
+        .find(|guard| guard["if"]["properties"]["fixture_only"]["const"] == true)
+        .expect("fixture-only observations must have a dedicated schema guard");
+    assert_eq!(fixture_guard["then"]["properties"]["retrieved_at"]["type"], "null");
+    assert_eq!(
+        fixture_guard["then"]["properties"]["source_snapshot_sha256"]["type"],
+        "null"
+    );
+    assert_eq!(
+        fixture_guard["else"]["properties"]["retrieved_at"]["type"],
+        "string"
+    );
+    assert_eq!(
+        fixture_guard["else"]["properties"]["retrieved_at"]["format"],
+        "date-time"
+    );
+    assert_eq!(
+        fixture_guard["else"]["properties"]["source_snapshot_sha256"]["pattern"],
+        "^sha256:[a-f0-9]{64}$"
+    );
 }
 
 #[test]
