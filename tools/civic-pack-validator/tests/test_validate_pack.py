@@ -8,7 +8,7 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-from validate_pack import validate_pack
+from validate_pack import requirement_claim_sha256, validate_pack
 
 ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_PATH = ROOT / "schemas" / "jurisdiction-pack-v0.1.0.schema.json"
@@ -87,6 +87,44 @@ def attach_review_receipt(
     return receipt
 
 
+def attach_requirement_review_receipt(pack, requirement):
+    """Attach a synthetic claim receipt; tests do not assert legal correctness."""
+    source_receipt_ids = []
+    for source_ref in requirement["source_refs"]:
+        source = next(item for item in pack["sources"] if item["source_id"] == source_ref)
+        if source.get("review_receipt_id"):
+            source_receipt_ids.append(source["review_receipt_id"])
+    receipt_id = f"review.{requirement['requirement_id']}.2026-10-01"
+    reviewer_id = "test-claim-reviewer"
+    reviewer_role = "qualified-claim-reviewer"
+    receipt = {
+        "receipt_id": receipt_id,
+        "requirement_id": requirement["requirement_id"],
+        "decision": "verified",
+        "reviewed_at": "2026-10-01T13:00:00Z",
+        "next_review_at": "2026-10-20T13:00:00Z",
+        "reviewer_id": reviewer_id,
+        "reviewer_role": reviewer_role,
+        "claim_sha256": requirement_claim_sha256(requirement),
+        "source_receipt_ids": source_receipt_ids,
+        "review_scope": {
+            "source_support_checked": True,
+            "jurisdiction_checked": True,
+            "applicability_checked": True,
+            "user_language_checked": True,
+            "completion_effect_checked": True,
+        },
+    }
+    requirement.update({
+        "review_state": "verified",
+        "reviewer_id": reviewer_id,
+        "reviewer_role": reviewer_role,
+        "review_receipt_id": receipt_id,
+    })
+    pack.setdefault("requirement_review_receipts", []).append(receipt)
+    return receipt
+
+
 class JurisdictionPackValidatorTests(unittest.TestCase):
     def test_reference_pack_is_valid_but_not_publishable(self):
         report = report_for(copy.deepcopy(PACK))
@@ -152,7 +190,6 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         source = pack["sources"][0]
         attach_review_receipt(pack, source, next_review_at="2026-10-12T12:00:00Z")
         pack["publication_state"] = "candidate"
-        pack["requirements"][0]["review_state"] = "verified"
         report = report_for(pack)
         self.assertTrue(report["validation_passed"])
         self.assertFalse(report["publication_eligible"])
@@ -214,12 +251,45 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         for source in pack["sources"]:
             attach_review_receipt(pack, source)
         for requirement in pack["requirements"]:
-            requirement["review_state"] = "verified"
+            attach_requirement_review_receipt(pack, requirement)
         report = report_for(pack)
         self.assertTrue(report["validation_passed"])
         self.assertTrue(report["publication_eligible"])
         self.assertEqual(check_status(report, "publication.evidence_gates"), "PASS")
         self.assertEqual(check_status(report, "publication.gate"), "PASS")
+
+    def test_verified_requirement_cannot_be_claimed_without_a_receipt(self):
+        pack = copy.deepcopy(PACK)
+        pack["requirements"][0]["review_state"] = "verified"
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertEqual(check_status(report, "requirement.review_receipts"), "FAIL")
+
+    def test_verified_requirement_receipt_detects_claim_mutation(self):
+        pack = copy.deepcopy(PACK)
+        for source in pack["sources"]:
+            attach_review_receipt(pack, source)
+        requirement = pack["requirements"][0]
+        attach_requirement_review_receipt(pack, requirement)
+        requirement["summary"] += " This sentence was not reviewed."
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertIn("claim fields no longer match", " ".join(
+            check["details"] for check in report["checks"]
+        ))
+
+    def test_verified_requirement_must_bind_all_current_source_receipts(self):
+        pack = copy.deepcopy(PACK)
+        for source in pack["sources"]:
+            attach_review_receipt(pack, source)
+        requirement = pack["requirements"][0]
+        receipt = attach_requirement_review_receipt(pack, requirement)
+        receipt["source_receipt_ids"] = receipt["source_receipt_ids"][:-1]
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertIn("source_receipt_ids do not exactly match", " ".join(
+            check["details"] for check in report["checks"]
+        ))
 
     def test_current_source_cannot_be_claimed_without_a_receipt(self):
         pack = copy.deepcopy(PACK)
