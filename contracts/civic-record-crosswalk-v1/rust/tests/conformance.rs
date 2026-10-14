@@ -28,7 +28,7 @@ fn public_observation_contract_pin_tracks_truthful_retrieval_provenance() {
     assert_eq!(contract.version.as_deref(), Some("public-observation-v1"));
     assert_eq!(
         contract.qualification_state,
-        civic_record_crosswalk_v1::QualificationState::NarrowWorkflowSuccess
+        civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
     );
     assert!(
         contract.notes.contains("fixture-only observations require null retrieved_at"),
