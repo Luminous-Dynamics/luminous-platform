@@ -216,7 +216,10 @@
           "url": "https://joburg.org.za/work_/BusinessLicences/Pages/The-City%27s-policy-on-business-licences.aspx"
         }
       ],
-      "completion_effect": "must_confirm_with_authority"
+      "completion_effect": "must_confirm_with_authority",
+      "reviewer_id": null,
+      "reviewer_role": null,
+      "review_receipt_id": null
     },
     {
       "requirement_id": "za.confirm-food-premises-process",
@@ -260,7 +263,10 @@
           "url": "https://www.health.gov.za/food-control-regulations/"
         }
       ],
-      "completion_effect": "must_confirm_with_authority"
+      "completion_effect": "must_confirm_with_authority",
+      "reviewer_id": null,
+      "reviewer_role": null,
+      "review_receipt_id": null
     },
     {
       "requirement_id": "za.consider-cipc-registration",
@@ -303,7 +309,10 @@
           "url": "https://www.bizportal.gov.za/"
         }
       ],
-      "completion_effect": "informational_only"
+      "completion_effect": "informational_only",
+      "reviewer_id": null,
+      "reviewer_role": null,
+      "review_receipt_id": null
     }
   ],
   "decision_contract": {
@@ -321,5 +330,6 @@
     "Official source links were rechecked during research on 2026-10-13, but source records remain unreviewed until a named maintainer verifies the current text, applicability, version, and review deadline.",
     "Applicability predicates use a small declarative operator set. Missing fact values evaluate as unknown and require user clarification; no arbitrary code or AI-generated predicate execution is supported."
   ],
-  "source_review_receipts": []
+  "source_review_receipts": [],
+  "requirement_review_receipts": []
 }
