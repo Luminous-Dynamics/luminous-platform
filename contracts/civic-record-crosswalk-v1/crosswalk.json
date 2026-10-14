@@ -86,6 +86,18 @@
       "availability": "present_at_snapshot",
       "notes": "Pinned from the separate draft Platform PR #4 branch at this exact commit. Its Operations Event and Holochain Attestation Contracts workflow run 38043424999 failed: Rust qualification stopped at a SQLx dynamic-query compile error, and the research-only Python suite failed to import test_adapter_model because a test definition is missing a colon. Schema presence is not contract qualification.",
       "qualification_state": "unqualified_draft"
+    },
+    {
+      "schema_id": "mycelix.life-civic-service-reference-corpus",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "d1fedcc4fdda0181aa6847349ffdb42e421b2310",
+      "path": "tests/reference/life-civic-service/cases-v0.4.0.json",
+      "git_blob_sha1": "8674042a1d4d9fe4d8b27cfca759657ace4f07f5",
+      "version": "0.4.0",
+      "artifact_kind": "evaluation_corpus",
+      "availability": "present_at_snapshot",
+      "notes": "Mycelix service-journey evaluation corpus v0.4.0 using service schema v0.3.0. Includes an effects-disabled synthetic cross-utility statement case that explicitly prohibits incident-level power-trip causality and current-restoration claims from historical public context.",
+      "qualification_state": "unqualified_draft"
     }
   ],
   "mappings": [
@@ -610,6 +622,38 @@
         "preserve numeric priority plus tenant policy version separately",
         "do not turn provider SLA priority into resident urgency",
         "review consequences and equity impact before any presentation-only mapping"
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-SYMTHAEA-CAUSALITY-CORPORA",
+      "from": {
+        "schema_id": "mycelix.life-civic-service-reference-corpus",
+        "field_paths": [
+          "cases[].fixture_id",
+          "cases[].instance.evidence[].claim_scope",
+          "cases[].instance.evidence[].limitations",
+          "cases[].instance.claim_ceiling.prohibited_inferences"
+        ]
+      },
+      "to": {
+        "schema_id": "symthaea.life-civic-reference-corpus",
+        "field_paths": [
+          "cases[].case_id",
+          "cases[].expected.must_distinguish",
+          "cases[].expected.prohibited_claims"
+        ]
+      },
+      "relationship": "partial_semantic_overlap",
+      "conversion_policy": "preserve_separately",
+      "disposition": "preserve_separate",
+      "rationale": "Mycelix's service-journey case tests the evidence/service-state contract while Symthaea's case tests expected reasoning boundaries. Both encode the same negative causal/currentness boundary in different fixture shapes; they are corresponding evaluation controls, not interchangeable runtime records.",
+      "required_guards": [
+        "Keep Mycelix fixture IDs and Symthaea case IDs namespaced and distinct.",
+        "Preserve publication/event dates separately from source retrieval/check timestamps; synthetic fixture timestamps remain null.",
+        "Do not infer incident-level cause, live outage status, restoration, or intervention effect from the historical government statement alone.",
+        "Keep the Mycelix service schema at v0.3.0 and the corpus revision at v0.4.0 as distinct version axes.",
+        "Do not turn either evaluation fixture into a production case, action authority or a claim that model reasoning has passed.",
+        "Keep both source contracts and evaluation suites unqualified until their exact-head workflows finish."
       ]
     }
   ],
