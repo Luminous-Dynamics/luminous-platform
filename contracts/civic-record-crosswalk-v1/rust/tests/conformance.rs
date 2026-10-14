@@ -8,6 +8,35 @@ fn checked_in_crosswalk_conforms_to_strict_rust_contract() {
 }
 
 #[test]
+fn public_observation_contract_pin_tracks_truthful_retrieval_provenance() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+    let contract = crosswalk
+        .contracts
+        .iter()
+        .find(|contract| contract.schema_id == "platform.public-observation-v1")
+        .expect("public observation schema is pinned");
+
+    assert_eq!(
+        contract.snapshot_commit_sha,
+        "9316cc917b13a395a62da4b719bcdb76f0ef224a"
+    );
+    assert_eq!(
+        contract.git_blob_sha1.as_deref(),
+        Some("4a50b82a8ed32deeb245e11b7e4d542860a6c2a2")
+    );
+    assert_eq!(contract.version.as_deref(), Some("public-observation-v1"));
+    assert_eq!(
+        contract.qualification_state,
+        civic_record_crosswalk_v1::QualificationState::NarrowWorkflowSuccess
+    );
+    assert!(
+        contract.notes.contains("fixture-only observations require null retrieved_at"),
+        "the pinned observation contract must document truthful capture provenance"
+    );
+}
+
+#[test]
 fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_stays_unqualified() {
     let input = include_str!("../../crosswalk.json");
     let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
