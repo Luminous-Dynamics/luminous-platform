@@ -18,7 +18,9 @@
     "notices"
   ],
   "properties": {
-    "schema_version": { "const": "0.1.0" },
+    "schema_version": {
+      "const": "0.1.0"
+    },
     "pack_id": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
@@ -28,62 +30,133 @@
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
     },
     "publication_state": {
-      "enum": ["draft", "candidate", "published", "suspended", "retired"]
+      "enum": [
+        "draft",
+        "candidate",
+        "published",
+        "suspended",
+        "retired"
+      ]
     },
     "jurisdiction": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["jurisdiction_id", "name", "country_code", "administrative_area"],
+      "required": [
+        "jurisdiction_id",
+        "name",
+        "country_code",
+        "administrative_area"
+      ],
       "properties": {
-        "jurisdiction_id": { "type": "string", "minLength": 3 },
-        "name": { "type": "string", "minLength": 1 },
-        "country_code": { "type": "string", "pattern": "^[A-Z]{2}$" },
-        "administrative_area": { "type": ["string", "null"] },
-        "locality": { "type": ["string", "null"] }
+        "jurisdiction_id": {
+          "type": "string",
+          "minLength": 3
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "country_code": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "administrative_area": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "locality": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       }
     },
     "workflow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["workflow_id", "title", "goal", "business_types", "scope_notes"],
+      "required": [
+        "workflow_id",
+        "title",
+        "goal",
+        "business_types",
+        "scope_notes"
+      ],
       "properties": {
-        "workflow_id": { "type": "string", "minLength": 3 },
-        "title": { "type": "string", "minLength": 1 },
-        "goal": { "type": "string", "minLength": 1 },
+        "workflow_id": {
+          "type": "string",
+          "minLength": 3
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "goal": {
+          "type": "string",
+          "minLength": 1
+        },
         "business_types": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "scope_notes": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
     "review_policy": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["owner_role", "review_interval_days", "human_review_required", "stale_evidence_behavior"],
+      "required": [
+        "owner_role",
+        "review_interval_days",
+        "human_review_required",
+        "stale_evidence_behavior"
+      ],
       "properties": {
-        "owner_role": { "type": "string", "minLength": 1 },
-        "review_interval_days": { "type": "integer", "minimum": 1, "maximum": 365 },
-        "human_review_required": { "const": true },
+        "owner_role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "review_interval_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365
+        },
+        "human_review_required": {
+          "const": true
+        },
         "stale_evidence_behavior": {
-          "enum": ["downgrade_claim_and_block_completion", "suspend_pack"]
+          "enum": [
+            "downgrade_claim_and_block_completion",
+            "suspend_pack"
+          ]
         }
       }
     },
     "sources": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/source" }
+      "items": {
+        "$ref": "#/$defs/source"
+      }
     },
     "requirements": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/requirement" }
+      "items": {
+        "$ref": "#/$defs/requirement"
+      }
     },
     "decision_contract": {
       "type": "object",
@@ -96,24 +169,42 @@
         "user_checkbox_is_not_legal_evidence"
       ],
       "properties": {
-        "guidance_only": { "const": true },
-        "ai_may_create_requirements": { "const": false },
-        "stale_evidence_blocks_completion_claims": { "const": true },
-        "authority_outcome_requires_verifiable_receipt": { "const": true },
-        "user_checkbox_is_not_legal_evidence": { "const": true }
+        "guidance_only": {
+          "const": true
+        },
+        "ai_may_create_requirements": {
+          "const": false
+        },
+        "stale_evidence_blocks_completion_claims": {
+          "const": true
+        },
+        "authority_outcome_requires_verifiable_receipt": {
+          "const": true
+        },
+        "user_checkbox_is_not_legal_evidence": {
+          "const": true
+        }
       }
     },
     "notices": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string", "minLength": 1 }
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     }
   },
   "$defs": {
     "nullableDateTime": {
       "oneOf": [
-        { "type": "string", "format": "date-time" },
-        { "type": "null" }
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "source": {
@@ -140,32 +231,98 @@
           "type": "string",
           "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
         },
-        "authority": { "type": "string", "minLength": 1 },
-        "title": { "type": "string", "minLength": 1 },
-        "canonical_url": { "type": "string", "format": "uri" },
-        "section": { "type": ["string", "null"] },
+        "authority": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonical_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "section": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "evidence_kind": {
-          "enum": ["statute_or_regulation", "official_policy", "official_guidance", "official_service", "model_code", "other"]
+          "enum": [
+            "statute_or_regulation",
+            "official_policy",
+            "official_guidance",
+            "official_service",
+            "model_code",
+            "other"
+          ]
         },
         "review_state": {
-          "enum": ["unreviewed", "current", "changed", "stale", "unavailable", "disputed", "withdrawn"]
+          "enum": [
+            "unreviewed",
+            "current",
+            "changed",
+            "stale",
+            "unavailable",
+            "disputed",
+            "withdrawn"
+          ]
         },
-        "published_at": { "$ref": "#/$defs/nullableDateTime" },
-        "effective_from": { "$ref": "#/$defs/nullableDateTime" },
-        "checked_at": { "$ref": "#/$defs/nullableDateTime" },
-        "reviewed_at": { "$ref": "#/$defs/nullableDateTime" },
-        "next_review_at": { "$ref": "#/$defs/nullableDateTime" },
-        "reviewer_role": { "type": ["string", "null"] },
+        "published_at": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "effective_from": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "checked_at": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "reviewed_at": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "next_review_at": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "reviewer_role": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "snapshot_sha256": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "pattern": "^[a-f0-9]{64}$"
         },
         "reuse": {
-          "enum": ["not_assessed", "link_only", "public_domain", "licensed", "permission_granted"]
+          "enum": [
+            "not_assessed",
+            "link_only",
+            "public_domain",
+            "licensed",
+            "permission_granted"
+          ]
         },
-        "source_license_url": { "type": ["string", "null"], "format": "uri" },
-        "attribution": { "type": ["string", "null"] },
-        "rights_notes": { "type": "string" }
+        "source_license_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "attribution": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rights_notes": {
+          "type": "string"
+        }
       }
     },
     "requirement": {
@@ -187,55 +344,222 @@
           "type": "string",
           "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
         },
-        "title": { "type": "string", "minLength": 1 },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
         "claim_type": {
-          "enum": ["official_requirement", "official_guidance", "verification_step", "derived_step", "informational"]
+          "enum": [
+            "official_requirement",
+            "official_guidance",
+            "verification_step",
+            "derived_step",
+            "informational"
+          ]
         },
         "review_state": {
-          "enum": ["draft", "verified", "stale", "disputed", "withdrawn"]
+          "enum": [
+            "draft",
+            "verified",
+            "stale",
+            "disputed",
+            "withdrawn"
+          ]
         },
-        "summary": { "type": "string", "minLength": 1 },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
         "applicability": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["business_types", "conditions", "unknowns"],
+          "required": [
+            "business_types",
+            "conditions",
+            "unknowns",
+            "predicates"
+          ],
           "properties": {
             "business_types": {
               "type": "array",
               "minItems": 1,
               "uniqueItems": true,
-              "items": { "type": "string", "minLength": 1 }
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
             },
-            "conditions": { "type": "array", "items": { "type": "string" } },
-            "unknowns": { "type": "array", "items": { "type": "string" } }
+            "conditions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "unknowns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "predicates": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/predicate"
+              }
+            }
           }
         },
         "source_refs": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "type": "string", "minLength": 1 }
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "user_actions": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["action_id", "label", "action_kind"],
+            "required": [
+              "action_id",
+              "label",
+              "action_kind"
+            ],
             "properties": {
-              "action_id": { "type": "string", "minLength": 1 },
-              "label": { "type": "string", "minLength": 1 },
-              "action_kind": {
-                "enum": ["read_source", "contact_authority", "prepare_information", "visit_official_service", "review_with_authority"]
+              "action_id": {
+                "type": "string",
+                "minLength": 1
               },
-              "url": { "type": ["string", "null"], "format": "uri" }
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "action_kind": {
+                "enum": [
+                  "read_source",
+                  "contact_authority",
+                  "prepare_information",
+                  "visit_official_service",
+                  "review_with_authority"
+                ]
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "uri"
+              }
             }
           }
         },
         "completion_effect": {
-          "enum": ["informational_only", "must_resolve_before_guidance_complete", "must_confirm_with_authority", "external_decision_required"]
+          "enum": [
+            "informational_only",
+            "must_resolve_before_guidance_complete",
+            "must_confirm_with_authority",
+            "external_decision_required"
+          ]
         }
       }
+    },
+    "predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "predicate_id",
+        "field",
+        "operator"
+      ],
+      "properties": {
+        "predicate_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+        },
+        "field": {
+          "enum": [
+            "jurisdiction_id",
+            "business_type",
+            "handles_food",
+            "prepares_food_on_site",
+            "sells_perishable_food",
+            "premises_status",
+            "sells_alcohol",
+            "offers_seating",
+            "business_entity_registration_intended"
+          ]
+        },
+        "operator": {
+          "enum": [
+            "eq",
+            "in",
+            "is_true",
+            "is_false"
+          ]
+        },
+        "value": {}
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "operator": {
+              "const": "eq"
+            },
+            "value": {
+              "type": [
+                "string",
+                "boolean",
+                "number"
+              ]
+            }
+          },
+          "required": [
+            "value"
+          ]
+        },
+        {
+          "properties": {
+            "operator": {
+              "const": "in"
+            },
+            "value": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": [
+                  "string",
+                  "boolean",
+                  "number"
+                ]
+              }
+            }
+          },
+          "required": [
+            "value"
+          ]
+        },
+        {
+          "properties": {
+            "operator": {
+              "enum": [
+                "is_true",
+                "is_false"
+              ]
+            }
+          },
+          "not": {
+            "required": [
+              "value"
+            ]
+          }
+        }
+      ]
     }
   }
 }
