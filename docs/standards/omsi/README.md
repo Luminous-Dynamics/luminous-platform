@@ -18,6 +18,7 @@ OMSI proposes to standardize that boundary and reuse existing domain standards i
 - [Scope and gap register](SCOPE-AND-GAP-REGISTER.md)
 - [Research notes](RESEARCH-NOTES.md)
 - [IT Service Core prior-art mapping](profiles/it-service-core/0.1/PRIOR-ART-MAPPING.md)
+- [Field Service profile for trades and asset maintenance](profiles/field-service/0.1/PROFILE.md)
 - [Nixward adapter mapping](profiles/nixos/0.1/NIXWARD-ADAPTER-MAPPING.md)
 - [Local conformance report and limits](CONFORMANCE-REPORT.md)
 
@@ -37,11 +38,11 @@ A conforming implementation may use other languages, databases, operating system
 
 ## Review focus
 
-1. Is the operation/authority/evidence boundary a useful interoperability target distinct from existing ITSM/RMM and security standards?
+1. Is operation/authority/evidence a useful small interoperability kernel distinct from existing ITSM/RMM and field-service schemas?
 2. Are the proposed records minimal enough to map across independently developed systems?
 3. What belongs in Core 0.1 versus a service-specific profile?
-4. Which independent MSPs, PSA/RMM vendors, customers and security reviewers should review the problem statement before stable schemas are frozen?
+4. Which independent MSPs, tradespeople, service providers, customers and security reviewers should review the problem statement before stable schemas are frozen?
 
 ## Non-claims
 
-Passing draft schemas or local semantic tests does not verify cryptographic signatures, prove target observations true, establish tenant isolation in a live deployment, demonstrate cross-OS fleet coverage, or certify an MSP service. See the scope register and threat model.
+Passing draft schemas or local semantic tests does not verify cryptographic signatures, prove target observations true, establish tenant isolation in a live deployment, demonstrate cross-provider interoperability, or certify a service. The field-service profile is an incubation proposal; see the scope register and threat model.
