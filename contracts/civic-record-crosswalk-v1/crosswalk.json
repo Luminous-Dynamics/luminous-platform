@@ -12,8 +12,8 @@
       "version": "public-observation-v1",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Public source-observation envelope. Fixture-only observations require null retrieved_at and null source snapshot digest; captured observations require an RFC3339 retrieval timestamp and a SHA-256 source snapshot digest. This contract is an observation envelope, not a service-case contract.",
-      "qualification_state": "narrow_workflow_success"
+      "notes": "Public source-observation envelope. Fixture-only observations require null retrieved_at and null source snapshot digest; captured observations require an RFC3339 retrieval timestamp and a SHA-256 source snapshot digest. This contract is an observation envelope, not a service-case contract. This conditional provenance hardening is awaiting exact-head requalification; previous workflow evidence predates these changes and is not carried forward.",
+      "qualification_state": "unqualified_draft"
     },
     {
       "schema_id": "mycelix.service-journey-reference-v0.3.0",
