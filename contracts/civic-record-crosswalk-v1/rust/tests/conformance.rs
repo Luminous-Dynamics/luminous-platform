@@ -44,7 +44,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "d1fedcc4fdda0181aa6847349ffdb42e421b2310"
+        "1eec5ed1e046eae71b0e376f327016a0998e0a92"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
@@ -55,6 +55,28 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
         contract.qualification_state,
         civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
     );
+
+    for (schema_id, expected_blob) in [
+        (
+            "mycelix.service-journey-reference-v0.3.0",
+            "7e2b8b3d963c9c5598c78927121fcf60203591f9",
+        ),
+        (
+            "mycelix.applicability-assessment",
+            "241d4c4abbd765c05e56ddfae3391cead0f26dbc",
+        ),
+    ] {
+        let source_schema = crosswalk
+            .contracts
+            .iter()
+            .find(|entry| entry.schema_id == schema_id)
+            .unwrap_or_else(|| panic!("missing pinned Mycelix schema {schema_id}"));
+        assert_eq!(
+            source_schema.snapshot_commit_sha,
+            "1eec5ed1e046eae71b0e376f327016a0998e0a92"
+        );
+        assert_eq!(source_schema.git_blob_sha1.as_deref(), Some(expected_blob));
+    }
 
     let mapping = crosswalk
         .mappings
