@@ -34,6 +34,20 @@ The digest must be computed over the exact captured bytes, not normalized text. 
 
 The history check provides tamper-evidence relative to the PR base, not a cryptographic guarantee against administrators rewriting repository history or a contributor inventing a new receipt. Configure repository branch protection/CODEOWNERS and require independent human review before accepting a receipt that enables publication. The validator does not authenticate `reviewer_id` and cannot prove that the human actually performed the review.
 
+## Claim-specific verification receipts
+
+A source being current does not prove that a particular requirement summary is supported, correctly scoped, understandable, or safe to present as a user task. Every non-draft requirement therefore needs its own entry in `requirement_review_receipts`, and its active `review_receipt_id` must point to the latest receipt for that requirement.
+
+A claim receipt binds:
+- The requirement ID and a SHA-256 of the exact claim-bearing fields: title, claim type, summary, applicability predicates and prose, source references, user actions, and completion effect.
+- The review decision, reviewer ID/role, review time, and next-review deadline.
+- The source-review receipt IDs actually checked.
+- Five explicit checks: source support, jurisdiction, applicability, user-facing language, and completion effect.
+
+A `verified` receipt requires all five checks to be true and the exact set of source receipt IDs currently attached to the requirement's declared source references. If the claim text, applicability, actions, cited sources, or completion effect changes, the claim digest changes and the receipt no longer verifies that content. The receipt also expires under the pack's review interval and freshness rules.
+
+Claim-review receipts are part of the same append-only ledger policy. CI protects both `source_review_receipts` and `requirement_review_receipts` against editing, removal, and reordering relative to the base pack. This does not prove the reviewer did the work or authenticate the reviewer's identity. A repository approval rule and accountable human source/claim reviewers remain mandatory before a pack can be published.
+
 ## State and publication semantics
 
 - `unreviewed` plus an empty receipt pointer/history is the valid initial state.
