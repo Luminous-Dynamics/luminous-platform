@@ -13,7 +13,8 @@ import json
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any\nfrom urllib.parse import urlsplit
+from typing import Any
+from urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator, FormatChecker, SchemaError
 
