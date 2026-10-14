@@ -71,7 +71,7 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
-          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          git fetch --no-tags --depth=1 origin "refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
           PACK_PATH="examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json"
           if git cat-file -e "origin/$BASE_REF:$PACK_PATH" 2>/dev/null; then
             git show "origin/$BASE_REF:$PACK_PATH" > /tmp/jurisdiction-pack-baseline.json
