@@ -62,6 +62,15 @@ The demonstrator remains useful if every AI component is switched off. No reside
 
 Mycelix Prism can remain an optional, separately qualified presentation/privacy component; it is not on the first-pilot critical path.
 
+
+## 2A. First executable cross-repository crosswalk (added 14 October 2026)
+
+The public Platform PR branch now includes a separate contract in the [civic-record-crosswalk-v1 directory](https://github.com/Luminous-Dynamics/luminous-platform/tree/docs/public-service-operations-profile-rfc-001/contracts/civic-record-crosswalk-v1/). It pins the exact audited Mycelix service-journey and applicability schemas, Sol-Atlas Rust civic-case types, the Platform public-observation schema and Symthaea's life/civic evaluation corpus.
+
+The crosswalk is intentionally metadata-only. It forbids automatic state-machine conversion, keeps evidence independence separate from review disposition, rejects reuse of source-snapshot digests as target evidence-byte digests, and prevents applicability assessments or evaluation expectations from becoming action authority. It also records a concrete dependency gap: Work Case V1 and Operations Event V1 are referenced in the Platform RFC but were not present as schema/source artifacts in the audited PR #34 tree at commit 93a97cb16dfea73660b6dc868fbba3b5f4d9c06c. Those contracts remain blocked until an actual pinned artifact exists; this finding applies to that snapshot, not every repository branch.
+
+The new Rust 1.96 checker rejects unknown fields and tests the conservative invariants; the workflow now formats, tests and validates both the public-source and civic-crosswalk contracts at the exact event revision. A successful run will qualify the validators and fixtures only, not runtime interoperation or municipal deployment.
+
 ## 3. The most important architectural decision: do not merge three different lifecycles
 
 Several current tracks contain useful case-like or journey-like records. We should reconcile their purposes before extending any one of them into a production schema.

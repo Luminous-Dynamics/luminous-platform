@@ -1,10 +1,11 @@
-name: Public Source Catalogue V1
+name: Public Source and Civic Crosswalk Contracts
 
 on:
   pull_request:
     branches: [main]
     paths:
       - 'contracts/public-source-catalogue-v1/**'
+      - 'contracts/civic-record-crosswalk-v1/**'
       - 'docs/LANGUAGE_AND_RUNTIME_POLICY.md'
       - 'docs/PUBLIC_SERVICE_OPERATIONS_PROFILE_RFC.md'
       - '.github/workflows/public-source-catalogue-v1.yml'
@@ -14,6 +15,7 @@ on:
       - docs/public-service-operations-profile-rfc-001
     paths:
       - 'contracts/public-source-catalogue-v1/**'
+      - 'contracts/civic-record-crosswalk-v1/**'
       - 'docs/LANGUAGE_AND_RUNTIME_POLICY.md'
       - 'docs/PUBLIC_SERVICE_OPERATIONS_PROFILE_RFC.md'
       - '.github/workflows/public-source-catalogue-v1.yml'
@@ -22,7 +24,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: public-source-catalogue-v1-${{ github.event.pull_request.number || github.ref }}
+  group: public-civic-contracts-v1-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -63,17 +65,23 @@ jobs:
           rustc +1.96.0 --version
           cargo +1.96.0 --version
 
-      - name: Reject handwritten JavaScript and TypeScript in this contract
+      - name: Reject handwritten JavaScript and TypeScript in these contracts
         shell: bash
         run: |
           set -euo pipefail
-          if find contracts/public-source-catalogue-v1 \
+          if find contracts/public-source-catalogue-v1 contracts/civic-record-crosswalk-v1 \
             -type f \
             \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.ts' -o -name '*.tsx' \) \
             -print -quit | grep -q .; then
-            echo 'Unexpected JS/TS source in the Rust-only public-source contract.' >&2
+            echo 'Unexpected JS/TS source in the Rust-only civic contract directories.' >&2
             exit 1
           fi
+
+      - name: Check civic crosswalk Rust formatting on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 fmt --manifest-path contracts/civic-record-crosswalk-v1/rust/Cargo.toml --all -- --check
 
       - name: Test contract validator on this exact checkout
         shell: bash
@@ -93,9 +101,21 @@ jobs:
           set -euo pipefail
           cargo +1.96.0 run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- observation contracts/public-source-catalogue-v1/examples/observation-v1.json
 
+      - name: Test civic record crosswalk validator on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 test --manifest-path contracts/civic-record-crosswalk-v1/rust/Cargo.toml --all-targets
+
+      - name: Validate civic record crosswalk fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 run --manifest-path contracts/civic-record-crosswalk-v1/rust/Cargo.toml --bin validate-civic-crosswalk -- validate contracts/civic-record-crosswalk-v1/crosswalk.json
+
       - name: Report qualification boundary
         shell: bash
         run: |
           set -euo pipefail
-          echo 'PASS only means the Rust contract/fixture checks passed at GITHUB_SHA.'
-          echo 'This does not qualify network ingestion, legal access, production readiness or municipal integrations.'
+          echo 'PASS only means the public-source and civic crosswalk Rust checks passed at GITHUB_SHA.'
+          echo 'This does not qualify network ingestion, legal access, semantic interoperability, production readiness or municipal integrations.'

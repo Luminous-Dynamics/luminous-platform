@@ -1,0 +1,457 @@
+{
+  "schema_version": "civic-record-crosswalk-v1",
+  "review_snapshot": "2026-10-14",
+  "status": "static_mapping_contract_no_runtime_transform",
+  "contracts": [
+    {
+      "schema_id": "platform.public-observation-v1",
+      "repository": "Luminous-Dynamics/luminous-platform",
+      "snapshot_commit_sha": "93a97cb16dfea73660b6dc868fbba3b5f4d9c06c",
+      "path": "contracts/public-source-catalogue-v1/observation.schema.json",
+      "git_blob_sha1": "7d4696034149951c8374890de8d2deacb607ef85",
+      "version": "public-observation-v1",
+      "artifact_kind": "json_schema",
+      "availability": "present_at_snapshot",
+      "notes": "Public source-observation envelope; separates raw_value_state from normalisation and preserves retrieval/source snapshot provenance. This is an observation contract, not a service-case contract."
+    },
+    {
+      "schema_id": "mycelix.service-journey-reference-v0.3.0",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "b8e743549d0253a3725e2a32cf80dc3d4d5dd193",
+      "path": "schemas/life-civic/service-journey-reference.schema.json",
+      "git_blob_sha1": "7e2b8b3d963c9c5598c78927121fcf60203591f9",
+      "version": "0.3.0",
+      "artifact_kind": "json_schema",
+      "availability": "present_at_snapshot",
+      "notes": "Effects-disabled service journey and outcome reference. It explicitly separates route status, case_state, evidence retrieval state, outcome status, review and claim_ceiling."
+    },
+    {
+      "schema_id": "mycelix.applicability-assessment",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "b8e743549d0253a3725e2a32cf80dc3d4d5dd193",
+      "path": "schemas/life-civic/applicability-assessment.schema.json",
+      "git_blob_sha1": "241d4c4abbd765c05e56ddfae3391cead0f26dbc",
+      "version": null,
+      "artifact_kind": "json_schema",
+      "availability": "present_at_snapshot",
+      "notes": "The schema has no top-level schema_version; individual records carry profile_version. Applicability results require context and evidence, and applicable status requires completed human review. It is not an authorisation contract."
+    },
+    {
+      "schema_id": "sol-atlas.civic-service-case-v1",
+      "repository": "Luminous-Dynamics/sol-atlas-leptos",
+      "snapshot_commit_sha": "ac6e37d63f44c7e4d02a54e60eabfd1ade607a62",
+      "path": "sol-atlas-core/src/civic_cases.rs",
+      "git_blob_sha1": "20e693f81d41d4b94ea825f6c3e09ed8811e2884",
+      "version": "1",
+      "artifact_kind": "rust_serde_types",
+      "availability": "present_at_snapshot",
+      "notes": "Serde-derived Rust data types with schema_version=1; a separate JSON Schema was not present at the reviewed path. Public output is deliberately constructed through CivicServiceCase::public_projection."
+    },
+    {
+      "schema_id": "symthaea.life-civic-reference-corpus",
+      "repository": "Luminous-Dynamics/symthaea",
+      "snapshot_commit_sha": "1fb5c3aaf990aa3cd00171f4d68bcc3488a808cf",
+      "path": "docs/research/life-civic/reference-scenarios.json",
+      "git_blob_sha1": "40aa73d7a8447d424bb55a4983319eda13bc70ea",
+      "version": "0.1.0",
+      "artifact_kind": "evaluation_corpus",
+      "availability": "present_at_snapshot",
+      "notes": "Reference scenarios and required reasoning outputs, not a runtime service-case schema, a verified model result, or an action protocol."
+    },
+    {
+      "schema_id": "platform.work-case-v1",
+      "repository": "Luminous-Dynamics/luminous-platform",
+      "snapshot_commit_sha": "93a97cb16dfea73660b6dc868fbba3b5f4d9c06c",
+      "path": null,
+      "git_blob_sha1": null,
+      "version": null,
+      "artifact_kind": "proposed_reference",
+      "availability": "reference_only_not_present_in_audited_snapshot",
+      "notes": "Named by the public-service RFC and tracked by Platform issue #7, but no concrete schema or implementation path was present in the audited PR #34 branch tree at this commit. Do not infer its fields or transitions."
+    },
+    {
+      "schema_id": "platform.operations-event-v1",
+      "repository": "Luminous-Dynamics/luminous-platform",
+      "snapshot_commit_sha": "93a97cb16dfea73660b6dc868fbba3b5f4d9c06c",
+      "path": null,
+      "git_blob_sha1": null,
+      "version": null,
+      "artifact_kind": "proposed_reference",
+      "availability": "reference_only_not_present_in_audited_snapshot",
+      "notes": "Named by the public-service RFC as a proposed versioned event contract, but no concrete schema or implementation path was present in the audited PR #34 branch tree at this commit. Do not invent event delivery or authority semantics."
+    }
+  ],
+  "mappings": [
+    {
+      "mapping_id": "OBSERVATION-TO-MYCELIX-EVIDENCE",
+      "from": {
+        "schema_id": "platform.public-observation-v1",
+        "field_paths": [
+          "source_uri",
+          "retrieved_at",
+          "source_id",
+          "raw_value_state"
+        ]
+      },
+      "to": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "evidence[].source_uri",
+          "evidence[].retrieved_at",
+          "evidence[].checked_at",
+          "evidence[].retrieval_state",
+          "evidence[].limitations"
+        ]
+      },
+      "relationship": "partial_semantic_overlap",
+      "conversion_policy": "explicit_adapter_required",
+      "disposition": "candidate_only",
+      "rationale": "A source observation may support a service-journey evidence record only if it refers to the same source material and claim scope. raw_value_state describes the source value state, not whether source retrieval succeeded; retrieval_state and checked_at must be derived from the actual capture attempt, not copied from raw_value_state.",
+      "required_guards": [
+        "preserve source-native fields and timestamps",
+        "do not invent checked_at for fixtures that were never retrieved",
+        "retain null/missing/stale/invalid states without coercing them",
+        "check source terms and reuse permission",
+        "keep source observation identity namespaced"
+      ]
+    },
+    {
+      "mapping_id": "OBSERVATION-DIGEST-TO-SOL-DIGEST",
+      "from": {
+        "schema_id": "platform.public-observation-v1",
+        "field_paths": [
+          "source_snapshot_sha256"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "EvidenceReference.sha256"
+        ]
+      },
+      "relationship": "digest_subject_mismatch",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "The public observation digest is defined as a source snapshot digest; the Sol-Atlas evidence digest is a SHA-256 of captured bytes. They are not interchangeable unless the exact hashed byte sequence and digest subject are demonstrated to be identical.",
+      "required_guards": [
+        "preserve original digest and its subject",
+        "calculate a separate digest for the target's exact evidence bytes",
+        "never relabel a digest without recomputing it"
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-CASE-ID-TO-SOL-CASE-ID",
+      "from": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "case_id"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CivicServiceCase.case_id"
+        ]
+      },
+      "relationship": "identity_namespace_only",
+      "conversion_policy": "namespaced_reference_only",
+      "disposition": "preserve_separate",
+      "rationale": "Both fields are local record identifiers; matching names or values do not prove the records represent the same incident. Any relationship belongs in an explicit cross-reference that preserves repository, schema identity and each native record ID.",
+      "required_guards": [
+        "never overwrite or reuse a native ID across schemas",
+        "require explicit linkage evidence before asserting same incident",
+        "keep ambiguous and unresolved links unresolved"
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-CASE-STATE-TO-SOL-STATUS",
+      "from": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "case_state"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CaseStatus",
+          "CaseEventKind"
+        ]
+      },
+      "relationship": "incompatible_state_machine",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "Mycelix includes routing_conflict, submitted, acknowledged, source_conflict and human_review_required; Sol-Atlas has a different append-only event transition system. In particular, a Mycelix verified_resolved state does not alone meet Sol-Atlas's reviewer-bound independent evidence and transition requirements.",
+      "required_guards": [
+        "preserve both native state values",
+        "do not infer missing Sol-Atlas transition events",
+        "require a reviewed versioned state adapter before presentation-only translation",
+        "do not use presentation translation to authorise writes"
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-URGENCY-TO-SOL-SEVERITY",
+      "from": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "scope.urgency"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CaseSeverity"
+        ]
+      },
+      "relationship": "distinct_semantic_dimension",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "Informational/routine/urgent/emergency and routine/moderate/high/immediate_safety_risk are not shared ordinal scales. An implicit cast would change risk meaning.",
+      "required_guards": [
+        "preserve source urgency",
+        "define domain-specific reviewed policy before any display translation",
+        "do not infer safety priority from report volume"
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-AREA-TO-SOL-PUBLIC-AREA",
+      "from": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "scope.service_area_ref"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CivicServiceCase.internal_area_ref",
+          "CivicServiceCase.public_area"
+        ]
+      },
+      "relationship": "distinct_semantic_dimension",
+      "conversion_policy": "explicit_adapter_required",
+      "disposition": "candidate_only",
+      "rationale": "Mycelix service_area_ref is opaque and purpose-scoped. It is neither a Sol-Atlas internal area/asset reference nor proof of a reviewed public Region/Ward/Precinct code. A mapping requires a data-steward-approved jurisdictional lookup and a separate public-area projection.",
+      "required_guards": [
+        "do not copy opaque refs into public outputs",
+        "verify geography and allowed granularity with the responsible data steward",
+        "never expose household coordinates or exact address as public_area",
+        "leave unresolved mappings unknown"
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-EVIDENCE-INDEPENDENCE-TO-SOL-REVIEW",
+      "from": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "evidence[].independence"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "EvidenceReference.review"
+        ]
+      },
+      "relationship": "distinct_semantic_dimension",
+      "conversion_policy": "preserve_separately",
+      "disposition": "preserve_separate",
+      "rationale": "Evidence origin independence (unknown/same_origin/independent) and review disposition (unreviewed/corroborated/contested/independently_verified) answer different questions. Independence must not be promoted into a verification judgement.",
+      "required_guards": [
+        "retain independent provenance dimension",
+        "retain review status dimension",
+        "require reviewer identity, review time and evidence linkage for Sol-Atlas independently-verified evidence"
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-OUTCOME-TO-SOL-STATUS",
+      "from": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "outcome.status",
+          "outcome.verification_evidence_ids",
+          "outcome.verified_at"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CaseStatus.VerifiedResolved",
+          "CaseEventKind.ResolutionVerified",
+          "EvidenceReference.reviewer_ref",
+          "EvidenceReference.reviewed_at_unix_ms"
+        ]
+      },
+      "relationship": "partial_semantic_overlap",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "An outcome assertion and a target event/evidence chain have different proof obligations. Sol-Atlas validates reviewer identity against independently verified evidence and rejects a reviewer who performed or claimed the work. Textual status equality is insufficient.",
+      "required_guards": [
+        "preserve the source outcome record",
+        "do not synthesize events from status strings",
+        "require independently checked target evidence and reviewer binding",
+        "keep provider-attested and independently verified outcomes distinct"
+      ]
+    },
+    {
+      "mapping_id": "APPLICABILITY-TO-AUTHORITY",
+      "from": {
+        "schema_id": "mycelix.applicability-assessment",
+        "field_paths": [
+          "result.status",
+          "human_review",
+          "claim_ceiling"
+        ]
+      },
+      "to": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": []
+      },
+      "relationship": "no_authority_mapping",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "A standard-applicability assessment may be uncertain or require human review and is explicitly not an authorization contract. Even an applicable result with completed review cannot grant a permission or issue a privileged command.",
+      "required_guards": [
+        "keep legal applicability distinct from authorization",
+        "require the responsible authority and capability to be established independently",
+        "refuse writes when the actual command policy and contract are absent"
+      ]
+    },
+    {
+      "mapping_id": "SYMTHAEA-CORPUS-TO-ACTION",
+      "from": {
+        "schema_id": "symthaea.life-civic-reference-corpus",
+        "field_paths": [
+          "cases[].expected",
+          "required_outputs"
+        ]
+      },
+      "to": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": []
+      },
+      "relationship": "not_runtime_contract",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "Expected values in an evaluation corpus specify what a test should detect; they are not model outputs, runtime commands or permission to act. The corpus must never be wired directly to production mutations.",
+      "required_guards": [
+        "use corpus only for evaluation",
+        "capture real model outputs separately from expected fixtures",
+        "keep advisory reasoning side-effect free"
+      ]
+    },
+    {
+      "mapping_id": "PLATFORM-WORK-CASE-CONTRACT-DEPENDENCY",
+      "from": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CivicServiceCase.case_id",
+          "CaseEventKind",
+          "CaseStatus"
+        ]
+      },
+      "to": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": []
+      },
+      "relationship": "not_available",
+      "conversion_policy": "blocked_until_contract_exists",
+      "disposition": "blocked",
+      "rationale": "The audited public Platform PR #34 tree at commit 93a97cb16dfea73660b6dc868fbba3b5f4d9c06c did not contain a Work Case V1 schema or implementation artifact, despite the RFC reference to issue #7. This is a snapshot-scoped finding; it is not a claim about every branch or future revision.",
+      "required_guards": [
+        "do not invent Work Case V1 fields or transitions",
+        "re-audit the exact source tree before this mapping is reconsidered",
+        "require a pinned, qualified target contract before adapter implementation"
+      ]
+    },
+    {
+      "mapping_id": "PLATFORM-OPERATIONS-EVENT-CONTRACT-DEPENDENCY",
+      "from": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CaseEvent.event_id",
+          "CaseEvent.kind",
+          "CaseEvent.recorded_at_unix_ms",
+          "CaseEvent.occurred_at_unix_ms"
+        ]
+      },
+      "to": {
+        "schema_id": "platform.operations-event-v1",
+        "field_paths": []
+      },
+      "relationship": "not_available",
+      "conversion_policy": "blocked_until_contract_exists",
+      "disposition": "blocked",
+      "rationale": "The audited public Platform PR #34 tree at commit 93a97cb16dfea73660b6dc868fbba3b5f4d9c06c did not contain the proposed Operations Event V1 schema or implementation artifact. Do not assume CloudEvents compatibility implies matching event semantics, tenancy, ordering or delivery guarantees.",
+      "required_guards": [
+        "do not invent event fields or delivery semantics",
+        "re-audit the exact source tree before this mapping is reconsidered",
+        "require a pinned, qualified target contract before adapter implementation"
+      ]
+    },
+    {
+      "mapping_id": "SOL-INTERNAL-TO-PUBLIC-PROJECTION",
+      "from": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CivicServiceCase"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CivicServiceCase::public_projection",
+          "PublicCivicCase"
+        ]
+      },
+      "relationship": "explicit_public_projection",
+      "conversion_policy": "dedicated_sanitizing_projection",
+      "disposition": "required_boundary",
+      "rationale": "The module defines a reduced public type and explicit projection that omits raw official ticket IDs, actor references and artifact pointers and filters evidence by public visibility. Raw internal records are not public serialization types.",
+      "required_guards": [
+        "call public_projection and reject None",
+        "do not serialize CivicServiceCase directly for public endpoints",
+        "apply aggregation/suppression for aggregate-only, restricted or sensitive cases",
+        "review public-area code semantics before publication"
+      ]
+    },
+    {
+      "mapping_id": "OBSERVATION-RAW-STATE-TO-RETRIEVAL-STATE",
+      "from": {
+        "schema_id": "platform.public-observation-v1",
+        "field_paths": [
+          "raw_value_state"
+        ]
+      },
+      "to": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "evidence[].retrieval_state"
+        ]
+      },
+      "relationship": "distinct_semantic_dimension",
+      "conversion_policy": "preserve_separately",
+      "disposition": "preserve_separate",
+      "rationale": "A raw value can be reported_null or row_omitted even when its source was successfully retrieved; conversely a retrieval can be unavailable. Source-value state and retrieval state must be recorded separately.",
+      "required_guards": [
+        "do not translate raw value null to source retrieval failure",
+        "do not translate a successful retrieval into a claim that the source value is valid",
+        "preserve source-native states and provenance"
+      ]
+    }
+  ],
+  "invariants": [
+    "The crosswalk is descriptive metadata; no mapping rule is executable.",
+    "Operational Work Case, service journey and public civic case records remain separate bounded contexts.",
+    "Unknown, unavailable, stale, invalid, conflicting, missing and zero remain distinct.",
+    "Model output, source attestation, consensus, signature and digest do not by themselves establish physical truth or action authority.",
+    "Only explicit, reviewed public projections may expose civic records; internal record serialization is not a public API contract."
+  ],
+  "non_goals": [
+    "No universal case schema.",
+    "No record merge or fuzzy entity resolution.",
+    "No live municipal connectors or service submissions.",
+    "No authority, eligibility, legal-compliance, fraud or service-restoration decisions.",
+    "No public disclosure of personal data, exact household locations, private ticket IDs or sensitive infrastructure."
+  ]
+}

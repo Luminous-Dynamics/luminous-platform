@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/civic-record-crosswalk-v1.json",
+  "title": "Civic Record Crosswalk V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "review_snapshot",
+    "status",
+    "contracts",
+    "mappings",
+    "invariants",
+    "non_goals"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "civic-record-crosswalk-v1"
+    },
+    "review_snapshot": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "const": "static_mapping_contract_no_runtime_transform"
+    },
+    "contracts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/contract"
+      }
+    },
+    "mappings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/mapping"
+      }
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "non_goals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "$defs": {
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "repository",
+        "snapshot_commit_sha",
+        "artifact_kind",
+        "availability",
+        "notes"
+      ],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "snapshot_commit_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "path": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "git_blob_sha1": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "artifact_kind": {
+          "enum": [
+            "json_schema",
+            "rust_serde_types",
+            "evaluation_corpus",
+            "proposed_reference"
+          ]
+        },
+        "availability": {
+          "enum": [
+            "present_at_snapshot",
+            "reference_only_not_present_in_audited_snapshot"
+          ]
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "const": "present_at_snapshot"
+              }
+            },
+            "required": [
+              "availability"
+            ]
+          },
+          "then": {
+            "required": [
+              "path",
+              "git_blob_sha1"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "git_blob_sha1": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "const": "reference_only_not_present_in_audited_snapshot"
+              }
+            },
+            "required": [
+              "availability"
+            ]
+          },
+          "then": {
+            "properties": {
+              "path": {
+                "type": "null"
+              },
+              "git_blob_sha1": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_id",
+        "field_paths"
+      ],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "field_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "mapping": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mapping_id",
+        "from",
+        "to",
+        "relationship",
+        "conversion_policy",
+        "disposition",
+        "rationale",
+        "required_guards"
+      ],
+      "properties": {
+        "mapping_id": {
+          "type": "string",
+          "pattern": "^[A-Z0-9-]{3,100}$"
+        },
+        "from": {
+          "$ref": "#/$defs/binding"
+        },
+        "to": {
+          "$ref": "#/$defs/binding"
+        },
+        "relationship": {
+          "enum": [
+            "partial_semantic_overlap",
+            "digest_subject_mismatch",
+            "identity_namespace_only",
+            "incompatible_state_machine",
+            "distinct_semantic_dimension",
+            "no_authority_mapping",
+            "not_runtime_contract",
+            "not_available",
+            "explicit_public_projection"
+          ]
+        },
+        "conversion_policy": {
+          "enum": [
+            "explicit_adapter_required",
+            "no_automatic_mapping",
+            "namespaced_reference_only",
+            "preserve_separately",
+            "blocked_until_contract_exists",
+            "dedicated_sanitizing_projection"
+          ]
+        },
+        "disposition": {
+          "enum": [
+            "candidate_only",
+            "preserve_separate",
+            "prohibited",
+            "blocked",
+            "required_boundary"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required_guards": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}
