@@ -2,11 +2,11 @@
 
 ## Implementation-language boundary
 
-**Production services and domain logic are Rust-first; production Python is not permitted.** The Python files in this directory are explicitly non-production reference models and test harnesses used to explore semantics, not deployable adapters, daemons, API services, authorization boundaries, or durable repositories. They must not be imported or packaged by production binaries or used as the only evidence for production correctness.
-
-The next implementation step is to port the event schema validation and durable inbox/outbox behavior into Rust crates, with typed domain APIs and Rust integration tests against the actual persistence layer. Until that port exists, these Python models are research fixtures only; their passing tests do not qualify a Rust implementation or production deployment. Keep production build/deployment artifacts free of Python runtimes and Python dependencies.
+**Production services and domain logic are Rust-first; production Python is not permitted.** The Rust crate under `rust/` is the canonical Operations Event V1 schema validator and trusted-context binding checker. Python files in this directory remain research-only reference models and test harnesses; they are not deployable adapters, daemons, API services, authorization boundaries, or durable repositories. They must not be imported or packaged by production binaries, and they do not qualify the Rust implementation or production deployment.
 
 This folder defines the first portable cross-repository event contract for the proposed Xenia Operations Fabric. The envelope uses the **CloudEvents 1.0 structured JSON format** instead of introducing a proprietary envelope.
+
+Automatic CI runs on relevant pull-request changes and relevant pushes to `main`; `workflow_dispatch` remains available for a standalone branch. This avoids executing identical Rust/PostgreSQL suites twice on every commit to a branch that already has a PR.
 
 ## Files
 
@@ -19,14 +19,26 @@ This folder defines the first portable cross-repository event contract for the p
 - `tests/test_adapter_model.py` — deterministic normalization, trusted tenant/source binding, duplicate-delivery and idempotency-conflict tests.
 - `tests/test_durable_sqlite_model.py` — restart/replay, conflict, transaction fault-injection, concurrency, quarantine, stale-revision, and outbox lease tests.
 - `DURABLE_SQLITE_REFERENCE_MODEL.md` — scope, semantics, limitations, and production continuation gates.
-- `requirements.txt` — pinned validator dependency used by local tests and CI.
+- `rust/` — canonical Rust-native envelope/payload validator, trusted connector-binding checks, PostgreSQL transactional receiver, versioned PostgreSQL migrations, and adversarial/integration tests.
+- `requirements.txt` — Python validator pinned for research-only reference-model tests; not a production dependency.
 
-Run locally:
+Deployment order matters: a cluster administrator provisions the non-login RLS application role and the separate non-login `luminous_ops_retry_owner` role from `rust/deploy/postgres/00-operations-app-role.sql`; the schema migrations install the outbox lifecycle routines and transfer all three SECURITY DEFINER functions (claim, acknowledgement, and failure recording) to that dedicated owner. A non-superuser migration identity must be allowed to `SET ROLE luminous_ops_retry_owner` for ownership transfer; never grant that membership to the runtime login. Runtime login roles are explicitly granted membership in `luminous_ops_app` only. The retry owner has no LOGIN, SUPERUSER, or BYPASSRLS attributes and receives outbox SELECT plus column-scoped UPDATE privileges only for fields required by those three functions. Runtime roles have no direct UPDATE permission on outbox lifecycle or scheduling columns. Do not run application traffic as a superuser or table owner.
+
+Primary contract qualification (Rust + PostgreSQL 18.6): start an isolated PostgreSQL instance and set `DATABASE_URL` to an administrator URL and `APP_DATABASE_URL` to a login URL for the test-only runtime role (created by the integration test), then run:
 
 ```sh
-python3 -m venv /tmp/operations-event-contract-venv
-/tmp/operations-event-contract-venv/bin/python -m pip install --no-cache-dir -r contracts/operations-event-v1/requirements.txt
-PYTHONDONTWRITEBYTECODE=1 /tmp/operations-event-contract-venv/bin/python -m unittest discover -s contracts/operations-event-v1/tests -p 'test_*.py' -v
+rustup toolchain install 1.96.0 --profile minimal
+cargo +1.96.0 test --manifest-path contracts/operations-event-v1/rust/Cargo.toml --all-targets
+```
+
+The PostgreSQL integration test exercises unique event identity, replay with a different receiver-local observation timestamp, digest-only quarantine of conflicting event identities and idempotency keys, quarantine outcome replay, explicit source-to-local mapping enforcement by database foreign keys, validation of the initial revision token before state writes, idempotency conflict precedence over malformed revision errors, stale-revision idempotency-key reservation and replay, numeric revision ordering, fail-closed opaque revisions under a connection explicitly configured for opaque ordering; a numeric-suffix policy rejects nonconforming initial revisions before mutation, concurrent duplicate submissions and concurrent different-semantics reuse of one business idempotency key under separate event IDs (exactly one effect, one conflict and one quarantine), all-or-nothing rollback on a database trigger failure, default-deny tenant RLS, transaction-local tenant context, outbox predecessor ordering, lease expiration, acknowledgement ownership, least-privilege column grants, and a subprocess-exit probe that terminates immediately after the receiver transaction commits but before the parent caller can acknowledge receipt. The parent then redelivers the same event and checks for a single durable business/outbox effect. This probe is authored but not yet observed passing. The CI service uses the PostgreSQL 18.6 multi-platform image manifest digest `sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650`.
+
+Optional reference-model research tests (Python; never a production runtime):
+
+```sh
+python3 -m venv /tmp/operations-reference-venv
+/tmp/operations-reference-venv/bin/python -m pip install --no-cache-dir -r contracts/operations-event-v1/requirements.txt
+PYTHONDONTWRITEBYTECODE=1 /tmp/operations-reference-venv/bin/python scripts/run_unittest_suite.py contracts/operations-event-v1/tests --minimum-tests 1
 ```
 
 ## Profile choices
@@ -34,6 +46,24 @@ PYTHONDONTWRITEBYTECODE=1 /tmp/operations-event-contract-venv/bin/python -m unit
 The envelope uses CloudEvents core attributes `specversion`, `id`, `source`, `type`, `subject`, `time`, `datacontenttype`, and `dataschema`, plus a small allowlist of lowercase extension attributes: `tenantid`, `idempotencykey`, `observedat`, `correlationid`, `causationref`, `producersystem`, `producercomponent`, `producerversion`, `actorkind`, `actorid`, and `authorityref`.
 
 The strict local profile rejects unknown extension attributes so the accepted metadata surface is explicit. This is stricter than general CloudEvents extensibility; external events must first be parsed by their adapter and normalized into this profile. Use the `application/cloudevents+json` media type for structured CloudEvents JSON.
+
+## Rust validator boundary
+
+The Rust crate embeds the checked-in Draft 2020-12 schemas, enables format assertions, disables network schema retrieval, and accepts only the exact registered `dataschema` URI. It emits stable rule codes and JSON Pointers without rejected values. `validate_event_for_connection` also compares source URI, producer, actor/connection identity, company-to-tenant mapping, and company/resource-to-local-incident mapping with a caller-supplied trusted context. That context must originate from authenticated connector configuration; this crate does not authenticate connections or itself provide durable idempotency.
+
+The CI workflow qualifies the Rust contract separately from the Python reference-model research job. Passing the latter does not qualify the Rust crate or any production system.
+
+## Conflict and quarantine replay behavior
+
+Conflicting content under an already accepted event identity records a digest-only quarantine receipt without changing the original inbox outcome. Reusing a business idempotency key with different semantics keeps the new inbox event quarantined and returns an explicit conflict. Re-delivery of that quarantined event returns the stored quarantine reason keyed to the original event digest, even if later conflicting payloads reuse its event ID, instead of a generic duplicate result. Quarantine uniqueness includes the rejected-content digest, so identical repeated attempts collapse to one receipt while distinct conflicting contents remain distinguishable without storing raw payloads.
+
+## PostgreSQL outbox failure and recovery behavior
+
+Delivery lifecycle transitions execute through narrowly granted PostgreSQL `SECURITY DEFINER` routines owned by `luminous_ops_retry_owner`, a dedicated non-login/non-`BYPASSRLS` role. The runtime role has no direct UPDATE permission on status, attempt count, lease ownership/expiry, delivery acknowledgement, or scheduling metadata. The routines bind the explicit tenant parameter to the transaction-local RLS tenant, verify the current unexpired lease owner for acknowledgement/failure transitions, use a fixed `search_path = pg_catalog, ops, pg_temp`, and persist only allowlisted failure codes—never raw provider errors or response bodies.
+
+Retryable failures use deterministic exponential backoff from 5 seconds to 1 hour. There are at most 12 claimed delivery attempts, including expired worker leases. Authentication/authorization rejection, destination mismatch, TLS identity rejection, payload rejection, and remote contract mismatch are dead-lettered immediately; other classified failures retry until the ceiling. An expired lease at the ceiling is terminalized on the next claim attempt. The tenant-scoped dead-letter listing exposes only IDs, incident ordering, attempt count, stable failure code, and timestamps. A dead-lettered row remains undelivered, so later events for that incident remain blocked.
+
+This tranche does **not** expose replay or a “skip predecessor” operation. Replay requires an authenticated operator principal, tenant authorization, an immutable recovery audit, and safe treatment of an external send whose acknowledgement was lost. Those requirements are tracked in [issue #18](https://github.com/Luminous-Dynamics/luminous-platform/issues/18). At-least-once delivery and downstream idempotency remain mandatory.
 
 ## Important limits
 

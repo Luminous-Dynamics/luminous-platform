@@ -85,7 +85,7 @@ class PsaAdapterModelTests(unittest.TestCase):
             self.event["idempotencykey"], updated["idempotencykey"]
         )
 
-    def test_unmapped_external_company_fails_closed(self) -> None
+    def test_unmapped_external_company_fails_closed(self) -> None:
         snapshot = PsaIncidentSnapshot(
             company_id="company-attacker",
             ticket_id="7301",
