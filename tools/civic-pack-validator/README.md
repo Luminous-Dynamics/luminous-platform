@@ -69,8 +69,8 @@ The fixture intentionally keeps both `source_review_receipts: []` and `requireme
 For a local baseline comparison:
 
 ```sh
-python tools/civic-pack-validator/check_review_history.py \\
-  --baseline-pack /path/to/base-pack.json \\
+python tools/civic-pack-validator/check_review_history.py \
+  --baseline-pack /path/to/base-pack.json \
   --pack examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json
 ```
 
