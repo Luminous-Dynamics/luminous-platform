@@ -278,6 +278,43 @@ fn observation_rejects_invalid_zero_claim_and_digest() {
     assert!(validate_observation_json(&encoded(&bad_digest)).is_err());
 }
 
+
+#[test]
+fn fixture_only_observations_reject_synthetic_retrieval_timestamps() {
+    let fixtures = [
+        parse_observation_fixture(),
+        serde_json::from_str::<Value>(JHB_POWER_WATER_STATEMENT)
+            .expect("Johannesburg fixture must be valid JSON"),
+    ];
+    for fixture in fixtures {
+        let mut claimed_capture = fixture;
+        claimed_capture["retrieved_at"] = json!("2026-10-14T00:00:00Z");
+        let error = validate_observation_json(&encoded(&claimed_capture))
+            .expect_err("fixture-only observations must not claim a retrieval timestamp");
+        assert!(error.to_string().contains("retrieved_at must be null for fixture-only observations"));
+    }
+}
+
+#[test]
+fn non_fixture_observation_requires_retrieval_timestamp_and_snapshot_digest() {
+    let mut no_retrieval_time = parse_observation_fixture();
+    no_retrieval_time["fixture_only"] = json!(false);
+    no_retrieval_time["retrieved_at"] = Value::Null;
+    no_retrieval_time["source_snapshot_sha256"] =
+        json!(format!("sha256:{}", "a".repeat(64)));
+    let error = validate_observation_json(&encoded(&no_retrieval_time))
+        .expect_err("captured observation must have a retrieval timestamp");
+    assert!(error.to_string().contains("retrieved_at is required for non-fixture observations"));
+
+    let mut no_digest = parse_observation_fixture();
+    no_digest["fixture_only"] = json!(false);
+    no_digest["retrieved_at"] = json!("2026-10-12T12:00:00Z");
+    no_digest["source_snapshot_sha256"] = Value::Null;
+    let error = validate_observation_json(&encoded(&no_digest))
+        .expect_err("captured observation must have a source digest");
+    assert!(error.to_string().contains("source_snapshot_sha256 must be sha256:"));
+}
+
 #[test]
 fn non_fixture_observation_requires_snapshot_digest() {
     let mut value = parse_observation_fixture();
