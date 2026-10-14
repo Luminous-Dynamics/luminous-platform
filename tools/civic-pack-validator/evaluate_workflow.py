@@ -152,7 +152,14 @@ def evaluate_workflow(
 
     jurisdiction = pack.get("jurisdiction", {})
     workflow = pack.get("workflow", {})
-    facts = facts or {}
+    if facts is None:
+        facts = {}
+    if not isinstance(facts, dict):
+        report["execution_state"] = "invalid_context"
+        report["reasons"].append("Facts input must be a JSON object.")
+        report["invalid_fact_keys"] = ["<facts-not-object>"]
+        return report
+
     invalid_fact_keys = sorted(
         key for key in facts
         if key not in FACT_FIELD_TYPES
