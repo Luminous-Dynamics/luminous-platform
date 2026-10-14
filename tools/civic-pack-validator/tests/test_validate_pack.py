@@ -51,6 +51,21 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         self.assertFalse(report["validation_passed"])
         self.assertEqual(check_status(report, "pack.unique_identifiers"), "FAIL")
 
+    def test_duplicate_predicate_ids_fail(self):
+        pack = copy.deepcopy(PACK)
+        duplicate = copy.deepcopy(pack["requirements"][0]["applicability"]["predicates"][0])
+        pack["requirements"][1]["applicability"]["predicates"].append(duplicate)
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertEqual(check_status(report, "pack.unique_identifiers"), "FAIL")
+
+    def test_unknown_predicate_field_fails_schema_validation(self):
+        pack = copy.deepcopy(PACK)
+        pack["requirements"][0]["applicability"]["predicates"][0]["field"] = "government_approved"
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertEqual(check_status(report, "pack.schema_validation"), "FAIL")
+
     def test_out_of_scope_business_type_fails(self):
         pack = copy.deepcopy(PACK)
         pack["requirements"][0]["applicability"]["business_types"].append("unknown_business")
