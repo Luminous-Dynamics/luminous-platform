@@ -296,6 +296,18 @@ fn fixture_only_observations_reject_synthetic_retrieval_timestamps() {
 }
 
 #[test]
+fn observations_reject_a_missing_retrieved_at_field_even_for_fixtures() {
+    let mut value = parse_observation_fixture();
+    value.as_object_mut()
+        .expect("observation must be an object")
+        .remove("retrieved_at");
+    assert!(
+        validate_observation_json(&encoded(&value)).is_err(),
+        "nullable retrieved_at must still be a required key"
+    );
+}
+
+#[test]
 fn non_fixture_observation_requires_retrieval_timestamp_and_snapshot_digest() {
     let mut no_retrieval_time = parse_observation_fixture();
     no_retrieval_time["fixture_only"] = json!(false);
