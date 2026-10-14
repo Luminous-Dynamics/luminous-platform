@@ -54,13 +54,13 @@
     {
       "schema_id": "symthaea.life-civic-reference-corpus",
       "repository": "Luminous-Dynamics/symthaea",
-      "snapshot_commit_sha": "1fb5c3aaf990aa3cd00171f4d68bcc3488a808cf",
+      "snapshot_commit_sha": "42dbd6de258cf6d1b97e4b863c010c628802433d",
       "path": "docs/research/life-civic/reference-scenarios.json",
-      "git_blob_sha1": "40aa73d7a8447d424bb55a4983319eda13bc70ea",
-      "version": "0.1.0",
+      "git_blob_sha1": "df29b96497a4a1dfc0042d9853ee10eb79f962c0",
+      "version": "0.2.0",
       "artifact_kind": "evaluation_corpus",
       "availability": "present_at_snapshot",
-      "notes": "Reference scenarios and required reasoning outputs, not a runtime service-case schema, a verified model result, or an action protocol.",
+      "notes": "Symthaea life/civic reference corpus version 0.2.0 includes SYM-LC-011, a negative control that rejects assigning incident-level power-trip causality or claiming current restoration from the South African Government's dated cross-utility statement. It is an evaluation corpus, not a runtime service-case schema, a verified model result, or an action protocol.",
       "qualification_state": "unqualified_draft"
     },
     {
