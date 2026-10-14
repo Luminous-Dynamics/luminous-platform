@@ -3,7 +3,7 @@
   "observation_id": "synthetic-jhb-power-water-statement-claim-v1",
   "source_id": "za-gov-jhb-power-water-coordination",
   "source_uri": "https://www.gov.za/news/media-statements/government-measures-mitigate-water-supply-disruptions-resulting-power-trips",
-  "retrieved_at": "2026-10-14T00:00:00Z",
+  "retrieved_at": null,
   "source_period": {
     "period_label": "SYNTHETIC-REFERENCE-NOT-A-CAPTURE"
   },
@@ -11,7 +11,7 @@
   "field_path": "statement.claim.power_trip_water_disruption_context",
   "raw_value": {
     "fixture_only": true,
-    "fixture_note": "Synthetic structured scenario referencing the existence and topic of the published statement. The timestamp is a fixture value, not a recorded retrieval time, and no source-content digest has been captured.",
+    "fixture_note": "Synthetic structured scenario referencing the existence and topic of the published statement. No source retrieval timestamp or source-content digest has been captured.",
     "claim_kind": "published_official_statement",
     "publication_date": "2026-09-10",
     "summary": "The statement reports a joint meeting convened to address water-supply disruptions associated with intermittent power trips.",
