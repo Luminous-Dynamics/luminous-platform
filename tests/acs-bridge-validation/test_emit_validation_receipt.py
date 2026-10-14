@@ -118,11 +118,15 @@ class ValidationReceiptTests(unittest.TestCase):
             "GITHUB_RUN_ATTEMPT": "1",
             "GITHUB_EVENT_NAME": "pull_request",
             "GITHUB_REF": "refs/pull/40/merge",
-            "GITHUB_SHA": "abc123",
+            "GITHUB_SHA": "merge456",
+            "ACS_SOURCE_HEAD_SHA": "abc123",
         }
         result = receipt.build_receipt(ROOT, env, log)
         self.assertEqual("PASS", result["status"])
         self.assertEqual("luminous-acs-nixward-validation-receipt-v1", result["receipt_format"])
+        self.assertEqual("abc123", result["run"]["head_sha"])
+        self.assertEqual("merge456", result["run"]["workflow_event_sha"])
+        self.assertEqual("abc123", result["run"]["checkout_sha"])
         self.assertEqual(inventory["count"], result["checks"]["tests_reported_by_unittest"])
         self.assertTrue(result["inputs"]["schema_lock"]["bundle_integrity"]["all_files_match"])
         self.assertEqual(45, result["inputs"]["schema_lock"]["bundle_integrity"]["matched_file_count"])
