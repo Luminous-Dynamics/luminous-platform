@@ -101,8 +101,8 @@ jobs:
             fi
             git show "$COMMIT:$PACK_PATH" > "$CURRENT"
             echo "Checking append-only review history at $COMMIT"
-            python tools/civic-pack-validator/check_review_history.py \\
-              --baseline-pack "$BASELINE" \\
+            python tools/civic-pack-validator/check_review_history.py \
+              --baseline-pack "$BASELINE" \
               --pack "$CURRENT"
           done
       - name: Write validation summary
