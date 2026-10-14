@@ -124,7 +124,8 @@
       "claim_status": "reported",
       "recorded_by": "practitioner-sam",
       "occurred_at": "2026-10-14T10:01:00Z",
-      "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "operation_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
     },
     {
       "id": "building-measurement",
@@ -147,7 +148,8 @@
         "instrument_ref": "force-gauge-12",
         "calibration_ref": "calibration-force-gauge-12",
         "calibration_status": "valid"
-      }
+      },
+      "operation_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
     },
     {
       "id": "building-independent-verification",
@@ -166,7 +168,8 @@
         "verifier_authority_domain": "independent-building-review-collective",
         "method_ref": "door-fixing-pull-test-v1-review-v1",
         "result": "passed"
-      }
+      },
+      "operation_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
     },
     {
       "id": "building-customer-ack",
@@ -179,7 +182,8 @@
       "claim_status": "acknowledged",
       "recorded_by": "site-manager-02",
       "occurred_at": "2026-10-14T10:15:00Z",
-      "content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      "content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "operation_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
     },
     {
       "id": "building-handover",
@@ -192,7 +196,8 @@
       "claim_status": "acknowledged",
       "recorded_by": "practitioner-sam",
       "occurred_at": "2026-10-14T10:16:00Z",
-      "content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      "content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "operation_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
     }
   ],
   "closeout": {
