@@ -237,14 +237,14 @@ This is a time-stamped engineering snapshot only. Re-query each exact head befor
 
 | Track / exact head | Observed result | Implication |
 |---|---|---|
-| Luminous Platform PR #34 — d4a8dc18627ec2d82a8d4b960fbef4971fd2cbf0 | Public Source Catalogue V1 workflow completed successfully | Qualifies that workflow on that head only; not the whole civic profile |
+| Luminous Platform PR #34 — e55fde2af10dadf821d5fe2a578e2fa5e4fe8777 | Public Source Catalogue V1 queued on the current head; prior head d4a8dc18627ec2d82a8d4b960fbef4971fd2cbf0 had that workflow complete successfully | No pass established on the current exact head; historical success applies only to the previous head and that workflow |
 | Mycelix PR #5016 — e53d245945e2dc24a70498e4441cc4a5bb1c6807 | Water Workforce Pilot Qualification queued | No pass established |
 | Mycelix PR #5019 — 4f29a02acb591285e774724fd764e439e2881c31 | Life/civic contract queued; D6S qualification pending; general CI skipped | No complete qualification established |
 | Symthaea PR #7443 — db537f003a086f9bcabf00b3277e61028a707440 | Life/civic reference and crime-economics workflows queued; other workflows skipped | No pass established for the reference suite |
 | Symthaea PR #7414 — 6ac47344fe854386df42b63ce2a05cdc4e28fc00 | Water Leak Satellite Offline Tests completed successfully; several broad project workflows skipped | Narrow offline-test success only, not full Symthaea or field qualification |
 | Symthaea PR #7425 — 3f7c3b08ffae3718f881dfa350ceb0f06b424d34 | Energy Telemetry Privacy Contract workflow failed; broad workflows skipped | Needs failure review before reuse |
 | Sol-Atlas PR #104 — b561102f77df76f779b4b5c30a2cccb361074afe | Check workflow completed successfully | Qualification evidence for this workflow only |
-| Sol-Atlas PR #109 — 768b20d5dab207cbd53b37d1bd56fc53632ff3b8 | native tests and WASM check succeeded; formatting check failed | Fix rustfmt and rerun on the new exact head; not currently green |
+| Sol-Atlas PR #109 — 1c84081f05abdbb6b824f83284dcaab7f62fca81 | current Check run queued; prior head 768b20d5dab207cbd53b37d1bd56fc53632ff3b8 had native tests and WASM check succeed but formatting fail | No pass established on the current exact head; prior fmt corrections were applied and need exact-head requalification |
 | Symtropy PR #1602 — a46ef8d348394ba3dca41d85f237c1e3ef76b700 | CI queued | No pass established |
 | Nixward PR #58 — 34ef8807cedd917c8116218c366d87642d824c7a | standalone qualification queued; previous listed attempts skipped | No pass established |
 | Xenia peer PR #451 — 208423e7786e18364679983b05865162e28e840a | validation, ledger format, restore/runtime and durable-frontier checks failed; two listed checks succeeded | Not qualified for privileged civic use |
