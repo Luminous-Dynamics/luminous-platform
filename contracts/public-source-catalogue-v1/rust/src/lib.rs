@@ -3,7 +3,7 @@
 //! This crate performs no network access. It is intentionally a narrow Rust
 //! domain validator, not a general JSON Schema Draft 2020-12 implementation.
 
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::fmt;
@@ -306,7 +306,10 @@ pub struct SourceObservation {
     pub observation_id: String,
     pub source_id: String,
     pub source_uri: String,
-    pub retrieved_at: String,
+    /// Null for synthetic fixtures; captured observations must carry a real retrieval timestamp.
+    /// The custom deserializer makes the JSON field required even when its value may be null.
+    #[serde(deserialize_with = "deserialize_required_nullable_string")]
+    pub retrieved_at: Option<String>,
     pub source_period: SourcePeriod,
     pub dataset_id: String,
     pub field_path: String,
@@ -315,6 +318,13 @@ pub struct SourceObservation {
     pub normalization: Normalization,
     pub source_snapshot_sha256: Value,
     pub fixture_only: bool,
+}
+
+fn deserialize_required_nullable_string<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer)
 }
 
 #[derive(Debug, Deserialize)]
@@ -364,8 +374,18 @@ fn validate_observation(observation: &SourceObservation) -> ValidationErrors {
     if !valid_https_url(&observation.source_uri) {
         errors.push("source_uri must be an absolute HTTPS URL without userinfo");
     }
-    if !valid_rfc3339_timestamp(&observation.retrieved_at) {
-        errors.push("retrieved_at must be a valid RFC3339 timestamp with an explicit timezone");
+    match (observation.fixture_only, observation.retrieved_at.as_deref()) {
+        (true, None) => {}
+        (true, Some(_)) => {
+            errors.push("retrieved_at must be null for fixture-only observations");
+        }
+        (false, Some(value)) if valid_rfc3339_timestamp(value) => {}
+        (false, Some(_)) => {
+            errors.push("retrieved_at must be a valid RFC3339 timestamp with an explicit timezone");
+        }
+        (false, None) => {
+            errors.push("retrieved_at is required for non-fixture observations");
+        }
     }
     if observation
         .source_period
@@ -437,16 +457,16 @@ fn validate_observation(observation: &SourceObservation) -> ValidationErrors {
         RawValueState::InvalidValue | RawValueState::Stale | RawValueState::Provisional => {}
     }
 
-    if observation.source_snapshot_sha256.is_null() {
-        if !observation.fixture_only {
-            errors.push("source_snapshot_sha256 is required for non-fixture observations");
+    if observation.fixture_only {
+        if !observation.source_snapshot_sha256.is_null() {
+            errors.push("source_snapshot_sha256 must be null for fixture-only observations");
         }
     } else if !observation
         .source_snapshot_sha256
         .as_str()
         .is_some_and(valid_sha256)
     {
-        errors.push("source_snapshot_sha256 must be null only for a fixture, or sha256:<64 lowercase hex digits>");
+        errors.push("source_snapshot_sha256 must be sha256:<64 lowercase hex digits> for non-fixture observations");
     }
 
     errors
