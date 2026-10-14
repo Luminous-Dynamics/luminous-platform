@@ -224,7 +224,6 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
             next_review_at="2026-11-13T16:00:00Z",
         )
         pack["publication_state"] = "candidate"
-        pack["requirements"][0]["review_state"] = "verified"
         report = report_for(pack)
         self.assertTrue(report["validation_passed"])
         self.assertFalse(report["publication_eligible"])
@@ -362,7 +361,6 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         source = pack["sources"][0]
         attach_review_receipt(pack, source, next_review_at="2026-12-01T12:00:00Z")
         pack["publication_state"] = "candidate"
-        pack["requirements"][0]["review_state"] = "verified"
         report = report_for(pack)
         self.assertTrue(report["validation_passed"])
         self.assertFalse(report["publication_eligible"])
