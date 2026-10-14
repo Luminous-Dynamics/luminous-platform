@@ -134,12 +134,15 @@ def evaluate_workflow(
         "reasons": [],
     }
 
-    if not validation["validation_passed"]:
+    integrity_failures = [
+        check for check in validation["checks"]
+        if check["status"] == "FAIL"
+        and check["check_id"] != "publication.gate"
+    ]
+    if integrity_failures:
         report["execution_state"] = "invalid_pack"
-        report["reasons"].append("Pack failed structural or semantic validation.")
-        report["validation_errors"] = [
-            c for c in validation["checks"] if c["status"] == "FAIL"
-        ]
+        report["reasons"].append("Pack failed structural or semantic integrity validation.")
+        report["validation_errors"] = integrity_failures
         return report
 
     if not isinstance(pack, dict):
