@@ -7,7 +7,7 @@
     "source_system": "synthetic-erpnext-export",
     "external_id": "CASE-101",
     "source_revision": "rev-03",
-    "source_status": "Completed",
+    "source_status": "Handed over",
     "normalized_status": "handed_over",
     "mapping_profile": "erpnext-adapter-draft-0.1",
     "mapping_losses": [],
