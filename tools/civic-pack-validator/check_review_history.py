@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail if previously committed source-review receipts are edited, reordered, or removed."""
+"""Fail if previously committed source-review receipt history is rewritten."""
 from __future__ import annotations
 
 import argparse
@@ -7,22 +7,36 @@ import json
 from pathlib import Path
 from typing import Any
 
+LEDGER_NAMES = ("source_review_receipts", "requirement_review_receipts")
+
 
 def check_review_history(baseline: dict[str, Any], current: dict[str, Any]) -> list[str]:
-    """The baseline receipt list must remain an exact prefix of the current ledger."""
-    old = baseline.get("source_review_receipts", [])
-    new = current.get("source_review_receipts", [])
-    if not isinstance(old, list) or not isinstance(new, list):
-        return ["source_review_receipts must be arrays in baseline and current pack"]
-    if len(new) < len(old):
-        return [f"receipt history was shortened: baseline={len(old)} current={len(new)}"]
-    violations = []
-    for index, previous in enumerate(old):
-        if previous != new[index]:
-            receipt_id = previous.get("receipt_id", "<unknown>") if isinstance(previous, dict) else "<invalid>"
+    """Each receipt ledger in the baseline must remain an exact prefix."""
+    violations: list[str] = []
+    for ledger_name in LEDGER_NAMES:
+        old = baseline.get(ledger_name, [])
+        new = current.get(ledger_name, [])
+        if not isinstance(old, list) or not isinstance(new, list):
             violations.append(
-                f"baseline receipt at index {index} ({receipt_id}) was changed, removed, or reordered"
+                f"{ledger_name} must be arrays in baseline and current pack"
             )
+            continue
+        if len(new) < len(old):
+            violations.append(
+                f"{ledger_name} history was shortened: baseline={len(old)} current={len(new)}"
+            )
+            continue
+        for index, previous in enumerate(old):
+            if previous != new[index]:
+                receipt_id = (
+                    previous.get("receipt_id", "<unknown>")
+                    if isinstance(previous, dict)
+                    else "<invalid>"
+                )
+                violations.append(
+                    f"{ledger_name} baseline receipt at index {index} ({receipt_id}) "
+                    "was changed, removed, or reordered"
+                )
     return violations
 
 
@@ -31,6 +45,14 @@ def load_object(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{path} must contain a JSON object")
     return value
+
+
+def receipt_counts(pack: dict[str, Any]) -> dict[str, int | None]:
+    counts: dict[str, int | None] = {}
+    for ledger_name in LEDGER_NAMES:
+        ledger = pack.get(ledger_name, [])
+        counts[ledger_name] = len(ledger) if isinstance(ledger, list) else None
+    return counts
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -45,11 +67,9 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"passed": False, "errors": [str(exc)]}, sort_keys=True))
         return 1
     errors = check_review_history(baseline, current)
-    baseline_receipts = baseline.get("source_review_receipts", [])
-    current_receipts = current.get("source_review_receipts", [])
     result = {
-        "baseline_receipt_count": len(baseline_receipts) if isinstance(baseline_receipts, list) else None,
-        "current_receipt_count": len(current_receipts) if isinstance(current_receipts, list) else None,
+        "baseline_receipt_counts": receipt_counts(baseline),
+        "current_receipt_counts": receipt_counts(current),
         "passed": not errors,
         "errors": errors,
     }
