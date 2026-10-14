@@ -125,5 +125,104 @@
     "review_state_changed": {
       "const": false
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "comparison": {
+            "properties": {
+              "state": {
+                "const": "baseline"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "comparison": {
+            "properties": {
+              "previous_snapshot_sha256": {
+                "const": null
+              },
+              "previous_final_url": {
+                "const": null
+              },
+              "previous_content_type": {
+                "const": null
+              },
+              "change_signals": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "comparison": {
+            "properties": {
+              "state": {
+                "const": "unchanged"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "comparison": {
+            "properties": {
+              "previous_snapshot_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "previous_final_url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "change_signals": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "comparison": {
+            "properties": {
+              "state": {
+                "const": "changed"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "comparison": {
+            "properties": {
+              "previous_snapshot_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "previous_final_url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "change_signals": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

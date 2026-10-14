@@ -5,10 +5,9 @@ import hashlib
 import json
 import sys
 import unittest
-from datetime import datetime, timezone
 from pathlib import Path
 
-from jsonschema import Draft202012Validator, FormatChecker
+from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "tools" / "civic-pack-validator"))
@@ -30,6 +29,22 @@ def build(data=b"captured bytes", **overrides):
 
 
 class CaptureManifestTests(unittest.TestCase):
+    def test_schema_rejects_unchanged_state_without_a_baseline(self):
+        manifest = build()
+        manifest["comparison"]["state"] = "unchanged"
+        with self.assertRaises(ValidationError):
+            Draft202012Validator(SCHEMA, format_checker=FormatChecker()).validate(manifest)
+
+    def test_supplied_empty_final_url_is_not_silently_defaulted(self):
+        with self.assertRaises(CaptureManifestError):
+            build(final_url="")
+
+    def test_malformed_previous_capture_metadata_is_rejected(self):
+        first = build()
+        malformed = {**first, "content_type": 17}
+        with self.assertRaises(CaptureManifestError):
+            build(previous_manifest=malformed, captured_at="2026-10-15T18:00:00Z")
+
     def test_manifest_hashes_exact_bytes_and_validates_schema(self):
         data = b"raw\x00bytes\n"
         manifest = build(data)

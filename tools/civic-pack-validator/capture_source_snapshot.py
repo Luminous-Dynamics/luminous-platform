@@ -70,15 +70,29 @@ def load_previous_manifest(value: dict[str, Any], *, source_id: str, canonical_u
     if value.get("canonical_url") != canonical_url:
         raise CaptureManifestError("previous manifest canonical_url does not match")
     snapshot = value.get("snapshot")
+    if value.get("capture_method") != "offline_sha256_of_provided_bytes":
+        raise CaptureManifestError("previous manifest has an unsupported capture_method")
+    if value.get("network_access_performed") is not False:
+        raise CaptureManifestError("previous manifest must record network_access_performed=false")
+    if value.get("human_review_required") is not True or value.get("review_state_changed") is not False:
+        raise CaptureManifestError("previous manifest must not imply review or alter review state")
     if not isinstance(snapshot, dict) or not isinstance(snapshot.get("sha256"), str):
         raise CaptureManifestError("previous manifest has no snapshot SHA-256")
     if not SHA256_PATTERN.fullmatch(snapshot["sha256"]):
         raise CaptureManifestError("previous manifest snapshot SHA-256 is malformed")
+    if type(snapshot.get("size_bytes")) is not int or snapshot["size_bytes"] < 1:
+        raise CaptureManifestError("previous manifest snapshot size is missing or invalid")
+    previous_content_type = value.get("content_type")
+    if previous_content_type is not None and not isinstance(previous_content_type, str):
+        raise CaptureManifestError("previous manifest content_type must be a string or null")
     previous_captured_at = parse_instant(value.get("captured_at"))
+    comparison = value.get("comparison")
+    if not isinstance(comparison, dict) or comparison.get("state") not in {"baseline", "unchanged", "changed"}:
+        raise CaptureManifestError("previous manifest comparison state is missing or invalid")
     return {
         "snapshot_sha256": snapshot["sha256"],
         "final_url": validate_https_url(value.get("final_url"), "previous final_url"),
-        "content_type": value.get("content_type"),
+        "content_type": previous_content_type,
         "captured_at": previous_captured_at,
     }
 
@@ -97,7 +111,7 @@ def build_capture_manifest(
     if not isinstance(source_id, str) or not SOURCE_ID_PATTERN.fullmatch(source_id):
         raise CaptureManifestError("source_id does not match the pack identifier convention")
     canonical_url = validate_https_url(canonical_url, "canonical_url")
-    final_url = validate_https_url(final_url or canonical_url, "final_url")
+    final_url = validate_https_url(canonical_url if final_url is None else final_url, "final_url")
     captured = parse_instant(captured_at)
     if not isinstance(snapshot_bytes, bytes):
         raise CaptureManifestError("snapshot input must be raw bytes")
