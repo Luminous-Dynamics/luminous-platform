@@ -64,7 +64,7 @@ A draft pack can therefore be a structurally valid fixture while being explicitl
 
 Read the [source review and receipt protocol v0.1](../../docs/civic-services/source-review-protocol-v0.1.md). A source cannot claim a non-unreviewed state without a latest receipt matching its URL, snapshot digest, reviewer metadata, and reuse-rights fields. A `current` receipt requires all five review-scope fields to be true.
 
-The fixture intentionally keeps both `source_review_receipts: []` and `requirement_review_receipts: []`, with null review pointers; no source or claim has been reviewed. Verified requirements need a receipt that hashes the exact claim-bearing fields and names all current source receipts supporting that claim. Pull-request CI compares both base ledgers against the head pack and rejects editing, removing, or reordering prior receipts. This is append-only history relative to the base; it does not authenticate reviewer identity or prove legal accuracy. Require independent human review and approved repository rules before publication.
+The fixture intentionally keeps both `source_review_receipts: []` and `requirement_review_receipts: []`, with null review pointers; no source or claim has been reviewed. Verified requirements need a receipt that hashes the exact claim-bearing fields and names all current source receipts supporting that claim. Pull-request CI checks each pack-changing commit against its first parent and rejects editing, removing, or reordering receipts added in any earlier PR commit. This is append-only history relative to the base; it does not authenticate reviewer identity or prove legal accuracy. Require independent human review and approved repository rules before publication.
 
 For a local baseline comparison:
 
