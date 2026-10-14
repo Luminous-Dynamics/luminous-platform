@@ -56,6 +56,29 @@ REQUIRED_CURRENT_REVIEW_SCOPE = (
     "applicability_reviewed",
     "reuse_rights_reviewed",
 )
+REQUIRED_VERIFIED_REQUIREMENT_SCOPE = (
+    "source_support_checked",
+    "jurisdiction_checked",
+    "applicability_checked",
+    "user_language_checked",
+    "completion_effect_checked",
+)
+REQUIREMENT_CLAIM_FIELDS = (
+    "requirement_id",
+    "title",
+    "claim_type",
+    "summary",
+    "applicability",
+    "source_refs",
+    "user_actions",
+    "completion_effect",
+)
+
+
+def requirement_claim_sha256(requirement: dict[str, Any]) -> str:
+    """Hash only the claim-bearing fields, excluding mutable review metadata."""
+    claim = {field: requirement[field] for field in REQUIREMENT_CLAIM_FIELDS}
+    return sha256_hex(canonical_json_bytes(claim))
 
 
 def _same_timestamp(left: Any, right: Any) -> bool:
@@ -147,6 +170,11 @@ def validate_pack(
         receipt.get("receipt_id", "")
         for receipt in source_review_receipts if isinstance(receipt, dict)
     ]
+    requirement_review_receipts = pack.get("requirement_review_receipts", [])
+    requirement_review_receipt_ids = [
+        receipt.get("receipt_id", "")
+        for receipt in requirement_review_receipts if isinstance(receipt, dict)
+    ]
 
     all_unique = (
         len(source_ids) == len(sources)
@@ -160,16 +188,18 @@ def validate_pack(
             for req in requirements if isinstance(req, dict)
         )
         and len(review_receipt_ids) == len(source_review_receipts)
+        and len(requirement_review_receipt_ids) == len(requirement_review_receipts)
         and _unique_check(source_ids)
         and _unique_check(requirement_ids)
         and _unique_check(action_ids)
         and _unique_check(predicate_ids)
         and _unique_check(review_receipt_ids)
+        and _unique_check(requirement_review_receipt_ids)
     )
     add(
         "pack.unique_identifiers",
         "PASS" if all_unique else "FAIL",
-        "Source, requirement, action, predicate, and review-receipt identifiers must be present and unique within the pack.",
+        "Source, requirement, action, predicate, source-review receipt, and requirement-review receipt identifiers must be present and unique within the pack.",
     )
 
     source_by_id = {
@@ -273,6 +303,156 @@ def validate_pack(
         "source.review_receipts",
         "FAIL" if receipt_errors else "PASS",
         "Source review receipt consistency: " + ("; ".join(receipt_errors) if receipt_errors else "all records are source-bound and internally consistent."),
+    )
+
+    requirement_by_id = {
+        req.get("requirement_id"): req for req in requirements if isinstance(req, dict)
+    }
+    source_receipt_by_id = {
+        receipt.get("receipt_id"): receipt
+        for receipt in source_review_receipts if isinstance(receipt, dict)
+    }
+    requirement_receipt_by_id = {
+        receipt.get("receipt_id"): receipt
+        for receipt in requirement_review_receipts if isinstance(receipt, dict)
+    }
+    requirement_receipts_by_requirement: dict[str, list[dict[str, Any]]] = {}
+    requirement_receipt_errors: list[str] = []
+    last_reviewed_by_requirement: dict[str, datetime] = {}
+    for receipt in requirement_review_receipts:
+        if not isinstance(receipt, dict):
+            requirement_receipt_errors.append("requirement review receipt must be an object")
+            continue
+        receipt_id = receipt.get("receipt_id", "<unknown>")
+        requirement_id = receipt.get("requirement_id", "<unknown>")
+        requirement = requirement_by_id.get(requirement_id)
+        if requirement is None:
+            requirement_receipt_errors.append(f"{receipt_id}: unknown requirement_id {requirement_id}")
+            continue
+        requirement_receipts_by_requirement.setdefault(requirement_id, []).append(receipt)
+        reviewed = parse_datetime(receipt.get("reviewed_at"))
+        next_review = parse_datetime(receipt.get("next_review_at"))
+        if reviewed is None or next_review is None:
+            requirement_receipt_errors.append(f"{receipt_id}: invalid review timestamp")
+        elif next_review <= reviewed:
+            requirement_receipt_errors.append(f"{receipt_id}: next_review_at must follow reviewed_at")
+        if reviewed is not None:
+            previous_review = last_reviewed_by_requirement.get(requirement_id)
+            if previous_review is not None and reviewed <= previous_review:
+                requirement_receipt_errors.append(
+                    f"{receipt_id}: review history is not strictly chronological for {requirement_id}"
+                )
+            last_reviewed_by_requirement[requirement_id] = reviewed
+        if not isinstance(receipt.get("reviewer_id"), str) or not receipt.get("reviewer_id", "").strip():
+            requirement_receipt_errors.append(f"{receipt_id}: reviewer_id is missing")
+        if not isinstance(receipt.get("reviewer_role"), str) or not receipt.get("reviewer_role", "").strip():
+            requirement_receipt_errors.append(f"{receipt_id}: reviewer_role is missing")
+        for source_receipt_id in receipt.get("source_receipt_ids", []):
+            source_receipt = source_receipt_by_id.get(source_receipt_id)
+            if source_receipt is None:
+                requirement_receipt_errors.append(
+                    f"{receipt_id}: unknown source receipt {source_receipt_id}"
+                )
+            elif source_receipt.get("source_id") not in requirement.get("source_refs", []):
+                requirement_receipt_errors.append(
+                    f"{receipt_id}: source receipt {source_receipt_id} is outside this requirement's source_refs"
+                )
+        if receipt.get("decision") == "verified":
+            scope = receipt.get("review_scope", {})
+            incomplete = [
+                field for field in REQUIRED_VERIFIED_REQUIREMENT_SCOPE
+                if scope.get(field) is not True
+            ]
+            if incomplete:
+                requirement_receipt_errors.append(
+                    f"{receipt_id}: verified decision has incomplete review scope ({', '.join(incomplete)})"
+                )
+
+    for requirement in requirements:
+        if not isinstance(requirement, dict):
+            continue
+        requirement_id = requirement.get("requirement_id", "<unknown>")
+        state = requirement.get("review_state")
+        history = requirement_receipts_by_requirement.get(requirement_id, [])
+        pointer = requirement.get("review_receipt_id")
+        if state == "draft":
+            if history or pointer is not None or requirement.get("reviewer_id") is not None or requirement.get("reviewer_role") is not None:
+                requirement_receipt_errors.append(
+                    f"{requirement_id}: draft state conflicts with requirement review receipt metadata"
+                )
+            continue
+        if not history or not pointer:
+            requirement_receipt_errors.append(
+                f"{requirement_id}: review_state={state} has no linked requirement review receipt"
+            )
+            continue
+        dated_history = [(parse_datetime(item.get("reviewed_at")), item) for item in history]
+        if any(when is None for when, _ in dated_history):
+            requirement_receipt_errors.append(f"{requirement_id}: receipt history has an invalid reviewed_at")
+            continue
+        timestamps = [when for when, _ in dated_history]
+        if len(timestamps) != len(set(timestamps)):
+            requirement_receipt_errors.append(
+                f"{requirement_id}: receipt history has ambiguous duplicate reviewed_at timestamps"
+            )
+            continue
+        if any(left >= right for left, right in zip(timestamps, timestamps[1:])):
+            requirement_receipt_errors.append(
+                f"{requirement_id}: receipt history is not strictly chronological"
+            )
+            continue
+        latest = history[-1]
+        if pointer != latest.get("receipt_id"):
+            requirement_receipt_errors.append(
+                f"{requirement_id}: review_receipt_id does not identify the latest receipt"
+            )
+        if state != latest.get("decision"):
+            requirement_receipt_errors.append(
+                f"{requirement_id}: review_state does not match the latest receipt decision"
+            )
+        if requirement.get("reviewer_id") != latest.get("reviewer_id"):
+            requirement_receipt_errors.append(
+                f"{requirement_id}: reviewer_id does not match latest receipt"
+            )
+        if requirement.get("reviewer_role") != latest.get("reviewer_role"):
+            requirement_receipt_errors.append(
+                f"{requirement_id}: reviewer_role does not match latest receipt"
+            )
+        if latest.get("claim_sha256") != requirement_claim_sha256(requirement):
+            requirement_receipt_errors.append(
+                f"{requirement_id}: claim fields no longer match latest review receipt digest"
+            )
+        if state == "verified":
+            expected_source_receipt_ids = []
+            all_sources_current = True
+            for source_ref in requirement.get("source_refs", []):
+                source = source_by_id.get(source_ref)
+                if (
+                    source is None
+                    or source.get("review_state") != "current"
+                    or not source.get("review_receipt_id")
+                ):
+                    all_sources_current = False
+                    continue
+                expected_source_receipt_ids.append(source["review_receipt_id"])
+            if not all_sources_current:
+                requirement_receipt_errors.append(
+                    f"{requirement_id}: verified claim references a missing or non-current source receipt"
+                )
+            if latest.get("source_receipt_ids") != expected_source_receipt_ids:
+                requirement_receipt_errors.append(
+                    f"{requirement_id}: source_receipt_ids do not exactly match the reviewed claim's sources"
+                )
+
+    requirement_receipt_errors = sorted(set(requirement_receipt_errors))
+    add(
+        "requirement.review_receipts",
+        "FAIL" if requirement_receipt_errors else "PASS",
+        "Requirement review receipt consistency: " + (
+            "; ".join(requirement_receipt_errors)
+            if requirement_receipt_errors
+            else "all verified claims are bound to their current source receipts and claim digests."
+        ),
     )
 
     unresolved = sorted({
