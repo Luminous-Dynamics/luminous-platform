@@ -24,6 +24,64 @@ from validate_pack import (
 ENGINE_VERSION = "0.1.0"
 AUTHORITATIVE_OUTCOMES = {"approved", "refused", "legally_compliant", "satisfied"}
 
+FACT_FIELD_TYPES = {
+    "handles_food": bool,
+    "prepares_food_on_site": bool,
+    "sells_perishable_food": bool,
+    "premises_status": str,
+    "sells_alcohol": bool,
+    "offers_seating": bool,
+    "business_entity_registration_intended": bool,
+}
+SCOPE_FIELDS = {"jurisdiction_id", "business_type"}
+
+
+def evaluate_predicate(
+    predicate: dict[str, Any], context: dict[str, Any]
+) -> bool | None:
+    """Evaluate one allow-listed predicate: True/False/None (unknown)."""
+    field = predicate["field"]
+    operator = predicate["operator"]
+    if field not in SCOPE_FIELDS and field not in FACT_FIELD_TYPES:
+        raise ValueError(f"Unsupported predicate field: {field}")
+    if field not in context or context[field] is None or context[field] == "":
+        return None
+
+    actual = context[field]
+    if operator == "is_true":
+        return actual if type(actual) is bool else None
+    if operator == "is_false":
+        return not actual if type(actual) is bool else None
+    if operator == "eq":
+        expected = predicate["value"]
+        return type(actual) is type(expected) and actual == expected
+    if operator == "in":
+        expected_values = predicate["value"]
+        return any(type(actual) is type(expected) and actual == expected for expected in expected_values)
+    raise ValueError(f"Unsupported predicate operator: {operator}")
+
+
+def evaluate_predicates(
+    predicates: list[dict[str, Any]], context: dict[str, Any]
+) -> tuple[str, list[dict[str, str]]]:
+    """Return applicable, not_applicable, or needs_scope_confirmation."""
+    results: list[dict[str, str]] = []
+    outcomes: list[bool | None] = []
+    for predicate in predicates:
+        outcome = evaluate_predicate(predicate, context)
+        outcomes.append(outcome)
+        results.append({
+            "predicate_id": predicate["predicate_id"],
+            "field": predicate["field"],
+            "operator": predicate["operator"],
+            "result": "true" if outcome is True else "false" if outcome is False else "unknown",
+        })
+    if any(outcome is False for outcome in outcomes):
+        return "not_applicable", results
+    if any(outcome is None for outcome in outcomes):
+        return "needs_scope_confirmation", results
+    return "applicable", results
+
 
 def _iso_utc(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -39,6 +97,7 @@ def evaluate_workflow(
     jurisdiction_id: str,
     workflow_id: str,
     business_type: str,
+    facts: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Evaluate exact-scope candidates while refusing to infer legal outcomes."""
     if as_of.tzinfo is None or as_of.utcoffset() is None:
@@ -90,6 +149,31 @@ def evaluate_workflow(
 
     jurisdiction = pack.get("jurisdiction", {})
     workflow = pack.get("workflow", {})
+    facts = facts or {}
+    invalid_fact_keys = sorted(
+        key for key in facts
+        if key not in FACT_FIELD_TYPES
+    )
+    invalid_fact_values: list[str] = []
+    for key, value in facts.items():
+        expected_type = FACT_FIELD_TYPES.get(key)
+        if expected_type is None:
+            continue
+        if type(value) is not expected_type or (isinstance(value, str) and not value.strip()):
+            invalid_fact_values.append(key)
+    if invalid_fact_keys or invalid_fact_values:
+        report["execution_state"] = "invalid_context"
+        report["reasons"].append(
+            "Facts must use only the allow-listed fields and their exact declared types."
+        )
+        report["invalid_fact_keys"] = invalid_fact_keys
+        report["invalid_fact_values"] = sorted(invalid_fact_values)
+        return report
+
+    context: dict[str, Any] = dict(facts)
+    context["jurisdiction_id"] = jurisdiction_id
+    context["business_type"] = business_type
+
     if jurisdiction.get("jurisdiction_id") != jurisdiction_id:
         report["execution_state"] = "scope_confirmation_required"
         report["scope_status"] = "jurisdiction_mismatch"
@@ -126,9 +210,17 @@ def evaluate_workflow(
 
     source_by_id = {s["source_id"]: s for s in pack.get("sources", [])}
     candidates: list[dict[str, Any]] = []
+    not_applicable_ids: list[str] = []
     for requirement in pack.get("requirements", []):
         applicability = requirement.get("applicability", {})
         if business_type not in applicability.get("business_types", []):
+            continue
+
+        predicate_status, predicate_results = evaluate_predicates(
+            applicability.get("predicates", []), context
+        )
+        if predicate_status == "not_applicable":
+            not_applicable_ids.append(requirement["requirement_id"])
             continue
 
         refs = requirement.get("source_refs", [])
@@ -147,7 +239,9 @@ def evaluate_workflow(
         # The engine deliberately does not parse these strings as policy logic.
         conditions = applicability.get("conditions", [])
         unknowns = applicability.get("unknowns", [])
-        if requirement.get("review_state") != "verified":
+        if predicate_status == "needs_scope_confirmation":
+            state = "needs_scope_confirmation"
+        elif requirement.get("review_state") != "verified":
             state = "needs_human_review"
         elif any(s["review_state"] != "current" for s in source_states):
             state = "needs_source_verification"
@@ -171,6 +265,8 @@ def evaluate_workflow(
             "user_actions": requirement.get("user_actions", []),
             "scope_conditions_to_review": conditions,
             "known_unknowns": unknowns,
+            "predicate_evaluation": predicate_status,
+            "predicate_results": predicate_results,
             "completion_effect": requirement["completion_effect"],
             "user_checkbox_effect": "records_user_progress_only",
             "authority_outcome": "unknown",
@@ -181,6 +277,7 @@ def evaluate_workflow(
         candidates.append(candidate)
 
     report["requirements"] = candidates
+    report["not_applicable_requirement_ids"] = sorted(not_applicable_ids)
     report["execution_state"] = "guidance_ready" if candidates else "no_matching_requirements"
     report["reasons"].append(
         "Matched records are guidance candidates only; conditions and unknowns remain explicit."
@@ -196,6 +293,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--jurisdiction", required=True)
     parser.add_argument("--workflow", required=True)
     parser.add_argument("--business-type", required=True)
+    parser.add_argument(
+        "--facts",
+        type=Path,
+        help="Optional JSON object of allow-listed non-sensitive facts; absent fields evaluate as unknown.",
+    )
     parser.add_argument("--report", type=Path)
     args = parser.parse_args(argv)
 
@@ -205,6 +307,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         schema, schema_bytes = load_json(args.schema)
         pack, pack_bytes = load_json(args.pack)
+        facts: dict[str, Any] = {}
+        if args.facts:
+            facts, _ = load_json(args.facts)
         report = evaluate_workflow(
             schema,
             pack,
@@ -214,6 +319,7 @@ def main(argv: list[str] | None = None) -> int:
             jurisdiction_id=args.jurisdiction,
             workflow_id=args.workflow,
             business_type=args.business_type,
+            facts=facts,
         )
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         print(json.dumps({"execution_state": "invalid_input", "error": str(exc)}, indent=2), file=sys.stderr)
