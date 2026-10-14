@@ -34,14 +34,34 @@ fn revised_event(revision: &str, event_id: &str, idempotency_key: &str, summary:
     event
 }
 
+fn count_query_for_table(table: &str) -> Option<&'static str> {
+    match table {
+        "inbox_events" => Some("SELECT COUNT(*)::bigint AS count FROM ops.inbox_events"),
+        "business_effects" => Some("SELECT COUNT(*)::bigint AS count FROM ops.business_effects"),
+        "incident_heads" => Some("SELECT COUNT(*)::bigint AS count FROM ops.incident_heads"),
+        "incident_activity" => Some("SELECT COUNT(*)::bigint AS count FROM ops.incident_activity"),
+        "outbox_events" => Some("SELECT COUNT(*)::bigint AS count FROM ops.outbox_events"),
+        "quarantined_events" => {
+            Some("SELECT COUNT(*)::bigint AS count FROM ops.quarantined_events")
+        }
+        _ => None,
+    }
+}
+
 async fn scalar_count(pool: &PgPool, table: &str) -> i64 {
-    let query = format!("SELECT COUNT(*)::bigint AS count FROM ops.{table}");
-    sqlx::query(&query)
+    let query = count_query_for_table(table).expect("test table must be allowlisted");
+    sqlx::query(query)
         .fetch_one(pool)
         .await
         .expect("table count query")
         .try_get("count")
         .expect("count column")
+}
+
+#[test]
+fn scalar_count_rejects_unapproved_table_names() {
+    assert!(count_query_for_table("inbox_events; DROP TABLE ops.tenants").is_none());
+    assert!(count_query_for_table("unknown_table").is_none());
 }
 
 async fn reset_and_seed(pool: &PgPool) {
