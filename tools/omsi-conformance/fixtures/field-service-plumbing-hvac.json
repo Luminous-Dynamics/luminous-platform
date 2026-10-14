@@ -1,0 +1,230 @@
+{
+  "schema": "org.omsi.field-service-record/0.1",
+  "id": "field-record-hvac-0001",
+  "tenant_id": "tenant-example-coop",
+  "created_at": "2026-10-14T09:00:00Z",
+  "service_case": {
+    "source_system": "synthetic-erpnext-export",
+    "external_id": "CASE-101",
+    "source_revision": "rev-03",
+    "source_status": "Completed",
+    "normalized_status": "handed_over",
+    "mapping_profile": "erpnext-adapter-draft-0.1",
+    "mapping_losses": [],
+    "mapping_loss_disclosed": true
+  },
+  "work_order": {
+    "id": "WO-101",
+    "case_external_id": "CASE-101",
+    "tenant_id": "tenant-example-coop",
+    "site_id": "site-building-01",
+    "asset_id": "asset-hvac-01",
+    "jurisdiction": "ZA-GP",
+    "status": "handed_over",
+    "scope_version": 2,
+    "scope_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "required_practitioner_scopes": [
+      "plumbing"
+    ],
+    "credential_status_max_age_seconds": 86400,
+    "measurement_requirements": [
+      {
+        "requirement_id": "req-pressure-01",
+        "method_ref": "hvac-pressure-test-v1",
+        "unit_code": "bar",
+        "scale": 2,
+        "min_scaled": 110,
+        "max_scaled": 130
+      }
+    ]
+  },
+  "site": {
+    "id": "site-building-01",
+    "tenant_id": "tenant-example-coop",
+    "jurisdiction": "ZA-GP",
+    "location_ref": "site-ref:building-01"
+  },
+  "asset": {
+    "id": "asset-hvac-01",
+    "tenant_id": "tenant-example-coop",
+    "asset_type": "hvac_chilled_water_line",
+    "identity_source": "asset-register:hvac-01",
+    "manufacturer_ref": "generic-hvac",
+    "model_ref": "pipe-segment-3"
+  },
+  "practitioner": {
+    "id": "practitioner-ada",
+    "tenant_id": "tenant-example-coop",
+    "role": "plumbing-technician",
+    "credentials": [
+      {
+        "credential_id": "credential-plumbing-01",
+        "tenant_id": "tenant-example-coop",
+        "issuer_id": "synthetic-trade-register",
+        "status": "valid",
+        "jurisdiction": "ZA-GP",
+        "scopes": [
+          "plumbing",
+          "hvac"
+        ],
+        "checked_at": "2026-10-14T08:00:00Z",
+        "valid_until": "2027-01-01T00:00:00Z"
+      }
+    ]
+  },
+  "estimate": {
+    "id": "EST-101",
+    "version": 3,
+    "scope_version": 2,
+    "currency": "ZAR",
+    "total_minor": 185000,
+    "scope_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "valid_until": "2026-10-16T00:00:00Z"
+  },
+  "approval": {
+    "approval_id": "APPROVAL-101",
+    "tenant_id": "tenant-example-coop",
+    "approver_id": "customer-contact-01",
+    "status": "accepted",
+    "approved_at": "2026-10-14T09:20:00Z",
+    "estimate_id": "EST-101",
+    "estimate_version": 3,
+    "scope_version": 2,
+    "scope_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "currency": "ZAR",
+    "approved_total_minor": 185000
+  },
+  "operations": [
+    {
+      "operation_id": "operation-pressure-test-01",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-building-01",
+      "asset_id": "asset-hvac-01",
+      "scope_version": 2,
+      "manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "idempotency_key": "idem-hvac-pressure-01",
+      "state": "verified",
+      "executor_id": "practitioner-ada",
+      "executor_authority_domain": "provider-hvac-01",
+      "authorized_at": "2026-10-14T09:30:00Z",
+      "authority_expires_at": "2026-10-14T11:00:00Z",
+      "applied_at": "2026-10-14T10:00:00Z",
+      "required_verification": true
+    }
+  ],
+  "evidence": [
+    {
+      "id": "hvac-provider-report",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-building-01",
+      "asset_id": "asset-hvac-01",
+      "operation_id": "operation-pressure-test-01",
+      "scope_version": 2,
+      "evidence_kind": "provider_report",
+      "claim_status": "reported",
+      "recorded_by": "practitioner-ada",
+      "occurred_at": "2026-10-14T10:01:00Z",
+      "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    {
+      "id": "hvac-measurement",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-building-01",
+      "asset_id": "asset-hvac-01",
+      "operation_id": "operation-pressure-test-01",
+      "scope_version": 2,
+      "evidence_kind": "instrument_measurement",
+      "claim_status": "measured",
+      "recorded_by": "practitioner-ada",
+      "occurred_at": "2026-10-14T10:02:00Z",
+      "content_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "measurement": {
+        "requirement_ref": "req-pressure-01",
+        "value_scaled": 120,
+        "scale": 2,
+        "unit_code": "bar",
+        "method_ref": "hvac-pressure-test-v1",
+        "instrument_ref": "gauge-09",
+        "calibration_ref": "calibration-gauge-09-2026",
+        "calibration_status": "valid"
+      }
+    },
+    {
+      "id": "hvac-qualified-inspection",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-building-01",
+      "asset_id": "asset-hvac-01",
+      "operation_id": "operation-pressure-test-01",
+      "scope_version": 2,
+      "evidence_kind": "qualified_inspection",
+      "claim_status": "inspected",
+      "recorded_by": "practitioner-ada",
+      "occurred_at": "2026-10-14T10:04:00Z",
+      "content_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "inspection": {
+        "credential_ref": "credential-plumbing-01",
+        "inspection_profile": "hvac-hydraulic-integrity-v1",
+        "result": "passed"
+      }
+    },
+    {
+      "id": "hvac-independent-verification",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-building-01",
+      "asset_id": "asset-hvac-01",
+      "operation_id": "operation-pressure-test-01",
+      "scope_version": 2,
+      "evidence_kind": "independent_verification",
+      "claim_status": "verified",
+      "recorded_by": "reviewer-bea",
+      "occurred_at": "2026-10-14T10:08:00Z",
+      "content_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "verification": {
+        "verifier_id": "reviewer-bea",
+        "verifier_authority_domain": "independent-inspection-coop",
+        "method_ref": "hvac-pressure-test-v1-review-v1",
+        "result": "passed"
+      }
+    },
+    {
+      "id": "hvac-customer-ack",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-building-01",
+      "asset_id": "asset-hvac-01",
+      "operation_id": "operation-pressure-test-01",
+      "scope_version": 2,
+      "evidence_kind": "customer_acknowledgement",
+      "claim_status": "acknowledged",
+      "recorded_by": "customer-contact-01",
+      "occurred_at": "2026-10-14T10:15:00Z",
+      "content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "id": "hvac-handover",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-building-01",
+      "asset_id": "asset-hvac-01",
+      "operation_id": "operation-pressure-test-01",
+      "scope_version": 2,
+      "evidence_kind": "handover_record",
+      "claim_status": "acknowledged",
+      "recorded_by": "practitioner-ada",
+      "occurred_at": "2026-10-14T10:16:00Z",
+      "content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "closeout": {
+    "status": "handed_over",
+    "evidence_refs": [
+      "hvac-provider-report",
+      "hvac-measurement",
+      "hvac-qualified-inspection",
+      "hvac-independent-verification",
+      "hvac-customer-ack",
+      "hvac-handover"
+    ],
+    "customer_ack_evidence_id": "hvac-customer-ack",
+    "exceptions": [],
+    "warranty_ref": "warranty-ref:hvac-101"
+  }
+}
