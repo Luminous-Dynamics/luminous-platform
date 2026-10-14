@@ -125,6 +125,8 @@ jobs:
               f"- Pack: `{report.get('pack_id')}` version `{report.get('pack_version')}`",
               f"- Input SHA-256: `{report.get('input_sha256')}`",
               f"- Schema SHA-256: `{report.get('schema_sha256')}`",
+              f"- Source records / requirement claims: {report.get('source_count')} / {report.get('requirement_count')}",
+              f"- Source-review / claim-review receipts: {report.get('source_review_receipt_count')} / {report.get('requirement_review_receipt_count')}",
               f"- Structural/semantic validation: **{'PASS' if report.get('validation_passed') else 'FAIL'}**",
               f"- Publication eligible: **{'YES' if report.get('publication_eligible') else 'NO'}**",
               f"- Failed checks: {report.get('failed_check_count')}",
