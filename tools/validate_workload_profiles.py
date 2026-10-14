@@ -571,38 +571,6 @@ def main() -> int:
         ),
         (
             full_vm,
-            lambda candidate: candidate["deployment"]["image"].update(
-                {"sourceUri": "https://artifacts.example.invalid/image%2eqcow2"}
-            ),
-            "reject percent-encoded HTTPS path",
-            "non-canonical characters",
-        ),
-        (
-            full_vm,
-            lambda candidate: candidate["deployment"]["image"].update(
-                {"sourceUri": r"https://artifacts.example.invalid\\@evil.invalid/image.qcow2"}
-            ),
-            "reject backslash in HTTPS image URI",
-            "non-canonical characters",
-        ),
-        (
-            full_vm,
-            lambda candidate: candidate["deployment"]["image"].update(
-                {"sourceUri": "https://artifacts.example.invalid/café.qcow2"}
-            ),
-            "reject non-ASCII HTTPS image URI",
-            "non-canonical characters",
-        ),
-        (
-            full_vm,
-            lambda candidate: candidate["deployment"]["image"].update(
-                {"sourceUri": "https://artifacts.example.invalid/image\\t.qcow2"}
-            ),
-            "reject control character in HTTPS image URI",
-            "non-canonical characters",
-        ),
-        (
-            full_vm,
             lambda candidate: (
                 candidate["metadata"].update({"qualification": "ci_verified"}),
                 candidate["evidence"].update({"status": "ci_verified"}),
@@ -830,6 +798,38 @@ def main() -> int:
             ),
             "reject query-bearing artifact key",
             "without credentials, ports, query, fragment, or traversal",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "https://artifacts.example.invalid/image%2eqcow2"}
+            ),
+            "reject percent-encoded HTTPS path",
+            "non-canonical characters",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": r"https://artifacts.example.invalid\@evil.invalid/image.qcow2"}
+            ),
+            "reject backslash in HTTPS image URI",
+            "non-canonical characters",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "https://artifacts.example.invalid/café.qcow2"}
+            ),
+            "reject non-ASCII HTTPS image URI",
+            "non-canonical characters",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "https://artifacts.example.invalid/image\\t.qcow2"}
+            ),
+            "reject control character in HTTPS image URI",
+            "non-canonical characters",
         ),
         (
             full_vm,
