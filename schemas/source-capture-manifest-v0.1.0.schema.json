@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Civic Services Source Capture Manifest",
+  "description": "Metadata for exact bytes captured separately by an operator. It is not a review receipt or a legal determination.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifest_version",
+    "source_id",
+    "canonical_url",
+    "final_url",
+    "captured_at",
+    "capture_method",
+    "network_access_performed",
+    "content_type",
+    "snapshot",
+    "comparison",
+    "human_review_required",
+    "review_state_changed"
+  ],
+  "properties": {
+    "manifest_version": {
+      "const": "0.1.0"
+    },
+    "source_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+    },
+    "canonical_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "final_url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "captured_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "capture_method": {
+      "const": "offline_sha256_of_provided_bytes"
+    },
+    "network_access_performed": {
+      "const": false
+    },
+    "content_type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sha256",
+        "size_bytes"
+      ],
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "previous_snapshot_sha256",
+        "previous_final_url",
+        "previous_content_type",
+        "change_signals"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "baseline",
+            "unchanged",
+            "changed"
+          ]
+        },
+        "previous_snapshot_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "previous_final_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "previous_content_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "change_signals": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "snapshot_bytes_changed",
+              "final_url_changed",
+              "content_type_changed"
+            ]
+          }
+        }
+      }
+    },
+    "human_review_required": {
+      "const": true
+    },
+    "review_state_changed": {
+      "const": false
+    }
+  }
+}

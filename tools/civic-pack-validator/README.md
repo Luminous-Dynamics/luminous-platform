@@ -74,6 +74,26 @@ python tools/civic-pack-validator/check_review_history.py \\
   --pack examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json
 ```
 
+## Reproducible source snapshot manifests
+
+The [source capture manifest contract](../../docs/civic-services/source-capture-manifest-v0.1.md) adds an offline helper that hashes bytes you have already captured; it does **not** fetch URLs, mark sources current, or create review receipts. It flags byte changes, redirect-target changes, and content-type changes against a prior manifest. Any change signal requires a human to review the source before the source/claim ledgers are updated.
+
+Example:
+
+```sh
+python tools/civic-pack-validator/capture_source_snapshot.py \\
+  --source-id joburg.business-licences \\
+  --canonical-url https://joburg.org.za/work_/InvestInJoburg/Pages/Business-Licences.aspx \\
+  --snapshot /secure/capture/business-licences.html \\
+  --captured-at 2026-10-14T18:00:00Z \\
+  --final-url https://joburg.org.za/work_/InvestInJoburg/Pages/Business-Licences.aspx \\
+  --content-type text/html \\
+  --previous-manifest /secure/evidence/business-licences.manifest.json \\
+  --output /secure/evidence/business-licences.next-manifest.json
+```
+
+Do not put protected or third-party source bytes in the repository by default. Store them only where lawful and access-controlled. A manifest is metadata about the bytes, not the evidence itself and not a legal review. The timestamp and observed headers must come from the capture operator; this tool does not pretend to verify them independently.
+
 ## Applicability predicate contract
 
 Read the normative [Applicability predicate contract v0.1](../../docs/civic-services/applicability-predicate-contract-v0.1.md) for the allow-listed fields, strict typing, three-valued conjunction semantics, and regression requirements.

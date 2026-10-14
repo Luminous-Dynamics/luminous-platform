@@ -1,0 +1,125 @@
+"""Tests for offline source snapshot capture manifests."""
+from __future__ import annotations
+
+import hashlib
+import json
+import sys
+import unittest
+from datetime import datetime, timezone
+from pathlib import Path
+
+from jsonschema import Draft202012Validator, FormatChecker
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "tools" / "civic-pack-validator"))
+from capture_source_snapshot import CaptureManifestError, build_capture_manifest  # noqa: E402
+
+SCHEMA = json.loads((ROOT / "schemas" / "source-capture-manifest-v0.1.0.schema.json").read_text(encoding="utf-8"))
+CANONICAL = "https://example.gov/source"
+BASE_TIME = "2026-10-14T18:00:00Z"
+
+
+def build(data=b"captured bytes", **overrides):
+    kwargs = {
+        "source_id": "example.official-source",
+        "canonical_url": CANONICAL,
+        "captured_at": BASE_TIME,
+    }
+    kwargs.update(overrides)
+    return build_capture_manifest(data, **kwargs)
+
+
+class CaptureManifestTests(unittest.TestCase):
+    def test_manifest_hashes_exact_bytes_and_validates_schema(self):
+        data = b"raw\x00bytes\n"
+        manifest = build(data)
+        self.assertEqual(manifest["snapshot"]["sha256"], hashlib.sha256(data).hexdigest())
+        self.assertEqual(manifest["snapshot"]["size_bytes"], len(data))
+        Draft202012Validator(SCHEMA, format_checker=FormatChecker()).validate(manifest)
+
+    def test_capture_time_is_normalized_to_utc(self):
+        manifest = build(captured_at="2026-10-14T20:00:00+02:00")
+        self.assertEqual(manifest["captured_at"], "2026-10-14T18:00:00Z")
+
+    def test_first_capture_is_a_baseline_not_a_review(self):
+        manifest = build()
+        self.assertEqual(manifest["comparison"]["state"], "baseline")
+        self.assertTrue(manifest["human_review_required"])
+        self.assertFalse(manifest["review_state_changed"])
+        self.assertIsNone(manifest["comparison"]["previous_snapshot_sha256"])
+
+    def test_identical_bytes_and_metadata_are_unchanged(self):
+        first = build(b"same bytes")
+        second = build(
+            b"same bytes",
+            captured_at="2026-10-15T18:00:00Z",
+            previous_manifest=first,
+        )
+        self.assertEqual(second["comparison"]["state"], "unchanged")
+        self.assertEqual(second["comparison"]["change_signals"], [])
+
+    def test_changed_bytes_are_reported_without_changing_review_state(self):
+        first = build(b"old")
+        second = build(b"new", captured_at="2026-10-15T18:00:00Z", previous_manifest=first)
+        self.assertEqual(second["comparison"]["state"], "changed")
+        self.assertEqual(second["comparison"]["change_signals"], ["snapshot_bytes_changed"])
+        self.assertFalse(second["review_state_changed"])
+
+    def test_redirect_target_change_is_detected_even_with_same_bytes(self):
+        first = build(b"same", final_url=CANONICAL)
+        second = build(
+            b"same",
+            final_url="https://redirected.example.gov/source",
+            captured_at="2026-10-15T18:00:00Z",
+            previous_manifest=first,
+        )
+        self.assertEqual(second["comparison"]["state"], "changed")
+        self.assertEqual(second["comparison"]["change_signals"], ["final_url_changed"])
+
+    def test_content_type_change_is_detected(self):
+        first = build(b"same", content_type="text/html")
+        second = build(
+            b"same",
+            content_type="application/pdf",
+            captured_at="2026-10-15T18:00:00Z",
+            previous_manifest=first,
+        )
+        self.assertEqual(second["comparison"]["change_signals"], ["content_type_changed"])
+
+    def test_non_https_canonical_url_is_rejected(self):
+        with self.assertRaises(CaptureManifestError):
+            build(canonical_url="http://example.gov/source")
+
+    def test_credentialed_url_is_rejected(self):
+        with self.assertRaises(CaptureManifestError):
+            build(canonical_url="https://user:secret@example.gov/source")
+
+    def test_empty_capture_is_rejected(self):
+        with self.assertRaises(CaptureManifestError):
+            build(b"")
+
+    def test_timezone_naive_capture_time_is_rejected(self):
+        with self.assertRaises(CaptureManifestError):
+            build(captured_at="2026-10-14T18:00:00")
+
+    def test_backdated_capture_is_rejected(self):
+        first = build()
+        with self.assertRaises(CaptureManifestError):
+            build(b"next", captured_at="2026-10-14T17:59:59Z", previous_manifest=first)
+
+    def test_prior_manifest_identity_mismatch_is_rejected(self):
+        first = build()
+        with self.assertRaises(CaptureManifestError):
+            build(previous_manifest={**first, "source_id": "other.source"}, captured_at="2026-10-15T18:00:00Z")
+
+    def test_different_canonical_url_is_rejected(self):
+        first = build()
+        with self.assertRaises(CaptureManifestError):
+            build(previous_manifest={**first, "canonical_url": "https://other.gov/"}, captured_at="2026-10-15T18:00:00Z")
+
+    def test_result_is_reproducible_for_same_inputs(self):
+        self.assertEqual(build(b"stable"), build(b"stable"))
+
+
+if __name__ == "__main__":
+    unittest.main()
