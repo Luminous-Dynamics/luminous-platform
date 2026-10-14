@@ -8,6 +8,31 @@ fn checked_in_crosswalk_conforms_to_strict_rust_contract() {
 }
 
 #[test]
+fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_stays_unqualified() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+    let contract = crosswalk
+        .contracts
+        .iter()
+        .find(|contract| contract.schema_id == "symthaea.life-civic-reference-corpus")
+        .expect("Symthaea life/civic corpus is pinned");
+
+    assert_eq!(
+        contract.snapshot_commit_sha,
+        "42dbd6de258cf6d1b97e4b863c010c628802433d"
+    );
+    assert_eq!(
+        contract.git_blob_sha1.as_deref(),
+        Some("df29b96497a4a1dfc0042d9853ee10eb79f962c0")
+    );
+    assert_eq!(contract.version.as_deref(), Some("0.2.0"));
+    assert_eq!(
+        contract.qualification_state,
+        civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+    );
+}
+
+#[test]
 fn existing_draft_work_case_and_operations_event_contracts_remain_blocked_until_qualified() {
     let input = include_str!("../../crosswalk.json");
     let crosswalk = parse_and_validate_json(input).expect("valid mapping register");
