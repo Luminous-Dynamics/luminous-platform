@@ -434,6 +434,14 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
         Disposition::RequiredBoundary,
         &mut errors,
     );
+    require_rule(
+        crosswalk,
+        "MYCELIX-SYMTHAEA-CAUSALITY-CORPORA",
+        SemanticRelationship::PartialSemanticOverlap,
+        ConversionPolicy::PreserveSeparately,
+        Disposition::PreserveSeparate,
+        &mut errors,
+    );
 
     errors
 }
