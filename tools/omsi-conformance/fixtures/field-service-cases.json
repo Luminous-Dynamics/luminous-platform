@@ -1,0 +1,227 @@
+{
+  "schema": "org.omsi.field-service-conformance-cases/0.1",
+  "note": "Synthetic adversarial mutations only. Expected errors are reference-checker diagnostics, not legal findings or production security qualification.",
+  "positive_fixtures": [
+    "field-service-plumbing-hvac.json",
+    "field-service-building-maintenance.json"
+  ],
+  "negative_cases": [
+    {
+      "id": "cross-tenant-asset",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/asset/tenant_id",
+          "value": "tenant-victim"
+        }
+      ],
+      "expected_error": "tenant mismatch"
+    },
+    {
+      "id": "approval-scope-does-not-match",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/approval/scope_version",
+          "value": 1
+        }
+      ],
+      "expected_error": "approval does not match current work scope"
+    },
+    {
+      "id": "credential-revoked",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/practitioner/credentials/0/status",
+          "value": "revoked"
+        }
+      ],
+      "expected_error": "no current credential covers required scope"
+    },
+    {
+      "id": "credential-wrong-scope",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/practitioner/credentials/0/scopes",
+          "value": [
+            "electrical"
+          ]
+        }
+      ],
+      "expected_error": "no current credential covers required scope"
+    },
+    {
+      "id": "measurement-unit-mismatch",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/1/measurement/unit_code",
+          "value": "psi"
+        }
+      ],
+      "expected_error": "measurement does not match required profile"
+    },
+    {
+      "id": "measurement-calibration-stale",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/1/measurement/calibration_status",
+          "value": "stale"
+        }
+      ],
+      "expected_error": "measurement calibration is not current"
+    },
+    {
+      "id": "provider-claim-forged-as-verified",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/claim_status",
+          "value": "verified"
+        }
+      ],
+      "expected_error": "evidence kind and claim status conflict"
+    },
+    {
+      "id": "idempotency-key-reused-with-new-manifest",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/operations",
+          "value": {
+            "operation_id": "operation-attacker",
+            "tenant_id": "tenant-example-coop",
+            "site_id": "site-building-01",
+            "asset_id": "asset-hvac-01",
+            "scope_version": 2,
+            "manifest_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+            "idempotency_key": "idem-hvac-pressure-01",
+            "state": "proposed",
+            "executor_id": "practitioner-ada",
+            "executor_authority_domain": "provider-hvac-01",
+            "authorized_at": "2026-10-14T09:30:00Z",
+            "authority_expires_at": "2026-10-14T11:00:00Z",
+            "applied_at": "2026-10-14T09:30:00Z",
+            "required_verification": true
+          }
+        }
+      ],
+      "expected_error": "idempotency key reused with different manifest"
+    },
+    {
+      "id": "offline-execution-after-expiry",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/operations/0/applied_at",
+          "value": "2026-10-14T11:01:00Z"
+        }
+      ],
+      "expected_error": "operation applied after authority expiry"
+    },
+    {
+      "id": "correction-must-link-prior-evidence",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "append",
+          "path": "/evidence",
+          "value": {
+            "id": "correction-01",
+            "tenant_id": "tenant-example-coop",
+            "site_id": "site-building-01",
+            "asset_id": "asset-hvac-01",
+            "operation_id": "operation-pressure-test-01",
+            "scope_version": 2,
+            "evidence_kind": "correction",
+            "claim_status": "reported",
+            "recorded_by": "practitioner-ada",
+            "occurred_at": "2026-10-14T10:20:00Z",
+            "content_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+            "supersedes_evidence_id": "missing-evidence"
+          }
+        }
+      ],
+      "expected_error": "correction must supersede existing evidence"
+    },
+    {
+      "id": "unreported-source-mapping-loss",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/service_case/mapping_losses",
+          "value": [
+            "currency"
+          ]
+        },
+        {
+          "op": "replace",
+          "path": "/service_case/mapping_loss_disclosed",
+          "value": false
+        }
+      ],
+      "expected_error": "mapping loss is not disclosed"
+    },
+    {
+      "id": "cross-tenant-approval",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/approval/tenant_id",
+          "value": "tenant-victim"
+        }
+      ],
+      "expected_error": "tenant mismatch"
+    },
+    {
+      "id": "same-authority-domain-claimed-independent",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/3/verification/verifier_authority_domain",
+          "value": "provider-hvac-01"
+        }
+      ],
+      "expected_error": "independent verification lacks distinct authority domains"
+    },
+    {
+      "id": "closeout-references-missing-customer-ack",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/closeout/customer_ack_evidence_id",
+          "value": "missing-ack"
+        }
+      ],
+      "expected_error": "closeout customer acknowledgement reference is invalid"
+    },
+    {
+      "id": "unknown-authority-field",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "add",
+          "path": "/production_authorized",
+          "value": true
+        }
+      ],
+      "expected_error": "field-service schema error"
+    }
+  ]
+}
