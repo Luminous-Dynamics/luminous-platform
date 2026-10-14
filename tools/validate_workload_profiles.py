@@ -168,6 +168,11 @@ def full_vm_source_uri_errors(source_uri: str) -> list[str]:
     except ValueError:
         return ["full VM image source URI has an invalid authority or port"]
 
+    # urllib.parse accepts an empty explicit port and port 0; neither is a
+    # usable/ambiguous-free endpoint declaration for this contract.
+    if parsed.netloc.endswith(":") or (port is not None and not 1 <= port <= 65535):
+        return ["full VM image source URI has an invalid authority or port"]
+
     has_credentials = parsed.username is not None or parsed.password is not None
     has_query_or_fragment = "?" in source_uri or "#" in source_uri
     if parsed.scheme == "https":
@@ -404,6 +409,10 @@ def main() -> int:
         (
             "https://artifacts.example.invalid/ubuntu-server-24.04.qcow2",
             "HTTPS artifact locator",
+        ),
+        (
+            "https://artifacts.example.invalid:8443/images/ubuntu-server-24.04.qcow2",
+            "HTTPS artifact locator with valid explicit port",
         ),
     ]:
         candidate = copy.deepcopy(full_vm)
@@ -717,6 +726,70 @@ def main() -> int:
             ),
             "reject credentialed or query-bearing VM image URI",
             "userinfo, query, or fragment",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "https://artifacts.example.invalid:0/image.qcow2"}
+            ),
+            "reject VM image URI port zero",
+            "invalid authority or port",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "https://artifacts.example.invalid:/image.qcow2"}
+            ),
+            "reject VM image URI empty port",
+            "invalid authority or port",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "https:///image.qcow2"}
+            ),
+            "reject VM image URI without host",
+            "requires a host and path",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "https://artifacts.example.invalid"}
+            ),
+            "reject VM image URI without artifact path",
+            "requires a host and path",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "artifact://artifacts.example.invalid:/image.qcow2"}
+            ),
+            "reject artifact key empty port",
+            "invalid authority or port",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "artifact://artifacts.example.invalid/../image.qcow2"}
+            ),
+            "reject artifact key path traversal",
+            "without credentials, ports, query, fragment, or traversal",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "artifact://artifacts.example.invalid/%2e%2e/image.qcow2"}
+            ),
+            "reject encoded artifact key traversal",
+            "without credentials, ports, query, fragment, or traversal",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "artifact://artifacts.example.invalid/image.qcow2?token=fixture"}
+            ),
+            "reject query-bearing artifact key",
+            "without credentials, ports, query, fragment, or traversal",
         ),
         (
             full_vm,
