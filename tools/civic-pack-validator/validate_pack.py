@@ -49,6 +49,23 @@ def _unique_check(values: list[str]) -> bool:
     return len(values) == len(set(values))
 
 
+REQUIRED_CURRENT_REVIEW_SCOPE = (
+    "authority_confirmed",
+    "effective_status_checked",
+    "content_reviewed",
+    "applicability_reviewed",
+    "reuse_rights_reviewed",
+)
+
+
+def _same_timestamp(left: Any, right: Any) -> bool:
+    if left is None or right is None:
+        return left is right
+    parsed_left = parse_datetime(left)
+    parsed_right = parse_datetime(right)
+    return parsed_left is not None and parsed_left == parsed_right
+
+
 def validate_pack(
     schema: dict[str, Any],
     pack: dict[str, Any],
@@ -125,6 +142,11 @@ def validate_pack(
         for predicate in req.get("applicability", {}).get("predicates", [])
         if isinstance(predicate, dict)
     ]
+    source_review_receipts = pack.get("source_review_receipts", [])
+    review_receipt_ids = [
+        receipt.get("receipt_id", "")
+        for receipt in source_review_receipts if isinstance(receipt, dict)
+    ]
 
     all_unique = (
         len(source_ids) == len(sources)
@@ -137,20 +159,113 @@ def validate_pack(
             len(req.get("applicability", {}).get("predicates", []))
             for req in requirements if isinstance(req, dict)
         )
+        and len(review_receipt_ids) == len(source_review_receipts)
         and _unique_check(source_ids)
         and _unique_check(requirement_ids)
         and _unique_check(action_ids)
         and _unique_check(predicate_ids)
+        and _unique_check(review_receipt_ids)
     )
     add(
         "pack.unique_identifiers",
         "PASS" if all_unique else "FAIL",
-        "Source, requirement, action, and predicate identifiers must be present and unique within the pack.",
+        "Source, requirement, action, predicate, and review-receipt identifiers must be present and unique within the pack.",
     )
 
     source_by_id = {
         s.get("source_id"): s for s in sources if isinstance(s, dict)
     }
+    receipts_by_source: dict[str, list[dict[str, Any]]] = {}
+    receipt_errors: list[str] = []
+    for receipt in source_review_receipts:
+        if not isinstance(receipt, dict):
+            receipt_errors.append("review receipt must be an object")
+            continue
+        receipt_id = receipt.get("receipt_id", "<unknown>")
+        source_id = receipt.get("source_id", "<unknown>")
+        if source_id not in source_by_id:
+            receipt_errors.append(f"{receipt_id}: unknown source_id {source_id}")
+            continue
+        receipts_by_source.setdefault(source_id, []).append(receipt)
+        captured = parse_datetime(receipt.get("captured_at"))
+        reviewed = parse_datetime(receipt.get("reviewed_at"))
+        next_review = parse_datetime(receipt.get("next_review_at"))
+        if captured is None or reviewed is None or next_review is None:
+            receipt_errors.append(f"{receipt_id}: invalid review timestamp")
+        elif captured > reviewed:
+            receipt_errors.append(f"{receipt_id}: capture is later than review")
+        elif next_review <= reviewed:
+            receipt_errors.append(f"{receipt_id}: next_review_at must follow reviewed_at")
+        if not isinstance(receipt.get("reviewer_id"), str) or not receipt.get("reviewer_id", "").strip():
+            receipt_errors.append(f"{receipt_id}: reviewer_id is missing")
+        if not isinstance(receipt.get("reviewer_role"), str) or not receipt.get("reviewer_role", "").strip():
+            receipt_errors.append(f"{receipt_id}: reviewer_role is missing")
+        if receipt.get("decision") == "current":
+            scope = receipt.get("review_scope", {})
+            incomplete = [field for field in REQUIRED_CURRENT_REVIEW_SCOPE if scope.get(field) is not True]
+            if incomplete:
+                receipt_errors.append(f"{receipt_id}: current decision has incomplete review scope ({', '.join(incomplete)})")
+            if not isinstance(receipt.get("snapshot_sha256"), str) or len(receipt.get("snapshot_sha256", "")) != 64:
+                receipt_errors.append(f"{receipt_id}: current decision requires a source snapshot SHA-256")
+
+    # Non-unreviewed states must be backed by the latest source-bound receipt.
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        source_id = source.get("source_id", "<unknown>")
+        state = source.get("review_state")
+        history = receipts_by_source.get(source_id, [])
+        pointer = source.get("review_receipt_id")
+        if state == "unreviewed":
+            if history or pointer is not None:
+                receipt_errors.append(f"{source_id}: unreviewed state conflicts with review receipt history")
+            continue
+        if not history or not pointer:
+            receipt_errors.append(f"{source_id}: review_state={state} has no linked review receipt")
+            continue
+        dated_history = [(parse_datetime(item.get("reviewed_at")), item) for item in history]
+        if any(when is None for when, _ in dated_history):
+            receipt_errors.append(f"{source_id}: receipt history has an invalid reviewed_at")
+            continue
+        timestamps = [when for when, _ in dated_history]
+        if len(timestamps) != len(set(timestamps)):
+            receipt_errors.append(f"{source_id}: receipt history has ambiguous duplicate reviewed_at timestamps")
+            continue
+        latest = max(dated_history, key=lambda entry: entry[0])[1]
+        if pointer != latest.get("receipt_id"):
+            receipt_errors.append(f"{source_id}: review_receipt_id does not identify the latest receipt")
+        if state != latest.get("decision"):
+            receipt_errors.append(f"{source_id}: review_state does not match the latest receipt decision")
+        pairs = (
+            ("canonical_url", "canonical_url"),
+            ("published_at", "published_at"),
+            ("effective_from", "effective_from"),
+            ("checked_at", "captured_at"),
+            ("reviewed_at", "reviewed_at"),
+            ("next_review_at", "next_review_at"),
+            ("reviewer_id", "reviewer_id"),
+            ("reviewer_role", "reviewer_role"),
+            ("snapshot_sha256", "snapshot_sha256"),
+            ("reuse", "reuse"),
+            ("source_license_url", "source_license_url"),
+            ("attribution", "attribution"),
+            ("rights_notes", "rights_notes"),
+        )
+        for source_field, receipt_field in pairs:
+            if source_field in {"published_at", "effective_from", "checked_at", "reviewed_at", "next_review_at"}:
+                matches = _same_timestamp(source.get(source_field), latest.get(receipt_field))
+            else:
+                matches = source.get(source_field) == latest.get(receipt_field)
+            if not matches:
+                receipt_errors.append(f"{source_id}: {source_field} does not match latest receipt {pointer}")
+
+    receipt_errors = sorted(set(receipt_errors))
+    add(
+        "source.review_receipts",
+        "FAIL" if receipt_errors else "PASS",
+        "Source review receipt consistency: " + ("; ".join(receipt_errors) if receipt_errors else "all records are source-bound and internally consistent."),
+    )
+
     unresolved = sorted({
         source_ref
         for req in requirements if isinstance(req, dict)
@@ -210,6 +325,17 @@ def validate_pack(
                 or parsed.password is not None
             ):
                 unsafe_urls.append(f"action:{req_id}:{action.get('action_id', '<unknown>')}")
+    for receipt in source_review_receipts:
+        if not isinstance(receipt, dict):
+            continue
+        parsed = urlsplit(receipt.get("canonical_url", ""))
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
+            unsafe_urls.append(f"receipt:{receipt.get('receipt_id', '<unknown>')}")
     unsafe_urls.sort()
     add(
         "security.https_only",
