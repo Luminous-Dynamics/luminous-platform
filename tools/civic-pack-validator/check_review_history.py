@@ -45,9 +45,11 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"passed": False, "errors": [str(exc)]}, sort_keys=True))
         return 1
     errors = check_review_history(baseline, current)
+    baseline_receipts = baseline.get("source_review_receipts", [])
+    current_receipts = current.get("source_review_receipts", [])
     result = {
-        "baseline_receipt_count": len(baseline.get("source_review_receipts", [])),
-        "current_receipt_count": len(current.get("source_review_receipts", [])),
+        "baseline_receipt_count": len(baseline_receipts) if isinstance(baseline_receipts, list) else None,
+        "current_receipt_count": len(current_receipts) if isinstance(current_receipts, list) else None,
         "passed": not errors,
         "errors": errors,
     }
