@@ -600,6 +600,30 @@ def validate_pack(
         state = requirement.get("review_state")
         if state in {"draft", "stale", "disputed", "withdrawn"}:
             blockers.append(f"{req_id}: requirement review_state={state}")
+        if state == "verified":
+            receipt_history = requirement_receipts_by_requirement.get(req_id, [])
+            if not receipt_history:
+                blockers.append(f"{req_id}: verified requirement has no review receipt")
+            else:
+                active_receipt = receipt_history[-1]
+                reviewed_at = parse_datetime(active_receipt.get("reviewed_at"))
+                next_review_at = parse_datetime(active_receipt.get("next_review_at"))
+                if reviewed_at is None:
+                    blockers.append(f"{req_id}: requirement review timestamp missing or invalid")
+                elif reviewed_at > as_of:
+                    blockers.append(f"{req_id}: requirement review is in the future relative to --as-of")
+                if next_review_at is None:
+                    blockers.append(f"{req_id}: requirement next_review_at missing or invalid")
+                elif next_review_at <= as_of:
+                    blockers.append(f"{req_id}: requirement review deadline reached")
+                policy_interval = pack.get("review_policy", {}).get("review_interval_days")
+                if (
+                    reviewed_at is not None
+                    and next_review_at is not None
+                    and isinstance(policy_interval, int)
+                    and next_review_at > reviewed_at + timedelta(days=policy_interval)
+                ):
+                    blockers.append(f"{req_id}: requirement review deadline exceeds configured review interval")
         if requirement.get("claim_type") in CURRENT_CLAIM_TYPES and not refs:
             blockers.append(f"{req_id}: current legal/guidance claim has no source")
         for ref in refs:
