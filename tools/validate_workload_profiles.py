@@ -162,6 +162,14 @@ def canonical_peer(rule: dict[str, Any]) -> str:
 
 def full_vm_source_uri_errors(source_uri: str) -> list[str]:
     """Require a durable, unambiguous artifact locator; retrieval policy is separate."""
+    # urlsplit parses URL components but does not validate URL safety; it can
+    # also strip or normalize some controls. Accept only canonical printable
+    # ASCII locators without backslashes or percent-encoded ambiguity.
+    if any(ord(char) <= 0x20 or ord(char) >= 0x7F for char in source_uri):
+        return ["full VM image source URI contains non-canonical characters"]
+    if "\\" in source_uri or "%" in source_uri:
+        return ["full VM image source URI contains non-canonical characters"]
+
     try:
         parsed = urlsplit(source_uri)
         port = parsed.port  # Access validates that any explicit port is numeric and in range.
@@ -560,6 +568,38 @@ def main() -> int:
                 candidate["evidence"].update({"status": "hardware_qualified", "testsPassed": ["guest_boot_shutdown"]}),
             ),
             "reject hardware qualification without evidence receipt",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "https://artifacts.example.invalid/image%2eqcow2"}
+            ),
+            "reject percent-encoded HTTPS path",
+            "non-canonical characters",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": r"https://artifacts.example.invalid\\@evil.invalid/image.qcow2"}
+            ),
+            "reject backslash in HTTPS image URI",
+            "non-canonical characters",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "https://artifacts.example.invalid/café.qcow2"}
+            ),
+            "reject non-ASCII HTTPS image URI",
+            "non-canonical characters",
+        ),
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {"sourceUri": "https://artifacts.example.invalid/image\\t.qcow2"}
+            ),
+            "reject control character in HTTPS image URI",
+            "non-canonical characters",
         ),
         (
             full_vm,
