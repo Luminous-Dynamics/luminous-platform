@@ -165,6 +165,10 @@ def semantic_errors(profile: dict[str, Any]) -> list[str]:
     kind = deployment["kind"]
     security = profile["security"]
     resources = profile["resources"]
+    evidence = profile["evidence"]
+
+    if not set(evidence["testsPassed"]).issubset(set(evidence["testsRequired"])):
+        errors.append("evidence.testsPassed must be a subset of evidence.testsRequired")
 
     network = security["network"]
     rule_identities: set[tuple[str, str, str, str, int]] = set()
@@ -624,6 +628,21 @@ def main() -> int:
         expect_invalid(validator, profile, mutate, label)
 
     semantic_negative_cases = [
+        (
+            full_vm,
+            lambda candidate: (
+                candidate["metadata"].update({"qualification": "ci_verified"}),
+                candidate["evidence"].update(
+                    {
+                        "status": "ci_verified",
+                        "testsPassed": ["guest_boot_and_shutdown", "undeclared_test_id"],
+                        "receiptReferences": ["https://evidence.example.invalid/receipt.json"],
+                    }
+                ),
+            ),
+            "reject passed test ID not declared as required",
+            "evidence.testsPassed must be a subset of evidence.testsRequired",
+        ),
         (
             full_vm,
             lambda candidate: candidate["resources"].update({"memoryMiB": 1024}),
