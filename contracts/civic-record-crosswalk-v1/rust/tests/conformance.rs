@@ -33,6 +33,61 @@ fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_stays_unqualified() {
 }
 
 #[test]
+fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+    let contract = crosswalk
+        .contracts
+        .iter()
+        .find(|contract| contract.schema_id == "mycelix.life-civic-service-reference-corpus")
+        .expect("Mycelix service-journey corpus is pinned");
+
+    assert_eq!(
+        contract.snapshot_commit_sha,
+        "d1fedcc4fdda0181aa6847349ffdb42e421b2310"
+    );
+    assert_eq!(
+        contract.git_blob_sha1.as_deref(),
+        Some("8674042a1d4d9fe4d8b27cfca759657ace4f07f5")
+    );
+    assert_eq!(contract.version.as_deref(), Some("0.4.0"));
+    assert_eq!(
+        contract.qualification_state,
+        civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+    );
+
+    let mapping = crosswalk
+        .mappings
+        .iter()
+        .find(|rule| rule.mapping_id == "MYCELIX-SYMTHAEA-CAUSALITY-CORPORA")
+        .expect("cross-corpus semantic relationship is explicit");
+    assert_eq!(
+        mapping.from.schema_id,
+        "mycelix.life-civic-service-reference-corpus"
+    );
+    assert_eq!(mapping.to.schema_id, "symthaea.life-civic-reference-corpus");
+    assert_eq!(
+        mapping.relationship,
+        civic_record_crosswalk_v1::SemanticRelationship::PartialSemanticOverlap
+    );
+    assert_eq!(
+        mapping.conversion_policy,
+        civic_record_crosswalk_v1::ConversionPolicy::PreserveSeparately
+    );
+    assert_eq!(
+        mapping.disposition,
+        civic_record_crosswalk_v1::Disposition::PreserveSeparate
+    );
+    assert!(
+        mapping
+            .required_guards
+            .iter()
+            .any(|guard| guard.contains("incident-level cause")),
+        "the cross-corpus mapping must preserve its causal-inference guard"
+    );
+}
+
+#[test]
 fn existing_draft_work_case_and_operations_event_contracts_remain_blocked_until_qualified() {
     let input = include_str!("../../crosswalk.json");
     let crosswalk = parse_and_validate_json(input).expect("valid mapping register");
