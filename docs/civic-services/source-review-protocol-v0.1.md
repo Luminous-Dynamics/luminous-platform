@@ -39,7 +39,7 @@ The history check provides tamper-evidence relative to the PR base, not a crypto
 A source being current does not prove that a particular requirement summary is supported, correctly scoped, understandable, or safe to present as a user task. Every non-draft requirement therefore needs its own entry in `requirement_review_receipts`, and its active `review_receipt_id` must point to the latest receipt for that requirement.
 
 A claim receipt binds:
-- The requirement ID and a SHA-256 of the exact claim-bearing fields: title, claim type, summary, applicability predicates and prose, source references, user actions, and completion effect.
+- The requirement ID and a SHA-256 of the exact claim-bearing fields: title, claim type, summary, applicability predicates and prose, source references, user actions, and completion effect. The hash is SHA-256 over UTF-8 canonical JSON with object keys sorted and no insignificant whitespace; it excludes mutable review metadata.
 - The review decision, reviewer ID/role, review time, and next-review deadline.
 - The source-review receipt IDs actually checked.
 - Five explicit checks: source support, jurisdiction, applicability, user-facing language, and completion effect.
