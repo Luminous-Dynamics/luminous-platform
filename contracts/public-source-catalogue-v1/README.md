@@ -16,16 +16,18 @@ This directory defines the machine-readable source inventory and observation con
 The validator and first-party domain logic are Rust. This slice adds no JavaScript, TypeScript, Node.js, npm runtime, or browser-side business logic. Follow the platform language/runtime policy at docs/LANGUAGE_AND_RUNTIME_POLICY.md. Any future civic UI must preserve essential workflows with JavaScript disabled; prefer server-rendered HTML and ordinary HTTP forms.
 
 ## Sources selected
-The metadata-only catalogue now includes eight source families:
+The metadata-only catalogue now includes ten source families:
 
 1. National Treasury Municipal Finance Data: repairs and maintenance, capital acquisition and expenditure measures.
 2. National Treasury Transparency Portal / eTender published OCDS data.
 3. Johannesburg Water published service standards and public notices.
 4. City of Johannesburg IDP, SDBIP and Service-Level Standards index.
-5. City/Johannesburg Roads Agency Operation Restore maintenance announcements.
-6. Pikitup public-service, waste-collection disruption and illegal-dumping notices.
-7. City Comprehensive Integrated Transport Plan public updates.
-8. City Food Resilience Policy and urban-agriculture programme announcements.
+5. City Power public service, fault-logging and dated interruption/restoration notices.
+6. City/Johannesburg Roads Agency Operation Restore maintenance announcements.
+7. Pikitup public-service, waste-collection disruption and illegal-dumping notices.
+8. City Comprehensive Integrated Transport Plan public updates.
+9. City Food Resilience Policy and urban-agriculture programme announcements.
+10. South African Government's dated joint statement on electricity reliability and water-supply disruptions.
 
 Research snapshot: 2026-10-14. Every source remains catalogue-only with ingestion disabled. Most city/utility entries are manual-review pointers, not APIs. A URL is a discovery pointer, not proof that retrieval, licensing, completeness, unique incident identity or outcome verification has been tested. For each use, pin the exact notice or policy version rather than treating a mutable webpage as a dataset.
 
