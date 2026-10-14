@@ -84,3 +84,42 @@ This is an architectural mapping, not evidence that the separate Mycelix mechani
 - Does the local conformance starter match real operational semantics across platforms?
 
 Next step: structured review with independent MSPs, a PSA/RMM integrator, identity/security engineers and an external protocol reviewer before freezing any wire format.
+
+
+## Field-service and physical-profession research checkpoint — 2026-10-14
+
+This is a focused desk-research snapshot, not an exhaustive market map, implementation test, legal review, or novelty claim. It informs the Field Service profile at `profiles/field-service/0.1/PROFILE.md`.
+
+### Existing products: do not rebuild commodity workflows without evidence
+
+| Existing project/product | Publicly documented capability | Design implication for OMSI / Luminous Platform |
+|---|---|---|
+| ERPNext | Maintenance schedules, visits, assigned personnel, asset maintenance plans and logs. Docs: https://docs.frappe.io/erpnext/maintenance-schedule, https://docs.frappe.io/erpnext/maintenance-visit, https://docs.frappe.io/erpnext/asset-maintenance | Treat scheduling, assets, recurrence and visit capture as established product territory; prioritize import/export and evidence/authorization interop. |
+| Odoo Community Association field-service addons | Modular models for service locations, workers, orders, activities, agreements, calendars, CRM linkage, availability and invoice linkage. Repo: https://github.com/OCA/field-service | Map to an existing ecosystem instead of forcing providers to replace their system of record. Verify target Odoo/addon version and license before implementation. |
+| openMAINT / CMDBuild | Asset/property inventory; scheduled and corrective maintenance; logistic and economic management; GIS/BIM support with IFC. Docs: https://www.openmaint.org/en/product/project, https://www.openmaint.org/en/product/modules, https://www.openmaint.org/en/product/modules/facility-maintenance | Existing CMMS/facilities tools already cover much of the work-order and asset layer. BIM/IFC should be optional when present, not a prerequisite for a small trade business. |
+| OpenFieldService | A recent self-hostable open-source field-service project documents CRM, sites/equipment histories, dispatch, work orders, estimates, invoices/payments, service plans and technician mobile workflows. Repo: https://github.com/clawnify/OpenFieldService | Re-check maturity, license, security and maintainership before adoption. Its feature surface is evidence that basic lead-to-payment workflows are not a defensible novelty claim. |
+
+**Product conclusion:** a second generic scheduler, CRM, job board or invoicing application is not the strongest initial differentiator. Prefer an interoperable service-operation and evidence profile that can integrate with existing tools, then build native UI/workflow only where pilots demonstrate a concrete gap. An open-source competitor's existence does not establish that it is secure, mature, production-ready or suitable for a specific deployment.
+
+### Standards to reuse, with boundaries
+
+| Area | Official primary source and status checked | What it can contribute | What it does not establish |
+|---|---|---|---|
+| Professional credentials | W3C Verifiable Credentials Data Model 2.0, W3C Recommendation, 15 May 2025 — https://www.w3.org/TR/2025/REC-vc-data-model-2.0-20250515/ | Portable issuer/holder/verifier claims and tamper-evident presentations, with privacy/accessibility considerations. | A valid proof does not by itself make a claim true, the issuer competent, the credential current, or the holder legally permitted for the exact job; verifier policy and status checks remain necessary. |
+| Built assets / BIM | IFC 4.3.2.0 official documentation; IFC 4.3 published as ISO 16739-1:2024 — https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/ | Vendor-neutral structured building/infrastructure information across lifecycle stages, including maintainable asset references where data exists. | Does not define work-order authorization, service-case semantics or whether a repair passed an inspection. Do not require BIM for ordinary residential service. |
+| Business documents | OASIS UBL 2.4 Standard, 20 June 2024 — https://docs.oasis-open.org/ubl/UBL-2.4.html | Reusable structured documents including orders, order responses and invoices; supports adapters to customer/procurement systems. | Does not define trade safety, legal tax compliance in every jurisdiction, payment settlement or proof of work quality. |
+| Cross-enterprise traceability | GS1 EPCIS 2.0 / current ratified artefacts — https://ref.gs1.org/standards/epcis/2.0.1/, https://ref.gs1.org/standards/ | Share visibility-event data about objects/process steps, including what, when, where and business context; useful for parts, serial/lot identity or custody when needed. | Not a universal case schema and not a substitute for authorization, calibration, or inspection evidence. Use only when physical traceability creates value. |
+| Software telemetry | OpenTelemetry semantic conventions — https://opentelemetry.io/docs/concepts/semantic-conventions/ | Consistent names for software logs, metrics, traces, profiles and resource attributes, useful for platform diagnostics and event correlation. | Software telemetry semantics are not a substitute for physical measurement units, calibrated instrument records, trade-specific acceptance criteria or customer acknowledgment. |
+
+### Profile architecture implications
+
+1. **Separate the business case from the operation.** A service case/work order contains business context and may span multiple visits, revisions and operations. Each consequential operation has its own immutable manifest, attempt identity, authorization and outcome; closing a work order does not prove all physical postconditions.
+2. **Make evidence type and provenance explicit.** Provider report, customer acknowledgment, instrument reading, qualified inspection and independently verified result must remain distinct types/states. A schema-valid or signed artifact proves neither real-world truth nor legal applicability on its own.
+3. **Treat jurisdiction and time as first-class scope.** Credential checks, licenses, permits, acceptance criteria and code references require jurisdiction, issuer/source, applicable scope, effective/retrieval/check times and freshness policy. A cached or stale source must never silently become current authority.
+4. **Preserve privacy in the physical world.** Photos and diagnostics may reveal home interiors, precise locations, vehicle identifiers, access arrangements, layouts or business vulnerabilities. Keep raw sensitive content in access-controlled storage; exchange scoped references, digests and purpose-bound disclosures. A content hash is not anonymization.
+5. **Pilot adapters before replacing product surfaces.** The first integration study should select one existing workflow system (for example ERPNext or an OCA field-service installation), record its exact version/license/export shapes, and test loss-aware export/import of source IDs, statuses, estimate versions, units, timestamps and evidence classification. No integration should be claimed from reading product documentation alone.
+6. **Test a genuinely different second domain.** Plumbing/HVAC plus automotive or construction tests whether the shared envelope is actually generalizable. Keep measurements, tool calibration, parts, safety procedures, legal obligations and domain objects in explicit extension profiles rather than generic nullable fields.
+
+### Research limits
+
+The sources above establish that usable prior art and standards exist; they do not establish commercial demand, user willingness to switch, successful field deployment, standards conformity, or the novelty of OMSI. Before freezing a stable profile, obtain independently implemented exports, interview practitioners/customers, check the exact licenses, and run round-trip plus adversarial conformance tests. All cited versions should be re-checked at implementation time.
