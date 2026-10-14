@@ -37,6 +37,8 @@ jobs:
           python-version: "3.12"
       - name: Install pinned validator dependency
         run: python -m pip install -r tools/civic-pack-validator/requirements.txt
+      - name: Compile validator and evaluator
+        run: python -m compileall -q tools/civic-pack-validator
       - name: Validate draft sample and emit evidence report
         env:
           PR_UPDATED_AT: ${{ github.event.pull_request.updated_at }}
@@ -64,3 +66,39 @@ jobs:
         env:
           PYTHONPATH: tools/civic-pack-validator
         run: python -m unittest discover -s tools/civic-pack-validator/tests -v
+      - name: Write validation summary
+        if: always() && hashFiles('/tmp/jurisdiction-pack-validation-report.json') != ''
+        env:
+          REPORT_PATH: /tmp/jurisdiction-pack-validation-report.json
+          SUMMARY_PATH: ${{ github.step_summary }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          report = json.loads(Path(os.environ["REPORT_PATH"]).read_text(encoding="utf-8"))
+          lines = [
+              "## Civic jurisdiction-pack validation",
+              "",
+              f"- Pack: `{report.get('pack_id')}` version `{report.get('pack_version')}`",
+              f"- Input SHA-256: `{report.get('input_sha256')}`",
+              f"- Schema SHA-256: `{report.get('schema_sha256')}`",
+              f"- Structural/semantic validation: **{'PASS' if report.get('validation_passed') else 'FAIL'}**",
+              f"- Publication eligible: **{'YES' if report.get('publication_eligible') else 'NO'}**",
+              f"- Failed checks: {report.get('failed_check_count')}",
+              f"- Blocked checks: {report.get('blocked_check_count')}",
+              "",
+              "Publication eligibility is separate from structural validation. The checked-in Johannesburg fixture is expected to remain unpublished.",
+          ]
+          Path(os.environ["SUMMARY_PATH"]).write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+      - name: Retain validation evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: civic-pack-validation-${{ github.sha }}
+          path: |
+            /tmp/jurisdiction-pack-validation-report.json
+            /tmp/jurisdiction-pack-evaluation.json
+          if-no-files-found: ignore
+          retention-days: 14
