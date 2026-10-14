@@ -162,7 +162,8 @@
             "recorded_by": "practitioner-ada",
             "occurred_at": "2026-10-14T10:20:00Z",
             "content_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
-            "supersedes_evidence_id": "missing-evidence"
+            "supersedes_evidence_id": "missing-evidence",
+            "operation_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
           }
         }
       ],
