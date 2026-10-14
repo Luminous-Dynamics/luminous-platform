@@ -110,26 +110,33 @@ def validate_record(record: dict[str, Any], now: datetime) -> None:
     credential_ids = [credential["credential_id"] for credential in credentials]
     if len(credential_ids) != len(set(credential_ids)):
         _fail("duplicate practitioner credential ID")
-    current_credentials: dict[str, dict[str, Any]] = {}
+    credentials_by_id = {credential["credential_id"]: credential for credential in credentials}
     max_age = work["credential_status_max_age_seconds"]
     for credential in credentials:
         if credential["tenant_id"] != tenant:
             _fail("tenant mismatch: practitioner credential belongs to another tenant")
-        checked_at = core.parse_time(credential["checked_at"])
-        valid_until = core.parse_time(credential["valid_until"])
-        if checked_at > now:
-            continue
-        if (now - checked_at).total_seconds() > max_age:
-            continue
-        if valid_until <= now or credential["status"] != "valid":
-            continue
-        if credential["jurisdiction"] != work["jurisdiction"]:
-            continue
-        current_credentials[credential["credential_id"]] = credential
 
-    for required_scope in work["required_practitioner_scopes"]:
-        if not any(required_scope in credential["scopes"] for credential in current_credentials.values()):
-            _fail("no current credential covers required scope")
+    def credentials_at(instant: datetime) -> dict[str, dict[str, Any]]:
+        """Evaluate the recorded credential status at the operation/evidence time.
+
+        Historical jobs must not become invalid merely because a credential later
+        expires. The status snapshot must nevertheless predate the action and be
+        within the profile's declared freshness window at the time of use.
+        """
+        valid: dict[str, dict[str, Any]] = {}
+        for credential in credentials:
+            checked_at = core.parse_time(credential["checked_at"])
+            valid_until = core.parse_time(credential["valid_until"])
+            if credential["status"] != "valid":
+                continue
+            if credential["jurisdiction"] != work["jurisdiction"]:
+                continue
+            if checked_at > instant or (instant - checked_at).total_seconds() > max_age:
+                continue
+            if valid_until <= instant:
+                continue
+            valid[credential["credential_id"]] = credential
+        return valid
 
     operations = record["operations"]
     operation_ids: dict[str, dict[str, Any]] = {}
@@ -153,10 +160,17 @@ def validate_record(record: dict[str, Any], now: datetime) -> None:
         applied_at = core.parse_time(operation["applied_at"])
         if expires_at <= authorized_at:
             _fail("operation authority has an invalid validity interval")
+        if authorized_at > core.parse_time(estimate["valid_until"]):
+            _fail("operation authorized after estimate expiry")
         if applied_at < authorized_at:
             _fail("operation application predates authorization")
         if operation["state"] in {"applied", "verified"} and applied_at > expires_at:
             _fail("operation applied after authority expiry")
+        for instant in (authorized_at, applied_at):
+            credentials_at_use = credentials_at(instant)
+            for required_scope in work["required_practitioner_scopes"]:
+                if not any(required_scope in credential["scopes"] for credential in credentials_at_use.values()):
+                    _fail("no current credential covers required scope")
         if operation["state"] in {"authorized", "accepted", "running"} and expires_at <= now:
             _fail("active operation authority has expired")
         idem = operation["idempotency_key"]
@@ -232,7 +246,8 @@ def validate_record(record: dict[str, Any], now: datetime) -> None:
             inspection = evidence.get("inspection")
             if inspection is None:
                 _fail("qualified inspection lacks typed inspection data")
-            credential = current_credentials.get(inspection["credential_ref"])
+            credentials_at_inspection = credentials_at(occurred_at)
+            credential = credentials_at_inspection.get(inspection["credential_ref"])
             if credential is None:
                 _fail("inspection references a credential that is not current")
             if not set(work["required_practitioner_scopes"]).intersection(credential["scopes"]):
