@@ -386,6 +386,101 @@
         "enabled": false,
         "reason": "No automated PDF extraction, geospatial ingestion, farm monitoring or person-level records are implemented."
       }
+    },
+    {
+      "source_id": "za-gp-jhb-city-power-public-notices",
+      "display_name": "City Power Johannesburg public service and outage-information pages",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "City Power Johannesburg",
+        "url": "https://citypower.co.za/"
+      },
+      "source_url": "https://citypower.co.za/city-power/Pages/default.aspx",
+      "documentation_url": "https://citypower.co.za/city-power/Pages/default.aspx",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "This entry points to public service information, fault-logging guidance and published notices. The page is not treated as a machine-readable outage feed; stale page text must never be presented as live status."
+      },
+      "terms": {
+        "policy_url": "https://citypower.co.za/city-power/Pages/default.aspx",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Review site terms, restrictions and source-specific reuse rights before automated capture or republication. Public customer channels are not permission for unattended automated submissions."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Public service and fault-logging guidance",
+          "Dated power interruption and maintenance notices where published",
+          "Published restoration updates where explicitly stated"
+        ],
+        "collection_policy": "Manual review only. Preserve notice publication time, stated affected area, planned versus unplanned status, expected restoration time versus confirmed restoration, and original URL. Do not infer an exact customer outage or critical-asset topology from a general notice."
+      },
+      "known_limitations": [
+        "The homepage may surface stale or cached notices; it is not an authoritative live-status API.",
+        "A planned restoration time is not proof that restoration occurred; only explicit subsequent evidence may support a restored claim.",
+        "A public notice may not cover all faults, supply points, areas or customers.",
+        "Do not harvest resident account information, contact submissions or precise household locations."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "No scraping, polling, power telemetry, customer-case import or automated fault submission is implemented."
+      }
+    },
+    {
+      "source_id": "za-gov-jhb-power-water-coordination",
+      "display_name": "South African Government joint statement on power trips and water-supply disruptions",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "South African Government",
+        "url": "https://www.gov.za/"
+      },
+      "source_url": "https://www.gov.za/news/media-statements/government-measures-mitigate-water-supply-disruptions-resulting-power-trips",
+      "documentation_url": "https://www.gov.za/news/media-statements/government-measures-mitigate-water-supply-disruptions-resulting-power-trips",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "A dated intergovernmental statement is evidence that a public coordination discussion was announced, not a machine-readable incident feed or proof of ongoing outage status."
+      },
+      "terms": {
+        "policy_url": "https://www.gov.za/",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Review current government-site and document reuse terms before systematic collection or republication."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Published intergovernmental statements on electricity reliability and resulting water-supply disruptions",
+          "Publicly stated coordination actions and responsible institutions"
+        ],
+        "collection_policy": "Manual review only. Capture date, named institutions, specific statements and source URL. Keep a statement of intent or meeting separate from verified implementation, current service status and causal measurements."
+      },
+      "known_limitations": [
+        "A joint statement dated 10 September 2026 does not establish present-day outage conditions or the effectiveness of any intervention.",
+        "A reported discussion or commitment is not equivalent to a funded project, completed work or verified outcome.",
+        "The source is broader public policy context; it does not provide customer-level water/electricity incident IDs or access to municipal telemetry.",
+        "Do not claim that every water interruption is caused by a power trip; the source describes a risk/coordination issue, not a universal incident-level causal rule."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "No government data exchange, live outage integration, automated collection or operational command is implemented."
+      }
     }
   ],
   "reviewed_on": "2026-10-14"
