@@ -52,7 +52,9 @@
       "reuse": "not_assessed",
       "source_license_url": null,
       "attribution": "City of Johannesburg",
-      "rights_notes": "Link to the authority page; do not redistribute substantial source text until reuse terms have been assessed."
+      "rights_notes": "Link to the authority page; do not redistribute substantial source text until reuse terms have been assessed.",
+      "reviewer_id": null,
+      "review_receipt_id": null
     },
     {
       "source_id": "za.food-premises-hygiene",
@@ -72,7 +74,9 @@
       "reuse": "not_assessed",
       "source_license_url": null,
       "attribution": "South African Government",
-      "rights_notes": "Verify the currently applicable regulation and local administrative process before promoting a compliance claim."
+      "rights_notes": "Verify the currently applicable regulation and local administrative process before promoting a compliance claim.",
+      "reviewer_id": null,
+      "review_receipt_id": null
     },
     {
       "source_id": "cipc.bizportal",
@@ -92,7 +96,9 @@
       "reuse": "not_assessed",
       "source_license_url": null,
       "attribution": "Companies and Intellectual Property Commission (CIPC)",
-      "rights_notes": "Direct users to the official service. Do not imply that this app submits a company registration."
+      "rights_notes": "Direct users to the official service. Do not imply that this app submits a company registration.",
+      "reviewer_id": null,
+      "review_receipt_id": null
     },
     {
       "source_id": "joburg.business-licensing-policy",
@@ -112,7 +118,9 @@
       "reuse": "not_assessed",
       "source_license_url": null,
       "attribution": "City of Johannesburg",
-      "rights_notes": "Use this page to locate the City's published policy and schedule. Confirm the operative version and applicable business classification before publication; do not redistribute annexure text without rights assessment."
+      "rights_notes": "Use this page to locate the City's published policy and schedule. Confirm the operative version and applicable business classification before publication; do not redistribute annexure text without rights assessment.",
+      "reviewer_id": null,
+      "review_receipt_id": null
     },
     {
       "source_id": "joburg.business-licensing-enquiries",
@@ -132,7 +140,9 @@
       "reuse": "not_assessed",
       "source_license_url": null,
       "attribution": "City of Johannesburg",
-      "rights_notes": "Contact details may change. Resolve the live page and confirm the correct office for the proposed business type before displaying contact details as current."
+      "rights_notes": "Contact details may change. Resolve the live page and confirm the correct office for the proposed business type before displaying contact details as current.",
+      "reviewer_id": null,
+      "review_receipt_id": null
     },
     {
       "source_id": "za.department-health-food-control",
@@ -152,7 +162,9 @@
       "reuse": "not_assessed",
       "source_license_url": null,
       "attribution": "National Department of Health, South Africa",
-      "rights_notes": "This is an official index, not a replacement for reviewing the applicable current regulation and amendments. Do not treat a page listing alone as legal approval."
+      "rights_notes": "This is an official index, not a replacement for reviewing the applicable current regulation and amendments. Do not treat a page listing alone as legal approval.",
+      "reviewer_id": null,
+      "review_receipt_id": null
     }
   ],
   "requirements": [
@@ -308,5 +320,6 @@
     "Official portals linked here remain the responsible authorities. This prototype is not an official government service.",
     "Official source links were rechecked during research on 2026-10-13, but source records remain unreviewed until a named maintainer verifies the current text, applicability, version, and review deadline.",
     "Applicability predicates use a small declarative operator set. Missing fact values evaluate as unknown and require user clarification; no arbitrary code or AI-generated predicate execution is supported."
-  ]
+  ],
+  "source_review_receipts": []
 }
