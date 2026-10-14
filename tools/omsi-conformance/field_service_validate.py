@@ -160,11 +160,11 @@ def validate_record(record: dict[str, Any], now: datetime) -> None:
         applied_at = core.parse_time(operation["applied_at"])
         if expires_at <= authorized_at:
             _fail("operation authority has an invalid validity interval")
-        if authorized_at > core.parse_time(estimate["valid_until"]):
+        if authorized_at >= core.parse_time(estimate["valid_until"]):
             _fail("operation authorized after estimate expiry")
         if applied_at < authorized_at:
             _fail("operation application predates authorization")
-        if operation["state"] in {"applied", "verified"} and applied_at > expires_at:
+        if operation["state"] in {"applied", "verified"} and applied_at >= expires_at:
             _fail("operation applied after authority expiry")
         for instant in (authorized_at, applied_at):
             credentials_at_use = credentials_at(instant)
@@ -313,6 +313,8 @@ def validate_record(record: dict[str, Any], now: datetime) -> None:
     ):
         _fail("closeout customer acknowledgement reference is invalid")
     if closeout["status"] == "handed_over":
+        if any(op["required_verification"] and op["state"] != "verified" for op in operations):
+            _fail("handover closeout includes operation lacking required verification")
         if work["status"] != "handed_over":
             _fail("handover closeout conflicts with work-order lifecycle")
         if not any(
