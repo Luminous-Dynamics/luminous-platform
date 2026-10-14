@@ -257,6 +257,33 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         self.assertEqual(check_status(report, "publication.evidence_gates"), "PASS")
         self.assertEqual(check_status(report, "publication.gate"), "PASS")
 
+    def test_expired_claim_review_deadline_blocks_publication(self):
+        pack = copy.deepcopy(PACK)
+        pack["publication_state"] = "candidate"
+        for source in pack["sources"]:
+            attach_review_receipt(pack, source)
+        for requirement in pack["requirements"]:
+            attach_requirement_review_receipt(pack, requirement)
+        pack["requirement_review_receipts"][0]["next_review_at"] = "2026-10-12T13:00:00Z"
+        report = report_for(pack)
+        self.assertTrue(report["validation_passed"])
+        self.assertFalse(report["publication_eligible"])
+        self.assertIn("requirement review deadline reached", " ".join(report["publication_blockers"]))
+
+    def test_future_claim_review_timestamp_blocks_publication(self):
+        pack = copy.deepcopy(PACK)
+        pack["publication_state"] = "candidate"
+        for source in pack["sources"]:
+            attach_review_receipt(pack, source)
+        for requirement in pack["requirements"]:
+            attach_requirement_review_receipt(pack, requirement)
+        pack["requirement_review_receipts"][0]["reviewed_at"] = "2026-10-14T16:00:00Z"
+        pack["requirement_review_receipts"][0]["next_review_at"] = "2026-10-24T16:00:00Z"
+        report = report_for(pack)
+        self.assertTrue(report["validation_passed"])
+        self.assertFalse(report["publication_eligible"])
+        self.assertIn("requirement review is in the future", " ".join(report["publication_blockers"]))
+
     def test_verified_requirement_cannot_be_claimed_without_a_receipt(self):
         pack = copy.deepcopy(PACK)
         pack["requirements"][0]["review_state"] = "verified"
