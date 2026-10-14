@@ -1,0 +1,332 @@
+{
+  "lock_format": "luminous-acs-schema-lock-v1",
+  "status": "pinned_snapshot_not_publisher_authentication",
+  "upstream_repository": "GenAI-Security-Project/agent-control-standard",
+  "upstream_release_tag": "v0.1.1",
+  "upstream_release_commit": "1af1f92c1e445cf5ffa662515f83275de6eb603e",
+  "upstream_commit_signature": {
+    "verified": false,
+    "reason": "GitHub API commit verification reports unsigned; a commit pin establishes content identity but not publisher authenticity."
+  },
+  "normative_specification_namespace": "v0.1.0",
+  "upstream_license_note": "ACS v0.1.1 release notes state machine-readable schemas/code are Apache-2.0; exact upstream LICENSE and NOTICE are vendored.",
+  "upstream_tree_object": "66d08a7133b44711f26c3c1a162c3624f04aed44",
+  "expected_locked_file_count": 45,
+  "files": [
+    {
+      "upstream_path": "LICENSE",
+      "vendored_path": "vendor/agent-control-standard/LICENSE",
+      "git_blob_sha": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "upstream_size_bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "upstream_path": "NOTICE",
+      "vendored_path": "vendor/agent-control-standard/NOTICE",
+      "git_blob_sha": "8ab0503d87a414f3b84f70d27cc10b9aa73ec3ef",
+      "upstream_size_bytes": 791,
+      "sha256": "592f23bcc48e7693b67625e44bb0a58495173ec6617b5728942ac0a5e897a542"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/agbom/component.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/agbom/component.json",
+      "git_blob_sha": "d6746cc9427035c953dd962e946c22858254e183",
+      "upstream_size_bytes": 9972,
+      "sha256": "35151936afae272ffd02d462ef5cb0ef09aa25db05dc534b3cfa4866994bb45e"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/agbom/document.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/agbom/document.json",
+      "git_blob_sha": "2322cda7ba11c33544fa404f0be525949f071dd8",
+      "upstream_size_bytes": 2009,
+      "sha256": "fdba62622562c398fa52cecf951135957416dc34bcbd7ae704c7a2f31a16e60a"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/ask-details.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/ask-details.json",
+      "git_blob_sha": "3cc2ceab2b9cea3e713b5ecd14e67dfa225a7a7b",
+      "upstream_size_bytes": 3223,
+      "sha256": "3f1a4174b559486a84129eb5462995f7a2f2563467b0f41545cbb37f61e39fd6"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/context-entry.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/context-entry.json",
+      "git_blob_sha": "ebee864e6666b3803414e0f05922603be3387e5c",
+      "upstream_size_bytes": 3583,
+      "sha256": "945acf001b350f815a7912302540bd14406bbf3dd86ee6e8657d4a61f7c1491d"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/defer-details.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/defer-details.json",
+      "git_blob_sha": "a2026dce5badd1e2365d12a4c03c2ceab368d88b",
+      "upstream_size_bytes": 1055,
+      "sha256": "6f17785243ea8ed3730b4dc9e04f8a695102996e7b1cb4f32bf3bbd619dea70e"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/handshake.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/handshake.json",
+      "git_blob_sha": "8ccfc4e2f0b3e441bbc0618549b5d71b70dfa458",
+      "upstream_size_bytes": 11114,
+      "sha256": "ffb64af4ed0f094acb413c44d1798fb40d602d63e77628540785e5fb47e7cb30"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/agbom-changed.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/agbom-changed.json",
+      "git_blob_sha": "38ae39f5dea99b802a1ab04afea518eeb82353b5",
+      "upstream_size_bytes": 2784,
+      "sha256": "7daedc753dfca8545bd0de9228f6ca0af724a796d4164ab1da54b1aeb5baffbf"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/agbom-snapshot.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/agbom-snapshot.json",
+      "git_blob_sha": "2629426170147dff51f4edbec3ae4eb5ef50e070",
+      "upstream_size_bytes": 1351,
+      "sha256": "7271daa9abdc7250997d0d54f8ae53107294a8084ddf88f6d5adcd81f38544bd"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/agent-response.acs-provenance.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/agent-response.acs-provenance.json",
+      "git_blob_sha": "86f63b99355688b804817aac5d68947c0969700f",
+      "upstream_size_bytes": 645,
+      "sha256": "a720fa88c593d3fc55756951a231011096978d4e0bcf1043e518ef0947e54893"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/agent-response.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/agent-response.json",
+      "git_blob_sha": "374231eb96e027f240f207e2fba624c0ca864360",
+      "upstream_size_bytes": 1135,
+      "sha256": "867c764ea4a5fd1c93145b72c04350c023352c23ae794e80bcb07f48216f41a6"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/agent-trigger.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/agent-trigger.json",
+      "git_blob_sha": "dbcc2ed6cdd12a5170b956857a662d9549ef2118",
+      "upstream_size_bytes": 1385,
+      "sha256": "114ddf42d656898d3def0176f4223f68b65c8bf24497a118874b1b20aa7bd157"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/knowledge-retrieval.acs-provenance.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/knowledge-retrieval.acs-provenance.json",
+      "git_blob_sha": "7b91082ca78442d307a755c14d974d4d5763a832",
+      "upstream_size_bytes": 719,
+      "sha256": "f4845d0a0f228fbe887352aa295192352cf42b19973b04510de3277c6de11b8b"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/knowledge-retrieval.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/knowledge-retrieval.json",
+      "git_blob_sha": "51f45193144c149d6a336e300d4f8c7852b8eaf3",
+      "upstream_size_bytes": 1779,
+      "sha256": "b151b0ba9dd973b4bbd4d3fb23f412bb9a9c9ece4fcb4dfaf6395b4fa16c2479"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/memory-context-retrieval.acs-provenance.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/memory-context-retrieval.acs-provenance.json",
+      "git_blob_sha": "73aee48014203f944b417c2c2e7fbadfac8e172b",
+      "upstream_size_bytes": 670,
+      "sha256": "7238196c4d9f881aac8d6bdae459451202f370adc43f5410be7f35d00e6971ad"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/memory-context-retrieval.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/memory-context-retrieval.json",
+      "git_blob_sha": "5c1c5440b4203ae2bee6908080da8cb4f231f944",
+      "upstream_size_bytes": 1397,
+      "sha256": "2d1290812f4476589846f4142959b8442d609b4ba654cb606c0136a13829c6d3"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/memory-store.acs-provenance.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/memory-store.acs-provenance.json",
+      "git_blob_sha": "9e9649e0945700e38027fef1a60de59da3934de2",
+      "upstream_size_bytes": 584,
+      "sha256": "978fa7626c9bd8eb0c304c02f7e6ccaf41c0e9c2753ab9129f72a144f94e2bf7"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/memory-store.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/memory-store.json",
+      "git_blob_sha": "450e36e41b2ad8857c67fbafdf4f3b85c6c28311",
+      "upstream_size_bytes": 1296,
+      "sha256": "3b9724cd2777af4fba0dce30c0639fa5f7f5cbd394b52cb267e8085dc7d98b4f"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/post-compact.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/post-compact.json",
+      "git_blob_sha": "dacd0ff3d2f9635000a87cc0788fa299ae328895",
+      "upstream_size_bytes": 3533,
+      "sha256": "944d77753b651169883769e1493ed184d3f1d08579b412783c01d5d9a2d4d38b"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/pre-compact.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/pre-compact.json",
+      "git_blob_sha": "55aabf9c6b09278a8f7f0d660ca70b9e74c26c3b",
+      "upstream_size_bytes": 2892,
+      "sha256": "712687670a5905e078eb79ef04080b2b62715e89e5c2d842c0137d06e390e674"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/session-end.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/session-end.json",
+      "git_blob_sha": "a76c30281205aab3cff48c9cb5d8b0435faaac38",
+      "upstream_size_bytes": 1018,
+      "sha256": "e3bdb1ccd8fd5abd0a051abaab71a47cab4303c45f4e2b3b704e04c30eb55484"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/session-start.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/session-start.json",
+      "git_blob_sha": "18a595d3e34f79fb438412ca45e513c294ee3e06",
+      "upstream_size_bytes": 2896,
+      "sha256": "13909ee8fc1b5995822295e94e1fcb03fcee218524758e801379038f39fc1d78"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/skill-load.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/skill-load.json",
+      "git_blob_sha": "98c8eb6f905bbe672f5b64269b723c706280c343",
+      "upstream_size_bytes": 4864,
+      "sha256": "3cd774b07eac95a5d467c0b46367df968effab2866d5f2d7f3274ed7b0ea9310"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/skill-register.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/skill-register.json",
+      "git_blob_sha": "8636e029db3649b155f5b86131fa42f5537b3d19",
+      "upstream_size_bytes": 5492,
+      "sha256": "6780bf04f5d255a97104ab1b90a7942b251224fbbb10dd1afa607f1a47a4f740"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/skill-unload.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/skill-unload.json",
+      "git_blob_sha": "7cc610be5d42d7138e521e494a3794b2319c6574",
+      "upstream_size_bytes": 1363,
+      "sha256": "6db467df4cce9b088c320210765e2879590e842be5729404457b328be0a4d7a3"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/subagent-start.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/subagent-start.json",
+      "git_blob_sha": "f17f78a8c34718040e43e1f70385fc7fb209fc32",
+      "upstream_size_bytes": 4115,
+      "sha256": "801893600414455a8e678bd125b63f4f3ec70fcf4aaaa014545dc0d31a5fa9de"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/subagent-stop.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/subagent-stop.json",
+      "git_blob_sha": "e4dc1b72a6082be7d6d46eae7ec6b78972f39cc4",
+      "upstream_size_bytes": 2618,
+      "sha256": "ce34e8a519625dce981d82979aeefa38d29cd7e68689365c3e53ee4eca63c971"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/system-ping.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/system-ping.json",
+      "git_blob_sha": "e776bc2799d6cf77d302a83aae2a3e34012b723c",
+      "upstream_size_bytes": 1083,
+      "sha256": "38d44858b4a33a0c70be19bced57614fe550f698fecdbb39db6ab8705b2bf499"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/tool-call-request.acs-provenance.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/tool-call-request.acs-provenance.json",
+      "git_blob_sha": "ec3be615378725c52b585481442a65ca1be55ebc",
+      "upstream_size_bytes": 676,
+      "sha256": "9a2fa1066158bcd90308aecc14346a7f9a04ab778d2652e1d589291a833d3425"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/tool-call-request.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/tool-call-request.json",
+      "git_blob_sha": "28240442375b39c42d36a020cb458a671e7f85ca",
+      "upstream_size_bytes": 1965,
+      "sha256": "25398db16282c4304d7aa7510a24a8d534839df93707c1a5d4351a94141b5d32"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/tool-call-result.acs-provenance.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/tool-call-result.acs-provenance.json",
+      "git_blob_sha": "8de3dd0fc96ccd8f698127ec8ddf42a6d9f6be32",
+      "upstream_size_bytes": 643,
+      "sha256": "f0ed204054cbd62a237a8f2d1e9e3d1eac99da293a606367b031a56949fc6039"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/tool-call-result.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/tool-call-result.json",
+      "git_blob_sha": "6ab04fb637dc4f1e39dd63982ff63fed541501dd",
+      "upstream_size_bytes": 1511,
+      "sha256": "8076f3240ce1495d1526aa695901a284a0054e5b3a56be957580a63ad90cd2e4"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/turn-end.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/turn-end.json",
+      "git_blob_sha": "026a5ec3f6b72a97247bf1dd2b4d418900ee727f",
+      "upstream_size_bytes": 2798,
+      "sha256": "7e1ac962815fa5a384ee2dc61dde9c29dcc690730e64f67dd7a9508f21993e74"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/turn-start.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/turn-start.json",
+      "git_blob_sha": "dc0814f90ece28267b6affff269b9618ee13c9d2",
+      "upstream_size_bytes": 2510,
+      "sha256": "a90d5a08b18900e9f1e5dfb84f118dac0f430e446a4a1d5ffa9cd60d3750c4f4"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/user-message.acs-provenance.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/user-message.acs-provenance.json",
+      "git_blob_sha": "e97361e4aea4062e1ed7b6c10212cc385e5408c9",
+      "upstream_size_bytes": 637,
+      "sha256": "1c0c36e8bc84c2d7bac3d82f977f9117354e90f0d5c18f0dabcdc67a3acf92cf"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/hooks/user-message.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/hooks/user-message.json",
+      "git_blob_sha": "95b7a28f61d3f11e09cbaa5f2328457d5e412f61",
+      "upstream_size_bytes": 981,
+      "sha256": "a8b9c6106c9f81a8d54e98f94ba2ccd01825f389bb575c079c4a793682cc7b3e"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/inspect/format-mapping.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/inspect/format-mapping.json",
+      "git_blob_sha": "2188ff23307d6fbd3d3f9d46b000601cdf1afd9a",
+      "upstream_size_bytes": 3454,
+      "sha256": "6b897fc0f51cbf66751fd7958269adea56d42c5bf12bf0ae7dd1316cdb83afb4"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/modifications.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/modifications.json",
+      "git_blob_sha": "0d6c73132812d4bee4e8441cf97c7529e26b98d7",
+      "upstream_size_bytes": 2187,
+      "sha256": "5462cdbfcd731a771ccdef084c3a6325563700b7220a76af48d2e9bdd9ab742d"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/provenance-summary.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/provenance-summary.json",
+      "git_blob_sha": "620fc857507bcd78ab7e7535479a4b3073f8b50b",
+      "upstream_size_bytes": 2969,
+      "sha256": "48b8f9f2b146ac4566763c9999fd6c81d34d938925564fab1e5801ec83f632fe"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/provenance.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/provenance.json",
+      "git_blob_sha": "e559449ae3555124d161067abcf4fbcfd34a2678",
+      "upstream_size_bytes": 1789,
+      "sha256": "13426e36a05d3570ac0c40e920c283e25118e196e06caa4aee3a81b3ad2a1787"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/request-envelope.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/request-envelope.json",
+      "git_blob_sha": "b7ce18e779b52c77fd0cabd6abb887357fbecbf5",
+      "upstream_size_bytes": 6839,
+      "sha256": "5ef2573b3069a04f7f5ff344444abe6ad07f7629898b7d2971fd8a117e2cb2af"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/response-envelope.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/response-envelope.json",
+      "git_blob_sha": "c0883020f6a345a21fa38a2a24403e0a3b08b00f",
+      "upstream_size_bytes": 9299,
+      "sha256": "eea137b424414c5ca58fef3810de50c14717c490b8aedd3de5535989bcb04182"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/trace/ocsf-mapping.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/trace/ocsf-mapping.json",
+      "git_blob_sha": "12837e207bc7c84f459a748b664f8744b50f4dc3",
+      "upstream_size_bytes": 4987,
+      "sha256": "26c8d54e034298b3ddb17e30168feab34be6a2bc10d63697e956becf5d9c1a47"
+    },
+    {
+      "upstream_path": "specification/v0.1.0/trace/otel-mapping.json",
+      "vendored_path": "vendor/agent-control-standard/specification/v0.1.0/trace/otel-mapping.json",
+      "git_blob_sha": "03dba46d52bcfb96ae38c109c2e6586d7204b091",
+      "upstream_size_bytes": 6282,
+      "sha256": "5d5105645a2d56a090ab8b10ead1fe365b11b9d981eea1318d28c0a3fc7fef9c"
+    }
+  ]
+}

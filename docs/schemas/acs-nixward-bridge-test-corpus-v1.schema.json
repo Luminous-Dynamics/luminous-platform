@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:schema:acs-nixward-bridge-test-corpus:v1",
+  "title": "Luminous ACS-Nixward Bridge Test Corpus v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "corpus_format",
+    "corpus_id",
+    "corpus_version",
+    "status",
+    "acs_release",
+    "acs_release_commit",
+    "acs_specification_namespace",
+    "nixward_reference_head",
+    "normative_rule",
+    "case_count",
+    "cases",
+    "related_existing_work"
+  ],
+  "properties": {
+    "corpus_format": {
+      "const": "luminous-acs-nixward-bridge-test-corpus-v1"
+    },
+    "corpus_id": {
+      "const": "luminous-acs-nixward-bridge-v1"
+    },
+    "corpus_version": {
+      "const": 1
+    },
+    "status": {
+      "const": "test_specification_only_not_execution_evidence"
+    },
+    "acs_release": {
+      "const": "v0.1.1"
+    },
+    "acs_release_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "acs_specification_namespace": {
+      "const": "v0.1.0"
+    },
+    "nixward_reference_head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "normative_rule": {
+      "type": "string",
+      "minLength": 50
+    },
+    "case_count": {
+      "const": 32
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 32,
+      "maxItems": 32,
+      "items": {
+        "$ref": "#/$defs/testCase"
+      }
+    },
+    "related_existing_work": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "$ref": "#/$defs/relatedWork"
+      }
+    }
+  },
+  "$defs": {
+    "testCase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "class",
+        "scenario",
+        "expected_bridge_outcome",
+        "expected_transaction",
+        "max_mutating_effects",
+        "pass_condition"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^BR-[0-9]{3}$"
+        },
+        "class": {
+          "type": "string",
+          "enum": [
+            "approval",
+            "authority",
+            "baseline",
+            "binding",
+            "boot-recovery",
+            "disposition",
+            "evidence",
+            "failure-posture",
+            "federation",
+            "freshness",
+            "integrity",
+            "lifecycle",
+            "policy",
+            "privacy",
+            "replay",
+            "tool-scope",
+            "verification"
+          ]
+        },
+        "scenario": {
+          "type": "string",
+          "minLength": 20
+        },
+        "expected_bridge_outcome": {
+          "type": "string",
+          "enum": [
+            "ALLOW",
+            "ALLOW_AT_HOOK_ONLY",
+            "ALLOW_PLAN_ONLY",
+            "ASK_OR_DENY",
+            "BLOCK_PROMOTION",
+            "BLOCK_RETRY_UNTIL_RECONCILED",
+            "DEFER_OR_DENY",
+            "DENY",
+            "DENY_ACTION_MISMATCH",
+            "DENY_AUTHORITY_MISMATCH",
+            "DENY_ON_FAILURE",
+            "DENY_OR_DISABLE_MUTATION_CAPABILITY",
+            "DENY_REPLAY",
+            "DENY_SESSION_OR_REQUEST",
+            "DENY_STALE",
+            "DENY_STALE_POLICY",
+            "DENY_STALE_PRESTATE",
+            "DENY_STALE_TARGET",
+            "DENY_TRANSPORT_RESULT",
+            "DENY_UNSUPPORTED_MODIFY",
+            "HOST_BOOT_RECOVERY_CONTINUES",
+            "LOCAL_POLICY_DECISION",
+            "NOT_VERIFIED",
+            "QUALIFICATION_BLOCKED",
+            "RECONCILE",
+            "REDACT_OR_REJECT",
+            "RETURN_PRIOR_RESULT_OR_REJECT_DUPLICATE"
+          ]
+        },
+        "expected_transaction": {
+          "type": "string",
+          "enum": [
+            "applied_unverified_or_unknown",
+            "applied_unverified_recover_or_reconcile",
+            "authorized_then_normal_lifecycle",
+            "awaiting_authority_or_rejected",
+            "indeterminate_requires_explicit_semantics",
+            "no_authority_expansion",
+            "no_pass_claim",
+            "no_sensitive_publication",
+            "none",
+            "none_or_rejected",
+            "normal_local_lifecycle",
+            "not_authorized",
+            "prior_attempt_reference_only",
+            "prior_verified_attempt",
+            "reconciled_pre_state_or_failed",
+            "rejected_before_apply",
+            "validated_not_applied"
+          ]
+        },
+        "max_mutating_effects": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "pass_condition": {
+          "type": "string",
+          "minLength": 20
+        }
+      }
+    },
+    "relatedWork": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "issue",
+        "url",
+        "scope"
+      ],
+      "properties": {
+        "repository": {
+          "const": "Luminous-Dynamics/nixward"
+        },
+        "issue": {
+          "type": "integer",
+          "enum": [
+            63,
+            70,
+            75
+          ]
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 10
+        }
+      }
+    }
+  }
+}
