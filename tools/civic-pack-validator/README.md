@@ -29,7 +29,7 @@ Example facts file (only use answers the person actually provided; omit unknown 
 The evaluator uses a three-valued rule for every declared predicate:
 - `true`: the predicate matches the submitted, correctly typed fact;
 - `false`: the submitted, correctly typed fact contradicts the predicate, so that requirement is omitted as not applicable;
-- `unknown`: the fact was not supplied or has an unsupported value, so the requirement remains visible as needing scope confirmation.
+- `unknown`: the fact was not supplied, so the requirement remains visible as needing scope confirmation. Explicit malformed input (unknown fact key, wrong type, or non-object facts document) is rejected as `invalid_context` with no requirement cards.
 
 Predicates use only a schema-allow-listed field and one of four operators (`eq`, `in`, `is_true`, `is_false`). Packs cannot submit code, expressions, regular expressions, imports, or dynamic function names. The evaluator does not parse explanatory free text as a rule. Jurisdiction and business type are locked to the explicit CLI selection and cannot be overridden through the facts file. Unknown applicability must not be interpreted as false or true.
 
@@ -61,6 +61,8 @@ Use a frozen, timezone-aware `--as-of` instant when generating evidence that mus
 A draft pack can therefore be a structurally valid fixture while being explicitly **not publishable**. The Johannesburg example intentionally behaves this way: its source records are unreviewed, requirements remain draft, and no legal-completion claim can be made from it.
 
 ## Applicability predicate contract
+
+Read the normative [Applicability predicate contract v0.1](../../docs/civic-services/applicability-predicate-contract-v0.1.md) for the allow-listed fields, strict typing, three-valued conjunction semantics, and regression requirements.
 
 Each requirement now contains at least one `applicability.predicates` record in schema version 0.1.0. Predicate evaluation is restricted to explicit facts; it is not a general rules language. Unknown answers lead to scope clarification. This limits the first version but provides a small, auditable core that can be expanded deliberately with tests rather than executing free-text conditions.
 
