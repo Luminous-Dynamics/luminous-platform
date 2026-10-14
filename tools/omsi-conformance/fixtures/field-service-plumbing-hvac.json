@@ -124,7 +124,8 @@
       "claim_status": "reported",
       "recorded_by": "practitioner-ada",
       "occurred_at": "2026-10-14T10:01:00Z",
-      "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "operation_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
     },
     {
       "id": "hvac-measurement",
@@ -147,7 +148,8 @@
         "instrument_ref": "gauge-09",
         "calibration_ref": "calibration-gauge-09-2026",
         "calibration_status": "valid"
-      }
+      },
+      "operation_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
     },
     {
       "id": "hvac-qualified-inspection",
@@ -165,7 +167,8 @@
         "credential_ref": "credential-plumbing-01",
         "inspection_profile": "hvac-hydraulic-integrity-v1",
         "result": "passed"
-      }
+      },
+      "operation_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
     },
     {
       "id": "hvac-independent-verification",
@@ -184,7 +187,8 @@
         "verifier_authority_domain": "independent-inspection-coop",
         "method_ref": "hvac-pressure-test-v1-review-v1",
         "result": "passed"
-      }
+      },
+      "operation_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
     },
     {
       "id": "hvac-customer-ack",
@@ -197,7 +201,8 @@
       "claim_status": "acknowledged",
       "recorded_by": "customer-contact-01",
       "occurred_at": "2026-10-14T10:15:00Z",
-      "content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      "content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "operation_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
     },
     {
       "id": "hvac-handover",
@@ -210,7 +215,8 @@
       "claim_status": "acknowledged",
       "recorded_by": "practitioner-ada",
       "occurred_at": "2026-10-14T10:16:00Z",
-      "content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      "content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "operation_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
     }
   ],
   "closeout": {
