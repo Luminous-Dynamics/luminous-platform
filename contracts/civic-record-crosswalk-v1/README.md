@@ -21,7 +21,7 @@ The concrete Work Case V1 and Operations Event V1 schemas were absent from the a
 
 The mapping pins exact commits and Git blob IDs for the artifacts it inspected. These snapshots are audit anchors, not moving references to current branch heads. When a source PR changes, refresh the exact commit and blob IDs, re-review the affected rule, and rerun this contract's qualification before reusing the mapping.
 
-The Mycelix service journey record is version 0.3.0. The applicability schema does not define a top-level schema version; records instead carry profile_version. Sol-Atlas civic case wire types are Serde-derived Rust types using schema_version 1; no separate JSON Schema file was present at the reviewed path. Symthaea's referenced file is an evaluation corpus, not a general runtime output schema.
+The Mycelix service-journey **schema** is version 0.3.0, while its versioned **evaluation corpus** is now v0.4.0 (six effects-disabled fixtures). The corpus adds `cross-utility-statement-not-incident-cause`, which treats the South African Government's 10 September 2026 power/water statement as synthetic contextual evidence and keeps route/outcome unknown; it forbids inference of incident-level causality or current restoration. Symthaea's corresponding life/civic evaluation corpus is v0.2.0 with 11 scenarios, including SYM-LC-011 for the same negative boundary. The new `MYCELIX-SYMTHAEA-CAUSALITY-CORPORA` mapping explicitly preserves the two fixture shapes separately rather than pretending they are interchangeable runtime records. Both corpus pins remain `unqualified_draft` until their exact-head tests complete. The Mycelix applicability schema does not define a top-level schema version; records instead carry `profile_version`. Sol-Atlas civic case wire types are Serde-derived Rust types using schema_version 1; no separate JSON Schema file was present at the reviewed path. Neither evaluation corpus is a general runtime output schema.
 
 ## Design invariants
 
@@ -34,6 +34,7 @@ The Mycelix service journey record is version 0.3.0. The applicability schema do
 7. Symthaea evaluation expectations do not form an executable action command or runtime output schema.
 8. Publish Sol-Atlas cases only through its explicit sanitising public_projection boundary. Never serialise the internal CivicServiceCase as a public API response.
 9. Work Case and Operations Event artifacts are pinned from separate draft PRs, but remain unqualified; do not implement adapters until exact-head tests and stack ancestry are reconciled.
+10. Mycelix's service-journey corpus v0.4.0 and Symthaea's life/civic corpus v0.2.0 share a causal/currentness negative control but remain separate evaluation formats. A historical public statement and a synthetic fixture must not be mapped to incident-level causality, live service state, restoration or action authority.
 
 ## Validate offline
 
