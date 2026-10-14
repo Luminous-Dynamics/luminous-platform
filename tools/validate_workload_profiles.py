@@ -13,6 +13,7 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from jsonschema import Draft202012Validator, FormatChecker
 from jsonschema.exceptions import FormatError
@@ -60,6 +61,7 @@ EXPECTED_SCHEMA_ERROR_FRAGMENTS: dict[str, tuple[str, ...]] = {
     "reject privileged OCI container": ("deployment.privileged",),
     "reject host PID namespace": ("deployment.hostNamespaces.pid",),
     "reject mutable image tag without digest": ("deployment.image.ref",),
+    "reject URL-shaped OCI image reference": ("deployment.image.ref",),
     "reject custom seccomp profile without an identified policy artifact": ("deployment.seccompProfile",),
     "reject wildcard hostname peer": ("peer",),
     "reject malformed IPv4 network peer": ("peer",),
@@ -158,6 +160,47 @@ def canonical_peer(rule: dict[str, Any]) -> str:
         return peer.lower()
 
 
+def full_vm_source_uri_errors(source_uri: str) -> list[str]:
+    """Require a durable, unambiguous artifact locator; retrieval policy is separate."""
+    try:
+        parsed = urlsplit(source_uri)
+        port = parsed.port  # Access validates that any explicit port is numeric and in range.
+    except ValueError:
+        return ["full VM image source URI has an invalid authority or port"]
+
+    has_credentials = parsed.username is not None or parsed.password is not None
+    has_query_or_fragment = "?" in source_uri or "#" in source_uri
+    if parsed.scheme == "https":
+        if (
+            not parsed.hostname
+            or has_credentials
+            or has_query_or_fragment
+            or parsed.path in {"", "/"}
+        ):
+            return [
+                "HTTPS image source URI requires a host and path, without userinfo, query, or fragment"
+            ]
+        return []
+
+    if parsed.scheme == "artifact":
+        path_segments = parsed.path.split("/")
+        if (
+            not parsed.hostname
+            or has_credentials
+            or port is not None
+            or has_query_or_fragment
+            or "%" in source_uri
+            or parsed.path in {"", "/"}
+            or any(segment in {".", ".."} for segment in path_segments)
+        ):
+            return [
+                "artifact image source URI must be an opaque registry key without credentials, ports, query, fragment, or traversal"
+            ]
+        return []
+
+    return ["full VM image source URI must use HTTPS or the artifact scheme"]
+
+
 def semantic_errors(profile: dict[str, Any]) -> list[str]:
     """Check cross-field invariants JSON Schema cannot express portably."""
     errors: list[str] = []
@@ -199,6 +242,7 @@ def semantic_errors(profile: dict[str, Any]) -> list[str]:
         errors.extend(mount_layout_errors(deployment["shares"], "microVM shares"))
 
     elif kind == "full_vm":
+        errors.extend(full_vm_source_uri_errors(deployment["image"]["sourceUri"]))
         if resources["cpuMilli"] < deployment["vcpus"] * 1000:
             errors.append("resource CPU budget must cover configured full-VM vCPUs")
         if resources["memoryMiB"] < deployment["memoryMiB"]:
@@ -352,6 +396,27 @@ def main() -> int:
             )
         print(f"PASS network peer: {peer_type}")
 
+    for source_uri, label in [
+        (
+            "artifact://artifacts.example.invalid/ubuntu-server-24.04.qcow2",
+            "opaque artifact key",
+        ),
+        (
+            "https://artifacts.example.invalid/ubuntu-server-24.04.qcow2",
+            "HTTPS artifact locator",
+        ),
+    ]:
+        candidate = copy.deepcopy(full_vm)
+        candidate["deployment"]["image"]["sourceUri"] = source_uri
+        if list(validator.iter_errors(candidate)):
+            raise AssertionError(f"valid full VM source URI rejected: {label}")
+        semantic = semantic_errors(candidate)
+        if semantic:
+            raise AssertionError(
+                f"valid full VM source URI failed semantic checks ({label}): {semantic!r}"
+            )
+        print(f"PASS full VM source URI: {label}")
+
     negative_cases = [
         (
             oci,
@@ -374,6 +439,18 @@ def main() -> int:
                 {"ref": "registry.example.invalid/luminous/example:latest"}
             ),
             "reject mutable image tag without digest",
+        ),
+        (
+            oci,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {
+                    "ref": (
+                        "https://registry.example.invalid/luminous/example@sha256:"
+                        + "0" * 64
+                    )
+                }
+            ),
+            "reject URL-shaped OCI image reference",
         ),
         (
             oci,
@@ -628,6 +705,19 @@ def main() -> int:
         expect_invalid(validator, profile, mutate, label)
 
     semantic_negative_cases = [
+        (
+            full_vm,
+            lambda candidate: candidate["deployment"]["image"].update(
+                {
+                    "sourceUri": (
+                        "https://user:placeholder@artifacts.example.invalid/"
+                        "ubuntu-server-24.04.qcow2?token=fixture#fragment"
+                    )
+                }
+            ),
+            "reject credentialed or query-bearing VM image URI",
+            "userinfo, query, or fragment",
+        ),
         (
             full_vm,
             lambda candidate: (
