@@ -97,7 +97,7 @@ jobs:
             if git cat-file -e "$COMMIT^1:$PACK_PATH" 2>/dev/null; then
               git show "$COMMIT^1:$PACK_PATH" > "$BASELINE"
             else
-              printf '%s\\n' '{"source_review_receipts":[],"requirement_review_receipts":[]}' > "$BASELINE"
+              printf '%s\n' '{"source_review_receipts":[],"requirement_review_receipts":[]}' > "$BASELINE"
             fi
             git show "$COMMIT:$PACK_PATH" > "$CURRENT"
             echo "Checking append-only review history at $COMMIT"
