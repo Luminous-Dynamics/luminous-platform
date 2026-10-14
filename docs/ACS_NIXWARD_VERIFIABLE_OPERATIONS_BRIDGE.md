@@ -1,17 +1,17 @@
 # ACS ↔ Nixward Verifiable Operations Bridge
 
 **Status:** Proposed adapter and qualification contract; not implementation evidence  
-**Revision date:** 2026-10-13  
+**Revision date:** 2026-10-14  
 **Normative scope:** First isolated-VM operations slice  
 **ACS baseline:** Repository release tag `v0.1.1`, immutable commit `1af1f92c1e445cf5ffa662515f83275de6eb603e`; wire/schema namespace remains ACS specification `v0.1.0`  
 **Nixward baseline inspected:** `main` at `ae60256f0be73138a539ecda048e81056dd14a30`; re-pin at implementation time before claiming conformance
 
 ## 1. Decision
 
-Implement an **adapter between an agent-control wire protocol and Nixward's existing canonical System Transaction protocol**. Do not create another transaction engine, authority signer, or host mutation path.
+Implement an **adapter between an agent-control wire protocol and Nixward's versioned System Transaction contract**. Do not create another transaction engine, authority signer, or host mutation path.
 
 - **ACS** is the Observed Agent ↔ Guardian interception and decision contract.
-- **Nixward System Transaction** remains the canonical target/change/authorization/application/verification lifecycle for NixOS mutations.
+- **Nixward System Transaction** is the intended canonical target/change/authorization/application/verification lifecycle and sole owner of the NixOS mutation path. This states the contract/ownership boundary, not that the current default branch has a qualified runtime implementation.
 - **Luminous Platform** owns the product integration, operator UX, correlation/telemetry, capability policy, and packaging.
 - **Symthaea** may reason, diagnose, predict, and propose. None of those outputs constitutes permission.
 - **Mycelix** may later coordinate organizational identity, consent, provenance, witness, and evidence exchange. It is not the sole online authority for local host safety.
@@ -20,6 +20,12 @@ Existing authoritative Nixward references:
 - [System Transaction Architecture](https://github.com/Luminous-Dynamics/nixward/blob/ae60256f0be73138a539ecda048e81056dd14a30/docs/SYSTEM_TRANSACTION_ARCHITECTURE.md)
 - [System Transaction Wire v1](https://github.com/Luminous-Dynamics/nixward/blob/ae60256f0be73138a539ecda048e81056dd14a30/docs/SYSTEM_TRANSACTION_WIRE_V1.md)
 - [Wire v1 fixture](https://github.com/Luminous-Dynamics/nixward/blob/ae60256f0be73138a539ecda048e81056dd14a30/docs/fixtures/system-transaction-v1.json)
+
+## Runtime implementation status (source audit 2026-10-14)
+
+The Wire v1 and architecture documents are normative design references, not proof that their complete runtime path is implemented and qualified on the default branch. The default-branch source audit found `src/action/config_transaction.rs` absent at the expected path. The separate [Nixward PR #62](https://github.com/Luminous-Dynamics/nixward/pull/62), at inspected head `7d13576758085d940b7c756c85a6142708001cd9`, adds that transaction module and explicit indeterminate/recovery phases, but remains **draft and unqualified**. Its outstanding request-cancellation/supervision and journal-publication boundaries remain tracked in [Nixward #75](https://github.com/Luminous-Dynamics/nixward/issues/75) and [#63](https://github.com/Luminous-Dynamics/nixward/issues/63).
+
+Therefore, “use the canonical Nixward path” is an **implementation acceptance gate**, not a current capability claim. Before any mutation-capable bridge is enabled, pin the exact Nixward source revision and selected host adapter, verify that the concrete path issues and checks the existing ChangePlan/ChangeAuthorization, journal, effect and post-state evidence, and qualify its recovery semantics. If that path is not present or cannot represent an indeterminate effect truthfully, keep that operation class disabled; do not create a Luminous Platform substitute.
 
 ACS references:
 - [Pinned ACS v0.1.1 repository release](https://github.com/GenAI-Security-Project/agent-control-standard/tree/1af1f92c1e445cf5ffa662515f83275de6eb603e)
@@ -122,7 +128,7 @@ Do not expose an unauthenticated Guardian socket to other local processes or a n
 
 ## 6. Nixward contract reuse and the open lifecycle gap
 
-Nixward's System Transaction Wire v1 already defines the stable serialized boundary and lifecycle identity for consequential machine changes. The bridge MUST reference the canonical ChangePlan digest, target-machine digest, transaction identity, authority evidence, pre-state/snapshot, application evidence, and verification evidence that the existing implementation provides. It must not mint a parallel transaction id or make a second state machine authoritative.
+Nixward's System Transaction Wire v1 already defines the stable serialized boundary and lifecycle identity for consequential machine changes. The bridge MUST reference the canonical ChangePlan digest, target-machine digest, transaction identity, authority evidence, pre-state/snapshot, application evidence, and verification evidence provided by the exact selected Nixward implementation after source and runtime qualification. It must not mint a parallel transaction id or make a second state machine authoritative.
 
 **Blocker to resolve before enabling retryable mutations:** the published System Transaction Wire v1 lifecycle enumerates planned, validated, authorized, snapshotted, applied, verified, promoted, plus failed/recovered outcomes. The published lifecycle does not name an explicit *indeterminate external effect* state. A process crash or timeout after a mutation begins cannot truthfully be mapped to either “not applied” or “applied and verified” without fresh target observation.
 
