@@ -3,7 +3,7 @@
   "observation_id": "synthetic-observation-0001",
   "source_id": "za-treasury-municipal-finance",
   "source_uri": "https://municipaldata.treasury.gov.za/docs",
-  "retrieved_at": "2026-10-12T00:00:00Z",
+  "retrieved_at": null,
   "source_period": {
     "financial_year_end": 2026,
     "period_label": "SYNTHETIC-EXAMPLE"
