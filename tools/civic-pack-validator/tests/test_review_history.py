@@ -46,6 +46,15 @@ class ReviewHistoryTests(unittest.TestCase):
         current = copy.deepcopy(BASE)
         self.assertEqual(check_review_history({"pack_id": "old-pack"}, current), [])
 
+    def test_non_array_ledger_fails_closed(self):
+        self.assertIn(
+            "must be arrays",
+            " ".join(check_review_history(
+                {"source_review_receipts": None},
+                {"source_review_receipts": []},
+            )),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
