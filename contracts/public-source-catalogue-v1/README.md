@@ -8,7 +8,8 @@ This directory defines the machine-readable source inventory and observation con
 - schema.json — JSON Schema Draft 2020-12 for catalogue documents.
 - observation.schema.json — JSON Schema Draft 2020-12 for observations.
 - examples/catalogue.json — initial public-source inventory.
-- examples/observation-v1.json — synthetic provenance fixture.
+- examples/observation-v1.json — synthetic Treasury null/zero provenance fixture.
+- examples/johannesburg-power-water-statement-v1.synthetic.json — synthetic source-claim fixture distinguishing a published cross-utility statement from live status, incident-level causality and verified outcomes.
 - CONFORMANCE.md — future adapter and contract test requirements.
 - rust/ — strict offline validator and CLI, authored in Rust.
 
@@ -37,12 +38,13 @@ The Municipal Finance API overview links to an HTTPS API base, while the API gui
 The eTender Transparency Portal documents CC BY 4.0 for published data, but states that the portal covers only a subset of eTender data shared with National Treasury. Missing records cannot support conclusions about non-existence. Anomaly flags are review leads, not accusations.
 
 ## Validation
-The Rust validator enforces strict field sets, unique source IDs, HTTPS URL syntax, catalogue-only ingestion, timestamp shape, observation-state consistency, explicit normalization identity and source snapshot digest requirements.
+The Rust validator enforces strict field sets, unique source IDs, HTTPS URL syntax, catalogue-only ingestion, timestamp shape, observation-state consistency, explicit normalization identity and source snapshot digest requirements. Conformance tests pin all ten catalogue entries and verify that the synthetic Johannesburg power/water statement fixture is not marked as current service status, case-level causal evidence or an independently verified outcome.
 
 Run from the repository root:
 
     cargo test --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --all-targets
     cargo run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- catalogue contracts/public-source-catalogue-v1/examples/catalogue.json
     cargo run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- observation contracts/public-source-catalogue-v1/examples/observation-v1.json
+    cargo run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- observation contracts/public-source-catalogue-v1/examples/johannesburg-power-water-statement-v1.synthetic.json
 
 These commands describe the intended workflow. They have not yet been reported as executed on an exact GitHub commit in this PR. The Rust implementation is a strict domain validator, not a general JSON Schema Draft 2020-12 implementation.
