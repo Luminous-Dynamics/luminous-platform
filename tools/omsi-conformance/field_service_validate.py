@@ -200,6 +200,8 @@ def validate_record(record: dict[str, Any], now: datetime) -> None:
         op = operation_ids.get(evidence["operation_id"])
         if op is None:
             _fail("evidence references an unknown operation")
+        if evidence["operation_manifest_digest"] != op["manifest_digest"]:
+            _fail("evidence operation manifest digest mismatch")
         occurred_at = core.parse_time(evidence["occurred_at"])
         if occurred_at < created:
             _fail("evidence predates the service record")
