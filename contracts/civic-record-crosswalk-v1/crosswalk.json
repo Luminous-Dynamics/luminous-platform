@@ -12,7 +12,8 @@
       "version": "public-observation-v1",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Public source-observation envelope; separates raw_value_state from normalisation and preserves retrieval/source snapshot provenance. This is an observation contract, not a service-case contract."
+      "notes": "Public source-observation envelope; separates raw_value_state from normalisation and preserves retrieval/source snapshot provenance. This is an observation contract, not a service-case contract.",
+      "qualification_state": "narrow_workflow_success"
     },
     {
       "schema_id": "mycelix.service-journey-reference-v0.3.0",
@@ -23,7 +24,8 @@
       "version": "0.3.0",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Effects-disabled service journey and outcome reference. It explicitly separates route status, case_state, evidence retrieval state, outcome status, review and claim_ceiling."
+      "notes": "Effects-disabled service journey and outcome reference. It explicitly separates route status, case_state, evidence retrieval state, outcome status, review and claim_ceiling.",
+      "qualification_state": "unqualified_draft"
     },
     {
       "schema_id": "mycelix.applicability-assessment",
@@ -34,7 +36,8 @@
       "version": null,
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "The schema has no top-level schema_version; individual records carry profile_version. Applicability results require context and evidence, and applicable status requires completed human review. It is not an authorisation contract."
+      "notes": "The schema has no top-level schema_version; individual records carry profile_version. Applicability results require context and evidence, and applicable status requires completed human review. It is not an authorisation contract.",
+      "qualification_state": "unqualified_draft"
     },
     {
       "schema_id": "sol-atlas.civic-service-case-v1",
@@ -45,7 +48,8 @@
       "version": "1",
       "artifact_kind": "rust_serde_types",
       "availability": "present_at_snapshot",
-      "notes": "Serde-derived Rust data types with schema_version=1; a separate JSON Schema was not present at the reviewed path. Public output is deliberately constructed through CivicServiceCase::public_projection."
+      "notes": "Serde-derived Rust data types with schema_version=1; a separate JSON Schema was not present at the reviewed path. Public output is deliberately constructed through CivicServiceCase::public_projection.",
+      "qualification_state": "unqualified_draft"
     },
     {
       "schema_id": "symthaea.life-civic-reference-corpus",
@@ -56,29 +60,32 @@
       "version": "0.1.0",
       "artifact_kind": "evaluation_corpus",
       "availability": "present_at_snapshot",
-      "notes": "Reference scenarios and required reasoning outputs, not a runtime service-case schema, a verified model result, or an action protocol."
+      "notes": "Reference scenarios and required reasoning outputs, not a runtime service-case schema, a verified model result, or an action protocol.",
+      "qualification_state": "unqualified_draft"
     },
     {
       "schema_id": "platform.work-case-v1",
       "repository": "Luminous-Dynamics/luminous-platform",
-      "snapshot_commit_sha": "93a97cb16dfea73660b6dc868fbba3b5f4d9c06c",
-      "path": null,
-      "git_blob_sha1": null,
-      "version": null,
-      "artifact_kind": "proposed_reference",
-      "availability": "reference_only_not_present_in_audited_snapshot",
-      "notes": "Named by the public-service RFC and tracked by Platform issue #7, but no concrete schema or implementation path was present in the audited PR #34 branch tree at this commit. Do not infer its fields or transitions."
+      "snapshot_commit_sha": "384a60d9668e77c40561b46d5511593ea5198c23",
+      "path": "contracts/work-case-v1/schema.json",
+      "git_blob_sha1": "6be2f6498630d76287034020d9e89eca76ee2711",
+      "version": "work-case-v1",
+      "artifact_kind": "json_schema",
+      "availability": "present_at_snapshot",
+      "notes": "Pinned from the separate draft Platform PR #8 branch at this exact commit. The schema exists outside the PR #34 tree. The draft is not qualified for cross-repository use; no current-head checks were returned for this exact commit during this audit.",
+      "qualification_state": "unqualified_draft"
     },
     {
       "schema_id": "platform.operations-event-v1",
       "repository": "Luminous-Dynamics/luminous-platform",
-      "snapshot_commit_sha": "93a97cb16dfea73660b6dc868fbba3b5f4d9c06c",
-      "path": null,
-      "git_blob_sha1": null,
-      "version": null,
-      "artifact_kind": "proposed_reference",
-      "availability": "reference_only_not_present_in_audited_snapshot",
-      "notes": "Named by the public-service RFC as a proposed versioned event contract, but no concrete schema or implementation path was present in the audited PR #34 branch tree at this commit. Do not invent event delivery or authority semantics."
+      "snapshot_commit_sha": "b4b32d90742e9a218e4d6919f15d74d904f5beca",
+      "path": "contracts/operations-event-v1/schema.json",
+      "git_blob_sha1": "aa7364e5661125e04cc5e36b12269ec08b611448",
+      "version": "operations-event-v1",
+      "artifact_kind": "json_schema",
+      "availability": "present_at_snapshot",
+      "notes": "Pinned from the separate draft Platform PR #4 branch at this exact commit. Its Operations Event and Holochain Attestation Contracts workflow run 38043424999 failed: Rust qualification stopped at a SQLx dynamic-query compile error, and the research-only Python suite failed to import test_adapter_model because a test definition is missing a colon. Schema presence is not contract qualification.",
+      "qualification_state": "unqualified_draft"
     }
   ],
   "mappings": [
@@ -341,55 +348,6 @@
       ]
     },
     {
-      "mapping_id": "PLATFORM-WORK-CASE-CONTRACT-DEPENDENCY",
-      "from": {
-        "schema_id": "sol-atlas.civic-service-case-v1",
-        "field_paths": [
-          "CivicServiceCase.case_id",
-          "CaseEventKind",
-          "CaseStatus"
-        ]
-      },
-      "to": {
-        "schema_id": "platform.work-case-v1",
-        "field_paths": []
-      },
-      "relationship": "not_available",
-      "conversion_policy": "blocked_until_contract_exists",
-      "disposition": "blocked",
-      "rationale": "The audited public Platform PR #34 tree at commit 93a97cb16dfea73660b6dc868fbba3b5f4d9c06c did not contain a Work Case V1 schema or implementation artifact, despite the RFC reference to issue #7. This is a snapshot-scoped finding; it is not a claim about every branch or future revision.",
-      "required_guards": [
-        "do not invent Work Case V1 fields or transitions",
-        "re-audit the exact source tree before this mapping is reconsidered",
-        "require a pinned, qualified target contract before adapter implementation"
-      ]
-    },
-    {
-      "mapping_id": "PLATFORM-OPERATIONS-EVENT-CONTRACT-DEPENDENCY",
-      "from": {
-        "schema_id": "sol-atlas.civic-service-case-v1",
-        "field_paths": [
-          "CaseEvent.event_id",
-          "CaseEvent.kind",
-          "CaseEvent.recorded_at_unix_ms",
-          "CaseEvent.occurred_at_unix_ms"
-        ]
-      },
-      "to": {
-        "schema_id": "platform.operations-event-v1",
-        "field_paths": []
-      },
-      "relationship": "not_available",
-      "conversion_policy": "blocked_until_contract_exists",
-      "disposition": "blocked",
-      "rationale": "The audited public Platform PR #34 tree at commit 93a97cb16dfea73660b6dc868fbba3b5f4d9c06c did not contain the proposed Operations Event V1 schema or implementation artifact. Do not assume CloudEvents compatibility implies matching event semantics, tenancy, ordering or delivery guarantees.",
-      "required_guards": [
-        "do not invent event fields or delivery semantics",
-        "re-audit the exact source tree before this mapping is reconsidered",
-        "require a pinned, qualified target contract before adapter implementation"
-      ]
-    },
-    {
       "mapping_id": "SOL-INTERNAL-TO-PUBLIC-PROJECTION",
       "from": {
         "schema_id": "sol-atlas.civic-service-case-v1",
@@ -438,14 +396,230 @@
         "do not translate a successful retrieval into a claim that the source value is valid",
         "preserve source-native states and provenance"
       ]
+    },
+    {
+      "mapping_id": "MYCELIX-CASE-ID-TO-WORK-CASE-ID",
+      "from": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "case_id"
+        ]
+      },
+      "to": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": [
+          "case_id"
+        ]
+      },
+      "relationship": "identity_namespace_only",
+      "conversion_policy": "namespaced_reference_only",
+      "disposition": "preserve_separate",
+      "rationale": "The IDs belong to separate local record namespaces. Equal strings do not establish the same incident, tenant, or ownership.",
+      "required_guards": [
+        "preserve repository/schema namespace with each ID",
+        "require explicit linkage evidence before claiming record identity",
+        "never use a Mycelix case ID as a Work Case primary key"
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-CASE-STATE-TO-WORK-CASE-STATE",
+      "from": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "case_state"
+        ]
+      },
+      "to": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": [
+          "state"
+        ]
+      },
+      "relationship": "incompatible_state_machine",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "blocked",
+      "rationale": "Mycelix distinguishes routing_conflict, submitted, acknowledged, work_reported_complete, verified_resolved, closed_unresolved, human_review_required and source_conflict. Work Case V1 uses open, in_progress, waiting, resolved, closed and cancelled. These semantics cannot be collapsed without losing route, evidence and review information.",
+      "required_guards": [
+        "keep both native state values",
+        "do not map verified_resolved to resolved or closed by string similarity",
+        "any future display adapter must be separately versioned and loss-aware",
+        "do not enable the adapter until the exact Work Case and source-contract revisions qualify"
+      ]
+    },
+    {
+      "mapping_id": "WORK-CASE-CASE-ID-TO-SOL-CASE-ID",
+      "from": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": [
+          "case_id"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CivicServiceCase.case_id"
+        ]
+      },
+      "relationship": "identity_namespace_only",
+      "conversion_policy": "namespaced_reference_only",
+      "disposition": "preserve_separate",
+      "rationale": "Work Case is tenant-scoped operational state; Sol-Atlas is a separate civic projection. Equal or similar identifiers do not prove common incident identity and can reveal private work records if copied publicly.",
+      "required_guards": [
+        "keep source repository, schema, tenant and native ID in an internal mapping",
+        "never expose tenant_id or internal case IDs in a public projection",
+        "require purpose and access checks before looking up an external record"
+      ]
+    },
+    {
+      "mapping_id": "WORK-CASE-STATE-TO-SOL-STATUS",
+      "from": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": [
+          "state",
+          "revision"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CaseStatus",
+          "CaseEventKind"
+        ]
+      },
+      "relationship": "incompatible_state_machine",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "blocked",
+      "rationale": "Work Case state is operational workflow state, and revision is an optimistic-concurrency token. Sol-Atlas event states include resolution claim and independent verification; Work Case resolved/closed does not prove physical restoration.",
+      "required_guards": [
+        "never map resolved or closed to VerifiedResolved without independent target evidence",
+        "do not manufacture Sol-Atlas append-only events from a snapshot",
+        "do not expose Work Case state or revision in a public case without an explicit reviewed projection",
+        "remain blocked until both contracts and the explicit adapter qualify"
+      ]
+    },
+    {
+      "mapping_id": "SOL-EVENT-TO-OPERATIONS-EVENT",
+      "from": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CaseEvent.event_id",
+          "CaseEvent.kind",
+          "CaseEvent.recorded_at_unix_ms",
+          "CaseEvent.occurred_at_unix_ms",
+          "CaseEvent.actor_kind",
+          "CaseEvent.actor_ref"
+        ]
+      },
+      "to": {
+        "schema_id": "platform.operations-event-v1",
+        "field_paths": [
+          "id",
+          "source",
+          "type",
+          "subject",
+          "time",
+          "tenantid",
+          "idempotencykey",
+          "observedat",
+          "correlationid",
+          "actorkind",
+          "actorid",
+          "data"
+        ]
+      },
+      "relationship": "partial_semantic_overlap",
+      "conversion_policy": "explicit_adapter_required",
+      "disposition": "blocked",
+      "rationale": "CloudEvents is an envelope, not a direct serialization of a Sol-Atlas event. event ID must be namespaced by source; event type and data payload need their own versioned contract; source event time is distinct from trusted observed-at time; tenant and actor bindings must come from trusted context, not caller-supplied fields. PR #4's exact-head qualification failed and PR #8 does not provide current-head evidence.",
+      "required_guards": [
+        "pin and qualify the exact Operations Event envelope and payload schema",
+        "keep occurred_at and recorded_at semantics and clock domains distinct",
+        "derive tenantid, authenticated source and actor identity from trusted connection context",
+        "define source-scoped event identity, durable idempotency and correlation/causation rules",
+        "validate domain payload against dataschema",
+        "no event may trigger action authority by itself"
+      ]
+    },
+    {
+      "mapping_id": "OBSERVATION-DIGEST-TO-WORK-CASE-DIGEST",
+      "from": {
+        "schema_id": "platform.public-observation-v1",
+        "field_paths": [
+          "source_snapshot_sha256"
+        ]
+      },
+      "to": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": [
+          "evidence_refs[].digest_sha256"
+        ]
+      },
+      "relationship": "digest_subject_mismatch",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "A source snapshot digest binds the captured source snapshot; a Work Case evidence reference points to an evidence artifact. Unless byte identity and digest subject match exactly, reusing the digest would make a false provenance claim.",
+      "required_guards": [
+        "preserve source snapshot digest and subject independently",
+        "recompute the target evidence digest over the exact evidence bytes",
+        "retain provenance linking, not digest substitution"
+      ]
+    },
+    {
+      "mapping_id": "WORK-CASE-CLASSIFICATION-TO-SOL-VISIBILITY",
+      "from": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": [
+          "evidence_refs[].classification"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "EvidenceVisibility"
+        ]
+      },
+      "relationship": "distinct_semantic_dimension",
+      "conversion_policy": "explicit_adapter_required",
+      "disposition": "candidate_only",
+      "rationale": "Work Case classifications public/internal/confidential/restricted and Sol-Atlas visibility public/redacted_public/restricted/private differ in vocabulary and publication meaning. In particular, Work Case confidential and internal do not automatically imply a public redaction policy.",
+      "required_guards": [
+        "default to the more restrictive classification when policy requires a crosswalk",
+        "require a reviewed classification matrix and purpose-specific public projection",
+        "do not publish individual cases from an unreviewed mapping"
+      ]
+    },
+    {
+      "mapping_id": "WORK-CASE-PRIORITY-TO-MYCELIX-URGENCY",
+      "from": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": [
+          "priority"
+        ]
+      },
+      "to": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "scope.urgency"
+        ]
+      },
+      "relationship": "distinct_semantic_dimension",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "Work Case priority is a tenant-policy-defined integer where 1 is highest; Mycelix urgency is a semantic class. Numeric priority is not an urgency or harm level and can vary by tenant policy.",
+      "required_guards": [
+        "preserve numeric priority plus tenant policy version separately",
+        "do not turn provider SLA priority into resident urgency",
+        "review consequences and equity impact before any presentation-only mapping"
+      ]
     }
   ],
   "invariants": [
     "The crosswalk is descriptive metadata; no mapping rule is executable.",
-    "Operational Work Case, service journey and public civic case records remain separate bounded contexts.",
     "Unknown, unavailable, stale, invalid, conflicting, missing and zero remain distinct.",
     "Model output, source attestation, consensus, signature and digest do not by themselves establish physical truth or action authority.",
-    "Only explicit, reviewed public projections may expose civic records; internal record serialization is not a public API contract."
+    "Only explicit, reviewed public projections may expose civic records; internal record serialization is not a public API contract.",
+    "Work Case V1 and Operations Event V1 schemas are pinned from separate public draft PRs, but remain unqualified; adapters must stay blocked until source-specific exact-head checks pass.",
+    "A record's native ID, lifecycle state, priority, visibility class, event time, and digest subject must not be copied across contracts merely because fields look similar."
   ],
   "non_goals": [
     "No universal case schema.",

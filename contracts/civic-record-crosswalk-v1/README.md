@@ -8,12 +8,12 @@
 
 This contract records how selected public artifacts from Luminous Platform, Mycelix, Sol-Atlas and Symthaea relate. It is a mapping register, not a replacement data model. It does not implement adapters, merge records, make network requests, or authorise actions.
 
-The first audited tree showed that the Luminous Platform public-service RFC refers to Work Case V1 and Operations Event V1, but no corresponding schema or source artifact was present in the audited PR #34 branch tree at commit 93a97cb16dfea73660b6dc868fbba3b5f4d9c06c. Those dependencies are explicitly marked unavailable in the crosswalk. They must not be guessed into existence or silently replaced by Sol-Atlas's public civic-case model.
+The concrete Work Case V1 and Operations Event V1 schemas were absent from the audited PR #34 branch tree at commit 93a97cb16dfea73660b6dc868fbba3b5f4d9c06c. Further public-repository inspection found them on separate draft PRs: Work Case V1 in [PR #8](https://github.com/Luminous-Dynamics/luminous-platform/pull/8) at exact head 384a60d9668e77c40561b46d5511593ea5198c23 (schema blob 6be2f6498630d76287034020d9e89eca76ee2711), and Operations Event V1 in [PR #4](https://github.com/Luminous-Dynamics/luminous-platform/pull/4) at exact head b4b32d90742e9a218e4d6919f15d74d904f5beca (schema blob aa7364e5661125e04cc5e36b12269ec08b611448). They are pinned separately in the crosswalk as present but `unqualified_draft`. PR #4's exact-head qualification workflow failed: the Rust test crate stopped on an SQLx 0.9 dynamic-query compile error, and its non-production Python research-model job failed to import a test file because a test function definition was missing a colon. No workflow run was returned for PR #8's pinned head. The crosswalk therefore blocks adapters involving those contracts until the exact source revisions are qualified. This is not a claim that the artifacts are absent from every branch.
 
 ## Files
 
 - crosswalk.schema.json: JSON Schema Draft 2020-12 for the mapping register.
-- crosswalk.json: exact-source snapshot, field-level relationships, prohibited lossy conversions and dependency gaps.
+- crosswalk.json: exact-source snapshot, field-level relationships, qualification states and prohibited lossy conversions.
 - rust/: Rust 1.96 strict deserializer and semantic checker with regression tests.
 - The checker is intentionally not a general JSON Schema engine and does not execute transformations.
 
@@ -33,7 +33,7 @@ The Mycelix service journey record is version 0.3.0. The applicability schema do
 6. Published standard applicability is not authorisation to act.
 7. Symthaea evaluation expectations do not form an executable action command or runtime output schema.
 8. Publish Sol-Atlas cases only through its explicit sanitising public_projection boundary. Never serialise the internal CivicServiceCase as a public API response.
-9. Do not map to Work Case or Operations Event fields until those actual versioned contracts are available at a pinned revision.
+9. Work Case and Operations Event artifacts are pinned from separate draft PRs, but remain unqualified; do not implement adapters until exact-head tests and stack ancestry are reconciled.
 
 ## Validate offline
 

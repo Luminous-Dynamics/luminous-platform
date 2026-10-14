@@ -65,7 +65,8 @@
         "snapshot_commit_sha",
         "artifact_kind",
         "availability",
-        "notes"
+        "notes",
+        "qualification_state"
       ],
       "properties": {
         "schema_id": {
@@ -118,6 +119,13 @@
         "notes": {
           "type": "string",
           "minLength": 1
+        },
+        "qualification_state": {
+          "enum": [
+            "unqualified_draft",
+            "narrow_workflow_success"
+          ],
+          "description": "Qualification evidence observed at the exact pinned source revision. Narrow success does not qualify unrelated contract behavior."
         }
       },
       "allOf": [

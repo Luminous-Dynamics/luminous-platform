@@ -60,6 +60,13 @@ pub enum Availability {
     ReferenceOnlyNotPresentInAuditedSnapshot,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum QualificationState {
+    UnqualifiedDraft,
+    NarrowWorkflowSuccess,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ContractBinding {
@@ -71,6 +78,7 @@ pub struct ContractBinding {
     pub version: Option<String>,
     pub artifact_kind: ArtifactKind,
     pub availability: Availability,
+    pub qualification_state: QualificationState,
     pub notes: String,
 }
 
@@ -215,7 +223,10 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
         match contract.availability {
             Availability::PresentAtSnapshot => {
                 if contract.path.as_deref().is_none_or(|path| !nonempty(path)) {
-                    errors.push(format!("{}: present artifact requires a path", contract.schema_id));
+                    errors.push(format!(
+                        "{}: present artifact requires a path",
+                        contract.schema_id
+                    ));
                 }
                 if contract
                     .git_blob_sha1
@@ -231,7 +242,7 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
             Availability::ReferenceOnlyNotPresentInAuditedSnapshot => {
                 if contract.path.is_some() || contract.git_blob_sha1.is_some() {
                     errors.push(format!(
-                        "{}: an artifact absent at the audited snapshot cannot claim a path or blob",
+                        "{}: absent artifact cannot claim a path or blob",
                         contract.schema_id
                     ));
                 }
@@ -298,11 +309,25 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
                 mapping.mapping_id
             ));
         }
+        let explicit_non_mapping = matches!(
+            mapping.relationship,
+            SemanticRelationship::NoAuthorityMapping | SemanticRelationship::NotRuntimeContract
+        ) && mapping.conversion_policy == ConversionPolicy::NoAutomaticMapping
+            && mapping.disposition == Disposition::Prohibited;
+        if explicit_non_mapping && !mapping.to.field_paths.is_empty() {
+            errors.push(format!(
+                "{}: explicitly prohibited mapping cannot declare target field paths",
+                mapping.mapping_id
+            ));
+        }
+
         if let Some(target) = target {
             match target.availability {
-                Availability::PresentAtSnapshot if mapping.to.field_paths.is_empty() => {
+                Availability::PresentAtSnapshot
+                    if mapping.to.field_paths.is_empty() && !explicit_non_mapping =>
+                {
                     errors.push(format!(
-                        "{}: present target requires a declared target field path",
+                        "{}: target needs paths unless mapping is prohibited",
                         mapping.mapping_id
                     ));
                 }
@@ -313,17 +338,20 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
                             mapping.mapping_id
                         ));
                     }
-                    let blocked_dependency = mapping.relationship == SemanticRelationship::NotAvailable
-                        && mapping.conversion_policy == ConversionPolicy::BlockedUntilContractExists
-                        && mapping.disposition == Disposition::Blocked;
+                    let blocked_dependency =
+                        mapping.relationship == SemanticRelationship::NotAvailable
+                            && mapping.conversion_policy
+                                == ConversionPolicy::BlockedUntilContractExists
+                            && mapping.disposition == Disposition::Blocked;
                     let explicit_prohibition = matches!(
                         mapping.relationship,
-                        SemanticRelationship::NoAuthorityMapping | SemanticRelationship::NotRuntimeContract
+                        SemanticRelationship::NoAuthorityMapping
+                            | SemanticRelationship::NotRuntimeContract
                     ) && mapping.conversion_policy == ConversionPolicy::NoAutomaticMapping
                         && mapping.disposition == Disposition::Prohibited;
                     if !blocked_dependency && !explicit_prohibition {
                         errors.push(format!(
-                            "{}: unavailable target must remain blocked or be an explicit non-mapping prohibition",
+                            "{}: unavailable target must stay blocked or explicitly prohibited",
                             mapping.mapping_id
                         ));
                     }
@@ -376,17 +404,25 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
     );
     require_rule(
         crosswalk,
-        "PLATFORM-WORK-CASE-CONTRACT-DEPENDENCY",
-        SemanticRelationship::NotAvailable,
-        ConversionPolicy::BlockedUntilContractExists,
+        "MYCELIX-CASE-STATE-TO-WORK-CASE-STATE",
+        SemanticRelationship::IncompatibleStateMachine,
+        ConversionPolicy::NoAutomaticMapping,
         Disposition::Blocked,
         &mut errors,
     );
     require_rule(
         crosswalk,
-        "PLATFORM-OPERATIONS-EVENT-CONTRACT-DEPENDENCY",
-        SemanticRelationship::NotAvailable,
-        ConversionPolicy::BlockedUntilContractExists,
+        "WORK-CASE-STATE-TO-SOL-STATUS",
+        SemanticRelationship::IncompatibleStateMachine,
+        ConversionPolicy::NoAutomaticMapping,
+        Disposition::Blocked,
+        &mut errors,
+    );
+    require_rule(
+        crosswalk,
+        "SOL-EVENT-TO-OPERATIONS-EVENT",
+        SemanticRelationship::PartialSemanticOverlap,
+        ConversionPolicy::ExplicitAdapterRequired,
         Disposition::Blocked,
         &mut errors,
     );
@@ -472,20 +508,36 @@ mod tests {
     }
 
     #[test]
-    fn unavailable_work_case_contract_cannot_acquire_invented_fields() {
-        let mut value = fixture_value();
-        let rule = value["mappings"]
-            .as_array_mut()
-            .unwrap()
-            .iter_mut()
-            .find(|rule| rule["mapping_id"] == "PLATFORM-WORK-CASE-CONTRACT-DEPENDENCY")
-            .unwrap();
-        rule["to"]["field_paths"] = serde_json::json!(["case_id", "status"]);
-        assert!(parse_and_validate_json(&value.to_string()).is_err());
+    fn draft_work_case_contract_is_pinned_but_not_qualified() {
+        let crosswalk = parse_and_validate_json(FIXTURE).expect("valid crosswalk");
+        let contract = crosswalk
+            .contracts
+            .iter()
+            .find(|contract| contract.schema_id == "platform.work-case-v1")
+            .expect("Work Case schema binding is present");
+        assert_eq!(
+            contract.snapshot_commit_sha,
+            "384a60d9668e77c40561b46d5511593ea5198c23"
+        );
+        assert_eq!(
+            contract.git_blob_sha1.as_deref(),
+            Some("6be2f6498630d76287034020d9e89eca76ee2711")
+        );
+        assert_eq!(
+            contract.qualification_state,
+            QualificationState::UnqualifiedDraft
+        );
+        let mapping = crosswalk
+            .mappings
+            .iter()
+            .find(|mapping| mapping.mapping_id == "MYCELIX-CASE-STATE-TO-WORK-CASE-STATE")
+            .expect("state relationship is explicit");
+        assert_eq!(mapping.disposition, Disposition::Blocked);
+        assert_eq!(mapping.conversion_policy, ConversionPolicy::NoAutomaticMapping);
     }
 
     #[test]
-    fn absent_target_contract_allows_only_blocked_dependencies_or_explicit_prohibitions() {
+    fn explicit_prohibitions_have_no_target_field_paths() {
         let crosswalk = parse_and_validate_json(FIXTURE).expect("valid crosswalk");
         for id in ["APPLICABILITY-TO-AUTHORITY", "SYMTHAEA-CORPUS-TO-ACTION"] {
             let rule = crosswalk.mappings.iter().find(|rule| rule.mapping_id == id).unwrap();
@@ -493,6 +545,64 @@ mod tests {
             assert_eq!(rule.conversion_policy, ConversionPolicy::NoAutomaticMapping);
             assert_eq!(rule.disposition, Disposition::Prohibited);
         }
+    }
+
+    #[test]
+    fn explicit_prohibition_cannot_acquire_target_fields() {
+        let mut value = fixture_value();
+        let rule = value["mappings"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|rule| rule["mapping_id"] == "APPLICABILITY-TO-AUTHORITY")
+            .unwrap();
+        rule["to"]["field_paths"] = serde_json::json!(["mutate"]);
+        assert!(parse_and_validate_json(&value.to_string()).is_err());
+    }
+
+    #[test]
+    fn operations_event_contract_stays_blocked_while_unqualified() {
+        let crosswalk = parse_and_validate_json(FIXTURE).expect("valid crosswalk");
+        let contract = crosswalk
+            .contracts
+            .iter()
+            .find(|contract| contract.schema_id == "platform.operations-event-v1")
+            .expect("Operations Event schema binding is present");
+        assert_eq!(
+            contract.snapshot_commit_sha,
+            "b4b32d90742e9a218e4d6919f15d74d904f5beca"
+        );
+        assert_eq!(
+            contract.git_blob_sha1.as_deref(),
+            Some("aa7364e5661125e04cc5e36b12269ec08b611448")
+        );
+        assert_eq!(
+            contract.qualification_state,
+            QualificationState::UnqualifiedDraft
+        );
+        let mapping = crosswalk
+            .mappings
+            .iter()
+            .find(|mapping| mapping.mapping_id == "SOL-EVENT-TO-OPERATIONS-EVENT")
+            .expect("event mapping is explicit");
+        assert_eq!(mapping.disposition, Disposition::Blocked);
+        assert_eq!(
+            mapping.conversion_policy,
+            ConversionPolicy::ExplicitAdapterRequired
+        );
+    }
+
+    #[test]
+    fn explicit_prohibition_cannot_acquire_target_fields() {
+        let mut value = fixture_value();
+        let rule = value["mappings"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|rule| rule["mapping_id"] == "APPLICABILITY-TO-AUTHORITY")
+            .unwrap();
+        rule["to"]["field_paths"] = serde_json::json!(["mutate"]);
+        assert!(parse_and_validate_json(&value.to_string()).is_err());
     }
 
     #[test]
