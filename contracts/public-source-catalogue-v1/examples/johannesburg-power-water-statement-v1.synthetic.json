@@ -1,0 +1,32 @@
+{
+  "schema_version": "public-observation-v1",
+  "observation_id": "synthetic-jhb-power-water-statement-claim-v1",
+  "source_id": "za-gov-jhb-power-water-coordination",
+  "source_uri": "https://www.gov.za/news/media-statements/government-measures-mitigate-water-supply-disruptions-resulting-power-trips",
+  "retrieved_at": "2026-10-14T00:00:00Z",
+  "source_period": {
+    "period_label": "SYNTHETIC-REFERENCE-NOT-A-CAPTURE"
+  },
+  "dataset_id": "joint-statement-context-v1",
+  "field_path": "statement.claim.power_trip_water_disruption_context",
+  "raw_value": {
+    "fixture_only": true,
+    "fixture_note": "Synthetic structured scenario referencing the existence and topic of the published statement. The timestamp is a fixture value, not a recorded retrieval time, and no source-content digest has been captured.",
+    "claim_kind": "published_official_statement",
+    "publication_date": "2026-09-10",
+    "summary": "The statement reports a joint meeting convened to address water-supply disruptions associated with intermittent power trips.",
+    "is_live_service_status": false,
+    "is_case_level_causal_proof": false,
+    "is_independently_verified_outcome": false
+  },
+  "raw_value_state": "reported_value",
+  "normalization": {
+    "applied": false,
+    "rule_id": null,
+    "rule_version": null,
+    "normalized_value": null,
+    "reason": "No normalization is applied. This fixture preserves the epistemic class of a published statement and must not be converted into a current outage claim, a measured dependency, or case-level causal proof."
+  },
+  "source_snapshot_sha256": null,
+  "fixture_only": true
+}
