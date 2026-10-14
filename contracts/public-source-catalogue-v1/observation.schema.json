@@ -38,8 +38,12 @@
       "pattern": "^https://"
     },
     "retrieved_at": {
-      "type": "string",
-      "format": "date-time"
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "RFC3339 retrieval timestamp for a captured observation; null for a fixture that was never retrieved."
     },
     "source_period": {
       "type": "object",
@@ -168,5 +172,41 @@
     "fixture_only": {
       "type": "boolean"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "fixture_only": {
+            "const": true
+          }
+        },
+        "required": [
+          "fixture_only"
+        ]
+      },
+      "then": {
+        "properties": {
+          "retrieved_at": {
+            "type": "null"
+          },
+          "source_snapshot_sha256": {
+            "type": "null"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "retrieved_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source_snapshot_sha256": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  ]
 }
