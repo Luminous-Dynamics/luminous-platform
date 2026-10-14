@@ -6,13 +6,13 @@
     {
       "schema_id": "platform.public-observation-v1",
       "repository": "Luminous-Dynamics/luminous-platform",
-      "snapshot_commit_sha": "93a97cb16dfea73660b6dc868fbba3b5f4d9c06c",
+      "snapshot_commit_sha": "9316cc917b13a395a62da4b719bcdb76f0ef224a",
       "path": "contracts/public-source-catalogue-v1/observation.schema.json",
-      "git_blob_sha1": "7d4696034149951c8374890de8d2deacb607ef85",
+      "git_blob_sha1": "4a50b82a8ed32deeb245e11b7e4d542860a6c2a2",
       "version": "public-observation-v1",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Public source-observation envelope; separates raw_value_state from normalisation and preserves retrieval/source snapshot provenance. This is an observation contract, not a service-case contract.",
+      "notes": "Public source-observation envelope. Fixture-only observations require null retrieved_at and null source snapshot digest; captured observations require an RFC3339 retrieval timestamp and a SHA-256 source snapshot digest. This contract is an observation envelope, not a service-case contract.",
       "qualification_state": "narrow_workflow_success"
     },
     {
