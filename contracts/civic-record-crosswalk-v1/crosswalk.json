@@ -18,7 +18,7 @@
     {
       "schema_id": "mycelix.service-journey-reference-v0.3.0",
       "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "b8e743549d0253a3725e2a32cf80dc3d4d5dd193",
+      "snapshot_commit_sha": "1eec5ed1e046eae71b0e376f327016a0998e0a92",
       "path": "schemas/life-civic/service-journey-reference.schema.json",
       "git_blob_sha1": "7e2b8b3d963c9c5598c78927121fcf60203591f9",
       "version": "0.3.0",
@@ -30,7 +30,7 @@
     {
       "schema_id": "mycelix.applicability-assessment",
       "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "b8e743549d0253a3725e2a32cf80dc3d4d5dd193",
+      "snapshot_commit_sha": "1eec5ed1e046eae71b0e376f327016a0998e0a92",
       "path": "schemas/life-civic/applicability-assessment.schema.json",
       "git_blob_sha1": "241d4c4abbd765c05e56ddfae3391cead0f26dbc",
       "version": null,
@@ -90,7 +90,7 @@
     {
       "schema_id": "mycelix.life-civic-service-reference-corpus",
       "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "d1fedcc4fdda0181aa6847349ffdb42e421b2310",
+      "snapshot_commit_sha": "1eec5ed1e046eae71b0e376f327016a0998e0a92",
       "path": "tests/reference/life-civic-service/cases-v0.4.0.json",
       "git_blob_sha1": "8674042a1d4d9fe4d8b27cfca759657ace4f07f5",
       "version": "0.4.0",
