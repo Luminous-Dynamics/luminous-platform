@@ -13,8 +13,26 @@ python tools/civic-pack-validator/evaluate_workflow.py \
   --as-of 2026-10-13T15:00:00Z \
   --jurisdiction za/gauteng/city-of-johannesburg \
   --workflow business.restaurant-launch \
-  --business-type sit_down_restaurant
+  --business-type sit_down_restaurant \
+  --facts /tmp/openstart-facts.json
 ```
+
+Example facts file (only use answers the person actually provided; omit unknown fields):
+
+```json
+{
+  "handles_food": true,
+  "business_entity_registration_intended": true
+}
+```
+
+The evaluator uses a three-valued rule for every declared predicate:
+- `true`: the predicate matches the submitted, correctly typed fact;
+- `false`: the submitted, correctly typed fact contradicts the predicate, so that requirement is omitted as not applicable;
+- `unknown`: the fact was not supplied or has an unsupported value, so the requirement remains visible as needing scope confirmation.
+
+Predicates use only a schema-allow-listed field and one of four operators (`eq`, `in`, `is_true`, `is_false`). Packs cannot submit code, expressions, regular expressions, imports, or dynamic function names. The evaluator does not parse explanatory free text as a rule. Jurisdiction and business type are locked to the explicit CLI selection and cannot be overridden through the facts file. Unknown applicability must not be interpreted as false or true.
+
 
 
 
@@ -41,6 +59,12 @@ Use a frozen, timezone-aware `--as-of` instant when generating evidence that mus
 - `2`: validation passed but `--require-publishable` was requested and publication gates are blocked.
 
 A draft pack can therefore be a structurally valid fixture while being explicitly **not publishable**. The Johannesburg example intentionally behaves this way: its source records are unreviewed, requirements remain draft, and no legal-completion claim can be made from it.
+
+## Applicability predicate contract
+
+Each requirement now contains at least one `applicability.predicates` record in schema version 0.1.0. Predicate evaluation is restricted to explicit facts; it is not a general rules language. Unknown answers lead to scope clarification. This limits the first version but provides a small, auditable core that can be expanded deliberately with tests rather than executing free-text conditions.
+
+The schema constrains predicate fields and operators, while the semantic validator ensures predicate IDs are unique across the pack. A structurally valid predicate still does not prove the source-backed requirement is legally applicable: pack reviewers and the actual user's facts remain separate authorities.
 
 ## Dependency reproducibility
 
