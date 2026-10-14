@@ -18,7 +18,7 @@ SPEC.loader.exec_module(receipt)
 class ValidationReceiptTests(unittest.TestCase):
     def test_git_blob_digest_matches_git_object_format(self) -> None:
         self.assertEqual(
-            "f2ba8f84ab5c1bce84a7b441cb1959cfc7093b7f",
+            "3b18e512dba79e4c8300dd08aeb37f8e728b8dad",
             receipt._git_blob_sha(b"hello world\n"),
         )
 
