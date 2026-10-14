@@ -1,0 +1,829 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omsi.example/spec/0.1/field-service-record.schema.json",
+  "title": "OMSI Field Service Record 0.1 (incubation profile; no authority or truth verification)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "tenant_id",
+    "created_at",
+    "service_case",
+    "work_order",
+    "site",
+    "asset",
+    "practitioner",
+    "estimate",
+    "approval",
+    "operations",
+    "evidence",
+    "closeout"
+  ],
+  "properties": {
+    "schema": {
+      "const": "org.omsi.field-service-record/0.1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "service_case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_system",
+        "external_id",
+        "source_revision",
+        "source_status",
+        "normalized_status",
+        "mapping_profile",
+        "mapping_losses",
+        "mapping_loss_disclosed"
+      ],
+      "properties": {
+        "source_system": {
+          "type": "string",
+          "minLength": 1
+        },
+        "external_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "normalized_status": {
+          "enum": [
+            "requested",
+            "assessed",
+            "awaiting_approval",
+            "approved",
+            "scheduled",
+            "dispatched",
+            "on_site",
+            "diagnosed",
+            "in_progress",
+            "quality_checked",
+            "handed_over",
+            "invoiced",
+            "closed",
+            "disputed",
+            "blocked",
+            "return_visit_required"
+          ]
+        },
+        "mapping_profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mapping_losses": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "mapping_loss_disclosed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "work_order": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "case_external_id",
+        "tenant_id",
+        "site_id",
+        "asset_id",
+        "jurisdiction",
+        "status",
+        "scope_version",
+        "scope_digest",
+        "required_practitioner_scopes",
+        "credential_status_max_age_seconds",
+        "measurement_requirements"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "case_external_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "site_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asset_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "requested",
+            "assessed",
+            "awaiting_approval",
+            "approved",
+            "scheduled",
+            "dispatched",
+            "on_site",
+            "diagnosed",
+            "in_progress",
+            "quality_checked",
+            "handed_over",
+            "invoiced",
+            "closed",
+            "disputed",
+            "blocked",
+            "return_visit_required"
+          ]
+        },
+        "scope_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "scope_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "required_practitioner_scopes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "credential_status_max_age_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "measurement_requirements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "requirement_id",
+              "method_ref",
+              "unit_code",
+              "scale",
+              "min_scaled",
+              "max_scaled"
+            ],
+            "properties": {
+              "requirement_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "method_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "unit_code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scale": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9
+              },
+              "min_scaled": {
+                "type": "integer"
+              },
+              "max_scaled": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "tenant_id",
+        "jurisdiction",
+        "location_ref"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "jurisdiction": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "tenant_id",
+        "asset_type",
+        "identity_source"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "asset_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity_source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manufacturer_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "practitioner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "tenant_id",
+        "role",
+        "credentials"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "credentials": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "credential_id",
+              "tenant_id",
+              "issuer_id",
+              "status",
+              "jurisdiction",
+              "scopes",
+              "checked_at",
+              "valid_until"
+            ],
+            "properties": {
+              "credential_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tenant_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "issuer_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "enum": [
+                  "valid",
+                  "stale",
+                  "revoked",
+                  "unavailable",
+                  "disputed"
+                ]
+              },
+              "jurisdiction": {
+                "type": "string",
+                "minLength": 1
+              },
+              "scopes": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "checked_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "valid_until": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "estimate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "scope_version",
+        "currency",
+        "total_minor",
+        "scope_digest",
+        "valid_until"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "scope_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "total_minor": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "scope_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "valid_until": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approval_id",
+        "tenant_id",
+        "approver_id",
+        "status",
+        "approved_at",
+        "estimate_id",
+        "estimate_version",
+        "scope_version",
+        "scope_digest",
+        "currency",
+        "approved_total_minor"
+      ],
+      "properties": {
+        "approval_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "approver_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "accepted",
+            "revoked",
+            "rejected"
+          ]
+        },
+        "approved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "estimate_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "estimate_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "scope_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "scope_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "approved_total_minor": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "operation_id",
+          "tenant_id",
+          "site_id",
+          "asset_id",
+          "scope_version",
+          "manifest_digest",
+          "idempotency_key",
+          "state",
+          "executor_id",
+          "executor_authority_domain",
+          "authorized_at",
+          "authority_expires_at",
+          "applied_at",
+          "required_verification"
+        ],
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tenant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "site_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "asset_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "manifest_digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "enum": [
+              "proposed",
+              "validated",
+              "authorized",
+              "accepted",
+              "running",
+              "applied",
+              "verified",
+              "failed",
+              "verification_failed",
+              "indeterminate",
+              "rejected",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "executor_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "executor_authority_domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "authorized_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "authority_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "applied_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "required_verification": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "tenant_id",
+          "site_id",
+          "asset_id",
+          "operation_id",
+          "scope_version",
+          "evidence_kind",
+          "claim_status",
+          "recorded_by",
+          "occurred_at",
+          "content_digest"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tenant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "site_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "asset_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operation_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope_version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "evidence_kind": {
+            "enum": [
+              "provider_report",
+              "customer_acknowledgement",
+              "instrument_measurement",
+              "qualified_inspection",
+              "independent_verification",
+              "handover_record",
+              "dispute",
+              "correction"
+            ]
+          },
+          "claim_status": {
+            "enum": [
+              "reported",
+              "acknowledged",
+              "measured",
+              "inspected",
+              "verified",
+              "disputed",
+              "unavailable",
+              "stale"
+            ]
+          },
+          "recorded_by": {
+            "type": "string",
+            "minLength": 1
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "content_digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "measurement": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "requirement_ref",
+              "value_scaled",
+              "scale",
+              "unit_code",
+              "method_ref",
+              "instrument_ref",
+              "calibration_ref",
+              "calibration_status"
+            ],
+            "properties": {
+              "requirement_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value_scaled": {
+                "type": "integer"
+              },
+              "scale": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9
+              },
+              "unit_code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "method_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "instrument_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "calibration_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "calibration_status": {
+                "enum": [
+                  "valid",
+                  "stale",
+                  "revoked",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "inspection": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "credential_ref",
+              "inspection_profile",
+              "result"
+            ],
+            "properties": {
+              "credential_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "inspection_profile": {
+                "type": "string",
+                "minLength": 1
+              },
+              "result": {
+                "enum": [
+                  "passed",
+                  "failed",
+                  "inconclusive"
+                ]
+              }
+            }
+          },
+          "verification": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "verifier_id",
+              "verifier_authority_domain",
+              "method_ref",
+              "result"
+            ],
+            "properties": {
+              "verifier_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "verifier_authority_domain": {
+                "type": "string",
+                "minLength": 1
+              },
+              "method_ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "result": {
+                "enum": [
+                  "passed",
+                  "failed",
+                  "inconclusive"
+                ]
+              }
+            }
+          },
+          "supersedes_evidence_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "closeout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "evidence_refs",
+        "customer_ack_evidence_id",
+        "exceptions"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "handed_over",
+            "blocked",
+            "disputed",
+            "return_visit_required"
+          ]
+        },
+        "evidence_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "customer_ack_evidence_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "exceptions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "warranty_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "follow_up_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
