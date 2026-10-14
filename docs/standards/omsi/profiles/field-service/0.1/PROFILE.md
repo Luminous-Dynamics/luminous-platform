@@ -192,7 +192,20 @@ Unknown action/profile, unknown critical field, missing evidence reference or un
 - **Nixward:** suitable for its own bounded host-management profile, not for controlling trade equipment by analogy.
 - **Symtropy / simulation:** can model scheduling, inventories, maintenance and coordination hypotheses; simulated outcomes must not be promoted to measured field evidence.
 
-## 13. Open questions for reviewers
+## 13. Cross-project integration seams
+
+This profile should compose with current public proposals without treating any draft PR as a completed dependency:
+
+- **Luminous Platform Work Case V1 — [PR #8](https://github.com/Luminous-Dynamics/luminous-platform/pull/8):** the case/work-order lifecycle, tenant scope, revisions, idempotency and evidence references belong at the service workflow layer. The OMSI operation lifecycle remains a separate state machine. Read that PR's current qualification scope before treating the Rust/PostgreSQL slice as production-ready.
+- **Mycelix life/civic service-journey contract — [PR #5019](https://github.com/Luminous-Dynamics/mycelix/pull/5019):** reuse compatible ideas for source evidence, service journeys, jurisdiction-bound applicability, currentness and conflict representation through a versioned adapter. That contract is civic-service focused; it is not a universal physical-trade work-order model and must not be pulled in as a hard dependency.
+- **Symthaea life/civic domain mastery — [PR #7443](https://github.com/Luminous-Dynamics/symthaea/pull/7443):** reuse its evaluation discipline for publication versus applicability, source freshness, conflicting sources, provider claims versus independent observation, and bounded claims. Keep these as cognition/evaluation patterns, not an authority primitive.
+- **Symthaea MSP diagnostic wedge — [logparse scope](https://github.com/Luminous-Dynamics/symthaea/blob/main/crates/core/symthaea-logparse/README.md):** this remains a research spike; the README says it is not yet wired to the real Symthaea HDC encoder. Do not generalize the diagnostic model to trades until the IT-operations evaluation passes its defined gate and a physical-trade dataset/protocol is separately validated.
+- **Xenia:** may secure an optional remote-support session with bounded consent and revocation. It does not replace onsite responsibility, trade safety procedures, credential checking or work-order state.
+- **Mycelix trust/federation:** optional for exchanging issuer-backed credentials and correction-linked attestations. Do not make global reputation, a ledger or consensus the source of legal authority.
+
+The cross-project contract should be IDs, versioned references, authority scope and evidence semantics—not shared database tables, implicit trust between services, or a circular crate dependency.
+
+## 14. Open questions for reviewers
 
 1. Is “Field Service” a suitable profile name, or should the profile split into “asset maintenance” and “project delivery” before 0.1?
 2. Which existing service-case and work-order models provide representative, legally shareable exports for plumbing/HVAC and automotive?
