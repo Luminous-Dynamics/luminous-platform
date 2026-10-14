@@ -20,8 +20,29 @@ fn encoded(value: &Value) -> String {
 fn canonical_source_catalogue_fixture_is_accepted() {
     let catalogue = validate_catalogue_json(CATALOGUE).expect("catalogue should validate");
     assert_eq!(catalogue.schema_version, "public-source-catalogue-v1");
-    assert_eq!(catalogue.sources.len(), 3);
+    assert_eq!(catalogue.sources.len(), 10);
     assert!(catalogue.sources.iter().all(|source| !source.ingestion.enabled));
+
+    for expected_id in [
+        "za-treasury-municipal-finance",
+        "za-treasury-etender-ocds",
+        "za-gp-jhb-johannesburg-water-public",
+        "za-gp-jhb-city-plans-service-standards",
+        "za-gp-jhb-city-power-public-notices",
+        "za-gp-jhb-jra-operation-restore",
+        "za-gp-jhb-pikitup-public-service-notices",
+        "za-gp-jhb-transport-masterplan-updates",
+        "za-gp-jhb-food-resilience-policy",
+        "za-gov-jhb-power-water-coordination",
+    ] {
+        assert!(
+            catalogue
+                .sources
+                .iter()
+                .any(|source| source.source_id.as_str() == expected_id),
+            "missing catalogued source {expected_id}"
+        );
+    }
 }
 
 #[test]
