@@ -81,14 +81,14 @@ The [source capture manifest contract](../../docs/civic-services/source-capture-
 Example:
 
 ```sh
-python tools/civic-pack-validator/capture_source_snapshot.py \\
-  --source-id joburg.business-licences \\
-  --canonical-url https://joburg.org.za/work_/InvestInJoburg/Pages/Business-Licences.aspx \\
-  --snapshot /secure/capture/business-licences.html \\
-  --captured-at 2026-10-14T18:00:00Z \\
-  --final-url https://joburg.org.za/work_/InvestInJoburg/Pages/Business-Licences.aspx \\
-  --content-type text/html \\
-  --previous-manifest /secure/evidence/business-licences.manifest.json \\
+python tools/civic-pack-validator/capture_source_snapshot.py \
+  --source-id joburg.business-licences \
+  --canonical-url https://joburg.org.za/work_/InvestInJoburg/Pages/Business-Licences.aspx \
+  --snapshot /secure/capture/business-licences.html \
+  --captured-at 2026-10-14T18:00:00Z \
+  --final-url https://joburg.org.za/work_/InvestInJoburg/Pages/Business-Licences.aspx \
+  --content-type text/html \
+  --previous-manifest /secure/evidence/business-licences.manifest.json \
   --output /secure/evidence/business-licences.next-manifest.json
 ```
 
