@@ -67,11 +67,14 @@ jobs:
           PYTHONPATH: tools/civic-pack-validator
         run: python -m unittest discover -s tools/civic-pack-validator/tests -v
       - name: Write validation summary
-        if: always() && hashFiles('/tmp/jurisdiction-pack-validation-report.json') != ''
+        if: always()
         env:
           REPORT_PATH: /tmp/jurisdiction-pack-validation-report.json
-          SUMMARY_PATH: ${{ github.step_summary }}
         run: |
+          if [ ! -f "$REPORT_PATH" ]; then
+            printf '%s\n' "## Civic jurisdiction-pack validation" "" "No validation report was produced; inspect the failing step logs." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           python - <<'PY'
           import json
           import os
@@ -90,7 +93,8 @@ jobs:
               "",
               "Publication eligibility is separate from structural validation. The checked-in Johannesburg fixture is expected to remain unpublished.",
           ]
-          Path(os.environ["SUMMARY_PATH"]).write_text("\n".join(lines) + "\n", encoding="utf-8")
+          with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
+              summary.write("\n".join(lines) + "\n")
           PY
       - name: Retain validation evidence
         if: always()
