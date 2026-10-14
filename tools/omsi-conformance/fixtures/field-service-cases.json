@@ -234,6 +234,30 @@
         }
       ],
       "expected_error": "field-service schema error"
+    },
+    {
+      "id": "authority-expiry-boundary",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/operations/0/applied_at",
+          "value": "2026-10-14T11:00:00Z"
+        }
+      ],
+      "expected_error": "operation applied after authority expiry"
+    },
+    {
+      "id": "handover-with-unverified-operation",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/operations/0/state",
+          "value": "applied"
+        }
+      ],
+      "expected_error": "handover closeout includes operation lacking required verification"
     }
   ]
 }
