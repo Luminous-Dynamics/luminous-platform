@@ -13,6 +13,7 @@
     "workflow",
     "review_policy",
     "sources",
+    "source_review_receipts",
     "requirements",
     "decision_contract",
     "notices"
@@ -193,6 +194,13 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "source_review_receipts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/sourceReviewReceipt"
+      },
+      "description": "Append-only source review receipts; non-unreviewed sources must point to their latest matching receipt."
     }
   },
   "$defs": {
@@ -224,7 +232,9 @@
         "next_review_at",
         "reviewer_role",
         "reuse",
-        "rights_notes"
+        "rights_notes",
+        "reviewer_id",
+        "review_receipt_id"
       ],
       "properties": {
         "source_id": {
@@ -322,6 +332,19 @@
         },
         "rights_notes": {
           "type": "string"
+        },
+        "reviewer_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "review_receipt_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
         }
       }
     },
@@ -560,6 +583,140 @@
           }
         }
       ]
+    },
+    "sourceReviewReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_id",
+        "source_id",
+        "canonical_url",
+        "decision",
+        "published_at",
+        "effective_from",
+        "captured_at",
+        "reviewed_at",
+        "next_review_at",
+        "reviewer_id",
+        "reviewer_role",
+        "snapshot_sha256",
+        "reuse",
+        "source_license_url",
+        "attribution",
+        "rights_notes",
+        "review_scope"
+      ],
+      "properties": {
+        "receipt_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+        },
+        "source_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+        },
+        "canonical_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "decision": {
+          "enum": [
+            "current",
+            "changed",
+            "stale",
+            "unavailable",
+            "disputed",
+            "withdrawn"
+          ]
+        },
+        "published_at": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "effective_from": {
+          "$ref": "#/$defs/nullableDateTime"
+        },
+        "captured_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "next_review_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewer_role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "snapshot_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "reuse": {
+          "enum": [
+            "not_assessed",
+            "link_only",
+            "public_domain",
+            "licensed",
+            "permission_granted"
+          ]
+        },
+        "source_license_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "attribution": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rights_notes": {
+          "type": "string",
+          "minLength": 1
+        },
+        "review_scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "authority_confirmed",
+            "effective_status_checked",
+            "content_reviewed",
+            "applicability_reviewed",
+            "reuse_rights_reviewed"
+          ],
+          "properties": {
+            "authority_confirmed": {
+              "type": "boolean"
+            },
+            "effective_status_checked": {
+              "type": "boolean"
+            },
+            "content_reviewed": {
+              "type": "boolean"
+            },
+            "applicability_reviewed": {
+              "type": "boolean"
+            },
+            "reuse_rights_reviewed": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
     }
   }
 }
