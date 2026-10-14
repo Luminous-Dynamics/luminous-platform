@@ -98,7 +98,7 @@ At minimum, every normalised observation should preserve:
 - access/visibility classification, privacy rationale and applicable retention rule;
 - relation to earlier/corrected observations without erasing history.
 
-The model must keep these states distinct: **zero, null, missing row, not published, stale, invalid, conflicting and not checked**. An unavailable source is not a negative finding. A source's stated target is not the measured outcome. A model score is not ground truth. A repair claim is not independently verified restoration.
+The model must keep these states distinct: **zero, null, missing row, not published, stale, invalid, conflicting and not checked**. An unavailable source is not a negative finding. A source's stated target is not the measured outcome. A model score is not ground truth. A repair claim is not independently verified restoration. Synthetic test data has its own hard provenance rule: `fixture_only=true` requires `retrieved_at=null` and no captured-source digest; a captured observation must carry an RFC3339 retrieval time with an explicit timezone and a valid digest of the captured source snapshot. A human-authored placeholder time must never be placed in the retrieval field. The draft observation schema and Rust validator now enforce the same distinction, but are marked unqualified pending exact-head CI.
 
 ### Spatial/privacy rules
 
