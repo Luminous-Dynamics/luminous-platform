@@ -261,6 +261,32 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         self.assertFalse(report["validation_passed"])
         self.assertEqual(check_status(report, "source.review_receipts"), "FAIL")
 
+    def test_receipt_history_cannot_be_backdated(self):
+        pack = copy.deepcopy(PACK)
+        source = pack["sources"][0]
+        original = attach_review_receipt(pack, source)
+        backdated = copy.deepcopy(original)
+        backdated.update({
+            "receipt_id": f"review.{source['source_id']}.backdated",
+            "decision": "changed",
+            "captured_at": "2026-09-29T12:00:00Z",
+            "reviewed_at": "2026-09-30T12:00:00Z",
+            "next_review_at": "2026-10-10T12:00:00Z",
+        })
+        pack["source_review_receipts"].append(backdated)
+        source.update({
+            "review_state": "changed",
+            "checked_at": backdated["captured_at"],
+            "reviewed_at": backdated["reviewed_at"],
+            "next_review_at": backdated["next_review_at"],
+            "review_receipt_id": backdated["receipt_id"],
+        })
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertIn("strictly chronological", " ".join(
+            check["details"] for check in report["checks"]
+        ))
+
     def test_review_interval_cannot_be_extended_by_metadata(self):
         pack = copy.deepcopy(PACK)
         source = pack["sources"][0]
