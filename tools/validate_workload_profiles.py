@@ -31,9 +31,24 @@ def load_json(path: Path) -> Any:
         raise ValueError(f"{path.relative_to(ROOT)}: unable to read valid JSON: {exc}") from exc
 
 
+def iter_validation_errors(errors: list[Any]) -> Any:
+    """Yield top-level schema failures and nested oneOf/anyOf context failures."""
+    pending = list(reversed(errors))
+    while pending:
+        error = pending.pop()
+        yield error
+        # jsonschema stores the useful branch-level diagnostics in context when
+        # a oneOf/anyOf failure is reported at a generic parent path.
+        pending.extend(reversed(error.context))
+
+
 def describe_errors(errors: list[Any]) -> str:
     lines: list[str] = []
-    for error in sorted(errors, key=lambda item: (list(map(str, item.absolute_path)), item.message)):
+    expanded = list(iter_validation_errors(errors))
+    for error in sorted(
+        expanded,
+        key=lambda item: (list(map(str, item.absolute_path)), item.message),
+    ):
         location = "$"
         for part in error.absolute_path:
             location += f"[{part}]" if isinstance(part, int) else f".{part}"
@@ -94,7 +109,7 @@ def expect_invalid(
         raise AssertionError(f"negative test has no expected diagnostic target: {name}")
 
     relevant_errors = []
-    for error in errors:
+    for error in iter_validation_errors(errors):
         error_path = ".".join(str(part) for part in error.absolute_path)
         if (
             all(fragment in error_path for fragment in expected_fragments)
