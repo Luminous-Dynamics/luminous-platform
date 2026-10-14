@@ -40,6 +40,12 @@ A future published pack must satisfy all of these deterministic checks:
 
 JSON Schema validation is necessary but not sufficient: cross-record references, uniqueness, date gates, status transitions, jurisdiction matching, source rights, and publication policy need semantic validator tests.
 
+## Source review receipts and append-only provenance
+
+The [source review protocol v0.1](source-review-protocol-v0.1.md) defines the receipt format and its limits. A non-`unreviewed` source must point to its latest receipt; active metadata must match that receipt. Each receipt records the snapshot digest, review times/deadline, reviewer ID/role, decision, reuse-rights metadata, and five explicit review dimensions.
+
+Pull-request CI rejects editing, removing, or reordering receipts already present in the base pack. This does not authenticate an identity, prevent an administrator rewriting history, or prove a review occurred. Repository branch protection and independent human approval remain release controls. Captured source bytes need a lawful, access-controlled evidence store; a digest alone cannot reproduce the capture. The Johannesburg fixture deliberately contains no receipts and remains unpublished.
+
 ## Applicability predicates
 
 Machine-evaluable applicability is limited to the [applicability predicate contract v0.1](applicability-predicate-contract-v0.1.md). Do not interpret free-text `conditions` or `unknowns` as code. Predicate evaluation uses exact type checks and three-valued outcomes: false excludes a candidate, unknown requires scope clarification, and only all-true predicates advance to later review/evidence gates. Malformed fact context fails closed with no cards.
