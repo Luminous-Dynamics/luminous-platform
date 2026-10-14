@@ -176,6 +176,7 @@ def validate_pack(
         s.get("source_id"): s for s in sources if isinstance(s, dict)
     }
     receipts_by_source: dict[str, list[dict[str, Any]]] = {}
+    last_reviewed_by_source: dict[str, datetime] = {}
     receipt_errors: list[str] = []
     for receipt in source_review_receipts:
         if not isinstance(receipt, dict):
@@ -196,6 +197,11 @@ def validate_pack(
             receipt_errors.append(f"{receipt_id}: capture is later than review")
         elif next_review <= reviewed:
             receipt_errors.append(f"{receipt_id}: next_review_at must follow reviewed_at")
+        if reviewed is not None:
+            previous_review = last_reviewed_by_source.get(source_id)
+            if previous_review is not None and reviewed <= previous_review:
+                receipt_errors.append(f"{receipt_id}: review history is not strictly chronological for {source_id}")
+            last_reviewed_by_source[source_id] = reviewed
         if not isinstance(receipt.get("reviewer_id"), str) or not receipt.get("reviewer_id", "").strip():
             receipt_errors.append(f"{receipt_id}: reviewer_id is missing")
         if not isinstance(receipt.get("reviewer_role"), str) or not receipt.get("reviewer_role", "").strip():
@@ -231,7 +237,10 @@ def validate_pack(
         if len(timestamps) != len(set(timestamps)):
             receipt_errors.append(f"{source_id}: receipt history has ambiguous duplicate reviewed_at timestamps")
             continue
-        latest = max(dated_history, key=lambda entry: entry[0])[1]
+        if any(left >= right for left, right in zip(timestamps, timestamps[1:])):
+            receipt_errors.append(f"{source_id}: receipt history is not strictly chronological")
+            continue
+        latest = history[-1]
         if pointer != latest.get("receipt_id"):
             receipt_errors.append(f"{source_id}: review_receipt_id does not identify the latest receipt")
         if state != latest.get("decision"):
