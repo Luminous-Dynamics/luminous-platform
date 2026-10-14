@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -11,7 +12,7 @@ from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "tools" / "civic-pack-validator"))
-from capture_source_snapshot import CaptureManifestError, build_capture_manifest  # noqa: E402
+from capture_source_snapshot import CaptureManifestError, build_capture_manifest, main  # noqa: E402
 
 SCHEMA = json.loads((ROOT / "schemas" / "source-capture-manifest-v0.1.0.schema.json").read_text(encoding="utf-8"))
 CANONICAL = "https://example.gov/source"
@@ -121,6 +122,29 @@ class CaptureManifestTests(unittest.TestCase):
         first = build()
         with self.assertRaises(CaptureManifestError):
             build(b"next", captured_at="2026-10-14T17:59:59Z", previous_manifest=first)
+
+    def test_malformed_https_port_is_rejected(self):
+        with self.assertRaises(CaptureManifestError):
+            build(canonical_url="https://example.gov:bad/source")
+
+    def test_whitespace_in_host_is_rejected(self):
+        with self.assertRaises(CaptureManifestError):
+            build(canonical_url="https://example .gov/source")
+
+    def test_output_cannot_overwrite_snapshot_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "capture.bin"
+            original = b"preserve captured bytes"
+            snapshot.write_bytes(original)
+            result = main([
+                "--source-id", "example.official-source",
+                "--canonical-url", CANONICAL,
+                "--snapshot", str(snapshot),
+                "--captured-at", BASE_TIME,
+                "--output", str(snapshot),
+            ])
+            self.assertEqual(result, 1)
+            self.assertEqual(snapshot.read_bytes(), original)
 
     def test_prior_manifest_identity_mismatch_is_rejected(self):
         first = build()

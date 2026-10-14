@@ -48,6 +48,8 @@ def validate_https_url(value: str, label: str) -> str:
     try:
         parsed = urlsplit(value)
         hostname = parsed.hostname
+        # Accessing .port forces urllib to reject non-numeric/out-of-range ports.
+        _port = parsed.port
     except ValueError as exc:
         raise CaptureManifestError(f"{label} is not a valid URL") from exc
     if (
@@ -55,6 +57,7 @@ def validate_https_url(value: str, label: str) -> str:
         or not hostname
         or parsed.username is not None
         or parsed.password is not None
+        or any(char.isspace() or ord(char) < 33 for char in (hostname or ""))
     ):
         raise CaptureManifestError(
             f"{label} must be an absolute HTTPS URL without embedded credentials"
@@ -193,6 +196,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
+        if args.output is not None:
+            output_path = args.output.resolve()
+            protected_inputs = {args.snapshot.resolve()}
+            if args.previous_manifest is not None:
+                protected_inputs.add(args.previous_manifest.resolve())
+            if output_path in protected_inputs:
+                raise CaptureManifestError(
+                    "--output must not overwrite the snapshot or previous manifest"
+                )
         snapshot_bytes = args.snapshot.read_bytes()
         previous = load_json_object(args.previous_manifest) if args.previous_manifest else None
         manifest = build_capture_manifest(
