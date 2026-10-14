@@ -200,6 +200,10 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         self.assertRegex(report["input_sha256"], r"^[a-f0-9]{64}$")
         self.assertRegex(report["schema_sha256"], r"^[a-f0-9]{64}$")
         self.assertEqual(report["evaluated_at"], "2026-10-13T15:00:00Z")
+        self.assertEqual(report["source_count"], len(PACK["sources"]))
+        self.assertEqual(report["requirement_count"], len(PACK["requirements"]))
+        self.assertEqual(report["source_review_receipt_count"], 0)
+        self.assertEqual(report["requirement_review_receipt_count"], 0)
 
     def test_report_is_reproducible_for_same_inputs_and_timestamp(self):
         first = report_for(copy.deepcopy(PACK))
