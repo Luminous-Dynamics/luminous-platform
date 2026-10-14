@@ -177,6 +177,13 @@
           "Exact activity and premises classification",
           "Current licensing schedule and administrative procedure",
           "Any exemptions or additional local conditions"
+        ],
+        "predicates": [
+          {
+            "predicate_id": "licence.handles-food",
+            "field": "handles_food",
+            "operator": "is_true"
+          }
         ]
       },
       "source_refs": [
@@ -220,6 +227,13 @@
           "Premises and operating model",
           "Current local application and inspection process",
           "Any activity-specific exceptions"
+        ],
+        "predicates": [
+          {
+            "predicate_id": "hygiene.handles-food",
+            "field": "handles_food",
+            "operator": "is_true"
+          }
         ]
       },
       "source_refs": [
@@ -257,6 +271,13 @@
           "Appropriate legal form for the user's circumstances",
           "Current eligibility and fees",
           "Tax and other registration obligations"
+        ],
+        "predicates": [
+          {
+            "predicate_id": "cipc.registration-intended",
+            "field": "business_entity_registration_intended",
+            "operator": "is_true"
+          }
         ]
       },
       "source_refs": [
@@ -285,6 +306,7 @@
     "All source records are intentionally unreviewed in this fixture. Human source review and current applicability checks are required before publication.",
     "A user marking a task complete records their own progress only; it does not prove that a licence, registration, inspection, or approval has been granted.",
     "Official portals linked here remain the responsible authorities. This prototype is not an official government service.",
-    "Official source links were rechecked during research on 2026-10-13, but source records remain unreviewed until a named maintainer verifies the current text, applicability, version, and review deadline."
+    "Official source links were rechecked during research on 2026-10-13, but source records remain unreviewed until a named maintainer verifies the current text, applicability, version, and review deadline.",
+    "Applicability predicates use a small declarative operator set. Missing fact values evaluate as unknown and require user clarification; no arbitrary code or AI-generated predicate execution is supported."
   ]
 }
