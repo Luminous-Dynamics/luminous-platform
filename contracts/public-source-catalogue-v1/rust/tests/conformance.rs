@@ -3,6 +3,8 @@ use serde_json::{json, Value};
 
 const CATALOGUE: &str = include_str!("../../examples/catalogue.json");
 const OBSERVATION: &str = include_str!("../../examples/observation-v1.json");
+const JHB_POWER_WATER_STATEMENT: &str =
+    include_str!("../../examples/johannesburg-power-water-statement-v1.synthetic.json");
 
 fn parse_catalogue_fixture() -> Value {
     serde_json::from_str(CATALOGUE).expect("catalogue fixture must be valid JSON")
@@ -122,6 +124,26 @@ fn canonical_synthetic_observation_is_accepted() {
         validate_observation_json(OBSERVATION).expect("synthetic observation should validate");
     assert!(observation.fixture_only);
     assert_eq!(observation.source_id, "za-treasury-municipal-finance");
+}
+
+#[test]
+fn synthetic_johannesburg_power_water_statement_is_not_live_or_causal_evidence() {
+    let observation = validate_observation_json(JHB_POWER_WATER_STATEMENT)
+        .expect("synthetic source-claim fixture should validate");
+    assert!(observation.fixture_only);
+    assert_eq!(observation.source_id, "za-gov-jhb-power-water-coordination");
+    assert_eq!(observation.raw_value["is_live_service_status"], false);
+    assert_eq!(observation.raw_value["is_case_level_causal_proof"], false);
+    assert_eq!(observation.raw_value["is_independently_verified_outcome"], false);
+    assert!(observation.source_snapshot_sha256.is_none());
+
+    let catalogue = validate_catalogue_json(CATALOGUE).expect("catalogue should validate");
+    let source = catalogue
+        .sources
+        .iter()
+        .find(|source| source.source_id == observation.source_id)
+        .expect("fixture source must exist in the catalogue");
+    assert!(!source.ingestion.enabled);
 }
 
 #[test]
