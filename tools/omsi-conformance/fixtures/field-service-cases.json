@@ -93,6 +93,18 @@
       "expected_error": "evidence kind and claim status conflict"
     },
     {
+      "id": "evidence-manifest-digest-substitution",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/1/operation_manifest_digest",
+          "value": "sha256:9999999999999999999999999999999999999999999999999999999999999999"
+        }
+      ],
+      "expected_error": "evidence operation manifest digest mismatch"
+    },
+    {
       "id": "idempotency-key-reused-with-new-manifest",
       "fixture": "field-service-plumbing-hvac.json",
       "mutations": [
