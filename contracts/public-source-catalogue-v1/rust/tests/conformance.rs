@@ -123,6 +123,8 @@ fn canonical_synthetic_observation_is_accepted() {
     let observation =
         validate_observation_json(OBSERVATION).expect("synthetic observation should validate");
     assert!(observation.fixture_only);
+    assert!(observation.retrieved_at.is_none());
+    assert!(observation.source_snapshot_sha256.is_null());
     assert_eq!(observation.source_id, "za-treasury-municipal-finance");
 }
 
@@ -131,6 +133,7 @@ fn synthetic_johannesburg_power_water_statement_is_not_live_or_causal_evidence()
     let observation = validate_observation_json(JHB_POWER_WATER_STATEMENT)
         .expect("synthetic source-claim fixture should validate");
     assert!(observation.fixture_only);
+    assert!(observation.retrieved_at.is_none());
     assert_eq!(observation.source_id, "za-gov-jhb-power-water-coordination");
     assert_eq!(observation.raw_value["is_live_service_status"], false);
     assert_eq!(observation.raw_value["is_case_level_causal_proof"], false);
@@ -162,8 +165,12 @@ fn observation_rejects_http_and_timezone_free_timestamps() {
     assert!(validate_observation_json(&encoded(&bad_url)).is_err());
 
     let mut no_timezone = parse_observation_fixture();
+    no_timezone["fixture_only"] = json!(false);
     no_timezone["retrieved_at"] = json!("2026-10-12T12:00:00");
-    assert!(validate_observation_json(&encoded(&no_timezone)).is_err());
+    no_timezone["source_snapshot_sha256"] = json!(format!("sha256:{}", "a".repeat(64)));
+    let error = validate_observation_json(&encoded(&no_timezone))
+        .expect_err("captured observation timestamps must include an explicit timezone");
+    assert!(error.to_string().contains("valid RFC3339 timestamp"));
 }
 
 #[test]
@@ -241,6 +248,7 @@ fn omitted_or_not_retrieved_rows_cannot_be_normalized() {
 fn non_fixture_observation_accepts_only_a_sha256_digest() {
     let mut value = parse_observation_fixture();
     value["fixture_only"] = json!(false);
+    value["retrieved_at"] = json!("2026-10-12T12:00:00Z");
     value["source_snapshot_sha256"] = json!(format!("sha256:{}", "a".repeat(64)));
     assert!(validate_observation_json(&encoded(&value)).is_ok());
 
@@ -274,6 +282,9 @@ fn observation_rejects_invalid_zero_claim_and_digest() {
 fn non_fixture_observation_requires_snapshot_digest() {
     let mut value = parse_observation_fixture();
     value["fixture_only"] = json!(false);
+    value["retrieved_at"] = json!("2026-10-12T12:00:00Z");
     value["source_snapshot_sha256"] = Value::Null;
-    assert!(validate_observation_json(&encoded(&value)).is_err());
+    let error = validate_observation_json(&encoded(&value))
+        .expect_err("captured observations must bind a source snapshot digest");
+    assert!(error.to_string().contains("source_snapshot_sha256 must be sha256:"));
 }
