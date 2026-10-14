@@ -15,6 +15,7 @@
     "sources",
     "source_review_receipts",
     "requirements",
+    "requirement_review_receipts",
     "decision_contract",
     "notices"
   ],
@@ -201,6 +202,13 @@
         "$ref": "#/$defs/sourceReviewReceipt"
       },
       "description": "Append-only source review receipts; non-unreviewed sources must point to their latest matching receipt."
+    },
+    "requirement_review_receipts": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/requirementReviewReceipt"
+      },
+      "description": "Append-only claim-review receipts; verified requirements must point to their latest matching receipt."
     }
   },
   "$defs": {
@@ -360,7 +368,10 @@
         "applicability",
         "source_refs",
         "user_actions",
-        "completion_effect"
+        "completion_effect",
+        "reviewer_id",
+        "reviewer_role",
+        "review_receipt_id"
       ],
       "properties": {
         "requirement_id": {
@@ -488,6 +499,25 @@
             "must_confirm_with_authority",
             "external_decision_required"
           ]
+        },
+        "reviewer_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reviewer_role": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "review_receipt_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
         }
       }
     },
@@ -712,6 +742,96 @@
               "type": "boolean"
             },
             "reuse_rights_reviewed": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "requirementReviewReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "receipt_id",
+        "requirement_id",
+        "decision",
+        "reviewed_at",
+        "next_review_at",
+        "reviewer_id",
+        "reviewer_role",
+        "claim_sha256",
+        "source_receipt_ids",
+        "review_scope"
+      ],
+      "properties": {
+        "receipt_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+        },
+        "requirement_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+        },
+        "decision": {
+          "enum": [
+            "verified",
+            "stale",
+            "disputed",
+            "withdrawn"
+          ]
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "next_review_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewer_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewer_role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_receipt_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$"
+          }
+        },
+        "review_scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_support_checked",
+            "jurisdiction_checked",
+            "applicability_checked",
+            "user_language_checked",
+            "completion_effect_checked"
+          ],
+          "properties": {
+            "source_support_checked": {
+              "type": "boolean"
+            },
+            "jurisdiction_checked": {
+              "type": "boolean"
+            },
+            "applicability_checked": {
+              "type": "boolean"
+            },
+            "user_language_checked": {
+              "type": "boolean"
+            },
+            "completion_effect_checked": {
               "type": "boolean"
             }
           }
