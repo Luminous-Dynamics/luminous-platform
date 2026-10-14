@@ -133,6 +133,11 @@ class WorkflowEvaluatorTests(unittest.TestCase):
         self.assertIn("government_approved", result["invalid_fact_keys"])
         self.assertEqual(result["requirements"], [])
 
+    def test_non_object_fact_context_fails_closed(self):
+        result = evaluate(reviewed_pack(), facts=["handles_food"])
+        self.assertEqual(result["execution_state"], "invalid_context")
+        self.assertEqual(result["requirements"], [])
+
     def test_unreviewed_source_makes_pack_unpublishable(self):
         pack = reviewed_pack()
         pack["sources"][0]["review_state"] = "unreviewed"
