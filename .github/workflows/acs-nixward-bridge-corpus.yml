@@ -37,9 +37,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Check out exact triggering revision
+      - name: Check out exact PR source head (or triggering commit)
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 1
 
@@ -78,6 +79,7 @@ jobs:
           ACS_UNIT_TESTS_OUTCOME: ${{ steps.unit-tests.outcome }}
           ACS_SCHEMA_LOCK_OUTCOME: ${{ steps.schema-lock.outcome }}
           ACS_CORPUS_OUTCOME: ${{ steps.corpus-validation.outcome }}
+          ACS_SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           ACS_TEST_LOG: ${{ runner.temp }}/acs-nixward-unit-tests.log
           ACS_RECEIPT_OUTPUT: ${{ runner.temp }}/acs-nixward-validation-receipt-v1.json
         run: python tools/acs-bridge-validation/emit_validation_receipt.py
