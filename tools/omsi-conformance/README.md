@@ -78,7 +78,7 @@ fixtures cover two different kinds of work:
 - a building-maintenance fixing/pull-test work order.
 
 The adversarial manifest in
-`fixtures/field-service-cases.json` includes cross-tenant references,
+`fixtures/field-service-cases.json` includes exact operation-manifest digest substitution and cross-tenant references,
 unmatched approval scope, revoked/wrong-scope credentials, unit and
 calibration mismatches, a provider report mislabelled as verified, reused
 idempotency keys with a different manifest, offline execution after authority
