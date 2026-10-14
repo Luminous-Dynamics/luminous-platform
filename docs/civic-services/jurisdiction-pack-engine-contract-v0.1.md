@@ -40,6 +40,12 @@ A future published pack must satisfy all of these deterministic checks:
 
 JSON Schema validation is necessary but not sufficient: cross-record references, uniqueness, date gates, status transitions, jurisdiction matching, source rights, and publication policy need semantic validator tests.
 
+## Applicability predicates
+
+Machine-evaluable applicability is limited to the [applicability predicate contract v0.1](applicability-predicate-contract-v0.1.md). Do not interpret free-text `conditions` or `unknowns` as code. Predicate evaluation uses exact type checks and three-valued outcomes: false excludes a candidate, unknown requires scope clarification, and only all-true predicates advance to later review/evidence gates. Malformed fact context fails closed with no cards.
+
+`applicable` is only a deterministic match against the supplied facts, not a legal conclusion. The workflow engine must keep pack/source review state, user assertions, and official authority outcomes as separate state domains.
+
 ## Deterministic execution
 
 1. Resolve the exact jurisdiction and business type selected by the user. If a pack cannot establish a fit, return needs_scope_confirmation; do not guess.
