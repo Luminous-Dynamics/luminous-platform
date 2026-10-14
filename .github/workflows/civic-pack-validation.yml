@@ -33,6 +33,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -72,17 +74,37 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           BASE_REF: ${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          git fetch --no-tags --depth=1 origin "refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
-          PACK_PATH="examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json"
-          if git cat-file -e "origin/$BASE_REF:$PACK_PATH" 2>/dev/null; then
-            git show "origin/$BASE_REF:$PACK_PATH" > /tmp/jurisdiction-pack-baseline.json
-            python tools/civic-pack-validator/check_review_history.py \
-              --baseline-pack /tmp/jurisdiction-pack-baseline.json \
-              --pack "$PACK_PATH"
-          else
-            echo "No baseline Johannesburg pack exists on the PR base; no prior receipts to preserve."
+          git fetch --no-tags origin "refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+          git fetch --no-tags origin "refs/pull/$PR_NUMBER/head:refs/remotes/origin/pr-head"
+          ACTUAL_HEAD_SHA="$(git rev-parse refs/remotes/origin/pr-head)"
+          if [ "$ACTUAL_HEAD_SHA" != "$EXPECTED_HEAD_SHA" ]; then
+            echo "Fetched PR head $ACTUAL_HEAD_SHA differs from event head $EXPECTED_HEAD_SHA."
+            exit 1
           fi
+          BASE_SHA="$(git merge-base "origin/$BASE_REF" "$EXPECTED_HEAD_SHA")"
+          PACK_PATH="examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json"
+          PACK_COMMITS="$(git rev-list --reverse --first-parent "$BASE_SHA..$EXPECTED_HEAD_SHA" -- "$PACK_PATH")"
+          if [ -z "$PACK_COMMITS" ]; then
+            echo "No changes to the Johannesburg pack in this PR history; no receipt rewrite is possible in these commits."
+            exit 0
+          fi
+          for COMMIT in $PACK_COMMITS; do
+            BASELINE="/tmp/jurisdiction-pack-baseline.json"
+            CURRENT="/tmp/jurisdiction-pack-current.json"
+            if git cat-file -e "$COMMIT^1:$PACK_PATH" 2>/dev/null; then
+              git show "$COMMIT^1:$PACK_PATH" > "$BASELINE"
+            else
+              printf '%s\\n' '{"source_review_receipts":[],"requirement_review_receipts":[]}' > "$BASELINE"
+            fi
+            git show "$COMMIT:$PACK_PATH" > "$CURRENT"
+            echo "Checking append-only review history at $COMMIT"
+            python tools/civic-pack-validator/check_review_history.py \\
+              --baseline-pack "$BASELINE" \\
+              --pack "$CURRENT"
+          done
       - name: Write validation summary
         if: always()
         env:
