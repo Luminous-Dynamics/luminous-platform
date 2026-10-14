@@ -30,9 +30,9 @@ The digest must be computed over the exact captured bytes, not normalized text. 
 1. Add a new receipt for a new review; do not edit an earlier receipt in place.
 2. Point the source record to the newest receipt and make its review metadata agree with that receipt.
 3. If a source changes, becomes unavailable, or is disputed, append the new decision and fail closed. Do not rewrite the old receipt to make the history look clean.
-4. Pull-request CI compares the base pack's receipt array with the head pack and requires the exact base array to remain an unchanged prefix. Receipt removal, editing, or reordering fails.
+4. Pull-request CI checks every pack-changing commit on the PR's first-parent history against that commit's parent and requires each prior ledger to remain an exact prefix. When the pack did not exist in the parent, the check starts from an empty ledger. Receipt removal, editing, or reordering in a later commit fails.
 
-The history check provides tamper-evidence relative to the PR base, not a cryptographic guarantee against administrators rewriting repository history or a contributor inventing a new receipt. Configure repository branch protection/CODEOWNERS and require independent human review before accepting a receipt that enables publication. The validator does not authenticate `reviewer_id` and cannot prove that the human actually performed the review.
+The per-commit check makes receipt rewriting within the PR history detectable, not cryptographically impossible. It cannot stop an administrator rewriting all repository history or a contributor inventing a receipt. Configure repository branch protection/CODEOWNERS and require independent human review before accepting a receipt that enables publication. The validator does not authenticate `reviewer_id` and cannot prove that the human actually performed the review.
 
 ## Claim-specific verification receipts
 
@@ -46,7 +46,7 @@ A claim receipt binds:
 
 A `verified` receipt requires all five checks to be true and the exact set of source receipt IDs currently attached to the requirement's declared source references. If the claim text, applicability, actions, cited sources, or completion effect changes, the claim digest changes and the receipt no longer verifies that content. The receipt also expires under the pack's review interval and freshness rules.
 
-Claim-review receipts are part of the same append-only ledger policy. CI protects both `source_review_receipts` and `requirement_review_receipts` against editing, removal, and reordering relative to the base pack. This does not prove the reviewer did the work or authenticate the reviewer's identity. A repository approval rule and accountable human source/claim reviewers remain mandatory before a pack can be published.
+Claim-review receipts are part of the same append-only ledger policy. CI protects both `source_review_receipts` and `requirement_review_receipts` against editing, removal, and reordering at every pack-changing commit in the PR history. This does not prove the reviewer did the work or authenticate the reviewer's identity. A repository approval rule and accountable human source/claim reviewers remain mandatory before a pack can be published.
 
 ## State and publication semantics
 
