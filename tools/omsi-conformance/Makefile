@@ -1,4 +1,4 @@
-.PHONY: test schemas validate-fixtures interop field-service
+.PHONY: test schemas validate-fixtures interop field-service oca-adapter
 
 test:
 	python -m unittest discover -s tests -v
@@ -17,3 +17,6 @@ interop:
 
 field-service:
 	python -c 'import sys,unittest; suite=unittest.defaultTestLoader.discover("tests", pattern="test_field_service.py"); result=unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(0 if result.wasSuccessful() and result.testsRun >= 5 else 1)'
+
+oca-adapter:
+	python -c 'import sys,unittest; suite=unittest.defaultTestLoader.discover("tests", pattern="test_oca_fsm_adapter.py"); result=unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(0 if result.wasSuccessful() and result.testsRun >= 20 else 1)'
