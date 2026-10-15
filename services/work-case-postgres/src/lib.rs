@@ -214,7 +214,7 @@ impl WorkCaseRepository {
         ).fetch_one(&mut *tx).await?;
 
         let activity_id = format!("{case_id}:activity:1");
-        let details = Json(json!({"kind": command.kind.as_db_str(), "customer_id": customer_id}));
+        let details = json!({"kind": command.kind.as_db_str(), "customer_id": customer_id});
         sqlx::query!(
             r#"INSERT INTO case_activity
                (tenant_id, case_id, sequence, activity_id, command_id, actor_id, actor_role,
@@ -228,11 +228,11 @@ impl WorkCaseRepository {
             r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload)
                VALUES ($1,$2,$3,1,'io.luminousdynamics.workcase.created',$4)"#,
             principal.tenant_id, Uuid::new_v4(), case_id,
-            Json(json!({"tenant_id": principal.tenant_id, "case_id": case_id, "revision": 1, "activity_id": activity_id}))
+            json!({"tenant_id": principal.tenant_id, "case_id": case_id, "revision": 1, "activity_id": activity_id})
         ).execute(&mut *tx).await?;
 
         let created = WorkCase::from((row, Vec::new(), Vec::new()));
-        let result_payload = Json(serde_json::to_value(&created)?);
+        let result_payload = serde_json::to_value(&created)?;
         sqlx::query!(
             "UPDATE command_idempotency SET result_payload = $3 WHERE tenant_id = $1 AND idempotency_key = $2",
             principal.tenant_id, key, result_payload
@@ -347,19 +347,19 @@ impl WorkCaseRepository {
                VALUES ($1,$2,$3,$4,$5,$6,$7,'case.state_changed',$8,$9,$10,$11,$12)"#,
             principal.tenant_id, case_id, sequence, activity_id, command_id, principal.actor_id,
             principal.role.as_db_str(), occurred_at, reason, expected_revision, expected_revision + 1,
-            Json(json!({"from": current.state.as_db_str(), "to": target.as_db_str()}))
+            json!({"from": current.state.as_db_str(), "to": target.as_db_str()})
         ).execute(&mut *tx).await?;
         sqlx::query!(
             r#"INSERT INTO case_outbox (tenant_id, outbox_id, case_id, revision, event_type, payload)
                VALUES ($1,$2,$3,$4,'io.luminousdynamics.workcase.state_changed',$5)"#,
             principal.tenant_id, Uuid::new_v4(), case_id, expected_revision + 1,
-            Json(json!({"tenant_id": principal.tenant_id, "case_id": case_id,
+            json!({"tenant_id": principal.tenant_id, "case_id": case_id,
                 "revision": expected_revision + 1, "activity_id": activity_id,
-                "from": current.state.as_db_str(), "to": target.as_db_str()}))
+                "from": current.state.as_db_str(), "to": target.as_db_str()})
         ).execute(&mut *tx).await?;
 
         let updated = WorkCase::from((row, current.external_refs, current.evidence_refs));
-        let result_payload = Json(serde_json::to_value(&updated)?);
+        let result_payload = serde_json::to_value(&updated)?;
         sqlx::query!(
             "UPDATE command_idempotency SET result_payload = $3 WHERE tenant_id = $1 AND idempotency_key = $2",
             principal.tenant_id, key, result_payload
@@ -509,7 +509,7 @@ mod tests {
             p.tenant_id, case_id
         ).fetch_one(&mut *tx).await?;
         let outbox = sqlx::query_scalar!(
-            r#"SELECT count(*)::BIGINT AS \"count!\" FROM case_outbox WHERE tenant_id = $1 AND case_id = $2"#,
+            r#"SELECT count(*)::BIGINT AS "count!" FROM case_outbox WHERE tenant_id = $1 AND case_id = $2"#,
             p.tenant_id, case_id
         ).fetch_one(&mut *tx).await?;
         tx.commit().await?;
@@ -579,7 +579,7 @@ mod tests {
         set_tenant(&mut tx, &p.tenant_id).await.expect("set tenant context");
         let update = sqlx::query!(
             "UPDATE command_idempotency SET result_payload = $3 WHERE tenant_id = $1 AND idempotency_key = $2",
-            p.tenant_id, command_value.idempotency_key, Json(json!({}))
+            p.tenant_id, command_value.idempotency_key, json!({})
         ).execute(&mut *tx).await;
         assert!(update.is_err(), "database must reject rewriting a finalized idempotency snapshot");
         tx.rollback().await.expect("roll back rejected snapshot rewrite");
@@ -844,7 +844,7 @@ mod tests {
             r#"INSERT INTO case_outbox
                (tenant_id, outbox_id, case_id, revision, event_type, payload, status, attempts, lease_owner, lease_until)
                VALUES ($1,$2,$3,2,'test.invalid.outbox_lease',$4,'LEASED',1,NULL,NULL)"#,
-            p.tenant_id, Uuid::new_v4(), created.case_id, Json(json!({"synthetic": true}))
+            p.tenant_id, Uuid::new_v4(), created.case_id, json!({"synthetic": true})
         ).execute(&mut *tx).await;
         match invalid {
             Err(sqlx::Error::Database(error)) => {
@@ -881,7 +881,7 @@ mod tests {
                 activity_type, occurred_at, reason, prior_revision, new_revision, details)
                VALUES ($1,$2,2,$3,'malformed-activity-command','synthetic-owner-test','technician',
                 'test.invalid.revision_step','2026-10-10T10:00:00Z','constraint test',1,3,$4)"#,
-            p.tenant_id, created.case_id, Uuid::new_v4().to_string(), Json(json!({"synthetic": true}))
+            p.tenant_id, created.case_id, Uuid::new_v4().to_string(), json!({"synthetic": true})
         ).execute(&mut *tx).await;
         match invalid {
             Err(sqlx::Error::Database(error)) => {
