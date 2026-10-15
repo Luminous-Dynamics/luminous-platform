@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 from jsonschema import Draft202012Validator, FormatChecker
 import omsi_validate as core
 
@@ -36,7 +37,10 @@ def _validate(kind: str, value: Any) -> None:
 
 
 def _ref(instance: str, doctype: str, name: str) -> str:
-    return f"{instance}|{doctype}|{name}"
+    # Escape source-controlled components so the delimiter cannot make IDs ambiguous.
+    encoded_instance = quote(instance, safe=":/.-_~")
+    encoded_name = quote(name, safe="-._~")
+    return f"{encoded_instance}|{doctype}|{encoded_name}"
 
 
 def _date(value: str | None) -> date | None:

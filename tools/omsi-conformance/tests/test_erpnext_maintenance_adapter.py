@@ -47,6 +47,27 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
         s, b = inputs(); out = adapter.map_maintenance_log(s, b, NOW)
         self.assertEqual(out["id"], "erpnext-instance://fixture.invalid/maintenance-db|Asset Maintenance Log|AML-SYN-001")
 
+    def test_external_id_escapes_delimiters_in_source_controlled_components(self):
+        def mapped_id(instance, record_name):
+            s, b = inputs()
+            s["source"]["instance_namespace"] = instance
+            b["source_instance_namespace"] = instance
+            s["log"]["name"] = record_name
+            return adapter.map_maintenance_log(s, b, NOW)["id"]
+
+        # These two tuples collided under raw pipe-joining. Keep each component unambiguous.
+        first = mapped_id(
+            "erpnext-instance://fixture.invalid/maintenance-db",
+            "AML-SYN-001|Asset Maintenance Log|CHILD",
+        )
+        second = mapped_id(
+            "erpnext-instance://fixture.invalid/maintenance-db|Asset Maintenance Log|AML-SYN-001",
+            "CHILD",
+        )
+        self.assertNotEqual(first, second)
+        self.assertIn("%7C", first)
+        self.assertIn("%7C", second)
+
     def test_company_mismatch_rejected(self):
         s, b = inputs(); b["source_company_id"] = "OTHER-COMPANY"
         with self.assertRaisesRegex(core.ConformanceError, "company does not match explicit tenant binding"):
