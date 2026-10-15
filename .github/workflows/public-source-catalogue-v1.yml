@@ -6,6 +6,7 @@ on:
     paths:
       - 'contracts/public-source-catalogue-v1/**'
       - 'contracts/civic-record-crosswalk-v1/**'
+      - 'contracts/civic-evaluation-pack-v1/**'
       - 'docs/LANGUAGE_AND_RUNTIME_POLICY.md'
       - 'docs/PUBLIC_SERVICE_OPERATIONS_PROFILE_RFC.md'
       - '.github/workflows/public-source-catalogue-v1.yml'
@@ -70,7 +71,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if find contracts/public-source-catalogue-v1 contracts/civic-record-crosswalk-v1 \
+          if find contracts/public-source-catalogue-v1 contracts/civic-record-crosswalk-v1 contracts/civic-evaluation-pack-v1 \
             -type f \
             \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.ts' -o -name '*.tsx' \) \
             -print -quit | grep -q .; then
@@ -83,6 +84,12 @@ jobs:
         run: |
           set -euo pipefail
           cargo +1.96.0 fmt --manifest-path contracts/civic-record-crosswalk-v1/rust/Cargo.toml --all -- --check
+
+      - name: Check civic evaluation-pack Rust formatting on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 fmt --manifest-path contracts/civic-evaluation-pack-v1/rust/Cargo.toml --all -- --check
 
       - name: Check public-source catalogue Rust formatting on this exact checkout
         shell: bash
@@ -108,6 +115,18 @@ jobs:
           set -euo pipefail
           cargo +1.96.0 run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- observation contracts/public-source-catalogue-v1/examples/observation-v1.json
 
+      - name: Test civic evaluation-pack validator on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 test --manifest-path contracts/civic-evaluation-pack-v1/rust/Cargo.toml --all-targets
+
+      - name: Validate synthetic civic evaluation pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 run --manifest-path contracts/civic-evaluation-pack-v1/rust/Cargo.toml --bin validate-evaluation-pack -- validate contracts/civic-evaluation-pack-v1/examples/joburg-water-synthetic-v1.json
+
       - name: Test civic record crosswalk validator on this exact checkout
         shell: bash
         run: |
@@ -130,5 +149,5 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo 'PASS only means the public-source and civic crosswalk Rust checks passed at GITHUB_SHA.'
+          echo 'PASS only means the public-source, civic crosswalk, and synthetic evaluation-pack Rust checks passed at GITHUB_SHA.'
           echo 'This does not qualify network ingestion, legal access, semantic interoperability, production readiness or municipal integrations.'

@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/civic-evaluation-pack-v1.json",
+  "title": "Civic Evaluation Pack V1",
+  "description": "Strictly synthetic evaluation scenarios. Semantic invariants are additionally checked by the Rust validator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pack_id",
+    "created_on",
+    "evidence_mode",
+    "source_policy",
+    "reproducibility",
+    "scenarios"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "civic-evaluation-pack-v1"
+    },
+    "pack_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{2,95}$"
+    },
+    "created_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "evidence_mode": {
+      "const": "synthetic_only"
+    },
+    "source_policy": {
+      "$ref": "#/$defs/sourcePolicy"
+    },
+    "reproducibility": {
+      "$ref": "#/$defs/reproducibility"
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    }
+  },
+  "$defs": {
+    "sourcePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "live_ingestion_enabled",
+        "personal_data_included",
+        "published_claims_count_as_ground_truth"
+      ],
+      "properties": {
+        "live_ingestion_enabled": {
+          "const": false
+        },
+        "personal_data_included": {
+          "const": false
+        },
+        "published_claims_count_as_ground_truth": {
+          "const": false
+        }
+      }
+    },
+    "reproducibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seed",
+        "simulator_version",
+        "expected_outcomes_are_fixture_oracles"
+      ],
+      "properties": {
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "simulator_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "expected_outcomes_are_fixture_oracles": {
+          "const": true
+        }
+      }
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_id",
+        "title",
+        "scenario_class",
+        "input",
+        "expected"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^scenario-[a-z0-9-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "scenario_class": {
+          "enum": [
+            "baseline",
+            "stale_source",
+            "conflicting_sources",
+            "repair_claim_without_independent_verification",
+            "cross_utility_context_not_causality",
+            "recurrence",
+            "independent_verification_positive_control"
+          ]
+        },
+        "input": {
+          "$ref": "#/$defs/input"
+        },
+        "expected": {
+          "$ref": "#/$defs/expected"
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_coverage",
+        "service_context",
+        "prior_outcome",
+        "available_inspectors",
+        "available_crews",
+        "observations"
+      ],
+      "properties": {
+        "source_coverage": {
+          "enum": [
+            "complete",
+            "incomplete"
+          ]
+        },
+        "service_context": {
+          "enum": [
+            "local_public_service",
+            "cross_utility_publication",
+            "unknown"
+          ]
+        },
+        "prior_outcome": {
+          "enum": [
+            "none",
+            "repair_claimed",
+            "independently_verified"
+          ]
+        },
+        "available_inspectors": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "available_crews": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "observations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/observation"
+          }
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observation_id",
+        "kind",
+        "evidence_state",
+        "event_minute",
+        "recorded_minute",
+        "actor_ref"
+      ],
+      "properties": {
+        "observation_id": {
+          "type": "string",
+          "pattern": "^obs-[a-z0-9-]+$"
+        },
+        "kind": {
+          "enum": [
+            "resident_report",
+            "public_notice",
+            "repair_claim",
+            "independent_inspection",
+            "contextual_statement",
+            "repeat_fault"
+          ]
+        },
+        "evidence_state": {
+          "enum": [
+            "current",
+            "stale",
+            "conflicting",
+            "claim_only",
+            "independently_verified",
+            "repeat_fault"
+          ]
+        },
+        "event_minute": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "recorded_minute": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actor_ref": {
+          "type": "string",
+          "pattern": "^synthetic-[a-z0-9-]+$"
+        }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "triage",
+        "outcome",
+        "causal_claim_permitted",
+        "must_abstain"
+      ],
+      "properties": {
+        "triage": {
+          "enum": [
+            "inspect",
+            "human_review",
+            "do_not_verify",
+            "reopen",
+            "no_action"
+          ]
+        },
+        "outcome": {
+          "enum": [
+            "unresolved",
+            "unknown",
+            "unverified",
+            "independently_verified",
+            "reopened"
+          ]
+        },
+        "causal_claim_permitted": {
+          "type": "boolean"
+        },
+        "must_abstain": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

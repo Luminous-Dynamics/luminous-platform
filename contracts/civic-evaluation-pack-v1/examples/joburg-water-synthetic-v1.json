@@ -1,0 +1,230 @@
+{
+  "schema_version": "civic-evaluation-pack-v1",
+  "pack_id": "joburg-water-synthetic-v1",
+  "created_on": "2026-10-15",
+  "evidence_mode": "synthetic_only",
+  "source_policy": {
+    "live_ingestion_enabled": false,
+    "personal_data_included": false,
+    "published_claims_count_as_ground_truth": false
+  },
+  "reproducibility": {
+    "seed": 104729,
+    "simulator_version": "policy-harness-contract-v1",
+    "expected_outcomes_are_fixture_oracles": true
+  },
+  "scenarios": [
+    {
+      "scenario_id": "scenario-baseline-report",
+      "title": "A new report requires triage, not a claim of confirmed failure",
+      "scenario_class": "baseline",
+      "input": {
+        "source_coverage": "complete",
+        "service_context": "local_public_service",
+        "prior_outcome": "none",
+        "available_inspectors": 2,
+        "available_crews": 1,
+        "observations": [
+          {
+            "observation_id": "obs-report-001",
+            "kind": "resident_report",
+            "evidence_state": "current",
+            "event_minute": 5,
+            "recorded_minute": 5,
+            "actor_ref": "synthetic-reporter-01"
+          }
+        ]
+      },
+      "expected": {
+        "triage": "inspect",
+        "outcome": "unresolved",
+        "causal_claim_permitted": false,
+        "must_abstain": false
+      }
+    },
+    {
+      "scenario_id": "scenario-stale-public-notice",
+      "title": "A stale notice cannot establish current service status",
+      "scenario_class": "stale_source",
+      "input": {
+        "source_coverage": "complete",
+        "service_context": "local_public_service",
+        "prior_outcome": "none",
+        "available_inspectors": 1,
+        "available_crews": 1,
+        "observations": [
+          {
+            "observation_id": "obs-notice-stale-001",
+            "kind": "public_notice",
+            "evidence_state": "stale",
+            "event_minute": 10,
+            "recorded_minute": 80,
+            "actor_ref": "synthetic-publisher-01"
+          }
+        ]
+      },
+      "expected": {
+        "triage": "human_review",
+        "outcome": "unknown",
+        "causal_claim_permitted": false,
+        "must_abstain": true
+      }
+    },
+    {
+      "scenario_id": "scenario-conflicting-notices",
+      "title": "Conflicting published claims require human review",
+      "scenario_class": "conflicting_sources",
+      "input": {
+        "source_coverage": "complete",
+        "service_context": "local_public_service",
+        "prior_outcome": "none",
+        "available_inspectors": 1,
+        "available_crews": 1,
+        "observations": [
+          {
+            "observation_id": "obs-notice-conflict-a",
+            "kind": "public_notice",
+            "evidence_state": "conflicting",
+            "event_minute": 12,
+            "recorded_minute": 14,
+            "actor_ref": "synthetic-publisher-a"
+          },
+          {
+            "observation_id": "obs-notice-conflict-b",
+            "kind": "public_notice",
+            "evidence_state": "conflicting",
+            "event_minute": 12,
+            "recorded_minute": 15,
+            "actor_ref": "synthetic-publisher-b"
+          }
+        ]
+      },
+      "expected": {
+        "triage": "human_review",
+        "outcome": "unknown",
+        "causal_claim_permitted": false,
+        "must_abstain": true
+      }
+    },
+    {
+      "scenario_id": "scenario-repair-claim-is-not-verification",
+      "title": "A provider's repair claim is not independent verification",
+      "scenario_class": "repair_claim_without_independent_verification",
+      "input": {
+        "source_coverage": "complete",
+        "service_context": "local_public_service",
+        "prior_outcome": "repair_claimed",
+        "available_inspectors": 1,
+        "available_crews": 0,
+        "observations": [
+          {
+            "observation_id": "obs-repair-claim-001",
+            "kind": "repair_claim",
+            "evidence_state": "claim_only",
+            "event_minute": 35,
+            "recorded_minute": 36,
+            "actor_ref": "synthetic-repair-crew-01"
+          }
+        ]
+      },
+      "expected": {
+        "triage": "do_not_verify",
+        "outcome": "unverified",
+        "causal_claim_permitted": false,
+        "must_abstain": true
+      }
+    },
+    {
+      "scenario_id": "scenario-context-is-not-causality",
+      "title": "A public cross-utility statement does not prove incident-level cause",
+      "scenario_class": "cross_utility_context_not_causality",
+      "input": {
+        "source_coverage": "complete",
+        "service_context": "cross_utility_publication",
+        "prior_outcome": "none",
+        "available_inspectors": 1,
+        "available_crews": 1,
+        "observations": [
+          {
+            "observation_id": "obs-context-statement-001",
+            "kind": "contextual_statement",
+            "evidence_state": "current",
+            "event_minute": 1,
+            "recorded_minute": 4,
+            "actor_ref": "synthetic-public-publisher-01"
+          }
+        ]
+      },
+      "expected": {
+        "triage": "human_review",
+        "outcome": "unknown",
+        "causal_claim_permitted": false,
+        "must_abstain": true
+      }
+    },
+    {
+      "scenario_id": "scenario-repeat-fault-reopens",
+      "title": "A recurrence after resolution reopens the service outcome",
+      "scenario_class": "recurrence",
+      "input": {
+        "source_coverage": "complete",
+        "service_context": "local_public_service",
+        "prior_outcome": "independently_verified",
+        "available_inspectors": 1,
+        "available_crews": 1,
+        "observations": [
+          {
+            "observation_id": "obs-repeat-fault-001",
+            "kind": "repeat_fault",
+            "evidence_state": "repeat_fault",
+            "event_minute": 90,
+            "recorded_minute": 91,
+            "actor_ref": "synthetic-monitor-01"
+          }
+        ]
+      },
+      "expected": {
+        "triage": "reopen",
+        "outcome": "reopened",
+        "causal_claim_permitted": false,
+        "must_abstain": false
+      }
+    },
+    {
+      "scenario_id": "scenario-independent-verification-positive-control",
+      "title": "Distinct-actor inspection can verify a repair claim",
+      "scenario_class": "independent_verification_positive_control",
+      "input": {
+        "source_coverage": "complete",
+        "service_context": "local_public_service",
+        "prior_outcome": "repair_claimed",
+        "available_inspectors": 1,
+        "available_crews": 0,
+        "observations": [
+          {
+            "observation_id": "obs-repair-claim-positive",
+            "kind": "repair_claim",
+            "evidence_state": "claim_only",
+            "event_minute": 40,
+            "recorded_minute": 41,
+            "actor_ref": "synthetic-repair-crew-02"
+          },
+          {
+            "observation_id": "obs-independent-inspection-positive",
+            "kind": "independent_inspection",
+            "evidence_state": "independently_verified",
+            "event_minute": 45,
+            "recorded_minute": 46,
+            "actor_ref": "synthetic-reviewer-01"
+          }
+        ]
+      },
+      "expected": {
+        "triage": "no_action",
+        "outcome": "independently_verified",
+        "causal_claim_permitted": false,
+        "must_abstain": false
+      }
+    }
+  ]
+}
