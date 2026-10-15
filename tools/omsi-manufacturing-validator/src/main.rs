@@ -1,3 +1,4 @@
+mod benchmark;
 mod replay;
 
 use omsi_manufacturing_validator::{evaluate_input_value, validate_vector_document};
@@ -73,8 +74,29 @@ fn run() -> Result<u8, String> {
                 Ok(1)
             }
         }
+        Some("benchmark-vectors") if args.len() == 3 || args.len() == 4 => {
+            let source = read_bytes(&args[2])?;
+            let document: Value = serde_json::from_slice(&source)
+                .map_err(|error| format!("invalid JSON in {}: {error}", args[2]))?;
+            let iterations = args
+                .get(3)
+                .map(|value| {
+                    value
+                        .parse::<usize>()
+                        .map_err(|error| format!("invalid iterations_per_case {value:?}: {error}"))
+                })
+                .transpose()?
+                .unwrap_or(1_000);
+            let report = benchmark::run(&document, &source, iterations)?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&report)
+                    .map_err(|error| format!("failed to serialize benchmark: {error}"))?
+            );
+            Ok(0)
+        }
         _ => Err(
-            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->".into(),
+            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]".into(),
         ),
     }
 }
