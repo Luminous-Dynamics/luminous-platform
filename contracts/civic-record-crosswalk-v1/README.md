@@ -1,14 +1,14 @@
 # Civic Record Crosswalk V1
 
 **Status:** Static semantic crosswalk for review; no runtime transform and no shared canonical case schema.
-**Snapshot date:** 2026-10-14
+**Snapshot date:** 2026-10-15
 **Scope:** Public repositories only.
 
 ## Purpose
 
 This contract records how selected public artifacts from Luminous Platform, Mycelix, Sol-Atlas and Symthaea relate. It is a mapping register, not a replacement data model. It does not implement adapters, merge records, make network requests, or authorise actions.
 
-The concrete Work Case V1 and Operations Event V1 schemas were absent from the audited PR #34 branch tree at commit 93a97cb16dfea73660b6dc868fbba3b5f4d9c06c. Further public-repository inspection found them on separate draft PRs: Work Case V1 in [PR #8](https://github.com/Luminous-Dynamics/luminous-platform/pull/8) at exact head 384a60d9668e77c40561b46d5511593ea5198c23 (schema blob 6be2f6498630d76287034020d9e89eca76ee2711), and Operations Event V1 in [PR #4](https://github.com/Luminous-Dynamics/luminous-platform/pull/4) at exact head b4b32d90742e9a218e4d6919f15d74d904f5beca (schema blob aa7364e5661125e04cc5e36b12269ec08b611448). They are pinned separately in the crosswalk as present but `unqualified_draft`. PR #4's exact-head qualification workflow failed: the Rust test crate stopped on an SQLx 0.9 dynamic-query compile error, and its non-production Python research-model job failed to import a test file because a test function definition was missing a colon. No workflow run was returned for PR #8's pinned head. The crosswalk therefore blocks adapters involving those contracts until the exact source revisions are qualified. This is not a claim that the artifacts are absent from every branch.
+The concrete Work Case V1 and Operations Event V1 schemas remain on separate draft PR branches, not in the PR #34 branch tree. Work Case V1 is pinned from [PR #8](https://github.com/Luminous-Dynamics/luminous-platform/pull/8) at head 584e0869da3c0de5ccf5e995ec029a87b12228fe (schema blob 6be2f6498630d76287034020d9e89eca76ee2711); Operations Event V1 is pinned from [PR #4](https://github.com/Luminous-Dynamics/luminous-platform/pull/4) at head c43a68adc9543fee67d67debfd7bcf6e1387395d (schema blob aa7364e5661125e04cc5e36b12269ec08b611448). Both remain `unqualified_draft`. A previous PR #4 run accepted an invalid `observedat` string because the format checker dependency was not installed and also exposed a stale issuer-role assertion. Those defects have been patched on the current PR #4 head, but its exact-head workflow #38692588693 is queued; PR #8 requires its own reconciled exact-head qualification. The crosswalk therefore blocks adapters involving these contracts until the current source revisions qualify.
 
 ## Files
 
@@ -50,3 +50,8 @@ This verifies the mapping register's structure and selected safety invariants on
 ## Before adding an adapter
 
 Require both source and target contracts at exact revisions; a field-level semantic review; source terms and data-use permission; an explicit mapping for missing, stale, conflicting and corrected values; a privacy projection; synthetic positive and negative controls; an independent checker; and exact-head completed CI. A blocked dependency remains blocked rather than being emulated by a vaguely similar type.
+
+
+## Exact-head snapshot notes — 15 October 2026
+
+All eight contract entries are pinned to the latest reviewed public PR heads and matching content blobs on this date. Qualification states remain `unqualified_draft` until the relevant checks complete on exact heads and cross-contract semantics are reviewed. Sol-Atlas PR #109's current Check workflow succeeded on its exact head, but this does not qualify a runtime adapter or any municipal connection. The Platform PR #34 source/crosswalk contract workflow and Symthaea/Mycelix life-civic workflows are queued; the Platform Operations Event/Holochain workflow was re-run after narrow validator/test fixes and is queued. Do not infer success from queued, skipped, cancelled, absent or predecessor-head results.

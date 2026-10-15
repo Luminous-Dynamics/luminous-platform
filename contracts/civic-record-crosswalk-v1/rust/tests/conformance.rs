@@ -19,7 +19,7 @@ fn public_observation_contract_pin_tracks_truthful_retrieval_provenance() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "9316cc917b13a395a62da4b719bcdb76f0ef224a"
+        "b5407b885115ab4ef30c118a78a0ea424ae1ab6d"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
@@ -37,6 +37,35 @@ fn public_observation_contract_pin_tracks_truthful_retrieval_provenance() {
 }
 
 #[test]
+fn sol_atlas_civic_case_pin_tracks_current_source_and_stays_unqualified() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+    let contract = crosswalk
+        .contracts
+        .iter()
+        .find(|contract| contract.schema_id == "sol-atlas.civic-service-case-v1")
+        .expect("Sol-Atlas civic case source is pinned");
+
+    assert_eq!(
+        contract.snapshot_commit_sha,
+        "e5b68e0fd30667ac9712a839faadc951e939c42c"
+    );
+    assert_eq!(
+        contract.git_blob_sha1.as_deref(),
+        Some("d8897ac47fc78685b4f7e7fa3b06d6ea0724191a")
+    );
+    assert_eq!(contract.version.as_deref(), Some("1"));
+    assert_eq!(
+        contract.qualification_state,
+        civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+    );
+    assert!(
+        contract.notes.contains("public_projection"),
+        "public serialization must pass through the explicit projection boundary"
+    );
+}
+
+#[test]
 fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_stays_unqualified() {
     let input = include_str!("../../crosswalk.json");
     let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
@@ -48,7 +77,7 @@ fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_stays_unqualified() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "42dbd6de258cf6d1b97e4b863c010c628802433d"
+        "e78717f569d7aa5956e2f70c891f257417c2429f"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
@@ -73,7 +102,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "1eec5ed1e046eae71b0e376f327016a0998e0a92"
+        "227e0b174c58044c75f1a56f6b78730fdf7fa4d6"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
@@ -102,7 +131,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
             .unwrap_or_else(|| panic!("missing pinned Mycelix schema {schema_id}"));
         assert_eq!(
             source_schema.snapshot_commit_sha,
-            "1eec5ed1e046eae71b0e376f327016a0998e0a92"
+            "227e0b174c58044c75f1a56f6b78730fdf7fa4d6"
         );
         assert_eq!(source_schema.git_blob_sha1.as_deref(), Some(expected_blob));
     }
@@ -142,6 +171,31 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
 fn existing_draft_work_case_and_operations_event_contracts_remain_blocked_until_qualified() {
     let input = include_str!("../../crosswalk.json");
     let crosswalk = parse_and_validate_json(input).expect("valid mapping register");
+    for (schema_id, expected_sha, expected_blob) in [
+        (
+            "platform.work-case-v1",
+            "584e0869da3c0de5ccf5e995ec029a87b12228fe",
+            "6be2f6498630d76287034020d9e89eca76ee2711",
+        ),
+        (
+            "platform.operations-event-v1",
+            "c43a68adc9543fee67d67debfd7bcf6e1387395d",
+            "aa7364e5661125e04cc5e36b12269ec08b611448",
+        ),
+    ] {
+        let contract = crosswalk
+            .contracts
+            .iter()
+            .find(|entry| entry.schema_id == schema_id)
+            .unwrap_or_else(|| panic!("missing pinned Platform contract {schema_id}"));
+        assert_eq!(contract.snapshot_commit_sha, expected_sha);
+        assert_eq!(contract.git_blob_sha1.as_deref(), Some(expected_blob));
+        assert_eq!(
+            contract.qualification_state,
+            civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+        );
+    }
+
     let work_state = crosswalk
         .mappings
         .iter()
