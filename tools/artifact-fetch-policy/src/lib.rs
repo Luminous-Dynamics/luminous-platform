@@ -49,11 +49,11 @@ impl HttpsOrigin {
 /// Only an absent header or `identity` is accepted. Compressed representations
 /// must be explicitly supported by a transport that meters both wire bytes and
 /// decoded artifact bytes; this policy intentionally fails closed by default.
-pub fn validate_content_encoding(encoding: Option<&str>) -> Result<(), PolicyError> {
-    match encoding {
-        None => Ok(()),
-        Some(value) if value.trim().eq_ignore_ascii_case("identity") => Ok(()),
-        Some(_) => Err(PolicyError::UnsupportedContentEncoding),
+pub fn validate_content_encoding_headers(encodings: &[&str]) -> Result<(), PolicyError> {
+    match encodings {
+        [] => Ok(()),
+        [value] if value.trim().eq_ignore_ascii_case("identity") => Ok(()),
+        _ => Err(PolicyError::UnsupportedContentEncoding),
     }
 }
 
@@ -81,6 +81,8 @@ pub enum PolicyError {
     DownloadLimitExceeded { received: u64, limit: u64 },
     DownloadCounterOverflow,
     UnsupportedContentEncoding,
+    InvalidContentLength,
+    AmbiguousContentLength,
     RedirectChainFailed,
 }
 
@@ -431,7 +433,33 @@ impl FetchPolicy {
         Ok(decision)
     }
 
-    /// Reject an advertised Content-Length above the configured byte cap.
+    /// Validate all raw Content-Length field values from one HTTP response.
+    ///
+    /// The strict artifact-fetch profile accepts either no field or exactly
+    /// one decimal value. It rejects duplicates even when identical, as well as
+    /// comma-joined values, non-decimal syntax, and integer overflow. This avoids
+    /// relying on differing HTTP stacks' interpretations of ambiguous framing.
+    pub fn validate_content_length_headers(
+        &self,
+        values: &[&str],
+    ) -> Result<Option<u64>, PolicyError> {
+        let value = match values {
+            [] => return Ok(None),
+            [value] => *value,
+            _ => return Err(PolicyError::AmbiguousContentLength),
+        };
+        let value = value.trim_matches(|character| character == ' ' || character == '\\t');
+        if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+            return Err(PolicyError::InvalidContentLength);
+        }
+        let declared = value
+            .parse::<u64>()
+            .map_err(|_| PolicyError::InvalidContentLength)?;
+        self.check_declared_length(Some(declared))?;
+        Ok(Some(declared))
+    }
+
+    /// Check an already parsed Content-Length number against the configured cap.
     pub fn check_declared_length(&self, declared: Option<u64>) -> Result<(), PolicyError> {
         if let Some(declared) = declared {
             if declared > self.max_download_bytes {
@@ -1045,14 +1073,46 @@ mod tests {
 
     #[test]
     fn rejects_unsupported_content_encodings_by_default() {
-        assert_eq!(validate_content_encoding(None), Ok(()));
-        assert_eq!(validate_content_encoding(Some("identity")), Ok(()));
-        assert_eq!(validate_content_encoding(Some(" IDENTITY ")), Ok(()));
-        for encoding in [Some("gzip"), Some("br"), Some("identity, gzip"), Some("")] {
+        assert_eq!(validate_content_encoding_headers(&[]), Ok(()));
+        assert_eq!(validate_content_encoding_headers(&["identity"]), Ok(()));
+        assert_eq!(validate_content_encoding_headers(&[" IDENTITY "]), Ok(()));
+        for encodings in [
+            &["gzip"][..],
+            &["br"][..],
+            &["identity, gzip"][..],
+            &[""][..],
+            &["identity", "identity"][..],
+        ] {
             assert_eq!(
-                validate_content_encoding(encoding),
+                validate_content_encoding_headers(encodings),
                 Err(PolicyError::UnsupportedContentEncoding),
-                "{encoding:?}"
+                "{encodings:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn content_length_headers_are_unambiguous_decimal_and_bounded() {
+        let p = policy();
+        assert_eq!(p.validate_content_length_headers(&[]), Ok(None));
+        assert_eq!(p.validate_content_length_headers(&["0"]), Ok(Some(0)));
+        assert_eq!(p.validate_content_length_headers(&[" 1024\\t"]), Ok(Some(1024)));
+        assert_eq!(
+            p.validate_content_length_headers(&["1025"]),
+            Err(PolicyError::DeclaredLengthExceeded {
+                declared: 1025,
+                limit: 1024,
+            })
+        );
+        assert_eq!(
+            p.validate_content_length_headers(&["1024", "1024"]),
+            Err(PolicyError::AmbiguousContentLength)
+        );
+        for value in ["", "+1", "-1", "1, 1", "18446744073709551616", "1\\r\\n2"] {
+            assert_eq!(
+                p.validate_content_length_headers(&[value]),
+                Err(PolicyError::InvalidContentLength),
+                "{value:?}"
             );
         }
     }
