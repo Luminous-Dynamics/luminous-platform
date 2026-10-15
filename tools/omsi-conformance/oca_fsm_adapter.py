@@ -129,6 +129,16 @@ def map_order(
         _fail("OCA scheduled window ends before it starts")
     if actual_start and actual_end and actual_start > actual_end:
         _fail("OCA actual work interval ends before it starts")
+    for label, actual_time in (("start", actual_start), ("end", actual_end)):
+        if actual_time and actual_time > now:
+            _fail(f"OCA actual work {label} is dated in the future")
+    signed_on = _timestamp(order["signed_on"])
+    if signed_on and signed_on > now:
+        _fail("OCA customer signature timestamp is dated in the future")
+    for activity in snapshot["activities"]:
+        completed_on = _timestamp(activity["completed_on"])
+        if completed_on and completed_on > now:
+            _fail("OCA activity completion timestamp is dated in the future")
 
     entries = stage_map["entries"]
     ids = [entry["stage_id"] for entry in entries]
