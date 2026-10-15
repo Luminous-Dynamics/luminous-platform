@@ -9,7 +9,7 @@
   "properties": {
     "contract_version": { "const": "1.0.0" },
     "bundle_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$" },
-    "mode": { "enum": ["synthetic", "redacted_pilot", "production"] },
+    "mode": { "enum": ["synthetic", "redacted_pilot"] },
     "evaluated_at": { "type": "string", "format": "date-time" },
     "scope": {
       "type": "object",

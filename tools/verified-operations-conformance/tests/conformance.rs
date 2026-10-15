@@ -394,6 +394,14 @@ fn evidence_bundle_schema_and_fixture_are_valid() {
         Ok(3),
         "all source payload digests, normalized measurement digests, lineage and decision semantics should agree"
     );
+
+    let mut premature_production = bundle;
+    premature_production["mode"] = Value::String("production".into());
+    assert!(
+        verified_operations_conformance::validate_evidence_bundle(&schema, &premature_production)
+            .is_err(),
+        "v1 must fail closed rather than imply production source authentication"
+    );
 }
 
 #[test]
