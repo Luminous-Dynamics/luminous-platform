@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "scorecard_contract": "omsi-manufacturing-benchmark-scorecard/0.1",
+  "status": "targets_not_measured",
+  "scope": "OMSI manufacturing semantic validator, replay envelope, and future Mycelix receipt adapter",
+  "principles": [
+    "Correctness and safety invariants are hard gates; performance cannot compensate for a semantic or privacy failure.",
+    "Queued CI and historical results are not exact-head passes.",
+    "Performance targets are provisional until measured on a named reference host with a sufficiently representative corpus.",
+    "No score or benchmark result confers product-release, machine-control, calibration-authentication, or safety authority."
+  ],
+  "gates": [
+    {
+      "id": "G0-semantic-correctness",
+      "class": "hard_gate",
+      "metric": "expected_conformance_vector_match_rate",
+      "target": 1.0,
+      "unit": "fraction",
+      "acceptance": "Every committed expected outcome must match the evaluator exactly for the versioned fields.",
+      "failure_policy": "Block release; never weaken a negative vector merely to obtain a pass."
+    },
+    {
+      "id": "G0-negative-controls",
+      "class": "hard_gate",
+      "metric": "unexpected_acceptances_in_negative_control_suite",
+      "target": 0,
+      "unit": "count",
+      "acceptance": "No cross-tenant input, malformed decimal/time, incompatible unit, missing required metadata, or contradictory source claim may be optimistically accepted.",
+      "failure_policy": "Block release and preserve the failing minimized fixture."
+    },
+    {
+      "id": "G0-schema-validation",
+      "class": "hard_gate",
+      "metric": "independent_json_schema_validation_rate",
+      "target": 1.0,
+      "unit": "fraction",
+      "acceptance": "All success, reject, conflict, loss and replay-verification reports validate with an independent JSON Schema Draft 2020-12 implementation; mutated reports are rejected.",
+      "failure_policy": "Block release; serde parsing is not a substitute for JSON Schema validation."
+    },
+    {
+      "id": "G0-replay-tamper",
+      "class": "hard_gate",
+      "metric": "fixed_tamper_catalogue_detection_rate",
+      "target": 1.0,
+      "unit": "fraction",
+      "acceptance": "Detect every catalogued mutation to exact input bytes, digest, envelope contract, required limitations and embedded semantic report.",
+      "failure_policy": "Block release; unsigned digest binding must not be described as source authentication."
+    },
+    {
+      "id": "G1-repeatability",
+      "class": "hard_gate",
+      "metric": "same_build_semantic_replay_equivalence",
+      "target": 1.0,
+      "unit": "fraction",
+      "acceptance": "Same input bytes, profile/rule versions and validator build produce semantically equal reports across repeated runs.",
+      "failure_policy": "Block release and retain corpus digest, build identity and differing fields."
+    },
+    {
+      "id": "G1-property-tests",
+      "class": "release_gate",
+      "metric": "deterministic_generated_cases_per_profile_version",
+      "target": 100000,
+      "unit": "cases",
+      "acceptance": "Exercise decimal boundaries, timezone equivalence, malformed inputs, scope isolation and evidence monotonicity using reproducible seeds; a separate minimized regression fixture is committed for every found defect.",
+      "failure_policy": "Do not promote beyond incubation until the test generator, seed and results are reproducible."
+    },
+    {
+      "id": "G1-fuzzing",
+      "class": "release_gate",
+      "metric": "coverage_guided_fuzz_duration",
+      "target": 24,
+      "unit": "hours_per_release_candidate",
+      "acceptance": "Fuzz parsing, profile-shape, decimal/time fields and envelope verification under resource limits; store corpus and crash artifacts.",
+      "failure_policy": "Any crash, panic, uncontrolled allocation or inconsistent acceptance blocks promotion until triaged."
+    },
+    {
+      "id": "G2-latency-semantic",
+      "class": "provisional_performance_target",
+      "metric": "semantic_evaluation_p95",
+      "target": 5,
+      "unit": "milliseconds",
+      "workload": "Single synthetic observation input <= 32 KiB; at least 1000 representative cases; pinned release build and named reference host.",
+      "acceptance": "Report p50/p95/p99 and host/compiler metadata over repeated independent runs. Do not gate shared GitHub-hosted CI on timing until the environment is controlled.",
+      "failure_policy": "Profile before optimizing; never trade away semantic checks for throughput."
+    },
+    {
+      "id": "G2-latency-replay",
+      "class": "provisional_performance_target",
+      "metric": "replay_verification_p95",
+      "target": 20,
+      "unit": "milliseconds",
+      "workload": "Input artifact <= 64 KiB; report replay includes digest, parsing and fresh semantic evaluation.",
+      "acceptance": "Measure on the same pinned reference host as semantic evaluation.",
+      "failure_policy": "Profile hashing, parsing and evaluation separately; do not skip verification steps."
+    },
+    {
+      "id": "G2-throughput",
+      "class": "provisional_performance_target",
+      "metric": "semantic_observations_per_second",
+      "target": 500,
+      "unit": "observations_per_second",
+      "workload": "At least 1000 representative cases across valid, reject, loss and conflict outcomes.",
+      "acceptance": "Report throughput with corpus digest, input-size distribution, compiler profile, CPU, OS and run count.",
+      "failure_policy": "A throughput result is not comparable without matching workload and environment."
+    },
+    {
+      "id": "G2-memory",
+      "class": "provisional_performance_target",
+      "metric": "peak_resident_memory_single_observation",
+      "target": 64,
+      "unit": "MiB",
+      "workload": "Input <= 64 KiB, one evaluation/replay process with bounded input count.",
+      "acceptance": "Measure process peak RSS externally; the Rust microbenchmark does not measure RSS.",
+      "failure_policy": "Investigate allocations and bounds; do not infer memory usage from latency."
+    },
+    {
+      "id": "G3-interoperability",
+      "class": "hard_gate",
+      "metric": "silent_field_loss_across_qualified_adapters",
+      "target": 0,
+      "unit": "count",
+      "acceptance": "Qualify at least two independently-shaped synthetic source adapters; every source field must be preserved, explicitly transformed by a named rule, or recorded as loss/unmapped. No silent field loss.",
+      "failure_policy": "Block federation until the semantic crosswalk and known-loss register are reviewed."
+    },
+    {
+      "id": "G3-cross-implementation",
+      "class": "release_gate",
+      "metric": "independent_verifier_vector_agreement",
+      "target": 1.0,
+      "unit": "fraction",
+      "acceptance": "A separately implemented verifier reproduces all public vector outcomes and independently detects every envelope mutation in the shared fixture pack.",
+      "failure_policy": "No trust or release policy may rely on a single producer/verifier implementation."
+    },
+    {
+      "id": "G3-privacy",
+      "class": "hard_gate",
+      "metric": "prohibited_sensitive_fields_in_public_receipts",
+      "target": 0,
+      "unit": "count",
+      "acceptance": "No raw/high-rate telemetry, confidential process parameters, operator personal information or unauthorized tenant identifiers enter public receipts.",
+      "failure_policy": "Block integration and retain a test demonstrating the leakage path."
+    },
+    {
+      "id": "G3-multi-agent",
+      "class": "release_gate",
+      "metric": "independent_agents_in_receipt_verification",
+      "target": 2,
+      "unit": "agents",
+      "acceptance": "At least two Mycelix agents exercise publication, resolution, receipt verification, disputes, revocation observations and unauthorized-route negative controls under a qualified Holochain version.",
+      "failure_policy": "Unit tests alone do not establish DHT/bridge behavior."
+    }
+  ],
+  "current_evidence": {
+    "committed_conformance_vectors": 8,
+    "measured_performance_baseline": null,
+    "reference_hardware_pinned": false,
+    "independent_schema_engine_run": false,
+    "independent_cross_implementation_verifier": false,
+    "mycelix_adapter_implemented": false,
+    "production_readiness_claimed": false
+  }
+}
