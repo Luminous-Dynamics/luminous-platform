@@ -7,14 +7,45 @@ on:
       - "schemas/workload-profile.schema.json"
       - "profiles/workloads/**"
       - "tools/validate_workload_profiles.py"
-      - "tools/requirements-workload-validation.txt"
+name: Workload profile schema
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "schemas/workload-profile.schema.json"
+      - "profiles/workloads/**"
+      - "tools/validate_workload_profiles.py"
       - ".github/workflows/workload-profile-validation.yml"
   pull_request:
     paths:
       - "schemas/workload-profile.schema.json"
       - "profiles/workloads/**"
       - "tools/validate_workload_profiles.py"
-      - "tools/requirements-workload-validation.txt"
+name: Workload profile schema
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "schemas/workload-profile.schema.json"
+      - "profiles/workloads/**"
+      - "tools/validate_workload_profiles.py"
+name: Workload profile schema
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "schemas/workload-profile.schema.json"
+      - "profiles/workloads/**"
+      - "tools/validate_workload_profiles.py"
+      - ".github/workflows/workload-profile-validation.yml"
+  pull_request:
+    paths:
+      - "schemas/workload-profile.schema.json"
+      - "profiles/workloads/**"
+      - "tools/validate_workload_profiles.py"
       - ".github/workflows/workload-profile-validation.yml"
 
 permissions:
@@ -46,3 +77,9 @@ jobs:
 
       - name: Validate example profiles and security-negative cases
         run: python tools/validate_workload_profiles.py
+
+      - name: Check Rust artifact-fetch policy formatting
+        run: cargo fmt --check --manifest-path tools/artifact-fetch-policy/Cargo.toml
+
+      - name: Test Rust artifact-fetch policy
+        run: cargo test --locked --offline --manifest-path tools/artifact-fetch-policy/Cargo.toml
