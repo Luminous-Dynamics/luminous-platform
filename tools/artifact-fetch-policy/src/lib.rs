@@ -44,6 +44,19 @@ impl HttpsOrigin {
     }
 }
 
+/// Validate an HTTP `Content-Encoding` value for a byte-bounded artifact fetch.
+///
+/// Only an absent header or `identity` is accepted. Compressed representations
+/// must be explicitly supported by a transport that meters both wire bytes and
+/// decoded artifact bytes; this policy intentionally fails closed by default.
+pub fn validate_content_encoding(encoding: Option<&str>) -> Result<(), PolicyError> {
+    match encoding {
+        None => Ok(()),
+        Some(value) if value.trim().eq_ignore_ascii_case("identity") => Ok(()),
+        Some(_) => Err(PolicyError::UnsupportedContentEncoding),
+    }
+}
+
 /// Errors returned by deterministic artifact-fetch policy checks.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PolicyError {
@@ -65,6 +78,8 @@ pub enum PolicyError {
     RedirectLimitExceeded { limit: u8 },
     DeclaredLengthExceeded { declared: u64, limit: u64 },
     DownloadLimitExceeded { received: u64, limit: u64 },
+    DownloadCounterOverflow,
+    UnsupportedContentEncoding,
     RedirectChainFailed,
 }
 
@@ -73,45 +88,48 @@ pub enum PolicyError {
 /// Once any chunk would exceed the configured limit, this meter becomes
 /// terminal: later calls remain rejected. Construct it through `FetchPolicy`
 /// so the limit comes from the administrator's immutable policy.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum DownloadFailure {
+    LimitExceeded,
+    CounterOverflow,
+}
+
 #[must_use = "download budget must be retained for the entire transfer"]
 #[derive(Debug, Eq, PartialEq)]
 pub struct DownloadBudget {
     limit: u64,
     received: u64,
-    failed: bool,
+    failure: Option<DownloadFailure>,
 }
 
 impl DownloadBudget {
     /// Account for the next body chunk before accepting or writing that chunk.
     /// Returns the cumulative byte count only while it remains within policy.
     pub fn record_chunk(&mut self, chunk_bytes: usize) -> Result<u64, PolicyError> {
-        if self.failed {
-            return Err(PolicyError::DownloadLimitExceeded {
-                received: self.received,
-                limit: self.limit,
+        if let Some(failure) = self.failure {
+            return Err(match failure {
+                DownloadFailure::LimitExceeded => PolicyError::DownloadLimitExceeded {
+                    received: self.received,
+                    limit: self.limit,
+                },
+                DownloadFailure::CounterOverflow => PolicyError::DownloadCounterOverflow,
             });
         }
 
-        let Some(chunk_bytes) = u64::try_from(chunk_bytes).ok() else {
+        let Ok(chunk_bytes) = u64::try_from(chunk_bytes) else {
             self.received = u64::MAX;
-            self.failed = true;
-            return Err(PolicyError::DownloadLimitExceeded {
-                received: self.received,
-                limit: self.limit,
-            });
+            self.failure = Some(DownloadFailure::CounterOverflow);
+            return Err(PolicyError::DownloadCounterOverflow);
         };
         let Some(received) = self.received.checked_add(chunk_bytes) else {
             self.received = u64::MAX;
-            self.failed = true;
-            return Err(PolicyError::DownloadLimitExceeded {
-                received: self.received,
-                limit: self.limit,
-            });
+            self.failure = Some(DownloadFailure::CounterOverflow);
+            return Err(PolicyError::DownloadCounterOverflow);
         };
 
         self.received = received;
         if received > self.limit {
-            self.failed = true;
+            self.failure = Some(DownloadFailure::LimitExceeded);
             Err(PolicyError::DownloadLimitExceeded {
                 received,
                 limit: self.limit,
@@ -126,7 +144,7 @@ impl DownloadBudget {
     }
 
     pub fn is_failed(&self) -> bool {
-        self.failed
+        self.failure.is_some()
     }
 }
 
@@ -411,7 +429,7 @@ impl FetchPolicy {
         DownloadBudget {
             limit: self.max_download_bytes,
             received: 0,
-            failed: false,
+            failure: None,
         }
     }
 
@@ -944,6 +962,35 @@ mod tests {
                 limit: 1024,
             })
         );
+
+        let mut near_overflow = DownloadBudget {
+            limit: u64::MAX,
+            received: u64::MAX - 1,
+            failure: None,
+        };
+        assert_eq!(
+            near_overflow.record_chunk(2),
+            Err(PolicyError::DownloadCounterOverflow)
+        );
+        assert!(near_overflow.is_failed());
+        assert_eq!(
+            near_overflow.record_chunk(0),
+            Err(PolicyError::DownloadCounterOverflow)
+        );
+    }
+
+    #[test]
+    fn rejects_unsupported_content_encodings_by_default() {
+        assert_eq!(validate_content_encoding(None), Ok(()));
+        assert_eq!(validate_content_encoding(Some("identity")), Ok(()));
+        assert_eq!(validate_content_encoding(Some(" IDENTITY ")), Ok(()));
+        for encoding in [Some("gzip"), Some("br"), Some("identity, gzip"), Some("")] {
+            assert_eq!(
+                validate_content_encoding(encoding),
+                Err(PolicyError::UnsupportedContentEncoding),
+                "{encoding:?}"
+            );
+        }
     }
 
     #[test]
