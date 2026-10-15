@@ -153,6 +153,25 @@ class TestOcaFsmReadOnlyAdapter(unittest.TestCase):
         with self.assertRaisesRegex(core.ConformanceError, "source revision is dated in the future"):
             adapter.map_order(source, binding, stage_map, NOW)
 
+    def test_future_actual_work_timestamp_is_rejected(self):
+        source, binding, stage_map = inputs()
+        source["order"]["date_start"] = "2026-10-15T12:00:01Z"
+        source["order"]["date_end"] = "2026-10-15T12:01:00Z"
+        with self.assertRaisesRegex(core.ConformanceError, "actual work start is dated in the future"):
+            adapter.map_order(source, binding, stage_map, NOW)
+
+    def test_future_customer_signature_timestamp_is_rejected(self):
+        source, binding, stage_map = inputs()
+        source["order"]["signed_on"] = "2026-10-15T12:00:01Z"
+        with self.assertRaisesRegex(core.ConformanceError, "customer signature timestamp is dated in the future"):
+            adapter.map_order(source, binding, stage_map, NOW)
+
+    def test_future_activity_completion_timestamp_is_rejected(self):
+        source, binding, stage_map = inputs()
+        source["activities"][0]["completed_on"] = "2026-10-15T12:00:01Z"
+        with self.assertRaisesRegex(core.ConformanceError, "activity completion timestamp is dated in the future"):
+            adapter.map_order(source, binding, stage_map, NOW)
+
     def test_unsupported_source_commit_is_rejected(self):
         source, binding, stage_map = inputs()
         source["source"]["repository_commit"] = "0" * 40
