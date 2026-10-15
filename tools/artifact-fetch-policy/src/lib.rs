@@ -53,10 +53,31 @@ pub enum PolicyError {
     OriginNotAllowed(HttpsOrigin),
     EmptyDnsAnswer,
     NonPublicDestination(IpAddr),
+    ResolutionOriginMismatch {
+        requested: HttpsOrigin,
+        validated_for: HttpsOrigin,
+    },
     ConnectedPeerNotValidated(IpAddr),
     RedirectLimitExceeded { limit: u8 },
     DeclaredLengthExceeded { declared: u64, limit: u64 },
     DownloadLimitExceeded { received: u64, limit: u64 },
+}
+
+/// DNS answers that passed policy checks for one exact HTTPS origin.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ValidatedResolution {
+    origin: HttpsOrigin,
+    addresses: Vec<IpAddr>,
+}
+
+impl ValidatedResolution {
+    pub fn origin(&self) -> &HttpsOrigin {
+        &self.origin
+    }
+
+    pub fn addresses(&self) -> &[IpAddr] {
+        &self.addresses
+    }
 }
 
 /// Immutable limits and administrator-approved HTTPS origins.
@@ -113,7 +134,7 @@ impl FetchPolicy {
         &self,
         origin: &HttpsOrigin,
         answers: &[IpAddr],
-    ) -> Result<Vec<IpAddr>, PolicyError> {
+    ) -> Result<ValidatedResolution, PolicyError> {
         self.authorize_origin(origin)?;
         if answers.is_empty() {
             return Err(PolicyError::EmptyDnsAnswer);
@@ -127,7 +148,10 @@ impl FetchPolicy {
             validated.insert(*address);
         }
 
-        Ok(validated.into_iter().collect())
+        Ok(ValidatedResolution {
+            origin: origin.clone(),
+            addresses: validated.into_iter().collect(),
+        })
     }
 
     /// Confirm that the socket's actual peer is in the exact validated set.
@@ -137,14 +161,20 @@ impl FetchPolicy {
     pub fn verify_connected_peer(
         &self,
         origin: &HttpsOrigin,
-        validated_addresses: &[IpAddr],
+        validated: &ValidatedResolution,
         connected_peer: IpAddr,
     ) -> Result<(), PolicyError> {
+        if &validated.origin != origin {
+            return Err(PolicyError::ResolutionOriginMismatch {
+                requested: origin.clone(),
+                validated_for: validated.origin.clone(),
+            });
+        }
         self.authorize_origin(origin)?;
         if !is_conservative_public_unicast(connected_peer) {
             return Err(PolicyError::NonPublicDestination(connected_peer));
         }
-        if validated_addresses.contains(&connected_peer) {
+        if validated.addresses.contains(&connected_peer) {
             Ok(())
         } else {
             Err(PolicyError::ConnectedPeerNotValidated(connected_peer))
@@ -308,6 +338,7 @@ fn is_conservative_public_ipv6(ip: Ipv6Addr) -> bool {
         && !ipv6_in_prefix(ip, Ipv6Addr::new(0x2001, 0x0db8, 0, 0, 0, 0, 0, 0), 32)
         && !ipv6_in_prefix(ip, Ipv6Addr::new(0x2002, 0, 0, 0, 0, 0, 0, 0), 16)
         && !ipv6_in_prefix(ip, Ipv6Addr::new(0x3fff, 0, 0, 0, 0, 0, 0, 0), 20)
+        && !ipv6_in_prefix(ip, Ipv6Addr::new(0x5f00, 0, 0, 0, 0, 0, 0, 0), 16)
 }
 
 fn ipv4_in_prefix(address: Ipv4Addr, network: Ipv4Addr, prefix: u8) -> bool {
@@ -429,9 +460,10 @@ mod tests {
         let registry = origin("registry.example.invalid", 443);
         let addresses = [ip("8.8.8.8"), ip("2606:4700:4700::1111")];
         let validated = p.authorize_resolution(&registry, &addresses).unwrap();
-        assert_eq!(validated.len(), 2);
-        assert!(validated.contains(&ip("8.8.8.8")));
-        assert!(validated.contains(&ip("2606:4700:4700::1111")));
+        assert_eq!(validated.origin(), &registry);
+        assert_eq!(validated.addresses().len(), 2);
+        assert!(validated.addresses().contains(&ip("8.8.8.8")));
+        assert!(validated.addresses().contains(&ip("2606:4700:4700::1111")));
     }
 
     #[test]
@@ -500,6 +532,7 @@ mod tests {
             "2001:db8::1",
             "2002::1",
             "3fff::1",
+            "5f00::1",
             "fc00::1",
             "fe80::1",
             "ff02::1",
@@ -529,6 +562,24 @@ mod tests {
         assert_eq!(
             p.verify_connected_peer(&registry, &validated, ip("127.0.0.1")),
             Err(PolicyError::NonPublicDestination(ip("127.0.0.1")))
+        );
+    }
+
+    #[test]
+    fn validated_resolution_cannot_be_reused_for_another_origin() {
+        let p = policy();
+        let registry = origin("registry.example.invalid", 443);
+        let mirror = origin("mirror.example.invalid", 8443);
+        let validated = p
+            .authorize_resolution(&registry, &[ip("8.8.8.8")])
+            .unwrap();
+
+        assert_eq!(
+            p.verify_connected_peer(&mirror, &validated, ip("8.8.8.8")),
+            Err(PolicyError::ResolutionOriginMismatch {
+                requested: mirror,
+                validated_for: registry,
+            })
         );
     }
 
