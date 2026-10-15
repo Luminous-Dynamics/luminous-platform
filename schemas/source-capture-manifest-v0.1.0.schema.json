@@ -28,11 +28,13 @@
     },
     "canonical_url": {
       "type": "string",
-      "format": "uri"
+      "format": "uri",
+      "pattern": "^[Hh][Tt][Tt][Pp][Ss]://"
     },
     "final_url": {
       "type": "string",
-      "format": "uri"
+      "format": "uri",
+      "pattern": "^[Hh][Tt][Tt][Pp][Ss]://"
     },
     "captured_at": {
       "type": "string",
@@ -98,7 +100,8 @@
             "string",
             "null"
           ],
-          "format": "uri"
+          "format": "uri",
+          "pattern": "^[Hh][Tt][Tt][Pp][Ss]://"
         },
         "previous_content_type": {
           "type": [
@@ -147,7 +150,8 @@
                 "const": null
               },
               "previous_final_url": {
-                "const": null
+                "const": null,
+                "pattern": "^[Hh][Tt][Tt][Pp][Ss]://"
               },
               "previous_content_type": {
                 "const": null
@@ -182,7 +186,8 @@
               },
               "previous_final_url": {
                 "type": "string",
-                "format": "uri"
+                "format": "uri",
+                "pattern": "^[Hh][Tt][Tt][Pp][Ss]://"
               },
               "change_signals": {
                 "maxItems": 0
@@ -214,7 +219,8 @@
               },
               "previous_final_url": {
                 "type": "string",
-                "format": "uri"
+                "format": "uri",
+                "pattern": "^[Hh][Tt][Tt][Pp][Ss]://"
               },
               "change_signals": {
                 "minItems": 1
