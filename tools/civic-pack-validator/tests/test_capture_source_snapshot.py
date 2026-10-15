@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -142,6 +143,23 @@ class CaptureManifestTests(unittest.TestCase):
                 "--snapshot", str(snapshot),
                 "--captured-at", BASE_TIME,
                 "--output", str(snapshot),
+            ])
+            self.assertEqual(result, 1)
+            self.assertEqual(snapshot.read_bytes(), original)
+
+    def test_output_cannot_overwrite_snapshot_through_hard_link(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "capture.bin"
+            output_alias = Path(directory) / "output.json"
+            original = b"preserve captured bytes"
+            snapshot.write_bytes(original)
+            os.link(snapshot, output_alias)
+            result = main([
+                "--source-id", "example.official-source",
+                "--canonical-url", CANONICAL,
+                "--snapshot", str(snapshot),
+                "--captured-at", BASE_TIME,
+                "--output", str(output_alias),
             ])
             self.assertEqual(result, 1)
             self.assertEqual(snapshot.read_bytes(), original)
