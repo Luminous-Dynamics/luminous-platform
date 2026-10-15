@@ -153,6 +153,8 @@ The first ERPNext slice is pinned to release v16.51.0 at commit fd97695de7bfeb1d
 
 The mapper requires an explicit ERPNext site/company-to-tenant binding. It preserves document status separately from maintenance status and keeps due/completion dates date-only without inventing a time. It rejects future-dated completion claims, mismatched plan/task relationships, unsupported source revisions and unknown fields.
 
+External IDs percent-escape source-controlled namespace and record-name components before joining them with the fixed DocType separator, preventing ambiguous composite IDs. The focused adapter suite currently contains 32 tests, and the Make target enforces that minimum.
+
 The task certificate requirement, log has_certificate flag and certificate attachment presence are separate data. Conflicts are disclosed; certificate metadata is not proof of authenticity. Assignment, status, submission and performed-work notes do not establish professional credentials, verified workmanship or compliance. PII/editor content and certificate bytes/attachment paths are omitted.
 
 Limits: synthetic offline conformance only, not a live ERPNext connector, credential verifier, certificate validator, legal review or production security qualification. ERPNext v16.51.0 license.txt identifies GPLv3; distribution obligations need independent review.
