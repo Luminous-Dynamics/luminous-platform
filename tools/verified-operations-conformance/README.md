@@ -13,12 +13,12 @@ cargo run --manifest-path tools/verified-operations-conformance/Cargo.toml -- \
   profiles/verified-operations/synthetic-pilot-v1.json
 ```
 
-The runner checks the Draft 2020-12 schema, validates the 27-case corpus, enforces unique scenario IDs and fail-closed metadata invariants, and independently recomputes expected classifications and reason codes. It now covers outcome objectives with scope, window completeness, measurement validity, coverage thresholds, compatible units, independent-measurement presence and numeric target comparison. It enables format assertions and refuses external schema reference retrieval.
+The runner checks the Draft 2020-12 schema, validates the 28-case corpus, enforces unique scenario IDs and fail-closed metadata invariants, and independently recomputes expected classifications and reason codes. It now covers outcome objectives with scope, window completeness, measurement validity, sample-derived coverage, window-boundary completeness, cadence alignment, duplicate and out-of-range sample rejection, maximum-gap enforcement, compatible units, independent-measurement presence and numeric target comparison. It enables format assertions and refuses external schema reference retrieval.
 
 ## Claim limits
 
 - The facts and scenarios are synthetic. No customer systems or provider API is called.
 - A classifier/test passing proves only that the authored contract and implementation agree. It does not prove a source observation true, validate a real adapter, or qualify an actuator or privileged operation.
 - The corpus prohibits automatic mutation in all scenarios. It is not an authorization API and must never be imported as a runtime command policy.
-- The direct Rust dependencies are exact-version pinned. A committed `Cargo.lock` is still required before treating transitive dependency resolution as reproducible or promoting this tool beyond contract-test use.
+- The direct Rust dependencies are exact-version pinned. The synthetic sample offsets establish only schedule coverage in this contract; production evidence must bind actual values, source identities, timestamps, unit semantics and verifier results. A committed `Cargo.lock` is still required before treating transitive dependency resolution as reproducible or promoting this tool beyond contract-test use.
 - CI must pass against the exact source head. Queued, skipped, absent, or older-head runs are not passes.
