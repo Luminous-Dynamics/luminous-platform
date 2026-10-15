@@ -158,15 +158,42 @@ fn valid_hex(value: &str, length: usize) -> bool {
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
-fn valid_iso_date_shape(value: &str) -> bool {
+fn valid_iso_calendar_date(value: &str) -> bool {
     let bytes = value.as_bytes();
-    bytes.len() == 10
-        && bytes[4] == b'-'
-        && bytes[7] == b'-'
-        && bytes
+    if !value.is_ascii()
+        || bytes.len() != 10
+        || bytes[4] != b'-'
+        || bytes[7] != b'-'
+        || !bytes
             .iter()
             .enumerate()
             .all(|(index, byte)| index == 4 || index == 7 || byte.is_ascii_digit())
+    {
+        return false;
+    }
+
+    let Ok(year) = value[0..4].parse::<i32>() else {
+        return false;
+    };
+    let Ok(month) = value[5..7].parse::<u32>() else {
+        return false;
+    };
+    let Ok(day) = value[8..10].parse::<u32>() else {
+        return false;
+    };
+    if !(1900..=2200).contains(&year) || !(1..=12).contains(&month) {
+        return false;
+    }
+
+    let leap_year = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let days_in_month = match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 if leap_year => 29,
+        2 => 28,
+        _ => return false,
+    };
+    (1..=days_in_month).contains(&day)
 }
 
 fn nonempty(value: &str) -> bool {
@@ -186,8 +213,8 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
     if crosswalk.schema_version != "civic-record-crosswalk-v1" {
         errors.push("schema_version must be civic-record-crosswalk-v1".to_owned());
     }
-    if !valid_iso_date_shape(&crosswalk.review_snapshot) {
-        errors.push("review_snapshot must have YYYY-MM-DD shape".to_owned());
+    if !valid_iso_calendar_date(&crosswalk.review_snapshot) {
+        errors.push("review_snapshot must be a real calendar date in YYYY-MM-DD format".to_owned());
     }
     if crosswalk.contracts.is_empty() {
         errors.push("contracts must not be empty".to_owned());
