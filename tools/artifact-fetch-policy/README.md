@@ -22,7 +22,8 @@ HTTP client or a complete SSRF defense.
   and becomes terminal after a denied hop; no credential forwarding occurs
   when the origin changes.
 - Declared content-length and streamed-byte limits, plus a policy-bound cumulative byte meter that becomes terminal after a limit breach or counter overflow. Counter overflow has its own error so it cannot be misreported as an ordinary size breach.
-- Fail-closed response content-encoding validation: accept only an absent header or `identity` unless a future transport explicitly meters compressed wire bytes and decoded artifact bytes.
+- Fail-closed response content-encoding validation across every field occurrence: accept only no `Content-Encoding` field or exactly one `identity` value. Duplicate values and compressed encodings are rejected.
+- Strict `Content-Length` header validation: accept no field or exactly one decimal value; reject duplicate fields, comma-joined or malformed values, integer overflow, and sizes above policy.
 - Required positive connect, read-idle, and whole-fetch time budgets, with phase timeouts constrained by the total budget.
 
 ## Required transport contract
@@ -49,12 +50,20 @@ The transport that eventually uses this library must:
    absolute total-fetch deadline spanning all redirects and retries. Do not
    restart the total budget for each attempt. These values are policy
    configuration only; this crate does not interrupt network I/O.
-5. Request `Accept-Encoding: identity` and use `validate_content_encoding`
-   on the response before processing the body. This default rejects gzip,
-   Brotli, and other compressed bodies so a small encoded length cannot hide a
-   large decoded artifact. A future transport that supports compression must
-   cap both wire bytes and decoded bytes independently.
-6. Create a `DownloadBudget` from the policy and call `record_chunk` for each
+5. Request `Accept-Encoding: identity`, gather every response `Content-Encoding`
+   field occurrence, and pass the full list to `validate_content_encoding_headers`.
+   Do not use a last-value-wins interpretation. This rejects gzip, Brotli,
+   combined values, and duplicate fields by default. A future transport that
+   supports compression must cap wire bytes and decoded bytes independently.
+6. Gather every response `Content-Length` field occurrence and pass the entire
+   list to `validate_content_length_headers`. The strict profile allows zero or
+   one decimal value; it rejects duplicate fields even when identical, plus
+   comma lists, malformed syntax, overflow, and values beyond the size cap. A
+   missing length is allowed only because the streamed-byte meter remains the
+   authoritative size bound. The HTTP implementation must still correctly
+   enforce message framing and reject invalid Transfer-Encoding/Content-Length
+   combinations; these helpers do not parse raw HTTP messages.
+7. Create a `DownloadBudget` from the policy and call `record_chunk` for each
    body chunk before accepting/writing it. Abort immediately on error. The meter
    uses checked cumulative arithmetic, has a distinct counter-overflow error,
    and remains terminal after the first over-limit event, so callers cannot
@@ -98,6 +107,6 @@ No third-party crates are used.
     cargo fmt --check --manifest-path tools/artifact-fetch-policy/Cargo.toml
     cargo test --locked --offline --manifest-path tools/artifact-fetch-policy/Cargo.toml
 
-The suite now contains 18 deterministic unit tests. Passing them proves only
+The suite now contains 19 deterministic unit tests. Passing them proves only
 that this library's policy checks behave as tested. It does not qualify any
 actual transport or artifact download.
