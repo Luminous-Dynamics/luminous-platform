@@ -102,15 +102,17 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
         with self.assertRaisesRegex(core.ConformanceError, "submitted log must be Completed or Cancelled"):
             adapter.map_maintenance_log(s, b, NOW)
 
-    def test_cancelled_docstatus_requires_cancelled_source_status(self):
+    def test_document_cancellation_with_completed_source_status_is_disclosed(self):
         s, b = inputs(); s["log"]["docstatus"] = 2
-        with self.assertRaisesRegex(core.ConformanceError, "cancelled document must have Cancelled"):
-            adapter.map_maintenance_log(s, b, NOW)
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(out["maintenance"]["normalized_status"], "cancelled")
+        self.assertIn("document_cancelled_but_maintenance_status_not_cancelled", out["maintenance"]["mapping_conflicts"])
 
-    def test_cancelled_status_requires_cancelled_docstatus(self):
+    def test_cancelled_source_status_without_cancelled_docstatus_is_disclosed(self):
         s, b = inputs(); s["log"].update(maintenance_status="Cancelled", docstatus=0, completion_date=None)
-        with self.assertRaisesRegex(core.ConformanceError, "Cancelled log must have cancelled document status"):
-            adapter.map_maintenance_log(s, b, NOW)
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(out["maintenance"]["normalized_status"], "cancelled")
+        self.assertIn("maintenance_status_cancelled_but_document_not_cancelled", out["maintenance"]["mapping_conflicts"])
 
     def test_plan_task_relationship_mismatch_rejected(self):
         s, b = inputs(); s["plan"]["task_id"] = "another-task"
