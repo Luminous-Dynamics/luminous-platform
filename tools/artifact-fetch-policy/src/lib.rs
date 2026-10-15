@@ -65,6 +65,7 @@ pub enum PolicyError {
     RedirectLimitExceeded { limit: u8 },
     DeclaredLengthExceeded { declared: u64, limit: u64 },
     DownloadLimitExceeded { received: u64, limit: u64 },
+    RedirectChainFailed,
 }
 
 /// Cumulative byte meter for one artifact transfer.
@@ -72,7 +73,8 @@ pub enum PolicyError {
 /// Once any chunk would exceed the configured limit, this meter becomes
 /// terminal: later calls remain rejected. Construct it through `FetchPolicy`
 /// so the limit comes from the administrator's immutable policy.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[must_use = "download budget must be retained for the entire transfer"]
+#[derive(Debug, Eq, PartialEq)]
 pub struct DownloadBudget {
     limit: u64,
     received: u64,
@@ -202,6 +204,31 @@ pub struct FetchPolicy {
     timeouts: FetchTimeouts,
 }
 
+/// Redirect-chain state. Private fields and no `Clone` implementation prevent
+/// callers from resetting or trivially forking the per-chain hop counter.
+#[must_use = "redirect chain must be retained across every redirect hop"]
+#[derive(Debug, Eq, PartialEq)]
+pub struct RedirectChain {
+    current: HttpsOrigin,
+    redirects_followed: u8,
+    max_redirects: u8,
+    failed: bool,
+}
+
+impl RedirectChain {
+    pub fn current_origin(&self) -> &HttpsOrigin {
+        &self.current
+    }
+
+    pub fn redirects_followed(&self) -> u8 {
+        self.redirects_followed
+    }
+
+    pub fn is_failed(&self) -> bool {
+        self.failed
+    }
+}
+
 /// Safe redirect decision. Fields are private so callers cannot fabricate an
 /// authorization result; credentials are still managed by the broker, not URLs.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -314,29 +341,56 @@ impl FetchPolicy {
         }
     }
 
-    /// Authorize one redirect target, bounding hop count and origin changes.
-    ///
-    /// redirects_already_followed is zero for the first response redirect.
-    /// The caller must invoke this for every Location hop before opening the
-    /// next connection and must independently validate that hop's DNS answers.
-    pub fn authorize_redirect(
+    /// Start a redirect chain at an authorized initial origin.
+    pub fn start_redirect_chain(
         &self,
-        from: &HttpsOrigin,
-        to: &HttpsOrigin,
-        redirects_already_followed: u8,
-    ) -> Result<RedirectDecision, PolicyError> {
-        self.authorize_origin(from)?;
-        if redirects_already_followed >= self.max_redirects {
-            return Err(PolicyError::RedirectLimitExceeded {
-                limit: self.max_redirects,
-            });
-        }
-        self.authorize_origin(to)?;
-
-        Ok(RedirectDecision {
-            target: to.clone(),
-            same_origin_credentials_allowed: from == to,
+        initial_origin: &HttpsOrigin,
+    ) -> Result<RedirectChain, PolicyError> {
+        self.authorize_origin(initial_origin)?;
+        Ok(RedirectChain {
+            current: initial_origin.clone(),
+            redirects_followed: 0,
+            max_redirects: self.max_redirects,
+            failed: false,
         })
+    }
+
+    /// Authorize and account for exactly one redirect from the chain's current
+    /// origin. The caller cannot supply or reset the hop count. Any rejected
+    /// hop makes the chain terminal; start a new fetch rather than continuing
+    /// an HTTP redirect chain after denial.
+    pub fn authorize_redirect_hop(
+        &self,
+        chain: &mut RedirectChain,
+        to: &HttpsOrigin,
+    ) -> Result<RedirectDecision, PolicyError> {
+        if chain.failed {
+            return Err(PolicyError::RedirectChainFailed);
+        }
+        if let Err(error) = self.authorize_origin(&chain.current) {
+            chain.failed = true;
+            return Err(error);
+        }
+
+        // Preserve the strictest hop limit if a caller accidentally attempts to
+        // use a chain with another policy instance.
+        let limit = self.max_redirects.min(chain.max_redirects);
+        if chain.redirects_followed >= limit {
+            chain.failed = true;
+            return Err(PolicyError::RedirectLimitExceeded { limit });
+        }
+        if let Err(error) = self.authorize_origin(to) {
+            chain.failed = true;
+            return Err(error);
+        }
+
+        let decision = RedirectDecision {
+            target: to.clone(),
+            same_origin_credentials_allowed: chain.current == *to,
+        };
+        chain.current = to.clone();
+        chain.redirects_followed += 1;
+        Ok(decision)
     }
 
     /// Reject an advertised Content-Length above the configured byte cap.
@@ -817,25 +871,52 @@ mod tests {
     }
 
     #[test]
-    fn redirects_require_allowlisted_origins_and_bounded_hops() {
+    fn redirects_require_allowlisted_origins_and_stateful_bounded_hops() {
         let p = policy();
         let registry = origin("registry.example.invalid", 443);
         let mirror = origin("mirror.example.invalid", 8443);
-        let same = p.authorize_redirect(&registry, &registry, 0).unwrap();
-        assert!(same.same_origin_credentials_allowed());
+        let mut chain = p.start_redirect_chain(&registry).unwrap();
 
-        let cross = p.authorize_redirect(&registry, &mirror, 0).unwrap();
+        let same = p.authorize_redirect_hop(&mut chain, &registry).unwrap();
+        assert!(same.same_origin_credentials_allowed());
+        assert_eq!(chain.redirects_followed(), 1);
+
+        let cross = p.authorize_redirect_hop(&mut chain, &mirror).unwrap();
         assert_eq!(cross.target(), &mirror);
         assert!(!cross.same_origin_credentials_allowed());
+        assert_eq!(chain.current_origin(), &mirror);
+        assert_eq!(chain.redirects_followed(), 2);
 
+        p.authorize_redirect_hop(&mut chain, &registry).unwrap();
+        assert_eq!(chain.redirects_followed(), 3);
         assert_eq!(
-            p.authorize_redirect(&registry, &mirror, 3),
+            p.authorize_redirect_hop(&mut chain, &mirror),
             Err(PolicyError::RedirectLimitExceeded { limit: 3 })
         );
+        assert!(chain.is_failed());
+        assert_eq!(
+            p.authorize_redirect_hop(&mut chain, &registry),
+            Err(PolicyError::RedirectChainFailed)
+        );
+    }
+
+    #[test]
+    fn rejected_redirect_poison_chain() {
+        let p = policy();
+        let registry = origin("registry.example.invalid", 443);
+        let attacker = origin("attacker.example.invalid", 443);
+        let mirror = origin("mirror.example.invalid", 8443);
+        let mut chain = p.start_redirect_chain(&registry).unwrap();
+
         assert!(matches!(
-            p.authorize_redirect(&registry, &origin("attacker.example.invalid", 443), 0),
+            p.authorize_redirect_hop(&mut chain, &attacker),
             Err(PolicyError::OriginNotAllowed(_))
         ));
+        assert!(chain.is_failed());
+        assert_eq!(
+            p.authorize_redirect_hop(&mut chain, &mirror),
+            Err(PolicyError::RedirectChainFailed)
+        );
     }
 
     #[test]
