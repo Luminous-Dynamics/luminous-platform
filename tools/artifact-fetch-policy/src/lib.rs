@@ -67,6 +67,67 @@ pub enum PolicyError {
     DownloadLimitExceeded { received: u64, limit: u64 },
 }
 
+/// Cumulative byte meter for one artifact transfer.
+///
+/// Once any chunk would exceed the configured limit, this meter becomes
+/// terminal: later calls remain rejected. Construct it through `FetchPolicy`
+/// so the limit comes from the administrator's immutable policy.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DownloadBudget {
+    limit: u64,
+    received: u64,
+    failed: bool,
+}
+
+impl DownloadBudget {
+    /// Account for the next body chunk before accepting or writing that chunk.
+    /// Returns the cumulative byte count only while it remains within policy.
+    pub fn record_chunk(&mut self, chunk_bytes: usize) -> Result<u64, PolicyError> {
+        if self.failed {
+            return Err(PolicyError::DownloadLimitExceeded {
+                received: self.received,
+                limit: self.limit,
+            });
+        }
+
+        let Some(chunk_bytes) = u64::try_from(chunk_bytes).ok() else {
+            self.received = u64::MAX;
+            self.failed = true;
+            return Err(PolicyError::DownloadLimitExceeded {
+                received: self.received,
+                limit: self.limit,
+            });
+        };
+        let Some(received) = self.received.checked_add(chunk_bytes) else {
+            self.received = u64::MAX;
+            self.failed = true;
+            return Err(PolicyError::DownloadLimitExceeded {
+                received: self.received,
+                limit: self.limit,
+            });
+        };
+
+        self.received = received;
+        if received > self.limit {
+            self.failed = true;
+            Err(PolicyError::DownloadLimitExceeded {
+                received,
+                limit: self.limit,
+            })
+        } else {
+            Ok(received)
+        }
+    }
+
+    pub fn received_bytes(&self) -> u64 {
+        self.received
+    }
+
+    pub fn is_failed(&self) -> bool {
+        self.failed
+    }
+}
+
 /// DNS answers that passed policy checks for one exact HTTPS origin.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ValidatedResolution {
@@ -291,10 +352,21 @@ impl FetchPolicy {
         Ok(())
     }
 
-    /// Reject a streamed byte count above the cap.
+    /// Create a terminal cumulative byte meter for one transfer.
+    pub fn start_download(&self) -> DownloadBudget {
+        DownloadBudget {
+            limit: self.max_download_bytes,
+            received: 0,
+            failed: false,
+        }
+    }
+
+    /// Check an externally maintained streamed-byte total against the cap.
     ///
-    /// The transport must call this while streaming and abort immediately when
-    /// it returns an error; checking only after writing the whole body is too late.
+    /// Prefer `start_download` and `DownloadBudget::record_chunk` in a concrete
+    /// transport so overflow and repeated calls after rejection fail closed.
+    /// The transport must abort immediately on error; checking only after
+    /// writing the whole body is too late.
     pub fn check_received_bytes(&self, received: u64) -> Result<(), PolicyError> {
         if received > self.max_download_bytes {
             Err(PolicyError::DownloadLimitExceeded {
@@ -764,6 +836,33 @@ mod tests {
             p.authorize_redirect(&registry, &origin("attacker.example.invalid", 443), 0),
             Err(PolicyError::OriginNotAllowed(_))
         ));
+    }
+
+    #[test]
+    fn cumulative_download_budget_is_terminal_after_overflow() {
+        let p = policy();
+        let mut budget = p.start_download();
+        assert_eq!(budget.record_chunk(512), Ok(512));
+        assert_eq!(budget.record_chunk(512), Ok(1024));
+        assert_eq!(budget.received_bytes(), 1024);
+        assert!(!budget.is_failed());
+
+        assert_eq!(
+            budget.record_chunk(1),
+            Err(PolicyError::DownloadLimitExceeded {
+                received: 1025,
+                limit: 1024,
+            })
+        );
+        assert!(budget.is_failed());
+        assert_eq!(budget.received_bytes(), 1025);
+        assert_eq!(
+            budget.record_chunk(1),
+            Err(PolicyError::DownloadLimitExceeded {
+                received: 1025,
+                limit: 1024,
+            })
+        );
     }
 
     #[test]
