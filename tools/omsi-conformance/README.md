@@ -151,9 +151,9 @@ Run the source-pinned offline checks with make -C tools/omsi-conformance erpnext
 
 The first ERPNext slice is pinned to release v16.51.0 at commit fd97695de7bfeb1d7728a7370c3e128d0cc1509e. It maps only Asset Maintenance Log snapshots with their separately linked Asset Maintenance plan and Asset Maintenance Task. Maintenance Visit/Schedule mapping remains distinct because those workflows have different lifecycle fields.
 
-The mapper requires an explicit ERPNext site/company-to-tenant binding. It preserves document status separately from maintenance status and keeps due/completion dates date-only without inventing a time. It rejects future-dated completion claims, mismatched plan/task relationships, unsupported source revisions and unknown fields.
+The mapper requires an explicit ERPNext site/company-to-tenant binding and an IANA site timezone. Date-only completion checks use the evaluation instant converted to that timezone; raw due/completion/next-task dates remain dates. "Overdue" stays "overdue" rather than being mislabeled "blocked", and a task's next due date is preserved separately from a log's due date. It rejects future-dated completion claims, mismatched plan/task relationships, unsupported source revisions, invalid timezones and unknown fields.
 
-External IDs percent-escape source-controlled namespace and record-name components before joining them with the fixed DocType separator, preventing ambiguous composite IDs. The focused adapter suite currently contains 32 tests, and the Make target enforces that minimum.
+External IDs percent-escape source-controlled namespace and record-name components before joining them with the fixed DocType separator, preventing ambiguous composite IDs. The focused adapter suite currently contains 36 tests, and the Make target enforces that minimum.
 
 The task certificate requirement, log has_certificate flag and certificate attachment presence are separate data. Conflicts are disclosed; certificate metadata is not proof of authenticity. Assignment, status, submission and performed-work notes do not establish professional credentials, verified workmanship or compliance. PII/editor content and certificate bytes/attachment paths are omitted.
 

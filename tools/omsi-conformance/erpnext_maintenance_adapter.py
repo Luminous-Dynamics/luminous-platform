@@ -4,6 +4,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from jsonschema import Draft202012Validator, FormatChecker
 import omsi_validate as core
 
@@ -16,7 +17,7 @@ SCHEMAS = {
 PINNED_RELEASE = "v16.51.0"
 PINNED_COMMIT = "fd97695de7bfeb1d7728a7370c3e128d0cc1509e"
 PINNED_LICENSE = "GPL-3.0"
-STATUS_MAP = {"Planned": "scheduled", "Completed": "closed", "Cancelled": "cancelled", "Overdue": "blocked"}
+STATUS_MAP = {"Planned": "scheduled", "Completed": "closed", "Cancelled": "cancelled", "Overdue": "overdue"}
 
 
 def _fail(message: str) -> None:
@@ -48,10 +49,12 @@ def _date(value: str | None) -> date | None:
 
 
 def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: datetime) -> dict[str, Any]:
-    """Map one snapshot; now must use the configured site's timezone.
+    """Map one snapshot using the trusted binding's IANA site timezone.
 
-    Source date-only values stay dates. This function never invents a time,
-    makes source writes, verifies credentials, or establishes workmanship.
+    now must be timezone-aware; date-only claims are compared with the current
+    date in binding["site_timezone"]. Source date-only values stay dates. This
+    function never invents a time, writes source records, verifies credentials,
+    or establishes workmanship.
     """
     if now.tzinfo is None or now.utcoffset() is None:
         _fail("ERPNext evaluation clock must include a timezone")
@@ -59,6 +62,11 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
     _validate("binding", binding)
     core.canonical_bytes(snapshot)
     core.canonical_bytes(binding)
+    try:
+        site_zone = ZoneInfo(binding["site_timezone"])
+    except (ZoneInfoNotFoundError, ValueError):
+        _fail("ERPNext tenant binding site timezone is not a valid IANA timezone")
+    site_today = now.astimezone(site_zone).date()
 
     source, plan, task, log = snapshot["source"], snapshot["plan"], snapshot["task"], snapshot["log"]
     if source["release_tag"] != PINNED_RELEASE or source["repository_commit"] != PINNED_COMMIT:
@@ -86,8 +94,6 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
     status, docstatus = log["maintenance_status"], log["docstatus"]
     completion, due = _date(log["completion_date"]), _date(log["due_date"])
     last_completion = _date(task["last_completion_date"])
-    site_today = now.date()  # now is supplied in the source site's configured timezone
-
     if status == "Completed" and completion is None:
         _fail("ERPNext Completed log requires a completion date")
     if status != "Completed" and completion is not None:
@@ -141,7 +147,8 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
             "task_ref": _ref(source["instance_namespace"], "Asset Maintenance Task", task["name"]),
             "asset_ref": _ref(source["instance_namespace"], "Asset", plan["asset_name"]),
             "maintenance_type": task["maintenance_type"], "periodicity": task["periodicity"],
-            "due_date": log["due_date"], "completion_date": log["completion_date"],
+            "due_date": log["due_date"], "next_task_due_date": task["next_due_date"],
+            "completion_date": log["completion_date"],
             "last_task_completion_date": task["last_completion_date"],
             "amended_from_ref": _ref(source["instance_namespace"], "Asset Maintenance Log", log["amended_from"]) if log["amended_from"] else None,
             "mapping_conflicts": sorted(conflicts), "mapping_losses": sorted(losses),

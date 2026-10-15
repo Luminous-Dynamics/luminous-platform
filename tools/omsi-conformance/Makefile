@@ -22,4 +22,4 @@ oca-adapter:
 	python -c 'import sys,unittest; suite=unittest.defaultTestLoader.discover("tests", pattern="test_oca_fsm_adapter.py"); result=unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(0 if result.wasSuccessful() and result.testsRun >= 23 else 1)'
 
 erpnext-adapter:
-	python -c 'import sys,unittest; suite=unittest.defaultTestLoader.discover("tests", pattern="test_erpnext_maintenance_adapter.py"); result=unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(0 if result.wasSuccessful() and result.testsRun >= 32 else 1)'
+	python -c 'import sys,unittest; suite=unittest.defaultTestLoader.discover("tests", pattern="test_erpnext_maintenance_adapter.py"); result=unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(0 if result.wasSuccessful() and result.testsRun >= 36 else 1)'

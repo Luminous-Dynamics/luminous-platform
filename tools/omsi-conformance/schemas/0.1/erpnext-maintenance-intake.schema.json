@@ -96,6 +96,7 @@
         "maintenance_type",
         "periodicity",
         "due_date",
+        "next_task_due_date",
         "completion_date",
         "last_task_completion_date",
         "amended_from_ref",
@@ -124,6 +125,7 @@
             "scheduled",
             "closed",
             "cancelled",
+            "overdue",
             "blocked"
           ]
         },
@@ -158,6 +160,18 @@
           ]
         },
         "due_date": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+              "format": "date"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "next_task_due_date": {
           "anyOf": [
             {
               "type": "string",

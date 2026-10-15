@@ -98,6 +98,31 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
         with self.assertRaisesRegex(core.ConformanceError, "export is dated in the future"):
             adapter.map_maintenance_log(s, b, NOW)
 
+    def test_site_timezone_controls_date_only_future_check(self):
+        s, b = inputs()
+        b["site_timezone"] = "Pacific/Kiritimati"
+        # 2026-10-16 is not future in the configured UTC+14 site at this instant.
+        s["log"]["completion_date"] = "2026-10-16"
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(out["maintenance"]["completion_date"], "2026-10-16")
+
+    def test_invalid_site_timezone_rejected(self):
+        s, b = inputs(); b["site_timezone"] = "Mars/Olympus_Mons"
+        with self.assertRaisesRegex(core.ConformanceError, "not a valid IANA timezone"):
+            adapter.map_maintenance_log(s, b, NOW)
+
+    def test_overdue_status_remains_overdue_not_blocked(self):
+        s, b = inputs()
+        s["log"].update(maintenance_status="Overdue", docstatus=0, completion_date=None)
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(out["maintenance"]["normalized_status"], "overdue")
+
+    def test_task_next_due_date_is_preserved_separately_from_log_due_date(self):
+        s, b = inputs(); out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(out["maintenance"]["due_date"], "2026-10-14")
+        self.assertEqual(out["maintenance"]["next_task_due_date"], "2026-11-14")
+        self.assertNotEqual(out["maintenance"]["due_date"], out["maintenance"]["next_task_due_date"])
+
     def test_future_completion_date_rejected(self):
         s, b = inputs(); s["log"]["completion_date"] = "2026-10-16"
         with self.assertRaisesRegex(core.ConformanceError, "completion date is in the future"):

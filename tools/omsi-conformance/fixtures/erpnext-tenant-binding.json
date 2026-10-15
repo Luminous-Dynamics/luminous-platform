@@ -4,6 +4,7 @@
   "tenant_id": "tenant-synthetic-maintenance",
   "source_instance_namespace": "erpnext-instance://fixture.invalid/maintenance-db",
   "source_company_id": "COMPANY-SYN-07",
+  "site_timezone": "UTC",
   "status": "active",
   "configured_at": "2026-10-01T00:00:00Z"
 }
