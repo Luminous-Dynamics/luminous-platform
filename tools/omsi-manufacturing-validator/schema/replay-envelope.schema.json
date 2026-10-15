@@ -45,7 +45,7 @@
       "additionalProperties": false
     },
     "report": {
-      "$ref": "semantic-report.schema.json"
+      "$ref": "urn:luminous-dynamics:omsi:manufacturing-semantic-report:0.1"
     },
     "limitations": {
       "type": "array",
