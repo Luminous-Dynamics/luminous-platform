@@ -106,6 +106,12 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
         _fail("ERPNext task last-completion date is in the future")
 
     conflicts: set[str] = set()
+    # A Completed status can exist on an unsubmitted draft: the pinned
+    # controller's Completed/Cancelled submission restriction lives in
+    # on_submit(), not validate(). Keep the status claim, but disclose that
+    # it has not reached the submitted document lifecycle state.
+    if status == "Completed" and docstatus == 0:
+        conflicts.add("completed_status_on_unsubmitted_document")
     # The pinned controller's validate() promotes past-due Planned logs to
     # Overdue when the record is validated. A stale snapshot can still report
     # Planned; preserve that source claim but make the inconsistency explicit.

@@ -23,6 +23,19 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
         self.assertEqual(out["maintenance"]["normalized_status"], "closed")
         self.assertEqual(out["assurance"]["workmanship_quality"], "not_verified")
 
+    def test_completed_claim_on_unsubmitted_draft_is_disclosed(self):
+        s, b = inputs()
+        s["log"].update(maintenance_status="Completed", docstatus=0, completion_date="2026-10-14")
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(out["maintenance"]["source_status"], "Completed")
+        self.assertEqual(out["maintenance"]["source_docstatus"], 0)
+        self.assertEqual(out["maintenance"]["normalized_status"], "closed")
+        self.assertIn(
+            "completed_status_on_unsubmitted_document",
+            out["maintenance"]["mapping_conflicts"],
+        )
+        self.assertEqual(out["assurance"]["workmanship_quality"], "not_verified")
+
     def test_date_only_completion_is_preserved(self):
         s, b = inputs(); out = adapter.map_maintenance_log(s, b, NOW)
         self.assertEqual(out["maintenance"]["completion_date"], "2026-10-14")
