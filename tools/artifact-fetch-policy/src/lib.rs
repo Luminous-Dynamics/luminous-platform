@@ -11,7 +11,7 @@
 //! defeats this policy.
 
 use std::collections::BTreeSet;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::time::Duration;
 
 /// An HTTPS origin represented in canonical form.
@@ -61,6 +61,7 @@ pub enum PolicyError {
         validated_for: HttpsOrigin,
     },
     ConnectedPeerNotValidated(IpAddr),
+    ConnectedPeerPortMismatch { expected: u16, actual: u16 },
     RedirectLimitExceeded { limit: u8 },
     DeclaredLengthExceeded { declared: u64, limit: u64 },
     DownloadLimitExceeded { received: u64, limit: u64 },
@@ -226,7 +227,7 @@ impl FetchPolicy {
         &self,
         origin: &HttpsOrigin,
         validated: &ValidatedResolution,
-        connected_peer: IpAddr,
+        connected_peer: SocketAddr,
     ) -> Result<(), PolicyError> {
         if &validated.origin != origin {
             return Err(PolicyError::ResolutionOriginMismatch {
@@ -235,13 +236,20 @@ impl FetchPolicy {
             });
         }
         self.authorize_origin(origin)?;
-        if !is_conservative_public_unicast(connected_peer) {
-            return Err(PolicyError::NonPublicDestination(connected_peer));
+        let peer_ip = connected_peer.ip();
+        if !is_conservative_public_unicast(peer_ip) {
+            return Err(PolicyError::NonPublicDestination(peer_ip));
         }
-        if validated.addresses.contains(&connected_peer) {
+        if connected_peer.port() != origin.port() {
+            return Err(PolicyError::ConnectedPeerPortMismatch {
+                expected: origin.port(),
+                actual: connected_peer.port(),
+            });
+        }
+        if validated.addresses.contains(&peer_ip) {
             Ok(())
         } else {
-            Err(PolicyError::ConnectedPeerNotValidated(connected_peer))
+            Err(PolicyError::ConnectedPeerNotValidated(peer_ip))
         }
     }
 
@@ -347,16 +355,25 @@ fn normalize_host(host: &str) -> Result<String, PolicyError> {
         return Err(PolicyError::InvalidHost);
     }
 
-    // Prevent invalid numeric-looking dotted strings from being treated as
-    // DNS names when a parser or resolver might interpret them as IP literals.
+    // URL parsers can treat a numeric final label as a shortened, octal,
+    // decimal, or hexadecimal IPv4 literal. Reject ambiguous forms rather than
+    // letting the URL parser, resolver, and policy interpret them differently.
     if labels
-        .iter()
-        .all(|label| label.bytes().all(|byte| byte.is_ascii_digit()))
+        .last()
+        .is_some_and(|label| is_legacy_ipv4_number(label))
     {
         return Err(PolicyError::InvalidHost);
     }
 
     Ok(without_root_dot.to_ascii_lowercase())
+}
+
+fn is_legacy_ipv4_number(label: &str) -> bool {
+    if let Some(digits) = label.strip_prefix("0x").or_else(|| label.strip_prefix("0X")) {
+        return digits.bytes().all(|byte| byte.is_ascii_hexdigit());
+    }
+
+    !label.is_empty() && label.bytes().all(|byte| byte.is_ascii_digit())
 }
 
 fn is_conservative_public_unicast(address: IpAddr) -> bool {
@@ -484,6 +501,11 @@ mod tests {
             "bad-.example",
             "999.999.999.999",
             "0177.0.0.1",
+            "0x7f000001",
+            "0x7f.1",
+            "127.0.0x1",
+            "example.123",
+            "example.0x2a",
             "example:443",
             "2001:db8::zz",
             "bad_label.example",
@@ -664,16 +686,39 @@ mod tests {
         let registry = origin("registry.example.invalid", 443);
         let validated = p.authorize_resolution(&registry, &[ip("8.8.8.8")]).unwrap();
         assert!(
-            p.verify_connected_peer(&registry, &validated, ip("8.8.8.8"))
-                .is_ok()
+            p.verify_connected_peer(
+                &registry,
+                &validated,
+                SocketAddr::new(ip("8.8.8.8"), 443)
+            )
+            .is_ok()
         );
         assert_eq!(
-            p.verify_connected_peer(&registry, &validated, ip("1.1.1.1")),
+            p.verify_connected_peer(
+                &registry,
+                &validated,
+                SocketAddr::new(ip("1.1.1.1"), 443)
+            ),
             Err(PolicyError::ConnectedPeerNotValidated(ip("1.1.1.1")))
         );
         assert_eq!(
-            p.verify_connected_peer(&registry, &validated, ip("127.0.0.1")),
+            p.verify_connected_peer(
+                &registry,
+                &validated,
+                SocketAddr::new(ip("127.0.0.1"), 443)
+            ),
             Err(PolicyError::NonPublicDestination(ip("127.0.0.1")))
+        );
+        assert_eq!(
+            p.verify_connected_peer(
+                &registry,
+                &validated,
+                SocketAddr::new(ip("8.8.8.8"), 8443)
+            ),
+            Err(PolicyError::ConnectedPeerPortMismatch {
+                expected: 443,
+                actual: 8443,
+            })
         );
     }
 
@@ -687,7 +732,11 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            p.verify_connected_peer(&mirror, &validated, ip("8.8.8.8")),
+            p.verify_connected_peer(
+                &mirror,
+                &validated,
+                SocketAddr::new(ip("8.8.8.8"), 8443)
+            ),
             Err(PolicyError::ResolutionOriginMismatch {
                 requested: mirror,
                 validated_for: registry,
