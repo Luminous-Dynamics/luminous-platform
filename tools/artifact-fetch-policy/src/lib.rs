@@ -68,6 +68,7 @@ pub enum PolicyError {
     TimeoutExceedsTotal { phase: &'static str },
     OriginNotAllowed(HttpsOrigin),
     EmptyDnsAnswer,
+    IpLiteralResolutionMismatch { expected: IpAddr },
     NonPublicDestination(IpAddr),
     ResolutionOriginMismatch {
         requested: HttpsOrigin,
@@ -228,6 +229,7 @@ pub struct FetchPolicy {
 #[derive(Debug, Eq, PartialEq)]
 pub struct RedirectChain {
     current: HttpsOrigin,
+    allowed_origins: BTreeSet<HttpsOrigin>,
     redirects_followed: u8,
     max_redirects: u8,
     failed: bool,
@@ -311,6 +313,15 @@ impl FetchPolicy {
             return Err(PolicyError::EmptyDnsAnswer);
         }
 
+        // IP-literal URLs have no DNS rebinding step: the selected peer must
+        // be that literal, not an arbitrary public address supplied as an
+        // alleged resolution result.
+        if let Ok(expected) = origin.host.parse::<IpAddr>() {
+            if answers.len() != 1 || answers[0] != expected {
+                return Err(PolicyError::IpLiteralResolutionMismatch { expected });
+            }
+        }
+
         let mut validated = BTreeSet::new();
         for address in answers {
             if !is_conservative_public_unicast(*address) {
@@ -367,6 +378,7 @@ impl FetchPolicy {
         self.authorize_origin(initial_origin)?;
         Ok(RedirectChain {
             current: initial_origin.clone(),
+            allowed_origins: self.allowed_origins.clone(),
             redirects_followed: 0,
             max_redirects: self.max_redirects,
             failed: false,
@@ -385,17 +397,25 @@ impl FetchPolicy {
         if chain.failed {
             return Err(PolicyError::RedirectChainFailed);
         }
+        if !chain.allowed_origins.contains(&chain.current) {
+            chain.failed = true;
+            return Err(PolicyError::OriginNotAllowed(chain.current.clone()));
+        }
         if let Err(error) = self.authorize_origin(&chain.current) {
             chain.failed = true;
             return Err(error);
         }
 
-        // Preserve the strictest hop limit if a caller accidentally attempts to
-        // use a chain with another policy instance.
+        // Bind each chain to the originating policy's allowlist and preserve
+        // the strictest hop limit if another policy instance is passed by error.
         let limit = self.max_redirects.min(chain.max_redirects);
         if chain.redirects_followed >= limit {
             chain.failed = true;
             return Err(PolicyError::RedirectLimitExceeded { limit });
+        }
+        if !chain.allowed_origins.contains(to) {
+            chain.failed = true;
+            return Err(PolicyError::OriginNotAllowed(to.clone()));
         }
         if let Err(error) = self.authorize_origin(to) {
             chain.failed = true;
@@ -745,6 +765,25 @@ mod tests {
     }
 
     #[test]
+    fn ip_literal_resolution_must_match_the_literal_exactly() {
+        let p = policy();
+        let direct = origin("8.8.8.8", 443);
+        assert!(p.authorize_resolution(&direct, &[ip("8.8.8.8")]).is_ok());
+        assert_eq!(
+            p.authorize_resolution(&direct, &[ip("1.1.1.1")]),
+            Err(PolicyError::IpLiteralResolutionMismatch {
+                expected: ip("8.8.8.8"),
+            })
+        );
+        assert_eq!(
+            p.authorize_resolution(&direct, &[ip("8.8.8.8"), ip("1.1.1.1")]),
+            Err(PolicyError::IpLiteralResolutionMismatch {
+                expected: ip("8.8.8.8"),
+            })
+        );
+    }
+
+    #[test]
     fn rejects_empty_resolution_and_any_mixed_private_answer() {
         let p = policy();
         let registry = origin("registry.example.invalid", 443);
@@ -933,6 +972,25 @@ mod tests {
         assert!(chain.is_failed());
         assert_eq!(
             p.authorize_redirect_hop(&mut chain, &mirror),
+            Err(PolicyError::RedirectChainFailed)
+        );
+    }
+
+    #[test]
+    fn redirect_chain_remains_bound_to_its_originating_allowlist() {
+        let registry = origin("registry.example.invalid", 443);
+        let mirror = origin("mirror.example.invalid", 8443);
+        let strict = FetchPolicy::new([registry.clone()], 2, 1024, timeouts()).unwrap();
+        let permissive = policy();
+        let mut chain = strict.start_redirect_chain(&registry).unwrap();
+
+        assert_eq!(
+            permissive.authorize_redirect_hop(&mut chain, &mirror),
+            Err(PolicyError::OriginNotAllowed(mirror.clone()))
+        );
+        assert!(chain.is_failed());
+        assert_eq!(
+            permissive.authorize_redirect_hop(&mut chain, &registry),
             Err(PolicyError::RedirectChainFailed)
         );
     }
