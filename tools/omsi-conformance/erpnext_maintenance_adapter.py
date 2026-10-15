@@ -126,7 +126,12 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
         "site_timezone_and_source_clock_not_independently_attested",
     }
     if task["certificate_required"] != log["has_certificate"]:
-        conflicts.add("task_certificate_requirement_disagrees_with_log_flag")
+        # sync_maintenance_tasks refreshes only Planned/Overdue logs. The current
+        # task requirement may have changed since a Completed/Cancelled log.
+        if status in {"Planned", "Overdue"}:
+            conflicts.add("active_log_certificate_flag_disagrees_with_task_requirement")
+        else:
+            losses.add("current_task_certificate_requirement_may_postdate_historical_log")
     if log["has_certificate"] and not log["certificate_attachment_present"]:
         conflicts.add("certificate_flag_without_attachment_reference")
     if task["certificate_required"] and not log["certificate_attachment_present"]:

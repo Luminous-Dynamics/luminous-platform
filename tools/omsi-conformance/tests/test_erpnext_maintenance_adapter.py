@@ -216,10 +216,29 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
         with self.assertRaisesRegex(core.ConformanceError, "log/task reference mismatch"):
             adapter.map_maintenance_log(s, b, NOW)
 
-    def test_certificate_requirement_vs_log_flag_is_reported(self):
+    def test_historical_log_certificate_flag_may_differ_from_current_task_requirement(self):
         s, b = inputs(); s["log"]["has_certificate"] = False
         out = adapter.map_maintenance_log(s, b, NOW)
-        self.assertIn("task_certificate_requirement_disagrees_with_log_flag", out["maintenance"]["mapping_conflicts"])
+        self.assertIn(
+            "current_task_certificate_requirement_may_postdate_historical_log",
+            out["maintenance"]["mapping_losses"],
+        )
+        self.assertNotIn(
+            "active_log_certificate_flag_disagrees_with_task_requirement",
+            out["maintenance"]["mapping_conflicts"],
+        )
+
+    def test_active_log_certificate_flag_mismatch_is_conflict(self):
+        s, b = inputs()
+        s["log"].update(
+            maintenance_status="Planned", docstatus=0, completion_date=None,
+            due_date="2026-10-20", has_certificate=False,
+        )
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertIn(
+            "active_log_certificate_flag_disagrees_with_task_requirement",
+            out["maintenance"]["mapping_conflicts"],
+        )
 
     def test_certificate_flag_does_not_prove_attachment_exists(self):
         s, b = inputs(); s["log"]["certificate_attachment_present"] = False
