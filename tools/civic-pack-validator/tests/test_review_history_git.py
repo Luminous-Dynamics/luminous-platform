@@ -66,6 +66,18 @@ class GitReviewHistoryTests(unittest.TestCase):
             f"{PACK_DIR}/za-city-a.json", f"{PACK_DIR}/za-city-b.json"
         ])
 
+    def test_legacy_pack_without_receipt_fields_is_empty_genesis(self):
+        pack = draft_pack("za.legacy-city")
+        pack.pop("source_review_receipts")
+        pack.pop("requirement_review_receipts")
+        pack["sources"][0].pop("review_receipt_id")
+        pack["requirements"][0].pop("review_receipt_id")
+        self.write_pack("za-legacy-city.json", pack)
+        head = self.commit_all("add legacy-schema draft pack")
+        report = self.check(head)
+        self.assertTrue(report["passed"], report["errors"])
+        self.assertEqual(report["pack_revisions_checked"], 1)
+
     def test_new_pack_with_prepopulated_review_history_fails(self):
         pack = draft_pack("za.city-a")
         pack["source_review_receipts"] = [{"receipt_id": "review.seeded"}]

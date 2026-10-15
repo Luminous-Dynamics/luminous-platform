@@ -49,7 +49,9 @@ def _bootstrap_errors(pack: dict[str, Any]) -> list[str]:
         errors.append("new pack must start with publication_state=draft")
 
     for ledger_name in ("source_review_receipts", "requirement_review_receipts"):
-        ledger = pack.get(ledger_name)
+        # Early schema-v0.1 packs predate these fields. Missing is equivalent to
+        # an empty ledger at genesis; any explicitly seeded/non-array ledger fails.
+        ledger = pack.get(ledger_name, [])
         if not isinstance(ledger, list) or ledger:
             errors.append(f"new pack must start with an empty {ledger_name} ledger")
 
