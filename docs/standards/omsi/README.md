@@ -19,6 +19,7 @@ OMSI proposes to standardize that boundary and reuse existing domain standards i
 - [Research notes](RESEARCH-NOTES.md)
 - [IT Service Core prior-art mapping](profiles/it-service-core/0.1/PRIOR-ART-MAPPING.md)
 - [Field Service profile for trades and asset maintenance](profiles/field-service/0.1/PROFILE.md)
+- [OCA Field Service 19.0 read-only adapter mapping](profiles/field-service/0.1/adapters/OCA_FIELD_SERVICE_19_0_MAPPING.md)
 - [Nixward adapter mapping](profiles/nixos/0.1/NIXWARD-ADAPTER-MAPPING.md)
 - [Local conformance report and limits](CONFORMANCE-REPORT.md)
 
