@@ -174,3 +174,8 @@ Relevant vendor documentation: [Maintenance Visit](https://docs.frappe.io/erpnex
 After pinning the OCA Field Service 19.0 and ERPNext v16.51.0 source slices, added [a comparison note](profiles/field-service/0.1/adapters/CROSS_VENDOR_ADAPTER_COMPARISON.md). The central finding is that OMSI can share stable namespaced external references, explicit tenant binding, source-status preservation, typed time fields, loss disclosure and assurance boundaries—but it must not collapse each vendor's case, visit, recurring plan, task, activity or maintenance log into a single lifecycle.
 
 The first adapters deliberately distinguish planning from execution, assignment from credentials, source completion from verified workmanship, and certificate/signature metadata from verified evidence. Use the comparison as an adversarial test plan, not a claim of live cross-vendor interoperability.
+
+
+### ERPNext controller nuance: document cancellation vs maintenance status
+
+A follow-up code review of the pinned Asset Maintenance Log controller confirmed that it validates status/date combinations and restricts submission to Completed or Cancelled, but it does not define a one-to-one mapping between Frappe docstatus and the custom maintenance_status field. The prototype therefore preserves both source fields, rejects combinations the inspected controller explicitly disallows, and discloses other disagreements instead of over-rejecting an inferred invariant. If docstatus says the document is cancelled, the intake status is conservatively cancelled while the original custom status remains visible.
