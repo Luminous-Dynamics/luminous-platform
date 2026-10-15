@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ERPNext trusted site/company-to-tenant binding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "binding_id",
+    "tenant_id",
+    "source_instance_namespace",
+    "source_company_id",
+    "status",
+    "configured_at"
+  ],
+  "properties": {
+    "schema": {
+      "const": "org.omsi.erpnext-tenant-binding/0.1"
+    },
+    "binding_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_instance_namespace": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_company_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "active",
+        "revoked",
+        "unavailable"
+      ]
+    },
+    "configured_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

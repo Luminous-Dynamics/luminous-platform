@@ -1,0 +1,9 @@
+{
+  "schema": "org.omsi.erpnext-tenant-binding/0.1",
+  "binding_id": "erpnext-binding-syn-01",
+  "tenant_id": "tenant-synthetic-maintenance",
+  "source_instance_namespace": "erpnext-instance://fixture.invalid/maintenance-db",
+  "source_company_id": "COMPANY-SYN-07",
+  "status": "active",
+  "configured_at": "2026-10-01T00:00:00Z"
+}
