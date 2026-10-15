@@ -123,3 +123,30 @@ This is a focused desk-research snapshot, not an exhaustive market map, implemen
 ### Research limits
 
 The sources above establish that usable prior art and standards exist; they do not establish commercial demand, user willingness to switch, successful field deployment, standards conformity, or the novelty of OMSI. Before freezing a stable profile, obtain independently implemented exports, interview practitioners/customers, check the exact licenses, and run round-trip plus adversarial conformance tests. All cited versions should be re-checked at implementation time.
+
+
+## Source-pinned field-service adapter: OCA Field Service 19.0 — 2026-10-15
+
+The OCA Field Service GitHub repository's default branch is `19.0`; the inspected branch reference resolved to commit `8b2fa2592dda401726834ccf8030d34e241a69ad` (2026-10-08). The core `fieldservice` addon manifest identifies version `19.0.1.2.3`, AGPL-3, maturity Production/Stable. The optional `fieldservice_activity` addon identifies version `19.0.1.0.1`, AGPL-3; `fieldservice_account` identifies version `19.0.1.0.0`, AGPL-3 and maturity Beta.
+
+Primary source pins:
+
+- `fsm.order`: https://github.com/OCA/field-service/blob/8b2fa2592dda401726834ccf8030d34e241a69ad/fieldservice/models/fsm_order.py (blob `469aac02eb967179a4bf01ff5a769b478f3eaee6`).
+- `fsm.stage`: https://github.com/OCA/field-service/blob/8b2fa2592dda401726834ccf8030d34e241a69ad/fieldservice/models/fsm_stage.py (blob `7f71fc9a755b42650ccd4a84740794ed91d76bc1`).
+- `fsm.location`: https://github.com/OCA/field-service/blob/8b2fa2592dda401726834ccf8030d34e241a69ad/fieldservice/models/fsm_location.py (blob `60d3fd1bf24dcc5fc0206a9a86e4a2c57373329e`).
+- `fsm.equipment`: https://github.com/OCA/field-service/blob/8b2fa2592dda401726834ccf8030d34e241a69ad/fieldservice/models/fsm_equipment.py (blob `0e397bcbf0e41168436fd5f170f20fea637de471`).
+- Activity: https://github.com/OCA/field-service/blob/8b2fa2592dda401726834ccf8030d34e241a69ad/fieldservice_activity/models/fsm_activity.py (blob `8a21a4c52fa690bcb796a92e445dced4b3ae6544`).
+- Invoice link: https://github.com/OCA/field-service/blob/8b2fa2592dda401726834ccf8030d34e241a69ad/fieldservice_account/models/account_move.py (blob `75f0c9f5872be27ac4138f327ed9dc70db422aa4`).
+
+Concrete schema observations:
+
+- The service order has a configurable stage relation, derived `is_closed`, priority values, a required `location_id`, `company_id`, assigned `person_id` and `person_ids`, scheduling fields, separate actual `date_start`/`date_end`, linked `equipment_ids`, and signature fields.
+- `fsm.stage` includes `stage_type`, `is_closed` and `require_signature`; configured stage labels therefore cannot safely be equated with a universal OMSI status.
+- `fsm.location` delegates to `res.partner` and contains owner/contact and hierarchical location data; precise location/contact fields require purpose and privacy controls.
+- The optional Activity addon has required flags, todo/done/cancelled state, completion actor and time. Source code refuses action completion while a required activity remains todo. This is stronger than an untyped note but still a source-system assertion, not independent evidence.
+- The accounting addon links invoices to orders via invoice lines; it does not itself supply a universal customer-estimate/scope-approval contract.
+
+The detailed loss-aware mapping is in [OCA Field Service 19.0 adapter note](profiles/field-service/0.1/adapters/OCA_FIELD_SERVICE_19_0_MAPPING.md). Next validation should be a read-only, synthetic fixture/export adapter against the pinned version. Do not install it in production or perform write-back for this research increment.
+
+License note: AGPL obligations and linking/distribution/hosting implications require review for the intended deployment before adopting or bundling these addons. The source inspection does not establish that an OMSI adapter is legally compatible with every distribution model.
+
