@@ -95,7 +95,7 @@ def load_previous_manifest(value: dict[str, Any], *, source_id: str, canonical_u
     if not isinstance(comparison, dict):
         raise CaptureManifestError("previous manifest comparison metadata is missing")
     comparison_state = comparison.get("state")
-    if comparison_state not in {"baseline", "unchanged", "changed"}:
+    if not isinstance(comparison_state, str) or comparison_state not in {"baseline", "unchanged", "changed"}:
         raise CaptureManifestError("previous manifest comparison state is missing or invalid")
     comparison_signals = comparison.get("change_signals")
     allowed_signals = {
