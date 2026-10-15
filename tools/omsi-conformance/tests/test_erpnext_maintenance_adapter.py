@@ -198,6 +198,12 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
             out["maintenance"]["mapping_losses"],
         )
 
+    def test_empty_amendment_reference_is_rejected(self):
+        s, b = inputs()
+        s["log"]["amended_from"] = ""
+        with self.assertRaisesRegex(core.ConformanceError, "snapshot schema error"):
+            adapter.map_maintenance_log(s, b, NOW)
+
     def test_self_amending_maintenance_log_is_rejected(self):
         s, b = inputs()
         s["log"]["amended_from"] = s["log"]["name"]
