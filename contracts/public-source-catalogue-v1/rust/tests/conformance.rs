@@ -6,6 +6,12 @@ const OBSERVATION: &str = include_str!("../../examples/observation-v1.json");
 const OBSERVATION_SCHEMA: &str = include_str!("../../observation.schema.json");
 const JHB_POWER_WATER_STATEMENT: &str =
     include_str!("../../examples/johannesburg-power-water-statement-v1.synthetic.json");
+const JHB_WATER_DEPOT: &str =
+    include_str!("../../examples/johannesburg-water-depot-upgrade-2026-10-12.synthetic.json");
+const JHB_BRAAMFONTEIN_TRAFFIC: &str =
+    include_str!("../../examples/braamfontein-traffic-signal-upgrade-2026-10-02.synthetic.json");
+const JHB_MALVERN_CLINIC: &str =
+    include_str!("../../examples/malvern-clinic-reopening-2026-10-14.synthetic.json");
 
 fn parse_catalogue_fixture() -> Value {
     serde_json::from_str(CATALOGUE).expect("catalogue fixture must be valid JSON")
@@ -23,7 +29,7 @@ fn encoded(value: &Value) -> String {
 fn canonical_source_catalogue_fixture_is_accepted() {
     let catalogue = validate_catalogue_json(CATALOGUE).expect("catalogue should validate");
     assert_eq!(catalogue.schema_version, "public-source-catalogue-v1");
-    assert_eq!(catalogue.sources.len(), 10);
+    assert_eq!(catalogue.sources.len(), 11);
     assert!(catalogue.sources.iter().all(|source| !source.ingestion.enabled));
 
     for expected_id in [
@@ -37,6 +43,7 @@ fn canonical_source_catalogue_fixture_is_accepted() {
         "za-gp-jhb-transport-masterplan-updates",
         "za-gp-jhb-food-resilience-policy",
         "za-gov-jhb-power-water-coordination",
+        "za-gp-jhb-city-project-updates",
     ] {
         assert!(
             catalogue
@@ -188,6 +195,84 @@ fn synthetic_johannesburg_power_water_statement_is_not_live_or_causal_evidence()
         .find(|source| source.source_id == observation.source_id)
         .expect("fixture source must exist in the catalogue");
     assert!(!source.ingestion.enabled);
+}
+
+#[test]
+fn synthetic_city_project_announcements_do_not_prove_live_or_verified_outcomes() {
+    let fixtures = [
+        (JHB_WATER_DEPOT, "2026-10-12"),
+        (JHB_BRAAMFONTEIN_TRAFFIC, "2026-10-02"),
+        (JHB_MALVERN_CLINIC, "2026-10-14"),
+    ];
+
+    let catalogue = validate_catalogue_json(CATALOGUE).expect("catalogue should validate");
+    let source = catalogue
+        .sources
+        .iter()
+        .find(|source| source.source_id == "za-gp-jhb-city-project-updates")
+        .expect("City project announcement source must be catalogued");
+    assert!(!source.ingestion.enabled);
+
+    for (fixture, expected_date) in fixtures {
+        let observation = validate_observation_json(fixture)
+            .expect("synthetic City project statement should validate");
+        assert_eq!(
+            observation.source_id,
+            "za-gp-jhb-city-project-updates"
+        );
+        assert!(observation.fixture_only);
+        assert!(observation.retrieved_at.is_none());
+        assert!(observation.source_snapshot_sha256.is_none());
+        assert_eq!(
+            observation.raw_value["claim_kind"],
+            "publisher_statement"
+        );
+        assert_eq!(
+            observation.raw_value["publication_date"],
+            expected_date
+        );
+        assert_eq!(observation.raw_value["is_live_service_status"], false);
+        assert_eq!(
+            observation.raw_value["is_current_operational_status_independently_verified"],
+            false
+        );
+        assert_eq!(
+            observation.raw_value["is_independently_verified_outcome"],
+            false
+        );
+        assert_eq!(observation.normalization.applied, false);
+        assert_eq!(
+            observation.normalization.normalized_value,
+            observation.raw_value,
+            "no-op normalization must preserve the raw publisher claim"
+        );
+    }
+
+    let depot: Value = serde_json::from_str(JHB_WATER_DEPOT).expect("valid depot fixture");
+    assert_eq!(
+        depot["raw_value"]["reported_progress"]["relation"],
+        "greater_than"
+    );
+    assert_eq!(depot["raw_value"]["reported_progress"]["percent"], 89);
+    assert_eq!(
+        depot["raw_value"]["reported_project_state"],
+        "final_close_out_in_progress"
+    );
+
+    let traffic: Value =
+        serde_json::from_str(JHB_BRAAMFONTEIN_TRAFFIC).expect("valid traffic fixture");
+    assert_eq!(traffic["raw_value"]["reported_intersection_count"], 8);
+    assert_eq!(traffic["raw_value"]["reported_project_value_zar"], 19_000_000);
+
+    let clinic: Value = serde_json::from_str(JHB_MALVERN_CLINIC).expect("valid clinic fixture");
+    assert_eq!(
+        clinic["raw_value"]["city_reported_service_state"],
+        "reopened_after_refurbishment"
+    );
+    assert_eq!(
+        clinic["raw_value"]["is_current_operational_status_independently_verified"],
+        false
+    );
 }
 
 #[test]

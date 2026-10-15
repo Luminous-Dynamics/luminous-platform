@@ -24,7 +24,16 @@
     "applied": false,
     "rule_id": null,
     "rule_version": null,
-    "normalized_value": null,
+    "normalized_value": {
+      "fixture_only": true,
+      "fixture_note": "Synthetic structured scenario referencing the existence and topic of the published statement. No source retrieval timestamp or source-content digest has been captured.",
+      "claim_kind": "published_official_statement",
+      "publication_date": "2026-09-10",
+      "summary": "The statement reports a joint meeting convened to address water-supply disruptions associated with intermittent power trips.",
+      "is_live_service_status": false,
+      "is_case_level_causal_proof": false,
+      "is_independently_verified_outcome": false
+    },
     "reason": "No normalization is applied. This fixture preserves the epistemic class of a published statement and must not be converted into a current outage claim, a measured dependency, or case-level causal proof."
   },
   "source_snapshot_sha256": null,

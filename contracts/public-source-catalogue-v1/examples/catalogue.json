@@ -481,7 +481,54 @@
         "enabled": false,
         "reason": "No government data exchange, live outage integration, automated collection or operational command is implemented."
       }
+    },
+    {
+      "source_id": "za-gp-jhb-city-project-updates",
+      "display_name": "City of Johannesburg public project announcements",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "City of Johannesburg",
+        "url": "https://joburg.org.za/"
+      },
+      "source_url": "https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/October.aspx",
+      "documentation_url": "https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/October.aspx",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "The archive page is a discovery pointer only. Review each dated article separately; capture timestamp and content digest only after actual retrieval. It is not a structured project-status API."
+      },
+      "terms": {
+        "policy_url": "https://joburg.org.za/Pages/Terms-and-Conditions.aspx",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Check City site terms and article/media reuse conditions before caching or redistributing contents. This catalogue record does not grant a reuse or data-ingestion licence."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Dated City Newsroom announcements about public-works milestones, service readiness, accessibility upgrades and public-facility rehabilitation"
+        ],
+        "collection_policy": "Use a human-reviewed observation per exact article URL. Preserve publication date separately from retrieval time. Keep project progress, close-out, commissioning, reopening and measured outcomes distinct. Do not infer current availability, sustained performance or independent verification from a City announcement alone."
+      },
+      "known_limitations": [
+        "The archive is a webpage, not a structured API or authoritative live operational-status feed.",
+        "Project progress and close-out statements are publisher claims; commissioning, compliance certificates, sustained uptime and resident outcomes require separate evidence.",
+        "Articles may describe work spanning multiple municipal entities and private partners; do not infer the exclusive responsible owner from article authorship or partnership participation.",
+        "The archive and underlying article content may change; preserve exact URL, actual retrieval timestamp and content digest only after a real capture.",
+        "Publisher terms and article/media reuse rights must be rechecked before ingestion or redistribution."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Metadata-only discovery pointer. No periodic crawling, extraction, caching or service-status inference is implemented."
+      }
     }
   ],
-  "reviewed_on": "2026-10-14"
+  "reviewed_on": "2026-10-15"
 }

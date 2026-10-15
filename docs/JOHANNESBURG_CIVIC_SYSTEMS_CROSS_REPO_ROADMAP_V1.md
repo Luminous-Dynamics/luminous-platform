@@ -108,6 +108,18 @@ The model must keep these states distinct: **zero, null, missing row, not publis
 - Aggregate small cells or suppress them when publishing could re-identify people, expose a vulnerable household or reveal sensitive infrastructure. Preserve a documented suppression reason.
 - Do not use report volume or smartphone access as a proxy for need; model under-reporting and missingness as first-class risks.
 
+## Fresh official examples for the first scenario corpus (reviewed 15 October 2026)
+
+Three City announcements published in October make the cross-service case for the first vertical slice unusually concrete:
+
+- **Johannesburg Water depot, Randburg (12 October):** the City/JDA says the project is above 89% progress and in final close-out, while testing/commissioning and required Certificates of Compliance are still being finalised. This is a strong regression case for “progress percentage ≠ operational acceptance”. The reported service region includes Region C and parts of Regions B, D and F; that is project context, not a live performance result. Source: https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/Joburg-Water-depot-upgrade-to-strengthen-service-delivery.aspx
+- **Braamfontein traffic signals and accessibility (2 October):** the City/JRA statement describes upgrades at eight intersections, backup power with Wits as partner, countdown timers, audible pushbuttons and widened pavements. It reports a R19 million project and delivered upgrades, but does not provide independent signal-uptime or safety-impact measurements. Source: https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/Braamfontein-traffic-upgrades-set-to-make-journeys-safer-and-smoother.aspx
+- **Malvern Clinic (14 October):** the City says the refurbished clinic reopened after addressing electricity problems and connecting to water reticulation, noting earlier water shortages sometimes forced closure. That is a real cross-dependency test between municipal water, electricity and access to healthcare, but it is not evidence of today's staffing, availability or clinical outcomes. Source: https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/Refurbished-Malvern-Clinic-restores-access-to-healthcare.aspx
+
+Johannesburg Water's 8 October Customer Notice page lists four image attachments rather than a text-normalised incident table. The first public demonstrator should therefore treat article pages as discovery pointers, use human-reviewed per-article observations, preserve the exact URL and publication date, and require capture time/content digest only after an actual source capture. It must not claim API access, OCR correctness or current service status from the archive. Source: https://www.johannesburgwater.co.za/blog/2026/10/08/customer-notice-8-october-2026/
+
+The source-discovery rule remains unchanged: public announcements seed *attributed claim fixtures*, not authoritative live work-order states. Any future extraction must retain source content and provenance, record who reviewed transcription, and keep the original claim separate from subsequent inspection or independent verification.
+
 ## 5. Priority use cases and why
 
 ### P0 — Public service reliability and evidence ledger

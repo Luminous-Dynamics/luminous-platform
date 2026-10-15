@@ -1,0 +1,81 @@
+{
+  "schema_version": "public-observation-v1",
+  "observation_id": "synthetic-jhb-water-depot-closeout-v1",
+  "source_id": "za-gp-jhb-city-project-updates",
+  "source_uri": "https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/Joburg-Water-depot-upgrade-to-strengthen-service-delivery.aspx",
+  "retrieved_at": null,
+  "source_period": {
+    "period_label": "published-2026-10-12"
+  },
+  "dataset_id": "city-project-announcements-v1",
+  "field_path": "article.project.depot.close_out_state",
+  "raw_value": {
+    "claim_kind": "publisher_statement",
+    "fixture_only": true,
+    "fixture_note": "Synthetic summary of a dated City announcement. No article capture or independent inspection is represented.",
+    "publication_date": "2026-10-12",
+    "project_subject": "Johannesburg Water depot upgrade in Randburg",
+    "municipal_region": "Region C",
+    "reported_progress": {
+      "relation": "greater_than",
+      "percent": 89
+    },
+    "reported_project_state": "final_close_out_in_progress",
+    "reported_close_out_items": [
+      "final ceiling works",
+      "painting",
+      "paving and minor external works",
+      "outstanding electrical, mechanical and plumbing works",
+      "testing and commissioning of building services",
+      "issuing of required Certificates of Compliance"
+    ],
+    "return_to_operational_use": "preparation_reported; final operational readiness not independently checked",
+    "is_live_service_status": false,
+    "is_current_operational_status_independently_verified": false,
+    "is_independently_verified_outcome": false,
+    "prohibited_inferences": [
+      "Do not call the depot fully commissioned from the reported progress percentage.",
+      "Do not infer that every Certificate of Compliance has been issued.",
+      "Do not infer a measured improvement in repair response time or resident service outcomes."
+    ]
+  },
+  "raw_value_state": "reported_value",
+  "normalization": {
+    "applied": false,
+    "rule_id": null,
+    "rule_version": null,
+    "normalized_value": {
+      "claim_kind": "publisher_statement",
+      "fixture_only": true,
+      "fixture_note": "Synthetic summary of a dated City announcement. No article capture or independent inspection is represented.",
+      "publication_date": "2026-10-12",
+      "project_subject": "Johannesburg Water depot upgrade in Randburg",
+      "municipal_region": "Region C",
+      "reported_progress": {
+        "relation": "greater_than",
+        "percent": 89
+      },
+      "reported_project_state": "final_close_out_in_progress",
+      "reported_close_out_items": [
+        "final ceiling works",
+        "painting",
+        "paving and minor external works",
+        "outstanding electrical, mechanical and plumbing works",
+        "testing and commissioning of building services",
+        "issuing of required Certificates of Compliance"
+      ],
+      "return_to_operational_use": "preparation_reported; final operational readiness not independently checked",
+      "is_live_service_status": false,
+      "is_current_operational_status_independently_verified": false,
+      "is_independently_verified_outcome": false,
+      "prohibited_inferences": [
+        "Do not call the depot fully commissioned from the reported progress percentage.",
+        "Do not infer that every Certificate of Compliance has been issued.",
+        "Do not infer a measured improvement in repair response time or resident service outcomes."
+      ]
+    },
+    "reason": "No transformation is applied. Preserve the publisher-reported close-out state without promoting progress to commissioning or verified service performance."
+  },
+  "source_snapshot_sha256": null,
+  "fixture_only": true
+}

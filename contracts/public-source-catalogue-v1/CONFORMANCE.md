@@ -38,3 +38,8 @@ Do not rewrite raw values. A derived interpretation must retain the raw value an
 10. Core civic workflow smoke tests succeed with JavaScript disabled.
 
 These are requirements for a future adapter and UI implementation, not all current test results. Rust tests authored in this PR remain subject to execution on the exact PR head.
+
+
+## City project statement fixtures
+
+Three dated City newsroom announcements are represented as synthetic, unretrieved observations: the Johannesburg Water depot close-out report (12 October 2026), Braamfontein traffic-signal and accessibility upgrades (2 October 2026), and the Malvern Clinic refurbishment announcement (14 October 2026). These fixtures carry the article publication date but keep capture timestamp and content digest null. The fixtures explicitly distinguish publisher-reported progress or reopening from commissioning, live service status, current operational availability and independently measured outcomes. They are not a live feed or independent audit.
