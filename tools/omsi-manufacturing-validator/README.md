@@ -24,7 +24,7 @@ cargo test --manifest-path tools/omsi-manufacturing-validator/Cargo.toml
 cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- validate-vectors docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json
 ```
 
-The vector command exits 0 only when all machine-readable expected outcomes match the computed semantic results. It checks expected disposition types/reasons, the comparison rule ID, and optional measurement/scope/freshness fields. The human-readable `assertions` strings are documentation and are not interpreted as executable tests.
+The vector command exits 0 only when all machine-readable expected outcomes match the computed semantic results. It checks expected disposition types/reasons, the comparison rule ID, and optional measurement/scope/revision fields. The human-readable `assertions` strings are documentation and are not interpreted as executable tests.
 
 Evaluate one input object (the content of a vector's `input`) by writing it to a JSON file or piping it through stdin:
 
@@ -34,6 +34,21 @@ cat input.json | cargo run --manifest-path tools/omsi-manufacturing-validator/Ca
 ```
 
 A rejected or conflicted input is emitted as JSON and results in exit code 1 for `evaluate-input`. Clean projections and projections with explicitly disclosed loss return exit code 0. Invalid JSON, filesystem errors, or CLI usage errors return exit code 2.
+
+## Raw-byte replay envelope
+
+Create an unsigned envelope that binds the exact bytes of the input artifact to the validator's report:
+
+```sh
+cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- create-envelope input.json > envelope.json
+cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- verify-envelope envelope.json input.json
+```
+
+The envelope schema is [replay-envelope.schema.json](schema/replay-envelope.schema.json). It records the SHA-256 digest, byte length, and explicit digest scope `exact_input_bytes`, with `canonicalization=none`. Therefore even whitespace changes create a different input digest. This is intentional: the bound identity is the exact supplied artifact, not an implied canonical JSON object.
+
+`verify-envelope` recomputes the digest from the supplied bytes, parses that input, re-runs the semantic evaluator, and compares its JSON result with the embedded report. It returns `status=replay_consistent` only when those checks and the envelope contract match; a mismatch exits 1. Invalid envelope JSON or file/CLI errors exit 2.
+
+**Security boundary:** the envelope is unsigned. It can detect a changed input or altered report when compared with a preserved envelope, but an attacker able to replace both the artifact and envelope can recompute the digest. The digest does not authenticate a source, signer, calibration certificate, or physical measurement. Replay consistency shows agreement with the validator implementation that ran; it is not proof of source truth, cross-implementation equivalence, quality conformity, product release, or authorization. No RFC 8785 JSON canonicalization or cryptographic signature is claimed.
 
 ## Decimal and timestamp profile
 
@@ -45,6 +60,6 @@ A rejected or conflicted input is emitted as JSON and results in exit code 1 for
 
 ## Test design
 
-Integration tests load the exact committed vector file via `include_str!` and assert that the evaluator reproduces its machine-readable expectations. Additional adversarial and metamorphic tests cover high-precision decimal comparisons, unit non-equivalence, equivalent decimal spellings, multiple timestamp offsets for the same instant, a 601-case generated boundary sweep, invalid dates, inverted ranges/intervals, missing snapshot tokens, unknown fields, attempt to promote a source claim, malformed decimal values, negative uncertainty, duplicate/mutated conformance vectors, and report-contract invariants.
+Integration tests load the exact committed vector file via `include_str!` and assert that the evaluator reproduces its machine-readable expectations. Additional adversarial and metamorphic tests cover high-precision decimal comparisons, unit non-equivalence, equivalent decimal spellings, multiple timestamp offsets for the same instant, a 601-case generated boundary sweep, invalid dates, inverted ranges/intervals, missing snapshot tokens, unknown fields, attempt to promote a source claim, malformed decimal values, negative uncertainty, duplicate/mutated conformance vectors, report-contract invariants, and replay-envelope tampering.
 
-This profile validator does not replace an independently reviewed JSON Schema engine. The CI workflow runs formatting, Rust tests, the committed vector command, and Clippy against the exact PR head.
+This profile validator does not replace an independently reviewed JSON Schema engine. The CI workflow runs formatting, Rust tests, the committed vector command, a replay-envelope round-trip, and Clippy against the exact PR head.
