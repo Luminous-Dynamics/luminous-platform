@@ -187,7 +187,23 @@ fn validation_errors_do_not_echo_untrusted_values() {
 
 #[test]
 fn issuer_role_claim_never_promotes_authority() {
-    let event = fixture();
+    let mut event = fixture();
     assert_eq!(json!("none"), event["authorityEffect"]);
-    assert_eq!(json!("service-provider"), event["issuerRoleClaim"]);
+
+    // The role is a claim made by the issuer, not an authorization grant.
+    // All schema-admitted claims must leave the package's authority effect
+    // explicitly inert; trust policy binds the claim to identity separately.
+    for role in [
+        "customer",
+        "service-provider",
+        "independent-reviewer",
+        "auditor",
+    ] {
+        event["issuerRoleClaim"] = json!(role);
+        assert_eq!(json!("none"), event["authorityEffect"]);
+        assert!(
+            validate(&event).is_ok(),
+            "schema-admitted issuer role claim {role:?} must not be treated as authority"
+        );
+    }
 }
