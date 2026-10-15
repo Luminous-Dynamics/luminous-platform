@@ -103,3 +103,41 @@ check a live regulator, establish verifier independence in the real world,
 verify evidence content against its digest, inspect physical assets, or
 prove legal compliance. It is not a production authorization service. The
 new tests do not qualify independent vendor interoperability or a field pilot.
+
+
+## Pinned OCA Field Service 19.0 adapter projection (research prototype)
+
+Run the new read-only mapper checks:
+
+```sh
+make -C tools/omsi-conformance oca-adapter
+```
+
+The prototype is pinned to OCA/field-service commit
+`8b2fa2592dda401726834ccf8030d34e241a69ad`, core addon
+`fieldservice 19.0.1.2.3`, and exact optional Activity/Accounting addon
+versions where present. It accepts a synthetic, PII-minimized order snapshot,
+a separate explicit instance/company-to-tenant binding, and a source-stage
+mapping profile. It does not call Odoo and cannot write source records.
+
+The resulting `org.omsi.field-service-intake/0.1` projection is deliberately
+**not** a qualified service record. It carries the original source stage and
+configured mapping, source-namespaced worker/equipment/location references,
+distinct request/scheduled/actual time fields, optional activity state, and
+invoice references. It discloses unresolved jurisdiction, credential,
+estimate/approval, operation-manifest and independent-verification facts.
+The output cannot claim that work quality is verified or that an invoice is
+paid. An Odoo `company_id` is not accepted as an OMSI tenant identity without
+an explicit external binding.
+
+The synthetic tests cover unknown/custom stages, stage-map fingerprint
+substitution, tenant/company and source-instance mismatches, revoked bindings,
+incomplete required activities on a closed stage, signature requirements,
+optional add-on absence, interval errors, source version pins, unsupported
+fields, privacy projection, and invoice links not being conflated with
+payment or quality proof.
+
+**Limits:** this is an offline mapping prototype, not a connector, Odoo API
+integration, legal/license determination or production security qualification.
+The core and optional addons inspected declare AGPL-3; review the deployment
+and distribution obligations before bundling or linking them in any product.
