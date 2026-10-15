@@ -12,6 +12,7 @@ Source detail:
 - [OCA Field Service 19.0 mapping](OCA_FIELD_SERVICE_19_0_MAPPING.md)
 - [ERPNext v16.51.0 maintenance mapping](ERPNEXT_V16_51_0_MAINTENANCE_MAPPING.md)
 - [Field Service profile 0.1](../PROFILE.md)
+- [Adapter conformance matrix](ADAPTER_CONFORMANCE_MATRIX.md)
 
 ## Cross-vendor findings
 
