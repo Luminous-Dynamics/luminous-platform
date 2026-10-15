@@ -498,7 +498,7 @@ fn evidence_bundle_rejects_raw_to_normalized_mismatch_even_when_digest_is_recomp
     let errors = verified_operations_conformance::validate_evidence_bundle(&schema, &bundle)
         .expect_err("valid normalized-field digest cannot overrule the raw source state");
     assert!(
-        errors.iter().any(|error| error.contains("raw source fields do not support the normalized energy measurement")),
+        errors.iter().any(|error| error.contains("raw entity/resource identity")),
         "expected source-to-normalized binding diagnostic, got {errors:#?}"
     );
 }
@@ -514,5 +514,49 @@ fn evidence_bundle_rejects_an_unknown_normalization_profile() {
     assert!(
         errors.iter().any(|error| error.contains("schema")),
         "schema should reject an unknown normalization profile, got {errors:#?}"
+    );
+}
+
+
+#[test]
+fn evidence_bundle_rejects_source_resource_identity_mismatch() {
+    let schema = parsed_evidence_schema();
+    let mut bundle = parsed_evidence_bundle();
+    bundle["evidence"][0]["source"]["resource_id"] =
+        Value::String("sensor.another_meter".into());
+
+    let errors = verified_operations_conformance::validate_evidence_bundle(&schema, &bundle)
+        .expect_err("the normalized observation must stay bound to the source resource");
+    assert!(
+        errors.iter().any(|error| error.contains("raw entity/resource identity")),
+        "expected source resource mismatch diagnostic, got {errors:#?}"
+    );
+}
+
+#[test]
+fn evidence_bundle_rejects_power_units_for_an_energy_counter() {
+    let schema = parsed_evidence_schema();
+    let mut bundle = parsed_evidence_bundle();
+    let raw = r#"{"entity_id":"sensor.demo_energy","state":"100.0","unit_of_measurement":"W"}"#;
+    bundle["evidence"][0]["payload"]["raw_utf8"] = Value::String(raw.to_owned());
+    bundle["evidence"][0]["payload"]["sha256_of_raw_utf8"] =
+        Value::String(format!("{:x}", Sha256::digest(raw.as_bytes())));
+    bundle["evidence"][0]["measurement"]["unit"] = Value::String("W".into());
+    let measurement = &bundle["evidence"][0]["measurement"];
+    let framed = format!(
+        "luminous-operations-measurement-v1\\n{}\\n{}\\n{}\\n{}",
+        measurement["metric_name"].as_str().unwrap(),
+        measurement["value_decimal"].as_str().unwrap(),
+        measurement["unit"].as_str().unwrap(),
+        measurement["validity"].as_str().unwrap()
+    );
+    bundle["evidence"][0]["measurement"]["normalized_sha256"] =
+        Value::String(format!("{:x}", Sha256::digest(framed.as_bytes())));
+
+    let errors = verified_operations_conformance::validate_evidence_bundle(&schema, &bundle)
+        .expect_err("power cannot be interpreted as an energy-counter metric");
+    assert!(
+        errors.iter().any(|error| error.contains("raw entity/resource identity")),
+        "expected energy-unit semantic rejection, got {errors:#?}"
     );
 }
