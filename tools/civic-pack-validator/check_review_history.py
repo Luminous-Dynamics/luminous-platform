@@ -21,6 +21,11 @@ def check_review_history(baseline: dict[str, Any], current: dict[str, Any]) -> l
                 f"{ledger_name} must be arrays in baseline and current pack"
             )
             continue
+        if ledger_name not in baseline and ledger_name in current and new:
+            violations.append(
+                f"{ledger_name} was introduced with pre-populated history; "
+                "introduce an empty ledger in an earlier commit first"
+            )
         if len(new) < len(old):
             violations.append(
                 f"{ledger_name} history was shortened: baseline={len(old)} current={len(new)}"

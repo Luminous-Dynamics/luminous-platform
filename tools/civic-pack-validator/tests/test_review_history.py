@@ -57,9 +57,17 @@ class ReviewHistoryTests(unittest.TestCase):
         current["source_review_receipts"].reverse()
         self.assertIn("was changed", " ".join(check_review_history(BASE, current)))
 
-    def test_old_pack_without_ledgers_is_treated_as_empty_history(self):
+    def test_old_pack_can_introduce_empty_ledgers(self):
         current = copy.deepcopy(BASE)
+        current["source_review_receipts"] = []
+        current["requirement_review_receipts"] = []
         self.assertEqual(check_review_history({"pack_id": "old-pack"}, current), [])
+
+    def test_old_pack_cannot_introduce_prepopulated_ledgers(self):
+        current = copy.deepcopy(BASE)
+        errors = check_review_history({"pack_id": "old-pack"}, current)
+        self.assertIn("source_review_receipts was introduced with pre-populated history", " ".join(errors))
+        self.assertIn("requirement_review_receipts was introduced with pre-populated history", " ".join(errors))
 
     def test_non_array_ledger_fails_closed(self):
         current = copy.deepcopy(BASE)
