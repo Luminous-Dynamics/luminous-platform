@@ -153,11 +153,17 @@ def validate_record(record: dict[str, Any], now: datetime) -> None:
             or operation["scope_version"] != scope_version
         ):
             _fail("operation target or scope binding mismatch")
+        if operation["practitioner_id"] != practitioner["id"]:
+            _fail("operation practitioner does not match assigned practitioner")
         if core.parse_time(operation["authorized_at"]) < approved_at:
             _fail("operation was authorized before customer approval")
         expires_at = core.parse_time(operation["authority_expires_at"])
         authorized_at = core.parse_time(operation["authorized_at"])
         applied_at = core.parse_time(operation["applied_at"])
+        if authorized_at > now:
+            _fail("operation authorization is in the future relative to evaluation time")
+        if applied_at > now:
+            _fail("operation application is in the future relative to evaluation time")
         if expires_at <= authorized_at:
             _fail("operation authority has an invalid validity interval")
         if authorized_at >= core.parse_time(estimate["valid_until"]):
@@ -205,10 +211,17 @@ def validate_record(record: dict[str, Any], now: datetime) -> None:
         occurred_at = core.parse_time(evidence["occurred_at"])
         if occurred_at < created:
             _fail("evidence predates the service record")
+        if occurred_at > now:
+            _fail("evidence occurs after evaluation time")
         if occurred_at < core.parse_time(op["applied_at"]):
             _fail("evidence observation predates operation application")
 
         kind = evidence["evidence_kind"]
+        if kind in {"provider_report", "instrument_measurement", "qualified_inspection", "handover_record", "correction"}:
+            if evidence["recorded_by"] != practitioner["id"]:
+                _fail("work evidence actor does not match assigned practitioner")
+        if kind == "customer_acknowledgement" and evidence["recorded_by"] != approval["approver_id"]:
+            _fail("customer acknowledgement actor does not match approving customer")
         status = evidence["claim_status"]
         expected_status = {
             "provider_report": "reported",
@@ -235,6 +248,14 @@ def validate_record(record: dict[str, Any], now: datetime) -> None:
                 _fail("measurement references an unknown requirement")
             if measurement["calibration_status"] != "valid":
                 _fail("measurement calibration is not current")
+            calibration_checked_at = core.parse_time(measurement["calibration_checked_at"])
+            calibration_valid_until = core.parse_time(measurement["calibration_valid_until"])
+            if calibration_checked_at > occurred_at:
+                _fail("calibration was checked after measurement")
+            if calibration_valid_until <= occurred_at:
+                _fail("calibration was expired at measurement time")
+            if (occurred_at - calibration_checked_at).total_seconds() > requirement["max_calibration_age_seconds"]:
+                _fail("measurement calibration is stale at observation time")
             if (
                 measurement["method_ref"] != requirement["method_ref"]
                 or measurement["unit_code"] != requirement["unit_code"]
@@ -312,6 +333,8 @@ def validate_record(record: dict[str, Any], now: datetime) -> None:
         or acknowledgement["claim_status"] != "acknowledged"
     ):
         _fail("closeout customer acknowledgement reference is invalid")
+    if closeout["customer_ack_evidence_id"] not in closeout["evidence_refs"]:
+        _fail("closeout customer acknowledgement is not included in closeout evidence refs")
     if closeout["status"] == "handed_over":
         if any(op["required_verification"] and op["state"] != "verified" for op in operations):
             _fail("handover closeout includes operation lacking required verification")
