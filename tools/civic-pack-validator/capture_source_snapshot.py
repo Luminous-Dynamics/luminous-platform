@@ -105,7 +105,10 @@ def load_previous_manifest(value: dict[str, Any], *, source_id: str, canonical_u
     }
     if (
         not isinstance(comparison_signals, list)
-        or any(signal not in allowed_signals for signal in comparison_signals)
+        or any(
+            not isinstance(signal, str) or signal not in allowed_signals
+            for signal in comparison_signals
+        )
         or len(comparison_signals) != len(set(comparison_signals))
     ):
         raise CaptureManifestError("previous manifest change_signals are malformed")
