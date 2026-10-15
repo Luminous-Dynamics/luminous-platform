@@ -259,6 +259,108 @@
         }
       ],
       "expected_error": "handover closeout includes operation lacking required verification"
+    },
+    {
+      "id": "operation-practitioner-substitution",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/operations/0/practitioner_id",
+          "value": "practitioner-unknown"
+        }
+      ],
+      "expected_error": "operation practitioner does not match assigned practitioner"
+    },
+    {
+      "id": "calibration-expired-at-measurement",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/1/measurement/calibration_valid_until",
+          "value": "2026-10-14T10:02:00Z"
+        }
+      ],
+      "expected_error": "calibration was expired at measurement time"
+    },
+    {
+      "id": "calibration-checked-after-measurement",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/1/measurement/calibration_checked_at",
+          "value": "2026-10-14T10:03:00Z"
+        }
+      ],
+      "expected_error": "calibration was checked after measurement"
+    },
+    {
+      "id": "calibration-status-snapshot-too-old",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/1/measurement/calibration_checked_at",
+          "value": "2026-09-01T00:00:00Z"
+        }
+      ],
+      "expected_error": "measurement calibration is stale at observation time"
+    },
+    {
+      "id": "work-evidence-actor-substitution",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/1/recorded_by",
+          "value": "unauthorized-person"
+        }
+      ],
+      "expected_error": "work evidence actor does not match assigned practitioner"
+    },
+    {
+      "id": "customer-ack-actor-substitution",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/4/recorded_by",
+          "value": "unauthorized-customer"
+        }
+      ],
+      "expected_error": "customer acknowledgement actor does not match approving customer"
+    },
+    {
+      "id": "closeout-ack-omitted-from-evidence-refs",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/closeout/evidence_refs",
+          "value": [
+            "hvac-provider-report",
+            "hvac-measurement",
+            "hvac-qualified-inspection",
+            "hvac-independent-verification",
+            "hvac-handover"
+          ]
+        }
+      ],
+      "expected_error": "closeout customer acknowledgement is not included in closeout evidence refs"
+    },
+    {
+      "id": "future-dated-evidence",
+      "fixture": "field-service-plumbing-hvac.json",
+      "mutations": [
+        {
+          "op": "replace",
+          "path": "/evidence/1/occurred_at",
+          "value": "2026-10-15T13:00:00Z"
+        }
+      ],
+      "expected_error": "evidence occurs after evaluation time"
     }
   ]
 }
