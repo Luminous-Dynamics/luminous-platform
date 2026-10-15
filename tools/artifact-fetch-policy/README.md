@@ -13,7 +13,9 @@ HTTP client or a complete SSRF defense.
 - A `ValidatedResolution` value binds the validated IP set to the exact
   normalized origin that produced it; peer verification rejects reuse for a
   different origin.
-- Actual socket-peer membership in that origin-bound validated set.
+- Actual socket-peer IP membership and exact origin-port matching.
+- Rejection of ambiguous legacy IPv4 hostname spellings (including shortened,
+  octal, and hexadecimal forms that URL parsers can interpret differently).
 - Redirect target authorization on every hop, a configurable hop cap, and no
   credential forwarding when the normalized origin changes.
 - Declared content-length and streamed-byte limits.
@@ -28,8 +30,10 @@ The transport that eventually uses this library must:
    separately; it does not parse URLs.
 2. Resolve DNS after authorizing the origin, pass all A and AAAA answers to
    authorize_resolution, and connect directly to one of the returned
-   addresses. Preserve the original hostname for TLS SNI, certificate
-   verification, and HTTP Host. Do not make an unchecked second DNS lookup.
+   addresses at the origin's exact port. Before sending HTTP data, pass the
+   actual socket peer IP and port to verify_connected_peer. Preserve the
+   original hostname for TLS SNI, certificate verification, and HTTP Host. Do
+   not make an unchecked second DNS lookup.
 3. Re-run destination authorization for every redirect, retry, fallback
    address, and reconnect. Disable redirects by default unless each hop is
    explicitly authorized. Do not inherit ambient proxy settings.
