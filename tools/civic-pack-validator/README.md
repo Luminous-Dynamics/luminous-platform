@@ -132,3 +132,18 @@ The GitHub Actions workflow validates **every top-level `*.json` pack** in `exam
 - publication gate outcomes and a reproducible JSON report with schema and input SHA-256.
 
 JSON Schema and this semantic validator cannot prove legal accuracy, detect paraphrases of third-party source text reliably, authenticate government systems, or establish whether a source is authoritative. Human reviewers must confirm applicability and content before publication. Change monitoring should alert for review; it must never silently re-approve a changed source.
+
+
+## Verify retained evidence bytes
+
+Use `verify_source_snapshot.py` after retrieving captured bytes from a lawful, access-controlled evidence store:
+
+```sh
+python tools/civic-pack-validator/verify_source_snapshot.py \
+  --manifest /secure/evidence/business-licences.manifest.json \
+  --snapshot /secure/capture/business-licences.html
+```
+
+The tool checks that the manifest conforms to its JSON Schema and that the retrieved file's exact SHA-256 and byte length match its declaration. It prints metadata and a machine-readable check report without printing source bytes or accessing the network. A mismatch exits nonzero.
+
+A successful result means only that the bytes now supplied match this manifest. It does not authenticate who created either file, establish chain of custody, prove when the source was captured, establish that the URL was authoritative, or review legal content. Keep the bytes and manifest under access control; preserve storage permissions, retrieval logs, and independent review records separately.

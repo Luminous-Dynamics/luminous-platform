@@ -42,3 +42,10 @@ To compare a future capture, pass the earlier manifest with `--previous-manifest
 - SHA-256 binds the digest to the bytes only if the bytes remain available for verification.
 - A change signal must not automatically set a source to current, stale, disputed or withdrawn; a human reviewer must inspect the evidence and record a new source-review receipt.
 - Publication remains blocked until both source evidence and each claim that depends on it have approved review receipts.
+
+
+## Retrieval verification
+
+`verify_source_snapshot.py` validates the manifest schema and recomputes SHA-256 and byte length on bytes retrieved from storage. It reports digest/size matches separately and exits nonzero on malformed manifest, schema violations, or byte mismatch. The report records that no network access occurred and that provenance/authenticity and legal correctness remain unverified.
+
+Use this after a retrieval operation, not as a replacement for evidence-store controls. The store must separately enforce authorization, retention/expiry policy, access auditing, and immutable or versioned object semantics. A matching digest verifies byte identity relative to this manifest only; it cannot authenticate the manifest itself or prove its timestamp, capture method, or source authority. The verifier never emits source bytes into its JSON report.
