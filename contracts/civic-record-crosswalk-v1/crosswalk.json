@@ -6,37 +6,37 @@
     {
       "schema_id": "platform.public-observation-v1",
       "repository": "Luminous-Dynamics/luminous-platform",
-      "snapshot_commit_sha": "b5407b885115ab4ef30c118a78a0ea424ae1ab6d",
+      "snapshot_commit_sha": "f04951f8f1fed8f0ea1d244824e1d39d8f71089d",
       "path": "contracts/public-source-catalogue-v1/observation.schema.json",
       "git_blob_sha1": "4a50b82a8ed32deeb245e11b7e4d542860a6c2a2",
       "version": "public-observation-v1",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Luminous Platform PR #34 head b5407b885115ab4ef30c118a78a0ea424ae1ab6d; pinned observation schema blob is unchanged. Fixture-only observations require null retrieved_at and null source snapshot digest; captured observations require an RFC3339 retrieval timestamp and SHA-256 source snapshot digest. Current Public Source and Civic Crosswalk Contracts run #38691885208 is queued, so exact-head conformance remains pending.",
+      "notes": "Reviewed against Luminous Platform PR #34 predecessor head f04951f8f1fed8f0ea1d244824e1d39d8f71089d; schema blob 4a50b82a8ed32deeb245e11b7e4d542860a6c2a2 is unchanged. Fixture-only observations require null retrieved_at and null source snapshot digest; captured observations require an RFC3339 retrieval timestamp and a valid SHA-256 source snapshot digest. Predecessor exact-head workflow #38703017164 was queued when checked after formatter corrections, not passed. This refresh adds calendar-aware validation and regression cases on a newer head; requalify that head separately.",
       "qualification_state": "unqualified_draft"
     },
     {
       "schema_id": "mycelix.service-journey-reference-v0.3.0",
       "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "227e0b174c58044c75f1a56f6b78730fdf7fa4d6",
+      "snapshot_commit_sha": "4f74e4338d44e3523f6f9f629455beabd834b1ae",
       "path": "schemas/life-civic/service-journey-reference.schema.json",
       "git_blob_sha1": "7e2b8b3d963c9c5598c78927121fcf60203591f9",
       "version": "0.3.0",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Mycelix PR #5019 head 227e0b174c58044c75f1a56f6b78730fdf7fa4d6; schema blob is unchanged. The schema separates route status, case_state, evidence retrieval state, outcome status, review and claim_ceiling. Current life/civic reference workflow #38689970670 is queued and general CI #38689970659 is skipped; exact-head cross-contract qualification is not established.",
+      "notes": "Reviewed against Mycelix PR #5019 head 4f74e4338d44e3523f6f9f629455beabd834b1ae; schema blob is unchanged. The schema separates route status, case_state, evidence retrieval state, outcome status, review and claim_ceiling. Life/civic reference workflow #38701461835 is queued on this exact head and general Mycelix CI is skipped; exact-head qualification remains pending.",
       "qualification_state": "unqualified_draft"
     },
     {
       "schema_id": "mycelix.applicability-assessment",
       "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "227e0b174c58044c75f1a56f6b78730fdf7fa4d6",
+      "snapshot_commit_sha": "4f74e4338d44e3523f6f9f629455beabd834b1ae",
       "path": "schemas/life-civic/applicability-assessment.schema.json",
       "git_blob_sha1": "241d4c4abbd765c05e56ddfae3391cead0f26dbc",
       "version": null,
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Mycelix PR #5019 head 227e0b174c58044c75f1a56f6b78730fdf7fa4d6; schema blob is unchanged. The schema has no top-level schema_version; records carry profile_version. Applicability requires context, evidence and completed human review. It is not an authorisation contract. Exact-head qualification remains pending.",
+      "notes": "Reviewed against Mycelix PR #5019 head 4f74e4338d44e3523f6f9f629455beabd834b1ae; schema blob is unchanged. The schema has no top-level schema_version; records carry profile_version. Applicability requires context, evidence and completed human review. It is not an authorisation contract. The exact-head life/civic reference workflow #38701461835 is queued; no pass is claimed.",
       "qualification_state": "unqualified_draft"
     },
     {
@@ -54,26 +54,26 @@
     {
       "schema_id": "symthaea.life-civic-reference-corpus",
       "repository": "Luminous-Dynamics/symthaea",
-      "snapshot_commit_sha": "e78717f569d7aa5956e2f70c891f257417c2429f",
+      "snapshot_commit_sha": "18697d2737af4164ef0ffa54cf7293c8e97bc792",
       "path": "docs/research/life-civic/reference-scenarios.json",
-      "git_blob_sha1": "df29b96497a4a1dfc0042d9853ee10eb79f962c0",
+      "git_blob_sha1": "574f6d3ba235c68e306f84f5ee761d399cc165b6",
       "version": "0.2.0",
       "artifact_kind": "evaluation_corpus",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Symthaea PR #7443 head e78717f569d7aa5956e2f70c891f257417c2429f; corpus blob is unchanged. It includes a negative control rejecting incident-level power-trip causality and current-restoration claims from a historical public statement. Current life/civic scenarios run #38689702336 is queued; broad CI and benchmark workflows are skipped. This is an evaluation corpus, not a runtime case schema or qualified model result.",
-      "qualification_state": "unqualified_draft"
+      "notes": "Reviewed against Symthaea PR #7443 head 18697d2737af4164ef0ffa54cf7293c8e97bc792; corpus blob is pinned at 574f6d3ba235c68e306f84f5ee761d399cc165b6. The 11-scenario life/civic corpus includes a negative control rejecting incident-level power-trip causality and current-restoration claims from a historical public statement. Life/civic scenario workflow #38695477970, crime-prevention reference workflow #38695477851 and synthetic evaluator workflow #38695478067 succeeded on that exact head. These are narrow corpus/evaluator results; broad CI, benchmark and governance workflows were skipped, and no overall Symthaea model or field qualification is implied.",
+      "qualification_state": "narrow_workflow_success"
     },
     {
       "schema_id": "platform.work-case-v1",
       "repository": "Luminous-Dynamics/luminous-platform",
-      "snapshot_commit_sha": "7ec5588d9844b10006b3264e34f30bd4aeba48ec",
+      "snapshot_commit_sha": "662aaf2bd2a3f873fd8f6fc0eb4181f061043794",
       "path": "contracts/work-case-v1/schema.json",
       "git_blob_sha1": "6be2f6498630d76287034020d9e89eca76ee2711",
       "version": "work-case-v1",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed from Platform PR #8 current head 7ec5588d9844b10006b3264e34f30bd4aeba48ec, an ancestry-preserving merge of the previous Work Case head with current parent PR #4 head c43a68adc9543fee67d67debfd7bcf6e1387395d; Work Case schema blob remains 6be2f6498630d76287034020d9e89eca76ee2711. The merge imports the parent's date-time format-checker and role-claim test fixes without changing Work Case implementation files. Current combined workflow #38693004364 is queued, and Work Case-specific qualification is not yet established. Keep adapters blocked.",
-      "qualification_state": "unqualified_draft"
+      "notes": "Reviewed from Luminous Platform PR #8 head 662aaf2bd2a3f873fd8f6fc0eb4181f061043794; Work Case schema blob remains 6be2f6498630d76287034020d9e89eca76ee2711. Exact workflow #38694337384 succeeded on this head. This is narrow contract/schema qualification only; the crosswalk mapping remains blocked pending runtime integration tests and the required semantic/authority boundaries.",
+      "qualification_state": "narrow_workflow_success"
     },
     {
       "schema_id": "platform.operations-event-v1",
@@ -84,19 +84,19 @@
       "version": "operations-event-v1",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed from Platform PR #4 branch head c43a68adc9543fee67d67debfd7bcf6e1387395d; schema blob is unchanged. The prior exact-head workflow #38618166253 exposed a missing JSON Schema date-time checker dependency (the invalid value observedat='yesterday' was accepted) and a stale Holochain role-claim test expectation. Both are patched on this new head; workflow #38692588693 is queued, so they are not yet qualified.",
-      "qualification_state": "unqualified_draft"
+      "notes": "Reviewed from Luminous Platform PR #4 head c43a68adc9543fee67d67debfd7bcf6e1387395d; Operations Event schema blob is unchanged. Exact workflow #38692588693 succeeded on this head after fixing date-time format-checking and the stale issuer-role expectation. This qualifies the named narrow contract workflow only; it does not qualify a civic adapter or runtime event delivery.",
+      "qualification_state": "narrow_workflow_success"
     },
     {
       "schema_id": "mycelix.life-civic-service-reference-corpus",
       "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "227e0b174c58044c75f1a56f6b78730fdf7fa4d6",
+      "snapshot_commit_sha": "4f74e4338d44e3523f6f9f629455beabd834b1ae",
       "path": "tests/reference/life-civic-service/cases-v0.4.0.json",
       "git_blob_sha1": "8674042a1d4d9fe4d8b27cfca759657ace4f07f5",
       "version": "0.4.0",
       "artifact_kind": "evaluation_corpus",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Mycelix PR #5019 head 227e0b174c58044c75f1a56f6b78730fdf7fa4d6; corpus blob is unchanged. It uses service-journey schema v0.3.0 and shares a causal/currentness negative control with the Symthaea corpus while remaining a separate evaluation format. Current life/civic qualification workflow #38689970670 is queued and general Mycelix CI is skipped; remains unqualified.",
+      "notes": "Reviewed against Mycelix PR #5019 head 4f74e4338d44e3523f6f9f629455beabd834b1ae; corpus blob is unchanged at 8674042a1d4d9fe4d8b27cfca759657ace4f07f5. It uses service-journey schema v0.3.0 and shares a causal/currentness negative control with the Symthaea corpus while remaining a separate evaluation format. Current life/civic qualification workflow #38701461835 is queued and general Mycelix CI is skipped; remains unqualified.",
       "qualification_state": "unqualified_draft"
     }
   ],

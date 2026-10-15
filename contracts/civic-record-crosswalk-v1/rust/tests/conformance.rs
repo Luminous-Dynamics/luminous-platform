@@ -19,7 +19,7 @@ fn public_observation_contract_pin_tracks_truthful_retrieval_provenance() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "b5407b885115ab4ef30c118a78a0ea424ae1ab6d"
+        "f04951f8f1fed8f0ea1d244824e1d39d8f71089d"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
@@ -68,7 +68,7 @@ fn sol_atlas_civic_case_pin_tracks_current_source_and_stays_unqualified() {
 }
 
 #[test]
-fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_stays_unqualified() {
+fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_narrow_success() {
     let input = include_str!("../../crosswalk.json");
     let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
     let contract = crosswalk
@@ -79,16 +79,16 @@ fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_stays_unqualified() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "e78717f569d7aa5956e2f70c891f257417c2429f"
+        "18697d2737af4164ef0ffa54cf7293c8e97bc792"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
-        Some("df29b96497a4a1dfc0042d9853ee10eb79f962c0")
+        Some("574f6d3ba235c68e306f84f5ee761d399cc165b6")
     );
     assert_eq!(contract.version.as_deref(), Some("0.2.0"));
     assert_eq!(
         contract.qualification_state,
-        civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+        civic_record_crosswalk_v1::QualificationState::NarrowWorkflowSuccess
     );
 }
 
@@ -104,7 +104,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "227e0b174c58044c75f1a56f6b78730fdf7fa4d6"
+        "4f74e4338d44e3523f6f9f629455beabd834b1ae"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
@@ -133,7 +133,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
             .unwrap_or_else(|| panic!("missing pinned Mycelix schema {schema_id}"));
         assert_eq!(
             source_schema.snapshot_commit_sha,
-            "227e0b174c58044c75f1a56f6b78730fdf7fa4d6"
+            "4f74e4338d44e3523f6f9f629455beabd834b1ae"
         );
         assert_eq!(source_schema.git_blob_sha1.as_deref(), Some(expected_blob));
     }
@@ -170,7 +170,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
 }
 
 #[test]
-fn existing_draft_work_case_and_operations_event_contracts_remain_blocked_until_qualified() {
+fn work_case_and_operations_event_mappings_remain_blocked_after_narrow_contract_success() {
     let input = include_str!("../../crosswalk.json");
     let crosswalk = parse_and_validate_json(input).expect("valid mapping register");
     for (schema_id, expected_sha, expected_blob) in [
@@ -194,7 +194,7 @@ fn existing_draft_work_case_and_operations_event_contracts_remain_blocked_until_
         assert_eq!(contract.git_blob_sha1.as_deref(), Some(expected_blob));
         assert_eq!(
             contract.qualification_state,
-            civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+            civic_record_crosswalk_v1::QualificationState::NarrowWorkflowSuccess
         );
     }
 
