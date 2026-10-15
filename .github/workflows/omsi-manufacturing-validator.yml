@@ -65,6 +65,15 @@ jobs:
       - name: Run semantic validator against the committed profile vectors
         if: steps.source.outputs.present == 'true'
         run: cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- validate-vectors docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json
+      - name: Smoke-test raw-byte replay envelope
+        if: steps.source.outputs.present == 'true'
+        shell: bash
+        run: |
+          input_file="$RUNNER_TEMP/omsi-replay-input.json"
+          envelope_file="$RUNNER_TEMP/omsi-replay-envelope.json"
+          jq '.vectors[0].input' docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json > "$input_file"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- create-envelope "$input_file" > "$envelope_file"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- verify-envelope "$envelope_file" "$input_file"
       - name: Clippy
         if: steps.source.outputs.present == 'true'
         run: cargo clippy --manifest-path tools/omsi-manufacturing-validator/Cargo.toml --all-targets -- -D warnings
