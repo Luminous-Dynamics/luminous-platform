@@ -36,7 +36,9 @@ fn main() -> ExitCode {
                 crosswalk.mappings.len(),
                 crosswalk.review_snapshot
             );
-            println!("BOUNDARY: mapping register only; no adapter executed and no action authorized");
+            println!(
+                "BOUNDARY: mapping register only; no adapter executed and no action authorized"
+            );
             ExitCode::SUCCESS
         }
         Err(errors) => {

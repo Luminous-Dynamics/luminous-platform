@@ -139,11 +139,10 @@ pub struct FieldBinding {
 
 /// Parse and validate one exact crosswalk register.
 pub fn parse_and_validate_json(input: &str) -> Result<CivicRecordCrosswalk, ValidationErrors> {
-    let crosswalk: CivicRecordCrosswalk = serde_json::from_str(input).map_err(|error| {
-        ValidationErrors {
+    let crosswalk: CivicRecordCrosswalk =
+        serde_json::from_str(input).map_err(|error| ValidationErrors {
             messages: vec![format!("invalid crosswalk JSON: {error}")],
-        }
-    })?;
+        })?;
     let errors = validate(&crosswalk);
     if errors.is_empty() {
         Ok(crosswalk)
@@ -209,7 +208,10 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
             errors.push("contract schema_id must not be empty".to_owned());
         }
         if !nonempty(&contract.repository) {
-            errors.push(format!("{}: repository must not be empty", contract.schema_id));
+            errors.push(format!(
+                "{}: repository must not be empty",
+                contract.schema_id
+            ));
         }
         if !valid_hex(&contract.snapshot_commit_sha, 40) {
             errors.push(format!(
@@ -258,19 +260,26 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
             .insert(contract.schema_id.as_str(), contract)
             .is_some()
         {
-            errors.push(format!("duplicate contract schema_id: {}", contract.schema_id));
+            errors.push(format!(
+                "duplicate contract schema_id: {}",
+                contract.schema_id
+            ));
         }
     }
 
     let mut mapping_ids = HashSet::new();
     for mapping in &crosswalk.mappings {
-        if !nonempty(&mapping.mapping_id)
-            || !mapping_ids.insert(mapping.mapping_id.as_str())
-        {
-            errors.push(format!("empty or duplicate mapping_id: {}", mapping.mapping_id));
+        if !nonempty(&mapping.mapping_id) || !mapping_ids.insert(mapping.mapping_id.as_str()) {
+            errors.push(format!(
+                "empty or duplicate mapping_id: {}",
+                mapping.mapping_id
+            ));
         }
         if !nonempty(&mapping.rationale) {
-            errors.push(format!("{}: rationale must not be empty", mapping.mapping_id));
+            errors.push(format!(
+                "{}: rationale must not be empty",
+                mapping.mapping_id
+            ));
         }
         if mapping.required_guards.is_empty()
             || mapping.required_guards.iter().any(|guard| !nonempty(guard))
@@ -312,7 +321,8 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
         let explicit_non_mapping = matches!(
             mapping.relationship,
             SemanticRelationship::NoAuthorityMapping | SemanticRelationship::NotRuntimeContract
-        ) && mapping.conversion_policy == ConversionPolicy::NoAutomaticMapping
+        ) && mapping.conversion_policy
+            == ConversionPolicy::NoAutomaticMapping
             && mapping.disposition == Disposition::Prohibited;
         if explicit_non_mapping && !mapping.to.field_paths.is_empty() {
             errors.push(format!(
@@ -338,16 +348,17 @@ fn validate(crosswalk: &CivicRecordCrosswalk) -> Vec<String> {
                             mapping.mapping_id
                         ));
                     }
-                    let blocked_dependency =
-                        mapping.relationship == SemanticRelationship::NotAvailable
-                            && mapping.conversion_policy
-                                == ConversionPolicy::BlockedUntilContractExists
-                            && mapping.disposition == Disposition::Blocked;
+                    let blocked_dependency = mapping.relationship
+                        == SemanticRelationship::NotAvailable
+                        && mapping.conversion_policy
+                            == ConversionPolicy::BlockedUntilContractExists
+                        && mapping.disposition == Disposition::Blocked;
                     let explicit_prohibition = matches!(
                         mapping.relationship,
                         SemanticRelationship::NoAuthorityMapping
                             | SemanticRelationship::NotRuntimeContract
-                    ) && mapping.conversion_policy == ConversionPolicy::NoAutomaticMapping
+                    ) && mapping.conversion_policy
+                        == ConversionPolicy::NoAutomaticMapping
                         && mapping.disposition == Disposition::Prohibited;
                     if !blocked_dependency && !explicit_prohibition {
                         errors.push(format!(
@@ -466,7 +477,9 @@ fn require_rule(
         Some(_) => errors.push(format!(
             "{mapping_id}: required conservative semantic guardrail was weakened"
         )),
-        None => errors.push(format!("{mapping_id}: required semantic guardrail is missing")),
+        None => errors.push(format!(
+            "{mapping_id}: required semantic guardrail is missing"
+        )),
     }
 }
 
@@ -541,14 +554,21 @@ mod tests {
             .find(|mapping| mapping.mapping_id == "MYCELIX-CASE-STATE-TO-WORK-CASE-STATE")
             .expect("state relationship is explicit");
         assert_eq!(mapping.disposition, Disposition::Blocked);
-        assert_eq!(mapping.conversion_policy, ConversionPolicy::NoAutomaticMapping);
+        assert_eq!(
+            mapping.conversion_policy,
+            ConversionPolicy::NoAutomaticMapping
+        );
     }
 
     #[test]
     fn explicit_prohibitions_have_no_target_field_paths() {
         let crosswalk = parse_and_validate_json(FIXTURE).expect("valid crosswalk");
         for id in ["APPLICABILITY-TO-AUTHORITY", "SYMTHAEA-CORPUS-TO-ACTION"] {
-            let rule = crosswalk.mappings.iter().find(|rule| rule.mapping_id == id).unwrap();
+            let rule = crosswalk
+                .mappings
+                .iter()
+                .find(|rule| rule.mapping_id == id)
+                .unwrap();
             assert!(rule.to.field_paths.is_empty());
             assert_eq!(rule.conversion_policy, ConversionPolicy::NoAutomaticMapping);
             assert_eq!(rule.disposition, Disposition::Prohibited);

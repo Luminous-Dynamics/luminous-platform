@@ -31,7 +31,9 @@ fn public_observation_contract_pin_tracks_truthful_retrieval_provenance() {
         civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
     );
     assert!(
-        contract.notes.contains("fixture-only observations require null retrieved_at"),
+        contract
+            .notes
+            .contains("fixture-only observations require null retrieved_at"),
         "the pinned observation contract must document truthful capture provenance"
     );
 }
@@ -201,7 +203,10 @@ fn existing_draft_work_case_and_operations_event_contracts_remain_blocked_until_
         .iter()
         .find(|rule| rule.mapping_id == "MYCELIX-CASE-STATE-TO-WORK-CASE-STATE")
         .expect("Work Case mapping is explicit");
-    assert_eq!(work_state.disposition, civic_record_crosswalk_v1::Disposition::Blocked);
+    assert_eq!(
+        work_state.disposition,
+        civic_record_crosswalk_v1::Disposition::Blocked
+    );
     assert_eq!(
         work_state.conversion_policy,
         civic_record_crosswalk_v1::ConversionPolicy::NoAutomaticMapping
@@ -212,7 +217,10 @@ fn existing_draft_work_case_and_operations_event_contracts_remain_blocked_until_
         .iter()
         .find(|rule| rule.mapping_id == "SOL-EVENT-TO-OPERATIONS-EVENT")
         .expect("Operations Event mapping is explicit");
-    assert_eq!(event.disposition, civic_record_crosswalk_v1::Disposition::Blocked);
+    assert_eq!(
+        event.disposition,
+        civic_record_crosswalk_v1::Disposition::Blocked
+    );
     assert_eq!(
         event.conversion_policy,
         civic_record_crosswalk_v1::ConversionPolicy::ExplicitAdapterRequired
