@@ -161,16 +161,8 @@
             "objective_defined": {
               "type": "boolean"
             },
-            "window_complete": {
-              "type": "boolean"
-            },
             "measurement_valid": {
               "type": "boolean"
-            },
-            "coverage_ratio": {
-              "type": "number",
-              "minimum": 0,
-              "maximum": 1
             },
             "minimum_coverage_ratio": {
               "type": "number",
@@ -199,6 +191,31 @@
             },
             "independent_measurement_present": {
               "type": "boolean"
+            },
+            "observation_window_start_epoch_seconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "observation_window_end_epoch_seconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "expected_interval_seconds": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "maximum_allowed_gap_seconds": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "valid_sample_offsets_seconds": {
+              "type": "array",
+              "minItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
             }
           }
         },
@@ -241,7 +258,44 @@
             }
           }
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "domain": {
+                "const": "outcome_objective"
+              }
+            },
+            "required": [
+              "domain"
+            ]
+          },
+          "then": {
+            "properties": {
+              "facts": {
+                "required": [
+                  "objective_scope_matches",
+                  "objective_defined",
+                  "observation_window_start_epoch_seconds",
+                  "observation_window_end_epoch_seconds",
+                  "expected_interval_seconds",
+                  "maximum_allowed_gap_seconds",
+                  "valid_sample_offsets_seconds",
+                  "measurement_valid",
+                  "minimum_coverage_ratio",
+                  "measured_value",
+                  "target_value",
+                  "comparator",
+                  "measured_unit",
+                  "target_unit",
+                  "independent_measurement_present"
+                ]
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }
