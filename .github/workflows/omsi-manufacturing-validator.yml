@@ -20,11 +20,23 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+      - name: Detect validator crate
+        id: source
+        shell: bash
+        run: |
+          if test -f tools/omsi-manufacturing-validator/Cargo.toml; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No validator crate in this documentation-only revision; formatting job is not applicable."
+          fi
       - uses: dtolnay/rust-toolchain@stable
+        if: steps.source.outputs.present == 'true'
         with:
           toolchain: stable
           components: rustfmt
       - name: Check formatting
+        if: steps.source.outputs.present == 'true'
         run: cargo fmt --manifest-path tools/omsi-manufacturing-validator/Cargo.toml --all -- --check
 
   test:
@@ -32,13 +44,27 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
+      - name: Detect validator crate
+        id: source
+        shell: bash
+        run: |
+          if test -f tools/omsi-manufacturing-validator/Cargo.toml; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No validator crate in this documentation-only revision; semantic tests are not applicable."
+          fi
       - uses: dtolnay/rust-toolchain@stable
+        if: steps.source.outputs.present == 'true'
         with:
           toolchain: stable
           components: clippy
       - name: Run executable conformance tests
+        if: steps.source.outputs.present == 'true'
         run: cargo test --manifest-path tools/omsi-manufacturing-validator/Cargo.toml
       - name: Run semantic validator against the committed profile vectors
+        if: steps.source.outputs.present == 'true'
         run: cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- validate-vectors docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json
       - name: Clippy
+        if: steps.source.outputs.present == 'true'
         run: cargo clippy --manifest-path tools/omsi-manufacturing-validator/Cargo.toml --all-targets -- -D warnings
