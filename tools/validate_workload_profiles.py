@@ -789,7 +789,7 @@ def main() -> int:
                 {"sourceUri": "artifact://artifacts.example.invalid/%2e%2e/image.qcow2"}
             ),
             "reject encoded artifact key traversal",
-            "without credentials, ports, query, fragment, or traversal",
+            "non-canonical characters",
         ),
         (
             full_vm,
