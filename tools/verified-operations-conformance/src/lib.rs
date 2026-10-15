@@ -641,6 +641,11 @@ fn validate_source_normalization(record: &Value, id: &str, errors: &mut Vec<Stri
                 }
             };
             let entity_id = raw.get("entity_id").and_then(Value::as_str).unwrap_or("");
+            let resource_id = record
+                .get("source")
+                .and_then(|source| source.get("resource_id"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
             let raw_state = raw.get("state").and_then(Value::as_str).unwrap_or("");
             let raw_unit = raw
                 .get("unit_of_measurement")
@@ -664,6 +669,8 @@ fn validate_source_normalization(record: &Value, id: &str, errors: &mut Vec<Stri
                 .and_then(Value::as_str)
                 .unwrap_or("");
             if entity_id.is_empty()
+                || entity_id != resource_id
+                || !matches!(raw_unit, "Wh" | "kWh" | "MWh" | "J" | "kJ" | "MJ" | "GJ")
                 || parse_decimal(raw_state).is_none()
                 || raw_state != normalized_value
                 || raw_unit != normalized_unit
@@ -671,7 +678,7 @@ fn validate_source_normalization(record: &Value, id: &str, errors: &mut Vec<Stri
                 || normalized_validity != "valid"
             {
                 errors.push(format!(
-                    "evidence {id} raw source fields do not support the normalized energy measurement"
+                    "evidence {id} raw entity/resource identity, energy unit, state, or normalized fields do not agree"
                 ));
             }
         }
@@ -680,6 +687,19 @@ fn validate_source_normalization(record: &Value, id: &str, errors: &mut Vec<Stri
                 errors.push(format!(
                     "evidence {id} uses derived-subtract-v1 for unsupported kind {kind}"
                 ));
+            }
+            let resource_id = record
+                .get("source")
+                .and_then(|source| source.get("resource_id"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            let metric = record
+                .get("measurement")
+                .and_then(|measurement| measurement.get("metric_name"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            if kind == "derived_measurement" && resource_id != metric {
+                errors.push(format!("evidence {id} resource identity does not match its derived metric"));
             }
         }
         _ => errors.push(format!(
