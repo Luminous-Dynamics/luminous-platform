@@ -1,4 +1,7 @@
+mod replay;
+
 use omsi_manufacturing_validator::{evaluate_input_value, validate_vector_document};
+use replay::{create_replay_envelope, verify_replay_envelope};
 use serde_json::Value;
 use std::env;
 use std::fs;
@@ -45,21 +48,50 @@ fn run() -> Result<u8, String> {
                 _ => Ok(1),
             }
         }
+        Some("create-envelope") if args.len() == 3 => {
+            let source = read_bytes(&args[2])?;
+            let envelope = create_replay_envelope(&source)?;
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&envelope)
+                    .map_err(|error| format!("failed to serialize envelope: {error}"))?
+            );
+            Ok(0)
+        }
+        Some("verify-envelope") if args.len() == 4 => {
+            let envelope = read_json(&args[2])?;
+            let source = read_bytes(&args[3])?;
+            let verification = verify_replay_envelope(&envelope, &source);
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&verification)
+                    .map_err(|error| format!("failed to serialize verification: {error}"))?
+            );
+            if verification.get("status").and_then(Value::as_str) == Some("replay_consistent") {
+                Ok(0)
+            } else {
+                Ok(1)
+            }
+        }
         _ => Err(
-            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->".into(),
+            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->".into(),
         ),
     }
 }
 
 fn read_json(path: &str) -> Result<Value, String> {
-    let mut source = String::new();
+    let source = read_bytes(path)?;
+    serde_json::from_slice(&source).map_err(|error| format!("invalid JSON in {path}: {error}"))
+}
+
+fn read_bytes(path: &str) -> Result<Vec<u8>, String> {
     if path == "-" {
+        let mut source = Vec::new();
         io::stdin()
-            .read_to_string(&mut source)
+            .read_to_end(&mut source)
             .map_err(|error| format!("failed to read stdin: {error}"))?;
+        Ok(source)
     } else {
-        source =
-            fs::read_to_string(path).map_err(|error| format!("failed to read {path}: {error}"))?;
+        fs::read(path).map_err(|error| format!("failed to read {path}: {error}"))
     }
-    serde_json::from_str(&source).map_err(|error| format!("invalid JSON in {path}: {error}"))
 }
