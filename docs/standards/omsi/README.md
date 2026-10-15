@@ -37,6 +37,14 @@ Every consequential operation should be bound to an authenticated tenant, stable
 
 A conforming implementation may use other languages, databases, operating systems, transports, identity systems and execution tools. No Luminous product, blockchain, Holochain, AI system or central SaaS service is required.
 
+## Source-pinned field-service research
+
+- [OMSI Field Service profile 0.1](profiles/field-service/0.1/PROFILE.md)
+- [OCA Field Service 19.0 mapping](profiles/field-service/0.1/adapters/OCA_FIELD_SERVICE_19_0_MAPPING.md)
+- [ERPNext v16.51.0 maintenance mapping](profiles/field-service/0.1/adapters/ERPNEXT_V16_51_0_MAINTENANCE_MAPPING.md)
+
+These source-specific documents explain how existing workflow models can map into an OMSI intake projection without asserting that a source status, assigned worker, certificate flag, signature, or invoice link constitutes verified work. All adapter notes are research and conformance design—not live integration claims.
+
 ## Review focus
 
 1. Is operation/authority/evidence a useful small interoperability kernel distinct from existing ITSM/RMM and field-service schemas?
