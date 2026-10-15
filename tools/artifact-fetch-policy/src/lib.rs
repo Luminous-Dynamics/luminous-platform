@@ -60,7 +60,7 @@ pub enum PolicyError {
 }
 
 /// Immutable limits and administrator-approved HTTPS origins.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FetchPolicy {
     allowed_origins: BTreeSet<HttpsOrigin>,
     max_redirects: u8,
@@ -213,8 +213,7 @@ fn normalize_host(host: &str) -> Result<String, PolicyError> {
     if host.is_empty()
         || !host.is_ascii()
         || host.chars().any(|c| {
-            c.is_ascii_whitespace()
-                || matches!(c, '/' | '\\' | '@' | '?' | '#' | '%' | '[' | ']')
+            c.is_ascii_whitespace() || matches!(c, '/' | '\\' | '@' | '?' | '#' | '%' | '[' | ']')
         })
     {
         return Err(PolicyError::InvalidHost);
@@ -251,7 +250,10 @@ fn normalize_host(host: &str) -> Result<String, PolicyError> {
 
     // Prevent invalid numeric-looking dotted strings from being treated as
     // DNS names when a parser or resolver might interpret them as IP literals.
-    if labels.iter().all(|label| label.bytes().all(|byte| byte.is_ascii_digit())) {
+    if labels
+        .iter()
+        .all(|label| label.bytes().all(|byte| byte.is_ascii_digit()))
+    {
         return Err(PolicyError::InvalidHost);
     }
 
@@ -299,11 +301,7 @@ fn is_conservative_public_ipv6(ip: Ipv6Addr) -> bool {
     // Only consider global-unicast space, then exclude registered special
     // ranges inside it. This deliberately rejects transition, documentation,
     // multicast, unique-local, link-local, and other non-global addresses.
-    let in_global_unicast = ipv6_in_prefix(
-        ip,
-        Ipv6Addr::new(0x2000, 0, 0, 0, 0, 0, 0, 0),
-        3,
-    );
+    let in_global_unicast = ipv6_in_prefix(ip, Ipv6Addr::new(0x2000, 0, 0, 0, 0, 0, 0, 0), 3);
 
     in_global_unicast
         && !ipv6_in_prefix(ip, Ipv6Addr::new(0x2001, 0, 0, 0, 0, 0, 0, 0), 23)
@@ -352,7 +350,10 @@ mod tests {
             origin("REGISTRY.EXAMPLE.INVALID.", 443).host(),
             "registry.example.invalid"
         );
-        assert_eq!(origin("2001:4860:4860::8888", 443).host(), "2001:4860:4860::8888");
+        assert_eq!(
+            origin("2001:4860:4860::8888", 443).host(),
+            "2001:4860:4860::8888"
+        );
         assert_eq!(origin("8.8.8.8", 443).host(), "8.8.8.8");
     }
 
@@ -377,9 +378,16 @@ mod tests {
             "2001:db8::zz",
             "bad_label.example",
         ] {
-            assert_eq!(HttpsOrigin::new(host, 443), Err(PolicyError::InvalidHost), "{host}");
+            assert_eq!(
+                HttpsOrigin::new(host, 443),
+                Err(PolicyError::InvalidHost),
+                "{host}"
+            );
         }
-        assert_eq!(HttpsOrigin::new("example.invalid", 0), Err(PolicyError::InvalidPort));
+        assert_eq!(
+            HttpsOrigin::new("example.invalid", 0),
+            Err(PolicyError::InvalidPort)
+        );
     }
 
     #[test]
@@ -397,8 +405,14 @@ mod tests {
     #[test]
     fn origin_allowlist_is_exact_after_normalization() {
         let p = policy();
-        assert!(p.authorize_origin(&origin("registry.example.invalid", 443)).is_ok());
-        assert!(p.authorize_origin(&origin("mirror.example.invalid", 8443)).is_ok());
+        assert!(
+            p.authorize_origin(&origin("registry.example.invalid", 443))
+                .is_ok()
+        );
+        assert!(
+            p.authorize_origin(&origin("mirror.example.invalid", 8443))
+                .is_ok()
+        );
         assert!(matches!(
             p.authorize_origin(&origin("attacker.example.invalid", 443)),
             Err(PolicyError::OriginNotAllowed(_))
@@ -504,7 +518,10 @@ mod tests {
         let p = policy();
         let registry = origin("registry.example.invalid", 443);
         let validated = p.authorize_resolution(&registry, &[ip("8.8.8.8")]).unwrap();
-        assert!(p.verify_connected_peer(&registry, &validated, ip("8.8.8.8")).is_ok());
+        assert!(
+            p.verify_connected_peer(&registry, &validated, ip("8.8.8.8"))
+                .is_ok()
+        );
         assert_eq!(
             p.verify_connected_peer(&registry, &validated, ip("1.1.1.1")),
             Err(PolicyError::ConnectedPeerNotValidated(ip("1.1.1.1")))
