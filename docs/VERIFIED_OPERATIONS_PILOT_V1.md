@@ -66,4 +66,4 @@ References (checked 2026-10-15):
 
 ## Explicit nonclaims
 
-The corpus is authored, not CI-qualified here. No production adapter, live device, backup restore, customer environment, security certification, savings, downtime reduction or paid demand is claimed. The first task after merge should be implementing the schema/test runner in the repository's chosen Rust-first validation path and capturing exact-head evidence, without relaxing the negative controls.
+The corpus is authored, not CI-qualified here. No production adapter, live device, backup restore, customer environment, security certification, savings, downtime reduction or paid demand is claimed. The Rust-first schema and semantic conformance runner is now included in this PR at `tools/verified-operations-conformance/`, with an exact-path GitHub Actions workflow and metamorphic/negative-control tests. Before any maturity promotion, require its workflow to pass on the exact PR head and add a committed Cargo.lock so transitive dependency resolution is reproducible. Do not relax negative controls to obtain a pass.
