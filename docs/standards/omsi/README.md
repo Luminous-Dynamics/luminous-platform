@@ -45,6 +45,14 @@ A conforming implementation may use other languages, databases, operating system
 
 These source-specific documents explain how existing workflow models can map into an OMSI intake projection without asserting that a source status, assigned worker, certificate flag, signature, or invoice link constitutes verified work. All adapter notes are research and conformance design—not live integration claims.
 
+## Cross-vendor field-service adapter research
+
+- [Cross-vendor comparison and conformance plan](profiles/field-service/0.1/adapters/CROSS_VENDOR_ADAPTER_COMPARISON.md)
+- [OCA Field Service source mapping](profiles/field-service/0.1/adapters/OCA_FIELD_SERVICE_19_0_MAPPING.md)
+- [ERPNext v16.51.0 maintenance mapping](profiles/field-service/0.1/adapters/ERPNEXT_V16_51_0_MAINTENANCE_MAPPING.md)
+
+These are pinned research artifacts. They do not establish live interoperability or production readiness.
+
 ## Review focus
 
 1. Is operation/authority/evidence a useful small interoperability kernel distinct from existing ITSM/RMM and field-service schemas?

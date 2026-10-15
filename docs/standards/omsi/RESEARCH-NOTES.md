@@ -167,3 +167,10 @@ Observed mapping constraints:
 ERPNext repository license.txt identifies GPLv3. This is a source license indicator, not legal advice on the adapter's or a deployment's obligations. Re-evaluate the exact source revision and licensing before implementation or distribution.
 
 Relevant vendor documentation: [Maintenance Visit](https://docs.frappe.io/erpnext/maintenance-visit), [Asset Maintenance](https://docs.frappe.io/erpnext/asset-maintenance), and [Asset Maintenance Log](https://docs.frappe.io/erpnext/asset-maintenance-log). The pinned repository DocTypes/controllers are the evidence for revision-specific field mapping; documentation is supplementary context.
+
+
+## Cross-vendor Field Service adapter comparison
+
+After pinning the OCA Field Service 19.0 and ERPNext v16.51.0 source slices, added [a comparison note](profiles/field-service/0.1/adapters/CROSS_VENDOR_ADAPTER_COMPARISON.md). The central finding is that OMSI can share stable namespaced external references, explicit tenant binding, source-status preservation, typed time fields, loss disclosure and assurance boundaries—but it must not collapse each vendor's case, visit, recurring plan, task, activity or maintenance log into a single lifecycle.
+
+The first adapters deliberately distinguish planning from execution, assignment from credentials, source completion from verified workmanship, and certificate/signature metadata from verified evidence. Use the comparison as an adversarial test plan, not a claim of live cross-vendor interoperability.

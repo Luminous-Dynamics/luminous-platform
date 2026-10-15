@@ -226,3 +226,8 @@ The adapters expose a common intake projection only where source semantics suppo
 6. Is an explicit jurisdiction-pack manifest with source version, effective date, review date and expiry required in the first profile?
 
 **Claim boundary:** this document is a proposal. It has not been through an industry standards process, legal review, independent implementation, live field trial, security assessment, or conformance run. It does not establish that any Luminous component is certified for regulated trade work.
+
+
+## Adapter comparison and shared constraints
+
+The cross-vendor comparison of the first two source mappings is captured in [Cross-vendor Field Service adapter comparison](adapters/CROSS_VENDOR_ADAPTER_COMPARISON.md). It documents the minimum common intake fields and the lifecycle/evidence meanings that must remain source-specific; it also lists adversarial conformance checks required before extending either adapter. This remains desk research for review, not an adopted wire-format requirement.
