@@ -317,16 +317,33 @@
       "facts": {
         "objective_scope_matches": true,
         "objective_defined": true,
-        "window_complete": true,
         "measurement_valid": true,
-        "coverage_ratio": 1,
         "minimum_coverage_ratio": 0.95,
         "measured_value": 99.95,
         "target_value": 99.9,
         "comparator": "gte",
         "measured_unit": "%",
         "target_unit": "%",
-        "independent_measurement_present": true
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
       },
       "expected": {
         "classification": "objective_met_within_observed_scope",
@@ -342,16 +359,33 @@
       "facts": {
         "objective_scope_matches": true,
         "objective_defined": true,
-        "window_complete": true,
         "measurement_valid": true,
-        "coverage_ratio": 1,
         "minimum_coverage_ratio": 0.95,
         "measured_value": 97.5,
         "target_value": 99.9,
         "comparator": "gte",
         "measured_unit": "%",
         "target_unit": "%",
-        "independent_measurement_present": true
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
       },
       "expected": {
         "classification": "objective_target_missed",
@@ -367,16 +401,25 @@
       "facts": {
         "objective_scope_matches": true,
         "objective_defined": true,
-        "window_complete": true,
         "measurement_valid": true,
-        "coverage_ratio": 0.4,
         "minimum_coverage_ratio": 0.95,
         "measured_value": 100,
         "target_value": 99.9,
         "comparator": "gte",
         "measured_unit": "%",
         "target_unit": "%",
-        "independent_measurement_present": true
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          3600
+        ]
       },
       "expected": {
         "classification": "indeterminate",
@@ -392,16 +435,32 @@
       "facts": {
         "objective_scope_matches": true,
         "objective_defined": true,
-        "window_complete": false,
         "measurement_valid": true,
-        "coverage_ratio": 1,
         "minimum_coverage_ratio": 0.95,
         "measured_value": 100,
         "target_value": 99.9,
         "comparator": "gte",
         "measured_unit": "%",
         "target_unit": "%",
-        "independent_measurement_present": true
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300
+        ]
       },
       "expected": {
         "classification": "indeterminate",
@@ -417,16 +476,33 @@
       "facts": {
         "objective_scope_matches": true,
         "objective_defined": true,
-        "window_complete": true,
         "measurement_valid": false,
-        "coverage_ratio": 1,
         "minimum_coverage_ratio": 0.95,
         "measured_value": 100,
         "target_value": 99.9,
         "comparator": "gte",
         "measured_unit": "%",
         "target_unit": "%",
-        "independent_measurement_present": true
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
       },
       "expected": {
         "classification": "indeterminate",
@@ -442,16 +518,33 @@
       "facts": {
         "objective_scope_matches": true,
         "objective_defined": true,
-        "window_complete": true,
         "measurement_valid": true,
-        "coverage_ratio": 1,
         "minimum_coverage_ratio": 0.95,
         "measured_value": 100,
         "target_value": 99.9,
         "comparator": "gte",
         "measured_unit": "kWh",
         "target_unit": "%",
-        "independent_measurement_present": true
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
       },
       "expected": {
         "classification": "indeterminate",
@@ -467,16 +560,33 @@
       "facts": {
         "objective_scope_matches": true,
         "objective_defined": true,
-        "window_complete": true,
         "measurement_valid": true,
-        "coverage_ratio": 1,
         "minimum_coverage_ratio": 0.95,
         "measured_value": 100,
         "target_value": 99.9,
         "comparator": "gte",
         "measured_unit": "%",
         "target_unit": "%",
-        "independent_measurement_present": false
+        "independent_measurement_present": false,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
       },
       "expected": {
         "classification": "indeterminate",
@@ -492,16 +602,33 @@
       "facts": {
         "objective_scope_matches": false,
         "objective_defined": true,
-        "window_complete": true,
         "measurement_valid": true,
-        "coverage_ratio": 1,
         "minimum_coverage_ratio": 0.95,
         "measured_value": 100,
         "target_value": 99.9,
         "comparator": "gte",
         "measured_unit": "%",
         "target_unit": "%",
-        "independent_measurement_present": true
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
       },
       "expected": {
         "classification": "indeterminate",
@@ -517,11 +644,68 @@
       "facts": {
         "objective_scope_matches": true,
         "objective_defined": false,
-        "window_complete": true,
         "measurement_valid": true,
-        "coverage_ratio": 1,
         "minimum_coverage_ratio": 0.95,
         "measured_value": 100,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "%",
+        "target_unit": "%",
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_UNDEFINED"
+      }
+    },
+    {
+      "id": "objective-sampling-gap-too-long",
+      "purpose": "A nominally adequate sample count cannot satisfy an objective when observed telemetry has a gap beyond the declared maximum.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": true,
+        "objective_defined": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ],
+        "measurement_valid": true,
+        "minimum_coverage_ratio": 0.8,
+        "measured_value": 99.95,
         "target_value": 99.9,
         "comparator": "gte",
         "measured_unit": "%",
@@ -532,7 +716,7 @@
         "classification": "indeterminate",
         "automatic_mutation_allowed": false,
         "must_preserve_provenance": true,
-        "reason_code": "OBJECTIVE_UNDEFINED"
+        "reason_code": "OBJECTIVE_GAP_TOO_LONG"
       }
     }
   ]
