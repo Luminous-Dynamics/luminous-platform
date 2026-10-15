@@ -68,3 +68,10 @@ Continue with source-specific offline adapters rather than add live connectors. 
 ## Additional ERPNext lifecycle distinction — completed draft claim (2026-10-15)
 
 A `Completed` maintenance status may appear on `docstatus=0` before ERPNext's submit-time restrictions execute. Preserve the source claim and document state separately, and disclose `completed_status_on_unsubmitted_document`; do not treat the projection as a clean submitted closeout. This is distinct from a submitted custom `Cancelled` state (`docstatus=1`), which the pinned controller explicitly permits.
+
+
+## ERPNext record-revision scope (2026-10-15)
+
+The mapper's `exported_at` is the extraction time, not the source record revision. This slice does not export Frappe record-level `modified` timestamps or Version history for plan/task/log and explicitly reports `record_level_modified_timestamps_not_exported`. Since Frappe timestamp interpretation depends on the configured system timezone and can differ from the DB session clock, don't silently coerce a naive source timestamp to UTC; a future implementation needs a tested, versioned extraction-time policy and a consistency/snapshot mechanism.
+
+An `amended_from` field becomes a namespaced predecessor reference, not complete provenance. The current one-log payload does not include the predecessor, so `amendment_predecessor_record_not_in_snapshot` is emitted; self-reference is rejected. A later lineage profile should retrieve bounded ancestors and detect missing nodes/cycles before it makes any completeness claim.

@@ -121,3 +121,8 @@ Before a real connector is accepted, require all of the following:
 ### Additional lifecycle negative control (2026-10-15)
 
 The pinned ERPNext log controller separates field validation from submit-time restrictions. A draft can carry `maintenance_status=Completed` while `docstatus=0`; the adapter preserves both source dimensions and emits `completed_status_on_unsubmitted_document`. Consumers must not treat a conflicted draft claim as clean submitted closeout. Exact-head adapter commit: `652f9a316adb9fbd0a335cb2ea86cbe888463509`; immediate commit-workflow lookup returned no exact-head PR run, and prior run evidence does not transfer. The 43 authored focused test methods are not a CI pass claim.
+
+
+### Revision and amendment lineage gap (2026-10-15)
+
+The ERPNext single-log snapshot has code-revision metadata and `exported_at`, but no record-level `modified` timestamps or Frappe Version history. Treat the absence as a mapping loss (`record_level_modified_timestamps_not_exported`); do not infer per-record freshness or atomic export from extraction time. An `amended_from` edge is scoped but its predecessor is outside the current snapshot, so emit `amendment_predecessor_record_not_in_snapshot`. Self-amending links are rejected. These changes are in adapter head `c65d18a31dbf09d50c81477223bb3cc9cdbea4bf` with 46 authored focused test methods; the commit-workflow lookup has not yet returned an exact-head run. No pass is claimed.

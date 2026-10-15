@@ -91,3 +91,10 @@ Documentation provides workflow context; the commit-pinned DocType JSON and cont
 ## Additional lifecycle edge case — completed draft status (2026-10-15)
 
 The pinned controller's `validate()` checks completion-date consistency, while its `on_submit()` separately restricts submission to `Completed` or `Cancelled`. Therefore a draft (`docstatus=0`) can carry `maintenance_status=Completed` before the submit-time restriction has run. This remains a source status claim, but not a clean submitted maintenance record. The adapter preserves the raw status/docstatus, keeps normalized status plus `completed_status_on_unsubmitted_document` conflict disclosure, and does not upgrade workmanship assurance. The acceptance suite includes this negative case.
+
+
+## Revision and amendment lineage boundary (2026-10-15)
+
+This synthetic snapshot contract records the source code pin and snapshot `exported_at`, but it does not export record-level `creation`/`modified` timestamps or the Frappe Version/change history for the plan, task, or log. Therefore `exported_at` is extraction metadata, not a per-record revision identifier, source snapshot token, or proof that the related records were read atomically. The mapper emits `record_level_modified_timestamps_not_exported` and does not claim stale-source detection or full revision lineage. Before adding those timestamps to a live adapter, define and test the exact Frappe-version timestamp format and configured timezone policy; do not blindly interpret naive timestamps as UTC.
+
+When `amended_from` is populated, the output retains a namespaced reference to the predecessor but the current single-log snapshot does not include that predecessor. The adapter emits `amendment_predecessor_record_not_in_snapshot`; the link remains a source claim, not proof the target exists, is unchanged, or completes the chain. A self-reference is rejected as an invalid lineage edge. A future lineage slice should fetch a bounded predecessor chain under the same tenant/site binding, preserve each record's source state, detect cycles and missing nodes, and report truncation explicitly rather than claim full history.
