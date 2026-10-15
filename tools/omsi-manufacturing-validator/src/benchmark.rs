@@ -6,7 +6,7 @@ use std::hint::black_box;
 use std::time::Instant;
 
 const WARMUP_ITERATIONS_PER_CASE: usize = 5;
-const MAX_ITERATIONS_PER_CASE: usize = 1_000_000;
+const MAX_ITERATIONS_PER_CASE: usize = 100_000;
 
 struct Case {
     id: String,
@@ -238,7 +238,7 @@ mod tests {
     fn empty_and_unbounded_benchmark_requests_are_rejected() {
         assert!(run(&json!({"vectors": []}), b"{}", 1).is_err());
         assert!(run(&json!({"vectors": []}), b"{}", 0).is_err());
-        assert!(run(&json!({"vectors": []}), b"{}", 1_000_001).is_err());
+        assert!(run(&json!({"vectors": []}), b"{}", 100_001).is_err());
     }
 
     #[test]
