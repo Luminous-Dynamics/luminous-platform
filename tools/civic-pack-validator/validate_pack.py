@@ -81,6 +81,16 @@ def requirement_claim_sha256(requirement: dict[str, Any]) -> str:
     return sha256_hex(canonical_json_bytes(claim))
 
 
+def pack_context_sha256(pack: dict[str, Any]) -> str:
+    """Bind claim review to pack identity, jurisdiction, and workflow scope."""
+    context = {
+        "pack_id": pack["pack_id"],
+        "jurisdiction": pack["jurisdiction"],
+        "workflow": pack["workflow"],
+    }
+    return sha256_hex(canonical_json_bytes(context))
+
+
 def _same_timestamp(left: Any, right: Any) -> bool:
     if left is None or right is None:
         return left is right
@@ -440,6 +450,10 @@ def validate_pack(
         if latest.get("claim_sha256") != requirement_claim_sha256(requirement):
             requirement_receipt_errors.append(
                 f"{requirement_id}: claim fields no longer match latest review receipt digest"
+            )
+        if latest.get("pack_context_sha256") != pack_context_sha256(pack):
+            requirement_receipt_errors.append(
+                f"{requirement_id}: jurisdiction/workflow context no longer matches latest review receipt digest"
             )
         if state == "verified":
             expected_source_receipt_ids = []

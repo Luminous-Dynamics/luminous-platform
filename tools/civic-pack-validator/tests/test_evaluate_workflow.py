@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from evaluate_workflow import evaluate_workflow
-from validate_pack import requirement_claim_sha256
+from validate_pack import pack_context_sha256, requirement_claim_sha256
 
 ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_PATH = ROOT / "schemas" / "jurisdiction-pack-v0.1.0.schema.json"
@@ -105,6 +105,7 @@ def _attach_requirement_receipt(pack, requirement):
         "reviewer_id": reviewer_id,
         "reviewer_role": reviewer_role,
         "claim_sha256": requirement_claim_sha256(requirement),
+        "pack_context_sha256": pack_context_sha256(pack),
         "source_receipt_ids": source_receipt_ids,
         "review_scope": {
             "source_support_checked": True,
@@ -137,6 +138,7 @@ def _refresh_claim_receipt(pack, requirement):
         "reviewed_at": reviewed_at,
         "next_review_at": "2026-10-21T13:00:00Z",
         "claim_sha256": requirement_claim_sha256(requirement),
+        "pack_context_sha256": pack_context_sha256(pack),
         "source_receipt_ids": [
             next(s["review_receipt_id"] for s in pack["sources"] if s["source_id"] == source_ref)
             for source_ref in requirement["source_refs"]

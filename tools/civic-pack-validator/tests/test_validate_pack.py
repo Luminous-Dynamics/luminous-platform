@@ -8,7 +8,7 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-from validate_pack import requirement_claim_sha256, validate_pack
+from validate_pack import pack_context_sha256, requirement_claim_sha256, validate_pack
 
 ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_PATH = ROOT / "schemas" / "jurisdiction-pack-v0.1.0.schema.json"
@@ -106,6 +106,7 @@ def attach_requirement_review_receipt(pack, requirement):
         "reviewer_id": reviewer_id,
         "reviewer_role": reviewer_role,
         "claim_sha256": requirement_claim_sha256(requirement),
+        "pack_context_sha256": pack_context_sha256(pack),
         "source_receipt_ids": source_receipt_ids,
         "review_scope": {
             "source_support_checked": True,
@@ -333,6 +334,31 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         report = report_for(pack)
         self.assertFalse(report["validation_passed"])
         self.assertIn("claim fields no longer match", " ".join(
+            check["details"] for check in report["checks"]
+        ))
+
+    def test_verified_requirement_receipt_detects_jurisdiction_context_mutation(self):
+        pack = copy.deepcopy(PACK)
+        for source in pack["sources"]:
+            attach_review_receipt(pack, source)
+        attach_requirement_review_receipt(pack, pack["requirements"][0])
+        pack["jurisdiction"]["jurisdiction_id"] = "za/western-cape/city-of-cape-town"
+        pack["jurisdiction"]["name"] = "City of Cape Town"
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertIn("jurisdiction/workflow context no longer matches", " ".join(
+            check["details"] for check in report["checks"]
+        ))
+
+    def test_verified_requirement_receipt_detects_workflow_scope_mutation(self):
+        pack = copy.deepcopy(PACK)
+        for source in pack["sources"]:
+            attach_review_receipt(pack, source)
+        attach_requirement_review_receipt(pack, pack["requirements"][0])
+        pack["workflow"]["business_types"] = ["takeaway"]
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertIn("jurisdiction/workflow context no longer matches", " ".join(
             check["details"] for check in report["checks"]
         ))
 

@@ -40,6 +40,7 @@ A source being current does not prove that a particular requirement summary is s
 
 A claim receipt binds:
 - The requirement ID and a SHA-256 of the exact claim-bearing fields: title, claim type, summary, applicability predicates and prose, source references, user actions, and completion effect. The hash is SHA-256 over UTF-8 canonical JSON with object keys sorted and no insignificant whitespace; it excludes mutable review metadata.
+- A separate `pack_context_sha256` over canonical JSON containing the top-level `pack_id`, `jurisdiction`, and `workflow` objects. The active receipt must match this digest, so changing jurisdiction identity or workflow scope invalidates the old claim receipt until a reviewer appends a new one.
 - The review decision, reviewer ID/role, review time, and next-review deadline.
 - The source-review receipt IDs actually checked.
 - Five explicit checks: source support, jurisdiction, applicability, user-facing language, and completion effect.
