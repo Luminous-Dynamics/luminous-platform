@@ -150,3 +150,20 @@ The detailed loss-aware mapping is in [OCA Field Service 19.0 adapter note](prof
 
 License note: AGPL obligations and linking/distribution/hosting implications require review for the intended deployment before adopting or bundling these addons. The source inspection does not establish that an OMSI adapter is legally compatible with every distribution model.
 
+
+
+## Field-service adapter research: ERPNext v16.51.0
+
+A second source model now has a version-pinned research note: [ERPNext v16.51.0 maintenance mapping](profiles/field-service/0.1/adapters/ERPNEXT_V16_51_0_MAINTENANCE_MAPPING.md). The release tag resolves to commit fd97695de7bfeb1d7728a7370c3e128d0cc1509e; inspection covers Maintenance Visit/Purpose, Maintenance Schedule/Detail, Asset Maintenance/Task and Asset Maintenance Log DocTypes/controllers.
+
+Observed mapping constraints:
+- A Maintenance Visit's completion status (Partially Completed / Fully Completed) differs from its document status (Draft / Cancelled / Submitted). Submitted is not synonymous with fully completed.
+- A Maintenance Schedule and its dates express planning intent; Detail has a distinct actual date. The Asset Maintenance plan/task is recurring configuration, while an Asset Maintenance Log is an occurrence.
+- The pinned Asset Maintenance Log controller requires a completion date for Completed status and updates the recurring task at submission. Its date is date-only; do not invent a timestamp or timezone.
+- A task's certificate_required setting is copied into the log's has_certificate field. Therefore has_certificate does not by itself establish that a certificate attachment exists; neither attachment presence nor bytes establish authenticity or valid scope.
+- Visit Purpose's service_person refers to a Sales Person record. Assignment is not professional qualification. Work-done text, completion status and document submission are source claims, not independent verification.
+- Customer address/contact fields and editable work descriptions exist; the first adapter should default to synthetic fixture data and omit raw PII/editor content.
+
+ERPNext repository license.txt identifies GPLv3. This is a source license indicator, not legal advice on the adapter's or a deployment's obligations. Re-evaluate the exact source revision and licensing before implementation or distribution.
+
+Relevant vendor documentation: [Maintenance Visit](https://docs.frappe.io/erpnext/maintenance-visit), [Asset Maintenance](https://docs.frappe.io/erpnext/asset-maintenance), and [Asset Maintenance Log](https://docs.frappe.io/erpnext/asset-maintenance-log). The pinned repository DocTypes/controllers are the evidence for revision-specific field mapping; documentation is supplementary context.
