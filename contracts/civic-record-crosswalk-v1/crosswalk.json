@@ -66,13 +66,13 @@
     {
       "schema_id": "platform.work-case-v1",
       "repository": "Luminous-Dynamics/luminous-platform",
-      "snapshot_commit_sha": "584e0869da3c0de5ccf5e995ec029a87b12228fe",
+      "snapshot_commit_sha": "7ec5588d9844b10006b3264e34f30bd4aeba48ec",
       "path": "contracts/work-case-v1/schema.json",
       "git_blob_sha1": "6be2f6498630d76287034020d9e89eca76ee2711",
       "version": "work-case-v1",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed from separate Platform PR #8 head 584e0869da3c0de5ccf5e995ec029a87b12228fe; the pinned schema blob is unchanged. PR #8's earlier combined workflow #38618946724 failed while validating the inherited Operations Event timestamp contract. PR #4's parent branch now has a fix candidate, but PR #8's own branch still needs stack/base reconciliation and its own exact-head qualification. No Work Case adapter is authorised by this pin.",
+      "notes": "Reviewed from Platform PR #8 current head 7ec5588d9844b10006b3264e34f30bd4aeba48ec, an ancestry-preserving merge of the previous Work Case head with current parent PR #4 head c43a68adc9543fee67d67debfd7bcf6e1387395d; Work Case schema blob remains 6be2f6498630d76287034020d9e89eca76ee2711. The merge imports the parent's date-time format-checker and role-claim test fixes without changing Work Case implementation files. Current combined workflow #38693004364 is queued, and Work Case-specific qualification is not yet established. Keep adapters blocked.",
       "qualification_state": "unqualified_draft"
     },
     {

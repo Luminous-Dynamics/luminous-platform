@@ -174,7 +174,7 @@ fn existing_draft_work_case_and_operations_event_contracts_remain_blocked_until_
     for (schema_id, expected_sha, expected_blob) in [
         (
             "platform.work-case-v1",
-            "584e0869da3c0de5ccf5e995ec029a87b12228fe",
+            "7ec5588d9844b10006b3264e34f30bd4aeba48ec",
             "6be2f6498630d76287034020d9e89eca76ee2711",
         ),
         (
