@@ -75,10 +75,10 @@ cargo run --release --manifest-path tools/omsi-manufacturing-validator/Cargo.tom
   > omsi-benchmark-report.json
 ```
 
-The optional final argument is iterations per vector (default 1000, allowed range 1–1,000,000). The harness warms each case and reports separate measurements for JSON parsing, semantic evaluation, replay-envelope creation and replay-envelope verification. The output contains p50/p95/p99 and other latency statistics, estimated observation/input throughput, platform architecture, case IDs and SHA-256 of the exact source vector-document bytes.
+The optional final argument is iterations per vector (default 1000, allowed range 1–100,000). The harness warms each case and reports separate measurements for JSON parsing, semantic evaluation, replay-envelope creation and replay-envelope verification. The output contains p50/p95/p99 and other latency statistics, estimated observation/input throughput, platform architecture, case IDs and SHA-256 of the exact source vector-document bytes.
 
 The report schema is [benchmark-report.schema.json](schema/benchmark-report.schema.json). Its status is deliberately `measured_no_acceptance_claim`: the harness measures work but does not decide whether a performance target has passed. Shared hosted CI should smoke-test report shape without making noisy wall-clock timings a merge gate.
 
 The eight current vectors are a microbenchmark smoke workload, **not** enough to establish a production service-level objective. Compare numbers only with a matching corpus digest and named hardware/toolchain. Before claiming a production SLO, expand to at least 1,000 behaviorally distinct cases, pin a reference host, capture multiple release-mode runs, and measure peak memory separately.
 
-See [the OMSI benchmark scorecard](../../../docs/standards/omsi/benchmark-scorecard-0.1.md) for proposed correctness, tamper-resistance, latency, throughput, memory, interoperability, privacy and multi-agent acceptance targets. These are targets, not measured results.
+See [the OMSI benchmark scorecard](../../docs/standards/omsi/benchmark-scorecard-0.1.md) for proposed correctness, tamper-resistance, latency, throughput, memory, interoperability, privacy and multi-agent acceptance targets. These are targets, not measured results.
