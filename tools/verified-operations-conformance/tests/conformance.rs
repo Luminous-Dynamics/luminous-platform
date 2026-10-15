@@ -48,11 +48,11 @@ fn schema_is_valid_draft_2020_12_and_formats_are_checked() {
 }
 
 #[test]
-fn all_eighteen_scenarios_match_the_rust_classifier() {
+fn all_twenty_seven_scenarios_match_the_rust_classifier() {
     let schema = parsed_schema();
     let corpus = parsed_corpus();
     let count = validate_corpus(&schema, &corpus).expect("corpus must conform");
-    assert_eq!(count, 18);
+    assert_eq!(count, 27);
 }
 
 #[test]
@@ -209,6 +209,95 @@ fn schema_rejects_mutation_permission_or_provenance_invariant_breaks() {
         validate_corpus(&schema, &corpus).is_err(),
         "schema must reject disabling provenance preservation"
     );
+}
+
+
+#[test]
+fn outcome_objective_target_met_and_missed_are_distinct() {
+    let corpus = parsed_corpus();
+
+    let (classification, reason) = classify_for_test(
+        scenario(&corpus, "objective-slo-met-with-adequate-evidence"),
+    )
+    .expect("scenario classifies");
+    assert_eq!(classification, "objective_met_within_observed_scope");
+    assert_eq!(reason, "OBJECTIVE_TARGET_MET");
+
+    let (classification, reason) = classify_for_test(
+        scenario(&corpus, "objective-slo-missed-with-adequate-evidence"),
+    )
+    .expect("scenario classifies");
+    assert_eq!(classification, "objective_target_missed");
+    assert_eq!(reason, "OBJECTIVE_TARGET_MISSED");
+}
+
+#[test]
+fn objective_claim_requires_complete_window_and_sufficient_coverage() {
+    let corpus = parsed_corpus();
+    for (id, reason) in [
+        ("objective-coverage-insufficient", "OBJECTIVE_COVERAGE_INSUFFICIENT"),
+        ("objective-window-incomplete", "OBJECTIVE_WINDOW_INCOMPLETE"),
+    ] {
+        let (classification, actual_reason) =
+            classify_for_test(scenario(&corpus, id)).expect("scenario classifies");
+        assert_eq!(classification, "indeterminate", "{id}");
+        assert_eq!(actual_reason, reason, "{id}");
+    }
+}
+
+#[test]
+fn objective_claim_fails_closed_on_scope_units_or_missing_independent_measurement() {
+    let corpus = parsed_corpus();
+    for (id, reason) in [
+        ("objective-scope-mismatch", "OBJECTIVE_SCOPE_MISMATCH"),
+        ("objective-unit-mismatch", "OBJECTIVE_UNITS_INCOMPATIBLE"),
+        (
+            "objective-independent-measurement-missing",
+            "OBJECTIVE_INDEPENDENT_MEASUREMENT_MISSING",
+        ),
+        ("objective-measurement-invalid", "OBJECTIVE_MEASUREMENT_INVALID"),
+        ("objective-definition-missing", "OBJECTIVE_UNDEFINED"),
+    ] {
+        let (classification, actual_reason) =
+            classify_for_test(scenario(&corpus, id)).expect("scenario classifies");
+        assert_eq!(classification, "indeterminate", "{id}");
+        assert_eq!(actual_reason, reason, "{id}");
+    }
+}
+
+#[test]
+fn objective_comparator_supports_bounded_energy_usage_goals() {
+    let corpus = parsed_corpus();
+    let mut energy = scenario(&corpus, "objective-slo-met-with-adequate-evidence").clone();
+    energy["facts"]["measured_unit"] = Value::String("kWh".into());
+    energy["facts"]["target_unit"] = Value::String("kWh".into());
+    energy["facts"]["comparator"] = Value::String("lte".into());
+    energy["facts"]["measured_value"] = serde_json::json!(7.0);
+    energy["facts"]["target_value"] = serde_json::json!(8.0);
+
+    let (classification, reason) =
+        classify_for_test(&energy).expect("energy scenario classifies");
+    assert_eq!(classification, "objective_met_within_observed_scope");
+    assert_eq!(reason, "OBJECTIVE_TARGET_MET");
+
+    energy["facts"]["measured_value"] = serde_json::json!(9.0);
+    let (classification, reason) =
+        classify_for_test(&energy).expect("energy scenario classifies");
+    assert_eq!(classification, "objective_target_missed");
+    assert_eq!(reason, "OBJECTIVE_TARGET_MISSED");
+}
+
+#[test]
+fn objective_metric_values_do_not_override_insufficient_evidence() {
+    let corpus = parsed_corpus();
+    let mut item = scenario(&corpus, "objective-coverage-insufficient").clone();
+    item["facts"]["measured_value"] = serde_json::json!(100.0);
+    item["facts"]["target_value"] = serde_json::json!(99.0);
+
+    let (classification, reason) =
+        classify_for_test(&item).expect("scenario classifies");
+    assert_eq!(classification, "indeterminate");
+    assert_eq!(reason, "OBJECTIVE_COVERAGE_INSUFFICIENT");
 }
 
 #[test]
