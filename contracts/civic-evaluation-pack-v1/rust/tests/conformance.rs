@@ -2,6 +2,7 @@ use civic_evaluation_pack_v1::validate_evaluation_pack_json;
 use serde_json::Value;
 
 const FIXTURE: &str = include_str!("../../examples/joburg-water-synthetic-v1.json");
+const SCHEMA: &str = include_str!("../../schema.json");
 
 fn fixture_value() -> Value {
     serde_json::from_str(FIXTURE).expect("checked-in fixture is valid JSON")
@@ -14,6 +15,56 @@ fn scenario_mut<'a>(value: &'a mut Value, id: &str) -> &'a mut Value {
         .iter_mut()
         .find(|scenario| scenario["scenario_id"] == id)
         .unwrap_or_else(|| panic!("missing scenario {id}"))
+}
+
+#[test]
+fn schema_is_parseable_versioned_and_strict() {
+    let schema: Value = serde_json::from_str(SCHEMA).expect("schema must be valid JSON");
+    assert_eq!(schema["$schema"], "https://json-schema.org/draft/2020-12/schema");
+    assert_eq!(
+        schema["$id"],
+        "https://luminousdynamics.io/schemas/civic-evaluation-pack-v1.json"
+    );
+    assert_eq!(
+        schema["properties"]["schema_version"]["const"],
+        "civic-evaluation-pack-v1"
+    );
+    assert_eq!(schema["additionalProperties"], false);
+
+    for name in [
+        "sourcePolicy",
+        "reproducibility",
+        "scenario",
+        "input",
+        "observation",
+        "expected",
+    ] {
+        assert_eq!(
+            schema["$defs"][name]["additionalProperties"],
+            false,
+            "{name} must reject unknown fields"
+        );
+    }
+
+    let mut classes = schema["$defs"]["scenario"]["properties"]["scenario_class"]["enum"]
+        .as_array()
+        .expect("scenario_class enum must be an array")
+        .iter()
+        .filter_map(Value::as_str)
+        .collect::<Vec<_>>();
+    classes.sort_unstable();
+    assert_eq!(
+        classes,
+        vec![
+            "baseline",
+            "conflicting_sources",
+            "cross_utility_context_not_causality",
+            "independent_verification_positive_control",
+            "recurrence",
+            "repair_claim_without_independent_verification",
+            "stale_source",
+        ]
+    );
 }
 
 #[test]
