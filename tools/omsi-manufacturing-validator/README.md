@@ -70,6 +70,9 @@ This profile validator does not replace an independently reviewed JSON Schema en
 Run the committed conformance-vector workload in release mode and save the JSON report:
 
 ```sh
+RUSTC_VERSION="$(rustc --version)" \
+OMSI_BENCHMARK_HOST_LABEL="reference-host-01" \
+OMSI_BENCHMARK_CPU_LABEL="record the CPU model here" \
 cargo run --release --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
   benchmark-vectors docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json 1000 \
   > omsi-benchmark-report.json
