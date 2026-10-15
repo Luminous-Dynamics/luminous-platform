@@ -179,6 +179,35 @@ class CaptureManifestTests(unittest.TestCase):
                 captured_at="2026-10-15T18:00:00Z",
             )
 
+    def test_unhashable_previous_comparison_state_is_rejected_cleanly(self):
+        first = build()
+        malformed = json.loads(json.dumps(first))
+        malformed["comparison"]["state"] = {"unexpected": "object"}
+        with self.assertRaises(CaptureManifestError):
+            build(
+                previous_manifest=malformed,
+                captured_at="2026-10-15T18:00:00Z",
+            )
+
+    def test_output_cannot_overwrite_previous_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory) / "capture.bin"
+            previous_path = Path(directory) / "previous.json"
+            snapshot.write_bytes(b"current capture")
+            previous = build(b"previous capture")
+            original_manifest = json.dumps(previous, sort_keys=True)
+            previous_path.write_text(original_manifest, encoding="utf-8")
+            result = main([
+                "--source-id", "example.official-source",
+                "--canonical-url", CANONICAL,
+                "--snapshot", str(snapshot),
+                "--captured-at", "2026-10-15T18:00:00Z",
+                "--previous-manifest", str(previous_path),
+                "--output", str(previous_path),
+            ])
+            self.assertEqual(result, 1)
+            self.assertEqual(previous_path.read_text(encoding="utf-8"), original_manifest)
+
     def test_inconsistent_previous_comparison_is_rejected(self):
         first = build(b"original")
         tampered = json.loads(json.dumps(first))
