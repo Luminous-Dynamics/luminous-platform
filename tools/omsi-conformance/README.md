@@ -133,9 +133,11 @@ an explicit external binding.
 The synthetic tests cover unknown/custom stages, stage-map fingerprint
 substitution, tenant/company and source-instance mismatches, revoked bindings,
 incomplete required activities on a closed stage, signature requirements,
-optional add-on absence, interval errors, source version pins, unsupported
-fields, privacy projection, and invoice links not being conflated with
-payment or quality proof.
+optional add-on absence, interval errors, source version pins, future-dated
+actual-work/signature/activity timestamps, unsupported fields, privacy
+projection, and invoice links not being conflated with payment or quality proof.
+The evaluation clock rejects purportedly completed events in the future while
+still permitting legitimate future request and scheduled windows.
 
 **Limits:** this is an offline mapping prototype, not a connector, Odoo API
 integration, legal/license determination or production security qualification.
