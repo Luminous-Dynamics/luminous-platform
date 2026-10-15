@@ -9,6 +9,7 @@ on:
       - "tools/validate_workload_profiles.py"
       - "tools/requirements-workload-validation.txt"
       - "tools/artifact-fetch-policy/**"
+      - "docs/ARTIFACT_FETCH_TRANSPORT_ADR.md"
       - ".github/workflows/workload-profile-validation.yml"
   pull_request:
     paths:
@@ -17,6 +18,7 @@ on:
       - "tools/validate_workload_profiles.py"
       - "tools/requirements-workload-validation.txt"
       - "tools/artifact-fetch-policy/**"
+      - "docs/ARTIFACT_FETCH_TRANSPORT_ADR.md"
       - ".github/workflows/workload-profile-validation.yml"
 
 permissions:
