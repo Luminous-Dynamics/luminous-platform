@@ -125,7 +125,8 @@
             "authorized_at": "2026-10-14T09:30:00Z",
             "authority_expires_at": "2026-10-14T11:00:00Z",
             "applied_at": "2026-10-14T09:30:00Z",
-            "required_verification": true
+            "required_verification": true,
+            "practitioner_id": "practitioner-ada"
           }
         }
       ],
