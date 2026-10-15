@@ -4,7 +4,10 @@ on:
     paths:
       - 'tools/omsi-conformance/**'
       - '.github/workflows/omsi-conformance.yml'
+  # Pull-request workflows cover feature branches. Run the push workflow only
+  # on main to avoid two queued copies for the same PR branch/head.
   push:
+    branches: [main]
     paths:
       - 'tools/omsi-conformance/**'
       - '.github/workflows/omsi-conformance.yml'
