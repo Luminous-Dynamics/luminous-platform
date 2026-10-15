@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -201,9 +202,15 @@ def main(argv: list[str] | None = None) -> int:
             protected_inputs = {args.snapshot.resolve()}
             if args.previous_manifest is not None:
                 protected_inputs.add(args.previous_manifest.resolve())
-            if output_path in protected_inputs:
+            aliases_input = output_path in protected_inputs
+            if not aliases_input and output_path.exists():
+                for protected_input in protected_inputs:
+                    if protected_input.exists() and os.path.samefile(output_path, protected_input):
+                        aliases_input = True
+                        break
+            if aliases_input:
                 raise CaptureManifestError(
-                    "--output must not overwrite the snapshot or previous manifest"
+                    "--output must not overwrite or alias the snapshot or previous manifest"
                 )
         snapshot_bytes = args.snapshot.read_bytes()
         previous = load_json_object(args.previous_manifest) if args.previous_manifest else None
