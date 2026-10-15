@@ -288,6 +288,34 @@ class JurisdictionPackValidatorTests(unittest.TestCase):
         self.assertFalse(report["publication_eligible"])
         self.assertIn("requirement review is in the future", " ".join(report["publication_blockers"]))
 
+    def test_claim_review_must_follow_cited_source_review(self):
+        pack = copy.deepcopy(PACK)
+        for source in pack["sources"]:
+            attach_review_receipt(pack, source)
+        requirement = pack["requirements"][0]
+        receipt = attach_requirement_review_receipt(pack, requirement)
+        receipt["reviewed_at"] = "2026-09-30T13:00:00Z"
+        receipt["next_review_at"] = "2026-10-20T13:00:00Z"
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertIn("was reviewed after the claim receipt", " ".join(
+            check["details"] for check in report["checks"]
+        ))
+
+    def test_official_guidance_claim_requires_independent_reviewer(self):
+        pack = copy.deepcopy(PACK)
+        for source in pack["sources"]:
+            attach_review_receipt(pack, source)
+        requirement = pack["requirements"][2]
+        receipt = attach_requirement_review_receipt(pack, requirement)
+        receipt["reviewer_id"] = "test-reviewer"
+        requirement["reviewer_id"] = "test-reviewer"
+        report = report_for(pack)
+        self.assertFalse(report["validation_passed"])
+        self.assertIn("must differ from source reviewer", " ".join(
+            check["details"] for check in report["checks"]
+        ))
+
     def test_verified_requirement_cannot_be_claimed_without_a_receipt(self):
         pack = copy.deepcopy(PACK)
         pack["requirements"][0]["review_state"] = "verified"
