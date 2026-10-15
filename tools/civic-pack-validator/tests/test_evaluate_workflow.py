@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from evaluate_workflow import evaluate_workflow
+from validate_pack import requirement_claim_sha256
 
 ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_PATH = ROOT / "schemas" / "jurisdiction-pack-v0.1.0.schema.json"
@@ -39,22 +40,116 @@ def evaluate(pack, *, jurisdiction=JURISDICTION, workflow=WORKFLOW, business_typ
     )
 
 
+def _attach_source_receipt(pack, source):
+    """Create a synthetic, internally consistent receipt for evaluator tests only."""
+    checked_at = "2026-10-01T12:00:00Z"
+    reviewer_id = "synthetic-source-reviewer"
+    reviewer_role = "qualified-source-reviewer"
+    receipt_id = f"review.{source['source_id']}.2026-10-01"
+    digest = __import__("hashlib").sha256(
+        f"synthetic-test-bytes:{source['source_id']}".encode("utf-8")
+    ).hexdigest()
+    receipt = {
+        "receipt_id": receipt_id,
+        "source_id": source["source_id"],
+        "canonical_url": source["canonical_url"],
+        "decision": "current",
+        "published_at": source["published_at"],
+        "effective_from": source["effective_from"],
+        "captured_at": checked_at,
+        "reviewed_at": checked_at,
+        "next_review_at": "2026-10-20T12:00:00Z",
+        "reviewer_id": reviewer_id,
+        "reviewer_role": reviewer_role,
+        "snapshot_sha256": digest,
+        "reuse": source["reuse"],
+        "source_license_url": source.get("source_license_url"),
+        "attribution": source.get("attribution"),
+        "rights_notes": source["rights_notes"],
+        "review_scope": {
+            "authority_confirmed": True,
+            "effective_status_checked": True,
+            "content_reviewed": True,
+            "applicability_reviewed": True,
+            "reuse_rights_reviewed": True,
+        },
+    }
+    source.update({
+        "review_state": "current",
+        "checked_at": checked_at,
+        "reviewed_at": checked_at,
+        "next_review_at": receipt["next_review_at"],
+        "reviewer_id": reviewer_id,
+        "reviewer_role": reviewer_role,
+        "snapshot_sha256": digest,
+        "review_receipt_id": receipt_id,
+    })
+    pack["source_review_receipts"].append(receipt)
+
+
+def _attach_requirement_receipt(pack, requirement):
+    """Bind test claim state to the exact claim fields and source receipts."""
+    reviewer_id = "synthetic-claim-reviewer"
+    reviewer_role = "qualified-claim-reviewer"
+    receipt_id = f"review.{requirement['requirement_id']}.2026-10-01"
+    source_receipt_ids = [
+        next(s["review_receipt_id"] for s in pack["sources"] if s["source_id"] == source_ref)
+        for source_ref in requirement["source_refs"]
+    ]
+    receipt = {
+        "receipt_id": receipt_id,
+        "requirement_id": requirement["requirement_id"],
+        "decision": "verified",
+        "reviewed_at": "2026-10-01T13:00:00Z",
+        "next_review_at": "2026-10-20T13:00:00Z",
+        "reviewer_id": reviewer_id,
+        "reviewer_role": reviewer_role,
+        "claim_sha256": requirement_claim_sha256(requirement),
+        "source_receipt_ids": source_receipt_ids,
+        "review_scope": {
+            "source_support_checked": True,
+            "jurisdiction_checked": True,
+            "applicability_checked": True,
+            "user_language_checked": True,
+            "completion_effect_checked": True,
+        },
+    }
+    requirement.update({
+        "review_state": "verified",
+        "reviewer_id": reviewer_id,
+        "reviewer_role": reviewer_role,
+        "review_receipt_id": receipt_id,
+    })
+    pack["requirement_review_receipts"].append(receipt)
+
+
+def _refresh_claim_receipt(pack, requirement):
+    """Simulate an explicit new review after a test changes a claim field."""
+    receipt = next(
+        item for item in pack["requirement_review_receipts"]
+        if item["requirement_id"] == requirement["requirement_id"]
+        and item["receipt_id"] == requirement["review_receipt_id"]
+    )
+    receipt["claim_sha256"] = requirement_claim_sha256(requirement)
+    receipt["source_receipt_ids"] = [
+        next(s["review_receipt_id"] for s in pack["sources"] if s["source_id"] == source_ref)
+        for source_ref in requirement["source_refs"]
+    ]
+
+
 def reviewed_pack():
     pack = copy.deepcopy(PACK)
     pack["publication_state"] = "published"
+    pack.setdefault("source_review_receipts", [])
+    pack.setdefault("requirement_review_receipts", [])
     for source in pack["sources"]:
-        source.update({
-            "review_state": "current",
-            "checked_at": "2026-10-01T12:00:00Z",
-            "reviewed_at": "2026-10-01T12:00:00Z",
-            "reviewer_role": "qualified-source-reviewer",
-            "next_review_at": "2026-10-20T12:00:00Z",
-        })
+        _attach_source_receipt(pack, source)
     for requirement in pack["requirements"]:
-        requirement["review_state"] = "verified"
         requirement["applicability"]["conditions"] = []
         requirement["applicability"]["unknowns"] = []
     pack["requirements"][0]["completion_effect"] = "informational_only"
+    for requirement in pack["requirements"]:
+        _attach_requirement_receipt(pack, requirement)
     return pack
 
 
@@ -91,6 +186,7 @@ class WorkflowEvaluatorTests(unittest.TestCase):
     def test_conditions_or_unknowns_require_scope_confirmation(self):
         pack = reviewed_pack()
         pack["requirements"][0]["applicability"]["unknowns"] = ["Premises classification is not known"]
+        _refresh_claim_receipt(pack, pack["requirements"][0])
         result = evaluate(pack)
         target = next(r for r in result["requirements"] if r["requirement_id"] == "joburg.confirm-licence-scope")
         self.assertEqual(target["display_state"], "needs_scope_confirmation")
@@ -98,6 +194,7 @@ class WorkflowEvaluatorTests(unittest.TestCase):
     def test_authority_confirmation_requirement_is_not_approval(self):
         pack = reviewed_pack()
         pack["requirements"][1]["completion_effect"] = "must_confirm_with_authority"
+        _refresh_claim_receipt(pack, pack["requirements"][1])
         result = evaluate(pack)
         target = next(r for r in result["requirements"] if r["requirement_id"] == "za.confirm-food-premises-process")
         self.assertEqual(target["display_state"], "authority_confirmation_required")
@@ -138,11 +235,11 @@ class WorkflowEvaluatorTests(unittest.TestCase):
         self.assertEqual(result["execution_state"], "invalid_context")
         self.assertEqual(result["requirements"], [])
 
-    def test_unreviewed_source_makes_pack_unpublishable(self):
+    def test_tampered_source_review_state_fails_closed(self):
         pack = reviewed_pack()
         pack["sources"][0]["review_state"] = "unreviewed"
         result = evaluate(pack)
-        self.assertEqual(result["execution_state"], "publication_blocked")
+        self.assertEqual(result["execution_state"], "invalid_pack")
         self.assertEqual(result["requirements"], [])
 
 
