@@ -48,11 +48,11 @@ fn schema_is_valid_draft_2020_12_and_formats_are_checked() {
 }
 
 #[test]
-fn all_twenty_seven_scenarios_match_the_rust_classifier() {
+fn all_twenty_eight_scenarios_match_the_rust_classifier() {
     let schema = parsed_schema();
     let corpus = parsed_corpus();
     let count = validate_corpus(&schema, &corpus).expect("corpus must conform");
-    assert_eq!(count, 27);
+    assert_eq!(count, 28);
 }
 
 #[test]
@@ -263,6 +263,59 @@ fn objective_claim_fails_closed_on_scope_units_or_missing_independent_measuremen
         assert_eq!(classification, "indeterminate", "{id}");
         assert_eq!(actual_reason, reason, "{id}");
     }
+}
+
+#[test]
+fn objective_gap_limit_rejects_clumped_samples_despite_adequate_sample_ratio() {
+    let corpus = parsed_corpus();
+    let (classification, reason) =
+        classify_for_test(scenario(&corpus, "objective-sampling-gap-too-long"))
+            .expect("scenario classifies");
+    assert_eq!(classification, "indeterminate");
+    assert_eq!(reason, "OBJECTIVE_GAP_TOO_LONG");
+}
+
+#[test]
+fn objective_coverage_is_derived_and_caller_claimed_ratio_is_rejected() {
+    let schema = parsed_schema();
+    let mut corpus = parsed_corpus();
+    let item = scenario_mut(&mut corpus, "objective-coverage-insufficient");
+    // Inject optimistic caller claims. The classifier ignores them and derives
+    // coverage from valid sample offsets and the declared sampling schedule.
+    item["facts"]["coverage_ratio"] = serde_json::json!(1.0);
+    item["facts"]["window_complete"] = Value::Bool(true);
+
+    let (classification, reason) =
+        classify_for_test(item).expect("sample timeline still classifies");
+    assert_eq!(classification, "indeterminate");
+    assert_eq!(reason, "OBJECTIVE_COVERAGE_INSUFFICIENT");
+
+    assert!(
+        validate_corpus(&schema, &corpus).is_err(),
+        "unknown self-declared coverage fields must be rejected by strict schema"
+    );
+}
+
+#[test]
+fn objective_window_and_sample_schedule_are_validated() {
+    let corpus = parsed_corpus();
+    let mut misaligned_window =
+        scenario(&corpus, "objective-slo-met-with-adequate-evidence").clone();
+    misaligned_window["facts"]["observation_window_end_epoch_seconds"] =
+        serde_json::json!(1792025999);
+    let (classification, reason) =
+        classify_for_test(&misaligned_window).expect("invalid window classifies fail-closed");
+    assert_eq!(classification, "indeterminate");
+    assert_eq!(reason, "OBJECTIVE_WINDOW_POLICY_INVALID");
+
+    let mut duplicate_sample =
+        scenario(&corpus, "objective-slo-met-with-adequate-evidence").clone();
+    duplicate_sample["facts"]["valid_sample_offsets_seconds"][1] =
+        serde_json::json!(0);
+    let (classification, reason) =
+        classify_for_test(&duplicate_sample).expect("invalid timeline classifies fail-closed");
+    assert_eq!(classification, "indeterminate");
+    assert_eq!(reason, "OBJECTIVE_TIMELINE_INVALID");
 }
 
 #[test]
