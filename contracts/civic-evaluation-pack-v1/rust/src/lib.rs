@@ -252,7 +252,9 @@ fn validate(pack: &EvaluationPack) -> Vec<String> {
         errors.push("schema_version must be civic-evaluation-pack-v1".to_owned());
     }
     if !valid_pack_id(&pack.pack_id) {
-        errors.push("pack_id must contain only lowercase ASCII letters, digits, and hyphens".to_owned());
+        errors.push(
+            "pack_id must contain only lowercase ASCII letters, digits, and hyphens".to_owned(),
+        );
     }
     if !valid_iso_date(&pack.created_on) {
         errors.push("created_on must be a real calendar date in YYYY-MM-DD format".to_owned());
@@ -296,25 +298,34 @@ fn validate(pack: &EvaluationPack) -> Vec<String> {
             if !valid_id(&observation.observation_id, "obs-")
                 || !observation_ids.insert(observation.observation_id.as_str())
             {
-                errors.push(format!("{observation_prefix}.observation_id is invalid or duplicated across the pack"));
+                errors.push(format!(
+                    "{observation_prefix}.observation_id is invalid or duplicated across the pack"
+                ));
             }
             if !valid_id(&observation.actor_ref, "synthetic-") {
-                errors.push(format!("{observation_prefix}.actor_ref must be a synthetic pseudonymous identifier"));
+                errors.push(format!(
+                    "{observation_prefix}.actor_ref must be a synthetic pseudonymous identifier"
+                ));
             }
             if observation.recorded_minute < observation.event_minute {
-                errors.push(format!("{observation_prefix}.recorded_minute cannot precede event_minute"));
+                errors.push(format!(
+                    "{observation_prefix}.recorded_minute cannot precede event_minute"
+                ));
             }
         }
 
         let uncertain = scenario.input.source_coverage == SourceCoverage::Incomplete
             || scenario.input.observations.iter().any(|observation| {
-                matches!(observation.evidence_state, EvidenceState::Stale | EvidenceState::Conflicting)
+                matches!(
+                    observation.evidence_state,
+                    EvidenceState::Stale | EvidenceState::Conflicting
+                )
             });
         if uncertain
             && (!scenario.expected.must_abstain
                 || scenario.expected.triage != TriageOutcome::HumanReview)
         {
-            errors.push(format!("{prefix}: incomplete, stale, or conflicting evidence requires abstention and human review"));
+            errors.push(format!("{prefix}: uncertain evidence requires abstention and review"));
         }
 
         let has_repair_claim = scenario.input.observations.iter().any(|observation| {
@@ -335,16 +346,16 @@ fn validate(pack: &EvaluationPack) -> Vec<String> {
         if scenario.expected.outcome == OutcomeState::IndependentlyVerified
             && !valid_independent_inspection
         {
-            errors.push(format!("{prefix}: independent verification requires a prior repair claim and distinct-actor inspection evidence"));
+            errors.push(format!("{prefix}: missing independent verification evidence"));
         }
         if has_repair_claim && !valid_independent_inspection
             && scenario.expected.outcome == OutcomeState::IndependentlyVerified
         {
-            errors.push(format!("{prefix}: a repair claim alone cannot establish an independently verified outcome"));
+            errors.push(format!("{prefix}: a repair claim is not verification"));
         }
 
         if scenario.expected.causal_claim_permitted {
-            errors.push(format!("{prefix}: causal claims are outside the authority of this synthetic contract"));
+            errors.push(format!("{prefix}: causal claims are outside this contract"));
         }
 
         let has_contextual_statement = scenario.input.observations.iter().any(|observation| {
@@ -354,7 +365,7 @@ fn validate(pack: &EvaluationPack) -> Vec<String> {
             && has_contextual_statement
             && scenario.expected.causal_claim_permitted
         {
-            errors.push(format!("{prefix}: cross-utility contextual publication cannot establish incident-level causality"));
+            errors.push(format!("{prefix}: contextual evidence does not establish causality"));
         }
 
         let has_repeat_fault = scenario.input.observations.iter().any(|observation| {
@@ -362,33 +373,41 @@ fn validate(pack: &EvaluationPack) -> Vec<String> {
                 || observation.evidence_state == EvidenceState::RepeatFault
         });
         if uncertain && scenario.expected.outcome == OutcomeState::IndependentlyVerified {
-            errors.push(format!("{prefix}: uncertain evidence cannot establish an independently verified outcome"));
+            errors.push(format!("{prefix}: uncertainty cannot verify an outcome"));
         }
 
         if scenario.input.prior_outcome == PriorOutcome::IndependentlyVerified
             && has_repeat_fault
             && scenario.expected.outcome != OutcomeState::Reopened
         {
-            errors.push(format!("{prefix}: recurrence after an independently verified outcome must reopen it"));
+            errors.push(format!("{prefix}: repeat fault must reopen verified outcome"));
         }
         if scenario.expected.outcome == OutcomeState::Reopened && !has_repeat_fault {
             errors.push(format!("{prefix}: reopened outcome requires a repeat-fault observation"));
         }
         match scenario.scenario_class {
             ScenarioClass::StaleSource
-                if !scenario.input.observations.iter().any(|observation| observation.evidence_state == EvidenceState::Stale) =>
+                if !scenario
+                    .input
+                    .observations
+                    .iter()
+                    .any(|observation| observation.evidence_state == EvidenceState::Stale) =>
             {
                 errors.push(format!("{prefix}: stale_source class requires a stale observation"));
             }
             ScenarioClass::ConflictingSources
-                if !scenario.input.observations.iter().any(|observation| observation.evidence_state == EvidenceState::Conflicting) =>
+                if !scenario
+                    .input
+                    .observations
+                    .iter()
+                    .any(|observation| observation.evidence_state == EvidenceState::Conflicting) =>
             {
-                errors.push(format!("{prefix}: conflicting_sources class requires conflicting evidence"));
+                errors.push(format!("{prefix}: conflict class needs conflicting evidence"));
             }
             ScenarioClass::RepairClaimWithoutIndependentVerification
                 if !has_repair_claim || valid_independent_inspection =>
             {
-                errors.push(format!("{prefix}: repair-claim negative control requires a claim without qualifying independent inspection"));
+                errors.push(format!("{prefix}: claim needs no qualifying inspection"));
             }
             ScenarioClass::CrossUtilityContextNotCausality
                 if scenario.input.service_context != ServiceContext::CrossUtilityPublication
@@ -396,21 +415,23 @@ fn validate(pack: &EvaluationPack) -> Vec<String> {
                     || scenario.expected.causal_claim_permitted
                     || !scenario.expected.must_abstain =>
             {
-                errors.push(format!("{prefix}: cross-utility negative control requires contextual evidence, no causal claim, and abstention"));
+                errors.push(format!("{prefix}: causal control invalid"));
             }
             ScenarioClass::Recurrence
                 if scenario.input.prior_outcome != PriorOutcome::IndependentlyVerified
                     || !has_repeat_fault
-                    || scenario.expected.outcome != OutcomeState::Reopened =>
+                    || scenario.expected.outcome != OutcomeState::Reopened
+                    || scenario.expected.triage != TriageOutcome::Reopen =>
             {
-                errors.push(format!("{prefix}: recurrence class requires a prior verified outcome and must reopen after repeat-fault evidence"));
+                errors.push(format!("{prefix}: recurrence control invalid"));
             }
             ScenarioClass::IndependentVerificationPositiveControl
                 if scenario.expected.outcome != OutcomeState::IndependentlyVerified
                     || !valid_independent_inspection
-                    || scenario.expected.must_abstain =>
+                    || scenario.expected.must_abstain
+                    || scenario.expected.triage != TriageOutcome::NoAction =>
             {
-                errors.push(format!("{prefix}: positive control requires independent distinct-actor verification without abstention"));
+                errors.push(format!("{prefix}: positive control invalid"));
             }
             _ => {}
         }

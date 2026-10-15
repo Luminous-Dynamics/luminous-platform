@@ -16,6 +16,7 @@ on:
     paths:
       - 'contracts/public-source-catalogue-v1/**'
       - 'contracts/civic-record-crosswalk-v1/**'
+      - 'contracts/civic-evaluation-pack-v1/**'
       - 'docs/LANGUAGE_AND_RUNTIME_POLICY.md'
       - 'docs/PUBLIC_SERVICE_OPERATIONS_PROFILE_RFC.md'
       - '.github/workflows/public-source-catalogue-v1.yml'
