@@ -768,7 +768,10 @@ mod tests {
     fn ip_literal_resolution_must_match_the_literal_exactly() {
         let p = policy();
         let direct = origin("8.8.8.8", 443);
-        assert!(p.authorize_resolution(&direct, &[ip("8.8.8.8")]).is_ok());
+        assert!(
+            p.authorize_resolution(&direct, &[ip("8.8.8.8")])
+                .is_ok()
+        );
         assert_eq!(
             p.authorize_resolution(&direct, &[ip("1.1.1.1")]),
             Err(PolicyError::IpLiteralResolutionMismatch {
@@ -776,7 +779,10 @@ mod tests {
             })
         );
         assert_eq!(
-            p.authorize_resolution(&direct, &[ip("8.8.8.8"), ip("1.1.1.1")]),
+            p.authorize_resolution(
+                &direct,
+                &[ip("8.8.8.8"), ip("1.1.1.1")]
+            ),
             Err(PolicyError::IpLiteralResolutionMismatch {
                 expected: ip("8.8.8.8"),
             })
