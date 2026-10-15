@@ -691,7 +691,7 @@ mod tests {
                 &validated,
                 SocketAddr::new(ip("8.8.8.8"), 443)
             )
-            .is_ok()
+                .is_ok()
         );
         assert_eq!(
             p.verify_connected_peer(
