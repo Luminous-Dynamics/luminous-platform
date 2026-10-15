@@ -85,6 +85,12 @@ jobs:
           set -euo pipefail
           cargo +1.96.0 fmt --manifest-path contracts/civic-record-crosswalk-v1/rust/Cargo.toml --all -- --check
 
+      - name: Check public-source catalogue Rust formatting on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 fmt --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --all -- --check
+
       - name: Test contract validator on this exact checkout
         shell: bash
         run: |
