@@ -104,10 +104,11 @@
         },
         "artifact_kind": {
           "enum": [
-            "json_schema",
-            "rust_serde_types",
             "evaluation_corpus",
-            "proposed_reference"
+            "evidence_manifest",
+            "json_schema",
+            "proposed_reference",
+            "rust_serde_types"
           ]
         },
         "availability": {

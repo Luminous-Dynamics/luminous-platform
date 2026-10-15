@@ -40,6 +40,18 @@
       "qualification_state": "unqualified_draft"
     },
     {
+      "schema_id": "mycelix.life-civic-service-reference-manifest",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "1232b9aef477f3de4a36fb6d3548be4748f87015",
+      "path": "tests/reference/life-civic-service/manifest.json",
+      "git_blob_sha1": "8c0db89a4bcdc2f7dbe8456904474ce633339ae9",
+      "version": "0.6.0",
+      "artifact_kind": "evidence_manifest",
+      "availability": "present_at_snapshot",
+      "qualification_state": "unqualified_draft",
+      "notes": "Mycelix PR #5019 head 1232b9aef477f3de4a36fb6d3548be4748f87015; exact manifest blob 8c0db89a4bcdc2f7dbe8456904474ce633339ae9. Declares service corpus v0.6.0 at tests/reference/life-civic-service/cases-v0.6.0.json with corpus blob 875fa72478ccd609b83d218bbae9b9facae8fd2e and service schema v0.3.0. Manifest pin supports drift detection only, not source authenticity or qualification; the life/civic workflow remains queued."
+    },
+    {
       "schema_id": "mycelix.life-civic-standard-instrument-schema",
       "repository": "Luminous-Dynamics/mycelix",
       "snapshot_commit_sha": "1232b9aef477f3de4a36fb6d3548be4748f87015",
@@ -62,6 +74,18 @@
       "availability": "present_at_snapshot",
       "qualification_state": "unqualified_draft",
       "notes": "Mycelix PR #5019 head 1232b9aef477f3de4a36fb6d3548be4748f87015; exact corpus blob 4aab141469b0b2f9971a2d2761e91ea2d5a884af, v0.5.0 with 17 cases. MYC-LCA-017 requires estimate-specific precision evidence and prohibits borrowing Table 41 CVs for the distinct police-reporting indicator, treating response rates as significance tests, or transferring national descriptive estimates into local causal claims. The life/civic workflow [#38726208761](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38726208761) is queued; no pass is claimed."
+    },
+    {
+      "schema_id": "mycelix.life-civic-standards-reference-manifest",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "1232b9aef477f3de4a36fb6d3548be4748f87015",
+      "path": "tests/reference/life-civic-standards/manifest.json",
+      "git_blob_sha1": "b2a267aeb04cbdd9da65cee0bc3d5f5f9ac76af6",
+      "version": "0.5.0",
+      "artifact_kind": "evidence_manifest",
+      "availability": "present_at_snapshot",
+      "qualification_state": "unqualified_draft",
+      "notes": "Mycelix PR #5019 head 1232b9aef477f3de4a36fb6d3548be4748f87015; exact manifest blob b2a267aeb04cbdd9da65cee0bc3d5f5f9ac76af6. Declares standards corpus v0.5.0 at tests/reference/life-civic-standards/cases.json (blob 4aab141469b0b2f9971a2d2761e91ea2d5a884af) and pins instrument, applicability and GPSJS survey-quality schemas. This is a drift-detection identity, not source authenticity or qualification."
     },
     {
       "schema_id": "mycelix.service-journey-reference-v0.3.0",
@@ -134,6 +158,18 @@
       "availability": "present_at_snapshot",
       "notes": "Reviewed against Symthaea PR #7443 head 68a2e5384f737069bcd779c0eb0078d622e811a2; scenario corpus blob f93d01a1832c991e9284c7e7ad92a90a40e5776f, version 0.4.0 with 15 cases. Its manifest points to Mycelix corpus MYC-LIFE-CIVIC-APPLICABILITY-001@0.5.0. New SYM-LC-015 distinguishes reporting proportions from prevalence estimates and requires indicator-specific uncertainty evidence; it rejects significance claims from rounded point differences and rejects local causal transfer. The exact-head life-civic workflow [#38730943742](https://github.com/Luminous-Dynamics/symthaea/actions/runs/38730943742) is queued; this corpus remains unqualified.",
       "qualification_state": "unqualified_draft"
+    },
+    {
+      "schema_id": "symthaea.life-civic-reference-manifest",
+      "repository": "Luminous-Dynamics/symthaea",
+      "snapshot_commit_sha": "68a2e5384f737069bcd779c0eb0078d622e811a2",
+      "path": "docs/research/life-civic/reference-scenarios.manifest.json",
+      "git_blob_sha1": "9c31f6e15101f0d9e3fb02c90d6dc5053587980e",
+      "version": "0.4.0",
+      "artifact_kind": "evidence_manifest",
+      "availability": "present_at_snapshot",
+      "qualification_state": "unqualified_draft",
+      "notes": "Symthaea PR #7443 head 68a2e5384f737069bcd779c0eb0078d622e811a2; exact manifest blob 9c31f6e15101f0d9e3fb02c90d6dc5053587980e. Declares the v0.4.0 15-case scenario suite (blob f93d01a1832c991e9284c7e7ad92a90a40e5776f) and corresponding Mycelix pointer MYC-LIFE-CIVIC-APPLICABILITY-001@0.5.0. The manifest and suite pins catch drift but do not prove evaluation execution or qualification."
     }
   ],
   "mappings": [

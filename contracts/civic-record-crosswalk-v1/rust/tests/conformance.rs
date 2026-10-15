@@ -252,6 +252,102 @@ fn mycelix_standards_and_gpsjs_precision_contracts_are_pinned_as_non_runtime() {
 }
 
 #[test]
+fn evaluation_manifests_pin_current_corpus_versions_and_blob_identities() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+
+    for (manifest_id, path, blob, version, source_commit) in [
+        (
+            "mycelix.life-civic-service-reference-manifest",
+            "tests/reference/life-civic-service/manifest.json",
+            "8c0db89a4bcdc2f7dbe8456904474ce633339ae9",
+            Some("0.6.0"),
+            "1232b9aef477f3de4a36fb6d3548be4748f87015",
+        ),
+        (
+            "mycelix.life-civic-standards-reference-manifest",
+            "tests/reference/life-civic-standards/manifest.json",
+            "b2a267aeb04cbdd9da65cee0bc3d5f5f9ac76af6",
+            Some("0.5.0"),
+            "1232b9aef477f3de4a36fb6d3548be4748f87015",
+        ),
+        (
+            "symthaea.life-civic-reference-manifest",
+            "docs/research/life-civic/reference-scenarios.manifest.json",
+            "9c31f6e15101f0d9e3fb02c90d6dc5053587980e",
+            Some("0.4.0"),
+            "68a2e5384f737069bcd779c0eb0078d622e811a2",
+        ),
+    ] {
+        let manifest = crosswalk
+            .contracts
+            .iter()
+            .find(|entry| entry.schema_id == manifest_id)
+            .unwrap_or_else(|| panic!("missing evidence manifest {manifest_id}"));
+        assert_eq!(manifest.snapshot_commit_sha, source_commit);
+        assert_eq!(manifest.path.as_deref(), Some(path));
+        assert_eq!(manifest.git_blob_sha1.as_deref(), Some(blob));
+        assert_eq!(manifest.version.as_deref(), version);
+        assert_eq!(
+            manifest.artifact_kind,
+            civic_record_crosswalk_v1::ArtifactKind::EvidenceManifest
+        );
+        assert_eq!(
+            manifest.qualification_state,
+            civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+        );
+    }
+
+    for (manifest_id, corpus_id, corpus_path, corpus_blob, version) in [
+        (
+            "mycelix.life-civic-service-reference-manifest",
+            "mycelix.life-civic-service-reference-corpus",
+            "tests/reference/life-civic-service/cases-v0.6.0.json",
+            "875fa72478ccd609b83d218bbae9b9facae8fd2e",
+            "0.6.0",
+        ),
+        (
+            "mycelix.life-civic-standards-reference-manifest",
+            "mycelix.life-civic-standards-reference-corpus",
+            "tests/reference/life-civic-standards/cases.json",
+            "4aab141469b0b2f9971a2d2761e91ea2d5a884af",
+            "0.5.0",
+        ),
+        (
+            "symthaea.life-civic-reference-manifest",
+            "symthaea.life-civic-reference-corpus",
+            "docs/research/life-civic/reference-scenarios.json",
+            "f93d01a1832c991e9284c7e7ad92a90a40e5776f",
+            "0.4.0",
+        ),
+    ] {
+        let manifest = crosswalk
+            .contracts
+            .iter()
+            .find(|entry| entry.schema_id == manifest_id)
+            .expect("manifest entry exists");
+        let corpus = crosswalk
+            .contracts
+            .iter()
+            .find(|entry| entry.schema_id == corpus_id)
+            .unwrap_or_else(|| panic!("missing pinned corpus {corpus_id}"));
+        assert_eq!(manifest.snapshot_commit_sha, corpus.snapshot_commit_sha);
+        assert_eq!(manifest.version.as_deref(), Some(version));
+        assert_eq!(corpus.version.as_deref(), Some(version));
+        assert_eq!(corpus.path.as_deref(), Some(corpus_path));
+        assert_eq!(corpus.git_blob_sha1.as_deref(), Some(corpus_blob));
+        assert_eq!(
+            manifest.qualification_state,
+            civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+        );
+        assert_eq!(
+            corpus.qualification_state,
+            civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+        );
+    }
+}
+
+#[test]
 fn work_case_and_operations_event_mappings_remain_blocked_after_narrow_contract_success() {
     let input = include_str!("../../crosswalk.json");
     let crosswalk = parse_and_validate_json(input).expect("valid mapping register");

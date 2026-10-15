@@ -50,6 +50,7 @@ pub enum ArtifactKind {
     JsonSchema,
     RustSerdeTypes,
     EvaluationCorpus,
+    EvidenceManifest,
     ProposedReference,
 }
 

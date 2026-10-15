@@ -14,6 +14,7 @@ The concrete Work Case V1 and Operations Event V1 schemas remain on separate dra
 
 - crosswalk.schema.json: JSON Schema Draft 2020-12 for the mapping register.
 - crosswalk.json: exact-source snapshot, field-level relationships, qualification states and prohibited lossy conversions.
+- `evidence_manifest` bindings: exact Git blob pins for upstream corpus manifests, distinct from the corpus data and from source authenticity.
 - rust/: Rust 1.96 strict deserializer and semantic checker with regression tests.
 - The checker is intentionally not a general JSON Schema engine and does not execute transformations.
 
@@ -72,3 +73,8 @@ Run from the repository root:
     bash contracts/civic-record-crosswalk-v1/verify-pinned-source-blobs.sh contracts/civic-record-crosswalk-v1/crosswalk.json
 
 A network error, missing path, malformed locator, or blob mismatch fails closed. This proves that the downloaded file bytes match the recorded Git blob at the requested commit; it does not prove that the source claim is true, that a repository branch still points to the commit, that the source is licensed for republication, or that a runtime mapping is semantically or operationally qualified. The CI step must pass on the exact crosswalk head before its pins can be described as independently reverified in that run.
+
+
+### Corpus and manifest pins
+
+The static crosswalk pins each life/civic evaluation corpus separately from its evidence manifest. The manifests have their own Git blob identity and are linked by regression tests to the same source commit and version as the corresponding corpus. A matching Git blob helps detect repository drift; it is not a signature, a proof that external data is authentic, or evidence that a suite ran successfully. The Mycelix service, Mycelix standards, and Symthaea life/civic evaluation inputs remain `unqualified_draft` until their own exact-head workflows complete.
