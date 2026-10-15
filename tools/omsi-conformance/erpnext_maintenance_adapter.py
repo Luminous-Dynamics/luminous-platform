@@ -90,6 +90,8 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
         _fail("ERPNext log/plan reference mismatch")
     if log["task_id"] != task["name"]:
         _fail("ERPNext log/task reference mismatch")
+    if log["amended_from"] is not None and log["amended_from"] == log["name"]:
+        _fail("ERPNext maintenance log cannot amend itself")
 
     status, docstatus = log["maintenance_status"], log["docstatus"]
     completion, due = _date(log["completion_date"]), _date(log["due_date"])
@@ -130,6 +132,7 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
         "independent_verification_not_provided_by_source",
         "certificate_authenticity_not_established",
         "source_event_history_not_exported",
+        "record_level_modified_timestamps_not_exported",
         "task_last_completion_date_is_not_reconstructed_from_event_history",
         "site_timezone_and_source_clock_not_independently_attested",
     }
@@ -144,6 +147,8 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
         conflicts.add("certificate_flag_without_attachment_reference")
     if task["certificate_required"] and not log["certificate_attachment_present"]:
         conflicts.add("required_certificate_attachment_missing")
+    if log["amended_from"] is not None:
+        losses.add("amendment_predecessor_record_not_in_snapshot")
     if log["actions_performed_present"]:
         losses.add("raw_actions_performed_content_omitted_by_privacy_policy")
     if log["certificate_attachment_present"]:

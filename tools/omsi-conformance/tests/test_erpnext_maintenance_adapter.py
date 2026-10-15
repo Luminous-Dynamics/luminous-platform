@@ -177,6 +177,33 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
             out["maintenance"]["mapping_losses"],
         )
 
+    def test_record_level_modified_timestamps_are_disclosed_as_not_exported(self):
+        s, b = inputs()
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertIn(
+            "record_level_modified_timestamps_not_exported",
+            out["maintenance"]["mapping_losses"],
+        )
+
+    def test_amendment_link_is_a_claim_not_a_complete_lineage(self):
+        s, b = inputs()
+        s["log"]["amended_from"] = "AML-SYN-000"
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(
+            out["maintenance"]["amended_from_ref"],
+            "erpnext-instance://fixture.invalid/maintenance-db|Asset Maintenance Log|AML-SYN-000",
+        )
+        self.assertIn(
+            "amendment_predecessor_record_not_in_snapshot",
+            out["maintenance"]["mapping_losses"],
+        )
+
+    def test_self_amending_maintenance_log_is_rejected(self):
+        s, b = inputs()
+        s["log"]["amended_from"] = s["log"]["name"]
+        with self.assertRaisesRegex(core.ConformanceError, "cannot amend itself"):
+            adapter.map_maintenance_log(s, b, NOW)
+
     def test_future_completion_date_rejected(self):
         s, b = inputs(); s["log"]["completion_date"] = "2026-10-16"
         with self.assertRaisesRegex(core.ConformanceError, "completion date is in the future"):
