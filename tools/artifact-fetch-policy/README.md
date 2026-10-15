@@ -19,7 +19,8 @@ HTTP client or a complete SSRF defense.
 - A private-state, non-cloneable redirect-chain tracker that counts every
   authorized hop, rejects caller-supplied counters, and becomes terminal after
   a denied hop; no credential forwarding occurs when the origin changes.
-- Declared content-length and streamed-byte limits, plus a policy-bound cumulative byte meter that becomes terminal after a limit breach or counter overflow.
+- Declared content-length and streamed-byte limits, plus a policy-bound cumulative byte meter that becomes terminal after a limit breach or counter overflow. Counter overflow has its own error so it cannot be misreported as an ordinary size breach.
+- Fail-closed response content-encoding validation: accept only an absent header or `identity` unless a future transport explicitly meters compressed wire bytes and decoded artifact bytes.
 - Required positive connect, read-idle, and whole-fetch time budgets, with phase timeouts constrained by the total budget.
 
 ## Required transport contract
@@ -46,17 +47,22 @@ The transport that eventually uses this library must:
    absolute total-fetch deadline spanning all redirects and retries. Do not
    restart the total budget for each attempt. These values are policy
    configuration only; this crate does not interrupt network I/O.
-5. Create a `DownloadBudget` from the policy and call `record_chunk` for
-   each incoming body chunk before accepting/writing it. Abort immediately on
-   error. The meter tracks cumulative bytes with checked arithmetic and remains
-   terminal after the first over-limit event; this avoids relying on callers to
-   add chunk sizes without overflow or accidentally resume after rejection. A
-   post-download size check alone is insufficient.
-6. Download into a broker-owned staging file with safe file handling, verify
+5. Request `Accept-Encoding: identity` and use `validate_content_encoding`
+   on the response before processing the body. This default rejects gzip,
+   Brotli, and other compressed bodies so a small encoded length cannot hide a
+   large decoded artifact. A future transport that supports compression must
+   cap both wire bytes and decoded bytes independently.
+6. Create a `DownloadBudget` from the policy and call `record_chunk` for each
+   body chunk before accepting/writing it. Abort immediately on error. The meter
+   uses checked cumulative arithmetic, has a distinct counter-overflow error,
+   and remains terminal after the first over-limit event, so callers cannot
+   accidentally resume after rejection. A post-download size check alone is
+   insufficient.
+7. Download into a broker-owned staging file with safe file handling, verify
    the expected content digest, then atomically promote only the fully verified
    artifact into a trusted cache. Digest verification and safe file promotion
    are outside this crate.
-7. Enforce network egress policy outside the process as defense in depth. This
+8. Enforce network egress policy outside the process as defense in depth. This
    helper does not control routing, DNS, TLS, proxies, redirects, sockets, or
    filesystem writes.
 
@@ -90,6 +96,6 @@ No third-party crates are used.
     cargo fmt --check --manifest-path tools/artifact-fetch-policy/Cargo.toml
     cargo test --locked --offline --manifest-path tools/artifact-fetch-policy/Cargo.toml
 
-The suite now contains 15 deterministic unit tests. Passing them proves only
+The suite now contains 16 deterministic unit tests. Passing them proves only
 that this library's policy checks behave as tested. It does not qualify any
 actual transport or artifact download.
