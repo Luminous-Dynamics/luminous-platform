@@ -197,7 +197,8 @@
               "unit_code",
               "scale",
               "min_scaled",
-              "max_scaled"
+              "max_scaled",
+              "max_calibration_age_seconds"
             ],
             "properties": {
               "requirement_id": {
@@ -222,6 +223,10 @@
               },
               "max_scaled": {
                 "type": "integer"
+              },
+              "max_calibration_age_seconds": {
+                "type": "integer",
+                "minimum": 1
               }
             }
           }
@@ -507,7 +512,8 @@
           "authorized_at",
           "authority_expires_at",
           "applied_at",
-          "required_verification"
+          "required_verification",
+          "practitioner_id"
         ],
         "properties": {
           "operation_id": {
@@ -577,6 +583,10 @@
           },
           "required_verification": {
             "type": "boolean"
+          },
+          "practitioner_id": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }
@@ -673,7 +683,9 @@
               "method_ref",
               "instrument_ref",
               "calibration_ref",
-              "calibration_status"
+              "calibration_status",
+              "calibration_checked_at",
+              "calibration_valid_until"
             ],
             "properties": {
               "requirement_ref": {
@@ -711,6 +723,14 @@
                   "revoked",
                   "unavailable"
                 ]
+              },
+              "calibration_checked_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "calibration_valid_until": {
+                "type": "string",
+                "format": "date-time"
               }
             }
           },
