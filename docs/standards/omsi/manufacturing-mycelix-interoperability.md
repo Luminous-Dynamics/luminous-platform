@@ -160,3 +160,10 @@ No gate should be bypassed merely because unit tests pass or a CI job is queued.
 - [in-toto Attestation Framework](https://github.com/in-toto/attestation/blob/main/spec/README.md)
 
 This is a proposed architecture. It does not state that OMSI and Mycelix are currently integrated, that the receipt type exists, or that either repository has been independently security-audited for this use.
+
+
+## Shared benchmark gates
+
+Use the [OMSI benchmark scorecard](./benchmark-scorecard-0.1.md) for the shared cross-repository acceptance framework. The first gates are semantic-vector exact match, zero unexpected acceptance in negative controls, replay mutation detection, and no silent field loss. Performance targets (semantic evaluation p95 ≤ 5 ms for bounded synthetic inputs and replay verification p95 ≤ 20 ms) remain provisional until a 1,000-case workload and a pinned reference machine exist.
+
+Mycelix-specific acceptance adds at least two-agent receipt verification, credential-expiry/revocation negative tests, route-denial tests, and zero prohibited sensitive fields in public receipts. These are not satisfied by OMSI's local benchmark harness; they require a later adapter plus multi-agent integration tests. A passing throughput result cannot offset any scope, privacy, source-authenticity, or authority-boundary failure.
