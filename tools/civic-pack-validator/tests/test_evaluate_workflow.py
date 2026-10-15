@@ -124,17 +124,26 @@ def _attach_requirement_receipt(pack, requirement):
 
 
 def _refresh_claim_receipt(pack, requirement):
-    """Simulate an explicit new review after a test changes a claim field."""
-    receipt = next(
+    """Append a new synthetic claim receipt after a test changes reviewed content."""
+    previous = next(
         item for item in pack["requirement_review_receipts"]
-        if item["requirement_id"] == requirement["requirement_id"]
-        and item["receipt_id"] == requirement["review_receipt_id"]
+        if item["receipt_id"] == requirement["review_receipt_id"]
     )
-    receipt["claim_sha256"] = requirement_claim_sha256(requirement)
-    receipt["source_receipt_ids"] = [
-        next(s["review_receipt_id"] for s in pack["sources"] if s["source_id"] == source_ref)
-        for source_ref in requirement["source_refs"]
-    ]
+    reviewed_at = "2026-10-02T13:00:00Z"
+    receipt_id = f"review.{requirement['requirement_id']}.2026-10-02"
+    receipt = copy.deepcopy(previous)
+    receipt.update({
+        "receipt_id": receipt_id,
+        "reviewed_at": reviewed_at,
+        "next_review_at": "2026-10-21T13:00:00Z",
+        "claim_sha256": requirement_claim_sha256(requirement),
+        "source_receipt_ids": [
+            next(s["review_receipt_id"] for s in pack["sources"] if s["source_id"] == source_ref)
+            for source_ref in requirement["source_refs"]
+        ],
+    })
+    pack["requirement_review_receipts"].append(receipt)
+    requirement["review_receipt_id"] = receipt_id
 
 
 def reviewed_pack():
