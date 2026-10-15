@@ -10,7 +10,10 @@ HTTP client or a complete SSRF defense.
   canonicalization.
 - Empty DNS answer rejection and fail-closed validation of every answer in a
   set. One disallowed address rejects the entire set.
-- Actual socket-peer membership in the exact validated IP set.
+- A `ValidatedResolution` value binds the validated IP set to the exact
+  normalized origin that produced it; peer verification rejects reuse for a
+  different origin.
+- Actual socket-peer membership in that origin-bound validated set.
 - Redirect target authorization on every hop, a configurable hop cap, and no
   credential forwarding when the normalized origin changes.
 - Declared content-length and streamed-byte limits.
@@ -43,8 +46,8 @@ The transport that eventually uses this library must:
 
 The implementation conservatively permits only IPv4 addresses outside its
 curated special-purpose deny prefixes, and IPv6 within global-unicast
-2000::/3 excluding selected transition, documentation, and IETF-assignment
-ranges. Some entries intentionally block entire registered prefixes even when
+2000::/3 excluding selected transition, documentation, IETF-assignment, and
+SRv6 SID (`5f00::/16`) ranges. Some entries intentionally block entire registered prefixes even when
 an exception inside the prefix is globally reachable. This is a conservative
 default, not an authoritative replacement for a current network-policy engine
 or cloud/organization-specific deny lists.
