@@ -4,7 +4,10 @@ on:
     paths:
       - 'tools/omsi-conformance/**'
       - '.github/workflows/omsi-conformance.yml'
+  # Pull-request workflows cover feature branches. Run the push workflow only
+  # on main to avoid two queued copies for the same PR branch/head.
   push:
+    branches: [main]
     paths:
       - 'tools/omsi-conformance/**'
       - '.github/workflows/omsi-conformance.yml'
@@ -29,5 +32,6 @@ jobs:
       - run: make -C tools/omsi-conformance test
       - run: make -C tools/omsi-conformance field-service
       - run: make -C tools/omsi-conformance oca-adapter
+      - run: make -C tools/omsi-conformance erpnext-adapter
       - run: make -C tools/omsi-conformance validate-fixtures
       - run: make -C tools/omsi-conformance interop

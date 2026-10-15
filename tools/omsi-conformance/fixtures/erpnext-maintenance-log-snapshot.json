@@ -1,0 +1,39 @@
+{
+  "schema": "org.omsi.erpnext-maintenance-log-snapshot/0.1",
+  "source": {
+    "system": "ERPNext",
+    "instance_namespace": "erpnext-instance://fixture.invalid/maintenance-db",
+    "release_tag": "v16.51.0",
+    "repository_commit": "fd97695de7bfeb1d7728a7370c3e128d0cc1509e",
+    "license": "GPL-3.0"
+  },
+  "exported_at": "2026-10-15T08:00:00Z",
+  "plan": {
+    "name": "ASSET-MAINT-SYN-01",
+    "company_id": "COMPANY-SYN-07",
+    "asset_name": "ASSET-HVAC-SYN-017",
+    "task_id": "TASK-FILTER-CHANGE"
+  },
+  "task": {
+    "name": "TASK-FILTER-CHANGE",
+    "maintenance_type": "Preventive Maintenance",
+    "periodicity": "Monthly",
+    "certificate_required": true,
+    "assigned_user_present": true,
+    "next_due_date": "2026-11-14",
+    "last_completion_date": "2026-10-14"
+  },
+  "log": {
+    "name": "AML-SYN-001",
+    "docstatus": 1,
+    "asset_maintenance_id": "ASSET-MAINT-SYN-01",
+    "task_id": "TASK-FILTER-CHANGE",
+    "maintenance_status": "Completed",
+    "due_date": "2026-10-14",
+    "completion_date": "2026-10-14",
+    "has_certificate": true,
+    "certificate_attachment_present": true,
+    "actions_performed_present": true,
+    "amended_from": null
+  }
+}
