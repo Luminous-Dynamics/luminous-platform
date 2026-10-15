@@ -178,21 +178,24 @@ fn mycelix_standards_and_gpsjs_precision_contracts_are_pinned_as_non_runtime() {
     let input = include_str!("../../crosswalk.json");
     let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
 
-    for (schema_id, path, expected_blob) in [
+    for (schema_id, path, expected_blob, expected_version) in [
         (
             "mycelix.life-civic-standard-instrument-schema",
             "schemas/life-civic/standard-instrument.schema.json",
             "a4c87f4e7ca27140af590cf353b252c3ceee2ed3",
+            None,
         ),
         (
             "mycelix.gpsjs-survey-quality-schema",
             "schemas/life-civic/gpsjs-survey-quality.schema.json",
             "5c79019dac237174015c169e3b893ffdc7e56cf7",
+            None,
         ),
         (
             "mycelix.life-civic-standards-reference-corpus",
             "tests/reference/life-civic-standards/cases.json",
             "4aab141469b0b2f9971a2d2761e91ea2d5a884af",
+            Some("0.5.0"),
         ),
     ] {
         let contract = crosswalk
@@ -200,9 +203,13 @@ fn mycelix_standards_and_gpsjs_precision_contracts_are_pinned_as_non_runtime() {
             .iter()
             .find(|contract| contract.schema_id == schema_id)
             .unwrap_or_else(|| panic!("missing Mycelix evidence contract {schema_id}"));
-        assert_eq!(contract.snapshot_commit_sha, "1232b9aef477f3de4a36fb6d3548be4748f87015");
+        assert_eq!(
+            contract.snapshot_commit_sha,
+            "1232b9aef477f3de4a36fb6d3548be4748f87015"
+        );
         assert_eq!(contract.path.as_deref(), Some(path));
         assert_eq!(contract.git_blob_sha1.as_deref(), Some(expected_blob));
+        assert_eq!(contract.version.as_deref(), expected_version);
         assert_eq!(
             contract.qualification_state,
             civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
