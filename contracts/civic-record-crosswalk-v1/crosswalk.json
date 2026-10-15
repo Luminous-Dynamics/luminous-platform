@@ -18,25 +18,25 @@
     {
       "schema_id": "mycelix.service-journey-reference-v0.3.0",
       "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "4325d01dbbf80df722b5f1529b83dad643286938",
+      "snapshot_commit_sha": "9c6855b95f756802c04ccea1708aa3392be0aba7",
       "path": "schemas/life-civic/service-journey-reference.schema.json",
       "git_blob_sha1": "7e2b8b3d963c9c5598c78927121fcf60203591f9",
       "version": "0.3.0",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Mycelix PR #5019 head 4325d01dbbf80df722b5f1529b83dad643286938; schema blob remains unchanged. Service schema v0.3.0 separates route status, case_state, evidence retrieval state, outcome status, review and claim_ceiling. Exact-head workflow [#38722722655](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38722722655) is queued; this artifact remains unqualified pending completed checks.",
+      "notes": "Reviewed against Mycelix PR #5019 head 9c6855b95f756802c04ccea1708aa3392be0aba7; schema blob unchanged. Service schema v0.3.0 separates route status, case_state, evidence retrieval state, outcome status, review and claim_ceiling. Exact-head life-civic workflow [#38723223217](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38723223217) is queued; no qualification pass is claimed.",
       "qualification_state": "unqualified_draft"
     },
     {
       "schema_id": "mycelix.applicability-assessment",
       "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "4325d01dbbf80df722b5f1529b83dad643286938",
+      "snapshot_commit_sha": "9c6855b95f756802c04ccea1708aa3392be0aba7",
       "path": "schemas/life-civic/applicability-assessment.schema.json",
       "git_blob_sha1": "241d4c4abbd765c05e56ddfae3391cead0f26dbc",
       "version": null,
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Mycelix PR #5019 head 4325d01dbbf80df722b5f1529b83dad643286938; schema blob remains unchanged. The schema has no top-level schema_version; records carry profile_version. Applicability requires context, evidence and completed human review, and is not an authorisation contract. Exact-head workflow [#38722722655](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38722722655) is queued; no pass is claimed.",
+      "notes": "Reviewed against Mycelix PR #5019 head 9c6855b95f756802c04ccea1708aa3392be0aba7; schema blob unchanged. The schema has no top-level schema_version; records carry profile_version. Applicability requires context, evidence and completed human review and is not an authorisation contract. Exact-head workflow [#38723223217](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38723223217) is queued; no pass is claimed.",
       "qualification_state": "unqualified_draft"
     },
     {
@@ -90,13 +90,13 @@
     {
       "schema_id": "mycelix.life-civic-service-reference-corpus",
       "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "4325d01dbbf80df722b5f1529b83dad643286938",
+      "snapshot_commit_sha": "9c6855b95f756802c04ccea1708aa3392be0aba7",
       "path": "tests/reference/life-civic-service/cases-v0.6.0.json",
       "git_blob_sha1": "875fa72478ccd609b83d218bbae9b9facae8fd2e",
       "version": "0.6.0",
       "artifact_kind": "evaluation_corpus",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Mycelix PR #5019 head 4325d01dbbf80df722b5f1529b83dad643286938; exact case corpus blob 875fa72478ccd609b83d218bbae9b9facae8fd2e. Corpus v0.6.0 contains ten effects-disabled service fixtures and adds a synthetic response-versus-turnaround clock-semantics control. The new fixture uses official page URLs only as provenance references, keeps retrieved_at/checked_at null, has no raw-source page digest, does not equate response with restoration, and does not assert a conflict merely because metric labels differ. The service schema remains v0.3.0. Exact-head workflow [#38722722655](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38722722655) is queued; this corpus remains unqualified.",
+      "notes": "Reviewed against Mycelix PR #5019 head 9c6855b95f756802c04ccea1708aa3392be0aba7; exact corpus blob remains 875fa72478ccd609b83d218bbae9b9facae8fd2e. Corpus v0.6.0 has ten effects-disabled service fixtures and a synthetic response-versus-turnaround clock-semantics control. The fixture keeps source retrieval/check times null, has no raw-page digest, does not equate response with restoration, and does not assert a source conflict solely because labels differ. Service schema remains v0.3.0. Exact-head workflow [#38723223217](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38723223217) is queued; this corpus remains unqualified.",
       "qualification_state": "unqualified_draft"
     }
   ],

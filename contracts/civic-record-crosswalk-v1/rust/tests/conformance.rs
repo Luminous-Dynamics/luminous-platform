@@ -104,7 +104,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "4325d01dbbf80df722b5f1529b83dad643286938"
+        "9c6855b95f756802c04ccea1708aa3392be0aba7"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
@@ -137,7 +137,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
             .unwrap_or_else(|| panic!("missing pinned Mycelix schema {schema_id}"));
         assert_eq!(
             source_schema.snapshot_commit_sha,
-            "4325d01dbbf80df722b5f1529b83dad643286938"
+            "9c6855b95f756802c04ccea1708aa3392be0aba7"
         );
         assert_eq!(source_schema.git_blob_sha1.as_deref(), Some(expected_blob));
     }
