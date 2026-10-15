@@ -943,11 +943,7 @@ mod tests {
         let validated = p.authorize_resolution(&registry, &[ip("8.8.8.8")]).unwrap();
 
         assert_eq!(
-            p.verify_connected_peer(
-                &mirror,
-                &validated,
-                SocketAddr::new(ip("8.8.8.8"), 8443)
-            ),
+            p.verify_connected_peer(&mirror, &validated, SocketAddr::new(ip("8.8.8.8"), 8443)),
             Err(PolicyError::ResolutionOriginMismatch {
                 requested: mirror,
                 validated_for: registry,
