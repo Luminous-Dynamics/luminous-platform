@@ -16,7 +16,9 @@ pub struct ValidationErrors {
 
 impl ValidationErrors {
     fn one(message: impl Into<String>) -> Self {
-        Self { messages: vec![message.into()] }
+        Self {
+            messages: vec![message.into()],
+        }
     }
 
     fn push(&mut self, message: impl Into<String>) {
@@ -204,7 +206,9 @@ pub fn validate_catalogue_json(input: &str) -> Result<SourceCatalogue, Validatio
 }
 
 fn validate_catalogue(catalogue: &SourceCatalogue) -> ValidationErrors {
-    let mut errors = ValidationErrors { messages: Vec::new() };
+    let mut errors = ValidationErrors {
+        messages: Vec::new(),
+    };
 
     if catalogue.schema_version != "public-source-catalogue-v1" {
         errors.push("schema_version must be public-source-catalogue-v1");
@@ -242,44 +246,65 @@ fn validate_catalogue(catalogue: &SourceCatalogue) -> ValidationErrors {
             ("terms.policy_url", source.terms.policy_url.as_str()),
         ] {
             if !valid_https_url(value) {
-                errors.push(format!("{prefix}.{field} must be an absolute HTTPS URL without userinfo"));
+                errors.push(format!(
+                    "{prefix}.{field} must be an absolute HTTPS URL without userinfo"
+                ));
             }
         }
 
         if source.access.documented_methods.is_empty() {
-            errors.push(format!("{prefix}.access.documented_methods must not be empty"));
+            errors.push(format!(
+                "{prefix}.access.documented_methods must not be empty"
+            ));
         }
         let mut methods = HashSet::new();
         for method in &source.access.documented_methods {
             if !methods.insert(method) {
-                errors.push(format!("{prefix}.access.documented_methods contains a duplicate method"));
+                errors.push(format!(
+                    "{prefix}.access.documented_methods contains a duplicate method"
+                ));
             }
         }
         if source.terms.must_recheck_before_ingestion != true {
-            errors.push(format!("{prefix}.terms.must_recheck_before_ingestion must be true"));
+            errors.push(format!(
+                "{prefix}.terms.must_recheck_before_ingestion must be true"
+            ));
         }
         if source.data_scope.datasets_or_content.is_empty() {
-            errors.push(format!("{prefix}.data_scope.datasets_or_content must not be empty"));
+            errors.push(format!(
+                "{prefix}.data_scope.datasets_or_content must not be empty"
+            ));
         }
         if source.data_scope.collection_policy.trim().is_empty() {
-            errors.push(format!("{prefix}.data_scope.collection_policy must not be empty"));
+            errors.push(format!(
+                "{prefix}.data_scope.collection_policy must not be empty"
+            ));
         }
         if source.known_limitations.is_empty()
-            || source.known_limitations.iter().any(|limitation| limitation.trim().is_empty())
+            || source
+                .known_limitations
+                .iter()
+                .any(|limitation| limitation.trim().is_empty())
         {
-            errors.push(format!("{prefix}.known_limitations must contain non-empty entries"));
+            errors.push(format!(
+                "{prefix}.known_limitations must contain non-empty entries"
+            ));
         }
         if source.ingestion.status != IngestionStatus::CatalogueOnly {
             errors.push(format!("{prefix}.ingestion.status must be catalogue_only"));
         }
         if source.ingestion.enabled {
-            errors.push(format!("{prefix}.ingestion.enabled must remain false until a separate authorization gate"));
+            errors.push(format!(
+                "{prefix}.ingestion.enabled must remain false until a separate authorization gate"
+            ));
         }
         if source.ingestion.reason.trim().is_empty() {
             errors.push(format!("{prefix}.ingestion.reason must not be empty"));
         }
         if source.access.transport_policy != TransportPolicy::HttpsOnly {
-            errors.push(format!("{prefix}.access.transport_policy must be https_only"));
+            errors.push(format!(
+                "{prefix}.access.transport_policy must be https_only"
+            ));
         }
     }
 
@@ -360,7 +385,9 @@ pub struct Normalization {
 }
 
 fn validate_observation(observation: &SourceObservation) -> ValidationErrors {
-    let mut errors = ValidationErrors { messages: Vec::new() };
+    let mut errors = ValidationErrors {
+        messages: Vec::new(),
+    };
 
     if observation.schema_version != "public-observation-v1" {
         errors.push("schema_version must be public-observation-v1");
@@ -374,7 +401,10 @@ fn validate_observation(observation: &SourceObservation) -> ValidationErrors {
     if !valid_https_url(&observation.source_uri) {
         errors.push("source_uri must be an absolute HTTPS URL without userinfo");
     }
-    match (observation.fixture_only, observation.retrieved_at.as_deref()) {
+    match (
+        observation.fixture_only,
+        observation.retrieved_at.as_deref(),
+    ) {
         (true, None) => {}
         (true, Some(_)) => {
             errors.push("retrieved_at must be null for fixture-only observations");
@@ -411,29 +441,43 @@ fn validate_observation(observation: &SourceObservation) -> ValidationErrors {
     let rule_version = observation.normalization.rule_version.as_str();
     if observation.normalization.applied {
         if !rule_id.is_some_and(|value| !value.trim().is_empty()) {
-            errors.push("normalization.rule_id must be a non-empty string when normalization is applied");
+            errors.push(
+                "normalization.rule_id must be a non-empty string when normalization is applied",
+            );
         }
         if !rule_version.is_some_and(|value| !value.trim().is_empty()) {
             errors.push("normalization.rule_version must be a non-empty string when normalization is applied");
         }
-        if matches!(observation.raw_value_state, RawValueState::RowOmitted | RawValueState::NotRetrieved) {
-            errors.push("normalization cannot be applied to a row_omitted or not_retrieved observation");
+        if matches!(
+            observation.raw_value_state,
+            RawValueState::RowOmitted | RawValueState::NotRetrieved
+        ) {
+            errors.push(
+                "normalization cannot be applied to a row_omitted or not_retrieved observation",
+            );
         }
     } else {
         if !observation.normalization.rule_id.is_null() {
             errors.push("normalization.rule_id must be null when normalization.applied is false");
         }
         if !observation.normalization.rule_version.is_null() {
-            errors.push("normalization.rule_version must be null when normalization.applied is false");
+            errors.push(
+                "normalization.rule_version must be null when normalization.applied is false",
+            );
         }
         if observation.normalization.normalized_value != observation.raw_value {
-            errors.push("normalized_value must equal raw_value when normalization.applied is false");
+            errors
+                .push("normalized_value must equal raw_value when normalization.applied is false");
         }
     }
 
     match observation.raw_value_state {
         RawValueState::ReportedZero => {
-            if !observation.raw_value.as_f64().is_some_and(|number| number == 0.0) {
+            if !observation
+                .raw_value
+                .as_f64()
+                .is_some_and(|number| number == 0.0)
+            {
                 errors.push("reported_zero requires raw_value to be numeric zero");
             }
         }
@@ -444,7 +488,10 @@ fn validate_observation(observation: &SourceObservation) -> ValidationErrors {
         }
         RawValueState::ReportedValue => {
             if observation.raw_value.is_null()
-                || observation.raw_value.as_f64().is_some_and(|number| number == 0.0)
+                || observation
+                    .raw_value
+                    .as_f64()
+                    .is_some_and(|number| number == 0.0)
             {
                 errors.push("reported_value cannot contain null or numeric zero; use the corresponding explicit state");
             }
@@ -476,9 +523,9 @@ fn valid_source_id(value: &str) -> bool {
     let bytes = value.as_bytes();
     (3..=64).contains(&bytes.len())
         && (bytes[0].is_ascii_lowercase() || bytes[0].is_ascii_digit())
-        && bytes.iter().all(|byte| {
-            byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-'
-        })
+        && bytes
+            .iter()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-')
 }
 
 fn valid_https_url(value: &str) -> bool {
@@ -495,7 +542,10 @@ fn valid_sha256(value: &str) -> bool {
     let Some(hex) = value.strip_prefix("sha256:") else {
         return false;
     };
-    hex.len() == 64 && hex.bytes().all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
+    hex.len() == 64
+        && hex
+            .bytes()
+            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())
 }
 
 fn valid_iso_date(value: &str) -> bool {
@@ -503,9 +553,15 @@ fn valid_iso_date(value: &str) -> bool {
     if !value.is_ascii() || bytes.len() != 10 || bytes[4] != b'-' || bytes[7] != b'-' {
         return false;
     }
-    let Ok(year) = value[0..4].parse::<i32>() else { return false };
-    let Ok(month) = value[5..7].parse::<u32>() else { return false };
-    let Ok(day) = value[8..10].parse::<u32>() else { return false };
+    let Ok(year) = value[0..4].parse::<i32>() else {
+        return false;
+    };
+    let Ok(month) = value[5..7].parse::<u32>() else {
+        return false;
+    };
+    let Ok(day) = value[8..10].parse::<u32>() else {
+        return false;
+    };
     if !(1..=12).contains(&month) {
         return false;
     }
@@ -526,23 +582,38 @@ fn valid_rfc3339_timestamp(value: &str) -> bool {
     if value.len() < 20 || !value.is_ascii() {
         return false;
     }
-    let Some((date, time_and_zone)) = value.split_once('T') else { return false };
+    let Some((date, time_and_zone)) = value.split_once('T') else {
+        return false;
+    };
     if !valid_iso_date(date) {
         return false;
     }
 
     let zone_start = if let Some(position) = time_and_zone.rfind('Z') {
-        if position != time_and_zone.len() - 1 { return false; }
+        if position != time_and_zone.len() - 1 {
+            return false;
+        }
         position
-    } else if let Some(position) = time_and_zone.rfind('+').or_else(|| time_and_zone.rfind('-')) {
-        if position < 8 { return false; }
+    } else if let Some(position) = time_and_zone
+        .rfind('+')
+        .or_else(|| time_and_zone.rfind('-'))
+    {
+        if position < 8 {
+            return false;
+        }
         let zone = &time_and_zone[position + 1..];
         if zone.len() != 5 || zone.as_bytes()[2] != b':' {
             return false;
         }
-        let Ok(hours) = zone[0..2].parse::<u32>() else { return false };
-        let Ok(minutes) = zone[3..5].parse::<u32>() else { return false };
-        if hours > 23 || minutes > 59 { return false; }
+        let Ok(hours) = zone[0..2].parse::<u32>() else {
+            return false;
+        };
+        let Ok(minutes) = zone[3..5].parse::<u32>() else {
+            return false;
+        };
+        if hours > 23 || minutes > 59 {
+            return false;
+        }
         position
     } else {
         return false;
@@ -561,11 +632,21 @@ fn valid_rfc3339_timestamp(value: &str) -> bool {
         unzoned_time
     };
     let parts: Vec<&str> = time.split(':').collect();
-    if parts.len() != 3 || parts.iter().any(|part| part.len() != 2 || !part.bytes().all(|b| b.is_ascii_digit())) {
+    if parts.len() != 3
+        || parts
+            .iter()
+            .any(|part| part.len() != 2 || !part.bytes().all(|b| b.is_ascii_digit()))
+    {
         return false;
     }
-    let Ok(hour) = parts[0].parse::<u32>() else { return false };
-    let Ok(minute) = parts[1].parse::<u32>() else { return false };
-    let Ok(second) = parts[2].parse::<u32>() else { return false };
+    let Ok(hour) = parts[0].parse::<u32>() else {
+        return false;
+    };
+    let Ok(minute) = parts[1].parse::<u32>() else {
+        return false;
+    };
+    let Ok(second) = parts[2].parse::<u32>() else {
+        return false;
+    };
     hour <= 23 && minute <= 59 && second <= 60
 }
