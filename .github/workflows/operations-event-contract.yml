@@ -1,22 +1,31 @@
-name: Operations Event and Holochain Attestation Contracts
+name: Operations Event, Work Case, and Holochain Attestation Contracts
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - "contracts/operations-event-v1/**"
+      - "contracts/work-case-v1/**"
+      - "services/work-case-postgres/**"
+      - "docs/WORK_CASE_STORAGE_AND_TENANCY_DECISION.md"
+      - ".github/workflows/work-case-v1.yml"
       - "contracts/holochain-attestation-v1/**"
+      - "README.md"
       - "scripts/run_unittest_suite.py"
       - "scripts/tests/**"
       - ".github/workflows/operations-event-contract.yml"
-  # PR updates are tested by pull_request. Limit automatic push validation
-  # to main to avoid running the same expensive suites twice for each PR commit.
-  # Branches without a PR can use workflow_dispatch.
+  # Pull requests are qualified by pull_request. Limit automatic push runs to main
+  # to avoid duplicate work on PR branches; use workflow_dispatch for standalone branches.
   push:
     branches: ["main"]
     paths:
       - "contracts/operations-event-v1/**"
+      - "contracts/work-case-v1/**"
+      - "services/work-case-postgres/**"
+      - "docs/WORK_CASE_STORAGE_AND_TENANCY_DECISION.md"
+      - ".github/workflows/work-case-v1.yml"
       - "contracts/holochain-attestation-v1/**"
+      - "README.md"
       - "scripts/run_unittest_suite.py"
       - "scripts/tests/**"
       - ".github/workflows/operations-event-contract.yml"
@@ -29,8 +38,183 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  rust_contracts:
-    name: Rust contract qualification
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18.6-bookworm@sha256:3842a70e942cfe442f35ac7dab76afdeb6f75920ddf78c9cf1724ff565ebe4ef
+        env:
+          POSTGRES_DB: work_case_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d work_case_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/work_case_test?sslmode=disable
+      APP_DATABASE_URL: postgres://work_case_app:work_case_test_password@localhost:5432/work_case_test?sslmode=disable
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Checkout exact source revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Python for reference-model conformance tests
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: "3.12.12"
+
+      - name: Create isolated Python environment
+        run: python3 -m venv "$RUNNER_TEMP/operations-event-contract-venv"
+
+      - name: Install pinned schema validator
+        run: >-
+          "$RUNNER_TEMP/operations-event-contract-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
+
+      - name: Self-test fail-closed test runner
+        id: runner_selftest
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/runner-selftest.log"
+          python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
+          "$python" scripts/run_unittest_suite.py scripts/tests --minimum-tests 6 2>&1 | tee "$log"
+          count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
+          if [[ -z "$count" || "$count" -lt 6 ]]; then
+            echo "::error::Test-runner regression suite must execute at least 6 tests."
+            exit 1
+          fi
+          echo "test_count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Operations Event Contract V1
+        id: operations_event
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/operations-event-tests.log"
+          python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
+          "$python" scripts/run_unittest_suite.py contracts/operations-event-v1/tests --minimum-tests 1 2>&1 | tee "$log"
+          count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
+          if [[ -z "$count" || "$count" -lt 1 ]]; then
+            echo "::error::Operations Event tests did not execute a nonzero count."
+            exit 1
+          fi
+          echo "test_count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Validate Native Work Case Contract V1
+        id: work_case
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/work-case-tests.log"
+          python="$RUNNER_TEMP/operations-event-contract-venv/bin/python"
+          "$python" scripts/run_unittest_suite.py contracts/work-case-v1/tests --minimum-tests 34 2>&1 | tee "$log"
+          count="$(awk -F= '/^EXECUTED_TEST_CASES=/ { count = $2 } END { print count }' "$log")"
+          if [[ -z "$count" || "$count" -lt 34 ]]; then
+            echo "::error::Work Case Contract V1 must execute at least 34 tests; observed $count."
+            exit 1
+          fi
+          echo "test_count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.96.0 --profile minimal
+
+      - name: Ensure PostgreSQL client is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+
+      - name: Install pinned SQLx CLI
+        run: cargo +1.96.0 install sqlx-cli --version 0.9.0 --no-default-features --features rustls,postgres
+
+      - name: Apply versioned Work Case PostgreSQL migration
+        run: cargo +1.96.0 sqlx migrate run --source services/work-case-postgres/migrations
+
+      - name: Create least-privilege test role
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f services/work-case-postgres/tests/bootstrap_app_role.sql
+
+      - name: Validate Rust Work Case repository against PostgreSQL
+        id: postgres_work_case
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/work-case-postgres-tests.log"
+          cp -a services/work-case-postgres "$RUNNER_TEMP/work-case-postgres"
+          cargo +1.96.0 test --manifest-path "$RUNNER_TEMP/work-case-postgres/Cargo.toml" --all-targets 2>&1 | tee "$log"
+          stats="$(awk '
+            /^running [0-9]+ tests?$/ { discovered += $2 }
+            /^test result:/ {
+              for (i = 1; i <= NF; i++) {
+                if ($i == "passed;") passed += $(i - 1)
+                else if ($i == "failed;") failed += $(i - 1)
+                else if ($i == "ignored;") ignored += $(i - 1)
+                else if ($i == "measured;") measured += $(i - 1)
+                else if ($i == "filtered" && $(i + 1) == "out;") filtered += $(i - 1)
+              }
+            }
+            END { printf "%d %d %d %d %d %d\n", discovered, passed, failed, ignored, measured, filtered }
+          ' "$log")"
+          read -r discovered count failed ignored measured filtered <<< "$stats"
+          if [[ "$count" -lt 12 || "$failed" -ne 0 || "$ignored" -ne 0 || "$measured" -ne 0 || "$filtered" -ne 0 || "$discovered" -ne "$((count + failed + ignored + measured))" ]]; then
+            echo "::error::PostgreSQL suite must execute at least 12 tests with no failures, ignores, measured or filtered tests; discovered=$discovered passed=$count failed=$failed ignored=$ignored measured=$measured filtered=$filtered."
+            exit 1
+          fi
+          echo "test_count=$count" >> "$GITHUB_OUTPUT"
+      - name: Validate Holochain Attestation Share Package V1 (Rust)
+        id: holochain_attestation
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/holochain-attestation-tests.log"
+          # Cargo may create a Cargo.lock; build a disposable copy so validation
+          # never changes the exact source checkout being qualified.
+          cp -a contracts/holochain-attestation-v1 "$RUNNER_TEMP/holochain-attestation-v1"
+          cargo +1.96.0 test --manifest-path "$RUNNER_TEMP/holochain-attestation-v1/rust/Cargo.toml" --all-targets 2>&1 | tee "$log"
+          count="$(awk '/^test result:/ { for (i = 1; i <= NF; i++) if ($i == "passed;") total += $(i - 1) } END { print total + 0 }' "$log")"
+          if [[ -z "$count" || "$count" -lt 20 ]]; then
+            echo "::error::Rust Holochain attestation suite must execute at least 20 tests; observed $count."
+            exit 1
+          fi
+          echo "test_count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Confirm checkout stayed unchanged
+        run: git diff --exit-code && test -z "$(git status --porcelain)"
+
+      - name: Write bounded qualification summary
+        if: success()
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          RUNNER_TESTS: ${{ steps.runner_selftest.outputs.test_count }}
+          OPERATIONS_TESTS: ${{ steps.operations_event.outputs.test_count }}
+          WORK_CASE_TESTS: ${{ steps.work_case.outputs.test_count }}
+          HOLOCHAIN_TESTS: ${{ steps.holochain_attestation.outputs.test_count }}
+          POSTGRES_TESTS: ${{ steps.postgres_work_case.outputs.test_count }}
+        run: |
+          {
+            echo "## Operations Event, Work Case, Holochain, and PostgreSQL Repository Contracts"
+            echo "- Tested source revision: $SOURCE_SHA"
+            echo "- Fail-closed runner regression tests executed: $RUNNER_TESTS"
+            echo "- Operations Event Contract V1 tests executed: $OPERATIONS_TESTS"
+            echo "- Work Case Contract V1 tests executed: $WORK_CASE_TESTS"
+            echo "- Rust Holochain Attestation Share Package V1 tests executed: $HOLOCHAIN_TESTS"
+            echo "- Rust/PostgreSQL Work Case repository tests executed against PostgreSQL 18.6-bookworm and a non-owner application role: $POSTGRES_TESTS"
+            echo "- Empty discovery, import errors, failing tests, minimum-count violations, and discovered/executed count mismatches are hard failures. The Work Case suite requires at least 34 tests; the PostgreSQL repository suite requires at least 12 tests. The Holochain share-package validator and its contract tests are Rust-native."
+            echo "- This workflow qualifies only the tested Rust repository slice and migration on the stated disposable PostgreSQL test image. It does not qualify API authentication, lifecycle transitions, provider integration, outbox dispatch/recovery, backups/restores, the Holochain integrity zome or multi-agent DHT behavior, cryptographic evidence verification, or remote execution."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  operations_event_rust:
+    name: Rust Operations Event Contract V1
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -62,7 +246,6 @@ jobs:
         run: rustup toolchain install 1.96.0 --profile minimal
 
       - name: Validate Operations Event Contract V1 (Rust)
-        id: operations_event
         shell: bash
         run: |
           set -euo pipefail
@@ -77,32 +260,6 @@ jobs:
           fi
           echo "test_count=$count" >> "$GITHUB_OUTPUT"
 
-      - name: Validate Holochain Attestation Share Package V1 (Rust)
-        id: holochain_attestation
-        shell: bash
-        run: |
-          set -euo pipefail
-          package="$RUNNER_TEMP/holochain-attestation-v1"
-          log="$RUNNER_TEMP/holochain-attestation-rust-tests.log"
-          cp -a contracts/holochain-attestation-v1 "$package"
-          cargo +1.96.0 test --manifest-path "$package/rust/Cargo.toml" --all-targets 2>&1 | tee "$log"
-          count="$(awk '/^test result:/ { for (i = 1; i <= NF; i++) if ($i == "passed;") total += $(i - 1) } END { print total + 0 }' "$log")"
-          if [[ -z "$count" || "$count" -lt 20 ]]; then
-            echo "::error::Rust Holochain attestation suite must execute at least 20 tests; observed $count."
-            exit 1
-          fi
-          echo "test_count=$count" >> "$GITHUB_OUTPUT"
-
-      - name: Export resolved Rust dependency lock candidate
-        if: always() && steps.operations_event.outcome == 'success'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        with:
-          name: operations-event-cargo-lock-${{ github.event.pull_request.head.sha || github.sha }}
-          path: ${{ runner.temp }}/operations-event-v1/rust/Cargo.lock
-          if-no-files-found: error
-          retention-days: 7
-          compression-level: 0
-
       - name: Confirm checkout stayed unchanged
         run: git diff --exit-code && test -z "$(git status --porcelain)"
 
@@ -110,52 +267,10 @@ jobs:
         if: success()
         env:
           SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          OPERATIONS_TESTS: ${{ steps.operations_event.outputs.test_count }}
-          HOLOCHAIN_TESTS: ${{ steps.holochain_attestation.outputs.test_count }}
         run: |
           {
-            echo "## Rust contract qualification"
+            echo "## Operations Event Rust qualification"
             echo "- Tested source revision: $SOURCE_SHA"
-            echo "- Operations Event Contract V1 Rust tests executed: $OPERATIONS_TESTS"
-            echo "- Holochain Attestation Share Package V1 Rust tests executed: $HOLOCHAIN_TESTS"
-            echo "- This tests schema and trusted-context binding logic only. It does not qualify PostgreSQL isolation, crash recovery, ConnectWise authentication, Holochain integrity-zome/multi-agent DHT behavior, cryptographic evidence verification, or remote execution."
-          } >> "$GITHUB_STEP_SUMMARY"
-
-  reference_model_research:
-    name: Non-production Python reference-model research
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - name: Checkout exact source revision
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-
-      - name: Set up Python for reference-model tests only
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: "3.12.12"
-
-      - name: Create isolated research-test environment
-        run: python3 -m venv "$RUNNER_TEMP/operations-reference-venv"
-
-      - name: Install research-only schema validator
-        run: >-
-          "$RUNNER_TEMP/operations-reference-venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-cache-dir -r contracts/operations-event-v1/requirements.txt
-
-      - name: Run reference-model research tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          python="$RUNNER_TEMP/operations-reference-venv/bin/python"
-          "$python" scripts/run_unittest_suite.py scripts/tests --minimum-tests 6
-          "$python" scripts/run_unittest_suite.py contracts/operations-event-v1/tests --minimum-tests 1
-
-      - name: Record research-only boundary
-        if: success()
-        run: |
-          {
-            echo "## Non-production reference-model research"
-            echo "- These Python tests exercise synthetic reference models and a fail-closed test runner; they are not production services, do not authorize any side effect, and do not substitute for the Rust contract qualification job."
+            echo "- The Rust suite must execute at least 30 tests."
+            echo "- This qualifies the tested Rust contract slice only; it does not qualify live provider authentication, remote execution or municipal deployment."
           } >> "$GITHUB_STEP_SUMMARY"
