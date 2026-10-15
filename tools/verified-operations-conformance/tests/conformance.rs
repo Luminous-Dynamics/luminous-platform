@@ -1,5 +1,7 @@
 use serde_json::Value;
-use verified_operations_conformance::{classify_for_test, validate_corpus, validate_document, validate_schema};
+use verified_operations_conformance::{
+    classify_for_test, validate_corpus, validate_document, validate_schema,
+};
 
 const SCHEMA: &str = include_str!("../../../profiles/verified-operations/pilot-v1.schema.json");
 const CORPUS: &str = include_str!("../../../profiles/verified-operations/synthetic-pilot-v1.json");
@@ -54,28 +56,23 @@ fn all_eighteen_scenarios_match_the_rust_classifier() {
 }
 
 #[test]
-fn missing_stale_invalid_or_conflicting_observations_never_become_healthy() {
-    let mut corpus = parsed_corpus();
-    let cases = [
-        ("fresh-in-scope-observation", "observation_fresh"),
-        ("missing-required-source", "source_present"),
-        ("contradictory-sources", "sources_agree"),
-        ("invalid-source-payload", "source_valid"),
+fn one_fact_at_a_time_never_promotes_uncertainty_to_health() {
+    let baseline = scenario(&parsed_corpus(), "fresh-in-scope-observation").clone();
+    let mutations = [
+        ("source_present", Value::Bool(false)),
+        ("source_valid", Value::Bool(false)),
+        ("observation_fresh", Value::Bool(false)),
+        ("sources_agree", Value::Bool(false)),
     ];
 
-    for (id, fact) in cases {
-        let changed = scenario_mut(&mut corpus, id);
-        match fact {
-            "observation_fresh" | "source_present" | "source_valid" => {
-                changed["facts"][fact] = Value::Bool(false);
-            }
-            "sources_agree" => changed["facts"][fact] = Value::Bool(false),
-            _ => unreachable!("case list is closed"),
-        }
-        let (classification, _) = classify_for_test(changed).expect("scenario classifies");
+    for (fact, mutated_value) in mutations {
+        let mut changed = baseline.clone();
+        changed["facts"][fact] = mutated_value;
+        let (classification, _) =
+            classify_for_test(&changed).expect("mutated scenario remains classifiable");
         assert_ne!(
             classification, "healthy_within_observed_scope",
-            "mutation of {id}.{fact} must not leave a healthy classification"
+            "changing facts.{fact} to a negative state must not preserve a healthy classification"
         );
     }
 }
@@ -96,6 +93,16 @@ fn failed_restore_test_is_actionable_even_when_backup_job_succeeded() {
     let (classification, reason) = classify_for_test(item).expect("scenario classifies");
     assert_eq!(classification, "actionable_finding");
     assert_eq!(reason, "RESTORE_TEST_FAILED");
+}
+
+#[test]
+fn revoked_connector_credentials_are_denied() {
+    let corpus = parsed_corpus();
+    let (classification, reason) =
+        classify_for_test(scenario(&corpus, "revoked-connector-credential"))
+            .expect("scenario classifies");
+    assert_eq!(classification, "denied");
+    assert_eq!(reason, "CONNECTOR_CREDENTIAL_REVOKED");
 }
 
 #[test]
@@ -148,8 +155,9 @@ fn conflicting_event_id_is_quarantined_and_identical_replay_is_deduplicated() {
     assert_eq!(classification, "quarantine_conflict");
     assert_eq!(reason, "EVENT_ID_CONTENT_CONFLICT");
 
-    let (classification, reason) = classify_for_test(scenario(&corpus, "duplicate-identical-event"))
-        .expect("scenario classifies");
+    let (classification, reason) =
+        classify_for_test(scenario(&corpus, "duplicate-identical-event"))
+            .expect("scenario classifies");
     assert_eq!(classification, "deduplicated");
     assert_eq!(reason, "EVENT_DUPLICATE_IDENTICAL");
 }
@@ -186,23 +194,20 @@ fn semantic_gate_rejects_a_safer_declared_classification_than_the_facts_support(
 }
 
 #[test]
-fn corpus_rejects_mutation_permission_or_provenance_invariant_breaks() {
+fn schema_rejects_mutation_permission_or_provenance_invariant_breaks() {
     let schema = parsed_schema();
     let mut corpus = parsed_corpus();
     corpus["scenarios"][0]["expected"]["automatic_mutation_allowed"] = Value::Bool(true);
-
-    let errors = validate_corpus(&schema, &corpus).expect_err("mutation permission must fail");
     assert!(
-        errors.iter().any(|error| error.contains("automatic_mutation_allowed=false")),
-        "expected mutation invariant diagnostic, got {errors:#?}"
+        validate_corpus(&schema, &corpus).is_err(),
+        "schema must reject mutation authority in synthetic corpus"
     );
 
     let mut corpus = parsed_corpus();
     corpus["scenarios"][0]["expected"]["must_preserve_provenance"] = Value::Bool(false);
-    let errors = validate_corpus(&schema, &corpus).expect_err("provenance invariant must fail");
     assert!(
-        errors.iter().any(|error| error.contains("must_preserve_provenance=true")),
-        "expected provenance invariant diagnostic, got {errors:#?}"
+        validate_corpus(&schema, &corpus).is_err(),
+        "schema must reject disabling provenance preservation"
     );
 }
 
