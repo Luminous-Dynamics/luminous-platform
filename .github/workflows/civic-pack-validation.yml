@@ -1,0 +1,167 @@
+name: Civic jurisdiction-pack validation
+
+on:
+  pull_request:
+    paths:
+      - "schemas/**"
+      - "examples/jurisdiction-packs/**"
+      - "tools/civic-pack-validator/**"
+      - "docs/civic-services/**"
+      - ".github/workflows/civic-pack-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "schemas/**"
+      - "examples/jurisdiction-packs/**"
+      - "tools/civic-pack-validator/**"
+      - "docs/civic-services/**"
+      - ".github/workflows/civic-pack-validation.yml"
+
+# Keep one validation run per ref; new commits supersede stale queued runs.
+concurrency:
+  group: civic-pack-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate-jurisdiction-packs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install pinned validator dependency
+        run: python -m pip install -r tools/civic-pack-validator/requirements.txt
+      - name: Compile validator and evaluator
+        run: python -m compileall -q tools/civic-pack-validator
+      - name: Validate every jurisdiction pack and emit evidence reports
+        env:
+          PR_UPDATED_AT: ${{ github.event.pull_request.updated_at }}
+          COMMIT_TIMESTAMP: ${{ github.event.head_commit.timestamp }}
+        run: |
+          AS_OF="${PR_UPDATED_AT:-$COMMIT_TIMESTAMP}"
+          shopt -s nullglob
+          PACKS=(examples/jurisdiction-packs/*.json)
+          if [ "${#PACKS[@]}" -eq 0 ]; then
+            echo "No jurisdiction-pack JSON files found; refusing a vacuous validation pass."
+            exit 1
+          fi
+          printf '%s\n' "${#PACKS[@]}" > /tmp/civic-pack-expected-count.txt
+          for PACK_PATH in "${PACKS[@]}"; do
+            SLUG="$(basename "$PACK_PATH" .json)"
+            REPORT_PATH="/tmp/civic-pack-${SLUG}-validation-report.json"
+            echo "Validating ${PACK_PATH}"
+            python tools/civic-pack-validator/validate_pack.py \
+              --schema schemas/jurisdiction-pack-v0.1.0.schema.json \
+              --pack "$PACK_PATH" \
+              --as-of "$AS_OF" \
+              --report "$REPORT_PATH"
+          done
+          cp /tmp/civic-pack-za-city-of-johannesburg-food-service-0.1.0-validation-report.json /tmp/jurisdiction-pack-validation-report.json
+      - name: Evaluate unpublished example without exposing live guidance
+        run: |
+          python tools/civic-pack-validator/evaluate_workflow.py \
+            --schema schemas/jurisdiction-pack-v0.1.0.schema.json \
+            --pack examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json \
+            --as-of 2026-10-13T15:00:00Z \
+            --jurisdiction za/gauteng/city-of-johannesburg \
+            --workflow business.restaurant-launch \
+            --business-type sit_down_restaurant \
+            --report /tmp/jurisdiction-pack-evaluation.json
+          python -c 'import json; r=json.load(open("/tmp/jurisdiction-pack-evaluation.json", encoding="utf-8")); assert r["execution_state"] == "pack_not_published", r; assert r["requirements"] == [], r'
+      - name: Run adversarial regression tests
+        env:
+          PYTHONPATH: tools/civic-pack-validator
+        run: python -m unittest discover -s tools/civic-pack-validator/tests -v
+      - name: Enforce append-only review history across all jurisdiction packs
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git fetch --no-tags origin "refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+          git fetch --no-tags origin "refs/pull/$PR_NUMBER/head:refs/remotes/origin/pr-head"
+          ACTUAL_HEAD_SHA="$(git rev-parse refs/remotes/origin/pr-head)"
+          if [ "$ACTUAL_HEAD_SHA" != "$EXPECTED_HEAD_SHA" ]; then
+            echo "Fetched PR head $ACTUAL_HEAD_SHA differs from event head $EXPECTED_HEAD_SHA."
+            exit 1
+          fi
+          BASE_SHA="$(git merge-base "origin/$BASE_REF" "$EXPECTED_HEAD_SHA")"
+          python tools/civic-pack-validator/check_review_history_git.py \
+            --repository . \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$EXPECTED_HEAD_SHA" \
+            --pack-dir examples/jurisdiction-packs
+      - name: Write validation summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          reports = []
+          for path in sorted(Path("/tmp").glob("civic-pack-*-validation-report.json")):
+              try:
+                  report = json.loads(path.read_text(encoding="utf-8"))
+              except (OSError, json.JSONDecodeError) as exc:
+                  print(f"Skipping unreadable report {path}: {exc}")
+                  continue
+              reports.append((path.name, report))
+          expected_path = Path("/tmp/civic-pack-expected-count.txt")
+          try:
+              expected_count = int(expected_path.read_text(encoding="utf-8").strip())
+          except (OSError, ValueError):
+              expected_count = None
+
+          lines = [
+              "## Civic jurisdiction-pack validation",
+              "",
+              "Validation and publication eligibility are separate. A structurally valid draft may correctly remain unpublished.",
+              "",
+              "| Pack | Version | Integrity | Publishable | Sources / claims | Source / claim receipts | Failed / blocked checks |",
+              "|---|---|---|---|---:|---:|---:|",
+          ]
+          for name, report in reports:
+              integrity = "PASS" if report.get("validation_passed") else "FAIL"
+              publishable = "YES" if report.get("publication_eligible") else "NO"
+              lines.append(
+                  f"| `{report.get('pack_id')}` | `{report.get('pack_version')}` | {integrity} | {publishable} | "
+                  f"{report.get('source_count')} / {report.get('requirement_count')} | "
+                  f"{report.get('source_review_receipt_count')} / {report.get('requirement_review_receipt_count')} | "
+                  f"{report.get('failed_check_count')} / {report.get('blocked_check_count')} |"
+              )
+              lines.append(f"- `{name}`: input SHA-256 `{report.get('input_sha256')}`; schema SHA-256 `{report.get('schema_sha256')}`")
+          if not reports:
+              lines.append("| _No reports produced_ | — | FAIL | NO | — | — | — |")
+          lines.extend(["", f"- Reports produced: {len(reports)}; expected pack files: {expected_count if expected_count is not None else 'unknown'}"])
+          if expected_count is None or len(reports) != expected_count:
+              lines.append("- **Validation incomplete:** report count did not match the expected pack count. Inspect the failed validation step.")
+          lines.extend([
+              "",
+              "The Johannesburg fixture is deliberately draft-only. A passing validation run does not imply that sources were reviewed or that legal guidance is publishable.",
+          ])
+          with Path(__import__("os").environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
+              summary.write("\n".join(lines) + "\n")
+          PY
+      - name: Retain validation evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: civic-pack-validation-${{ github.sha }}
+          path: |
+            /tmp/civic-pack-*-validation-report.json
+            /tmp/civic-pack-expected-count.txt
+            /tmp/jurisdiction-pack-validation-report.json
+            /tmp/jurisdiction-pack-evaluation.json
+          if-no-files-found: ignore
+          retention-days: 14

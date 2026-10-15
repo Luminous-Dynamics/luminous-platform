@@ -1,0 +1,335 @@
+{
+  "schema_version": "0.1.0",
+  "pack_id": "za.city-of-johannesburg.food-service",
+  "pack_version": "0.1.0",
+  "publication_state": "draft",
+  "jurisdiction": {
+    "jurisdiction_id": "za/gauteng/city-of-johannesburg",
+    "name": "City of Johannesburg Metropolitan Municipality",
+    "country_code": "ZA",
+    "administrative_area": "Gauteng",
+    "locality": "City of Johannesburg"
+  },
+  "workflow": {
+    "workflow_id": "business.restaurant-launch",
+    "title": "Prepare to launch a food-service business",
+    "goal": "Help a person identify official next steps and prepare questions and information before contacting authorities.",
+    "business_types": [
+      "sit_down_restaurant",
+      "takeaway",
+      "mobile_food_vendor",
+      "catering",
+      "other_food_service"
+    ],
+    "scope_notes": [
+      "This is a draft research fixture, not a verified legal checklist.",
+      "Premises, activity, business structure, and current authority requirements can change applicability.",
+      "This pack does not determine zoning, land-use approval, building use, fire safety, or permission to trade."
+    ]
+  },
+  "review_policy": {
+    "owner_role": "jurisdiction-pack-maintainer",
+    "review_interval_days": 30,
+    "human_review_required": true,
+    "stale_evidence_behavior": "downgrade_claim_and_block_completion"
+  },
+  "sources": [
+    {
+      "source_id": "joburg.business-licences",
+      "authority": "City of Johannesburg",
+      "title": "Business Licences",
+      "canonical_url": "https://joburg.org.za/work_/InvestInJoburg/Pages/Business-Licences.aspx",
+      "section": "Businesses that need a licence / Food provision",
+      "evidence_kind": "official_guidance",
+      "review_state": "unreviewed",
+      "published_at": null,
+      "effective_from": null,
+      "checked_at": null,
+      "reviewed_at": null,
+      "next_review_at": null,
+      "reviewer_role": null,
+      "snapshot_sha256": null,
+      "reuse": "not_assessed",
+      "source_license_url": null,
+      "attribution": "City of Johannesburg",
+      "rights_notes": "Link to the authority page; do not redistribute substantial source text until reuse terms have been assessed.",
+      "reviewer_id": null,
+      "review_receipt_id": null
+    },
+    {
+      "source_id": "za.food-premises-hygiene",
+      "authority": "South African Government",
+      "title": "Foodstuffs, Cosmetics and Disinfectants Act regulations: general hygiene requirements for food premises, transport of food and related matters",
+      "canonical_url": "https://www.gov.za/documents/notices/foodstuffs-cosmetics-and-disinfectants-act-regulations-general-hygiene-0",
+      "section": null,
+      "evidence_kind": "statute_or_regulation",
+      "review_state": "unreviewed",
+      "published_at": null,
+      "effective_from": null,
+      "checked_at": null,
+      "reviewed_at": null,
+      "next_review_at": null,
+      "reviewer_role": null,
+      "snapshot_sha256": null,
+      "reuse": "not_assessed",
+      "source_license_url": null,
+      "attribution": "South African Government",
+      "rights_notes": "Verify the currently applicable regulation and local administrative process before promoting a compliance claim.",
+      "reviewer_id": null,
+      "review_receipt_id": null
+    },
+    {
+      "source_id": "cipc.bizportal",
+      "authority": "Companies and Intellectual Property Commission (CIPC)",
+      "title": "BizPortal",
+      "canonical_url": "https://www.bizportal.gov.za/",
+      "section": "Available services",
+      "evidence_kind": "official_service",
+      "review_state": "unreviewed",
+      "published_at": null,
+      "effective_from": null,
+      "checked_at": null,
+      "reviewed_at": null,
+      "next_review_at": null,
+      "reviewer_role": null,
+      "snapshot_sha256": null,
+      "reuse": "not_assessed",
+      "source_license_url": null,
+      "attribution": "Companies and Intellectual Property Commission (CIPC)",
+      "rights_notes": "Direct users to the official service. Do not imply that this app submits a company registration.",
+      "reviewer_id": null,
+      "review_receipt_id": null
+    },
+    {
+      "source_id": "joburg.business-licensing-policy",
+      "authority": "City of Johannesburg",
+      "title": "The City's policy on business licences",
+      "canonical_url": "https://joburg.org.za/work_/BusinessLicences/Pages/The-City%27s-policy-on-business-licences.aspx",
+      "section": "Annexure A1: Schedule 1 (businesses requiring a licence)",
+      "evidence_kind": "official_policy",
+      "review_state": "unreviewed",
+      "published_at": null,
+      "effective_from": null,
+      "checked_at": null,
+      "reviewed_at": null,
+      "next_review_at": null,
+      "reviewer_role": null,
+      "snapshot_sha256": null,
+      "reuse": "not_assessed",
+      "source_license_url": null,
+      "attribution": "City of Johannesburg",
+      "rights_notes": "Use this page to locate the City's published policy and schedule. Confirm the operative version and applicable business classification before publication; do not redistribute annexure text without rights assessment.",
+      "reviewer_id": null,
+      "review_receipt_id": null
+    },
+    {
+      "source_id": "joburg.business-licensing-enquiries",
+      "authority": "City of Johannesburg",
+      "title": "Business Licences — Enquiries",
+      "canonical_url": "https://joburg.org.za/work_/BusinessLicences/Pages/Enquiries.aspx",
+      "section": "Business Licence Officer and Environmental Health Services",
+      "evidence_kind": "official_guidance",
+      "review_state": "unreviewed",
+      "published_at": null,
+      "effective_from": null,
+      "checked_at": null,
+      "reviewed_at": null,
+      "next_review_at": null,
+      "reviewer_role": null,
+      "snapshot_sha256": null,
+      "reuse": "not_assessed",
+      "source_license_url": null,
+      "attribution": "City of Johannesburg",
+      "rights_notes": "Contact details may change. Resolve the live page and confirm the correct office for the proposed business type before displaying contact details as current.",
+      "reviewer_id": null,
+      "review_receipt_id": null
+    },
+    {
+      "source_id": "za.department-health-food-control",
+      "authority": "National Department of Health, South Africa",
+      "title": "Food Control — Regulations",
+      "canonical_url": "https://www.health.gov.za/food-control-regulations/",
+      "section": "Regulations governing general hygiene requirements for food premises, the transport of food and related matters (R638 of 22 June 2018)",
+      "evidence_kind": "official_guidance",
+      "review_state": "unreviewed",
+      "published_at": null,
+      "effective_from": null,
+      "checked_at": null,
+      "reviewed_at": null,
+      "next_review_at": null,
+      "reviewer_role": null,
+      "snapshot_sha256": null,
+      "reuse": "not_assessed",
+      "source_license_url": null,
+      "attribution": "National Department of Health, South Africa",
+      "rights_notes": "This is an official index, not a replacement for reviewing the applicable current regulation and amendments. Do not treat a page listing alone as legal approval.",
+      "reviewer_id": null,
+      "review_receipt_id": null
+    }
+  ],
+  "requirements": [
+    {
+      "requirement_id": "joburg.confirm-licence-scope",
+      "title": "Confirm whether a City business licence applies",
+      "claim_type": "verification_step",
+      "review_state": "draft",
+      "summary": "The City of Johannesburg lists food provision, including selling or supplying meals, takeaways, or perishable food, among activities requiring a licence. Confirm the current schedule and applicability to this business model and premises directly with the City before making a trading decision.",
+      "applicability": {
+        "business_types": [
+          "sit_down_restaurant",
+          "takeaway",
+          "mobile_food_vendor",
+          "catering",
+          "other_food_service"
+        ],
+        "conditions": [
+          "The proposed activity involves preparation, sale, or supply of food."
+        ],
+        "unknowns": [
+          "Exact activity and premises classification",
+          "Current licensing schedule and administrative procedure",
+          "Any exemptions or additional local conditions"
+        ],
+        "predicates": [
+          {
+            "predicate_id": "licence.handles-food",
+            "field": "handles_food",
+            "operator": "is_true"
+          }
+        ]
+      },
+      "source_refs": [
+        "joburg.business-licences",
+        "joburg.business-licensing-policy"
+      ],
+      "user_actions": [
+        {
+          "action_id": "contact-city",
+          "label": "Confirm applicability with the City of Johannesburg",
+          "action_kind": "contact_authority",
+          "url": "https://joburg.org.za/work_/BusinessLicences/Pages/Enquiries.aspx"
+        },
+        {
+          "action_id": "read-city-policy",
+          "label": "Read the City's published licensing policy and Schedule 1",
+          "action_kind": "read_source",
+          "url": "https://joburg.org.za/work_/BusinessLicences/Pages/The-City%27s-policy-on-business-licences.aspx"
+        }
+      ],
+      "completion_effect": "must_confirm_with_authority",
+      "reviewer_id": null,
+      "reviewer_role": null,
+      "review_receipt_id": null
+    },
+    {
+      "requirement_id": "za.confirm-food-premises-process",
+      "title": "Confirm food-premises hygiene requirements",
+      "claim_type": "verification_step",
+      "review_state": "draft",
+      "summary": "Ask the responsible local authority which food-premises hygiene requirements and Certificate of Acceptability process apply to the intended operation. The pack must not represent the process as satisfied until the current regulation and local procedure have been reviewed.",
+      "applicability": {
+        "business_types": [
+          "sit_down_restaurant",
+          "takeaway",
+          "mobile_food_vendor",
+          "catering",
+          "other_food_service"
+        ],
+        "conditions": [
+          "The operation handles or supplies food."
+        ],
+        "unknowns": [
+          "Premises and operating model",
+          "Current local application and inspection process",
+          "Any activity-specific exceptions"
+        ],
+        "predicates": [
+          {
+            "predicate_id": "hygiene.handles-food",
+            "field": "handles_food",
+            "operator": "is_true"
+          }
+        ]
+      },
+      "source_refs": [
+        "za.food-premises-hygiene",
+        "za.department-health-food-control"
+      ],
+      "user_actions": [
+        {
+          "action_id": "confirm-food-premises",
+          "label": "Ask the responsible local authority about the applicable process",
+          "action_kind": "contact_authority",
+          "url": "https://www.health.gov.za/food-control-regulations/"
+        }
+      ],
+      "completion_effect": "must_confirm_with_authority",
+      "reviewer_id": null,
+      "reviewer_role": null,
+      "review_receipt_id": null
+    },
+    {
+      "requirement_id": "za.consider-cipc-registration",
+      "title": "Review CIPC registration options",
+      "claim_type": "official_guidance",
+      "review_state": "draft",
+      "summary": "CIPC's BizPortal provides company registration and related services. Review the official eligibility, current fees, service terms, and company type options there; this application does not file or guarantee registration.",
+      "applicability": {
+        "business_types": [
+          "sit_down_restaurant",
+          "takeaway",
+          "mobile_food_vendor",
+          "catering",
+          "other_food_service"
+        ],
+        "conditions": [
+          "The person is considering a registered business entity or a related CIPC service."
+        ],
+        "unknowns": [
+          "Appropriate legal form for the user's circumstances",
+          "Current eligibility and fees",
+          "Tax and other registration obligations"
+        ],
+        "predicates": [
+          {
+            "predicate_id": "cipc.registration-intended",
+            "field": "business_entity_registration_intended",
+            "operator": "is_true"
+          }
+        ]
+      },
+      "source_refs": [
+        "cipc.bizportal"
+      ],
+      "user_actions": [
+        {
+          "action_id": "open-cipc",
+          "label": "Review CIPC BizPortal",
+          "action_kind": "visit_official_service",
+          "url": "https://www.bizportal.gov.za/"
+        }
+      ],
+      "completion_effect": "informational_only",
+      "reviewer_id": null,
+      "reviewer_role": null,
+      "review_receipt_id": null
+    }
+  ],
+  "decision_contract": {
+    "guidance_only": true,
+    "ai_may_create_requirements": false,
+    "stale_evidence_blocks_completion_claims": true,
+    "authority_outcome_requires_verifiable_receipt": true,
+    "user_checkbox_is_not_legal_evidence": true
+  },
+  "notices": [
+    "Draft research fixture: not ready for public use or legal reliance.",
+    "All source records are intentionally unreviewed in this fixture. Human source review and current applicability checks are required before publication.",
+    "A user marking a task complete records their own progress only; it does not prove that a licence, registration, inspection, or approval has been granted.",
+    "Official portals linked here remain the responsible authorities. This prototype is not an official government service.",
+    "Official source links were rechecked during research on 2026-10-13, but source records remain unreviewed until a named maintainer verifies the current text, applicability, version, and review deadline.",
+    "Applicability predicates use a small declarative operator set. Missing fact values evaluate as unknown and require user clarification; no arbitrary code or AI-generated predicate execution is supported."
+  ],
+  "source_review_receipts": [],
+  "requirement_review_receipts": []
+}
