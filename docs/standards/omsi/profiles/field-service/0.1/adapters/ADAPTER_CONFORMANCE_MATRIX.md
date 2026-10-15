@@ -76,7 +76,7 @@ Every adapter slice should map its tests to these IDs. A test is not complete me
 - Maintenance Schedule, Maintenance Visit, Asset Maintenance plan, Asset Maintenance Task and Asset Maintenance Log are distinct source objects. The current adapter is only the Asset Maintenance Log slice.
 - Frappe `docstatus` and custom `maintenance_status` must remain separate. The inspected controller constrains certain combinations but does not establish a universal one-to-one state mapping. Preserve contradictory imported combinations as conflicts where safe.
 - `certificate_required`, `has_certificate`, and attachment-reference presence are separate. Neither a boolean nor an attachment path proves authenticity.
-- Due/completion dates remain date-only. Do not synthesize a UTC timestamp or infer a timezone.
+- Due/completion/next-task due dates remain date-only. The trusted binding declares a validated IANA site timezone for deriving the current local date during future-claim checks; do not assume the worker/runtime timezone.
 - `actions_performed` is a provider-supplied work claim and is omitted from the first privacy-minimized projection.
 
 Vendor details are in [the OCA mapping](OCA_FIELD_SERVICE_19_0_MAPPING.md) and [the ERPNext mapping](ERPNEXT_V16_51_0_MAINTENANCE_MAPPING.md).
@@ -89,7 +89,7 @@ Evidence below is a dated snapshot, not a permanent CI claim. Recheck the curren
 |---|---|---|---|
 | Shared Field Service synthetic profile (PR [#46](https://github.com/Luminous-Dynamics/luminous-platform/pull/46)) | `991c289a34a2e1433642d09fe2e4f610a2a776ca` | [Run #38689813506](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/38689813506) passed at that head. | Five focused tests plus schema/fixture-level negative controls; synthetic only. |
 | OCA read-only adapter (PR [#48](https://github.com/Luminous-Dynamics/luminous-platform/pull/48)) | `9740336957583c3084cfca99352ae2129f5801dc` | [Run #38695505503](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/38695505503) passed at that head, including the 128-test common suite, five profile tests, 23 OCA adapter tests, schema/fixture checks and interoperability target. | C1 synthetic offline mapping; no live Odoo extraction or write-back. |
-| ERPNext Asset Maintenance Log adapter (PR [#49](https://github.com/Luminous-Dynamics/luminous-platform/pull/49)) | `627677f34218e5e5223ac393a1d3f569190369e7` | [Run #38713200158](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/38713200158) was **queued** at 2026-10-15 09:28:35 UTC. This is not a pass. The focused suite contains 32 tests after the external-ID regression case. | C1 synthetic offline mapping; no live ERPNext site or API credentials. |
+| ERPNext Asset Maintenance Log adapter (PR [#49](https://github.com/Luminous-Dynamics/luminous-platform/pull/49)) | `8a0435a303169bbbe4c25581076b221f43fb2730` | Pull-request [run #38714075183](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/38714075183) and push [run #38714069527](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/38714069527) were both **queued** at 2026-10-15 09:35:36 UTC. Neither is a pass. Focused suite now has 36 tests; the prior-head runs were cancelled after code updates. | C1 synthetic offline mapping; no live ERPNext site or API credentials. |
 
 Green results on an earlier head do not transfer to a newer commit. The same principle applies if only one target in a workflow completes.
 
