@@ -90,12 +90,53 @@ def load_previous_manifest(value: dict[str, Any], *, source_id: str, canonical_u
     if previous_content_type is not None and not isinstance(previous_content_type, str):
         raise CaptureManifestError("previous manifest content_type must be a string or null")
     previous_captured_at = parse_instant(value.get("captured_at"))
+    final_url = validate_https_url(value.get("final_url"), "previous final_url")
     comparison = value.get("comparison")
-    if not isinstance(comparison, dict) or comparison.get("state") not in {"baseline", "unchanged", "changed"}:
+    if not isinstance(comparison, dict):
+        raise CaptureManifestError("previous manifest comparison metadata is missing")
+    comparison_state = comparison.get("state")
+    if comparison_state not in {"baseline", "unchanged", "changed"}:
         raise CaptureManifestError("previous manifest comparison state is missing or invalid")
+    comparison_signals = comparison.get("change_signals")
+    allowed_signals = {
+        "snapshot_bytes_changed",
+        "final_url_changed",
+        "content_type_changed",
+    }
+    if (
+        not isinstance(comparison_signals, list)
+        or any(signal not in allowed_signals for signal in comparison_signals)
+        or len(comparison_signals) != len(set(comparison_signals))
+    ):
+        raise CaptureManifestError("previous manifest change_signals are malformed")
+    prior_sha = comparison.get("previous_snapshot_sha256")
+    prior_url = comparison.get("previous_final_url")
+    prior_content_type = comparison.get("previous_content_type")
+    if prior_content_type is not None and not isinstance(prior_content_type, str):
+        raise CaptureManifestError("previous manifest comparison content type is malformed")
+    expected_signals: list[str] = []
+    if prior_sha is not None and snapshot["sha256"] != prior_sha:
+        expected_signals.append("snapshot_bytes_changed")
+    if prior_url is not None and final_url != prior_url:
+        expected_signals.append("final_url_changed")
+    if value.get("content_type") != prior_content_type and comparison_state != "baseline":
+        expected_signals.append("content_type_changed")
+    if comparison_state == "baseline":
+        if prior_sha is not None or prior_url is not None or prior_content_type is not None or comparison_signals:
+            raise CaptureManifestError("baseline manifest must not claim prior comparison data")
+    else:
+        if not isinstance(prior_sha, str) or not SHA256_PATTERN.fullmatch(prior_sha):
+            raise CaptureManifestError("compared manifest is missing the prior snapshot digest")
+        validate_https_url(prior_url, "previous comparison final_url")
+        if comparison_signals != expected_signals:
+            raise CaptureManifestError("previous manifest comparison signals do not match its recorded values")
+        if comparison_state == "unchanged" and expected_signals:
+            raise CaptureManifestError("previous manifest claims unchanged despite differing capture metadata")
+        if comparison_state == "changed" and not expected_signals:
+            raise CaptureManifestError("previous manifest claims changed without a recorded change")
     return {
         "snapshot_sha256": snapshot["sha256"],
-        "final_url": validate_https_url(value.get("final_url"), "previous final_url"),
+        "final_url": final_url,
         "content_type": previous_content_type,
         "captured_at": previous_captured_at,
     }
