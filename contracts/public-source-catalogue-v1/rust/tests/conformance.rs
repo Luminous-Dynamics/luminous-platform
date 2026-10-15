@@ -30,7 +30,10 @@ fn canonical_source_catalogue_fixture_is_accepted() {
     let catalogue = validate_catalogue_json(CATALOGUE).expect("catalogue should validate");
     assert_eq!(catalogue.schema_version, "public-source-catalogue-v1");
     assert_eq!(catalogue.sources.len(), 11);
-    assert!(catalogue.sources.iter().all(|source| !source.ingestion.enabled));
+    assert!(catalogue
+        .sources
+        .iter()
+        .all(|source| !source.ingestion.enabled));
 
     for expected_id in [
         "za-treasury-municipal-finance",
@@ -95,18 +98,20 @@ fn catalogue_rejects_malformed_https_url_and_userinfo() {
     ] {
         let mut value = parse_catalogue_fixture();
         value["sources"][0]["source_url"] = json!(url);
-        assert!(validate_catalogue_json(&encoded(&value)).is_err(), "accepted {url}");
+        assert!(
+            validate_catalogue_json(&encoded(&value)).is_err(),
+            "accepted {url}"
+        );
     }
 }
-
 #[test]
 fn catalogue_rejects_enabled_ingestion() {
     let mut value = parse_catalogue_fixture();
     value["sources"][0]["ingestion"]["enabled"] = json!(true);
-    let error = validate_catalogue_json(&encoded(&value)).expect_err("ingestion must stay disabled");
+    let error =
+        validate_catalogue_json(&encoded(&value)).expect_err("ingestion must stay disabled");
     assert!(error.to_string().contains("must remain false"));
 }
-
 #[test]
 fn catalogue_rejects_empty_catalogue_and_bad_review_date() {
     let mut empty = parse_catalogue_fixture();
@@ -147,7 +152,10 @@ fn observation_json_schema_binds_fixture_and_capture_provenance_consistently() {
         .iter()
         .find(|guard| guard["if"]["properties"]["fixture_only"]["const"] == true)
         .expect("fixture-only observations must have a dedicated schema guard");
-    assert_eq!(fixture_guard["then"]["properties"]["retrieved_at"]["type"], "null");
+    assert_eq!(
+        fixture_guard["then"]["properties"]["retrieved_at"]["type"],
+        "null"
+    );
     assert_eq!(
         fixture_guard["then"]["properties"]["source_snapshot_sha256"]["type"],
         "null"
@@ -185,7 +193,10 @@ fn synthetic_johannesburg_power_water_statement_is_not_live_or_causal_evidence()
     assert_eq!(observation.source_id, "za-gov-jhb-power-water-coordination");
     assert_eq!(observation.raw_value["is_live_service_status"], false);
     assert_eq!(observation.raw_value["is_case_level_causal_proof"], false);
-    assert_eq!(observation.raw_value["is_independently_verified_outcome"], false);
+    assert_eq!(
+        observation.raw_value["is_independently_verified_outcome"],
+        false
+    );
     assert!(observation.source_snapshot_sha256.is_none());
 
     let catalogue = validate_catalogue_json(CATALOGUE).expect("catalogue should validate");
@@ -216,21 +227,12 @@ fn synthetic_city_project_announcements_do_not_prove_live_or_verified_outcomes()
     for (fixture, expected_date) in fixtures {
         let observation = validate_observation_json(fixture)
             .expect("synthetic City project statement should validate");
-        assert_eq!(
-            observation.source_id,
-            "za-gp-jhb-city-project-updates"
-        );
+        assert_eq!(observation.source_id, "za-gp-jhb-city-project-updates");
         assert!(observation.fixture_only);
         assert!(observation.retrieved_at.is_none());
         assert!(observation.source_snapshot_sha256.is_none());
-        assert_eq!(
-            observation.raw_value["claim_kind"],
-            "publisher_statement"
-        );
-        assert_eq!(
-            observation.raw_value["publication_date"],
-            expected_date
-        );
+        assert_eq!(observation.raw_value["claim_kind"], "publisher_statement");
+        assert_eq!(observation.raw_value["publication_date"], expected_date);
         assert_eq!(observation.raw_value["is_live_service_status"], false);
         assert_eq!(
             observation.raw_value["is_current_operational_status_independently_verified"],
@@ -242,8 +244,7 @@ fn synthetic_city_project_announcements_do_not_prove_live_or_verified_outcomes()
         );
         assert_eq!(observation.normalization.applied, false);
         assert_eq!(
-            observation.normalization.normalized_value,
-            observation.raw_value,
+            observation.normalization.normalized_value, observation.raw_value,
             "no-op normalization must preserve the raw publisher claim"
         );
     }
@@ -262,7 +263,10 @@ fn synthetic_city_project_announcements_do_not_prove_live_or_verified_outcomes()
     let traffic: Value =
         serde_json::from_str(JHB_BRAAMFONTEIN_TRAFFIC).expect("valid traffic fixture");
     assert_eq!(traffic["raw_value"]["reported_intersection_count"], 8);
-    assert_eq!(traffic["raw_value"]["reported_project_value_zar"], 19_000_000);
+    assert_eq!(
+        traffic["raw_value"]["reported_project_value_zar"],
+        19_000_000
+    );
 
     let clinic: Value = serde_json::from_str(JHB_MALVERN_CLINIC).expect("valid clinic fixture");
     assert_eq!(
@@ -404,7 +408,6 @@ fn observation_rejects_invalid_zero_claim_and_digest() {
     assert!(validate_observation_json(&encoded(&bad_digest)).is_err());
 }
 
-
 #[test]
 fn fixture_only_observations_reject_synthetic_retrieval_timestamps() {
     let fixtures = [
@@ -417,14 +420,16 @@ fn fixture_only_observations_reject_synthetic_retrieval_timestamps() {
         claimed_capture["retrieved_at"] = json!("2026-10-14T00:00:00Z");
         let error = validate_observation_json(&encoded(&claimed_capture))
             .expect_err("fixture-only observations must not claim a retrieval timestamp");
-        assert!(error.to_string().contains("retrieved_at must be null for fixture-only observations"));
+        assert!(error
+            .to_string()
+            .contains("retrieved_at must be null for fixture-only observations"));
     }
 }
-
 #[test]
 fn observations_reject_a_missing_retrieved_at_field_even_for_fixtures() {
     let mut value = parse_observation_fixture();
-    value.as_object_mut()
+    value
+        .as_object_mut()
         .expect("observation must be an object")
         .remove("retrieved_at");
     assert!(
@@ -438,11 +443,12 @@ fn non_fixture_observation_requires_retrieval_timestamp_and_snapshot_digest() {
     let mut no_retrieval_time = parse_observation_fixture();
     no_retrieval_time["fixture_only"] = json!(false);
     no_retrieval_time["retrieved_at"] = Value::Null;
-    no_retrieval_time["source_snapshot_sha256"] =
-        json!(format!("sha256:{}", "a".repeat(64)));
+    no_retrieval_time["source_snapshot_sha256"] = json!(format!("sha256:{}", "a".repeat(64)));
     let error = validate_observation_json(&encoded(&no_retrieval_time))
         .expect_err("captured observation must have a retrieval timestamp");
-    assert!(error.to_string().contains("retrieved_at is required for non-fixture observations"));
+    assert!(error
+        .to_string()
+        .contains("retrieved_at is required for non-fixture observations"));
 
     let mut no_digest = parse_observation_fixture();
     no_digest["fixture_only"] = json!(false);
@@ -450,7 +456,9 @@ fn non_fixture_observation_requires_retrieval_timestamp_and_snapshot_digest() {
     no_digest["source_snapshot_sha256"] = Value::Null;
     let error = validate_observation_json(&encoded(&no_digest))
         .expect_err("captured observation must have a source digest");
-    assert!(error.to_string().contains("source_snapshot_sha256 must be sha256:"));
+    assert!(error
+        .to_string()
+        .contains("source_snapshot_sha256 must be sha256:"));
 }
 
 #[test]
@@ -461,5 +469,7 @@ fn non_fixture_observation_requires_snapshot_digest() {
     value["source_snapshot_sha256"] = Value::Null;
     let error = validate_observation_json(&encoded(&value))
         .expect_err("captured observations must bind a source snapshot digest");
-    assert!(error.to_string().contains("source_snapshot_sha256 must be sha256:"));
+    assert!(error
+        .to_string()
+        .contains("source_snapshot_sha256 must be sha256:"));
 }
