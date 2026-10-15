@@ -12,6 +12,7 @@
 
 use std::collections::BTreeSet;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::time::Duration;
 
 /// An HTTPS origin represented in canonical form.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -50,6 +51,8 @@ pub enum PolicyError {
     InvalidPort,
     EmptyOriginAllowlist,
     ZeroByteLimit,
+    ZeroTimeout,
+    TimeoutExceedsTotal { phase: &'static str },
     OriginNotAllowed(HttpsOrigin),
     EmptyDnsAnswer,
     NonPublicDestination(IpAddr),
@@ -80,20 +83,79 @@ impl ValidatedResolution {
     }
 }
 
+/// Time limits that a concrete transport must enforce.
+///
+/// `total` is one deadline for the entire fetch, including redirects and
+/// retries; transports must not restart this budget on each attempt.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FetchTimeouts {
+    connect: Duration,
+    read_idle: Duration,
+    total: Duration,
+}
+
+impl FetchTimeouts {
+    /// Build positive connect, read-idle, and whole-fetch time limits.
+    pub fn new(
+        connect: Duration,
+        read_idle: Duration,
+        total: Duration,
+    ) -> Result<Self, PolicyError> {
+        if connect.is_zero() || read_idle.is_zero() || total.is_zero() {
+            return Err(PolicyError::ZeroTimeout);
+        }
+        if connect > total {
+            return Err(PolicyError::TimeoutExceedsTotal { phase: "connect" });
+        }
+        if read_idle > total {
+            return Err(PolicyError::TimeoutExceedsTotal { phase: "read_idle" });
+        }
+
+        Ok(Self {
+            connect,
+            read_idle,
+            total,
+        })
+    }
+
+    pub fn connect(&self) -> Duration {
+        self.connect
+    }
+
+    pub fn read_idle(&self) -> Duration {
+        self.read_idle
+    }
+
+    pub fn total(&self) -> Duration {
+        self.total
+    }
+}
+
 /// Immutable limits and administrator-approved HTTPS origins.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FetchPolicy {
     allowed_origins: BTreeSet<HttpsOrigin>,
     max_redirects: u8,
     max_download_bytes: u64,
+    timeouts: FetchTimeouts,
 }
 
-/// Safe redirect decision. Credentials must come from a separate broker, not a
-/// URL. They may only be retained for the exact same normalized origin.
+/// Safe redirect decision. Fields are private so callers cannot fabricate an
+/// authorization result; credentials are still managed by the broker, not URLs.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RedirectDecision {
-    pub target: HttpsOrigin,
-    pub same_origin_credentials_allowed: bool,
+    target: HttpsOrigin,
+    same_origin_credentials_allowed: bool,
+}
+
+impl RedirectDecision {
+    pub fn target(&self) -> &HttpsOrigin {
+        &self.target
+    }
+
+    pub fn same_origin_credentials_allowed(&self) -> bool {
+        self.same_origin_credentials_allowed
+    }
 }
 
 impl FetchPolicy {
@@ -101,6 +163,7 @@ impl FetchPolicy {
         allowed_origins: impl IntoIterator<Item = HttpsOrigin>,
         max_redirects: u8,
         max_download_bytes: u64,
+        timeouts: FetchTimeouts,
     ) -> Result<Self, PolicyError> {
         let allowed_origins: BTreeSet<_> = allowed_origins.into_iter().collect();
         if allowed_origins.is_empty() {
@@ -114,6 +177,7 @@ impl FetchPolicy {
             allowed_origins,
             max_redirects,
             max_download_bytes,
+            timeouts,
         })
     }
 
@@ -237,6 +301,11 @@ impl FetchPolicy {
     pub fn max_download_bytes(&self) -> u64 {
         self.max_download_bytes
     }
+
+    /// Time budgets the concrete transport is required to enforce.
+    pub fn timeouts(&self) -> &FetchTimeouts {
+        &self.timeouts
+    }
 }
 
 fn normalize_host(host: &str) -> Result<String, PolicyError> {
@@ -359,6 +428,15 @@ mod tests {
         HttpsOrigin::new(host, port).expect("fixture origin should be valid")
     }
 
+    fn timeouts() -> FetchTimeouts {
+        FetchTimeouts::new(
+            Duration::from_secs(5),
+            Duration::from_secs(10),
+            Duration::from_secs(60),
+        )
+        .expect("fixture timeouts should be valid")
+    }
+
     fn policy() -> FetchPolicy {
         FetchPolicy::new(
             [
@@ -367,6 +445,7 @@ mod tests {
             ],
             3,
             1024,
+            timeouts(),
         )
         .expect("fixture policy should be valid")
     }
@@ -424,13 +503,34 @@ mod tests {
     #[test]
     fn requires_nonempty_allowlist_and_positive_size_limit() {
         assert!(matches!(
-            FetchPolicy::new([], 0, 1),
+            FetchPolicy::new([], 0, 1, timeouts()),
             Err(PolicyError::EmptyOriginAllowlist)
         ));
         assert!(matches!(
-            FetchPolicy::new([origin("example.invalid", 443)], 0, 0),
+            FetchPolicy::new([origin("example.invalid", 443)], 0, 0, timeouts()),
             Err(PolicyError::ZeroByteLimit)
         ));
+    }
+
+    #[test]
+    fn timeout_budgets_are_positive_bounded_and_attached_to_policy() {
+        assert_eq!(
+            FetchTimeouts::new(Duration::ZERO, Duration::from_secs(1), Duration::from_secs(5)),
+            Err(PolicyError::ZeroTimeout)
+        );
+        assert_eq!(
+            FetchTimeouts::new(Duration::from_secs(6), Duration::from_secs(1), Duration::from_secs(5)),
+            Err(PolicyError::TimeoutExceedsTotal { phase: "connect" })
+        );
+        assert_eq!(
+            FetchTimeouts::new(Duration::from_secs(1), Duration::from_secs(6), Duration::from_secs(5)),
+            Err(PolicyError::TimeoutExceedsTotal { phase: "read_idle" })
+        );
+
+        let p = policy();
+        assert_eq!(p.timeouts().connect(), Duration::from_secs(5));
+        assert_eq!(p.timeouts().read_idle(), Duration::from_secs(10));
+        assert_eq!(p.timeouts().total(), Duration::from_secs(60));
     }
 
     #[test]
@@ -589,11 +689,11 @@ mod tests {
         let registry = origin("registry.example.invalid", 443);
         let mirror = origin("mirror.example.invalid", 8443);
         let same = p.authorize_redirect(&registry, &registry, 0).unwrap();
-        assert!(same.same_origin_credentials_allowed);
+        assert!(same.same_origin_credentials_allowed());
 
         let cross = p.authorize_redirect(&registry, &mirror, 0).unwrap();
-        assert_eq!(cross.target, mirror);
-        assert!(!cross.same_origin_credentials_allowed);
+        assert_eq!(cross.target(), &mirror);
+        assert!(!cross.same_origin_credentials_allowed());
 
         assert_eq!(
             p.authorize_redirect(&registry, &mirror, 3),
