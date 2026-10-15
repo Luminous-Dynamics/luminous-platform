@@ -64,15 +64,28 @@ A draft pack can therefore be a structurally valid fixture while being explicitl
 
 Read the [source review and receipt protocol v0.1](../../docs/civic-services/source-review-protocol-v0.1.md). A source cannot claim a non-unreviewed state without a latest receipt matching its URL, snapshot digest, reviewer metadata, and reuse-rights fields. A `current` receipt requires all five review-scope fields to be true.
 
-The fixture intentionally keeps both `source_review_receipts: []` and `requirement_review_receipts: []`, with null review pointers; no source or claim has been reviewed. Verified requirements need a receipt that hashes the exact claim-bearing fields and names all current source receipts supporting that claim. Pull-request CI checks each pack-changing commit against its first parent and rejects editing, removing, or reordering receipts added in any earlier PR commit. This is append-only history relative to the base; it does not authenticate reviewer identity or prove legal accuracy. Require independent human review and approved repository rules before publication.
+The fixture intentionally keeps both `source_review_receipts: []` and `requirement_review_receipts: []`, with null review pointers; no source or claim has been reviewed. Verified requirements need a receipt that hashes the exact claim-bearing fields and names all current source receipts supporting that claim. Pull-request CI replays every top-level jurisdiction-pack JSON changed on the PR's first-parent history and checks both receipt ledgers against the immediate parent at every pack-changing commit. Pack deletion fails closed so history cannot be erased by removing the file. A newly introduced pack must begin as a draft with empty source/claim ledgers, all sources unreviewed, and all claims in draft state; it cannot bootstrap itself as previously reviewed. This is append-only history relative to the base, not authentication of reviewer identity or proof of legal accuracy. Require independent human review and approved repository rules before publication.
 
-For a local baseline comparison:
+For a local baseline comparison of one pack:
 
 ```sh
 python tools/civic-pack-validator/check_review_history.py \
   --baseline-pack /path/to/base-pack.json \
   --pack examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json
 ```
+
+To replay Git history for every changed top-level pack in a branch range:
+
+```sh
+git fetch origin main
+python tools/civic-pack-validator/check_review_history_git.py \
+  --repository . \
+  --base-sha "$(git merge-base origin/main HEAD)" \
+  --head-sha HEAD \
+  --pack-dir examples/jurisdiction-packs
+```
+
+The history command checks each changed pack revision against its first parent, reports the pack paths and revisions checked, rejects pack deletion, and enforces safe genesis state for new packs. It does not replace schema/semantic validation or repository branch protections.
 
 ## Reproducible source snapshot manifests
 

@@ -82,7 +82,7 @@ jobs:
         env:
           PYTHONPATH: tools/civic-pack-validator
         run: python -m unittest discover -s tools/civic-pack-validator/tests -v
-      - name: Enforce append-only source review history
+      - name: Enforce append-only review history across all jurisdiction packs
         if: github.event_name == 'pull_request'
         env:
           BASE_REF: ${{ github.base_ref }}
@@ -97,26 +97,11 @@ jobs:
             exit 1
           fi
           BASE_SHA="$(git merge-base "origin/$BASE_REF" "$EXPECTED_HEAD_SHA")"
-          PACK_PATH="examples/jurisdiction-packs/za-city-of-johannesburg-food-service-0.1.0.json"
-          PACK_COMMITS="$(git rev-list --reverse --first-parent "$BASE_SHA..$EXPECTED_HEAD_SHA" -- "$PACK_PATH")"
-          if [ -z "$PACK_COMMITS" ]; then
-            echo "No changes to the Johannesburg pack in this PR history; no receipt rewrite is possible in these commits."
-            exit 0
-          fi
-          for COMMIT in $PACK_COMMITS; do
-            BASELINE="/tmp/jurisdiction-pack-baseline.json"
-            CURRENT="/tmp/jurisdiction-pack-current.json"
-            if git cat-file -e "$COMMIT^1:$PACK_PATH" 2>/dev/null; then
-              git show "$COMMIT^1:$PACK_PATH" > "$BASELINE"
-            else
-              printf '%s\n' '{"source_review_receipts":[],"requirement_review_receipts":[]}' > "$BASELINE"
-            fi
-            git show "$COMMIT:$PACK_PATH" > "$CURRENT"
-            echo "Checking append-only review history at $COMMIT"
-            python tools/civic-pack-validator/check_review_history.py \
-              --baseline-pack "$BASELINE" \
-              --pack "$CURRENT"
-          done
+          python tools/civic-pack-validator/check_review_history_git.py \
+            --repository . \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$EXPECTED_HEAD_SHA" \
+            --pack-dir examples/jurisdiction-packs
       - name: Write validation summary
         if: always()
         run: |
