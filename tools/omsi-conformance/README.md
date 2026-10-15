@@ -55,3 +55,51 @@ A successful validator result means only that a document met these local schema 
 ## Intended next gate
 
 Add an independently reviewed cryptographic grant-verification interface, durable nonce/idempotency state, HTTP integration tests, wire the binding to Nixward's real authorized-execution result, and run the disposable-VM NixOS operation/recovery test before any real machine mutations or production claim.
+
+
+## Field Service profile 0.1 — synthetic conformance slice
+
+The incubation field-service profile is described in
+[OMSI PR #31](https://github.com/Luminous-Dynamics/luminous-platform/pull/31).
+This executable slice deliberately does **not** implement a PSA, dispatch
+system, licensing authority, billing system or production executor.
+
+Run the focused field-service checks:
+
+```sh
+make -C tools/omsi-conformance field-service
+```
+
+The checker applies a strict Draft 2020-12 schema and validates selected
+cross-record invariants at an explicit evaluation time. The synthetic positive
+fixtures cover two different kinds of work:
+
+- a plumbing/HVAC pressure-test work order;
+- a building-maintenance fixing/pull-test work order.
+
+The adversarial manifest in
+`fixtures/field-service-cases.json` contains 26 negative cases: exact
+operation-manifest digest substitution, cross-tenant references, unmatched
+approval scope, revoked/wrong-scope credentials, unit mismatch, calibration
+validity/freshness/chronology failures, provider claims mislabeled as verified,
+reused idempotency keys under a different manifest, offline execution after
+authority expiry, invalid correction links, undisclosed mapping losses,
+same-domain "independence", broken or mismatched customer acknowledgment,
+unknown fields, unverified closeout, assigned-practitioner substitution,
+evidence-actor substitution and evidence dated after the fixed evaluation
+clock. Each mutation declares the diagnostic fragment it is expected to
+trigger; the runner discovers the focused suite and requires at least five tests.
+
+The profile keeps the source system's case ID/status alongside the normalized
+status and makes mapping losses explicit. Each operation is bound to tenant,
+site, asset, scope version and manifest digest. Typed evidence distinguishes
+provider reports, measurements, inspections, independent verification,
+customer acknowledgment, handover, disputes and corrections.
+
+**Claim limits:** fixture values and acceptance intervals are synthetic and
+are not trade guidance or statutory criteria. The validator checks declared
+relationships; it does not cryptographically verify credential issuers,
+check a live regulator, establish verifier independence in the real world,
+verify evidence content against its digest, inspect physical assets, or
+prove legal compliance. It is not a production authorization service. The
+new tests do not qualify independent vendor interoperability or a field pilot.

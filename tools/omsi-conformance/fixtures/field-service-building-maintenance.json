@@ -1,0 +1,220 @@
+{
+  "schema": "org.omsi.field-service-record/0.1",
+  "id": "field-record-building-0002",
+  "tenant_id": "tenant-example-coop",
+  "created_at": "2026-10-14T09:00:00Z",
+  "service_case": {
+    "source_system": "synthetic-cmms-export",
+    "external_id": "CASE-202",
+    "source_revision": "rev-03",
+    "source_status": "Handed over",
+    "normalized_status": "handed_over",
+    "mapping_profile": "cmms-adapter-draft-0.1",
+    "mapping_losses": [],
+    "mapping_loss_disclosed": true
+  },
+  "work_order": {
+    "id": "WO-202",
+    "case_external_id": "CASE-202",
+    "tenant_id": "tenant-example-coop",
+    "site_id": "site-workshop-02",
+    "asset_id": "asset-door-02",
+    "jurisdiction": "ZA-GP",
+    "status": "handed_over",
+    "scope_version": 2,
+    "scope_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "required_practitioner_scopes": [
+      "building_maintenance"
+    ],
+    "credential_status_max_age_seconds": 86400,
+    "measurement_requirements": [
+      {
+        "requirement_id": "req-pull-test-01",
+        "method_ref": "door-fixing-pull-test-v1",
+        "unit_code": "kN",
+        "scale": 1,
+        "min_scaled": 90,
+        "max_scaled": 120,
+        "max_calibration_age_seconds": 2592000
+      }
+    ]
+  },
+  "site": {
+    "id": "site-workshop-02",
+    "tenant_id": "tenant-example-coop",
+    "jurisdiction": "ZA-GP",
+    "location_ref": "site-ref:workshop-02"
+  },
+  "asset": {
+    "id": "asset-door-02",
+    "tenant_id": "tenant-example-coop",
+    "asset_type": "commercial_door_assembly",
+    "identity_source": "asset-register:door-02",
+    "manufacturer_ref": "generic-door",
+    "model_ref": "rated-fixing-assembly"
+  },
+  "practitioner": {
+    "id": "practitioner-sam",
+    "tenant_id": "tenant-example-coop",
+    "role": "building-maintenance-contractor",
+    "credentials": [
+      {
+        "credential_id": "credential-building-01",
+        "tenant_id": "tenant-example-coop",
+        "issuer_id": "synthetic-contractor-registry",
+        "status": "valid",
+        "jurisdiction": "ZA-GP",
+        "scopes": [
+          "building_maintenance",
+          "inspection"
+        ],
+        "checked_at": "2026-10-14T08:00:00Z",
+        "valid_until": "2027-01-01T00:00:00Z"
+      }
+    ]
+  },
+  "estimate": {
+    "id": "EST-202",
+    "version": 3,
+    "scope_version": 2,
+    "currency": "ZAR",
+    "total_minor": 74000,
+    "scope_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "valid_until": "2026-10-16T00:00:00Z"
+  },
+  "approval": {
+    "approval_id": "APPROVAL-202",
+    "tenant_id": "tenant-example-coop",
+    "approver_id": "site-manager-02",
+    "status": "accepted",
+    "approved_at": "2026-10-14T09:20:00Z",
+    "estimate_id": "EST-202",
+    "estimate_version": 3,
+    "scope_version": 2,
+    "scope_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "currency": "ZAR",
+    "approved_total_minor": 74000
+  },
+  "operations": [
+    {
+      "operation_id": "operation-door-pull-test-02",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-workshop-02",
+      "asset_id": "asset-door-02",
+      "scope_version": 2,
+      "manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "idempotency_key": "idem-building-pull-02",
+      "state": "verified",
+      "executor_id": "practitioner-sam",
+      "executor_authority_domain": "contractor-maintenance-02",
+      "authorized_at": "2026-10-14T09:30:00Z",
+      "authority_expires_at": "2026-10-14T11:00:00Z",
+      "applied_at": "2026-10-14T10:00:00Z",
+      "required_verification": true,
+      "practitioner_id": "practitioner-sam"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "building-provider-report",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-workshop-02",
+      "asset_id": "asset-door-02",
+      "operation_id": "operation-door-pull-test-02",
+      "scope_version": 2,
+      "evidence_kind": "provider_report",
+      "claim_status": "reported",
+      "recorded_by": "practitioner-sam",
+      "occurred_at": "2026-10-14T10:01:00Z",
+      "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "operation_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    {
+      "id": "building-measurement",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-workshop-02",
+      "asset_id": "asset-door-02",
+      "operation_id": "operation-door-pull-test-02",
+      "scope_version": 2,
+      "evidence_kind": "instrument_measurement",
+      "claim_status": "measured",
+      "recorded_by": "practitioner-sam",
+      "occurred_at": "2026-10-14T10:02:00Z",
+      "content_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "measurement": {
+        "requirement_ref": "req-pull-test-01",
+        "value_scaled": 105,
+        "scale": 1,
+        "unit_code": "kN",
+        "method_ref": "door-fixing-pull-test-v1",
+        "instrument_ref": "force-gauge-12",
+        "calibration_ref": "calibration-force-gauge-12",
+        "calibration_status": "valid",
+        "calibration_checked_at": "2026-10-13T08:00:00Z",
+        "calibration_valid_until": "2026-11-30T00:00:00Z"
+      },
+      "operation_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    {
+      "id": "building-independent-verification",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-workshop-02",
+      "asset_id": "asset-door-02",
+      "operation_id": "operation-door-pull-test-02",
+      "scope_version": 2,
+      "evidence_kind": "independent_verification",
+      "claim_status": "verified",
+      "recorded_by": "reviewer-morgan",
+      "occurred_at": "2026-10-14T10:08:00Z",
+      "content_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "verification": {
+        "verifier_id": "reviewer-morgan",
+        "verifier_authority_domain": "independent-building-review-collective",
+        "method_ref": "door-fixing-pull-test-v1-review-v1",
+        "result": "passed"
+      },
+      "operation_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    {
+      "id": "building-customer-ack",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-workshop-02",
+      "asset_id": "asset-door-02",
+      "operation_id": "operation-door-pull-test-02",
+      "scope_version": 2,
+      "evidence_kind": "customer_acknowledgement",
+      "claim_status": "acknowledged",
+      "recorded_by": "site-manager-02",
+      "occurred_at": "2026-10-14T10:15:00Z",
+      "content_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "operation_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    {
+      "id": "building-handover",
+      "tenant_id": "tenant-example-coop",
+      "site_id": "site-workshop-02",
+      "asset_id": "asset-door-02",
+      "operation_id": "operation-door-pull-test-02",
+      "scope_version": 2,
+      "evidence_kind": "handover_record",
+      "claim_status": "acknowledged",
+      "recorded_by": "practitioner-sam",
+      "occurred_at": "2026-10-14T10:16:00Z",
+      "content_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "operation_manifest_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ],
+  "closeout": {
+    "status": "handed_over",
+    "evidence_refs": [
+      "building-provider-report",
+      "building-measurement",
+      "building-independent-verification",
+      "building-customer-ack",
+      "building-handover"
+    ],
+    "customer_ack_evidence_id": "building-customer-ack",
+    "exceptions": [],
+    "warranty_ref": "warranty-ref:door-202"
+  }
+}
