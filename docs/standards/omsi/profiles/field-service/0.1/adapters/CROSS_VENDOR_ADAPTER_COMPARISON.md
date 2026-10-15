@@ -63,3 +63,8 @@ The common projection must not flatten Maintenance Schedule, Visit, recurring As
 ## Next recommended boundary
 
 Continue with source-specific offline adapters rather than add live connectors. For ERPNext, keep Maintenance Visit/Schedule as a later, distinct slice with its own date/time conversion policy and partially/fully completed semantics. For OCA, a real export integration requires an independently reviewed extraction contract, credentials/tenant isolation and a separate privacy review. Neither synthetic mapper should trigger dispatch, billing, equipment operation or other physical-world side effects.
+
+
+## Additional ERPNext lifecycle distinction — completed draft claim (2026-10-15)
+
+A `Completed` maintenance status may appear on `docstatus=0` before ERPNext's submit-time restrictions execute. Preserve the source claim and document state separately, and disclose `completed_status_on_unsubmitted_document`; do not treat the projection as a clean submitted closeout. This is distinct from a submitted custom `Cancelled` state (`docstatus=1`), which the pinned controller explicitly permits.

@@ -92,7 +92,7 @@ Evidence below is a dated snapshot, not a permanent CI claim. Recheck the curren
 |---|---|---|---|
 | Shared Field Service synthetic profile (PR [#46](https://github.com/Luminous-Dynamics/luminous-platform/pull/46)) | `991c289a34a2e1433642d09fe2e4f610a2a776ca` | [Run #38689813506](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/38689813506) passed at that head. | Five focused tests plus schema/fixture-level negative controls; synthetic only. |
 | OCA read-only adapter (PR [#48](https://github.com/Luminous-Dynamics/luminous-platform/pull/48)) | `9740336957583c3084cfca99352ae2129f5801dc` | [Run #38695505503](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/38695505503) passed at that head, including the 128-test common suite, five profile tests, 23 OCA adapter tests, schema/fixture checks and interoperability target. | C1 synthetic offline mapping; no live Odoo extraction or write-back. |
-| ERPNext Asset Maintenance Log adapter (PR [#49](https://github.com/Luminous-Dynamics/luminous-platform/pull/49)) | `f3f11bae4f13a33f76d9b4c3007c9d60647d2e37` | Exact-head PR run [#38727429947](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/38727429947) is pending; its `test` job remains queued (last updated 2026-10-15 11:27:13 UTC), so no pass is claimed. Prior head `16d675e1e5b204967afe7c4456660e78fb065e69` had queued run #38726865967, which does not transfer evidence. Focused suite is 42 tests; output includes task-date/event-history loss, time-scoped certificate mismatch handling, and valid submitted custom-cancelled state. | C1 synthetic offline mapping; no live ERPNext site or API credentials. |
+| ERPNext Asset Maintenance Log adapter (PR [#49](https://github.com/Luminous-Dynamics/luminous-platform/pull/49)) | `652f9a316adb9fbd0a335cb2ea86cbe888463509` | No exact-head PR-triggered run was returned by the commit-workflow lookup immediately after this push; prior-head run #38727429947 remains pending/queued and is not evidence for this head. No pass is claimed. Focused suite is 43 tests; output discloses a Completed claim on an unsubmitted draft. | C1 synthetic offline mapping; no live ERPNext site or API credentials. |
 
 Green results on an earlier head do not transfer to a newer commit. The same principle applies if only one target in a workflow completes.
 
@@ -116,3 +116,8 @@ Before a real connector is accepted, require all of the following:
 4. Live reads are tested for tenant isolation, revocation, pagination, retries, stale/partial snapshots and zero writes.
 5. A paired consumer test proves that normalized status does not erase source claims, mapping losses, conflicts, or assurance limits.
 6. Exact-head CI and retained receipts identify the precise code under review. No draft becomes “production ready” based solely on synthetic conformance.
+
+
+### Additional lifecycle negative control (2026-10-15)
+
+The pinned ERPNext log controller separates field validation from submit-time restrictions. A draft can carry `maintenance_status=Completed` while `docstatus=0`; the adapter preserves both source dimensions and emits `completed_status_on_unsubmitted_document`. Consumers must not treat a conflicted draft claim as clean submitted closeout. Exact-head adapter commit: `652f9a316adb9fbd0a335cb2ea86cbe888463509`; immediate commit-workflow lookup returned no exact-head PR run, and prior run evidence does not transfer. The 43 authored focused test methods are not a CI pass claim.

@@ -86,3 +86,8 @@ Before any adapter implementation is described as passing:
 - [ERPNext Asset Maintenance Log documentation](https://docs.frappe.io/erpnext/asset-maintenance-log)
 
 Documentation provides workflow context; the commit-pinned DocType JSON and controllers above govern this adapter research.
+
+
+## Additional lifecycle edge case — completed draft status (2026-10-15)
+
+The pinned controller's `validate()` checks completion-date consistency, while its `on_submit()` separately restricts submission to `Completed` or `Cancelled`. Therefore a draft (`docstatus=0`) can carry `maintenance_status=Completed` before the submit-time restriction has run. This remains a source status claim, but not a clean submitted maintenance record. The adapter preserves the raw status/docstatus, keeps normalized status plus `completed_status_on_unsubmitted_document` conflict disclosure, and does not upgrade workmanship assurance. The acceptance suite includes this negative case.
