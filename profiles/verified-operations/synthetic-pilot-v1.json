@@ -1,0 +1,134 @@
+{
+  "contract_version": "1.0.0",
+  "profile_id": "verified-operations-pilot-v1",
+  "mode": "synthetic_only",
+  "evaluation_time": "2026-10-15T12:00:00Z",
+  "scenarios": [
+    {
+      "id": "fresh-in-scope-observation",
+      "purpose": "Fresh, valid, mutually consistent observations support a limited healthy statement.",
+      "domain": "asset_health",
+      "facts": { "source_present": true, "observation_fresh": true, "sources_agree": true, "source_valid": true, "asset_in_scope": true },
+      "expected": { "classification": "healthy_within_observed_scope", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "OBSERVATION_SET_CURRENT" }
+    },
+    {
+      "id": "missing-required-source",
+      "purpose": "A missing mandatory source prevents the system from inferring health.",
+      "domain": "asset_health",
+      "facts": { "source_present": false, "observation_fresh": false, "asset_in_scope": true },
+      "expected": { "classification": "indeterminate", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "REQUIRED_SOURCE_MISSING" }
+    },
+    {
+      "id": "stale-observation",
+      "purpose": "A source observation older than its declared freshness limit is not current health evidence.",
+      "domain": "asset_health",
+      "facts": { "source_present": true, "observation_fresh": false, "source_valid": true, "asset_in_scope": true },
+      "expected": { "classification": "indeterminate", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "OBSERVATION_STALE" }
+    },
+    {
+      "id": "contradictory-sources",
+      "purpose": "Conflicting provider claims remain visible and cannot be collapsed to healthy.",
+      "domain": "asset_health",
+      "facts": { "source_present": true, "observation_fresh": true, "sources_agree": false, "source_valid": true, "asset_in_scope": true },
+      "expected": { "classification": "indeterminate", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "OBSERVATION_CONFLICT" }
+    },
+    {
+      "id": "invalid-source-payload",
+      "purpose": "Malformed or untrusted source data must not be interpreted as a valid healthy result.",
+      "domain": "asset_health",
+      "facts": { "source_present": true, "observation_fresh": true, "source_valid": false, "asset_in_scope": true },
+      "expected": { "classification": "indeterminate", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "SOURCE_PAYLOAD_INVALID" }
+    },
+    {
+      "id": "asset-outside-allowlisted-scope",
+      "purpose": "An otherwise valid observation of an out-of-scope asset does not authorize collection or action.",
+      "domain": "asset_health",
+      "facts": { "source_present": true, "observation_fresh": true, "source_valid": true, "asset_in_scope": false },
+      "expected": { "classification": "denied", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "ASSET_OUT_OF_SCOPE" }
+    },
+    {
+      "id": "backup-success-no-restore-evidence",
+      "purpose": "A successful backup job without a current restore test does not prove recoverability.",
+      "domain": "backup_recovery",
+      "facts": { "source_present": true, "observation_fresh": true, "source_valid": true, "backup_job": "success", "restore_test": "not_run" },
+      "expected": { "classification": "recovery_not_demonstrated", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "RESTORE_NOT_DEMONSTRATED" }
+    },
+    {
+      "id": "backup-job-failed",
+      "purpose": "A fresh, valid failed backup job must create an actionable finding.",
+      "domain": "backup_recovery",
+      "facts": { "source_present": true, "observation_fresh": true, "source_valid": true, "backup_job": "failed", "restore_test": "unknown" },
+      "expected": { "classification": "actionable_finding", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "BACKUP_JOB_FAILED" }
+    },
+    {
+      "id": "restore-test-failed",
+      "purpose": "A recorded failed restore test is evidence of a recovery gap even if backup jobs succeeded.",
+      "domain": "backup_recovery",
+      "facts": { "source_present": true, "observation_fresh": true, "source_valid": true, "backup_job": "success", "restore_test": "failed" },
+      "expected": { "classification": "actionable_finding", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "RESTORE_TEST_FAILED" }
+    },
+    {
+      "id": "revoked-connector-credential",
+      "purpose": "A revoked connector credential blocks further reads and any associated mutations.",
+      "domain": "connector_security",
+      "facts": { "credential": "revoked", "source_present": false },
+      "expected": { "classification": "denied", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "CONNECTOR_CREDENTIAL_REVOKED" }
+    },
+    {
+      "id": "duplicate-identical-event",
+      "purpose": "A duplicate event with identical identity and content is idempotently deduplicated.",
+      "domain": "event_processing",
+      "facts": { "event_delivery": "duplicate_same_content", "source_present": true, "source_valid": true },
+      "expected": { "classification": "deduplicated", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "EVENT_DUPLICATE_IDENTICAL" }
+    },
+    {
+      "id": "duplicate-event-content-conflict",
+      "purpose": "Reusing an event identity with different content is quarantined without overwriting the original.",
+      "domain": "event_processing",
+      "facts": { "event_delivery": "duplicate_conflicting_content", "source_present": true, "source_valid": true },
+      "expected": { "classification": "quarantine_conflict", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "EVENT_ID_CONTENT_CONFLICT" }
+    },
+    {
+      "id": "authorization-expired",
+      "purpose": "An expired approval cannot authorize execution even if the plan itself is unchanged.",
+      "domain": "change_execution",
+      "facts": { "authorization": "expired", "pre_state": "fresh", "dispatch": "not_dispatched", "postcondition": "not_applicable" },
+      "expected": { "classification": "denied", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "AUTHORIZATION_EXPIRED" }
+    },
+    {
+      "id": "prestate-became-stale",
+      "purpose": "A change plan approved against stale or changed pre-state must be recreated and reapproved.",
+      "domain": "change_execution",
+      "facts": { "authorization": "valid", "pre_state": "stale", "dispatch": "not_dispatched", "postcondition": "not_applicable" },
+      "expected": { "classification": "requires_replan", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "PRESTATE_STALE_REPLAN" }
+    },
+    {
+      "id": "dispatched-effect-no-independent-check",
+      "purpose": "A dispatched operation with no independent postcondition evidence remains outcome-unknown.",
+      "domain": "change_execution",
+      "facts": { "authorization": "valid", "pre_state": "fresh", "dispatch": "dispatched", "postcondition": "missing" },
+      "expected": { "classification": "effect_unknown", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "EFFECT_DISPATCHED_UNVERIFIED" }
+    },
+    {
+      "id": "executor-claim-is-not-verification",
+      "purpose": "The executor's own success assertion is insufficient without an independent verifier.",
+      "domain": "change_execution",
+      "facts": { "authorization": "valid", "pre_state": "fresh", "dispatch": "dispatched", "postcondition": "executor_asserted_only" },
+      "expected": { "classification": "effect_unknown", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "INDEPENDENT_VERIFIER_MISSING" }
+    },
+    {
+      "id": "partial-effect-requires-reconciliation",
+      "purpose": "An operation with a possible partial effect must not be labeled no-effect or blindly retried.",
+      "domain": "change_execution",
+      "facts": { "authorization": "valid", "pre_state": "fresh", "dispatch": "partial", "postcondition": "failed" },
+      "expected": { "classification": "effect_partial", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "PARTIAL_EFFECT_RECONCILE" }
+    },
+    {
+      "id": "independently-verified-effect",
+      "purpose": "A successful result is verified only when an independent postcondition check is recorded.",
+      "domain": "change_execution",
+      "facts": { "authorization": "valid", "pre_state": "fresh", "dispatch": "dispatched", "postcondition": "independently_verified" },
+      "expected": { "classification": "verified", "automatic_mutation_allowed": false, "must_preserve_provenance": true, "reason_code": "POSTCONDITION_VERIFIED" }
+    }
+  ]
+}
