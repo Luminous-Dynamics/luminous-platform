@@ -1,0 +1,60 @@
+name: Verified Operations pilot conformance
+
+on:
+  pull_request:
+    paths:
+      - "profiles/verified-operations/**"
+      - "tools/verified-operations-conformance/**"
+      - ".github/workflows/verified-operations-conformance.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "profiles/verified-operations/**"
+      - "tools/verified-operations-conformance/**"
+      - ".github/workflows/verified-operations-conformance.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verified-operations-conformance-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  conformance:
+    name: Rust schema and semantic conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # immutable action revision
+        with:
+          toolchain: 1.99.0
+
+      - name: Run Rust tests
+        run: cargo test --manifest-path tools/verified-operations-conformance/Cargo.toml
+
+      - name: Run corpus conformance CLI
+        run: >-
+          cargo run --manifest-path tools/verified-operations-conformance/Cargo.toml --
+          profiles/verified-operations/pilot-v1.schema.json
+          profiles/verified-operations/synthetic-pilot-v1.json
+
+      - name: Run portable evidence bundle conformance
+        run: >-
+          cargo run --manifest-path tools/verified-operations-conformance/Cargo.toml --
+          profiles/verified-operations/evidence-bundle-v1.schema.json
+          profiles/verified-operations/synthetic-evidence-bundle-v1.json
+
+      - name: Emit exact-head and contract digests
+        run: |
+          echo "Source head: $SOURCE_HEAD_SHA"
+          sha256sum profiles/verified-operations/pilot-v1.schema.json
+          sha256sum profiles/verified-operations/synthetic-pilot-v1.json
+          sha256sum profiles/verified-operations/evidence-bundle-v1.schema.json
+          sha256sum profiles/verified-operations/synthetic-evidence-bundle-v1.json

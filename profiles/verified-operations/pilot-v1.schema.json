@@ -1,0 +1,301 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/profiles/verified-operations/pilot-v1.schema.json",
+  "title": "Verified Operations synthetic pilot corpus v1",
+  "description": "A design-stage schema for deterministic synthetic-only operational evidence scenarios. It does not authorize runtime actions or establish truth of source claims.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "profile_id",
+    "mode",
+    "evaluation_time",
+    "scenarios"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "1.0.0"
+    },
+    "profile_id": {
+      "const": "verified-operations-pilot-v1"
+    },
+    "mode": {
+      "const": "synthetic_only"
+    },
+    "evaluation_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 12,
+      "items": {
+        "$ref": "#/$defs/scenario"
+      }
+    }
+  },
+  "$defs": {
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "purpose",
+        "domain",
+        "facts",
+        "expected"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 12
+        },
+        "domain": {
+          "enum": [
+            "asset_health",
+            "backup_recovery",
+            "change_execution",
+            "connector_security",
+            "event_processing",
+            "outcome_objective"
+          ]
+        },
+        "facts": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source_present": {
+              "type": "boolean"
+            },
+            "observation_fresh": {
+              "type": "boolean"
+            },
+            "sources_agree": {
+              "type": "boolean"
+            },
+            "source_valid": {
+              "type": "boolean"
+            },
+            "asset_in_scope": {
+              "type": "boolean"
+            },
+            "backup_job": {
+              "enum": [
+                "success",
+                "failed",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "restore_test": {
+              "enum": [
+                "passed",
+                "failed",
+                "not_run",
+                "stale",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "authorization": {
+              "enum": [
+                "valid",
+                "missing",
+                "expired",
+                "wrong_target",
+                "revoked",
+                "not_applicable"
+              ]
+            },
+            "pre_state": {
+              "enum": [
+                "fresh",
+                "stale",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "dispatch": {
+              "enum": [
+                "not_dispatched",
+                "dispatched",
+                "partial",
+                "unknown",
+                "not_applicable"
+              ]
+            },
+            "postcondition": {
+              "enum": [
+                "independently_verified",
+                "executor_asserted_only",
+                "failed",
+                "missing",
+                "not_applicable"
+              ]
+            },
+            "event_delivery": {
+              "enum": [
+                "first_delivery",
+                "duplicate_same_content",
+                "duplicate_conflicting_content",
+                "out_of_order",
+                "not_applicable"
+              ]
+            },
+            "credential": {
+              "enum": [
+                "valid_scoped",
+                "revoked",
+                "expired",
+                "overprivileged",
+                "not_applicable"
+              ]
+            },
+            "objective_scope_matches": {
+              "type": "boolean"
+            },
+            "objective_defined": {
+              "type": "boolean"
+            },
+            "measurement_valid": {
+              "type": "boolean"
+            },
+            "minimum_coverage_ratio": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "measured_value": {
+              "type": "number"
+            },
+            "target_value": {
+              "type": "number"
+            },
+            "comparator": {
+              "enum": [
+                "lte",
+                "gte"
+              ]
+            },
+            "measured_unit": {
+              "type": "string",
+              "minLength": 1
+            },
+            "target_unit": {
+              "type": "string",
+              "minLength": 1
+            },
+            "independent_measurement_present": {
+              "type": "boolean"
+            },
+            "observation_window_start_epoch_seconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "observation_window_end_epoch_seconds": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "expected_interval_seconds": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "maximum_allowed_gap_seconds": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "valid_sample_offsets_seconds": {
+              "type": "array",
+              "minItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "classification",
+            "automatic_mutation_allowed",
+            "must_preserve_provenance",
+            "reason_code"
+          ],
+          "properties": {
+            "classification": {
+              "enum": [
+                "healthy_within_observed_scope",
+                "actionable_finding",
+                "indeterminate",
+                "recovery_not_demonstrated",
+                "denied",
+                "requires_replan",
+                "effect_unknown",
+                "effect_partial",
+                "verified",
+                "deduplicated",
+                "quarantine_conflict",
+                "objective_met_within_observed_scope",
+                "objective_target_missed"
+              ]
+            },
+            "automatic_mutation_allowed": {
+              "const": false
+            },
+            "must_preserve_provenance": {
+              "const": true
+            },
+            "reason_code": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "domain": {
+                "const": "outcome_objective"
+              }
+            },
+            "required": [
+              "domain"
+            ]
+          },
+          "then": {
+            "properties": {
+              "facts": {
+                "required": [
+                  "objective_scope_matches",
+                  "objective_defined",
+                  "observation_window_start_epoch_seconds",
+                  "observation_window_end_epoch_seconds",
+                  "expected_interval_seconds",
+                  "maximum_allowed_gap_seconds",
+                  "valid_sample_offsets_seconds",
+                  "measurement_valid",
+                  "minimum_coverage_ratio",
+                  "measured_value",
+                  "target_value",
+                  "comparator",
+                  "measured_unit",
+                  "target_unit",
+                  "independent_measurement_present"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

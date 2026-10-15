@@ -1,0 +1,103 @@
+# Verified Operations Companion — synthetic pilot contract v1
+
+**Status:** design-stage conformance fixture. Synthetic only. Not a runtime authorization contract, provider certification, or evidence that a production adapter works.
+
+## Purpose
+
+Turn the Home/SMB product decision into a small falsifiable contract before selecting a real customer connector. The corpus is intended to test one question: does the platform preserve the difference between observed, inferred, authorized, executed, and independently verified?
+
+The schema and fixtures live at:
+
+- `profiles/verified-operations/pilot-v1.schema.json`
+- `profiles/verified-operations/synthetic-pilot-v1.json`
+
+The corpus is deliberately vendor-neutral. It does not invent a customer, use live credentials, or assume a particular backup vendor. The selected pilot adapter must be based on the real inventory and supported interfaces of a consenting pilot customer.
+
+## Research implications
+
+The competitive baseline has moved beyond a conventional RMM dashboard. Tactical RMM already advertises inventory, monitoring, reporting, scripting, patching, and remote access; its license is source-available with restrictions and is not an OSI open-source license. ConnectWise announced its unified Predictive Intelligence / AI-native MSP platform in June 2026 and general availability in July 2026. Therefore, Luminous should not claim uniqueness for “AI-powered IT operations.”
+
+The narrower hypothesis to validate is that small IT teams and MSPs will pay for portable, source-bound evidence and verified recovery outcomes that can coexist with incumbent PSA/RMM tools. That hypothesis has not been validated with customers.
+
+For households, Home Assistant already provides native energy dashboards for electricity, gas, water, production and storage. The first differentiator should therefore be measurement integrity, health and resilience, and cautious recommendations around the existing automation engine—not another duplicate charting surface.
+
+References (checked 2026-10-15):
+
+- NIST CSF 2.0 Small Business Quick-Start Guide: <https://csrc.nist.gov/pubs/sp/1300/final>
+- Tactical RMM features: <https://tacticalrmm.com/features/>
+- Tactical RMM license: <https://docs.tacticalrmm.com/license/>
+- ConnectWise platform launch: <https://www.connectwise.com/company/press/releases/the-reactive-support-era-is-over-connectwise-platform-is-now-live-empowering-partners-in-journey-to-predictive-intelligence>
+- Home Assistant energy management: <https://www.home-assistant.io/docs/energy/>
+- Home Assistant Matter integration and supported configuration constraints: <https://www.home-assistant.io/integrations/matter/>
+- Matter 1.5 announcement: <https://csa-iot.org/newsroom/matter-1-5-introduces-cameras-closures-and-enhanced-energy-management-capabilities/>
+
+## Contract rules
+
+1. `mode` must remain `synthetic_only` in this fixture corpus. It contains no live target identifiers or credentials.
+2. Every scenario specifies the expected outcome and a stable reason code. Scenario IDs must be unique; a consumer test must reject duplicate IDs even though JSON Schema alone cannot guarantee uniqueness across a property of objects.
+3. All cases set `automatic_mutation_allowed` to `false`. This corpus qualifies no action executor.
+4. Missing, stale, invalid, contradictory, revoked, out-of-scope, or unverified states cannot be promoted to healthy or verified.
+5. A successful backup job without an actual current restore test must classify as `recovery_not_demonstrated`.
+6. Event identity reuse with different content must quarantine the conflict and preserve the original event record. Identical replay must be idempotently deduplicated.
+7. A command dispatch, timeout, or executor assertion alone is not proof of effect. The system must represent unknown and partial outcomes distinctly and reconcile state before retrying uncertain non-idempotent operations.
+8. An independently verified result is a necessary contract condition in these fixtures, not a claim that the verifier implementation or underlying source evidence is trustworthy by itself.
+9. The actual product must bind observations to tenant/site, target identity, source identity and revision, source event time, receive time, declared freshness bound, collection method, and verifier version. The fixture schema stays intentionally compact; it is not the canonical observation schema and must not compete with the existing typed observation/effect-receipt work.
+10. This profile must compose with the existing Work Case, Operations Event, typed observation evidence, recovery lifecycle and idempotency contracts rather than define parallel implementations.
+11. Outcome-objective coverage is derived from the declared UTC Unix-epoch window, expected sample interval and valid sample offsets. Require boundary samples, cadence-aligned and unique in-range offsets, a minimum derived coverage ratio and a maximum permissible inter-sample gap. Never trust a caller-supplied `coverage_ratio` or `window_complete` flag; the strict schema rejects these fields. These sample offsets are synthetic coverage inputs only, not raw production telemetry or proof that values were independently observed.
+
+## Required conformance checks
+
+- Parse the schema under JSON Schema Draft 2020-12 and validate all fixtures against it.
+- Reject malformed JSON, an unsupported contract version, a non-synthetic mode, missing reason codes, extra fields and duplicate scenario IDs.
+- Execute scenario expectations through the consumer contract tests; merely validating fixture structure does not prove semantics.
+- Add metamorphic tests that change one critical fact at a time (for example fresh→stale, valid→revoked, independently verified→executor assertion only) and assert the classification does not become safer.
+- Preserve negative-control coverage for false-green observations, false recovery confidence, expired approval, stale pre-state, self-certified actions, conflicting event identity and partial effect.
+- Record the exact tested source SHA, toolchain/dependency lock, corpus digest, discovered case count, executed case count, and per-case result. Missing or empty test discovery is failure; queued, skipped, or absent CI is not pass evidence.
+- Keep documentation/schema validation separate from adapter integration and physical/customer pilot evidence.
+
+## Mapping a real pilot without widening authority
+
+1. Inventory the one pilot site and agree its scope, data retention, operator roles, critical services, existing systems, and how to revoke the integration.
+2. Choose one actual connector based on supported API/protocols, source quality, customer permission and deployment feasibility. Synology SNMPv3 is an existing read-only candidate in platform issue #37, but it only exposes the configured allowlisted MIB observations; it does not automatically provide restore-test proof.
+3. Run read-only collection first. Do not deploy agents, run remote shell, push patches, modify network policy, flash firmware or change credentials in this pilot slice.
+4. Map findings into the existing Work Case contract with provenance and a clear indeterminate state. Any external ticket write requires separately qualified durable inbox/outbox semantics, tenant scoping, and explicit customer approval.
+5. Measure onboarding time, in-scope asset coverage against an independently established inventory, data freshness, actionable-finding precision, unresolved/indeterminate frequency, analyst minutes, evidence completeness, and weekly operator burden.
+6. For backup assurance, collect backup-job telemetry and a separately conducted restore-test record with target, test time, scope, result and reviewer. Do not claim a restore test was performed unless its evidence exists.
+7. Only after repeatable lab evidence and a customer-approved review may a later tranche consider a narrow, reversible action. That tranche must add an action-digest-bound authorization, fresh pre-state, idempotency classification, durable effect journal, independent verifier and reconciliation/rollback plan.
+
+## Explicit nonclaims
+
+The corpus is authored, not CI-qualified here. No production adapter, live device, backup restore, customer environment, security certification, savings, downtime reduction or paid demand is claimed. The Rust-first schema and semantic conformance runner is included in this PR at `tools/verified-operations-conformance/`, with an exact-path GitHub Actions workflow, 28 synthetic scenarios, and 27 distinct authored Rust test functions. The runner also validates the new portable evidence-bundle fixture, including source and normalized measurement digests, unique source-event identities, lineage, derived arithmetic, resolved decision references, and outcome/classification agreement. Structural checks are not a substitute for exact-head CI. Before maturity promotion, require the workflow to pass on the exact PR head and add a committed Cargo.lock so transitive dependency resolution is reproducible. Do not relax negative controls to obtain a pass.
+
+
+## Measurement integrity research update
+
+Home Assistant's official documentation describes data-quality failure modes in long-term energy statistics: counter resets, incorrect unit behavior, negative values, and totals inflated by combining independently resetting sensors. This is a concrete reason to separate "a value was received" from "the value is suitable for a target comparison." The platform must preserve source/unit/history warnings and avoid silently adjusting or smoothing telemetry to manufacture a green result.
+
+- [Home Assistant long-term statistics](https://www.home-assistant.io/docs/configuration/long-term-statistics/)
+- [Home Assistant energy dashboard FAQ](https://www.home-assistant.io/docs/energy/faq/)
+
+NIST SP 1339, published 17 June 2026, says OT backup management involves regular creation, testing, and review during recovery exercises. Even outside OT, it reinforces the product rule that backup job status and demonstrated recovery are distinct evidence classes.
+
+- [NIST SP 1339 — OT Backup Quick Start Guide](https://csrc.nist.gov/pubs/sp/1339/final)
+
+These sources inform the test contract; they do not qualify a real adapter or customer environment.
+
+
+### Evidence-derived coverage and timestamp integrity
+
+The current synthetic evaluator uses a declared UTC Unix-epoch start/end, a cadence in seconds, and valid sample offsets relative to the start. It rejects negative or reversed windows, cadence misalignment, duplicate/out-of-range sample offsets, missing boundary observations, below-threshold derived coverage, and gaps larger than the profile limit. These fields are a deterministic conformance abstraction: production must bind every sample to actual source identity, source timestamp, receive timestamp, source revision, unit and validation result. Offsets alone cannot prove that a measurement was genuine, current or independently observed.
+
+ 
+## Portable evidence receipt: bind the decision to its proof
+
+The new evidence-bundle-v1.schema.json contract makes the decision a portable, inspectable receipt rather than a detached green status. Each record carries a source identity and revision, source event identity, event/receive timestamps, the exact UTF-8 JSON payload and its SHA-256 digest, normalized measurement fields and a versioned normalized-field digest. A derived measurement references earlier evidence records; v1 accepts a deliberately narrow subtract operation and checks it using exact decimal scaling. A non-indeterminate decision must reference exactly one compatible, valid measurement for the objective and its classification/reason code must agree with the objective comparator.
+
+The fixture at profiles/verified-operations/synthetic-evidence-bundle-v1.json is synthetic. Digest verification detects mismatch after capture, but **does not authenticate who supplied the payload**: an unsigned digest can be recomputed by an attacker. The schema does not establish trustworthy clocks, source legitimacy, adapter correctness, or production data retention. A production phase still needs authenticated source identities, signature/challenge verification, key revocation, adapter-specific raw-to-normalized tests, clock-quality policies, privacy-preserving retention, and a committed lockfile. Evidence receipts remain read-only; automatic mutation is explicitly forbidden.
+
+
+### Resource identity and unit semantics
+
+Evidence-bundle v1 now distinguishes connector/source identity from the observed resource identity. The allow-listed Home Assistant energy profile requires the payload's `entity_id` to equal the declared `resource_id`, checks the raw state and unit against the normalized measurement, and rejects power units (for example W) as an energy-counter unit. The schema only permits the two record kinds implemented by this validator: telemetry samples and derived measurements.
+
+This binds fields within the receipt; it does not prove that the connector queried the authorized device. A production adapter must bind resource identity to an independently approved inventory and authenticate both source and collector.

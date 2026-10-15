@@ -1,0 +1,723 @@
+{
+  "contract_version": "1.0.0",
+  "profile_id": "verified-operations-pilot-v1",
+  "mode": "synthetic_only",
+  "evaluation_time": "2026-10-15T12:00:00Z",
+  "scenarios": [
+    {
+      "id": "fresh-in-scope-observation",
+      "purpose": "Fresh, valid, mutually consistent observations support a limited healthy statement.",
+      "domain": "asset_health",
+      "facts": {
+        "source_present": true,
+        "observation_fresh": true,
+        "sources_agree": true,
+        "source_valid": true,
+        "asset_in_scope": true
+      },
+      "expected": {
+        "classification": "healthy_within_observed_scope",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBSERVATION_SET_CURRENT"
+      }
+    },
+    {
+      "id": "missing-required-source",
+      "purpose": "A missing mandatory source prevents the system from inferring health.",
+      "domain": "asset_health",
+      "facts": {
+        "source_present": false,
+        "observation_fresh": false,
+        "asset_in_scope": true
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "REQUIRED_SOURCE_MISSING"
+      }
+    },
+    {
+      "id": "stale-observation",
+      "purpose": "A source observation older than its declared freshness limit is not current health evidence.",
+      "domain": "asset_health",
+      "facts": {
+        "source_present": true,
+        "observation_fresh": false,
+        "source_valid": true,
+        "asset_in_scope": true
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBSERVATION_STALE"
+      }
+    },
+    {
+      "id": "contradictory-sources",
+      "purpose": "Conflicting provider claims remain visible and cannot be collapsed to healthy.",
+      "domain": "asset_health",
+      "facts": {
+        "source_present": true,
+        "observation_fresh": true,
+        "sources_agree": false,
+        "source_valid": true,
+        "asset_in_scope": true
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBSERVATION_CONFLICT"
+      }
+    },
+    {
+      "id": "invalid-source-payload",
+      "purpose": "Malformed or untrusted source data must not be interpreted as a valid healthy result.",
+      "domain": "asset_health",
+      "facts": {
+        "source_present": true,
+        "observation_fresh": true,
+        "source_valid": false,
+        "asset_in_scope": true
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "SOURCE_PAYLOAD_INVALID"
+      }
+    },
+    {
+      "id": "asset-outside-allowlisted-scope",
+      "purpose": "An otherwise valid observation of an out-of-scope asset does not authorize collection or action.",
+      "domain": "asset_health",
+      "facts": {
+        "source_present": true,
+        "observation_fresh": true,
+        "source_valid": true,
+        "asset_in_scope": false
+      },
+      "expected": {
+        "classification": "denied",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "ASSET_OUT_OF_SCOPE"
+      }
+    },
+    {
+      "id": "backup-success-no-restore-evidence",
+      "purpose": "A successful backup job without a current restore test does not prove recoverability.",
+      "domain": "backup_recovery",
+      "facts": {
+        "source_present": true,
+        "observation_fresh": true,
+        "source_valid": true,
+        "backup_job": "success",
+        "restore_test": "not_run"
+      },
+      "expected": {
+        "classification": "recovery_not_demonstrated",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "RESTORE_NOT_DEMONSTRATED"
+      }
+    },
+    {
+      "id": "backup-job-failed",
+      "purpose": "A fresh, valid failed backup job must create an actionable finding.",
+      "domain": "backup_recovery",
+      "facts": {
+        "source_present": true,
+        "observation_fresh": true,
+        "source_valid": true,
+        "backup_job": "failed",
+        "restore_test": "unknown"
+      },
+      "expected": {
+        "classification": "actionable_finding",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "BACKUP_JOB_FAILED"
+      }
+    },
+    {
+      "id": "restore-test-failed",
+      "purpose": "A recorded failed restore test is evidence of a recovery gap even if backup jobs succeeded.",
+      "domain": "backup_recovery",
+      "facts": {
+        "source_present": true,
+        "observation_fresh": true,
+        "source_valid": true,
+        "backup_job": "success",
+        "restore_test": "failed"
+      },
+      "expected": {
+        "classification": "actionable_finding",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "RESTORE_TEST_FAILED"
+      }
+    },
+    {
+      "id": "revoked-connector-credential",
+      "purpose": "A revoked connector credential blocks further reads and any associated mutations.",
+      "domain": "connector_security",
+      "facts": {
+        "credential": "revoked",
+        "source_present": false
+      },
+      "expected": {
+        "classification": "denied",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "CONNECTOR_CREDENTIAL_REVOKED"
+      }
+    },
+    {
+      "id": "duplicate-identical-event",
+      "purpose": "A duplicate event with identical identity and content is idempotently deduplicated.",
+      "domain": "event_processing",
+      "facts": {
+        "event_delivery": "duplicate_same_content",
+        "source_present": true,
+        "source_valid": true
+      },
+      "expected": {
+        "classification": "deduplicated",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "EVENT_DUPLICATE_IDENTICAL"
+      }
+    },
+    {
+      "id": "duplicate-event-content-conflict",
+      "purpose": "Reusing an event identity with different content is quarantined without overwriting the original.",
+      "domain": "event_processing",
+      "facts": {
+        "event_delivery": "duplicate_conflicting_content",
+        "source_present": true,
+        "source_valid": true
+      },
+      "expected": {
+        "classification": "quarantine_conflict",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "EVENT_ID_CONTENT_CONFLICT"
+      }
+    },
+    {
+      "id": "authorization-expired",
+      "purpose": "An expired approval cannot authorize execution even if the plan itself is unchanged.",
+      "domain": "change_execution",
+      "facts": {
+        "authorization": "expired",
+        "pre_state": "fresh",
+        "dispatch": "not_dispatched",
+        "postcondition": "not_applicable"
+      },
+      "expected": {
+        "classification": "denied",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "AUTHORIZATION_EXPIRED"
+      }
+    },
+    {
+      "id": "prestate-became-stale",
+      "purpose": "A change plan approved against stale or changed pre-state must be recreated and reapproved.",
+      "domain": "change_execution",
+      "facts": {
+        "authorization": "valid",
+        "pre_state": "stale",
+        "dispatch": "not_dispatched",
+        "postcondition": "not_applicable"
+      },
+      "expected": {
+        "classification": "requires_replan",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "PRESTATE_STALE_REPLAN"
+      }
+    },
+    {
+      "id": "dispatched-effect-no-independent-check",
+      "purpose": "A dispatched operation with no independent postcondition evidence remains outcome-unknown.",
+      "domain": "change_execution",
+      "facts": {
+        "authorization": "valid",
+        "pre_state": "fresh",
+        "dispatch": "dispatched",
+        "postcondition": "missing"
+      },
+      "expected": {
+        "classification": "effect_unknown",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "EFFECT_DISPATCHED_UNVERIFIED"
+      }
+    },
+    {
+      "id": "executor-claim-is-not-verification",
+      "purpose": "The executor's own success assertion is insufficient without an independent verifier.",
+      "domain": "change_execution",
+      "facts": {
+        "authorization": "valid",
+        "pre_state": "fresh",
+        "dispatch": "dispatched",
+        "postcondition": "executor_asserted_only"
+      },
+      "expected": {
+        "classification": "effect_unknown",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "INDEPENDENT_VERIFIER_MISSING"
+      }
+    },
+    {
+      "id": "partial-effect-requires-reconciliation",
+      "purpose": "An operation with a possible partial effect must not be labeled no-effect or blindly retried.",
+      "domain": "change_execution",
+      "facts": {
+        "authorization": "valid",
+        "pre_state": "fresh",
+        "dispatch": "partial",
+        "postcondition": "failed"
+      },
+      "expected": {
+        "classification": "effect_partial",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "PARTIAL_EFFECT_RECONCILE"
+      }
+    },
+    {
+      "id": "independently-verified-effect",
+      "purpose": "A successful result is verified only when an independent postcondition check is recorded.",
+      "domain": "change_execution",
+      "facts": {
+        "authorization": "valid",
+        "pre_state": "fresh",
+        "dispatch": "dispatched",
+        "postcondition": "independently_verified"
+      },
+      "expected": {
+        "classification": "verified",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "POSTCONDITION_VERIFIED"
+      }
+    },
+    {
+      "id": "objective-slo-met-with-adequate-evidence",
+      "purpose": "An explicit availability objective is met by valid, sufficiently complete, independently corroborated measurements.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": true,
+        "objective_defined": true,
+        "measurement_valid": true,
+        "minimum_coverage_ratio": 0.95,
+        "measured_value": 99.95,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "%",
+        "target_unit": "%",
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
+      },
+      "expected": {
+        "classification": "objective_met_within_observed_scope",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_TARGET_MET"
+      }
+    },
+    {
+      "id": "objective-slo-missed-with-adequate-evidence",
+      "purpose": "A completed and adequately measured window shows that the declared service objective was missed.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": true,
+        "objective_defined": true,
+        "measurement_valid": true,
+        "minimum_coverage_ratio": 0.95,
+        "measured_value": 97.5,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "%",
+        "target_unit": "%",
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
+      },
+      "expected": {
+        "classification": "objective_target_missed",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_TARGET_MISSED"
+      }
+    },
+    {
+      "id": "objective-coverage-insufficient",
+      "purpose": "A target cannot be declared met or missed when the evidence coverage falls below the declared minimum.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": true,
+        "objective_defined": true,
+        "measurement_valid": true,
+        "minimum_coverage_ratio": 0.95,
+        "measured_value": 100,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "%",
+        "target_unit": "%",
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          3600
+        ]
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_COVERAGE_INSUFFICIENT"
+      }
+    },
+    {
+      "id": "objective-window-incomplete",
+      "purpose": "A partial observation window does not support a full-period objective claim.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": true,
+        "objective_defined": true,
+        "measurement_valid": true,
+        "minimum_coverage_ratio": 0.95,
+        "measured_value": 100,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "%",
+        "target_unit": "%",
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300
+        ]
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_WINDOW_INCOMPLETE"
+      }
+    },
+    {
+      "id": "objective-measurement-invalid",
+      "purpose": "Malformed, physically implausible, or invalidly sourced measurements prevent outcome classification.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": true,
+        "objective_defined": true,
+        "measurement_valid": false,
+        "minimum_coverage_ratio": 0.95,
+        "measured_value": 100,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "%",
+        "target_unit": "%",
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_MEASUREMENT_INVALID"
+      }
+    },
+    {
+      "id": "objective-unit-mismatch",
+      "purpose": "Incompatible metric units must not be compared by treating their numeric values as equivalent.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": true,
+        "objective_defined": true,
+        "measurement_valid": true,
+        "minimum_coverage_ratio": 0.95,
+        "measured_value": 100,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "kWh",
+        "target_unit": "%",
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_UNITS_INCOMPATIBLE"
+      }
+    },
+    {
+      "id": "objective-independent-measurement-missing",
+      "purpose": "One source cannot independently corroborate its own goal-attainment claim.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": true,
+        "objective_defined": true,
+        "measurement_valid": true,
+        "minimum_coverage_ratio": 0.95,
+        "measured_value": 100,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "%",
+        "target_unit": "%",
+        "independent_measurement_present": false,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_INDEPENDENT_MEASUREMENT_MISSING"
+      }
+    },
+    {
+      "id": "objective-scope-mismatch",
+      "purpose": "Measurements from the wrong site, service, tenant, or time scope cannot satisfy the requested objective.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": false,
+        "objective_defined": true,
+        "measurement_valid": true,
+        "minimum_coverage_ratio": 0.95,
+        "measured_value": 100,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "%",
+        "target_unit": "%",
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_SCOPE_MISMATCH"
+      }
+    },
+    {
+      "id": "objective-definition-missing",
+      "purpose": "The system cannot evaluate an operational goal whose target or scope has not been declared.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": true,
+        "objective_defined": false,
+        "measurement_valid": true,
+        "minimum_coverage_ratio": 0.95,
+        "measured_value": 100,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "%",
+        "target_unit": "%",
+        "independent_measurement_present": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1200,
+          1500,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ]
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_UNDEFINED"
+      }
+    },
+    {
+      "id": "objective-sampling-gap-too-long",
+      "purpose": "A nominally adequate sample count cannot satisfy an objective when observed telemetry has a gap beyond the declared maximum.",
+      "domain": "outcome_objective",
+      "facts": {
+        "objective_scope_matches": true,
+        "objective_defined": true,
+        "observation_window_start_epoch_seconds": 1792022400,
+        "observation_window_end_epoch_seconds": 1792026000,
+        "expected_interval_seconds": 300,
+        "maximum_allowed_gap_seconds": 600,
+        "valid_sample_offsets_seconds": [
+          0,
+          300,
+          600,
+          900,
+          1800,
+          2100,
+          2400,
+          2700,
+          3000,
+          3300,
+          3600
+        ],
+        "measurement_valid": true,
+        "minimum_coverage_ratio": 0.8,
+        "measured_value": 99.95,
+        "target_value": 99.9,
+        "comparator": "gte",
+        "measured_unit": "%",
+        "target_unit": "%",
+        "independent_measurement_present": true
+      },
+      "expected": {
+        "classification": "indeterminate",
+        "automatic_mutation_allowed": false,
+        "must_preserve_provenance": true,
+        "reason_code": "OBJECTIVE_GAP_TOO_LONG"
+      }
+    }
+  ]
+}
