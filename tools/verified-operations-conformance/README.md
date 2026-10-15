@@ -13,7 +13,7 @@ cargo run --manifest-path tools/verified-operations-conformance/Cargo.toml -- \
   profiles/verified-operations/synthetic-pilot-v1.json
 ```
 
-The runner checks the Draft 2020-12 schema, validates the 28-case corpus, enforces unique scenario IDs and fail-closed metadata invariants, and independently recomputes expected classifications and reason codes. It now covers outcome objectives with scope, window completeness, measurement validity, sample-derived coverage, window-boundary completeness, cadence alignment, duplicate and out-of-range sample rejection, maximum-gap enforcement, compatible units, independent-measurement presence and numeric target comparison. It enables format assertions and refuses external schema reference retrieval.
+The runner checks the Draft 2020-12 schema, validates the 28-case corpus, enforces unique scenario IDs and fail-closed metadata invariants, and independently recomputes expected classifications and reason codes. The test file currently contains 22 distinct Rust test functions. Outcome coverage is computed from the declared UTC epoch window, sampling interval and valid sample offsets—not a caller-supplied ratio. The runner checks boundary completeness, cadence alignment, duplicate/out-of-range offsets, calculated sample denominator, minimum derived coverage, maximum-gap enforcement, compatible units, independent-measurement presence and numeric target comparison. It enables format assertions and refuses external schema reference retrieval.
 
 ## Claim limits
 
