@@ -146,7 +146,11 @@ pub fn run(
         "validator_version": env!("CARGO_PKG_VERSION"),
         "platform": {
             "os": std::env::consts::OS,
-            "architecture": std::env::consts::ARCH
+            "architecture": std::env::consts::ARCH,
+            "build_profile": if cfg!(debug_assertions) { "debug" } else { "release" },
+            "rustc_version": option_env!("RUSTC_VERSION").unwrap_or("not_recorded"),
+            "host_label": environment_label("OMSI_BENCHMARK_HOST_LABEL"),
+            "cpu_label": environment_label("OMSI_BENCHMARK_CPU_LABEL")
         },
         "corpus": {
             "format": vector_document.get("format").and_then(Value::as_str).unwrap_or("unknown"),
@@ -173,6 +177,13 @@ pub fn run(
             "This harness does not measure Holochain DHT latency, source-adapter latency, signature verification, factory telemetry throughput, or product-release workflows."
         ]
     }))
+}
+
+fn environment_label(name: &str) -> String {
+    std::env::var(name)
+        .ok()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| "not_recorded".to_owned())
 }
 
 fn elapsed_nanos(started: Instant) -> u64 {
