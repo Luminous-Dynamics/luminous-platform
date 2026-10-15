@@ -31,6 +31,14 @@ def build(data=b"captured bytes", **overrides):
 
 
 class CaptureManifestTests(unittest.TestCase):
+    def test_schema_rejects_non_https_capture_urls(self):
+        for field in ("canonical_url", "final_url"):
+            manifest = build()
+            manifest[field] = "http://example.gov/source"
+            with self.subTest(field=field):
+                with self.assertRaises(ValidationError):
+                    Draft202012Validator(SCHEMA, format_checker=FormatChecker()).validate(manifest)
+
     def test_schema_rejects_unchanged_state_without_a_baseline(self):
         manifest = build()
         manifest["comparison"]["state"] = "unchanged"
