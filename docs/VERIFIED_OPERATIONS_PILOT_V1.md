@@ -67,7 +67,7 @@ References (checked 2026-10-15):
 
 ## Explicit nonclaims
 
-The corpus is authored, not CI-qualified here. No production adapter, live device, backup restore, customer environment, security certification, savings, downtime reduction or paid demand is claimed. The Rust-first schema and semantic conformance runner is now included in this PR at `tools/verified-operations-conformance/`, with an exact-path GitHub Actions workflow and 19 authored test functions. The corpus now contains 27 scenarios, including outcome-objective cases with explicit target comparators, measurement coverage, units, scope, window completeness and independent-measurement presence. Structural checks align all 27 expected decisions with the evaluator. Before maturity promotion, require the workflow to pass on the exact PR head and add a committed Cargo.lock so transitive dependency resolution is reproducible. Do not relax negative controls to obtain a pass.
+The corpus is authored, not CI-qualified here. No production adapter, live device, backup restore, customer environment, security certification, savings, downtime reduction or paid demand is claimed. The Rust-first schema and semantic conformance runner is now included in this PR at `tools/verified-operations-conformance/`, with an exact-path GitHub Actions workflow and 25 authored test functions. The corpus now contains 28 scenarios, including outcome-objective cases with explicit target comparators, UTC epoch window bounds, expected sampling cadence, valid sample offsets, minimum derived coverage, maximum permitted gaps, units, scope and independent-measurement presence. Structural checks align all 28 expected decisions with the evaluator. Before maturity promotion, require the workflow to pass on the exact PR head and add a committed Cargo.lock so transitive dependency resolution is reproducible. Do not relax negative controls to obtain a pass.
 
 
 ## Measurement integrity research update
@@ -82,3 +82,8 @@ NIST SP 1339, published 17 June 2026, says OT backup management involves regular
 - [NIST SP 1339 — OT Backup Quick Start Guide](https://csrc.nist.gov/pubs/sp/1339/final)
 
 These sources inform the test contract; they do not qualify a real adapter or customer environment.
+
+
+### Evidence-derived coverage and timestamp integrity
+
+The current synthetic evaluator uses a declared UTC Unix-epoch start/end, a cadence in seconds, and valid sample offsets relative to the start. It rejects negative or reversed windows, cadence misalignment, duplicate/out-of-range sample offsets, missing boundary observations, below-threshold derived coverage, and gaps larger than the profile limit. These fields are a deterministic conformance abstraction: production must bind every sample to actual source identity, source timestamp, receive timestamp, source revision, unit and validation result. Offsets alone cannot prove that a measurement was genuine, current or independently observed.
