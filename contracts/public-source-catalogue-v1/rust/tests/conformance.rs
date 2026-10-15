@@ -29,7 +29,7 @@ fn encoded(value: &Value) -> String {
 fn canonical_source_catalogue_fixture_is_accepted() {
     let catalogue = validate_catalogue_json(CATALOGUE).expect("catalogue should validate");
     assert_eq!(catalogue.schema_version, "public-source-catalogue-v1");
-    assert_eq!(catalogue.sources.len(), 11);
+    assert_eq!(catalogue.sources.len(), 13);
     assert!(catalogue
         .sources
         .iter()
@@ -47,6 +47,8 @@ fn canonical_source_catalogue_fixture_is_accepted() {
         "za-gp-jhb-food-resilience-policy",
         "za-gov-jhb-power-water-coordination",
         "za-gp-jhb-city-project-updates",
+        "za-gp-jhb-johannesburg-water-emergency-notices",
+        "za-gov-water-sanitation-compulsory-standards",
     ] {
         assert!(
             catalogue
@@ -56,6 +58,36 @@ fn canonical_source_catalogue_fixture_is_accepted() {
             "missing catalogued source {expected_id}"
         );
     }
+}
+
+#[test]
+fn water_clock_semantics_and_national_standards_limits_are_preserved() {
+    let catalogue = validate_catalogue_json(CATALOGUE).expect("catalogue should validate");
+    let emergency = catalogue
+        .sources
+        .iter()
+        .find(|source| source.source_id == "za-gp-jhb-johannesburg-water-emergency-notices")
+        .expect("daily water notices must be catalogued");
+    assert!(emergency.known_limitations.iter().any(|limitation| {
+        limitation.contains("clock start/stop rule")
+    }));
+    assert!(emergency.known_limitations.iter().any(|limitation| {
+        limitation.contains("do not infer a contradiction")
+    }));
+    assert!(!emergency.ingestion.enabled);
+
+    let standards = catalogue
+        .sources
+        .iter()
+        .find(|source| source.source_id == "za-gov-water-sanitation-compulsory-standards")
+        .expect("official national standards landing page must be catalogued");
+    assert!(standards.known_limitations.iter().any(|limitation| {
+        limitation.contains("current legal status")
+    }));
+    assert!(standards.known_limitations.iter().any(|limitation| {
+        limitation.contains("qualified human/legal review")
+    }));
+    assert!(!standards.ingestion.enabled);
 }
 
 #[test]

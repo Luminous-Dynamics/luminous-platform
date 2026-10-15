@@ -50,3 +50,9 @@ Run from the repository root:
     cargo run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- observation contracts/public-source-catalogue-v1/examples/johannesburg-power-water-statement-v1.synthetic.json
 
 These commands describe the intended workflow. They have not yet been reported as executed on an exact GitHub commit in this PR. The Rust implementation is a strict domain validator, not a general JSON Schema Draft 2020-12 implementation.
+
+## Water-service clock semantics and national standards
+
+The catalogue now keeps the Johannesburg Water `Services` page separate from its `Daily water Notices` / emergencies page, and separately lists the Government of South Africa landing page for the revised compulsory national Water and Sanitation Services Standards notice. The public pages use different wording (including response targets and category turnaround times). Treat those as distinct source claims until an owner-approved metric definition establishes clock start, stop, exclusions and applicability; do not silently collapse them into a universal SLA.
+
+The national standards entry is metadata-only. Its landing page links a Gazette PDF, but the catalogue does not claim to have qualified the instrument's current legal status, effective dates, applicable provisions or local service mapping. Ingestion remains disabled for every source.

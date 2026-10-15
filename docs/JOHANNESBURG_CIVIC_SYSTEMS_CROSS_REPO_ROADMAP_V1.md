@@ -336,3 +336,12 @@ Stop or remain in the current phase if source terms, authority, freshness, refer
 - MyMzansi data exchange initiative: https://www.mymzansi.gov.za/roadmap/initiative-2
 
 **Qualification caveat:** the GitHub workflow snapshot above is reproduced for coordination, not as a permanent source of truth. Before merging or reusing any component, inspect the current PR head and checks and record the exact revision and completed job outcomes.
+
+
+## Evidence-semantics addendum — 15 October 2026
+
+A current review of Johannesburg Water's public pages found that the `Services` page describes response targets (for example, endeavouring to respond within 12 hours for unplanned emergencies), while the `Daily water Notices` / emergencies page lists category turnaround times (including 12 hours for water outages and 48 hours for water leaks / major burst pipes). These wordings are not automatically contradictory: a response clock and a repair/restoration clock may measure different stages. The initial evidence pack must retain each exact label and source, and must not merge them into one SLA without a versioned definition of clock start, clock stop, exclusions, coverage, and applicable service class. Sources: https://www.johannesburgwater.co.za/services/ and https://www.johannesburgwater.co.za/emergencies/.
+
+The public source catalogue now separately indexes the Government of South Africa landing page for the revised compulsory national Water and Sanitation Services Standards notice: https://www.gov.za/documents/notices/water-services-act-compulsory-national-water-and-sanitation-services-standards. The landing page links a Gazette PDF; this addendum does **not** claim that the underlying instrument's current legal status, effective dates, exact provisions or applicability have been reviewed. It is a source-discovery pointer pending qualified human/legal review. All catalogue entries remain metadata-only with ingestion disabled.
+
+This update strengthens evidence semantics but does not establish actual Johannesburg service performance, a new municipal SLA, access to case-level data, or qualification of the civic evaluation pack. Exact-head CI remains the qualification gate.
