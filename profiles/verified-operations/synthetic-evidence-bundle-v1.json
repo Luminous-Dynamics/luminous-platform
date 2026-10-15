@@ -1,0 +1,118 @@
+{
+  "contract_version": "1.0.0",
+  "bundle_id": "bundle:synthetic-energy-001",
+  "mode": "synthetic",
+  "evaluated_at": "2026-10-15T20:00:06Z",
+  "scope": {
+    "scope_id": "synthetic-home-01",
+    "scope_type": "site",
+    "window_start": "2026-10-15T19:00:00Z",
+    "window_end": "2026-10-15T20:00:00Z"
+  },
+  "decision": {
+    "classification": "objective_met_within_observed_scope",
+    "reason_code": "OBJECTIVE_TARGET_MET",
+    "objective": {
+      "objective_id": "hourly-energy-cap",
+      "metric_name": "energy.delta_window",
+      "comparator": "lte",
+      "target_value_decimal": "8.0",
+      "target_unit": "kWh"
+    },
+    "evidence_refs": ["meter-start", "meter-end", "window-delta"],
+    "automatic_mutation_allowed": false,
+    "must_preserve_provenance": true
+  },
+  "evidence": [
+    {
+      "evidence_id": "meter-start",
+      "kind": "telemetry_sample",
+      "source": {
+        "source_id": "synthetic:home-assistant:meter-01",
+        "source_type": "home_energy_meter",
+        "adapter_id": "synthetic-home-assistant",
+        "adapter_version": "0.0.0-synthetic",
+        "source_revision": "fixture:meter-01:v1",
+        "source_event_id": "synthetic-event-start"
+      },
+      "timestamps": {
+        "event_time": "2026-10-15T19:00:00Z",
+        "received_at": "2026-10-15T19:00:02Z",
+        "clock_status": "source_reported"
+      },
+      "payload": {
+        "media_type": "application/json",
+        "raw_utf8": "{\"entity_id\":\"sensor.demo_energy\",\"state\":\"100.0\",\"unit_of_measurement\":\"kWh\"}",
+        "sha256_of_raw_utf8": "5d137f8e6ef3f74a80a3c5c23ad7fad41ac343cd997d1f3991696e5813d04ae5"
+      },
+      "measurement": {
+        "metric_name": "energy.total",
+        "value_decimal": "100.0",
+        "unit": "kWh",
+        "validity": "valid",
+        "normalized_sha256": "84b67b1e08f0289b7247648996218e8c6d8b8fef1da4d6593d3a7a630b793f2d"
+      },
+      "derived_from": []
+    },
+    {
+      "evidence_id": "meter-end",
+      "kind": "telemetry_sample",
+      "source": {
+        "source_id": "synthetic:home-assistant:meter-01",
+        "source_type": "home_energy_meter",
+        "adapter_id": "synthetic-home-assistant",
+        "adapter_version": "0.0.0-synthetic",
+        "source_revision": "fixture:meter-01:v1",
+        "source_event_id": "synthetic-event-end"
+      },
+      "timestamps": {
+        "event_time": "2026-10-15T20:00:00Z",
+        "received_at": "2026-10-15T20:00:02Z",
+        "clock_status": "source_reported"
+      },
+      "payload": {
+        "media_type": "application/json",
+        "raw_utf8": "{\"entity_id\":\"sensor.demo_energy\",\"state\":\"107.0\",\"unit_of_measurement\":\"kWh\"}",
+        "sha256_of_raw_utf8": "ee27a6899e894c0d1ea50e1139df37ce0848e3a48a45dc97a0d02c881a9b023b"
+      },
+      "measurement": {
+        "metric_name": "energy.total",
+        "value_decimal": "107.0",
+        "unit": "kWh",
+        "validity": "valid",
+        "normalized_sha256": "e93221baaf626aad764f0d2875e50f3961f3619ff7c3405fceedb6efb5aac95c"
+      },
+      "derived_from": []
+    },
+    {
+      "evidence_id": "window-delta",
+      "kind": "derived_measurement",
+      "source": {
+        "source_id": "luminous:synthetic-evaluator",
+        "source_type": "derived_calculation",
+        "adapter_id": "objective-energy-evaluator",
+        "adapter_version": "1.0.0",
+        "source_revision": "synthetic-evaluator:v1",
+        "source_event_id": "synthetic-derived-window-delta"
+      },
+      "timestamps": {
+        "event_time": null,
+        "received_at": "2026-10-15T20:00:05Z",
+        "clock_status": "collector_assigned"
+      },
+      "payload": {
+        "media_type": "application/json",
+        "raw_utf8": "{\"operation\":\"subtract\",\"start_evidence_id\":\"meter-start\",\"end_evidence_id\":\"meter-end\",\"derived_from\":[\"meter-start\",\"meter-end\"],\"metric_name\":\"energy.delta_window\",\"value_decimal\":\"7.0\",\"unit\":\"kWh\",\"validity\":\"valid\"}",
+        "sha256_of_raw_utf8": "648a22ec72a1ed017962ffc1954951dbf5c9a55057734a453f94aa82325ebc81"
+      },
+      "measurement": {
+        "metric_name": "energy.delta_window",
+        "value_decimal": "7.0",
+        "unit": "kWh",
+        "validity": "valid",
+        "normalized_sha256": "61def2e5a025b456b20e434d5f3c3c38584663035cbc5dc18d6327c97057a0fb"
+      },
+      "derived_from": ["meter-start", "meter-end"]
+    }
+  ]
+}

@@ -45,8 +45,16 @@ jobs:
           profiles/verified-operations/pilot-v1.schema.json
           profiles/verified-operations/synthetic-pilot-v1.json
 
-      - name: Emit exact-head and corpus digests
+      - name: Run portable evidence bundle conformance
+        run: >-
+          cargo run --manifest-path tools/verified-operations-conformance/Cargo.toml --
+          profiles/verified-operations/evidence-bundle-v1.schema.json
+          profiles/verified-operations/synthetic-evidence-bundle-v1.json
+
+      - name: Emit exact-head and contract digests
         run: |
           echo "Source head: $SOURCE_HEAD_SHA"
           sha256sum profiles/verified-operations/pilot-v1.schema.json
           sha256sum profiles/verified-operations/synthetic-pilot-v1.json
+          sha256sum profiles/verified-operations/evidence-bundle-v1.schema.json
+          sha256sum profiles/verified-operations/synthetic-evidence-bundle-v1.json

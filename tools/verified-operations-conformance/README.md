@@ -13,7 +13,17 @@ cargo run --manifest-path tools/verified-operations-conformance/Cargo.toml -- \
   profiles/verified-operations/synthetic-pilot-v1.json
 ```
 
-The runner checks the Draft 2020-12 schema, validates the 28-case corpus, enforces unique scenario IDs and fail-closed metadata invariants, and independently recomputes expected classifications and reason codes. The test file currently contains 22 distinct Rust test functions. Outcome coverage is computed from the declared UTC epoch window, sampling interval and valid sample offsets—not a caller-supplied ratio. The runner checks boundary completeness, cadence alignment, duplicate/out-of-range offsets, calculated sample denominator, minimum derived coverage, maximum-gap enforcement, compatible units, independent-measurement presence and numeric target comparison. It enables format assertions and refuses external schema reference retrieval.
+The runner checks the Draft 2020-12 scenario schema and all 28 synthetic decision cases. The same Rust crate also validates a portable evidence bundle: SHA-256 over exact UTF-8 source payloads; a versioned digest over normalized measurement fields; unique evidence IDs and source-event identities; resolved forward-only lineage; exact-decimal subtraction for the supported derived-measurement fixture; resolved decision references; matching measurement units; and decision/classification consistency. Outcome coverage still derives from the declared UTC window and sample offsets rather than caller assertions. The test file now contains 27 distinct Rust test functions. Format assertions are enabled and external schema retrieval is disabled.
+
+## Portable evidence receipt
+
+Run this command to validate the evidence-bundle fixture as well as the scenario corpus:
+
+    cargo run --manifest-path tools/verified-operations-conformance/Cargo.toml -- profiles/verified-operations/evidence-bundle-v1.schema.json profiles/verified-operations/synthetic-evidence-bundle-v1.json
+
+The bundle links an objective decision to source records and a derived measurement. The normalized SHA-256 digest uses the exact UTF-8 framing `luminous-operations-measurement-v1\nmetric_name\nvalue_decimal\nunit\nvalidity`; decimal values are strings so JSON-number reformatting cannot change this digest. Raw payload and normalized-field digests detect content mismatch. The conformance slice accepts `subtract` as the only derived-measurement operation and checks arithmetic with exact decimal scaling; it is deliberately narrow rather than a general expression engine.
+
+Digest checks do **not** authenticate the source, adapter, collector, time source or author. An attacker able to replace both content and its unsigned digest can forge a self-consistent bundle. Production qualification still needs authenticated source identities, signature or challenge-verification policy, key revocation, clock-quality bounds, adapter-specific raw-to-normalized conformance, secure retention/redaction and a reproducible lockfile. The fixture carries no secrets and executes no action.
 
 ## Claim limits
 
