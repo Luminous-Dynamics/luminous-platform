@@ -515,15 +515,27 @@ mod tests {
     #[test]
     fn timeout_budgets_are_positive_bounded_and_attached_to_policy() {
         assert_eq!(
-            FetchTimeouts::new(Duration::ZERO, Duration::from_secs(1), Duration::from_secs(5)),
+            FetchTimeouts::new(
+                Duration::ZERO,
+                Duration::from_secs(1),
+                Duration::from_secs(5)
+            ),
             Err(PolicyError::ZeroTimeout)
         );
         assert_eq!(
-            FetchTimeouts::new(Duration::from_secs(6), Duration::from_secs(1), Duration::from_secs(5)),
+            FetchTimeouts::new(
+                Duration::from_secs(6),
+                Duration::from_secs(1),
+                Duration::from_secs(5)
+            ),
             Err(PolicyError::TimeoutExceedsTotal { phase: "connect" })
         );
         assert_eq!(
-            FetchTimeouts::new(Duration::from_secs(1), Duration::from_secs(6), Duration::from_secs(5)),
+            FetchTimeouts::new(
+                Duration::from_secs(1),
+                Duration::from_secs(6),
+                Duration::from_secs(5)
+            ),
             Err(PolicyError::TimeoutExceedsTotal { phase: "read_idle" })
         );
 
