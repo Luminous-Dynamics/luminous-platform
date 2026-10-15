@@ -448,7 +448,7 @@ impl FetchPolicy {
             [value] => *value,
             _ => return Err(PolicyError::AmbiguousContentLength),
         };
-        let value = value.trim_matches(|character| character == ' ' || character == '\\t');
+        let value = value.trim_matches(|character| character == ' ' || character == '\t');
         if value.is_empty() || !value.bytes().all(|byte| byte.is_ascii_digit()) {
             return Err(PolicyError::InvalidContentLength);
         }
@@ -1096,7 +1096,7 @@ mod tests {
         let p = policy();
         assert_eq!(p.validate_content_length_headers(&[]), Ok(None));
         assert_eq!(p.validate_content_length_headers(&["0"]), Ok(Some(0)));
-        assert_eq!(p.validate_content_length_headers(&[" 1024\\t"]), Ok(Some(1024)));
+        assert_eq!(p.validate_content_length_headers(&[" 1024\t"]), Ok(Some(1024)));
         assert_eq!(
             p.validate_content_length_headers(&["1025"]),
             Err(PolicyError::DeclaredLengthExceeded {
@@ -1108,7 +1108,7 @@ mod tests {
             p.validate_content_length_headers(&["1024", "1024"]),
             Err(PolicyError::AmbiguousContentLength)
         );
-        for value in ["", "+1", "-1", "1, 1", "18446744073709551616", "1\\r\\n2"] {
+        for value in ["", "+1", "-1", "1, 1", "18446744073709551616", "1\r\n2"] {
             assert_eq!(
                 p.validate_content_length_headers(&[value]),
                 Err(PolicyError::InvalidContentLength),
