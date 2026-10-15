@@ -16,8 +16,9 @@ HTTP client or a complete SSRF defense.
 - Actual socket-peer IP membership and exact origin-port matching.
 - Rejection of ambiguous legacy IPv4 hostname spellings (including shortened,
   octal, and hexadecimal forms that URL parsers can interpret differently).
-- Redirect target authorization on every hop, a configurable hop cap, and no
-  credential forwarding when the normalized origin changes.
+- A private-state, non-cloneable redirect-chain tracker that counts every
+  authorized hop, rejects caller-supplied counters, and becomes terminal after
+  a denied hop; no credential forwarding occurs when the origin changes.
 - Declared content-length and streamed-byte limits, plus a policy-bound cumulative byte meter that becomes terminal after a limit breach or counter overflow.
 - Required positive connect, read-idle, and whole-fetch time budgets, with phase timeouts constrained by the total budget.
 
@@ -34,8 +35,12 @@ The transport that eventually uses this library must:
    actual socket peer IP and port to verify_connected_peer. Preserve the
    original hostname for TLS SNI, certificate verification, and HTTP Host. Do
    not make an unchecked second DNS lookup.
-3. Re-run destination authorization for every redirect, retry, fallback
-   address, and reconnect. Disable redirects by default unless each hop is
+3. Start a `RedirectChain` at the authorized origin and call
+   `authorize_redirect_hop` for each response redirect. Keep the same mutable
+   chain for the entire fetch; it owns the hop counter and is not cloneable.
+   A denied redirect poisons the chain, so the HTTP transaction must abort.
+   Re-run destination authorization for every retry, fallback address, and
+   reconnect as well. Disable redirects by default unless each hop is
    explicitly authorized. Do not inherit ambient proxy settings.
 4. Enforce the connect and read-idle timeouts on the actual transport, plus one
    absolute total-fetch deadline spanning all redirects and retries. Do not
@@ -85,6 +90,6 @@ No third-party crates are used.
     cargo fmt --check --manifest-path tools/artifact-fetch-policy/Cargo.toml
     cargo test --locked --offline --manifest-path tools/artifact-fetch-policy/Cargo.toml
 
-The suite now contains 14 deterministic unit tests. Passing them proves only
+The suite now contains 15 deterministic unit tests. Passing them proves only
 that this library's policy checks behave as tested. It does not qualify any
 actual transport or artifact download.
