@@ -70,7 +70,10 @@ pub fn validate_corpus(schema: &Value, corpus: &Value) -> Result<usize, Vec<Stri
             errors.push(format!("scenarios[{index}] duplicates scenario id {label}"));
         }
 
-        let expected = scenario.get("expected").unwrap_or(&Value::Null);
+        let Some(expected) = scenario.get("expected") else {
+            errors.push(format!("scenario {label} is missing expected outcomes"));
+            continue;
+        };
         if expected
             .get("automatic_mutation_allowed")
             .and_then(Value::as_bool)
