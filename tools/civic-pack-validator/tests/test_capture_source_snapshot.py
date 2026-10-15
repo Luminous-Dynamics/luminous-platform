@@ -169,6 +169,16 @@ class CaptureManifestTests(unittest.TestCase):
         with self.assertRaises(CaptureManifestError):
             build(previous_manifest={**first, "source_id": "other.source"}, captured_at="2026-10-15T18:00:00Z")
 
+    def test_unhashable_previous_change_signal_is_rejected_cleanly(self):
+        first = build()
+        malformed = json.loads(json.dumps(first))
+        malformed["comparison"]["change_signals"] = [{"unexpected": "object"}]
+        with self.assertRaises(CaptureManifestError):
+            build(
+                previous_manifest=malformed,
+                captured_at="2026-10-15T18:00:00Z",
+            )
+
     def test_inconsistent_previous_comparison_is_rejected(self):
         first = build(b"original")
         tampered = json.loads(json.dumps(first))
