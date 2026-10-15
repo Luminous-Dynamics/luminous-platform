@@ -90,16 +90,18 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
         _fail("ERPNext non-completed log cannot have a completion date")
     if docstatus == 1 and status not in {"Completed", "Cancelled"}:
         _fail("ERPNext submitted log must be Completed or Cancelled")
-    if docstatus == 2 and status != "Cancelled":
-        _fail("ERPNext cancelled document must have Cancelled maintenance status")
-    if docstatus == 0 and status == "Cancelled":
-        _fail("ERPNext Cancelled log must have cancelled document status")
     if completion and completion > site_today:
         _fail("ERPNext completion date is in the future")
     if last_completion and last_completion > site_today:
         _fail("ERPNext task last-completion date is in the future")
 
     conflicts: set[str] = set()
+    # Frappe document state and the custom maintenance status are separate.
+    # Preserve their disagreement instead of assuming undocumented coupling.
+    if docstatus == 2 and status != "Cancelled":
+        conflicts.add("document_cancelled_but_maintenance_status_not_cancelled")
+    if status == "Cancelled" and docstatus != 2:
+        conflicts.add("maintenance_status_cancelled_but_document_not_cancelled")
     losses: set[str] = {
         "professional_credential_status_not_provided_by_source",
         "independent_verification_not_provided_by_source",
@@ -130,7 +132,7 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
             "company_id": plan["company_id"], "exported_at": snapshot["exported_at"],
         },
         "maintenance": {
-            "source_status": status, "source_docstatus": docstatus, "normalized_status": STATUS_MAP[status],
+            "source_status": status, "source_docstatus": docstatus, "normalized_status": "cancelled" if docstatus == 2 or status == "Cancelled" else STATUS_MAP[status],
             "plan_ref": _ref(source["instance_namespace"], "Asset Maintenance", plan["name"]),
             "task_ref": _ref(source["instance_namespace"], "Asset Maintenance Task", task["name"]),
             "asset_ref": _ref(source["instance_namespace"], "Asset", plan["asset_name"]),
