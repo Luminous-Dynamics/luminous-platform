@@ -42,6 +42,7 @@ References (checked 2026-10-15):
 7. A command dispatch, timeout, or executor assertion alone is not proof of effect. The system must represent unknown and partial outcomes distinctly and reconcile state before retrying uncertain non-idempotent operations.
 8. An independently verified result is a necessary contract condition in these fixtures, not a claim that the verifier implementation or underlying source evidence is trustworthy by itself.
 9. The actual product must bind observations to tenant/site, target identity, source identity and revision, source event time, receive time, declared freshness bound, collection method, and verifier version. The fixture schema stays intentionally compact; it is not the canonical observation schema and must not compete with the existing typed observation/effect-receipt work.
+11. Outcome-objective coverage is derived from the declared UTC Unix-epoch window, expected sample interval and valid sample offsets. Require boundary samples, cadence-aligned and unique in-range offsets, a minimum derived coverage ratio and a maximum permissible inter-sample gap. Never trust a caller-supplied `coverage_ratio` or `window_complete` flag; the strict schema rejects these fields. These sample offsets are synthetic coverage inputs only, not raw production telemetry or proof that values were independently observed.
 10. This profile must compose with the existing Work Case, Operations Event, typed observation evidence, recovery lifecycle and idempotency contracts rather than define parallel implementations.
 
 ## Required conformance checks
@@ -67,3 +68,17 @@ References (checked 2026-10-15):
 ## Explicit nonclaims
 
 The corpus is authored, not CI-qualified here. No production adapter, live device, backup restore, customer environment, security certification, savings, downtime reduction or paid demand is claimed. The Rust-first schema and semantic conformance runner is now included in this PR at `tools/verified-operations-conformance/`, with an exact-path GitHub Actions workflow and 19 authored test functions. The corpus now contains 27 scenarios, including outcome-objective cases with explicit target comparators, measurement coverage, units, scope, window completeness and independent-measurement presence. Structural checks align all 27 expected decisions with the evaluator. Before maturity promotion, require the workflow to pass on the exact PR head and add a committed Cargo.lock so transitive dependency resolution is reproducible. Do not relax negative controls to obtain a pass.
+
+
+## Measurement integrity research update
+
+Home Assistant's official documentation describes data-quality failure modes in long-term energy statistics: counter resets, incorrect unit behavior, negative values, and totals inflated by combining independently resetting sensors. This is a concrete reason to separate "a value was received" from "the value is suitable for a target comparison." The platform must preserve source/unit/history warnings and avoid silently adjusting or smoothing telemetry to manufacture a green result.
+
+- [Home Assistant long-term statistics](https://www.home-assistant.io/docs/configuration/long-term-statistics/)
+- [Home Assistant energy dashboard FAQ](https://www.home-assistant.io/docs/energy/faq/)
+
+NIST SP 1339, published 17 June 2026, says OT backup management involves regular creation, testing, and review during recovery exercises. Even outside OT, it reinforces the product rule that backup job status and demonstrated recovery are distinct evidence classes.
+
+- [NIST SP 1339 — OT Backup Quick Start Guide](https://csrc.nist.gov/pubs/sp/1339/final)
+
+These sources inform the test contract; they do not qualify a real adapter or customer environment.
