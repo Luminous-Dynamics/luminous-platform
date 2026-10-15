@@ -78,14 +78,17 @@ fixtures cover two different kinds of work:
 - a building-maintenance fixing/pull-test work order.
 
 The adversarial manifest in
-`fixtures/field-service-cases.json` includes exact operation-manifest digest substitution and cross-tenant references,
-unmatched approval scope, revoked/wrong-scope credentials, unit and
-calibration mismatches, a provider report mislabelled as verified, reused
-idempotency keys with a different manifest, offline execution after authority
-expiry, invalid correction links, undisclosed mapping losses, same-domain
-"independent" verification, broken closeout acknowledgment and unknown fields.
-Each negative mutation declares the diagnostic fragment it is expected to
-trigger; discovery fails if fewer than five focused tests run.
+`fixtures/field-service-cases.json` contains 26 negative cases: exact
+operation-manifest digest substitution, cross-tenant references, unmatched
+approval scope, revoked/wrong-scope credentials, unit mismatch, calibration
+validity/freshness/chronology failures, provider claims mislabeled as verified,
+reused idempotency keys under a different manifest, offline execution after
+authority expiry, invalid correction links, undisclosed mapping losses,
+same-domain "independence", broken or mismatched customer acknowledgment,
+unknown fields, unverified closeout, assigned-practitioner substitution,
+evidence-actor substitution and evidence dated after the fixed evaluation
+clock. Each mutation declares the diagnostic fragment it is expected to
+trigger; the runner discovers the focused suite and requires at least five tests.
 
 The profile keeps the source system's case ID/status alongside the normalized
 status and makes mapping losses explicit. Each operation is bound to tenant,
