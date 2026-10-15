@@ -111,6 +111,24 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
         with self.assertRaisesRegex(core.ConformanceError, "not a valid IANA timezone"):
             adapter.map_maintenance_log(s, b, NOW)
 
+    def test_mapping_context_records_binding_timezone_and_utc_evaluation_instant(self):
+        s, b = inputs()
+        b["site_timezone"] = "Pacific/Kiritimati"
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(out["mapping_context"], {
+            "adapter_id": "org.omsi.erpnext-maintenance-adapter/0.1",
+            "binding_id": "erpnext-binding-syn-01",
+            "site_timezone": "Pacific/Kiritimati",
+            "evaluated_at": "2026-10-15T12:00:00Z",
+        })
+
+    def test_same_inputs_and_evaluation_clock_produce_identical_projection(self):
+        s1, b1 = inputs()
+        s2, b2 = inputs()
+        out1 = adapter.map_maintenance_log(s1, b1, NOW)
+        out2 = adapter.map_maintenance_log(s2, b2, NOW)
+        self.assertEqual(core.canonical_bytes(out1), core.canonical_bytes(out2))
+
     def test_overdue_status_remains_overdue_not_blocked(self):
         s, b = inputs()
         s["log"].update(maintenance_status="Overdue", docstatus=0, completion_date=None)

@@ -7,6 +7,7 @@
     "schema",
     "id",
     "tenant_id",
+    "mapping_context",
     "source",
     "maintenance",
     "source_claims",
@@ -24,6 +25,33 @@
     "tenant_id": {
       "type": "string",
       "minLength": 1
+    },
+    "mapping_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter_id",
+        "binding_id",
+        "site_timezone",
+        "evaluated_at"
+      ],
+      "properties": {
+        "adapter_id": {
+          "const": "org.omsi.erpnext-maintenance-adapter/0.1"
+        },
+        "binding_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "site_timezone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evaluated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
     },
     "source": {
       "type": "object",

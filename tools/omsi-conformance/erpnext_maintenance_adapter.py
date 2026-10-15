@@ -1,6 +1,6 @@
 """Read-only ERPNext Asset Maintenance Log to OMSI intake projection."""
 from __future__ import annotations
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -134,6 +134,12 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
         "schema": "org.omsi.erpnext-maintenance-intake/0.1",
         "id": _ref(source["instance_namespace"], "Asset Maintenance Log", log["name"]),
         "tenant_id": binding["tenant_id"],
+        "mapping_context": {
+            "adapter_id": "org.omsi.erpnext-maintenance-adapter/0.1",
+            "binding_id": binding["binding_id"],
+            "site_timezone": binding["site_timezone"],
+            "evaluated_at": now.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
+        },
         "source": {
             "system": "ERPNext", "instance_namespace": source["instance_namespace"],
             "release_tag": source["release_tag"], "repository_commit": source["repository_commit"],
