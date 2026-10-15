@@ -79,15 +79,15 @@
         "granularity": "public_service_pages",
         "personal_data_expectation": "aggregate_no_personal_data_expected",
         "datasets_or_content": [
-          "Revised compulsory national Water and Sanitation Services Standards notice",
-          "Linked Gazette publication listed on the official Government of South Africa landing page"
+          "Revised compulsory national Water and Sanitation Services Standards notice under Water Services Act section 9(1)",
+          "Official linked Government Gazette No. 52814, Notice 6292, dated 6 June 2025 (43-page PDF)"
         ],
         "collection_policy": "Catalogue the landing page and exact linked instrument. Following human review, preserve instrument title and identifier, Gazette issue/date, provision reference, effective period, source digest and applicability-review record. Do not convert a national requirement directly into an incident-level SLA or claim that the requirement was met."
       },
       "known_limitations": [
-        "The landing page establishes that the notice and linked Gazette artifact are published, but does not alone resolve the current legal status or application to a particular operator or service class.",
+        "The linked Gazette PDF identifies Government Gazette No. 52814, Notice 6292, dated 6 June 2025. This identifies the published instrument but does not establish its current status, commencement/effective period, or applicability to a particular operator or service class.",
         "A standard or target is not an observation of service performance and does not prove resolution of an individual incident.",
-        "Exact text, effective date, current amendment status and applicability need qualified human/legal review before rules are derived from the instrument."
+        "Exact text, subsequent amendments or supersession, effective status and applicability need qualified human/legal review before rules are derived from the instrument."
       ],
       "ingestion": {
         "status": "catalogue_only",
@@ -289,14 +289,14 @@
     },
     {
       "source_id": "za-gp-jhb-johannesburg-water-emergency-notices",
-      "display_name": "Johannesburg Water daily notices and public turnaround times",
+      "display_name": "Johannesburg Water Daily Water Notices: daily status and category turnaround times",
       "jurisdiction": "ZA-GP-JHB",
       "publisher": {
         "name": "Johannesburg Water",
         "url": "https://www.johannesburgwater.co.za/"
       },
-      "source_url": "https://www.johannesburgwater.co.za/emergencies/",
-      "documentation_url": "https://www.johannesburgwater.co.za/emergencies/",
+      "source_url": "https://www.johannesburgwater.co.za/daily-water-notices/",
+      "documentation_url": "https://www.johannesburgwater.co.za/daily-water-notices/",
       "source_type": "public_service_information",
       "access": {
         "mode": "manual_publication_review",
@@ -305,7 +305,7 @@
         ],
         "transport_policy": "https_only",
         "transport_verification": "https_confirmed",
-        "pagination_note": "The page states daily water-supply status updates and lists category-specific turnaround times. Capture a dated page version if used; it is not a machine-readable incident feed."
+        "pagination_note": "The page labels the content 'Daily water supply system status updates', lists category-specific turnaround times, and links an archive of daily updates. The summary list has no visible publication/effective date; capture a dated page version before any downstream use. This is not a machine-readable incident feed."
       },
       "terms": {
         "policy_url": "https://www.johannesburgwater.co.za/",
@@ -317,16 +317,17 @@
         "granularity": "public_service_pages",
         "personal_data_expectation": "public_pages_may_include_contact_details",
         "datasets_or_content": [
-          "Daily public water-system status notices and notice archive",
-          "Published turnaround-time categories for sewer, water outage, leaking meter, burst meter, water leak and major burst pipe"
+          "Daily public water-system status notices and the linked daily-update archive",
+          "Category turnaround times observed on the catalogue review date 2026-10-15: sewer 48 hours; water outage 24 hours; leaking meter 72 hours; burst meter 24 hours; water leak 48 hours; major burst pipe 48 hours"
         ],
-        "collection_policy": "Manual review only. Preserve exact source URL, source publication time where stated, local capture time, category and the publisher's own clock wording. Keep acknowledgement, first response, restoration and repair-completion measures distinct unless the source explicitly defines equivalence. No resident-report import or dispatch."
+        "collection_policy": "Manual review only. Preserve exact source URL, page capture timestamp, any separately stated publication time, category, and the publisher's exact clock wording. Treat listed times as published turnaround targets whose clock start/stop meaning is not defined here. Keep acknowledgement, response, restoration and repair completion distinct unless the applicable source explicitly defines equivalence. No resident-report import or dispatch."
       },
       "known_limitations": [
-        "The page lists category-level turnaround times but does not by itself define a common clock start/stop rule for every category.",
+        "On the catalogue review date 2026-10-15, the page listed sewer: 48 hours; water outage: 24 hours; leaking meter: 72 hours; burst meter: 24 hours; water leak: 48 hours; major burst pipe: 48 hours. The summary list showed no visible publication/effective date; recapture and recheck it before treating the figures as current.",
+        "The page does not by itself define a common clock start/stop rule or exclusions for every category. Do not silently equate turnaround times with response or restoration clocks.",
+        "Johannesburg Water's separate Services page says it endeavours to respond within 12 hours to unplanned supply emergencies. That is a different published label; do not infer contradiction or equivalence without an explicit metric definition.",
         "Published time targets do not measure actual observed performance or prove that a particular fault was resolved.",
-        "The page and archive may be stale or incomplete; no machine-readable current incident feed is established.",
-        "Johannesburg Water's separate Services page uses response wording for unplanned emergencies; do not infer a contradiction with turnaround-time values without comparing the exact metric definitions."
+        "The page and archive may be stale or incomplete; no machine-readable current incident feed is established."
       ],
       "ingestion": {
         "status": "catalogue_only",

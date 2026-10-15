@@ -71,8 +71,20 @@ fn water_clock_semantics_and_national_standards_limits_are_preserved() {
     assert!(emergency.known_limitations.iter().any(|limitation| {
         limitation.contains("clock start/stop rule")
     }));
+    assert_eq!(
+        emergency.source_url,
+        "https://www.johannesburgwater.co.za/daily-water-notices/"
+    );
+    assert!(emergency.data_scope.datasets_or_content.iter().any(|content| {
+        content.contains("water outage 24 hours")
+            && content.contains("leaking meter 72 hours")
+            && content.contains("water leak 48 hours")
+    }));
     assert!(emergency.known_limitations.iter().any(|limitation| {
-        limitation.contains("do not infer a contradiction")
+        limitation.contains("summary list showed no visible publication/effective date")
+    }));
+    assert!(emergency.known_limitations.iter().any(|limitation| {
+        limitation.contains("do not infer contradiction or equivalence")
     }));
     assert!(!emergency.ingestion.enabled);
 
@@ -83,6 +95,9 @@ fn water_clock_semantics_and_national_standards_limits_are_preserved() {
         .expect("official national standards landing page must be catalogued");
     assert!(standards.known_limitations.iter().any(|limitation| {
         limitation.contains("current legal status")
+    }));
+    assert!(standards.known_limitations.iter().any(|limitation| {
+        limitation.contains("Government Gazette No. 52814, Notice 6292, dated 6 June 2025")
     }));
     assert!(standards.known_limitations.iter().any(|limitation| {
         limitation.contains("qualified human/legal review")
