@@ -26,7 +26,7 @@ The command uses the exact vector-document bytes for a corpus SHA-256 and serial
 - replay-envelope creation (including parsing, evaluation and digest);
 - replay-envelope verification (including digest, parsing and fresh evaluation).
 
-It emits a versioned JSON report with case IDs, corpus digest scope, OS/architecture, iteration and warm-up counts, sample count, min/p50/p95/p99/max/mean latency, observations per second and serialized-input throughput. The report explicitly states `performance_observation_only` and `measured_no_acceptance_claim`.
+It emits a versioned JSON report with case IDs, corpus digest scope, OS/architecture, iteration and warm-up counts, sample count, min/p50/p95/p99/max/mean latency, observations per second, serialized-input throughput, OS/architecture/build profile, optional host/CPU labels and a compiler version when `RUSTC_VERSION` is captured. The report explicitly states `performance_observation_only` and `measured_no_acceptance_claim`.
 
 ### Reproducibility contract
 
@@ -78,11 +78,12 @@ For an initial comparable baseline:
 
 1. Build release mode; record git commit SHA, `rustc --version`, Cargo lockfile digest, OS/kernel, CPU/model, memory, compiler flags and power profile.
 2. Use the same corpus-file digest, the same input-size distribution and at least 1,000 behaviorally distinct cases. Until corpus expansion is complete, label results **microbenchmark only**.
-3. Run one warm-up process followed by at least 10 measured repetitions; report p50/p95/p99 and variance across runs, not only a best-case run.
-4. Separate local evaluator timings from source-adapter I/O, Holochain DHT latency, credential status checks and any external service. Measure them separately, then measure an end-to-end synthetic receipt flow.
-5. Compare only equivalent semantic rule/profile versions. Treat different corpus digests or toolchain environments as different benchmark configurations.
-6. Do not fail shared hosted PR CI on wall-clock thresholds until a stable reference host and measurement procedure have been established. CI should first verify that the harness runs and emits structurally valid metrics.
-7. Do not optimize by skipping validation, treating unknown as accepted, removing negative controls or reducing evidence retention.
+3. Set `RUSTC_VERSION="$(rustc --version)"` and the optional anonymized `OMSI_BENCHMARK_HOST_LABEL` / `OMSI_BENCHMARK_CPU_LABEL` variables. The report must never silently infer a hostname or expose it by default.
+4. Run one warm-up process followed by at least 10 measured repetitions; report p50/p95/p99 and variance across runs, not only a best-case run.
+5. Separate local evaluator timings from source-adapter I/O, Holochain DHT latency, credential status checks and any external service. Measure them separately, then measure an end-to-end synthetic receipt flow.
+6. Compare only equivalent semantic rule/profile versions. Treat different corpus digests or toolchain environments as different benchmark configurations.
+7. Do not fail shared hosted PR CI on wall-clock thresholds until a stable reference host and measurement procedure have been established. CI should first verify that the harness runs and emits structurally valid metrics.
+8. Do not optimize by skipping validation, treating unknown as accepted, removing negative controls or reducing evidence retention.
 
 ## Mycelix integration benchmark additions
 
