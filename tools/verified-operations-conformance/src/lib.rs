@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use jsonschema::{draft202012, Validator};
 use serde_json::Value;
 use std::collections::HashSet;
@@ -20,6 +22,7 @@ fn validator_for(schema: &Value) -> Result<Validator, Vec<String>> {
     }
 
     draft202012::options()
+        .offline()
         .should_validate_formats(true)
         .build(schema)
         .map_err(|error| vec![format!("schema compilation failed: {error}")])
@@ -142,10 +145,11 @@ fn classify(scenario: &Value) -> Option<(&'static str, &'static str)> {
             if fact_bool(scenario, "observation_fresh") != Some(true) {
                 return Some(("indeterminate", "OBSERVATION_STALE"));
             }
-            if fact_bool(scenario, "sources_agree") == Some(false) {
-                return Some(("indeterminate", "OBSERVATION_CONFLICT"));
+            match fact_bool(scenario, "sources_agree") {
+                Some(true) => Some(("healthy_within_observed_scope", "OBSERVATION_SET_CURRENT")),
+                Some(false) => Some(("indeterminate", "OBSERVATION_CONFLICT")),
+                None => Some(("indeterminate", "OBSERVATION_AGREEMENT_UNKNOWN")),
             }
-            Some(("healthy_within_observed_scope", "OBSERVATION_SET_CURRENT"))
         }
         "backup_recovery" => {
             if fact_bool(scenario, "source_present") != Some(true) {
