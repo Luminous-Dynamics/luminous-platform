@@ -369,3 +369,102 @@ fn unsupported_contract_version_mode_and_extra_fields_are_rejected() {
     corpus["unrecognized"] = Value::Bool(true);
     assert!(validate_corpus(&schema, &corpus).is_err());
 }
+
+
+const EVIDENCE_SCHEMA: &str =
+    include_str!("../../../profiles/verified-operations/evidence-bundle-v1.schema.json");
+const EVIDENCE_BUNDLE: &str =
+    include_str!("../../../profiles/verified-operations/synthetic-evidence-bundle-v1.json");
+
+fn parsed_evidence_schema() -> Value {
+    serde_json::from_str(EVIDENCE_SCHEMA).expect("evidence bundle schema JSON must parse")
+}
+
+fn parsed_evidence_bundle() -> Value {
+    serde_json::from_str(EVIDENCE_BUNDLE).expect("synthetic evidence bundle JSON must parse")
+}
+
+#[test]
+fn evidence_bundle_schema_and_fixture_are_valid() {
+    let schema = parsed_evidence_schema();
+    let bundle = parsed_evidence_bundle();
+    validate_schema(&schema).expect("evidence bundle schema should compile as Draft 2020-12");
+    assert_eq!(
+        verified_operations_conformance::validate_evidence_bundle(&schema, &bundle),
+        Ok(3),
+        "all source payload digests, normalized measurement digests, lineage and decision semantics should agree"
+    );
+}
+
+#[test]
+fn evidence_bundle_rejects_payload_tampering() {
+    let schema = parsed_evidence_schema();
+    let mut bundle = parsed_evidence_bundle();
+    bundle["evidence"][0]["payload"]["raw_utf8"] =
+        Value::String("{\"entity_id\":\"sensor.demo_energy\",\"state\":\"999.0\",\"unit_of_measurement\":\"kWh\"}".into());
+
+    let errors = verified_operations_conformance::validate_evidence_bundle(&schema, &bundle)
+        .expect_err("changed bytes without a changed digest must fail");
+    assert!(
+        errors.iter().any(|error| error.contains("raw payload SHA-256 mismatch")),
+        "expected raw-payload digest failure, got {errors:#?}"
+    );
+}
+
+#[test]
+fn evidence_bundle_rejects_dangling_decision_refs_and_replayed_source_identity() {
+    let schema = parsed_evidence_schema();
+    let mut bundle = parsed_evidence_bundle();
+    bundle["decision"]["evidence_refs"][0] = Value::String("missing-evidence".into());
+    let errors = verified_operations_conformance::validate_evidence_bundle(&schema, &bundle)
+        .expect_err("decision evidence links must resolve");
+    assert!(
+        errors.iter().any(|error| error.contains("decision references unknown evidence")),
+        "expected unresolved decision evidence diagnostic, got {errors:#?}"
+    );
+
+    let mut bundle = parsed_evidence_bundle();
+    bundle["evidence"][1]["source"]["source_event_id"] =
+        Value::String("synthetic-event-start".into());
+    let errors = verified_operations_conformance::validate_evidence_bundle(&schema, &bundle)
+        .expect_err("a source event identity may not appear twice in a normalized receipt");
+    assert!(
+        errors.iter().any(|error| error.contains("repeated source event identity")),
+        "expected replay diagnostic, got {errors:#?}"
+    );
+}
+
+#[test]
+fn evidence_bundle_rejects_self_consistent_measurement_that_disagrees_with_inputs() {
+    let schema = parsed_evidence_schema();
+    let mut bundle = parsed_evidence_bundle();
+    bundle["evidence"][2]["measurement"]["value_decimal"] = Value::String("9.0".into());
+    bundle["evidence"][2]["measurement"]["normalized_sha256"] =
+        Value::String("3f345e27cf319b4971f613d1d90fdc7a0d7ab2dbcaf57b4a7d51e726404c61d7".into());
+    bundle["evidence"][2]["payload"]["raw_utf8"] = Value::String(
+        "{\"operation\":\"subtract\",\"start_evidence_id\":\"meter-start\",\"end_evidence_id\":\"meter-end\",\"derived_from\":[\"meter-start\",\"meter-end\"],\"metric_name\":\"energy.delta_window\",\"value_decimal\":\"9.0\",\"unit\":\"kWh\",\"validity\":\"valid\"}".into()
+    );
+    bundle["evidence"][2]["payload"]["sha256_of_raw_utf8"] =
+        Value::String("b5cdf1febf0d30ce5c704eb0dcee9b7488ca13230226d376e36dd0971931573b".into());
+
+    let errors = verified_operations_conformance::validate_evidence_bundle(&schema, &bundle)
+        .expect_err("9 kWh is inconsistent with source readings of 100 and 107 kWh");
+    assert!(
+        errors.iter().any(|error| error.contains("does not equal end minus start")),
+        "expected derived arithmetic diagnostic, got {errors:#?}"
+    );
+}
+
+#[test]
+fn evidence_bundle_rejects_a_validly_derived_measurement_that_misses_its_objective() {
+    let schema = parsed_evidence_schema();
+    let mut bundle = parsed_evidence_bundle();
+    bundle["decision"]["objective"]["target_value_decimal"] = Value::String("6.0".into());
+
+    let errors = verified_operations_conformance::validate_evidence_bundle(&schema, &bundle)
+        .expect_err("7.0 kWh must not meet a 6.0 kWh maximum");
+    assert!(
+        errors.iter().any(|error| error.contains("decision classification does not match")),
+        "expected false-green decision diagnostic, got {errors:#?}"
+    );
+}
