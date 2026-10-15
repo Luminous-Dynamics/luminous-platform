@@ -17,6 +17,7 @@ HTTP client or a complete SSRF defense.
 - Redirect target authorization on every hop, a configurable hop cap, and no
   credential forwarding when the normalized origin changes.
 - Declared content-length and streamed-byte limits.
+- Required positive connect, read-idle, and whole-fetch time budgets, with phase timeouts constrained by the total budget.
 
 ## Required transport contract
 
@@ -32,13 +33,17 @@ The transport that eventually uses this library must:
 3. Re-run destination authorization for every redirect, retry, fallback
    address, and reconnect. Disable redirects by default unless each hop is
    explicitly authorized. Do not inherit ambient proxy settings.
-4. Enforce check_received_bytes as data streams in and abort as soon as the
+4. Enforce the connect and read-idle timeouts on the actual transport, plus one
+   absolute total-fetch deadline spanning all redirects and retries. Do not
+   restart the total budget for each attempt. These values are policy
+   configuration only; this crate does not interrupt network I/O.
+5. Enforce check_received_bytes as data streams in and abort as soon as the
    limit is exceeded. A post-download size check alone is insufficient.
-5. Download into a broker-owned staging file with safe file handling, verify
+6. Download into a broker-owned staging file with safe file handling, verify
    the expected content digest, then atomically promote only the fully verified
    artifact into a trusted cache. Digest verification and safe file promotion
    are outside this crate.
-6. Enforce network egress policy outside the process as defense in depth. This
+7. Enforce network egress policy outside the process as defense in depth. This
    helper does not control routing, DNS, TLS, proxies, redirects, sockets, or
    filesystem writes.
 
@@ -72,6 +77,6 @@ No third-party crates are used.
     cargo fmt --check --manifest-path tools/artifact-fetch-policy/Cargo.toml
     cargo test --locked --offline --manifest-path tools/artifact-fetch-policy/Cargo.toml
 
-Passing these tests proves only that this library's deterministic policy
-checks behave as tested. It does not qualify any actual transport or artifact
-download.
+The suite now contains 13 deterministic unit tests. Passing them proves only
+that this library's policy checks behave as tested. It does not qualify any
+actual transport or artifact download.
