@@ -1,0 +1,328 @@
+# Pre-RFC: OMSI Core Interoperability Contract
+
+- **Working identifier:** OMSI-0001
+- **Status:** pre-RFC draft for review; not an adopted standard
+- **Date:** 2026-10-12
+- **Proposed initial editor:** Luminous Dynamics; external co-authors and maintainers not appointed
+- **Working name:** Open Managed Services Interoperability (OMSI); name/acronym clearance pending
+
+## Summary
+
+Define a vendor-neutral, transport-independent contract for managed-service operations: tenant and resource binding, typed operation manifests, explicit authority grants, lifecycle events, portable evidence receipts and interoperable conformance tests. An initial HTTP binding may use OpenAPI while core semantics remain independent of transport and implementation language.
+
+## Motivation
+
+Organizations assemble managed IT from service desk/PSA tools, RMM agents, cloud and endpoint managers, identity providers, backup products, security tools and specialist providers. Integrations can exchange records or commands without a shared cross-vendor contract for the exact tenant/resource targeted, the action authorized, what execution state means, or what evidence is sufficient to claim a postcondition was verified.
+
+This proposal targets that boundary. It does not assume the overall problem is novel; it proposes a small contract over adjacent standards and service-specific profiles.
+
+MSP/RMM compromise can have outsized impact because management infrastructure may provide paths into many customer networks. CISA's JCDC Remote Monitoring and Management Cyber Defense Plan is relevant prior art: https://www.cisa.gov/topics/partnerships-and-collaboration/joint-cyber-defense-collaborative/jcdc-remote-monitoring-and-management-cyber-defense-plan.
+
+## Goals
+
+1. Bind each consequential action to one tenant, stable target, action profile/verb, canonical argument digest and valid authority grant.
+2. Distinguish intent, validation, authorization, acceptance, execution, application and independent verification.
+3. Represent ambiguous execution as **indeterminate**; never infer success from a transport response or process exit code alone.
+4. Make evidence portable and machine-validatable across providers and tools.
+5. Define negative tests for cross-tenant access, replay, stale plans, authorization substitution, secret leakage and false verification.
+6. Permit independent implementations without requiring Luminous code, Rust, NixOS, Symthaea, Mycelix, Xenia, central SaaS or distributed ledger.
+7. Reuse mature protocols for APIs, identity, telemetry, security events, domain commands, topology, controls and update trust.
+
+## Non-goals
+
+- Defining a full PSA, ITSM, RMM, EDR, backup, accounting, procurement or licensing product.
+- Standardizing provider pricing, service-level remedies, labor obligations or certification.
+- Introducing a mandatory identity provider, PKI, signed-token format or cryptographic algorithm in the initial proposal.
+- Making AI output, trust scores, ledger consensus or reputation a substitute for authorization.
+- Claiming schema validation provides production security or that a receipt independently proves truth.
+
+## Proposed core records
+
+### Operation manifest
+
+An immutable request with stable operation ID, tenant ID, target reference, action profile and verb, argument digest, preconditions, requested expiry, recovery reference, requester identity and idempotency key. The authorized subject is the canonical digest of the complete immutable manifest, not its human-readable name.
+
+### Authority grant
+
+An approval by a trusted issuer over the exact manifest digest, tenant/resource, authorized executor, audience, policy version, approval references, nonce and bounded validity interval. Implementations must verify issuer trust, principal identity, validity and revocation immediately before mutation. A grant is not itself execution.
+
+### Lifecycle event
+
+A uniquely identified, sequenced event correlated to an operation, with timestamp, actor and explicit transition. Replays, gaps, duplicates and illegal transitions must be detectable. A cancellation request is not evidence that the operation stopped.
+
+### Evidence receipt
+
+A structured claim about an operation's outcome, bound to the manifest and target, with executor identity, observed post-state, verification method and time, evidence digests, verifier identity and limitations. A verified outcome requires profile-defined postcondition evidence. Where independence is required, policy must establish distinct principals and sufficiently independent control/failure domains; two different name strings do not establish independence.
+
+### Capability document
+
+A statement of supported OMSI versions, profiles, actions, limits and optional extensions. An implementation must advertise its tested scope and must not imply universal MSP compatibility from passing the core tests.
+
+## Lifecycle semantics
+
+The normal path is:
+
+**proposed → validated → authorized → accepted → running → applied → verified**
+
+Failure, rejection, expiry, cancellation and indeterminate outcomes are typed states or terminal outcomes governed by profile rules. **Queued is not running; running is not applied; applied is not verified.** When connectivity is lost after acceptance, the client must reconcile target state before retrying. A non-idempotent action must not be blindly repeated.
+
+
+
+## Idempotency, retries, and unknown outcomes
+
+The manifest's `idempotency_key` is a stable identity for the intended operation
+within the profile-defined uniqueness scope; it is not a fresh random value for
+each attempt. The implementation must durably bind that key to the immutable
+operation-manifest digest and the resulting operation identity before any
+effect can be dispatched.
+
+- Same scoped key + same manifest commitment: return/reference the existing
+  operation and its current evidence; do not create a second semantic effect.
+- Same scoped key + different manifest commitment: reject as a conflict. Never
+  reinterpret a previously used key as a different operation.
+- Retry of one operation: preserve operation and manifest identity; give each
+  dispatch its own attempt identity. A new attempt is not a new intended effect.
+- A genuinely new intended effect requires a new operation identity, key, and
+  authorization over the new immutable manifest.
+- Timeout, transport loss, cancellation, or missing receipt after acceptance
+  MUST remain unknown/indeterminate until profile-sufficient reconciliation or
+  an exact domain-specific idempotency guarantee justifies another attempt.
+  Absence of a response is not evidence that no effect happened.
+- The profile must define the key's uniqueness scope, durable persistence,
+  retention horizon and behavior when an unknown operation outlives that
+  horizon. Expiring an idempotency record must not silently make an unresolved
+  non-idempotent effect safe to repeat; unresolved cases require reconciliation
+  or manual handling.
+
+Idempotency keys reduce duplicate effects only when the resource/adapter
+enforces the rule at the mutation boundary or has a qualified transaction
+protocol. Merely accepting a key in JSON, storing it in an event, or forwarding
+an HTTP header does not provide idempotency. The current seed's field validator
+does not implement a durable idempotency store, atomic admission, or
+cross-process concurrency control.
+
+The HTTP binding may map this semantic key to a suitable HTTP header where a
+stable adopted convention is available, but Core correctness MUST NOT depend on
+an unadopted or expired Internet-Draft. Wire binding and key syntax belong to
+the versioned HTTP profile; the operation identity and duplicate-submission
+semantics remain transport-independent.
+
+
+
+## Timestamp representation
+
+OMSI 0.1's reference validator uses a deliberately constrained RFC 3339 timestamp
+profile: a full date, uppercase `T` separator, full seconds, an explicit
+`Z` or colon-separated numeric offset, and at most six fractional-second
+digits. Implementations MUST reject local/naive timestamps, alternate ISO 8601
+spellings, and greater fractional precision rather than silently truncate or
+round it. Comparisons MUST be performed on normalized instants, not timestamp
+strings.
+
+This six-digit bound is a reference-implementation constraint, not a claim that
+RFC 3339 itself is limited to microseconds. It exists because the current Python
+reference uses `datetime`, whose precision is microseconds; accepting extra
+digits and silently discarding them can make distinct observations compare
+equal and weaken chronology checks. A future profile that needs nanosecond or
+higher precision must introduce an exact representation and independent
+cross-language vectors before relaxing the restriction.
+
+The timestamp format is still only one part of evidence quality: it does not
+prove clock synchronization, trustworthy time sources, event causality, or
+that a claimed observation was actually made. Where clock uncertainty or skew
+matters, the profile must specify time-source provenance and an uncertainty
+bound instead of treating serialized wall-clock order as infallible causal proof.
+
+## Operation identity versus attempt identity
+
+One immutable **operation** may have zero or more bounded **attempts**. The
+operation identity binds the requested semantic effect; an attempt identity
+binds one concrete dispatch/execution effort. They are related but not
+interchangeable:
+
+```
+Operation (immutable manifest / authority subject)
+  ├── Attempt A (dispatch, observations, reconciliation)
+  ├── Attempt B (only after profile-qualified retry admission)
+  └── Operation disposition (derived from the bounded attempt history)
+```
+
+A retry MUST preserve the operation ID and manifest commitment while using a
+new attempt ID. An attempt ID MUST NOT be used as a substitute idempotency key
+or used to make a changed manifest appear to be the same operation. Every
+attempt receipt and attempt-specific lifecycle event must bind both identities;
+the operation-level result must reference the attempt evidence from which it
+was derived.
+
+The current 0.1 event model describes one linear `from_state → to_state`
+chain and does not carry an `attempt_id`. Its transition table also makes
+`failed` and `indeterminate` terminal; it cannot faithfully express several
+dispatch attempts under one operation without inventing a new operation or
+rewriting history. The current receipt schema has no typed attempt collection.
+Therefore the retry semantics above are a **design requirement, not currently
+implemented by the 0.1 event/receipt schemas**.
+
+Before freezing a wire format, choose and test a versioned representation:
+either a per-operation append-only event stream with explicitly identified
+attempt branches, or a separate attempt resource/event stream referenced by
+the immutable operation. Do not simply permit `failed → running` in the
+existing linear state machine; that would blur the difference between one
+attempt failing and the operation's eventual disposition. A late observation
+from an earlier attempt must remain linked to that attempt and must not be
+mistaken for evidence from a newer attempt.
+
+The conformance model must cover at least two attempts under one operation,
+attempt identity substitution, a late response from attempt A after attempt B
+starts, attempt A remaining indeterminate while a retry is requested, and
+reconciliation that establishes A had no effect before a second attempt is
+admitted. The profile owns when a retry is safe; the core only preserves the
+identity/evidence lineage needed to enforce that decision.
+
+## Recovery is a separate outcome dimension
+
+An operation outcome and a recovery outcome MUST NOT be collapsed into one
+success/failure value. If an operation fails after partially changing a target,
+a later recovery may succeed; that does not make the original operation
+successful. Conversely, a recovery command may exit successfully while the
+target remains outside its required recovery state.
+
+The interoperable model must preserve at least two independently evaluated
+claims:
+
+- **Primary operation outcome:** whether the requested action was applied and
+  whether its declared postconditions were verified.
+- **Recovery outcome:** whether recovery was required, authorized, attempted,
+  independently observed, and verified against its own declared recovery
+  postconditions.
+
+Recovery MUST NOT be defined universally as an inverse operation or a
+literal rollback. Some profiles can restore a prior configuration; other
+profiles require quarantine, safe isolation, manual reconciliation, or a new
+forward compensating effect. In particular, where an external effect is
+irreversible, compensation does not erase the original effect or rewrite its
+history. The domain profile owns the meaning and permitted scope of recovery.
+
+A recovery result MUST be linked to the operation it compensates for and to a
+specific recovery plan/intent. It must carry its own target binding, authority
+reference, pre-recovery observation, expected recovery postconditions,
+execution evidence, post-recovery observation, verifier result and limitations.
+Where a profile permits multiple recovery attempts or compensating effects,
+the recovery lineage MUST bind the root operation/effect and exact prior
+recovery receipts, with profile-bounded generation/depth and explicit
+duplicate/cycle handling. Unknown outcome must not permit a second
+non-idempotent compensation merely because the first result was not received.
+The recovery's authorization is separate from the original grant unless that
+grant explicitly and narrowly authorizes the exact recovery plan. A generic
+`recovery` object or an executor label such as `recovered` is not, by itself,
+evidence that recovery occurred or succeeded.
+
+For interoperability, prefer a separately identifiable recovery operation or
+typed recovery subreceipt linked to the original operation, rather than forcing
+both lifecycles into one linear `from_state → to_state` chain. The original
+receipt must retain its primary outcome (for example, `failed`) while linked
+recovery evidence may independently report `verified`, `failed` or
+`indeterminate`. An absent recovery record must not be interpreted as
+"recovery was not needed"; "not required", "not started", "attempted",
+"verified", "failed" and "indeterminate" are different states.
+
+This is a semantic requirement for the proposal, **not a claim that the current
+0.1 seed already implements it**. The current draft has a recovery reference
+on the operation manifest, but the event and receipt schemas do not yet define
+a complete portable recovery lifecycle. Before freezing those schemas, either
+add a versioned recovery record/receipt and linked-operation semantics, or
+explicitly defer the feature without claiming that a generic extension is
+interoperable.
+
+The conformance corpus must include at least these cases:
+
+1. The primary action fails before mutation and recovery is not required.
+2. The primary action partially mutates state; recovery is attempted and the
+   restored postcondition is independently verified.
+3. The recovery process exits zero but the observed target state is not restored.
+4. The primary action applies, but its postcondition verification fails.
+5. Recovery loses its response or is interrupted; the state remains
+   indeterminate until read-only reconciliation supplies sufficient evidence.
+6. A recovery attempt is substituted or exceeds the authority bound to its
+   recovery plan; the actuator is not invoked.
+
+These cases are domain-neutral. A deployment may restore a prior system
+generation; a factory may isolate a failed batch; a utility may enter a safe
+operating configuration; a clinical logistics system may quarantine stock.
+Each profile defines what recovery means and what may be observed, while Core
+preserves the distinction between attempted compensation and verified
+postconditions.
+
+## Security requirements
+
+- The URL tenant, body tenant, target tenant and authenticated principal's permitted tenant must agree. Client-supplied tenant ID is never sufficient evidence of authorization.
+- Authorization MUST be checked against authenticated principal, tenant, resource, exact action, manifest/argument digest, audience, expiry, policy and approval requirements.
+- Issuer trust, key status and revocation MUST be rechecked at execution time.
+- A change to any authorized manifest field creates a new subject and requires fresh authorization.
+- The executor must apply the exact authorized plan; it must not reinterpret it into another command or substitute another target.
+- Retry after uncertain delivery MUST reconcile state and honor idempotency semantics.
+- Secret values MUST NOT appear in operation manifests, general events, error messages or portable receipts. Use a separate secret-delivery mechanism and reference.
+- A verified receipt MUST contain profile-defined postcondition observations and verification time.
+- Event/receipt storage and retention controls must be defined by deployment and customer policy; a digest alone is not a complete audit system.
+
+## HTTP binding (proposed)
+
+An initial API binding may provide separate endpoints for capability discovery, operation proposal, validation evidence, grants, execution requests, cancellation requests, lifecycle events and receipts. It must make it impossible to interpret proposal submission as authorization or execution. Requests require authenticated principal context, tenant scoping, idempotency behavior, structured errors and bounded pagination where applicable.
+
+The HTTP binding is an implementation profile, not the entirety of OMSI. Event delivery may use polling or a separately standardized subscription mechanism without changing core record semantics.
+
+## Prior art and relationships
+
+- **TM Forum TMF724 Incident Management API:** standardized incident records and lifecycle events already exist; OMSI should not create a competing full ticket model without evidence of a specific gap. https://www.tmforum.org/open-digital-architecture/open-apis/incident-management-api-TMF724/v4.0 and https://github.com/tmforum-apis/TMF724_IncidentManagement.
+- **SCIM (RFC 7644):** identity provisioning; it does not prescribe a universal tenant registration/mapping scheme. https://www.rfc-editor.org/rfc/rfc7644/.
+- **OAuth Resource Indicators (RFC 8707):** use audience/resource restriction where OAuth is selected. https://www.rfc-editor.org/rfc/rfc8707.html.
+- **OpenTelemetry:** reuse telemetry and trace context semantics. https://opentelemetry.io/docs/specs/otel/.
+- **OpenC2 Language 1.0:** reuse suitable cybersecurity command semantics; it does not replace general service lifecycle or outcome evidence. https://www.oasis-open.org/standard/oc2-ls-v1-0/.
+- **TOSCA 2.0:** reuse topology/orchestration concepts where they fit. https://docs.oasis-open.org/tosca/TOSCA/v2.0/TOSCA-v2.0.html.
+- **OSCAL:** map controls, implementation and assessment information rather than create a competing control ontology. https://pages.nist.gov/OSCAL/.
+- **RFC 8785 JCS:** candidate canonical JSON building block; cross-language vectors and independent review are required before freezing a profile. https://www.rfc-editor.org/rfc/rfc8785/.
+- **CISA JCDC RMM Cyber Defense Plan:** supports the elevated emphasis on tenant isolation and control-plane blast-radius reduction.
+- **MSPAlliance UCS 4.0:** an operational assurance/certification framework; OMSI may supply portable technical records to support assurance but must not claim to replace certification. https://mspalliance.com/mspalliance-launches-ucs-4-0-establishing-ai-governance-requirements-for-managed-service-providers/.
+
+This is a partial desk review, not proof of novelty, completeness or trademark availability. Pin exact artifact versions and licenses when a profile depends on them.
+
+## Alternatives considered
+
+1. A Luminous-only API: faster initially but would produce a product integration contract, not an open standard.
+2. Standardize every MSP domain at once: rejected for the first version; it would grow too broad before core operation/evidence semantics are tested.
+3. Replace existing standards: rejected because it duplicates mature work and raises adoption costs.
+4. Require blockchain or AI: rejected; neither is necessary for interoperability.
+5. Transport-independent model plus an accessible HTTP binding: proposed; it lets conventional tools participate without making REST the only possible transport.
+
+## Drawbacks and risks
+
+OMSI can impose integration work, over-constrain vendor models, or fragment into incompatible profiles. Well-formed evidence may be based on false observations. Management control planes remain high-value targets. Canonicalization and signature mismatches can break authorization. Mitigation requires narrow scope, mappings to existing standards, independent verification, negative tests, external security review and capability-specific claims instead of generic compatibility badges.
+
+## Feedback from the executable seed
+
+The companion conformance seed now uses distinct digest domains for action arguments and the complete operation manifest. Its current digest framing is a prototype: it prefixes canonical JSON with `OMSI-DIGEST/0.1`, a NUL separator, a registered ASCII domain label, another NUL separator, and the canonical bytes. This prevents the same JSON byte sequence from being reused as the digest subject in semantically different contexts.
+
+The seed also prototypes a constrained canonical JSON accepted-input profile: duplicate keys, negative zero, floating-point values, out-of-safe-range integers and invalid Unicode are rejected. This is **not declared full RFC 8785/JCS conformance**, and it is not frozen as normative OMSI behavior. The choice between adopting RFC 8785 without restriction and defining a formally constrained subset remains open. Cross-language golden vectors and independent review must precede any stable digest contract.
+
+The implementation follow-up is tracked in [draft PR #32](https://github.com/Luminous-Dynamics/luminous-platform/pull/32). The larger companion kit passed 68 tests locally. A local mirror of the compact seed's current 38-test source also passed all tests, schema self-validation, four CLI fixture checks and a separate JavaScript digest probe with basic and Unicode golden vectors. GitHub Actions for the current branch is still queued; no remote CI pass is claimed. Neither result constitutes security certification or proof of production readiness.
+
+## Open questions
+
+- Is this the right interoperability gap to standardize, and who experiences it most acutely?
+- What minimal cross-provider use case should be mandatory in Core 0.1?
+- Should canonicalization adopt unmodified RFC 8785 or a constrained profile, and how are malformed JSON and duplicate keys handled before canonicalization?
+- What signature and identity envelope should be profiled after independent cryptographic review?
+- How should tenant identifiers and delegated provider identities be namespaced without requiring a single identity authority?
+- What verifier independence is practical and testable?
+- Which governance model, license and naming policy will make unaffiliated implementations credible?
+
+## Acceptance gates before a stable release
+
+1. Two independently developed implementations pass the same golden fixtures.
+2. Cross-language canonicalization and cryptographic vectors cover Unicode, numeric, malformed-input and duplicate-key edge cases.
+3. A disposable VM demonstrates validation, exact authorization, execution, post-state verification and recovery.
+4. Cross-tenant tests exercise authenticated principal-to-tenant mapping and resource authorization, not just a payload field.
+5. Fault injection covers timeout-after-acceptance, lost results, retry, partial application, cancellation races, revoked delegation and stale state.
+6. A customer exports resources, cases and evidence to a second implementation without dependence on the original UI/database.
+7. External security review, naming clearance and an open governance process are completed.
+
+Until these gates pass, OMSI remains a pre-RFC proposal.
