@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "scorecard_contract": "omsi-manufacturing-benchmark-scorecard/0.1",
   "status": "targets_not_measured",
   "scope": "OMSI manufacturing semantic validator, replay envelope, and future Mycelix receipt adapter",
@@ -14,7 +13,7 @@
       "id": "G0-semantic-correctness",
       "class": "hard_gate",
       "metric": "expected_conformance_vector_match_rate",
-      "target": 1.0,
+      "target": 1,
       "unit": "fraction",
       "acceptance": "Every committed expected outcome must match the evaluator exactly for the versioned fields.",
       "failure_policy": "Block release; never weaken a negative vector merely to obtain a pass."
@@ -32,7 +31,7 @@
       "id": "G0-schema-validation",
       "class": "hard_gate",
       "metric": "independent_json_schema_validation_rate",
-      "target": 1.0,
+      "target": 1,
       "unit": "fraction",
       "acceptance": "All success, reject, conflict, loss and replay-verification reports validate with an independent JSON Schema Draft 2020-12 implementation; mutated reports are rejected.",
       "failure_policy": "Block release; serde parsing is not a substitute for JSON Schema validation."
@@ -41,7 +40,7 @@
       "id": "G0-replay-tamper",
       "class": "hard_gate",
       "metric": "fixed_tamper_catalogue_detection_rate",
-      "target": 1.0,
+      "target": 1,
       "unit": "fraction",
       "acceptance": "Detect every catalogued mutation to exact input bytes, digest, envelope contract, required limitations and embedded semantic report.",
       "failure_policy": "Block release; unsigned digest binding must not be described as source authentication."
@@ -50,7 +49,7 @@
       "id": "G1-repeatability",
       "class": "hard_gate",
       "metric": "same_build_semantic_replay_equivalence",
-      "target": 1.0,
+      "target": 1,
       "unit": "fraction",
       "acceptance": "Same input bytes, profile/rule versions and validator build produce semantically equal reports across repeated runs.",
       "failure_policy": "Block release and retain corpus digest, build identity and differing fields."
@@ -126,7 +125,7 @@
       "id": "G3-cross-implementation",
       "class": "release_gate",
       "metric": "independent_verifier_vector_agreement",
-      "target": 1.0,
+      "target": 1,
       "unit": "fraction",
       "acceptance": "A separately implemented verifier reproduces all public vector outcomes and independently detects every envelope mutation in the shared fixture pack.",
       "failure_policy": "No trust or release policy may rely on a single producer/verifier implementation."
@@ -158,5 +157,6 @@
     "independent_cross_implementation_verifier": false,
     "mycelix_adapter_implemented": false,
     "production_readiness_claimed": false
-  }
+  },
+  "scorecard_schema_reference": "benchmark-scorecard-0.1.md"
 }
