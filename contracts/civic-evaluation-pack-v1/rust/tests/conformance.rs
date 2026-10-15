@@ -103,6 +103,37 @@ fn unknown_fields_and_impossible_dates_fail_closed() {
 }
 
 #[test]
+fn causal_claims_are_outside_this_synthetic_contract() {
+    let mut value = fixture_value();
+    scenario_mut(&mut value, "scenario-baseline-report")["expected"]["causal_claim_permitted"] =
+        serde_json::json!(true);
+    assert!(validate_evaluation_pack_json(&value.to_string()).is_err());
+}
+
+#[test]
+fn scenario_class_must_match_the_actual_evidence_state() {
+    let mut value = fixture_value();
+    let scenario = scenario_mut(&mut value, "scenario-stale-public-notice");
+    scenario["input"]["observations"][0]["evidence_state"] = serde_json::json!("current");
+    assert!(validate_evaluation_pack_json(&value.to_string()).is_err());
+}
+
+#[test]
+fn uncertain_evidence_cannot_verify_a_repair() {
+    let mut value = fixture_value();
+    let scenario = scenario_mut(&mut value, "scenario-independent-verification-positive-control");
+    scenario["input"]["source_coverage"] = serde_json::json!("incomplete");
+    assert!(validate_evaluation_pack_json(&value.to_string()).is_err());
+}
+
+#[test]
+fn pack_id_must_match_the_schema_pattern() {
+    let mut value = fixture_value();
+    value["pack_id"] = serde_json::json!("---");
+    assert!(validate_evaluation_pack_json(&value.to_string()).is_err());
+}
+
+#[test]
 fn incomplete_source_coverage_requires_abstention_and_human_review() {
     let mut value = fixture_value();
     let scenario = scenario_mut(&mut value, "scenario-baseline-report");

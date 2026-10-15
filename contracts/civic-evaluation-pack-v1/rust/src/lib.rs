@@ -237,12 +237,21 @@ fn valid_iso_date(value: &str) -> bool {
     (1..=days).contains(&day)
 }
 
+fn valid_pack_id(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    (3..=96).contains(&bytes.len())
+        && (bytes[0].is_ascii_lowercase() || bytes[0].is_ascii_digit())
+        && bytes.iter().all(|byte| {
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-'
+        })
+}
+
 fn validate(pack: &EvaluationPack) -> Vec<String> {
     let mut errors = Vec::new();
     if pack.schema_version != "civic-evaluation-pack-v1" {
         errors.push("schema_version must be civic-evaluation-pack-v1".to_owned());
     }
-    if !valid_id(&pack.pack_id, "") || pack.pack_id.len() > 96 {
+    if !valid_pack_id(&pack.pack_id) {
         errors.push("pack_id must contain only lowercase ASCII letters, digits, and hyphens".to_owned());
     }
     if !valid_iso_date(&pack.created_on) {
@@ -334,6 +343,10 @@ fn validate(pack: &EvaluationPack) -> Vec<String> {
             errors.push(format!("{prefix}: a repair claim alone cannot establish an independently verified outcome"));
         }
 
+        if scenario.expected.causal_claim_permitted {
+            errors.push(format!("{prefix}: causal claims are outside the authority of this synthetic contract"));
+        }
+
         let has_contextual_statement = scenario.input.observations.iter().any(|observation| {
             observation.kind == ObservationKind::ContextualStatement
         });
@@ -348,6 +361,10 @@ fn validate(pack: &EvaluationPack) -> Vec<String> {
             observation.kind == ObservationKind::RepeatFault
                 || observation.evidence_state == EvidenceState::RepeatFault
         });
+        if uncertain && scenario.expected.outcome == OutcomeState::IndependentlyVerified {
+            errors.push(format!("{prefix}: uncertain evidence cannot establish an independently verified outcome"));
+        }
+
         if scenario.input.prior_outcome == PriorOutcome::IndependentlyVerified
             && has_repeat_fault
             && scenario.expected.outcome != OutcomeState::Reopened
@@ -357,10 +374,45 @@ fn validate(pack: &EvaluationPack) -> Vec<String> {
         if scenario.expected.outcome == OutcomeState::Reopened && !has_repeat_fault {
             errors.push(format!("{prefix}: reopened outcome requires a repeat-fault observation"));
         }
-        if scenario.scenario_class == ScenarioClass::CrossUtilityContextNotCausality
-            && (scenario.expected.causal_claim_permitted || !scenario.expected.must_abstain)
-        {
-            errors.push(format!("{prefix}: cross-utility negative control must forbid causal claims and require abstention"));
+        match scenario.scenario_class {
+            ScenarioClass::StaleSource
+                if !scenario.input.observations.iter().any(|observation| observation.evidence_state == EvidenceState::Stale) =>
+            {
+                errors.push(format!("{prefix}: stale_source class requires a stale observation"));
+            }
+            ScenarioClass::ConflictingSources
+                if !scenario.input.observations.iter().any(|observation| observation.evidence_state == EvidenceState::Conflicting) =>
+            {
+                errors.push(format!("{prefix}: conflicting_sources class requires conflicting evidence"));
+            }
+            ScenarioClass::RepairClaimWithoutIndependentVerification
+                if !has_repair_claim || valid_independent_inspection =>
+            {
+                errors.push(format!("{prefix}: repair-claim negative control requires a claim without qualifying independent inspection"));
+            }
+            ScenarioClass::CrossUtilityContextNotCausality
+                if scenario.input.service_context != ServiceContext::CrossUtilityPublication
+                    || !has_contextual_statement
+                    || scenario.expected.causal_claim_permitted
+                    || !scenario.expected.must_abstain =>
+            {
+                errors.push(format!("{prefix}: cross-utility negative control requires contextual evidence, no causal claim, and abstention"));
+            }
+            ScenarioClass::Recurrence
+                if scenario.input.prior_outcome != PriorOutcome::IndependentlyVerified
+                    || !has_repeat_fault
+                    || scenario.expected.outcome != OutcomeState::Reopened =>
+            {
+                errors.push(format!("{prefix}: recurrence class requires a prior verified outcome and must reopen after repeat-fault evidence"));
+            }
+            ScenarioClass::IndependentVerificationPositiveControl
+                if scenario.expected.outcome != OutcomeState::IndependentlyVerified
+                    || !valid_independent_inspection
+                    || scenario.expected.must_abstain =>
+            {
+                errors.push(format!("{prefix}: positive control requires independent distinct-actor verification without abstention"));
+            }
+            _ => {}
         }
     }
     errors
