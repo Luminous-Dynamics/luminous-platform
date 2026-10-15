@@ -353,10 +353,29 @@ def validate_pack(
                 requirement_receipt_errors.append(
                     f"{receipt_id}: unknown source receipt {source_receipt_id}"
                 )
-            elif source_receipt.get("source_id") not in requirement.get("source_refs", []):
+                continue
+            if source_receipt.get("source_id") not in requirement.get("source_refs", []):
                 requirement_receipt_errors.append(
                     f"{receipt_id}: source receipt {source_receipt_id} is outside this requirement's source_refs"
                 )
+            if receipt.get("decision") == "verified":
+                source_reviewed_at = parse_datetime(source_receipt.get("reviewed_at"))
+                claim_reviewed_at = parse_datetime(receipt.get("reviewed_at"))
+                if (
+                    source_reviewed_at is not None
+                    and claim_reviewed_at is not None
+                    and source_reviewed_at > claim_reviewed_at
+                ):
+                    requirement_receipt_errors.append(
+                        f"{receipt_id}: cited source receipt {source_receipt_id} was reviewed after the claim receipt"
+                    )
+                if (
+                    requirement.get("claim_type") in CURRENT_CLAIM_TYPES
+                    and receipt.get("reviewer_id") == source_receipt.get("reviewer_id")
+                ):
+                    requirement_receipt_errors.append(
+                        f"{receipt_id}: official requirement/guidance claim reviewer must differ from source reviewer {source_receipt_id}"
+                    )
         if receipt.get("decision") == "verified":
             scope = receipt.get("review_scope", {})
             incomplete = [
