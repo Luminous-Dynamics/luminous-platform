@@ -126,13 +126,13 @@
     {
       "schema_id": "symthaea.life-civic-reference-corpus",
       "repository": "Luminous-Dynamics/symthaea",
-      "snapshot_commit_sha": "c9acdf2ee7e5fc52379b43917af1c1c108f753b3",
+      "snapshot_commit_sha": "68a2e5384f737069bcd779c0eb0078d622e811a2",
       "path": "docs/research/life-civic/reference-scenarios.json",
-      "git_blob_sha1": "585cc046f3c4b88feaa0f6e30cca156ad4ba5618",
+      "git_blob_sha1": "f93d01a1832c991e9284c7e7ad92a90a40e5776f",
       "version": "0.4.0",
       "artifact_kind": "evaluation_corpus",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Symthaea PR #7443 head c9acdf2ee7e5fc52379b43917af1c1c108f753b3; current scenario corpus blob is 585cc046f3c4b88feaa0f6e30cca156ad4ba5618, version 0.4.0 with 15 cases. New SYM-LC-015 checks survey-precision boundaries: response-rate diagnostics and Table 41 household-prevalence CVs cannot substitute for estimate-specific uncertainty on police-reporting proportions; rounded point differences do not establish significance or local causal effects. The manifest pin matches the exact scenario-file blob. The latest workflow pins checkout and asserts the exact PR SHA; no completed exact-head run is recorded yet, so this corpus remains unqualified.",
+      "notes": "Reviewed against Symthaea PR #7443 head 68a2e5384f737069bcd779c0eb0078d622e811a2; scenario corpus blob f93d01a1832c991e9284c7e7ad92a90a40e5776f, version 0.4.0 with 15 cases. Its manifest points to Mycelix corpus MYC-LIFE-CIVIC-APPLICABILITY-001@0.5.0. New SYM-LC-015 distinguishes reporting proportions from prevalence estimates and requires indicator-specific uncertainty evidence; it rejects significance claims from rounded point differences and rejects local causal transfer. The exact-head life-civic workflow [#38730943742](https://github.com/Luminous-Dynamics/symthaea/actions/runs/38730943742) is queued; this corpus remains unqualified.",
       "qualification_state": "unqualified_draft"
     }
   ],

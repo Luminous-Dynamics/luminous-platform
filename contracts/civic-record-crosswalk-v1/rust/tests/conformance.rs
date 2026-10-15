@@ -68,7 +68,7 @@ fn sol_atlas_civic_case_pin_tracks_current_source_and_stays_unqualified() {
 }
 
 #[test]
-fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_narrow_success() {
+fn symthaea_life_civic_corpus_pin_tracks_v0_4_0_and_unqualified_state() {
     let input = include_str!("../../crosswalk.json");
     let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
     let contract = crosswalk
@@ -79,11 +79,11 @@ fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_narrow_success() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "c9acdf2ee7e5fc52379b43917af1c1c108f753b3"
+        "68a2e5384f737069bcd779c0eb0078d622e811a2"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
-        Some("574f6d3ba235c68e306f84f5ee761d399cc165b6")
+        Some("f93d01a1832c991e9284c7e7ad92a90a40e5776f")
     );
     assert_eq!(contract.version.as_deref(), Some("0.4.0"));
     assert_eq!(
