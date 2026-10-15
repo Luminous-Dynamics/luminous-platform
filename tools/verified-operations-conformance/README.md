@@ -13,7 +13,7 @@ cargo run --manifest-path tools/verified-operations-conformance/Cargo.toml -- \
   profiles/verified-operations/synthetic-pilot-v1.json
 ```
 
-The runner checks the Draft 2020-12 schema, validates the corpus, enforces unique scenario IDs and fail-closed metadata invariants, and independently recomputes expected classifications and reason codes. It enables format assertions and refuses external schema reference retrieval.
+The runner checks the Draft 2020-12 schema, validates the 27-case corpus, enforces unique scenario IDs and fail-closed metadata invariants, and independently recomputes expected classifications and reason codes. It now covers outcome objectives with scope, window completeness, measurement validity, coverage thresholds, compatible units, independent-measurement presence and numeric target comparison. It enables format assertions and refuses external schema reference retrieval.
 
 ## Claim limits
 
