@@ -1,0 +1,533 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:manufacturing-conformance-vectors:0.1",
+  "title": "OMSI Manufacturing Asset Operations synthetic conformance vectors",
+  "description": "Structural schema for the proposed test-vector file only. It is not the OMSI interchange envelope, manufacturing domain schema, or proof that the vector assertions were executed.",
+  "type": "object",
+  "required": [
+    "format",
+    "format_version",
+    "status",
+    "profile",
+    "common_rules",
+    "vectors"
+  ],
+  "properties": {
+    "format": {
+      "const": "omsi-manufacturing-conformance-vectors"
+    },
+    "format_version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic research fixture set; not a normative OMSI wire schema"
+    },
+    "profile": {
+      "const": "manufacturing-asset-operations/0.1-incubation"
+    },
+    "common_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "vectors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/vector"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "source_ref": {
+      "type": "object",
+      "required": [
+        "source_instance",
+        "object_type",
+        "external_id"
+      ],
+      "properties": {
+        "source_instance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "object_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "external_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "system",
+        "instance_namespace",
+        "release_pin",
+        "object_type",
+        "external_id",
+        "record_revision"
+      ],
+      "properties": {
+        "system": {
+          "type": "string",
+          "minLength": 1
+        },
+        "instance_namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "release_pin": {
+          "type": "string",
+          "minLength": 1
+        },
+        "object_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "external_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "record_revision": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "scope_binding": {
+      "type": "object",
+      "required": [
+        "binding_id",
+        "trusted_tenant_id",
+        "source_site_ref"
+      ],
+      "properties": {
+        "binding_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trusted_tenant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_site_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "record_ref": {
+      "type": "object",
+      "required": [
+        "source_instance",
+        "object_type",
+        "external_id"
+      ],
+      "properties": {
+        "source_instance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "object_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "external_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "snapshot": {
+      "type": "object",
+      "required": [
+        "export_id",
+        "consistency_mode",
+        "extraction_started_at",
+        "extraction_completed_at",
+        "source_watermark"
+      ],
+      "properties": {
+        "export_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "consistency_mode": {
+          "enum": [
+            "per_record_non_atomic",
+            "source_snapshot_token",
+            "transactional_snapshot",
+            "unknown"
+          ]
+        },
+        "extraction_started_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "extraction_completed_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_watermark": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "measurement": {
+      "type": "object",
+      "required": [
+        "quantity_kind",
+        "value_decimal",
+        "unit_system",
+        "unit_code",
+        "instrument_ref",
+        "calibration_ref",
+        "method_ref",
+        "uncertainty"
+      ],
+      "properties": {
+        "quantity_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value_decimal": {
+          "type": "string",
+          "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+        },
+        "unit_system": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "instrument_ref": {
+          "$ref": "#/$defs/record_ref"
+        },
+        "calibration_ref": {
+          "$ref": "#/$defs/record_ref"
+        },
+        "method_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uncertainty": {
+          "type": "object",
+          "required": [
+            "value_decimal",
+            "unit_code",
+            "meaning"
+          ],
+          "properties": {
+            "value_decimal": {
+              "type": "string",
+              "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+            },
+            "unit_code": {
+              "type": "string",
+              "minLength": 1
+            },
+            "meaning": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "calibration": {
+      "type": "object",
+      "required": [
+        "source_status_claim",
+        "valid_from",
+        "valid_until",
+        "issuer_ref",
+        "authenticity_verified_by_adapter"
+      ],
+      "properties": {
+        "source_status_claim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valid_from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "valid_until": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issuer_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authenticity_verified_by_adapter": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "specification": {
+      "type": "object",
+      "required": [
+        "spec_ref",
+        "revision",
+        "lower_bound_decimal",
+        "upper_bound_decimal",
+        "unit_system",
+        "unit_code"
+      ],
+      "properties": {
+        "spec_ref": {
+          "$ref": "#/$defs/record_ref"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lower_bound_decimal": {
+          "type": "string",
+          "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+        },
+        "upper_bound_decimal": {
+          "type": "string",
+          "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$"
+        },
+        "unit_system": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit_code": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "quality_claim": {
+      "type": "object",
+      "required": [
+        "raw_status",
+        "source_claim_only",
+        "independent_quality_release"
+      ],
+      "properties": {
+        "raw_status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_claim_only": {
+          "const": true
+        },
+        "independent_quality_release": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "disposition": {
+      "type": "object",
+      "required": [
+        "type",
+        "field",
+        "reason"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "reject",
+            "conflict",
+            "loss",
+            "unmapped",
+            "not_provided"
+          ]
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "expected": {
+      "type": "object",
+      "required": [
+        "outcome",
+        "dispositions",
+        "assertions",
+        "comparison_rule_id"
+      ],
+      "properties": {
+        "outcome": {
+          "enum": [
+            "accepted_projection",
+            "preserve_with_conflict",
+            "reject",
+            "accepted_projection_with_loss"
+          ]
+        },
+        "dispositions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/disposition"
+          }
+        },
+        "measurement_evaluation": {
+          "enum": [
+            "inside_declared_bounds_point_estimate_only",
+            "not_evaluable",
+            "inside_declared_bounds_point_estimate_only_calibration_assurance_limited",
+            "outside_declared_bounds_point_estimate_only"
+          ]
+        },
+        "projection_emitted": {
+          "type": "boolean"
+        },
+        "freshness_claim": {
+          "enum": [
+            "not_available",
+            "source_revision_available"
+          ]
+        },
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "comparison_rule_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "vector": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "classification",
+        "input",
+        "expected"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^MFG-OBS-[0-9]{3}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "classification": {
+          "enum": [
+            "positive",
+            "negative_control"
+          ]
+        },
+        "input": {
+          "type": "object",
+          "required": [
+            "source",
+            "scope_binding",
+            "asset_ref",
+            "work_order_ref",
+            "observed_time",
+            "source_modified_time",
+            "exported_at",
+            "snapshot",
+            "measurement",
+            "calibration",
+            "specification",
+            "source_quality_claim"
+          ],
+          "properties": {
+            "source": {
+              "$ref": "#/$defs/source"
+            },
+            "scope_binding": {
+              "$ref": "#/$defs/scope_binding"
+            },
+            "asset_ref": {
+              "$ref": "#/$defs/record_ref"
+            },
+            "work_order_ref": {
+              "$ref": "#/$defs/record_ref"
+            },
+            "observed_time": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_modified_time": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "minLength": 1
+            },
+            "exported_at": {
+              "type": "string",
+              "minLength": 1
+            },
+            "snapshot": {
+              "$ref": "#/$defs/snapshot"
+            },
+            "measurement": {
+              "$ref": "#/$defs/measurement"
+            },
+            "calibration": {
+              "$ref": "#/$defs/calibration"
+            },
+            "specification": {
+              "$ref": "#/$defs/specification"
+            },
+            "source_quality_claim": {
+              "$ref": "#/$defs/quality_claim"
+            }
+          },
+          "additionalProperties": false
+        },
+        "expected": {
+          "$ref": "#/$defs/expected"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,850 @@
+{
+  "format": "omsi-manufacturing-conformance-vectors",
+  "format_version": "0.1",
+  "status": "synthetic research fixture set; not a normative OMSI wire schema",
+  "profile": "manufacturing-asset-operations/0.1-incubation",
+  "common_rules": [
+    "Source claims and local derived comparisons must remain distinct.",
+    "No fixture establishes physical truth, calibration authenticity, product-release authority, or safe-to-operate authorization.",
+    "No vector permits a write to MES, ERP, SCADA, PLC, OPC UA server, or other industrial control target.",
+    "A null source revision does not mean the source is unchanged; exported_at is not a source revision.",
+    "A non-atomic per-record snapshot cannot claim source-wide atomic consistency."
+  ],
+  "vectors": [
+    {
+      "id": "MFG-OBS-001",
+      "label": "In-range observation with explicit unit, source revision and timezone offset",
+      "classification": "positive",
+      "input": {
+        "source": {
+          "system": "synthetic-mes",
+          "instance_namespace": "synthetic-mes://plant-a",
+          "release_pin": "synthetic-fixture-contract/0.1",
+          "object_type": "QualityObservation",
+          "external_id": "OBS-CNC44-TEMP-0001",
+          "record_revision": "rev-3"
+        },
+        "scope_binding": {
+          "binding_id": "binding-plant-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-a",
+          "source_site_ref": "plant-a"
+        },
+        "asset_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "Equipment",
+          "external_id": "CNC-44",
+          "tenant_ref": "tenant:synthetic-a"
+        },
+        "work_order_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "MaintenanceWorkOrder",
+          "external_id": "WO-8821"
+        },
+        "observed_time": "2026-10-15T10:00:00+02:00",
+        "source_modified_time": "2026-10-15T10:02:00+02:00",
+        "exported_at": "2026-10-15T08:05:00Z",
+        "snapshot": {
+          "export_id": "export-plant-a-20261015-0805z",
+          "consistency_mode": "per_record_non_atomic",
+          "extraction_started_at": "2026-10-15T08:04:00Z",
+          "extraction_completed_at": "2026-10-15T08:05:00Z",
+          "source_watermark": null
+        },
+        "measurement": {
+          "quantity_kind": "temperature",
+          "value_decimal": "72.4",
+          "unit_system": "UCUM",
+          "unit_code": "Cel",
+          "instrument_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "Instrument",
+            "external_id": "TEMP-PROBE-17"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-TEMP-PROBE-17-2026"
+          },
+          "method_ref": "synthetic-method:surface-bearing-temperature-v1",
+          "uncertainty": {
+            "value_decimal": "0.3",
+            "unit_code": "Cel",
+            "meaning": "fixture-provided expanded uncertainty; coverage convention not specified"
+          }
+        },
+        "calibration": {
+          "source_status_claim": "valid",
+          "valid_from": "2026-01-01T00:00:00Z",
+          "valid_until": "2027-01-01T00:00:00Z",
+          "issuer_ref": "synthetic-lab:metrology-01",
+          "authenticity_verified_by_adapter": false
+        },
+        "specification": {
+          "spec_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "QualitySpecification",
+            "external_id": "SPEC-BEARING-TEMP-07"
+          },
+          "revision": "spec-rev-2",
+          "lower_bound_decimal": "70.0",
+          "upper_bound_decimal": "75.0",
+          "unit_system": "UCUM",
+          "unit_code": "Cel"
+        },
+        "source_quality_claim": {
+          "raw_status": "Accepted",
+          "source_claim_only": true,
+          "independent_quality_release": false
+        }
+      },
+      "expected": {
+        "outcome": "accepted_projection",
+        "dispositions": [],
+        "measurement_evaluation": "inside_declared_bounds_point_estimate_only",
+        "assertions": [
+          "source identity and revision are preserved",
+          "decimal value and UCUM unit are preserved",
+          "observed_time remains distinct from source_modified_time and exported_at",
+          "calibration is represented as a source claim, not an authenticated fact",
+          "raw_status remains Accepted and independent_quality_release remains false",
+          "snapshot consistency remains per_record_non_atomic",
+          "comparison uses the nominal value only; uncertainty is retained but not applied by this rule"
+        ],
+        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+      }
+    },
+    {
+      "id": "MFG-OBS-002",
+      "label": "Missing measurement unit",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-mes",
+          "instance_namespace": "synthetic-mes://plant-a",
+          "release_pin": "synthetic-fixture-contract/0.1",
+          "object_type": "QualityObservation",
+          "external_id": "OBS-CNC44-TEMP-0001",
+          "record_revision": "rev-3"
+        },
+        "scope_binding": {
+          "binding_id": "binding-plant-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-a",
+          "source_site_ref": "plant-a"
+        },
+        "asset_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "Equipment",
+          "external_id": "CNC-44",
+          "tenant_ref": "tenant:synthetic-a"
+        },
+        "work_order_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "MaintenanceWorkOrder",
+          "external_id": "WO-8821"
+        },
+        "observed_time": "2026-10-15T10:00:00+02:00",
+        "source_modified_time": "2026-10-15T10:02:00+02:00",
+        "exported_at": "2026-10-15T08:05:00Z",
+        "snapshot": {
+          "export_id": "export-plant-a-20261015-0805z",
+          "consistency_mode": "per_record_non_atomic",
+          "extraction_started_at": "2026-10-15T08:04:00Z",
+          "extraction_completed_at": "2026-10-15T08:05:00Z",
+          "source_watermark": null
+        },
+        "measurement": {
+          "quantity_kind": "temperature",
+          "value_decimal": "72.4",
+          "unit_system": "UCUM",
+          "unit_code": null,
+          "instrument_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "Instrument",
+            "external_id": "TEMP-PROBE-17"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-TEMP-PROBE-17-2026"
+          },
+          "method_ref": "synthetic-method:surface-bearing-temperature-v1",
+          "uncertainty": {
+            "value_decimal": "0.3",
+            "unit_code": "Cel",
+            "meaning": "fixture-provided expanded uncertainty; coverage convention not specified"
+          }
+        },
+        "calibration": {
+          "source_status_claim": "valid",
+          "valid_from": "2026-01-01T00:00:00Z",
+          "valid_until": "2027-01-01T00:00:00Z",
+          "issuer_ref": "synthetic-lab:metrology-01",
+          "authenticity_verified_by_adapter": false
+        },
+        "specification": {
+          "spec_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "QualitySpecification",
+            "external_id": "SPEC-BEARING-TEMP-07"
+          },
+          "revision": "spec-rev-2",
+          "lower_bound_decimal": "70.0",
+          "upper_bound_decimal": "75.0",
+          "unit_system": "UCUM",
+          "unit_code": "Cel"
+        },
+        "source_quality_claim": {
+          "raw_status": "Accepted",
+          "source_claim_only": true,
+          "independent_quality_release": false
+        }
+      },
+      "expected": {
+        "outcome": "preserve_with_conflict",
+        "dispositions": [
+          {
+            "type": "conflict",
+            "field": "measurement.unit_code",
+            "reason": "measurement_unit_missing"
+          }
+        ],
+        "measurement_evaluation": "not_evaluable",
+        "assertions": [
+          "numeric value is preserved without treating it as comparable",
+          "no default unit is inferred from specification or machine type",
+          "source Accepted claim is preserved but not upgraded"
+        ],
+        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+      }
+    },
+    {
+      "id": "MFG-OBS-003",
+      "label": "Calibration period expired before observation although source still says valid",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-mes",
+          "instance_namespace": "synthetic-mes://plant-a",
+          "release_pin": "synthetic-fixture-contract/0.1",
+          "object_type": "QualityObservation",
+          "external_id": "OBS-CNC44-TEMP-0001",
+          "record_revision": "rev-3"
+        },
+        "scope_binding": {
+          "binding_id": "binding-plant-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-a",
+          "source_site_ref": "plant-a"
+        },
+        "asset_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "Equipment",
+          "external_id": "CNC-44",
+          "tenant_ref": "tenant:synthetic-a"
+        },
+        "work_order_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "MaintenanceWorkOrder",
+          "external_id": "WO-8821"
+        },
+        "observed_time": "2026-10-15T10:00:00+02:00",
+        "source_modified_time": "2026-10-15T10:02:00+02:00",
+        "exported_at": "2026-10-15T08:05:00Z",
+        "snapshot": {
+          "export_id": "export-plant-a-20261015-0805z",
+          "consistency_mode": "per_record_non_atomic",
+          "extraction_started_at": "2026-10-15T08:04:00Z",
+          "extraction_completed_at": "2026-10-15T08:05:00Z",
+          "source_watermark": null
+        },
+        "measurement": {
+          "quantity_kind": "temperature",
+          "value_decimal": "72.4",
+          "unit_system": "UCUM",
+          "unit_code": "Cel",
+          "instrument_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "Instrument",
+            "external_id": "TEMP-PROBE-17"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-TEMP-PROBE-17-2026"
+          },
+          "method_ref": "synthetic-method:surface-bearing-temperature-v1",
+          "uncertainty": {
+            "value_decimal": "0.3",
+            "unit_code": "Cel",
+            "meaning": "fixture-provided expanded uncertainty; coverage convention not specified"
+          }
+        },
+        "calibration": {
+          "source_status_claim": "valid",
+          "valid_from": "2025-01-01T00:00:00Z",
+          "valid_until": "2026-01-01T00:00:00Z",
+          "issuer_ref": "synthetic-lab:metrology-01",
+          "authenticity_verified_by_adapter": false
+        },
+        "specification": {
+          "spec_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "QualitySpecification",
+            "external_id": "SPEC-BEARING-TEMP-07"
+          },
+          "revision": "spec-rev-2",
+          "lower_bound_decimal": "70.0",
+          "upper_bound_decimal": "75.0",
+          "unit_system": "UCUM",
+          "unit_code": "Cel"
+        },
+        "source_quality_claim": {
+          "raw_status": "Accepted",
+          "source_claim_only": true,
+          "independent_quality_release": false
+        }
+      },
+      "expected": {
+        "outcome": "preserve_with_conflict",
+        "dispositions": [
+          {
+            "type": "conflict",
+            "field": "calibration",
+            "reason": "calibration_validity_interval_does_not_cover_observation"
+          }
+        ],
+        "measurement_evaluation": "inside_declared_bounds_point_estimate_only_calibration_assurance_limited",
+        "assertions": [
+          "measurement and calibration source claim remain available",
+          "adapter does not emit calibration_valid_at_observation=true",
+          "source status Accepted is not converted into product release",
+          "point-estimate comparison does not establish measurement validity or quality acceptance"
+        ],
+        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+      }
+    },
+    {
+      "id": "MFG-OBS-004",
+      "label": "Asset references a different tenant than the trusted binding",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-mes",
+          "instance_namespace": "synthetic-mes://plant-a",
+          "release_pin": "synthetic-fixture-contract/0.1",
+          "object_type": "QualityObservation",
+          "external_id": "OBS-CNC44-TEMP-0001",
+          "record_revision": "rev-3"
+        },
+        "scope_binding": {
+          "binding_id": "binding-plant-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-a",
+          "source_site_ref": "plant-a"
+        },
+        "asset_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "Equipment",
+          "external_id": "CNC-44",
+          "tenant_ref": "tenant:synthetic-b"
+        },
+        "work_order_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "MaintenanceWorkOrder",
+          "external_id": "WO-8821"
+        },
+        "observed_time": "2026-10-15T10:00:00+02:00",
+        "source_modified_time": "2026-10-15T10:02:00+02:00",
+        "exported_at": "2026-10-15T08:05:00Z",
+        "snapshot": {
+          "export_id": "export-plant-a-20261015-0805z",
+          "consistency_mode": "per_record_non_atomic",
+          "extraction_started_at": "2026-10-15T08:04:00Z",
+          "extraction_completed_at": "2026-10-15T08:05:00Z",
+          "source_watermark": null
+        },
+        "measurement": {
+          "quantity_kind": "temperature",
+          "value_decimal": "72.4",
+          "unit_system": "UCUM",
+          "unit_code": "Cel",
+          "instrument_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "Instrument",
+            "external_id": "TEMP-PROBE-17"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-TEMP-PROBE-17-2026"
+          },
+          "method_ref": "synthetic-method:surface-bearing-temperature-v1",
+          "uncertainty": {
+            "value_decimal": "0.3",
+            "unit_code": "Cel",
+            "meaning": "fixture-provided expanded uncertainty; coverage convention not specified"
+          }
+        },
+        "calibration": {
+          "source_status_claim": "valid",
+          "valid_from": "2026-01-01T00:00:00Z",
+          "valid_until": "2027-01-01T00:00:00Z",
+          "issuer_ref": "synthetic-lab:metrology-01",
+          "authenticity_verified_by_adapter": false
+        },
+        "specification": {
+          "spec_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "QualitySpecification",
+            "external_id": "SPEC-BEARING-TEMP-07"
+          },
+          "revision": "spec-rev-2",
+          "lower_bound_decimal": "70.0",
+          "upper_bound_decimal": "75.0",
+          "unit_system": "UCUM",
+          "unit_code": "Cel"
+        },
+        "source_quality_claim": {
+          "raw_status": "Accepted",
+          "source_claim_only": true,
+          "independent_quality_release": false
+        }
+      },
+      "expected": {
+        "outcome": "reject",
+        "dispositions": [
+          {
+            "type": "reject",
+            "field": "asset_ref.tenant_ref",
+            "reason": "trusted_scope_mismatch"
+          }
+        ],
+        "projection_emitted": false,
+        "assertions": [
+          "no normal intake projection is emitted",
+          "adapter does not fetch or resolve the asset across the tenant boundary",
+          "source site ID is not used as proof of tenant authorization"
+        ],
+        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+      }
+    },
+    {
+      "id": "MFG-OBS-005",
+      "label": "Naive timestamp without a UTC designator or numeric offset",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-mes",
+          "instance_namespace": "synthetic-mes://plant-a",
+          "release_pin": "synthetic-fixture-contract/0.1",
+          "object_type": "QualityObservation",
+          "external_id": "OBS-CNC44-TEMP-0001",
+          "record_revision": "rev-3"
+        },
+        "scope_binding": {
+          "binding_id": "binding-plant-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-a",
+          "source_site_ref": "plant-a"
+        },
+        "asset_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "Equipment",
+          "external_id": "CNC-44",
+          "tenant_ref": "tenant:synthetic-a"
+        },
+        "work_order_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "MaintenanceWorkOrder",
+          "external_id": "WO-8821"
+        },
+        "observed_time": "2026-10-15T10:00:00",
+        "source_modified_time": "2026-10-15T10:02:00+02:00",
+        "exported_at": "2026-10-15T08:05:00Z",
+        "snapshot": {
+          "export_id": "export-plant-a-20261015-0805z",
+          "consistency_mode": "per_record_non_atomic",
+          "extraction_started_at": "2026-10-15T08:04:00Z",
+          "extraction_completed_at": "2026-10-15T08:05:00Z",
+          "source_watermark": null
+        },
+        "measurement": {
+          "quantity_kind": "temperature",
+          "value_decimal": "72.4",
+          "unit_system": "UCUM",
+          "unit_code": "Cel",
+          "instrument_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "Instrument",
+            "external_id": "TEMP-PROBE-17"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-TEMP-PROBE-17-2026"
+          },
+          "method_ref": "synthetic-method:surface-bearing-temperature-v1",
+          "uncertainty": {
+            "value_decimal": "0.3",
+            "unit_code": "Cel",
+            "meaning": "fixture-provided expanded uncertainty; coverage convention not specified"
+          }
+        },
+        "calibration": {
+          "source_status_claim": "valid",
+          "valid_from": "2026-01-01T00:00:00Z",
+          "valid_until": "2027-01-01T00:00:00Z",
+          "issuer_ref": "synthetic-lab:metrology-01",
+          "authenticity_verified_by_adapter": false
+        },
+        "specification": {
+          "spec_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "QualitySpecification",
+            "external_id": "SPEC-BEARING-TEMP-07"
+          },
+          "revision": "spec-rev-2",
+          "lower_bound_decimal": "70.0",
+          "upper_bound_decimal": "75.0",
+          "unit_system": "UCUM",
+          "unit_code": "Cel"
+        },
+        "source_quality_claim": {
+          "raw_status": "Accepted",
+          "source_claim_only": true,
+          "independent_quality_release": false
+        }
+      },
+      "expected": {
+        "outcome": "reject",
+        "dispositions": [
+          {
+            "type": "reject",
+            "field": "observed_time",
+            "reason": "timestamp_has_no_explicit_offset"
+          }
+        ],
+        "projection_emitted": false,
+        "assertions": [
+          "timestamp is not assumed to be UTC or the runner's local timezone",
+          "the original malformed value may be retained only in a diagnostic field permitted by policy",
+          "export time is not substituted for observed time"
+        ],
+        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+      }
+    },
+    {
+      "id": "MFG-OBS-006",
+      "label": "Source says Accepted but measurement exceeds source-provided upper bound",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-mes",
+          "instance_namespace": "synthetic-mes://plant-a",
+          "release_pin": "synthetic-fixture-contract/0.1",
+          "object_type": "QualityObservation",
+          "external_id": "OBS-CNC44-TEMP-0001",
+          "record_revision": "rev-3"
+        },
+        "scope_binding": {
+          "binding_id": "binding-plant-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-a",
+          "source_site_ref": "plant-a"
+        },
+        "asset_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "Equipment",
+          "external_id": "CNC-44",
+          "tenant_ref": "tenant:synthetic-a"
+        },
+        "work_order_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "MaintenanceWorkOrder",
+          "external_id": "WO-8821"
+        },
+        "observed_time": "2026-10-15T10:00:00+02:00",
+        "source_modified_time": "2026-10-15T10:02:00+02:00",
+        "exported_at": "2026-10-15T08:05:00Z",
+        "snapshot": {
+          "export_id": "export-plant-a-20261015-0805z",
+          "consistency_mode": "per_record_non_atomic",
+          "extraction_started_at": "2026-10-15T08:04:00Z",
+          "extraction_completed_at": "2026-10-15T08:05:00Z",
+          "source_watermark": null
+        },
+        "measurement": {
+          "quantity_kind": "temperature",
+          "value_decimal": "82.0",
+          "unit_system": "UCUM",
+          "unit_code": "Cel",
+          "instrument_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "Instrument",
+            "external_id": "TEMP-PROBE-17"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-TEMP-PROBE-17-2026"
+          },
+          "method_ref": "synthetic-method:surface-bearing-temperature-v1",
+          "uncertainty": {
+            "value_decimal": "0.3",
+            "unit_code": "Cel",
+            "meaning": "fixture-provided expanded uncertainty; coverage convention not specified"
+          }
+        },
+        "calibration": {
+          "source_status_claim": "valid",
+          "valid_from": "2026-01-01T00:00:00Z",
+          "valid_until": "2027-01-01T00:00:00Z",
+          "issuer_ref": "synthetic-lab:metrology-01",
+          "authenticity_verified_by_adapter": false
+        },
+        "specification": {
+          "spec_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "QualitySpecification",
+            "external_id": "SPEC-BEARING-TEMP-07"
+          },
+          "revision": "spec-rev-2",
+          "lower_bound_decimal": "70.0",
+          "upper_bound_decimal": "75.0",
+          "unit_system": "UCUM",
+          "unit_code": "Cel"
+        },
+        "source_quality_claim": {
+          "raw_status": "Accepted",
+          "source_claim_only": true,
+          "independent_quality_release": false
+        }
+      },
+      "expected": {
+        "outcome": "preserve_with_conflict",
+        "dispositions": [
+          {
+            "type": "conflict",
+            "field": "source_quality_claim.raw_status",
+            "reason": "source_acceptance_disagrees_with_profile_comparison"
+          }
+        ],
+        "measurement_evaluation": "outside_declared_bounds_point_estimate_only",
+        "assertions": [
+          "82.0 and its unit are preserved exactly as supplied",
+          "raw source status Accepted is preserved",
+          "comparison result is attributed to the profile rule and spec-rev-2",
+          "no automatic lot rejection, product release, shutdown, or actuation is authorized",
+          "the named comparison rule does not apply the uncertainty interval or grant quality-release authority"
+        ],
+        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+      }
+    },
+    {
+      "id": "MFG-OBS-007",
+      "label": "Record revision metadata absent although export time is available",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-mes",
+          "instance_namespace": "synthetic-mes://plant-a",
+          "release_pin": "synthetic-fixture-contract/0.1",
+          "object_type": "QualityObservation",
+          "external_id": "OBS-CNC44-TEMP-0001",
+          "record_revision": null
+        },
+        "scope_binding": {
+          "binding_id": "binding-plant-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-a",
+          "source_site_ref": "plant-a"
+        },
+        "asset_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "Equipment",
+          "external_id": "CNC-44",
+          "tenant_ref": "tenant:synthetic-a"
+        },
+        "work_order_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "MaintenanceWorkOrder",
+          "external_id": "WO-8821"
+        },
+        "observed_time": "2026-10-15T10:00:00+02:00",
+        "source_modified_time": null,
+        "exported_at": "2026-10-15T08:05:00Z",
+        "snapshot": {
+          "export_id": "export-plant-a-20261015-0805z",
+          "consistency_mode": "per_record_non_atomic",
+          "extraction_started_at": "2026-10-15T08:04:00Z",
+          "extraction_completed_at": "2026-10-15T08:05:00Z",
+          "source_watermark": null
+        },
+        "measurement": {
+          "quantity_kind": "temperature",
+          "value_decimal": "72.4",
+          "unit_system": "UCUM",
+          "unit_code": "Cel",
+          "instrument_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "Instrument",
+            "external_id": "TEMP-PROBE-17"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-TEMP-PROBE-17-2026"
+          },
+          "method_ref": "synthetic-method:surface-bearing-temperature-v1",
+          "uncertainty": {
+            "value_decimal": "0.3",
+            "unit_code": "Cel",
+            "meaning": "fixture-provided expanded uncertainty; coverage convention not specified"
+          }
+        },
+        "calibration": {
+          "source_status_claim": "valid",
+          "valid_from": "2026-01-01T00:00:00Z",
+          "valid_until": "2027-01-01T00:00:00Z",
+          "issuer_ref": "synthetic-lab:metrology-01",
+          "authenticity_verified_by_adapter": false
+        },
+        "specification": {
+          "spec_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "QualitySpecification",
+            "external_id": "SPEC-BEARING-TEMP-07"
+          },
+          "revision": "spec-rev-2",
+          "lower_bound_decimal": "70.0",
+          "upper_bound_decimal": "75.0",
+          "unit_system": "UCUM",
+          "unit_code": "Cel"
+        },
+        "source_quality_claim": {
+          "raw_status": "Accepted",
+          "source_claim_only": true,
+          "independent_quality_release": false
+        }
+      },
+      "expected": {
+        "outcome": "accepted_projection_with_loss",
+        "dispositions": [
+          {
+            "type": "loss",
+            "field": "source.record_revision",
+            "reason": "source_record_revision_not_provided"
+          }
+        ],
+        "freshness_claim": "not_available",
+        "assertions": [
+          "exported_at is retained as extraction/export time only",
+          "adapter does not infer the source record's revision or freshness",
+          "snapshot consistency remains per_record_non_atomic",
+          "no source-history completeness claim is emitted"
+        ],
+        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+      }
+    },
+    {
+      "id": "MFG-OBS-008",
+      "label": "Measurement uses a dimensionally incompatible unit",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-mes",
+          "instance_namespace": "synthetic-mes://plant-a",
+          "release_pin": "synthetic-fixture-contract/0.1",
+          "object_type": "QualityObservation",
+          "external_id": "OBS-CNC44-TEMP-0001",
+          "record_revision": "rev-3"
+        },
+        "scope_binding": {
+          "binding_id": "binding-plant-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-a",
+          "source_site_ref": "plant-a"
+        },
+        "asset_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "Equipment",
+          "external_id": "CNC-44",
+          "tenant_ref": "tenant:synthetic-a"
+        },
+        "work_order_ref": {
+          "source_instance": "synthetic-mes://plant-a",
+          "object_type": "MaintenanceWorkOrder",
+          "external_id": "WO-8821"
+        },
+        "observed_time": "2026-10-15T10:00:00+02:00",
+        "source_modified_time": "2026-10-15T10:02:00+02:00",
+        "exported_at": "2026-10-15T08:05:00Z",
+        "snapshot": {
+          "export_id": "export-plant-a-20261015-0805z",
+          "consistency_mode": "per_record_non_atomic",
+          "extraction_started_at": "2026-10-15T08:04:00Z",
+          "extraction_completed_at": "2026-10-15T08:05:00Z",
+          "source_watermark": null
+        },
+        "measurement": {
+          "quantity_kind": "temperature",
+          "value_decimal": "72.4",
+          "unit_system": "UCUM",
+          "unit_code": "kPa",
+          "instrument_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "Instrument",
+            "external_id": "TEMP-PROBE-17"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-TEMP-PROBE-17-2026"
+          },
+          "method_ref": "synthetic-method:surface-bearing-temperature-v1",
+          "uncertainty": {
+            "value_decimal": "0.3",
+            "unit_code": "Cel",
+            "meaning": "fixture-provided expanded uncertainty; coverage convention not specified"
+          }
+        },
+        "calibration": {
+          "source_status_claim": "valid",
+          "valid_from": "2026-01-01T00:00:00Z",
+          "valid_until": "2027-01-01T00:00:00Z",
+          "issuer_ref": "synthetic-lab:metrology-01",
+          "authenticity_verified_by_adapter": false
+        },
+        "specification": {
+          "spec_ref": {
+            "source_instance": "synthetic-mes://plant-a",
+            "object_type": "QualitySpecification",
+            "external_id": "SPEC-BEARING-TEMP-07"
+          },
+          "revision": "spec-rev-2",
+          "lower_bound_decimal": "70.0",
+          "upper_bound_decimal": "75.0",
+          "unit_system": "UCUM",
+          "unit_code": "Cel"
+        },
+        "source_quality_claim": {
+          "raw_status": "Accepted",
+          "source_claim_only": true,
+          "independent_quality_release": false
+        }
+      },
+      "expected": {
+        "outcome": "preserve_with_conflict",
+        "dispositions": [
+          {
+            "type": "conflict",
+            "field": "measurement.unit_code",
+            "reason": "measurement_unit_incompatible_with_specification"
+          }
+        ],
+        "measurement_evaluation": "not_evaluable",
+        "assertions": [
+          "the original decimal value and kPa code are preserved",
+          "the adapter does not infer that kPa is a temperature unit or silently convert it",
+          "no point-estimate comparison is reported against the Celsius bounds",
+          "the source Accepted claim remains separate and unverified"
+        ],
+        "comparison_rule_id": "nominal-point-estimate-range/0.1"
+      }
+    }
+  ]
+}

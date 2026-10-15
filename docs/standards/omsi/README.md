@@ -14,11 +14,15 @@ OMSI proposes to standardize that boundary and reuse existing domain standards i
 ## Documents
 
 - [Pre-RFC proposal](RFC-PROPOSAL-0001.md)
+- [Cross-industry extension architecture](CROSS-INDUSTRY-EXTENSION-ARCHITECTURE.md) — proposed separation of shared evidence/interchange semantics, operation authority, industry profiles and vendor adapters
 - [Threat model](THREAT-MODEL.md)
 - [Scope and gap register](SCOPE-AND-GAP-REGISTER.md)
 - [Research notes](RESEARCH-NOTES.md)
 - [IT Service Core prior-art mapping](profiles/it-service-core/0.1/PRIOR-ART-MAPPING.md)
 - [Field Service profile for trades and asset maintenance](profiles/field-service/0.1/PROFILE.md)
+- [Manufacturing Asset Operations profile 0.1 — incubation](profiles/manufacturing-asset-operations/0.1/PROFILE.md)
+- [Manufacturing synthetic conformance vectors](profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json) — eight parseable positive/negative fixtures; not a normative wire schema
+- [Manufacturing conformance-vector JSON Schema](profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.schema.json) — structural validation contract for the fixture format only
 - [OCA Field Service 19.0 read-only adapter mapping](profiles/field-service/0.1/adapters/OCA_FIELD_SERVICE_19_0_MAPPING.md)
 - [Field Service adapter conformance matrix](profiles/field-service/0.1/adapters/ADAPTER_CONFORMANCE_MATRIX.md)
 - [Nixward adapter mapping](profiles/nixos/0.1/NIXWARD-ADAPTER-MAPPING.md)
@@ -59,7 +63,8 @@ These are pinned research artifacts. They do not establish live interoperability
 1. Is operation/authority/evidence a useful small interoperability kernel distinct from existing ITSM/RMM and field-service schemas?
 2. Are the proposed records minimal enough to map across independently developed systems?
 3. What belongs in Core 0.1 versus a service-specific profile?
-4. Which independent MSPs, tradespeople, service providers, customers and security reviewers should review the problem statement before stable schemas are frozen?
+4. Can the proposed interchange/evidence envelope be reused across industries without flattening domain-specific semantics or expanding operation authority unintentionally?
+5. Which independent MSPs, tradespeople, service providers, customers and security reviewers should review the problem statement before stable schemas are frozen?
 
 ## Non-claims
 
