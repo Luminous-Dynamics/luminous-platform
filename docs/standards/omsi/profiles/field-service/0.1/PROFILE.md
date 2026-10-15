@@ -207,7 +207,16 @@ The cross-project contract should be IDs, versioned references, authority scope 
 
 - **OCA Field Service 19.0 — [pinned adapter mapping](adapters/OCA_FIELD_SERVICE_19_0_MAPPING.md):** source-inspected `fsm.order`, configurable `fsm.stage`, locations, equipment, assigned workers, the optional checklist Activity addon, and invoice linkage. The mapping is research only. It preserves source stage and instance IDs, explicitly distinguishes `res.company` from an OMSI tenant, and notes that signatures, checklist completion and invoice links cannot be promoted to approval, independent verification or payment truth. The inspected source commit is pinned in the mapping; the addons use AGPL-3, and the optional accounting addon declares Beta maturity.
 
-## 14. Open questions for reviewers
+## 14. Adapter research pointers
+
+The profile is being evaluated against existing systems rather than used to replace their domain models. Source-pinned mapping notes remain research artifacts, not adopted requirements or claims that any adapter is production-ready:
+
+- [OCA Field Service 19.0 mapping](adapters/OCA_FIELD_SERVICE_19_0_MAPPING.md) — external field-service orders, configurable stage mapping, optional activities and invoice references.
+- [ERPNext v16.51.0 maintenance mapping](adapters/ERPNEXT_V16_51_0_MAINTENANCE_MAPPING.md) — distinguishes customer-facing Maintenance Visits, planned Maintenance Schedules, and recurring Asset Maintenance Logs.
+
+The adapters expose a common intake projection only where source semantics support it. Planned schedules, reported work, document submission, closure, certificate metadata, payment, and independently verified results remain distinct. Both research tracks require explicit site/instance-to-tenant bindings and privacy-minimized synthetic tests before any live connector work.
+
+## 15. Open questions for reviewers
 
 1. Is “Field Service” a suitable profile name, or should the profile split into “asset maintenance” and “project delivery” before 0.1?
 2. Which existing service-case and work-order models provide representative, legally shareable exports for plumbing/HVAC and automotive?
