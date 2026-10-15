@@ -9,16 +9,18 @@ HTTP client or a complete SSRF defense.
 - Exact administrator-owned HTTPS-origin allowlisting, after conservative host
   canonicalization.
 - Empty DNS answer rejection and fail-closed validation of every answer in a
-  set. One disallowed address rejects the entire set.
+  set. One disallowed address rejects the entire set. IP-literal origins must
+  resolve to exactly that literal, not an arbitrary public address.
 - A `ValidatedResolution` value binds the validated IP set to the exact
   normalized origin that produced it; peer verification rejects reuse for a
   different origin.
 - Actual socket-peer IP membership and exact origin-port matching.
 - Rejection of ambiguous legacy IPv4 hostname spellings (including shortened,
   octal, and hexadecimal forms that URL parsers can interpret differently).
-- A private-state, non-cloneable redirect-chain tracker that counts every
-  authorized hop, rejects caller-supplied counters, and becomes terminal after
-  a denied hop; no credential forwarding occurs when the origin changes.
+- A private-state, non-cloneable redirect-chain tracker bound to its original
+  allowlist. It counts every authorized hop, rejects caller-supplied counters,
+  and becomes terminal after a denied hop; no credential forwarding occurs
+  when the origin changes.
 - Declared content-length and streamed-byte limits, plus a policy-bound cumulative byte meter that becomes terminal after a limit breach or counter overflow. Counter overflow has its own error so it cannot be misreported as an ordinary size breach.
 - Fail-closed response content-encoding validation: accept only an absent header or `identity` unless a future transport explicitly meters compressed wire bytes and decoded artifact bytes.
 - Required positive connect, read-idle, and whole-fetch time budgets, with phase timeouts constrained by the total budget.
@@ -96,6 +98,6 @@ No third-party crates are used.
     cargo fmt --check --manifest-path tools/artifact-fetch-policy/Cargo.toml
     cargo test --locked --offline --manifest-path tools/artifact-fetch-policy/Cargo.toml
 
-The suite now contains 16 deterministic unit tests. Passing them proves only
+The suite now contains 18 deterministic unit tests. Passing them proves only
 that this library's policy checks behave as tested. It does not qualify any
 actual transport or artifact download.
