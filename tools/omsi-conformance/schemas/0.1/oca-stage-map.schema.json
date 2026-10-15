@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omsi.example/spec/0.1/oca-stage-map.schema.json",
+  "title": "Versioned OCA field service stage-map configuration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile_id",
+    "source_commit",
+    "entries"
+  ],
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stage_id",
+          "source_name",
+          "stage_type",
+          "source_is_closed",
+          "normalized_status"
+        ],
+        "properties": {
+          "stage_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stage_type": {
+            "const": "order"
+          },
+          "source_is_closed": {
+            "type": "boolean"
+          },
+          "normalized_status": {
+            "enum": [
+              "requested",
+              "assessed",
+              "awaiting_approval",
+              "approved",
+              "scheduled",
+              "dispatched",
+              "on_site",
+              "diagnosed",
+              "in_progress",
+              "quality_checked",
+              "handed_over",
+              "invoiced",
+              "closed",
+              "disputed",
+              "blocked",
+              "return_visit_required"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

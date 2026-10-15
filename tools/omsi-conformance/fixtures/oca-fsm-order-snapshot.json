@@ -1,0 +1,74 @@
+{
+  "schema": "org.omsi.oca-fsm-order-snapshot/0.1",
+  "source": {
+    "system": "OCA/field-service",
+    "instance_namespace": "odoo-instance://fixture.invalid/plumbing-db",
+    "repository_commit": "8b2fa2592dda401726834ccf8030d34e241a69ad",
+    "core_addon_version": "19.0.1.2.3",
+    "core_addon_license": "AGPL-3",
+    "optional_addons": [
+      {
+        "name": "fieldservice_activity",
+        "version": "19.0.1.0.1",
+        "license": "AGPL-3",
+        "maturity": "Beta"
+      }
+    ]
+  },
+  "order": {
+    "source_record_id": "101",
+    "name": "FSM/2026/0101",
+    "write_date": "2026-10-14T11:00:00Z",
+    "company_id": "7",
+    "stage": {
+      "id": "4",
+      "name": "Completed",
+      "stage_type": "order",
+      "is_closed": true,
+      "require_signature": true
+    },
+    "priority": "3",
+    "location_id": "18",
+    "person_id": "21",
+    "person_ids": [
+      "21",
+      "22"
+    ],
+    "team_id": "5",
+    "equipment_ids": [
+      "51",
+      "52"
+    ],
+    "request_early": "2026-10-14T09:00:00Z",
+    "request_late": "2026-10-14T12:00:00Z",
+    "scheduled_date_start": "2026-10-14T10:00:00Z",
+    "scheduled_date_end": "2026-10-14T11:00:00Z",
+    "date_start": "2026-10-14T10:15:00Z",
+    "date_end": "2026-10-14T10:45:00Z",
+    "signed_by_present": true,
+    "signed_on": "2026-10-14T10:46:00Z",
+    "signature_present": true,
+    "description_present": true,
+    "todo_present": true,
+    "resolution_present": true
+  },
+  "activity_addon_state": "exported",
+  "activities": [
+    {
+      "source_activity_id": "9001",
+      "required": true,
+      "state": "done",
+      "completed_on": "2026-10-14T10:42:00Z",
+      "completed_by": "odoo-user-14"
+    },
+    {
+      "source_activity_id": "9002",
+      "required": false,
+      "state": "cancel",
+      "completed_on": null,
+      "completed_by": null
+    }
+  ],
+  "invoice_addon_state": "not_installed",
+  "invoice_refs": []
+}

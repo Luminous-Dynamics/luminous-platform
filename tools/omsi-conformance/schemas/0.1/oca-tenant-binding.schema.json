@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omsi.example/spec/0.1/oca-tenant-binding.schema.json",
+  "title": "Explicit external OCA company-to-OMSI tenant binding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "binding_id",
+    "source_instance_namespace",
+    "source_company_id",
+    "tenant_id",
+    "status",
+    "configured_at",
+    "source_of_binding"
+  ],
+  "properties": {
+    "binding_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_instance_namespace": {
+      "type": "string",
+      "pattern": "^odoo-instance://[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$"
+    },
+    "source_company_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tenant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "active",
+        "revoked",
+        "unavailable"
+      ]
+    },
+    "configured_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_of_binding": {
+      "const": "trusted-integration-configuration"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "profile_id": "oca-fieldservice-stage-map-synthetic-v1",
+  "source_commit": "8b2fa2592dda401726834ccf8030d34e241a69ad",
+  "entries": [
+    {
+      "stage_id": "4",
+      "source_name": "Completed",
+      "stage_type": "order",
+      "source_is_closed": true,
+      "normalized_status": "closed"
+    }
+  ]
+}

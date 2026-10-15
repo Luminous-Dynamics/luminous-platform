@@ -1,0 +1,9 @@
+{
+  "binding_id": "synthetic-binding-plumbing-company-7",
+  "source_instance_namespace": "odoo-instance://fixture.invalid/plumbing-db",
+  "source_company_id": "7",
+  "tenant_id": "tenant-plumbing-provider-a",
+  "status": "active",
+  "configured_at": "2026-10-01T00:00:00Z",
+  "source_of_binding": "trusted-integration-configuration"
+}

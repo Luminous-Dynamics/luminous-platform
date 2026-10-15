@@ -1,0 +1,373 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omsi.example/spec/0.1/oca-fsm-order-snapshot.schema.json",
+  "title": "OCA Field Service 19.0 order snapshot projection (read-only adapter research)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "source",
+    "order",
+    "activity_addon_state",
+    "activities",
+    "invoice_addon_state",
+    "invoice_refs"
+  ],
+  "properties": {
+    "schema": {
+      "const": "org.omsi.oca-fsm-order-snapshot/0.1"
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "system",
+        "instance_namespace",
+        "repository_commit",
+        "core_addon_version",
+        "core_addon_license",
+        "optional_addons"
+      ],
+      "properties": {
+        "system": {
+          "const": "OCA/field-service"
+        },
+        "instance_namespace": {
+          "type": "string",
+          "pattern": "^odoo-instance://[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$"
+        },
+        "repository_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "core_addon_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "core_addon_license": {
+          "const": "AGPL-3"
+        },
+        "optional_addons": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "version",
+              "license",
+              "maturity"
+            ],
+            "properties": {
+              "name": {
+                "enum": [
+                  "fieldservice_activity",
+                  "fieldservice_account"
+                ]
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1
+              },
+              "license": {
+                "const": "AGPL-3"
+              },
+              "maturity": {
+                "enum": [
+                  "Production/Stable",
+                  "Beta",
+                  "Alpha",
+                  "Unknown"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "order": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_record_id",
+        "name",
+        "write_date",
+        "company_id",
+        "stage",
+        "priority",
+        "location_id",
+        "person_id",
+        "person_ids",
+        "team_id",
+        "equipment_ids",
+        "request_early",
+        "request_late",
+        "scheduled_date_start",
+        "scheduled_date_end",
+        "date_start",
+        "date_end",
+        "signed_by_present",
+        "signed_on",
+        "signature_present",
+        "description_present",
+        "todo_present",
+        "resolution_present"
+      ],
+      "properties": {
+        "source_record_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "write_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "company_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "name",
+            "stage_type",
+            "is_closed",
+            "require_signature"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "stage_type": {
+              "enum": [
+                "order",
+                "equipment",
+                "location",
+                "worker"
+              ]
+            },
+            "is_closed": {
+              "type": "boolean"
+            },
+            "require_signature": {
+              "type": "boolean"
+            }
+          }
+        },
+        "priority": {
+          "enum": [
+            "0",
+            "1",
+            "2",
+            "3"
+          ]
+        },
+        "location_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "person_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "person_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "team_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "equipment_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "request_early": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "request_late": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scheduled_date_start": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scheduled_date_end": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "date_start": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "date_end": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "signed_by_present": {
+          "type": "boolean"
+        },
+        "signed_on": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "signature_present": {
+          "type": "boolean"
+        },
+        "description_present": {
+          "type": "boolean"
+        },
+        "todo_present": {
+          "type": "boolean"
+        },
+        "resolution_present": {
+          "type": "boolean"
+        }
+      }
+    },
+    "activity_addon_state": {
+      "enum": [
+        "not_installed",
+        "exported",
+        "unavailable"
+      ]
+    },
+    "activities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_activity_id",
+          "required",
+          "state",
+          "completed_on",
+          "completed_by"
+        ],
+        "properties": {
+          "source_activity_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "state": {
+            "enum": [
+              "todo",
+              "done",
+              "cancel"
+            ]
+          },
+          "completed_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "completed_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "invoice_addon_state": {
+      "enum": [
+        "not_installed",
+        "exported",
+        "unavailable"
+      ]
+    },
+    "invoice_refs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
