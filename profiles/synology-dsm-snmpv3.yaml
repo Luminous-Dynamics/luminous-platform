@@ -1,0 +1,216 @@
+# Proposed machine-readable profile contract. Not a runnable collector config yet.
+schema_version: "0.1"
+profile_id: "luminous.synology.dsm.snmpv3.read-only"
+status: "design-only"
+qualification:
+  qualified: false
+  required_target_facts:
+    - nas_model
+    - cpu_architecture
+    - dsm_version
+    - dsm_build
+    - synology_mib_revision
+  claim_scope: "Only the exact recorded target and OIDs exercised by evidence"
+
+target:
+  product_family: "Synology DSM"
+  minimum_protocol: "SNMPv3"
+  discover_model_and_version_from:
+    - "SNMPv2-MIB::sysDescr.0"
+    - "SNMPv2-MIB::sysObjectID.0"
+    - "SNMPv2-MIB::sysName.0"
+    - "SNMPv2-MIB::sysUpTime.0"
+    - ".1.3.6.1.4.1.6574.1.5.1.0" # modelName
+    - ".1.3.6.1.4.1.6574.1.5.3.0" # version
+  do_not_collect_by_default:
+    - ".1.3.6.1.4.1.6574.1.5.2.0" # serialNumber
+    - ".1.3.6.1.4.1.6574.5"       # SMART attributes, may expose raw drive telemetry
+    - "user and group inventories"
+    - "installed package inventories"
+    - "file names, share contents, or file metadata"
+
+transport:
+  protocol: "SNMPv3"
+  security_level: "authPriv"
+  authentication_algorithm: "select DSM-supported secure algorithm during provisioning; record exact value in qualification evidence"
+  privacy_algorithm: "select DSM-supported secure algorithm during provisioning; record exact value in qualification evidence"
+  reject_security_levels:
+    - "noAuthNoPriv"
+    - "authNoPriv"
+  reject_protocol_versions:
+    - "SNMPv1"
+    - "SNMPv2c"
+  network_policy:
+    destination_port: 161
+    transport: "UDP"
+    restrict_source_to_collector: true
+    require_private_management_network_or_vpn: true
+    public_internet_exposure: false
+  secrets:
+    source: "OS secret store or approved secret manager"
+    allow_cli_arguments: false
+    allow_environment_dump: false
+    allow_logs_or_receipts: false
+    store_in_profile_file: false
+
+polling:
+  interval_seconds_min: 60
+  request_timeout_seconds: 3
+  retries_max: 1
+  walk_row_limit_per_table: 128
+  max_response_bytes: 1048576
+  fail_on_truncated_or_malformed_response: true
+  no_mutating_operations: true
+
+read_allowlist:
+  standard_system:
+    - oid: ".1.3.6.1.2.1.1.1.0"
+      meaning: "sysDescr"
+    - oid: ".1.3.6.1.2.1.1.2.0"
+      meaning: "sysObjectID"
+    - oid: ".1.3.6.1.2.1.1.3.0"
+      meaning: "sysUpTime"
+    - oid: ".1.3.6.1.2.1.1.5.0"
+      meaning: "sysName"
+  synology_system_scalars:
+    - oid: ".1.3.6.1.4.1.6574.1.1.0"
+      meaning: "systemStatus"
+      values:
+        1: "normal"
+        2: "failed"
+    - oid: ".1.3.6.1.4.1.6574.1.2.0"
+      meaning: "temperature"
+    - oid: ".1.3.6.1.4.1.6574.1.3.0"
+      meaning: "powerStatus"
+      values:
+        1: "normal"
+        2: "failed"
+    - oid: ".1.3.6.1.4.1.6574.1.4.1.0"
+      meaning: "systemFanStatus"
+      values:
+        1: "normal"
+        2: "failed"
+    - oid: ".1.3.6.1.4.1.6574.1.4.2.0"
+      meaning: "cpuFanStatus"
+      values:
+        1: "normal"
+        2: "failed"
+    - oid: ".1.3.6.1.4.1.6574.1.5.1.0"
+      meaning: "modelName"
+    - oid: ".1.3.6.1.4.1.6574.1.5.3.0"
+      meaning: "version"
+    - oid: ".1.3.6.1.4.1.6574.1.7.1.0"
+      meaning: "cpuUtilization_percent"
+    - oid: ".1.3.6.1.4.1.6574.1.7.2.0"
+      meaning: "memUtilization_percent"
+    - oid: ".1.3.6.1.4.1.6574.1.8.0"
+      meaning: "thermalStatus"
+      values:
+        1: "normal"
+        2: "failed"
+  disk_table_columns:
+    table_entry_prefix: ".1.3.6.1.4.1.6574.2.1.1"
+    # Column roots only. Implementations must walk each allowed column with bounded rows.
+    columns:
+      - suffix: ".3"
+        meaning: "diskModel"
+      - suffix: ".4"
+        meaning: "diskType"
+      - suffix: ".5"
+        meaning: "diskStatus"
+        values:
+          1: "normal"
+          2: "initialized"
+          3: "not_initialized"
+          4: "system_partition_failed"
+          5: "crashed"
+          6: "disconnected"
+      - suffix: ".6"
+        meaning: "diskTemperature"
+      - suffix: ".7"
+        meaning: "diskRole"
+      - suffix: ".9"
+        meaning: "diskBadSector"
+      - suffix: ".11"
+        meaning: "diskRemainLife_percent"
+      - suffix: ".12"
+        meaning: "diskName"
+      - suffix: ".13"
+        meaning: "diskHealthStatus"
+        values:
+          1: "normal"
+          2: "warning"
+          3: "critical"
+          4: "failing"
+  raid_table_columns:
+    table_entry_prefix: ".1.3.6.1.4.1.6574.3.1.1"
+    columns:
+      - suffix: ".2"
+        meaning: "raidName"
+      - suffix: ".3"
+        meaning: "raidStatus"
+        values:
+          1: "normal"
+          2: "repairing"
+          3: "migrating"
+          4: "expanding"
+          5: "deleting"
+          6: "creating"
+          7: "raid_syncing"
+          8: "parity_checking"
+          9: "assembling"
+          10: "canceling"
+          11: "degraded"
+          12: "crashed_or_read_only"
+          13: "data_scrubbing"
+          14: "raid_deploying"
+          15: "raid_undeploying"
+          16: "mounting_cache"
+          17: "unmounting_cache"
+          18: "shr_expansion_interrupted"
+          19: "converting_to_storage_pool"
+          20: "migrating_shr1_to_shr2"
+          21: "unknown_status"
+      - suffix: ".4"
+        meaning: "raidFreeSize_bytes"
+      - suffix: ".5"
+        meaning: "raidTotalSize_bytes"
+      - suffix: ".6"
+        meaning: "raidHotspareCount"
+
+normalization:
+  unknown_enum: "unknown"
+  missing_oid: "unknown"
+  timeout: "unreachable_or_unknown"
+  malformed_or_truncated_response: "invalid_observation"
+  authentication_or_privacy_failure: "authentication_failed"
+  partial_table: "partial_observation"
+  never_infer_healthy_from_absence: true
+  system_health_rule: "Use independent component signals; systemStatus alone is only the system partition status, not a complete NAS health verdict"
+  in_progress_storage_states_are_not_healthy: true
+  serial_numbers_in_receipts: false
+
+receipt:
+  required_fields:
+    - profile_id
+    - profile_version
+    - collector_build_digest
+    - target_alias
+    - observed_at_utc
+    - dsm_version_if_available
+    - mib_profile_revision
+    - requested_oid_set_digest
+    - result_classification
+    - typed_values_digest
+    - partial_or_unknown_fields
+    - verifier_version
+  secret_fields_forbidden:
+    - snmp_authentication_password
+    - snmp_privacy_password
+    - session_keys
+  raw_snmp_packets_retained_by_default: false
+
+official_references:
+  - "https://kb.synology.com/en-ca/DSM/help/DSM/AdminCenter/system_snmp?version=7"
+  - "https://kb.synology.com/en-af/DG/Synology_DiskStation_MIB_Guide/5"
+  - "https://kb.synology.com/en-global/DG/DSM_Login_Web_API_Guide/2"

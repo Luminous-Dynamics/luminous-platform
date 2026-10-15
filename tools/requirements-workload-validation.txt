@@ -1,0 +1,3 @@
+# Exact direct dependency for the workload-profile schema validator.
+# This dependency validates metadata; it is not used in workload runtime artifacts.
+jsonschema==4.26.0

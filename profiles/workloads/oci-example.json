@@ -1,0 +1,99 @@
+{
+  "apiVersion": "luminousdynamics.org/v1alpha1",
+  "kind": "WorkloadProfile",
+  "metadata": {
+    "name": "oci-example-health-probe",
+    "version": "0.1.0",
+    "qualification": "example_only",
+    "purpose": "Schema fixture for a restricted OCI workload; not a runnable image reference.",
+    "owner": "Luminous Dynamics"
+  },
+  "placement": {
+    "allowedHosts": [
+      "nixos",
+      "ubuntu",
+      "debian",
+      "fedora",
+      "fedora_bootc",
+      "rocky_linux",
+      "almalinux",
+      "opensuse_microos"
+    ],
+    "architectures": [
+      "x86_64",
+      "aarch64"
+    ],
+    "placementClass": "service",
+    "notes": "Schema-only fixture for the runtime contract. This does not claim native support on any host, and the .invalid image plus placeholder digest must never be fetched or launched."
+  },
+  "deployment": {
+    "kind": "oci_container",
+    "image": {
+      "ref": "registry.example.invalid/luminous/example@sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "pullPolicy": "never"
+    },
+    "command": [
+      "/bin/sh",
+      "-c",
+      "sleep infinity"
+    ],
+    "user": {
+      "uid": 10001,
+      "gid": 10001
+    },
+    "readOnlyRootFilesystem": true,
+    "noNewPrivileges": true,
+    "privileged": false,
+    "hostNamespaces": {
+      "pid": false,
+      "network": false,
+      "ipc": false
+    },
+    "capabilities": [],
+    "seccompProfile": "runtime_default",
+    "volumes": [],
+    "ports": []
+  },
+  "security": {
+    "trustZone": "restricted_service",
+    "hostDataAccess": "none",
+    "hostControl": "none",
+    "network": {
+      "ingress": "deny",
+      "egress": "deny",
+      "rules": []
+    },
+    "secrets": {
+      "referencesOnly": true,
+      "provider": "none",
+      "references": []
+    }
+  },
+  "resources": {
+    "cpuMilli": 100,
+    "memoryMiB": 128,
+    "diskMiB": 0,
+    "pidsMax": 64,
+    "startupTimeoutSeconds": 10
+  },
+  "lifecycle": {
+    "startPolicy": "manual",
+    "restartPolicy": "on_failure",
+    "upgradeStrategy": "replace_by_digest",
+    "changesRequireAuthorization": true,
+    "stopTimeoutSeconds": 10,
+    "healthGraceSeconds": 0
+  },
+  "evidence": {
+    "status": "design_only",
+    "claimScope": "Schema fixture only; not built, pulled, or runtime-qualified.",
+    "testsRequired": [
+      "json_schema_validation",
+      "reject_privileged_container",
+      "reject_host_namespaces",
+      "reject_mutable_image_reference"
+    ],
+    "testsPassed": [],
+    "receiptReferences": []
+  }
+}

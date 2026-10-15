@@ -1,6 +1,6 @@
 # Luminous Platform
 
-The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, fail-open, consciousness-aware runtime for NixOS hosts.
+The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, fail-open, consciousness-aware runtime for NixOS hosts, with a planned path toward explicitly qualified support for additional Linux distributions.
 
 ## Architecture
 
@@ -53,6 +53,16 @@ Every platform component follows the same core safety rule:
 - `sovereign-boot` — disabled by default; QEMU-gated before any host enable
 - `nixward` — read-only diagnosis by default; actuation requires explicit operator receipt
 - `sovereign-ops` — intent-only; never directly mutates NixOS configuration
+
+## Cross-Distribution Roadmap
+
+NixOS remains the reference integration. Additional distribution support is a planned, capability-by-capability effort—not a claim that the current releases already support every Linux distribution.
+
+The proposed native-host sequence is Ubuntu Server 24.04 LTS → Debian Stable 13 (Trixie) → Fedora Server → Rocky Linux 10, with Ubuntu 26.04/Desktop tested in separate release/graphics lanes. openSUSE MicroOS and Fedora bootc are separate transactional/image-based host profiles; AlmaLinux 10 is a later candidate if a concrete requirement justifies it. In parallel, keep NixOS as the preferred declarative host for machines we control, use OCI containers for suitable services, use microvm.nix for an initial NixOS guest proof, and KVM/QEMU for heterogeneous guests. This is a proposal, not a measured performance claim or implemented runtime.
+
+Synology DSM is a separate NAS appliance track: first, a remote read-only SNMPv3 monitor using Synology's documented MIBs; optionally, a narrow DSM Web API adapter if required; then, an unprivileged Container Manager/Compose profile for one explicitly qualified model. It is not treated as generic Linux support. None of these profiles touches DSM boot/recovery, installs a privileged SPK, or gives a control-plane agent Docker-socket/root authority. The proposed monitor contract is [profiles/synology-dsm-snmpv3.yaml](profiles/synology-dsm-snmpv3.yaml). See [docs/SYNOLOGY_MONITOR_ADR.md](docs/SYNOLOGY_MONITOR_ADR.md) for the Rust client evaluation and fail-closed collector design. For the host/guest distinction and placement policy, see [Host and Workload Strategy](docs/HOST_AND_WORKLOAD_STRATEGY.md). The [workload profile schema](schemas/workload-profile.schema.json) and [example profiles](profiles/workloads/) now define the first machine-readable contract; CI validates them and rejects selected unsafe configurations.
+
+See [Cross-Distribution Support Strategy](docs/CROSS_DISTRO_SUPPORT.md) for the support matrix, architecture boundaries, staged acceptance gates, and required evidence. For the future artifact-fetch implementation boundary, see the [Artifact Fetch Transport ADR](docs/ARTIFACT_FETCH_TRANSPORT_ADR.md), which records the custom-connector decision and end-to-end acceptance gates. Distribution support will be reported per capability and exact tested profile; a queued workflow is not a pass.
 
 ## Quick Start: NixOS Integration
 
