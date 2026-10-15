@@ -4,6 +4,90 @@
   "status": "static_mapping_contract_no_runtime_transform",
   "contracts": [
     {
+      "schema_id": "mycelix.applicability-assessment",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "1232b9aef477f3de4a36fb6d3548be4748f87015",
+      "path": "schemas/life-civic/applicability-assessment.schema.json",
+      "git_blob_sha1": "241d4c4abbd765c05e56ddfae3391cead0f26dbc",
+      "version": null,
+      "artifact_kind": "json_schema",
+      "availability": "present_at_snapshot",
+      "notes": "Reviewed against Mycelix PR #5019 head 1232b9aef477f3de4a36fb6d3548be4748f87015; schema blob remains 241d4c4abbd765c05e56ddfae3391cead0f26dbc. The schema has no top-level schema_version; records carry profile_version. Applicability requires context, evidence and completed human review and is not an authorisation contract. Exact-head workflow [#38726208761](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38726208761) is queued; no pass is claimed.",
+      "qualification_state": "unqualified_draft"
+    },
+    {
+      "schema_id": "mycelix.gpsjs-survey-quality-schema",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "1232b9aef477f3de4a36fb6d3548be4748f87015",
+      "path": "schemas/life-civic/gpsjs-survey-quality.schema.json",
+      "git_blob_sha1": "5c79019dac237174015c169e3b893ffdc7e56cf7",
+      "version": null,
+      "artifact_kind": "json_schema",
+      "availability": "present_at_snapshot",
+      "qualification_state": "unqualified_draft",
+      "notes": "Mycelix PR #5019 head 1232b9aef477f3de4a36fb6d3548be4748f87015; exact schema blob 5c79019dac237174015c169e3b893ffdc7e56cf7. Defines structured response-rate diagnostics, indicator compatibility and the distinction between Table 41 household-prevalence CVs and the separate police-reporting measure. Does not itself perform significance testing or establish local transfer; workflow [#38726208761](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38726208761) is queued."
+    },
+    {
+      "schema_id": "mycelix.life-civic-service-reference-corpus",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "1232b9aef477f3de4a36fb6d3548be4748f87015",
+      "path": "tests/reference/life-civic-service/cases-v0.6.0.json",
+      "git_blob_sha1": "875fa72478ccd609b83d218bbae9b9facae8fd2e",
+      "version": "0.6.0",
+      "artifact_kind": "evaluation_corpus",
+      "availability": "present_at_snapshot",
+      "notes": "Reviewed against Mycelix PR #5019 head 1232b9aef477f3de4a36fb6d3548be4748f87015; exact corpus blob is 875fa72478ccd609b83d218bbae9b9facae8fd2e. Corpus v0.6.0 contains ten effects-disabled service fixtures and a synthetic response-versus-turnaround clock-semantics control. The case keeps retrieval/check timestamps null, has no raw-page digest, does not equate response with restoration and does not assert conflict solely because labels differ. Service schema remains v0.3.0. Exact-head workflow [#38726208761](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38726208761) is queued; this corpus remains unqualified.",
+      "qualification_state": "unqualified_draft"
+    },
+    {
+      "schema_id": "mycelix.life-civic-standard-instrument-schema",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "1232b9aef477f3de4a36fb6d3548be4748f87015",
+      "path": "schemas/life-civic/standard-instrument.schema.json",
+      "git_blob_sha1": "a4c87f4e7ca27140af590cf353b252c3ceee2ed3",
+      "version": null,
+      "artifact_kind": "json_schema",
+      "availability": "present_at_snapshot",
+      "qualification_state": "unqualified_draft",
+      "notes": "Mycelix PR #5019 head 1232b9aef477f3de4a36fb6d3548be4748f87015; exact schema blob a4c87f4e7ca27140af590cf353b252c3ceee2ed3. Instrument lifecycle fields distinguish publication, normative status, jurisdiction, effective dates, currentness and claim ceiling. Pinned as reference metadata, not a legal determination; exact-head workflow [#38726208761](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38726208761) is queued."
+    },
+    {
+      "schema_id": "mycelix.life-civic-standards-reference-corpus",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "1232b9aef477f3de4a36fb6d3548be4748f87015",
+      "path": "tests/reference/life-civic-standards/cases.json",
+      "git_blob_sha1": "4aab141469b0b2f9971a2d2761e91ea2d5a884af",
+      "version": "0.5.0",
+      "artifact_kind": "evaluation_corpus",
+      "availability": "present_at_snapshot",
+      "qualification_state": "unqualified_draft",
+      "notes": "Mycelix PR #5019 head 1232b9aef477f3de4a36fb6d3548be4748f87015; exact corpus blob 4aab141469b0b2f9971a2d2761e91ea2d5a884af, v0.5.0 with 17 cases. MYC-LCA-017 requires estimate-specific precision evidence and prohibits borrowing Table 41 CVs for the distinct police-reporting indicator, treating response rates as significance tests, or transferring national descriptive estimates into local causal claims. The life/civic workflow [#38726208761](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38726208761) is queued; no pass is claimed."
+    },
+    {
+      "schema_id": "mycelix.service-journey-reference-v0.3.0",
+      "repository": "Luminous-Dynamics/mycelix",
+      "snapshot_commit_sha": "1232b9aef477f3de4a36fb6d3548be4748f87015",
+      "path": "schemas/life-civic/service-journey-reference.schema.json",
+      "git_blob_sha1": "7e2b8b3d963c9c5598c78927121fcf60203591f9",
+      "version": "0.3.0",
+      "artifact_kind": "json_schema",
+      "availability": "present_at_snapshot",
+      "notes": "Reviewed against Mycelix PR #5019 head 1232b9aef477f3de4a36fb6d3548be4748f87015; service schema v0.3.0 blob remains 7e2b8b3d963c9c5598c78927121fcf60203591f9. It separates route status, case_state, evidence retrieval state, outcome status, review and claim_ceiling. Exact-head workflow [#38726208761](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38726208761) is queued; this entry remains unqualified.",
+      "qualification_state": "unqualified_draft"
+    },
+    {
+      "schema_id": "platform.operations-event-v1",
+      "repository": "Luminous-Dynamics/luminous-platform",
+      "snapshot_commit_sha": "c43a68adc9543fee67d67debfd7bcf6e1387395d",
+      "path": "contracts/operations-event-v1/schema.json",
+      "git_blob_sha1": "aa7364e5661125e04cc5e36b12269ec08b611448",
+      "version": "operations-event-v1",
+      "artifact_kind": "json_schema",
+      "availability": "present_at_snapshot",
+      "notes": "Reviewed from Luminous Platform PR #4 head c43a68adc9543fee67d67debfd7bcf6e1387395d; Operations Event schema blob is unchanged. Exact workflow #38692588693 succeeded on this head after fixing date-time format-checking and the stale issuer-role expectation. This qualifies the named narrow contract workflow only; it does not qualify a civic adapter or runtime event delivery.",
+      "qualification_state": "narrow_workflow_success"
+    },
+    {
       "schema_id": "platform.public-observation-v1",
       "repository": "Luminous-Dynamics/luminous-platform",
       "snapshot_commit_sha": "f04951f8f1fed8f0ea1d244824e1d39d8f71089d",
@@ -16,28 +100,16 @@
       "qualification_state": "unqualified_draft"
     },
     {
-      "schema_id": "mycelix.service-journey-reference-v0.3.0",
-      "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "9c6855b95f756802c04ccea1708aa3392be0aba7",
-      "path": "schemas/life-civic/service-journey-reference.schema.json",
-      "git_blob_sha1": "7e2b8b3d963c9c5598c78927121fcf60203591f9",
-      "version": "0.3.0",
+      "schema_id": "platform.work-case-v1",
+      "repository": "Luminous-Dynamics/luminous-platform",
+      "snapshot_commit_sha": "662aaf2bd2a3f873fd8f6fc0eb4181f061043794",
+      "path": "contracts/work-case-v1/schema.json",
+      "git_blob_sha1": "6be2f6498630d76287034020d9e89eca76ee2711",
+      "version": "work-case-v1",
       "artifact_kind": "json_schema",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Mycelix PR #5019 head 9c6855b95f756802c04ccea1708aa3392be0aba7; schema blob unchanged. Service schema v0.3.0 separates route status, case_state, evidence retrieval state, outcome status, review and claim_ceiling. Exact-head life-civic workflow [#38723223217](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38723223217) is queued; no qualification pass is claimed.",
-      "qualification_state": "unqualified_draft"
-    },
-    {
-      "schema_id": "mycelix.applicability-assessment",
-      "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "9c6855b95f756802c04ccea1708aa3392be0aba7",
-      "path": "schemas/life-civic/applicability-assessment.schema.json",
-      "git_blob_sha1": "241d4c4abbd765c05e56ddfae3391cead0f26dbc",
-      "version": null,
-      "artifact_kind": "json_schema",
-      "availability": "present_at_snapshot",
-      "notes": "Reviewed against Mycelix PR #5019 head 9c6855b95f756802c04ccea1708aa3392be0aba7; schema blob unchanged. The schema has no top-level schema_version; records carry profile_version. Applicability requires context, evidence and completed human review and is not an authorisation contract. Exact-head workflow [#38723223217](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38723223217) is queued; no pass is claimed.",
-      "qualification_state": "unqualified_draft"
+      "notes": "Reviewed from Luminous Platform PR #8 head 662aaf2bd2a3f873fd8f6fc0eb4181f061043794; Work Case schema blob remains 6be2f6498630d76287034020d9e89eca76ee2711. Exact workflow #38694337384 succeeded on this head. This is narrow contract/schema qualification only; the crosswalk mapping remains blocked pending runtime integration tests and the required semantic/authority boundaries.",
+      "qualification_state": "narrow_workflow_success"
     },
     {
       "schema_id": "sol-atlas.civic-service-case-v1",
@@ -54,108 +126,65 @@
     {
       "schema_id": "symthaea.life-civic-reference-corpus",
       "repository": "Luminous-Dynamics/symthaea",
-      "snapshot_commit_sha": "18697d2737af4164ef0ffa54cf7293c8e97bc792",
+      "snapshot_commit_sha": "c9acdf2ee7e5fc52379b43917af1c1c108f753b3",
       "path": "docs/research/life-civic/reference-scenarios.json",
-      "git_blob_sha1": "574f6d3ba235c68e306f84f5ee761d399cc165b6",
-      "version": "0.2.0",
+      "git_blob_sha1": "585cc046f3c4b88feaa0f6e30cca156ad4ba5618",
+      "version": "0.4.0",
       "artifact_kind": "evaluation_corpus",
       "availability": "present_at_snapshot",
-      "notes": "Reviewed against Symthaea PR #7443 head 18697d2737af4164ef0ffa54cf7293c8e97bc792; corpus blob is pinned at 574f6d3ba235c68e306f84f5ee761d399cc165b6. The 11-scenario life/civic corpus includes a negative control rejecting incident-level power-trip causality and current-restoration claims from a historical public statement. Life/civic scenario workflow #38695477970, crime-prevention reference workflow #38695477851 and synthetic evaluator workflow #38695478067 succeeded on that exact head. These are narrow corpus/evaluator results; broad CI, benchmark and governance workflows were skipped, and no overall Symthaea model or field qualification is implied.",
-      "qualification_state": "narrow_workflow_success"
-    },
-    {
-      "schema_id": "platform.work-case-v1",
-      "repository": "Luminous-Dynamics/luminous-platform",
-      "snapshot_commit_sha": "662aaf2bd2a3f873fd8f6fc0eb4181f061043794",
-      "path": "contracts/work-case-v1/schema.json",
-      "git_blob_sha1": "6be2f6498630d76287034020d9e89eca76ee2711",
-      "version": "work-case-v1",
-      "artifact_kind": "json_schema",
-      "availability": "present_at_snapshot",
-      "notes": "Reviewed from Luminous Platform PR #8 head 662aaf2bd2a3f873fd8f6fc0eb4181f061043794; Work Case schema blob remains 6be2f6498630d76287034020d9e89eca76ee2711. Exact workflow #38694337384 succeeded on this head. This is narrow contract/schema qualification only; the crosswalk mapping remains blocked pending runtime integration tests and the required semantic/authority boundaries.",
-      "qualification_state": "narrow_workflow_success"
-    },
-    {
-      "schema_id": "platform.operations-event-v1",
-      "repository": "Luminous-Dynamics/luminous-platform",
-      "snapshot_commit_sha": "c43a68adc9543fee67d67debfd7bcf6e1387395d",
-      "path": "contracts/operations-event-v1/schema.json",
-      "git_blob_sha1": "aa7364e5661125e04cc5e36b12269ec08b611448",
-      "version": "operations-event-v1",
-      "artifact_kind": "json_schema",
-      "availability": "present_at_snapshot",
-      "notes": "Reviewed from Luminous Platform PR #4 head c43a68adc9543fee67d67debfd7bcf6e1387395d; Operations Event schema blob is unchanged. Exact workflow #38692588693 succeeded on this head after fixing date-time format-checking and the stale issuer-role expectation. This qualifies the named narrow contract workflow only; it does not qualify a civic adapter or runtime event delivery.",
-      "qualification_state": "narrow_workflow_success"
-    },
-    {
-      "schema_id": "mycelix.life-civic-service-reference-corpus",
-      "repository": "Luminous-Dynamics/mycelix",
-      "snapshot_commit_sha": "9c6855b95f756802c04ccea1708aa3392be0aba7",
-      "path": "tests/reference/life-civic-service/cases-v0.6.0.json",
-      "git_blob_sha1": "875fa72478ccd609b83d218bbae9b9facae8fd2e",
-      "version": "0.6.0",
-      "artifact_kind": "evaluation_corpus",
-      "availability": "present_at_snapshot",
-      "notes": "Reviewed against Mycelix PR #5019 head 9c6855b95f756802c04ccea1708aa3392be0aba7; exact corpus blob remains 875fa72478ccd609b83d218bbae9b9facae8fd2e. Corpus v0.6.0 has ten effects-disabled service fixtures and a synthetic response-versus-turnaround clock-semantics control. The fixture keeps source retrieval/check times null, has no raw-page digest, does not equate response with restoration, and does not assert a source conflict solely because labels differ. Service schema remains v0.3.0. Exact-head workflow [#38723223217](https://github.com/Luminous-Dynamics/mycelix/actions/runs/38723223217) is queued; this corpus remains unqualified.",
+      "notes": "Reviewed against Symthaea PR #7443 head c9acdf2ee7e5fc52379b43917af1c1c108f753b3; current scenario corpus blob is 585cc046f3c4b88feaa0f6e30cca156ad4ba5618, version 0.4.0 with 15 cases. New SYM-LC-015 checks survey-precision boundaries: response-rate diagnostics and Table 41 household-prevalence CVs cannot substitute for estimate-specific uncertainty on police-reporting proportions; rounded point differences do not establish significance or local causal effects. The manifest pin matches the exact scenario-file blob. The latest workflow pins checkout and asserts the exact PR SHA; no completed exact-head run is recorded yet, so this corpus remains unqualified.",
       "qualification_state": "unqualified_draft"
     }
   ],
   "mappings": [
     {
-      "mapping_id": "OBSERVATION-TO-MYCELIX-EVIDENCE",
+      "mapping_id": "APPLICABILITY-TO-AUTHORITY",
       "from": {
-        "schema_id": "platform.public-observation-v1",
+        "schema_id": "mycelix.applicability-assessment",
         "field_paths": [
-          "source_uri",
-          "retrieved_at",
-          "source_id",
-          "raw_value_state"
+          "result.status",
+          "human_review",
+          "claim_ceiling"
         ]
       },
       "to": {
-        "schema_id": "mycelix.service-journey-reference-v0.3.0",
-        "field_paths": [
-          "evidence[].source_uri",
-          "evidence[].retrieved_at",
-          "evidence[].checked_at",
-          "evidence[].retrieval_state",
-          "evidence[].limitations"
-        ]
+        "schema_id": "platform.work-case-v1",
+        "field_paths": []
       },
-      "relationship": "partial_semantic_overlap",
-      "conversion_policy": "explicit_adapter_required",
-      "disposition": "candidate_only",
-      "rationale": "A source observation may support a service-journey evidence record only if it refers to the same source material and claim scope. raw_value_state describes the source value state, not whether source retrieval succeeded; retrieval_state and checked_at must be derived from the actual capture attempt, not copied from raw_value_state.",
+      "relationship": "no_authority_mapping",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "A standard-applicability assessment may be uncertain or require human review and is explicitly not an authorization contract. Even an applicable result with completed review cannot grant a permission or issue a privileged command.",
       "required_guards": [
-        "preserve source-native fields and timestamps",
-        "do not invent checked_at for fixtures that were never retrieved",
-        "retain null/missing/stale/invalid states without coercing them",
-        "check source terms and reuse permission",
-        "keep source observation identity namespaced"
+        "keep legal applicability distinct from authorization",
+        "require the responsible authority and capability to be established independently",
+        "refuse writes when the actual command policy and contract are absent"
       ]
     },
     {
-      "mapping_id": "OBSERVATION-DIGEST-TO-SOL-DIGEST",
+      "mapping_id": "MYCELIX-AREA-TO-SOL-PUBLIC-AREA",
       "from": {
-        "schema_id": "platform.public-observation-v1",
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
         "field_paths": [
-          "source_snapshot_sha256"
+          "scope.service_area_ref"
         ]
       },
       "to": {
         "schema_id": "sol-atlas.civic-service-case-v1",
         "field_paths": [
-          "EvidenceReference.sha256"
+          "CivicServiceCase.internal_area_ref",
+          "CivicServiceCase.public_area"
         ]
       },
-      "relationship": "digest_subject_mismatch",
-      "conversion_policy": "no_automatic_mapping",
-      "disposition": "prohibited",
-      "rationale": "The public observation digest is defined as a source snapshot digest; the Sol-Atlas evidence digest is a SHA-256 of captured bytes. They are not interchangeable unless the exact hashed byte sequence and digest subject are demonstrated to be identical.",
+      "relationship": "distinct_semantic_dimension",
+      "conversion_policy": "explicit_adapter_required",
+      "disposition": "candidate_only",
+      "rationale": "Mycelix service_area_ref is opaque and purpose-scoped. It is neither a Sol-Atlas internal area/asset reference nor proof of a reviewed public Region/Ward/Precinct code. A mapping requires a data-steward-approved jurisdictional lookup and a separate public-area projection.",
       "required_guards": [
-        "preserve original digest and its subject",
-        "calculate a separate digest for the target's exact evidence bytes",
-        "never relabel a digest without recomputing it"
+        "do not copy opaque refs into public outputs",
+        "verify geography and allowed granularity with the responsible data steward",
+        "never expose household coordinates or exact address as public_area",
+        "leave unresolved mappings unknown"
       ]
     },
     {
@@ -180,6 +209,30 @@
         "never overwrite or reuse a native ID across schemas",
         "require explicit linkage evidence before asserting same incident",
         "keep ambiguous and unresolved links unresolved"
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-CASE-ID-TO-WORK-CASE-ID",
+      "from": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "case_id"
+        ]
+      },
+      "to": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": [
+          "case_id"
+        ]
+      },
+      "relationship": "identity_namespace_only",
+      "conversion_policy": "namespaced_reference_only",
+      "disposition": "preserve_separate",
+      "rationale": "The IDs belong to separate local record namespaces. Equal strings do not establish the same incident, tenant, or ownership.",
+      "required_guards": [
+        "preserve repository/schema namespace with each ID",
+        "require explicit linkage evidence before claiming record identity",
+        "never use a Mycelix case ID as a Work Case primary key"
       ]
     },
     {
@@ -209,53 +262,28 @@
       ]
     },
     {
-      "mapping_id": "MYCELIX-URGENCY-TO-SOL-SEVERITY",
+      "mapping_id": "MYCELIX-CASE-STATE-TO-WORK-CASE-STATE",
       "from": {
         "schema_id": "mycelix.service-journey-reference-v0.3.0",
         "field_paths": [
-          "scope.urgency"
+          "case_state"
         ]
       },
       "to": {
-        "schema_id": "sol-atlas.civic-service-case-v1",
+        "schema_id": "platform.work-case-v1",
         "field_paths": [
-          "CaseSeverity"
+          "state"
         ]
       },
-      "relationship": "distinct_semantic_dimension",
+      "relationship": "incompatible_state_machine",
       "conversion_policy": "no_automatic_mapping",
-      "disposition": "prohibited",
-      "rationale": "Informational/routine/urgent/emergency and routine/moderate/high/immediate_safety_risk are not shared ordinal scales. An implicit cast would change risk meaning.",
+      "disposition": "blocked",
+      "rationale": "Mycelix distinguishes routing_conflict, submitted, acknowledged, work_reported_complete, verified_resolved, closed_unresolved, human_review_required and source_conflict. Work Case V1 uses open, in_progress, waiting, resolved, closed and cancelled. These semantics cannot be collapsed without losing route, evidence and review information.",
       "required_guards": [
-        "preserve source urgency",
-        "define domain-specific reviewed policy before any display translation",
-        "do not infer safety priority from report volume"
-      ]
-    },
-    {
-      "mapping_id": "MYCELIX-AREA-TO-SOL-PUBLIC-AREA",
-      "from": {
-        "schema_id": "mycelix.service-journey-reference-v0.3.0",
-        "field_paths": [
-          "scope.service_area_ref"
-        ]
-      },
-      "to": {
-        "schema_id": "sol-atlas.civic-service-case-v1",
-        "field_paths": [
-          "CivicServiceCase.internal_area_ref",
-          "CivicServiceCase.public_area"
-        ]
-      },
-      "relationship": "distinct_semantic_dimension",
-      "conversion_policy": "explicit_adapter_required",
-      "disposition": "candidate_only",
-      "rationale": "Mycelix service_area_ref is opaque and purpose-scoped. It is neither a Sol-Atlas internal area/asset reference nor proof of a reviewed public Region/Ward/Precinct code. A mapping requires a data-steward-approved jurisdictional lookup and a separate public-area projection.",
-      "required_guards": [
-        "do not copy opaque refs into public outputs",
-        "verify geography and allowed granularity with the responsible data steward",
-        "never expose household coordinates or exact address as public_area",
-        "leave unresolved mappings unknown"
+        "keep both native state values",
+        "do not map verified_resolved to resolved or closed by string similarity",
+        "any future display adapter must be separately versioned and loss-aware",
+        "do not enable the adapter until the exact Work Case and source-contract revisions qualify"
       ]
     },
     {
@@ -313,76 +341,142 @@
       ]
     },
     {
-      "mapping_id": "APPLICABILITY-TO-AUTHORITY",
+      "mapping_id": "MYCELIX-SYMTHAEA-CAUSALITY-CORPORA",
       "from": {
-        "schema_id": "mycelix.applicability-assessment",
+        "schema_id": "mycelix.life-civic-service-reference-corpus",
         "field_paths": [
-          "result.status",
-          "human_review",
-          "claim_ceiling"
+          "cases[].fixture_id",
+          "cases[].instance.evidence[].claim_scope",
+          "cases[].instance.evidence[].limitations",
+          "cases[].instance.claim_ceiling.prohibited_inferences"
         ]
       },
       "to": {
-        "schema_id": "platform.work-case-v1",
-        "field_paths": []
-      },
-      "relationship": "no_authority_mapping",
-      "conversion_policy": "no_automatic_mapping",
-      "disposition": "prohibited",
-      "rationale": "A standard-applicability assessment may be uncertain or require human review and is explicitly not an authorization contract. Even an applicable result with completed review cannot grant a permission or issue a privileged command.",
-      "required_guards": [
-        "keep legal applicability distinct from authorization",
-        "require the responsible authority and capability to be established independently",
-        "refuse writes when the actual command policy and contract are absent"
-      ]
-    },
-    {
-      "mapping_id": "SYMTHAEA-CORPUS-TO-ACTION",
-      "from": {
         "schema_id": "symthaea.life-civic-reference-corpus",
         "field_paths": [
-          "cases[].expected",
-          "required_outputs"
+          "cases[].case_id",
+          "cases[].expected.must_distinguish",
+          "cases[].expected.prohibited_claims"
+        ]
+      },
+      "relationship": "partial_semantic_overlap",
+      "conversion_policy": "preserve_separately",
+      "disposition": "preserve_separate",
+      "rationale": "Mycelix's service-journey case tests the evidence/service-state contract while Symthaea's case tests expected reasoning boundaries. Both encode the same negative causal/currentness boundary in different fixture shapes; they are corresponding evaluation controls, not interchangeable runtime records.",
+      "required_guards": [
+        "Keep Mycelix fixture IDs and Symthaea case IDs namespaced and distinct.",
+        "Preserve publication/event dates separately from source retrieval/check timestamps; synthetic fixture timestamps remain null.",
+        "Do not infer incident-level cause, live outage status, restoration, or intervention effect from the historical government statement alone.",
+        "Keep the Mycelix service schema at v0.3.0 and the corpus revision at v0.6.0 as distinct version axes.",
+        "Do not turn either evaluation fixture into a production case, action authority or a claim that model reasoning has passed.",
+        "Keep both source contracts and evaluation suites unqualified until their exact-head workflows finish."
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-SYMTHAEA-GPSJS-PRECISION-CORPORA",
+      "from": {
+        "schema_id": "mycelix.life-civic-standards-reference-corpus",
+        "field_paths": [
+          "cases[].case_id",
+          "cases[].input_projection",
+          "cases[].survey_quality",
+          "cases[].expected.status",
+          "cases[].expected.forbidden_claims"
+        ]
+      },
+      "to": {
+        "schema_id": "symthaea.life-civic-reference-corpus",
+        "field_paths": [
+          "cases[].case_id",
+          "cases[].input",
+          "cases[].expected.must_distinguish",
+          "cases[].expected.prohibited_claims"
+        ]
+      },
+      "relationship": "partial_semantic_overlap",
+      "conversion_policy": "preserve_separately",
+      "disposition": "preserve_separate",
+      "rationale": "Mycelix supplies structured instrument/evidence and survey-precision constraints, while Symthaea defines expected reasoning distinctions and prohibited claims. MYC-LCA-017 and SYM-LC-015 test corresponding statistical-evidence boundaries, but their corpus shapes, identifier namespaces and outputs are not interchangeable data records.",
+      "required_guards": [
+        "Keep Mycelix case IDs and Symthaea scenario IDs in their own namespaces; a pairing is an evaluation relationship, not record identity.",
+        "Do not treat response-rate diagnostics as estimate-specific precision or statistical significance evidence.",
+        "Do not apply Table 41 household housebreaking-experience coefficients of variation to the separate police-reporting proportion.",
+        "Do not infer significance from rounded point estimates without compatible denominators, survey design and estimate-specific precision evidence.",
+        "Do not transfer national descriptive survey changes into a Johannesburg baseline or causal intervention effect without local validation.",
+        "Do not use victimization or reporting statistics for individual criminal propensity scores or action authority.",
+        "Keep both evaluation corpora unqualified until their own exact-head workflows complete."
+      ]
+    },
+    {
+      "mapping_id": "MYCELIX-URGENCY-TO-SOL-SEVERITY",
+      "from": {
+        "schema_id": "mycelix.service-journey-reference-v0.3.0",
+        "field_paths": [
+          "scope.urgency"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CaseSeverity"
+        ]
+      },
+      "relationship": "distinct_semantic_dimension",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "Informational/routine/urgent/emergency and routine/moderate/high/immediate_safety_risk are not shared ordinal scales. An implicit cast would change risk meaning.",
+      "required_guards": [
+        "preserve source urgency",
+        "define domain-specific reviewed policy before any display translation",
+        "do not infer safety priority from report volume"
+      ]
+    },
+    {
+      "mapping_id": "OBSERVATION-DIGEST-TO-SOL-DIGEST",
+      "from": {
+        "schema_id": "platform.public-observation-v1",
+        "field_paths": [
+          "source_snapshot_sha256"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "EvidenceReference.sha256"
+        ]
+      },
+      "relationship": "digest_subject_mismatch",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "prohibited",
+      "rationale": "The public observation digest is defined as a source snapshot digest; the Sol-Atlas evidence digest is a SHA-256 of captured bytes. They are not interchangeable unless the exact hashed byte sequence and digest subject are demonstrated to be identical.",
+      "required_guards": [
+        "preserve original digest and its subject",
+        "calculate a separate digest for the target's exact evidence bytes",
+        "never relabel a digest without recomputing it"
+      ]
+    },
+    {
+      "mapping_id": "OBSERVATION-DIGEST-TO-WORK-CASE-DIGEST",
+      "from": {
+        "schema_id": "platform.public-observation-v1",
+        "field_paths": [
+          "source_snapshot_sha256"
         ]
       },
       "to": {
         "schema_id": "platform.work-case-v1",
-        "field_paths": []
+        "field_paths": [
+          "evidence_refs[].digest_sha256"
+        ]
       },
-      "relationship": "not_runtime_contract",
+      "relationship": "digest_subject_mismatch",
       "conversion_policy": "no_automatic_mapping",
       "disposition": "prohibited",
-      "rationale": "Expected values in an evaluation corpus specify what a test should detect; they are not model outputs, runtime commands or permission to act. The corpus must never be wired directly to production mutations.",
+      "rationale": "A source snapshot digest binds the captured source snapshot; a Work Case evidence reference points to an evidence artifact. Unless byte identity and digest subject match exactly, reusing the digest would make a false provenance claim.",
       "required_guards": [
-        "use corpus only for evaluation",
-        "capture real model outputs separately from expected fixtures",
-        "keep advisory reasoning side-effect free"
-      ]
-    },
-    {
-      "mapping_id": "SOL-INTERNAL-TO-PUBLIC-PROJECTION",
-      "from": {
-        "schema_id": "sol-atlas.civic-service-case-v1",
-        "field_paths": [
-          "CivicServiceCase"
-        ]
-      },
-      "to": {
-        "schema_id": "sol-atlas.civic-service-case-v1",
-        "field_paths": [
-          "CivicServiceCase::public_projection",
-          "PublicCivicCase"
-        ]
-      },
-      "relationship": "explicit_public_projection",
-      "conversion_policy": "dedicated_sanitizing_projection",
-      "disposition": "required_boundary",
-      "rationale": "The module defines a reduced public type and explicit projection that omits raw official ticket IDs, actor references and artifact pointers and filters evidence by public visibility. Raw internal records are not public serialization types.",
-      "required_guards": [
-        "call public_projection and reject None",
-        "do not serialize CivicServiceCase directly for public endpoints",
-        "apply aggregation/suppression for aggregate-only, restricted or sensitive cases",
-        "review public-area code semantics before publication"
+        "preserve source snapshot digest and subject independently",
+        "recompute the target evidence digest over the exact evidence bytes",
+        "retain provenance linking, not digest substitution"
       ]
     },
     {
@@ -410,103 +504,36 @@
       ]
     },
     {
-      "mapping_id": "MYCELIX-CASE-ID-TO-WORK-CASE-ID",
+      "mapping_id": "OBSERVATION-TO-MYCELIX-EVIDENCE",
       "from": {
+        "schema_id": "platform.public-observation-v1",
+        "field_paths": [
+          "source_uri",
+          "retrieved_at",
+          "source_id",
+          "raw_value_state"
+        ]
+      },
+      "to": {
         "schema_id": "mycelix.service-journey-reference-v0.3.0",
         "field_paths": [
-          "case_id"
+          "evidence[].source_uri",
+          "evidence[].retrieved_at",
+          "evidence[].checked_at",
+          "evidence[].retrieval_state",
+          "evidence[].limitations"
         ]
       },
-      "to": {
-        "schema_id": "platform.work-case-v1",
-        "field_paths": [
-          "case_id"
-        ]
-      },
-      "relationship": "identity_namespace_only",
-      "conversion_policy": "namespaced_reference_only",
-      "disposition": "preserve_separate",
-      "rationale": "The IDs belong to separate local record namespaces. Equal strings do not establish the same incident, tenant, or ownership.",
+      "relationship": "partial_semantic_overlap",
+      "conversion_policy": "explicit_adapter_required",
+      "disposition": "candidate_only",
+      "rationale": "A source observation may support a service-journey evidence record only if it refers to the same source material and claim scope. raw_value_state describes the source value state, not whether source retrieval succeeded; retrieval_state and checked_at must be derived from the actual capture attempt, not copied from raw_value_state.",
       "required_guards": [
-        "preserve repository/schema namespace with each ID",
-        "require explicit linkage evidence before claiming record identity",
-        "never use a Mycelix case ID as a Work Case primary key"
-      ]
-    },
-    {
-      "mapping_id": "MYCELIX-CASE-STATE-TO-WORK-CASE-STATE",
-      "from": {
-        "schema_id": "mycelix.service-journey-reference-v0.3.0",
-        "field_paths": [
-          "case_state"
-        ]
-      },
-      "to": {
-        "schema_id": "platform.work-case-v1",
-        "field_paths": [
-          "state"
-        ]
-      },
-      "relationship": "incompatible_state_machine",
-      "conversion_policy": "no_automatic_mapping",
-      "disposition": "blocked",
-      "rationale": "Mycelix distinguishes routing_conflict, submitted, acknowledged, work_reported_complete, verified_resolved, closed_unresolved, human_review_required and source_conflict. Work Case V1 uses open, in_progress, waiting, resolved, closed and cancelled. These semantics cannot be collapsed without losing route, evidence and review information.",
-      "required_guards": [
-        "keep both native state values",
-        "do not map verified_resolved to resolved or closed by string similarity",
-        "any future display adapter must be separately versioned and loss-aware",
-        "do not enable the adapter until the exact Work Case and source-contract revisions qualify"
-      ]
-    },
-    {
-      "mapping_id": "WORK-CASE-CASE-ID-TO-SOL-CASE-ID",
-      "from": {
-        "schema_id": "platform.work-case-v1",
-        "field_paths": [
-          "case_id"
-        ]
-      },
-      "to": {
-        "schema_id": "sol-atlas.civic-service-case-v1",
-        "field_paths": [
-          "CivicServiceCase.case_id"
-        ]
-      },
-      "relationship": "identity_namespace_only",
-      "conversion_policy": "namespaced_reference_only",
-      "disposition": "preserve_separate",
-      "rationale": "Work Case is tenant-scoped operational state; Sol-Atlas is a separate civic projection. Equal or similar identifiers do not prove common incident identity and can reveal private work records if copied publicly.",
-      "required_guards": [
-        "keep source repository, schema, tenant and native ID in an internal mapping",
-        "never expose tenant_id or internal case IDs in a public projection",
-        "require purpose and access checks before looking up an external record"
-      ]
-    },
-    {
-      "mapping_id": "WORK-CASE-STATE-TO-SOL-STATUS",
-      "from": {
-        "schema_id": "platform.work-case-v1",
-        "field_paths": [
-          "state",
-          "revision"
-        ]
-      },
-      "to": {
-        "schema_id": "sol-atlas.civic-service-case-v1",
-        "field_paths": [
-          "CaseStatus",
-          "CaseEventKind"
-        ]
-      },
-      "relationship": "incompatible_state_machine",
-      "conversion_policy": "no_automatic_mapping",
-      "disposition": "blocked",
-      "rationale": "Work Case state is operational workflow state, and revision is an optimistic-concurrency token. Sol-Atlas event states include resolution claim and independent verification; Work Case resolved/closed does not prove physical restoration.",
-      "required_guards": [
-        "never map resolved or closed to VerifiedResolved without independent target evidence",
-        "do not manufacture Sol-Atlas append-only events from a snapshot",
-        "do not expose Work Case state or revision in a public case without an explicit reviewed projection",
-        "remain blocked until both contracts and the explicit adapter qualify"
+        "preserve source-native fields and timestamps",
+        "do not invent checked_at for fixtures that were never retrieved",
+        "retain null/missing/stale/invalid states without coercing them",
+        "check source terms and reuse permission",
+        "keep source observation identity namespaced"
       ]
     },
     {
@@ -553,27 +580,76 @@
       ]
     },
     {
-      "mapping_id": "OBSERVATION-DIGEST-TO-WORK-CASE-DIGEST",
+      "mapping_id": "SOL-INTERNAL-TO-PUBLIC-PROJECTION",
       "from": {
-        "schema_id": "platform.public-observation-v1",
+        "schema_id": "sol-atlas.civic-service-case-v1",
         "field_paths": [
-          "source_snapshot_sha256"
+          "CivicServiceCase"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CivicServiceCase::public_projection",
+          "PublicCivicCase"
+        ]
+      },
+      "relationship": "explicit_public_projection",
+      "conversion_policy": "dedicated_sanitizing_projection",
+      "disposition": "required_boundary",
+      "rationale": "The module defines a reduced public type and explicit projection that omits raw official ticket IDs, actor references and artifact pointers and filters evidence by public visibility. Raw internal records are not public serialization types.",
+      "required_guards": [
+        "call public_projection and reject None",
+        "do not serialize CivicServiceCase directly for public endpoints",
+        "apply aggregation/suppression for aggregate-only, restricted or sensitive cases",
+        "review public-area code semantics before publication"
+      ]
+    },
+    {
+      "mapping_id": "SYMTHAEA-CORPUS-TO-ACTION",
+      "from": {
+        "schema_id": "symthaea.life-civic-reference-corpus",
+        "field_paths": [
+          "cases[].expected",
+          "required_outputs"
         ]
       },
       "to": {
         "schema_id": "platform.work-case-v1",
-        "field_paths": [
-          "evidence_refs[].digest_sha256"
-        ]
+        "field_paths": []
       },
-      "relationship": "digest_subject_mismatch",
+      "relationship": "not_runtime_contract",
       "conversion_policy": "no_automatic_mapping",
       "disposition": "prohibited",
-      "rationale": "A source snapshot digest binds the captured source snapshot; a Work Case evidence reference points to an evidence artifact. Unless byte identity and digest subject match exactly, reusing the digest would make a false provenance claim.",
+      "rationale": "Expected values in an evaluation corpus specify what a test should detect; they are not model outputs, runtime commands or permission to act. The corpus must never be wired directly to production mutations.",
       "required_guards": [
-        "preserve source snapshot digest and subject independently",
-        "recompute the target evidence digest over the exact evidence bytes",
-        "retain provenance linking, not digest substitution"
+        "use corpus only for evaluation",
+        "capture real model outputs separately from expected fixtures",
+        "keep advisory reasoning side-effect free"
+      ]
+    },
+    {
+      "mapping_id": "WORK-CASE-CASE-ID-TO-SOL-CASE-ID",
+      "from": {
+        "schema_id": "platform.work-case-v1",
+        "field_paths": [
+          "case_id"
+        ]
+      },
+      "to": {
+        "schema_id": "sol-atlas.civic-service-case-v1",
+        "field_paths": [
+          "CivicServiceCase.case_id"
+        ]
+      },
+      "relationship": "identity_namespace_only",
+      "conversion_policy": "namespaced_reference_only",
+      "disposition": "preserve_separate",
+      "rationale": "Work Case is tenant-scoped operational state; Sol-Atlas is a separate civic projection. Equal or similar identifiers do not prove common incident identity and can reveal private work records if copied publicly.",
+      "required_guards": [
+        "keep source repository, schema, tenant and native ID in an internal mapping",
+        "never expose tenant_id or internal case IDs in a public projection",
+        "require purpose and access checks before looking up an external record"
       ]
     },
     {
@@ -625,35 +701,30 @@
       ]
     },
     {
-      "mapping_id": "MYCELIX-SYMTHAEA-CAUSALITY-CORPORA",
+      "mapping_id": "WORK-CASE-STATE-TO-SOL-STATUS",
       "from": {
-        "schema_id": "mycelix.life-civic-service-reference-corpus",
+        "schema_id": "platform.work-case-v1",
         "field_paths": [
-          "cases[].fixture_id",
-          "cases[].instance.evidence[].claim_scope",
-          "cases[].instance.evidence[].limitations",
-          "cases[].instance.claim_ceiling.prohibited_inferences"
+          "state",
+          "revision"
         ]
       },
       "to": {
-        "schema_id": "symthaea.life-civic-reference-corpus",
+        "schema_id": "sol-atlas.civic-service-case-v1",
         "field_paths": [
-          "cases[].case_id",
-          "cases[].expected.must_distinguish",
-          "cases[].expected.prohibited_claims"
+          "CaseStatus",
+          "CaseEventKind"
         ]
       },
-      "relationship": "partial_semantic_overlap",
-      "conversion_policy": "preserve_separately",
-      "disposition": "preserve_separate",
-      "rationale": "Mycelix's service-journey case tests the evidence/service-state contract while Symthaea's case tests expected reasoning boundaries. Both encode the same negative causal/currentness boundary in different fixture shapes; they are corresponding evaluation controls, not interchangeable runtime records.",
+      "relationship": "incompatible_state_machine",
+      "conversion_policy": "no_automatic_mapping",
+      "disposition": "blocked",
+      "rationale": "Work Case state is operational workflow state, and revision is an optimistic-concurrency token. Sol-Atlas event states include resolution claim and independent verification; Work Case resolved/closed does not prove physical restoration.",
       "required_guards": [
-        "Keep Mycelix fixture IDs and Symthaea case IDs namespaced and distinct.",
-        "Preserve publication/event dates separately from source retrieval/check timestamps; synthetic fixture timestamps remain null.",
-        "Do not infer incident-level cause, live outage status, restoration, or intervention effect from the historical government statement alone.",
-        "Keep the Mycelix service schema at v0.3.0 and the corpus revision at v0.6.0 as distinct version axes.",
-        "Do not turn either evaluation fixture into a production case, action authority or a claim that model reasoning has passed.",
-        "Keep both source contracts and evaluation suites unqualified until their exact-head workflows finish."
+        "never map resolved or closed to VerifiedResolved without independent target evidence",
+        "do not manufacture Sol-Atlas append-only events from a snapshot",
+        "do not expose Work Case state or revision in a public case without an explicit reviewed projection",
+        "remain blocked until both contracts and the explicit adapter qualify"
       ]
     }
   ],

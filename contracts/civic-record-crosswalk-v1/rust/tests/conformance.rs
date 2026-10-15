@@ -79,16 +79,16 @@ fn symthaea_life_civic_corpus_pin_tracks_v0_2_0_and_narrow_success() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "18697d2737af4164ef0ffa54cf7293c8e97bc792"
+        "c9acdf2ee7e5fc52379b43917af1c1c108f753b3"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
         Some("574f6d3ba235c68e306f84f5ee761d399cc165b6")
     );
-    assert_eq!(contract.version.as_deref(), Some("0.2.0"));
+    assert_eq!(contract.version.as_deref(), Some("0.4.0"));
     assert_eq!(
         contract.qualification_state,
-        civic_record_crosswalk_v1::QualificationState::NarrowWorkflowSuccess
+        civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
     );
 }
 
@@ -104,7 +104,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "9c6855b95f756802c04ccea1708aa3392be0aba7"
+        "1232b9aef477f3de4a36fb6d3548be4748f87015"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
@@ -137,7 +137,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
             .unwrap_or_else(|| panic!("missing pinned Mycelix schema {schema_id}"));
         assert_eq!(
             source_schema.snapshot_commit_sha,
-            "9c6855b95f756802c04ccea1708aa3392be0aba7"
+            "1232b9aef477f3de4a36fb6d3548be4748f87015"
         );
         assert_eq!(source_schema.git_blob_sha1.as_deref(), Some(expected_blob));
     }
@@ -170,6 +170,77 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
             .iter()
             .any(|guard| guard.contains("incident-level cause")),
         "the cross-corpus mapping must preserve its causal-inference guard"
+    );
+}
+
+#[test]
+fn mycelix_standards_and_gpsjs_precision_contracts_are_pinned_as_non_runtime() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+
+    for (schema_id, path, expected_blob) in [
+        (
+            "mycelix.life-civic-standard-instrument-schema",
+            "schemas/life-civic/standard-instrument.schema.json",
+            "a4c87f4e7ca27140af590cf353b252c3ceee2ed3",
+        ),
+        (
+            "mycelix.gpsjs-survey-quality-schema",
+            "schemas/life-civic/gpsjs-survey-quality.schema.json",
+            "5c79019dac237174015c169e3b893ffdc7e56cf7",
+        ),
+        (
+            "mycelix.life-civic-standards-reference-corpus",
+            "tests/reference/life-civic-standards/cases.json",
+            "4aab141469b0b2f9971a2d2761e91ea2d5a884af",
+        ),
+    ] {
+        let contract = crosswalk
+            .contracts
+            .iter()
+            .find(|contract| contract.schema_id == schema_id)
+            .unwrap_or_else(|| panic!("missing Mycelix evidence contract {schema_id}"));
+        assert_eq!(contract.snapshot_commit_sha, "1232b9aef477f3de4a36fb6d3548be4748f87015");
+        assert_eq!(contract.path.as_deref(), Some(path));
+        assert_eq!(contract.git_blob_sha1.as_deref(), Some(expected_blob));
+        assert_eq!(
+            contract.qualification_state,
+            civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+        );
+    }
+
+    let precision_mapping = crosswalk
+        .mappings
+        .iter()
+        .find(|rule| rule.mapping_id == "MYCELIX-SYMTHAEA-GPSJS-PRECISION-CORPORA")
+        .expect("statistical-precision semantic mapping is explicit");
+    assert_eq!(
+        precision_mapping.from.schema_id,
+        "mycelix.life-civic-standards-reference-corpus"
+    );
+    assert_eq!(
+        precision_mapping.to.schema_id,
+        "symthaea.life-civic-reference-corpus"
+    );
+    assert_eq!(
+        precision_mapping.conversion_policy,
+        civic_record_crosswalk_v1::ConversionPolicy::PreserveSeparately
+    );
+    assert_eq!(
+        precision_mapping.disposition,
+        civic_record_crosswalk_v1::Disposition::PreserveSeparate
+    );
+    assert!(
+        precision_mapping.required_guards.iter().any(|guard| {
+            guard.contains("Table 41")
+        }),
+        "precision mapping must prohibit reuse of unrelated prevalence CVs"
+    );
+    assert!(
+        precision_mapping.required_guards.iter().any(|guard| {
+            guard.contains("estimate-specific precision evidence")
+        }),
+        "precision mapping must require estimate-specific precision evidence"
     );
 }
 
