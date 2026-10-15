@@ -115,8 +115,10 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
     # Preserve their disagreement instead of assuming undocumented coupling.
     if docstatus == 2 and status != "Cancelled":
         conflicts.add("document_cancelled_but_maintenance_status_not_cancelled")
-    if status == "Cancelled" and docstatus != 2:
-        conflicts.add("maintenance_status_cancelled_but_document_not_cancelled")
+    # The pinned controller explicitly allows maintenance_status=Cancelled on
+    # submission (docstatus=1); only an unsubmitted draft is an incomplete cancel.
+    if status == "Cancelled" and docstatus == 0:
+        conflicts.add("maintenance_status_cancelled_but_document_not_submitted")
     losses: set[str] = {
         "professional_credential_status_not_provided_by_source",
         "independent_verification_not_provided_by_source",

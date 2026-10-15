@@ -199,7 +199,23 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
         s, b = inputs(); s["log"].update(maintenance_status="Cancelled", docstatus=0, completion_date=None)
         out = adapter.map_maintenance_log(s, b, NOW)
         self.assertEqual(out["maintenance"]["normalized_status"], "cancelled")
-        self.assertIn("maintenance_status_cancelled_but_document_not_cancelled", out["maintenance"]["mapping_conflicts"])
+        self.assertIn("maintenance_status_cancelled_but_document_not_submitted", out["maintenance"]["mapping_conflicts"])
+
+    def test_submitted_cancelled_maintenance_status_is_valid_without_doc_cancellation(self):
+        s, b = inputs()
+        s["log"].update(maintenance_status="Cancelled", docstatus=1, completion_date=None)
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(out["maintenance"]["normalized_status"], "cancelled")
+        self.assertEqual(out["maintenance"]["source_docstatus"], 1)
+        self.assertEqual(out["maintenance"]["source_status"], "Cancelled")
+        self.assertNotIn(
+            "maintenance_status_cancelled_but_document_not_submitted",
+            out["maintenance"]["mapping_conflicts"],
+        )
+        self.assertNotIn(
+            "document_cancelled_but_maintenance_status_not_cancelled",
+            out["maintenance"]["mapping_conflicts"],
+        )
 
     def test_plan_task_relationship_mismatch_rejected(self):
         s, b = inputs(); s["plan"]["task_id"] = "another-task"
