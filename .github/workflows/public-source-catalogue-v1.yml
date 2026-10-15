@@ -115,6 +115,12 @@ jobs:
           set -euo pipefail
           cargo +1.96.0 test --manifest-path contracts/civic-record-crosswalk-v1/rust/Cargo.toml --all-targets
 
+      - name: Verify pinned public source blobs at their exact commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash contracts/civic-record-crosswalk-v1/verify-pinned-source-blobs.sh contracts/civic-record-crosswalk-v1/crosswalk.json
+
       - name: Validate civic record crosswalk fixture
         shell: bash
         run: |

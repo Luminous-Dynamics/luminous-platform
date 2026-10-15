@@ -60,3 +60,14 @@ All eight contract entries are pinned to the latest reviewed public PR heads and
 ## Exact-head qualification refresh — 15 October 2026
 
 This refresh supersedes older status statements above where source PRs have advanced. Symthaea PR #7443 has narrow exact-head success for its life/civic corpus, crime-prevention reference and synthetic evaluator; this establishes corpus/evaluator checks only, not general model capability. Luminous Platform PR #4 (Operations Event) and #8 (Work Case) also have successful named contract workflows, and their crosswalk entries now record `narrow_workflow_success`. Runtime mappings remain blocked until independent integration tests and authority-boundary review pass. Mycelix PR #5019's life/civic workflow remains queued, so its records remain `unqualified_draft`. The crosswalk is a static mapping register only; it does not convert, join, or authorise runtime records.
+
+
+## Verify the pinned source artifacts independently
+
+The Rust contract validator remains offline and does not make network requests. The separate `verify-pinned-source-blobs.sh` audit fetches only the public files named by `availability: present_at_snapshot` from their exact full Git commit SHAs over HTTPS, computes each Git blob SHA-1 with `git hash-object`, and compares it with the crosswalk. It never checks out or executes source-repository code, never reads private municipal systems, and is not a data-ingestion adapter.
+
+Run from the repository root:
+
+    bash contracts/civic-record-crosswalk-v1/verify-pinned-source-blobs.sh contracts/civic-record-crosswalk-v1/crosswalk.json
+
+A network error, missing path, malformed locator, or blob mismatch fails closed. This proves that the downloaded file bytes match the recorded Git blob at the requested commit; it does not prove that the source claim is true, that a repository branch still points to the commit, that the source is licensed for republication, or that a runtime mapping is semantically or operationally qualified. The CI step must pass on the exact crosswalk head before its pins can be described as independently reverified in that run.
