@@ -34,7 +34,8 @@
         "unit_code": "bar",
         "scale": 2,
         "min_scaled": 110,
-        "max_scaled": 130
+        "max_scaled": 130,
+        "max_calibration_age_seconds": 2592000
       }
     ]
   },
@@ -109,7 +110,8 @@
       "authorized_at": "2026-10-14T09:30:00Z",
       "authority_expires_at": "2026-10-14T11:00:00Z",
       "applied_at": "2026-10-14T10:00:00Z",
-      "required_verification": true
+      "required_verification": true,
+      "practitioner_id": "practitioner-ada"
     }
   ],
   "evidence": [
@@ -147,7 +149,9 @@
         "method_ref": "hvac-pressure-test-v1",
         "instrument_ref": "gauge-09",
         "calibration_ref": "calibration-gauge-09-2026",
-        "calibration_status": "valid"
+        "calibration_status": "valid",
+        "calibration_checked_at": "2026-10-13T08:00:00Z",
+        "calibration_valid_until": "2026-11-30T00:00:00Z"
       },
       "operation_manifest_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
     },
