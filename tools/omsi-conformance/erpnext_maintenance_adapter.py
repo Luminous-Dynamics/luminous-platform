@@ -122,6 +122,7 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
         "independent_verification_not_provided_by_source",
         "certificate_authenticity_not_established",
         "source_event_history_not_exported",
+        "task_last_completion_date_is_not_reconstructed_from_event_history",
         "site_timezone_and_source_clock_not_independently_attested",
     }
     if task["certificate_required"] != log["has_certificate"]:

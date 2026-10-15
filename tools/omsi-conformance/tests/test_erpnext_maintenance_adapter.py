@@ -150,6 +150,20 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
         self.assertEqual(out["maintenance"]["next_task_due_date"], "2026-11-14")
         self.assertNotEqual(out["maintenance"]["due_date"], out["maintenance"]["next_task_due_date"])
 
+    def test_task_last_completion_date_is_not_reconstructed_as_log_history(self):
+        s, b = inputs()
+        # The pinned controller overwrites the task date when a different log
+        # is submitted; it does not compare calendar ordering. A later-submitted
+        # historical log can therefore move this source field backward.
+        s["task"]["last_completion_date"] = "2026-10-13"
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(out["maintenance"]["completion_date"], "2026-10-14")
+        self.assertEqual(out["maintenance"]["last_task_completion_date"], "2026-10-13")
+        self.assertIn(
+            "task_last_completion_date_is_not_reconstructed_from_event_history",
+            out["maintenance"]["mapping_losses"],
+        )
+
     def test_future_completion_date_rejected(self):
         s, b = inputs(); s["log"]["completion_date"] = "2026-10-16"
         with self.assertRaisesRegex(core.ConformanceError, "completion date is in the future"):
