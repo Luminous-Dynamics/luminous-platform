@@ -1,0 +1,75 @@
+{
+  "schema_version": "public-observation-v1",
+  "observation_id": "synthetic-braamfontein-traffic-upgrade-v1",
+  "source_id": "za-gp-jhb-city-project-updates",
+  "source_uri": "https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/Braamfontein-traffic-upgrades-set-to-make-journeys-safer-and-smoother.aspx",
+  "retrieved_at": null,
+  "source_period": {
+    "period_label": "published-2026-10-02"
+  },
+  "dataset_id": "city-project-announcements-v1",
+  "field_path": "article.project.traffic_signal_accessibility",
+  "raw_value": {
+    "claim_kind": "publisher_statement",
+    "fixture_only": true,
+    "fixture_note": "Synthetic summary of a dated City/JRA announcement. Reported works and intended benefits are not independently measured here.",
+    "publication_date": "2026-10-02",
+    "project_subject": "Braamfontein Crossings Improvement Project",
+    "reported_project_value_zar": 19000000,
+    "reported_intersection_count": 8,
+    "reported_features": [
+      "traffic signal upgrades",
+      "backup power at the eight intersections with Wits identified as the provider",
+      "pedestrian countdown timers",
+      "audible pushbuttons for people with visual impairments",
+      "wider pavements",
+      "lane lights synchronised with traffic signals",
+      "protected underground traffic-signal controller chambers"
+    ],
+    "source_reported_completion_state": "upgrades reported delivered at eight intersections",
+    "is_live_service_status": false,
+    "is_current_operational_status_independently_verified": false,
+    "is_independently_verified_outcome": false,
+    "prohibited_inferences": [
+      "Do not infer current signal uptime or backup-power availability from the announcement.",
+      "Do not claim independent safety or accessibility impact without follow-up measurement.",
+      "Do not infer that one partner owns every component or its ongoing maintenance."
+    ]
+  },
+  "raw_value_state": "reported_value",
+  "normalization": {
+    "applied": false,
+    "rule_id": null,
+    "rule_version": null,
+    "normalized_value": {
+      "claim_kind": "publisher_statement",
+      "fixture_only": true,
+      "fixture_note": "Synthetic summary of a dated City/JRA announcement. Reported works and intended benefits are not independently measured here.",
+      "publication_date": "2026-10-02",
+      "project_subject": "Braamfontein Crossings Improvement Project",
+      "reported_project_value_zar": 19000000,
+      "reported_intersection_count": 8,
+      "reported_features": [
+        "traffic signal upgrades",
+        "backup power at the eight intersections with Wits identified as the provider",
+        "pedestrian countdown timers",
+        "audible pushbuttons for people with visual impairments",
+        "wider pavements",
+        "lane lights synchronised with traffic signals",
+        "protected underground traffic-signal controller chambers"
+      ],
+      "source_reported_completion_state": "upgrades reported delivered at eight intersections",
+      "is_live_service_status": false,
+      "is_current_operational_status_independently_verified": false,
+      "is_independently_verified_outcome": false,
+      "prohibited_inferences": [
+        "Do not infer current signal uptime or backup-power availability from the announcement.",
+        "Do not claim independent safety or accessibility impact without follow-up measurement.",
+        "Do not infer that one partner owns every component or its ongoing maintenance."
+      ]
+    },
+    "reason": "No transformation is applied. Preserve reported infrastructure features separately from live uptime and independently measured safety/accessibility outcomes."
+  },
+  "source_snapshot_sha256": null,
+  "fixture_only": true
+}

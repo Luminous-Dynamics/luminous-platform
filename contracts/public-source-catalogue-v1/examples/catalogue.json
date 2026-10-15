@@ -1,0 +1,628 @@
+{
+  "schema_version": "public-source-catalogue-v1",
+  "catalogue_revision": "public-service-operations-profile-rfc-001",
+  "sources": [
+    {
+      "source_id": "za-gov-jhb-power-water-coordination",
+      "display_name": "South African Government joint statement on power trips and water-supply disruptions",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "South African Government",
+        "url": "https://www.gov.za/"
+      },
+      "source_url": "https://www.gov.za/news/media-statements/government-measures-mitigate-water-supply-disruptions-resulting-power-trips",
+      "documentation_url": "https://www.gov.za/news/media-statements/government-measures-mitigate-water-supply-disruptions-resulting-power-trips",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "A dated intergovernmental statement is evidence that a public coordination discussion was announced, not a machine-readable incident feed or proof of ongoing outage status."
+      },
+      "terms": {
+        "policy_url": "https://www.gov.za/",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Review current government-site and document reuse terms before systematic collection or republication."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Published intergovernmental statements on electricity reliability and resulting water-supply disruptions",
+          "Publicly stated coordination actions and responsible institutions"
+        ],
+        "collection_policy": "Manual review only. Capture date, named institutions, specific statements and source URL. Keep a statement of intent or meeting separate from verified implementation, current service status and causal measurements."
+      },
+      "known_limitations": [
+        "A joint statement dated 10 September 2026 does not establish present-day outage conditions or the effectiveness of any intervention.",
+        "A reported discussion or commitment is not equivalent to a funded project, completed work or verified outcome.",
+        "The source is broader public policy context; it does not provide customer-level water/electricity incident IDs or access to municipal telemetry.",
+        "Do not claim that every water interruption is caused by a power trip; the source describes a risk/coordination issue, not a universal incident-level causal rule."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "No government data exchange, live outage integration, automated collection or operational command is implemented."
+      }
+    },
+    {
+      "source_id": "za-gov-water-sanitation-compulsory-standards",
+      "display_name": "South African Government revised compulsory national water and sanitation services standards notice",
+      "jurisdiction": "ZA",
+      "publisher": {
+        "name": "Government of South Africa",
+        "url": "https://www.gov.za/"
+      },
+      "source_url": "https://www.gov.za/documents/notices/water-services-act-compulsory-national-water-and-sanitation-services-standards",
+      "documentation_url": "https://www.gov.za/documents/notices/water-services-act-compulsory-national-water-and-sanitation-services-standards",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "https_confirmed",
+        "pagination_note": "The official landing page lists a revised compulsory standards notice and a linked Gazette PDF. Pin the exact instrument/version and inspect its text before relying on a provision."
+      },
+      "terms": {
+        "policy_url": "https://www.gov.za/",
+        "reuse_status": "not_assessed",
+        "must_recheck_before_ingestion": true,
+        "notes": "This is a source-discovery entry, not a legal determination. Review instrument status, commencement/effective dates, amendment or supersession, applicable jurisdiction and reuse rules before interpretation or republication."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "aggregate_no_personal_data_expected",
+        "datasets_or_content": [
+          "Revised compulsory national Water and Sanitation Services Standards notice under Water Services Act section 9(1)",
+          "Official linked Government Gazette No. 52814, Notice 6292, dated 6 June 2025 (43-page PDF)"
+        ],
+        "collection_policy": "Catalogue the landing page and exact linked instrument. Following human review, preserve instrument title and identifier, Gazette issue/date, provision reference, effective period, source digest and applicability-review record. Do not convert a national requirement directly into an incident-level SLA or claim that the requirement was met."
+      },
+      "known_limitations": [
+        "The linked Gazette PDF identifies Government Gazette No. 52814, Notice 6292, dated 6 June 2025. This identifies the published instrument but does not establish its current status, commencement/effective period, or applicability to a particular operator or service class.",
+        "A standard or target is not an observation of service performance and does not prove resolution of an individual incident.",
+        "Exact text, subsequent amendments or supersession, effective status and applicability need qualified human/legal review before rules are derived from the instrument."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Metadata only; no PDF extraction, legal interpretation, rule generation or data ingestion is implemented."
+      }
+    },
+    {
+      "source_id": "za-gp-jhb-city-plans-service-standards",
+      "display_name": "City of Johannesburg IDP, SDBIP and Service-Level Standards index",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "City of Johannesburg",
+        "url": "https://joburg.org.za/"
+      },
+      "source_url": "https://joburg.org.za/documents_/Pages/Key%20Documents/SDBIP%20IDP%20and%20Budget/SDBIP-IDP-And-Budget.aspx",
+      "documentation_url": "https://joburg.org.za/documents_/Pages/Key%20Documents/SDBIP%20IDP%20and%20Budget/SDBIP-IDP-And-Budget.aspx",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "Index links to time-bounded plans and standards, often as PDFs. Pin the exact downloaded document/version and pages reviewed; do not treat the live index as an immutable dataset."
+      },
+      "terms": {
+        "policy_url": "https://joburg.org.za/",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "A public document index does not establish permission for automated bulk collection or redistribution. Confirm document terms and reuse rights before ingestion or republication."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "2026/27 Integrated Development Plan and SDBIP",
+          "2026/27 final business plans",
+          "2025/26 Institutional Service Level Standards Charter",
+          "Published performance measures, target periods and responsible departments"
+        ],
+        "collection_policy": "Manual review only. Preserve the document's title, publication/financial period, version, page or section reference, unit, denominator, accountable department and source snapshot digest. Do not convert an annual target into an incident-level SLA or a target into an observed outcome."
+      },
+      "known_limitations": [
+        "The index contains multiple years and document states; select the exact final or review version before comparison.",
+        "Performance indicators may change definition, denominator, target period or department ownership between versions.",
+        "Published plans and targets do not independently establish delivery, case-level timestamps, current work-order status or causal impact.",
+        "Documents may contain contact details; avoid copying personal information that is not needed for the target measure."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Metadata-only source register. No scheduled fetching, PDF extraction, caching or republication is implemented."
+      }
+    },
+    {
+      "source_id": "za-gp-jhb-city-power-public-notices",
+      "display_name": "City Power Johannesburg public service and outage-information pages",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "City Power Johannesburg",
+        "url": "https://citypower.co.za/"
+      },
+      "source_url": "https://citypower.co.za/city-power/Pages/default.aspx",
+      "documentation_url": "https://citypower.co.za/city-power/Pages/default.aspx",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "This entry points to public service information, fault-logging guidance and published notices. The page is not treated as a machine-readable outage feed; stale page text must never be presented as live status."
+      },
+      "terms": {
+        "policy_url": "https://citypower.co.za/city-power/Pages/default.aspx",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Review site terms, restrictions and source-specific reuse rights before automated capture or republication. Public customer channels are not permission for unattended automated submissions."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Public service and fault-logging guidance",
+          "Dated power interruption and maintenance notices where published",
+          "Published restoration updates where explicitly stated"
+        ],
+        "collection_policy": "Manual review only. Preserve notice publication time, stated affected area, planned versus unplanned status, expected restoration time versus confirmed restoration, and original URL. Do not infer an exact customer outage or critical-asset topology from a general notice."
+      },
+      "known_limitations": [
+        "The homepage may surface stale or cached notices; it is not an authoritative live-status API.",
+        "A planned restoration time is not proof that restoration occurred; only explicit subsequent evidence may support a restored claim.",
+        "A public notice may not cover all faults, supply points, areas or customers.",
+        "Do not harvest resident account information, contact submissions or precise household locations."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "No scraping, polling, power telemetry, customer-case import or automated fault submission is implemented."
+      }
+    },
+    {
+      "source_id": "za-gp-jhb-city-project-updates",
+      "display_name": "City of Johannesburg public project announcements",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "City of Johannesburg",
+        "url": "https://joburg.org.za/"
+      },
+      "source_url": "https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/October.aspx",
+      "documentation_url": "https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/October.aspx",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "The archive page is a discovery pointer only. Review each dated article separately; capture timestamp and content digest only after actual retrieval. It is not a structured project-status API."
+      },
+      "terms": {
+        "policy_url": "https://joburg.org.za/Pages/Terms-and-Conditions.aspx",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Check City site terms and article/media reuse conditions before caching or redistributing contents. This catalogue record does not grant a reuse or data-ingestion licence."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Dated City Newsroom announcements about public-works milestones, service readiness, accessibility upgrades and public-facility rehabilitation"
+        ],
+        "collection_policy": "Use a human-reviewed observation per exact article URL. Preserve publication date separately from retrieval time. Keep project progress, close-out, commissioning, reopening and measured outcomes distinct. Do not infer current availability, sustained performance or independent verification from a City announcement alone."
+      },
+      "known_limitations": [
+        "The archive is a webpage, not a structured API or authoritative live operational-status feed.",
+        "Project progress and close-out statements are publisher claims; commissioning, compliance certificates, sustained uptime and resident outcomes require separate evidence.",
+        "Articles may describe work spanning multiple municipal entities and private partners; do not infer the exclusive responsible owner from article authorship or partnership participation.",
+        "The archive and underlying article content may change; preserve exact URL, actual retrieval timestamp and content digest only after a real capture.",
+        "Publisher terms and article/media reuse rights must be rechecked before ingestion or redistribution."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Metadata-only discovery pointer. No periodic crawling, extraction, caching or service-status inference is implemented."
+      }
+    },
+    {
+      "source_id": "za-gp-jhb-food-resilience-policy",
+      "display_name": "City of Johannesburg Food Resilience Policy and urban-agriculture programme notices",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "City of Johannesburg",
+        "url": "https://joburg.org.za/"
+      },
+      "source_url": "https://joburg.org.za/documents_/Documents/FOOD-RESILIENCE-FINAL-APPROVED-POLICY-2024.pdf",
+      "documentation_url": "https://joburg.org.za/media_/Newsroom/Pages/2025-News-Articles/Joburg%E2%80%99s-new-urban-agriculture-project-to-boost-community-farming.aspx",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "Policy and project announcements are manually reviewed as separate, versioned documents. The PDF is policy text; project news is a dated report of programme activity."
+      },
+      "terms": {
+        "policy_url": "https://joburg.org.za/",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Check the policy PDF and related page's reuse terms before copying substantial text or redistributing extracts."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Approved 2024 City Food Resilience Policy",
+          "Published urban-agriculture infrastructure programme locations",
+          "Publicly described agri-resource centres, farming support and programme goals"
+        ],
+        "collection_policy": "Manual review only. Distinguish adopted policy, announced project, installed infrastructure, operating capacity and independently measured food-security outcome. Do not infer current yields, water availability, land tenure or household food access from policy text or greenness alone."
+      },
+      "known_limitations": [
+        "A policy is not evidence that every proposed service, site or funding allocation is active.",
+        "An announced facility or programme location does not establish current operating status, capacity, community access or measured yield.",
+        "Food-security need, participant status and household conditions are sensitive; do not infer individual need or eligibility from spatial or public data.",
+        "Climate and satellite products require separate quality, seasonality and ground-truth controls before agricultural interpretation."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "No automated PDF extraction, geospatial ingestion, farm monitoring or person-level records are implemented."
+      }
+    },
+    {
+      "source_id": "za-gp-jhb-johannesburg-water-emergency-notices",
+      "display_name": "Johannesburg Water Daily Water Notices: daily status and category turnaround times",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "Johannesburg Water",
+        "url": "https://www.johannesburgwater.co.za/"
+      },
+      "source_url": "https://www.johannesburgwater.co.za/daily-water-notices/",
+      "documentation_url": "https://www.johannesburgwater.co.za/daily-water-notices/",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "https_confirmed",
+        "pagination_note": "The page labels the content 'Daily water supply system status updates', lists category-specific turnaround times, and links an archive of daily updates. The summary list has no visible publication/effective date; capture a dated page version before any downstream use. This is not a machine-readable incident feed."
+      },
+      "terms": {
+        "policy_url": "https://www.johannesburgwater.co.za/",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Public availability is not a bulk-scraping or redistribution licence. Review the current site terms and exact content reuse rules before any capture or republication."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Daily public water-system status notices and the linked daily-update archive",
+          "Category turnaround times observed on the catalogue review date 2026-10-15: sewer 48 hours; water outage 24 hours; leaking meter 72 hours; burst meter 24 hours; water leak 48 hours; major burst pipe 48 hours"
+        ],
+        "collection_policy": "Manual review only. Preserve exact source URL, page capture timestamp, any separately stated publication time, category, and the publisher's exact clock wording. Treat listed times as published turnaround targets whose clock start/stop meaning is not defined here. Keep acknowledgement, response, restoration and repair completion distinct unless the applicable source explicitly defines equivalence. No resident-report import or dispatch."
+      },
+      "known_limitations": [
+        "On the catalogue review date 2026-10-15, the page listed sewer: 48 hours; water outage: 24 hours; leaking meter: 72 hours; burst meter: 24 hours; water leak: 48 hours; major burst pipe: 48 hours. The summary list showed no visible publication/effective date; recapture and recheck it before treating the figures as current.",
+        "The page does not by itself define a common clock start/stop rule or exclusions for every category. Do not silently equate turnaround times with response or restoration clocks.",
+        "Johannesburg Water's separate Services page says it endeavours to respond within 12 hours to unplanned supply emergencies. That is a different published label; do not infer contradiction or equivalence without an explicit metric definition.",
+        "Published time targets do not measure actual observed performance or prove that a particular fault was resolved.",
+        "The page and archive may be stale or incomplete; no machine-readable current incident feed is established."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Metadata only; no scraping, polling, resident-report intake, dispatch or work-order connector is implemented."
+      }
+    },
+    {
+      "source_id": "za-gp-jhb-johannesburg-water-public",
+      "display_name": "Johannesburg Water published service information",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "Johannesburg Water",
+        "url": "https://www.johannesburgwater.co.za/"
+      },
+      "source_url": "https://www.johannesburgwater.co.za/services/",
+      "documentation_url": "https://www.johannesburgwater.co.za/contact-us/",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "https_confirmed",
+        "pagination_note": "This entry catalogues public webpages and service guidance only. No machine-readable API or internal work-order feed has been established."
+      },
+      "terms": {
+        "policy_url": "https://www.johannesburgwater.co.za/",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "A publicly available webpage does not itself establish a licence for bulk scraping or redistribution. Check applicable site terms and robots guidance before automated collection."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Published service standards and public notices",
+          "Publicly documented customer fault-logging channels"
+        ],
+        "collection_policy": "Use manual review for a prototype and extract only public service guidance needed for synthetic tests. Do not harvest resident submissions, account details, private staff details or case-level records."
+      },
+      "known_limitations": [
+        "Published service standards are not proof of current internal queue state or resolution of an individual fault.",
+        "Public notices may change; keep capture time and original URL with each observation.",
+        "Internal work-order, dispatch or customer-case feeds require explicit authorisation and a separate adapter contract."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Public page catalogue only; no scraping, polling or work-order integration is implemented."
+      }
+    },
+    {
+      "source_id": "za-gp-jhb-jra-operation-restore",
+      "display_name": "City/JRA published Operation Restore maintenance notices",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "City of Johannesburg / Johannesburg Roads Agency",
+        "url": "https://joburg.org.za/"
+      },
+      "source_url": "https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/Operation-Restore-gains-momentum-as-JRA-marks-three-years-of-delivery.aspx",
+      "documentation_url": "https://joburg.org.za/documents_/Pages/Key%20Documents/SDBIP%20IDP%20and%20Budget/SDBIP-IDP-And-Budget.aspx",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "This entry is an example official announcement, not a canonical incident feed. For each observation retain the specific notice URL and event/publication date."
+      },
+      "terms": {
+        "policy_url": "https://joburg.org.za/",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Confirm publisher and asset-specific reuse terms before collecting or republishing text or imagery. Prefer short factual metadata and source links."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Published pothole and road-maintenance programme notices",
+          "Stormwater drain, pavement, road-marking and traffic-signal maintenance announcements",
+          "Named programme locations and stated work scopes"
+        ],
+        "collection_policy": "Manual review only. Record whether a page describes an announced plan, a work activity, a completed activity or an independently verified outcome. Do not infer the responsible landowner for an arbitrary reported defect from location alone."
+      },
+      "known_limitations": [
+        "Programme announcements are selective and do not represent a complete defects register or backlog.",
+        "A stated activity or completed workday does not prove that a specific resident's hazard was repaired or remained repaired.",
+        "Location descriptions may be coarse and may not bind to a unique asset, ward boundary or responsible owner.",
+        "Announcements can mention other service entities; those references do not establish shared case-level data access."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "No scraping, polling, fault intake, dispatch or work-order connector is implemented."
+      }
+    },
+    {
+      "source_id": "za-gp-jhb-pikitup-public-service-notices",
+      "display_name": "Pikitup Johannesburg public-service and disruption notices",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "Pikitup Johannesburg SOC Ltd",
+        "url": "https://pikitup.co.za/"
+      },
+      "source_url": "https://pikitup.co.za/",
+      "documentation_url": "https://pikitup.co.za/print/",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "The public site includes service-disruption notices and media statements. Notice dates and affected areas must be captured separately; do not assume a stable API."
+      },
+      "terms": {
+        "policy_url": "https://pikitup.co.za/",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Public availability is not a bulk-reuse licence. Check terms and republishing permissions before automated collection."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Public waste-collection delay and service-resumption notices",
+          "Illegal-dumping reporting channels published by Pikitup",
+          "Recycling, separation-at-source and garden-site public guidance"
+        ],
+        "collection_policy": "Use manual review for source-backed context and synthetic workflow cases. Capture only notice metadata, stated service area, publication time and source link; do not collect resident complaints or personal contact details."
+      },
+      "known_limitations": [
+        "A public notice may be superseded, incomplete or area-specific; it is not a real-time depot or truck telemetry feed.",
+        "A cleanup announcement does not establish recurrence prevention or that a hotspot stayed clean.",
+        "Pikitup, City departments, contractors and landowners can have different responsibilities; jurisdiction and case ownership require explicit confirmation.",
+        "Public contact channels are intended for residents; this catalogue entry does not authorise automated report submission."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "No scraping, polling, resident-report import, automated contact or operational connector is implemented."
+      }
+    },
+    {
+      "source_id": "za-gp-jhb-transport-masterplan-updates",
+      "display_name": "City of Johannesburg Comprehensive Integrated Transport Plan public updates",
+      "jurisdiction": "ZA-GP-JHB",
+      "publisher": {
+        "name": "City of Johannesburg / Johannesburg Development Agency",
+        "url": "https://joburg.org.za/"
+      },
+      "source_url": "https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/Joburg%E2%80%99s-Transport-Masterplan-gains-momentum-as-project-moves-to-key-next-phase.aspx",
+      "documentation_url": "https://joburg.org.za/documents_/Pages/Key%20Documents/SDBIP%20IDP%20and%20Budget/SDBIP-IDP-And-Budget.aspx",
+      "source_type": "public_service_information",
+      "access": {
+        "mode": "manual_publication_review",
+        "documented_methods": [
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "The indexed page is a dated programme update, not a live timetable, route performance or passenger-count API."
+      },
+      "terms": {
+        "policy_url": "https://joburg.org.za/",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "Confirm document/page reuse terms before systematic capture or republication."
+      },
+      "data_scope": {
+        "granularity": "public_service_pages",
+        "personal_data_expectation": "public_pages_may_include_contact_details",
+        "datasets_or_content": [
+          "Published transport planning stages",
+          "Publicly stated transport indicator and target-setting process",
+          "Named public engagement or planning milestones"
+        ],
+        "collection_policy": "Manual review only. Treat stated milestones as programme status claims, not measured travel times or route performance. A new indicator should retain its definition, unit, denominator, period, geography and source revision."
+      },
+      "known_limitations": [
+        "A planning phase to define indicators is not itself evidence that the indicators, targets or data feeds are final or operational.",
+        "An announcement does not provide current route reliability, affordability, accessibility or ridership measurements unless those are explicitly published.",
+        "Transport network datasets, operator timetables and passenger records require separate source, terms and privacy review."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Metadata-only source entry; no timetable scraping, live feed or passenger-data integration is implemented."
+      }
+    },
+    {
+      "source_id": "za-treasury-etender-ocds",
+      "display_name": "National Treasury Transparency Portal / eTender published data",
+      "jurisdiction": "ZA",
+      "publisher": {
+        "name": "National Treasury of South Africa, Office of the Chief Procurement Officer",
+        "url": "https://www.treasury.gov.za/"
+      },
+      "source_url": "https://data.etenders.gov.za/",
+      "documentation_url": "https://ocds-api.etenders.gov.za/Home/LearnMore",
+      "source_type": "procurement_open_data",
+      "access": {
+        "mode": "public_bulk_download",
+        "documented_methods": [
+          "GET",
+          "manual_review"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "not_tested",
+        "pagination_note": "Bulk CSV/JSON downloads and a versioned OCDS JSON API are documented. Resolve API paths and the current OpenAPI specification from publisher-controlled documentation before authoring a connector."
+      },
+      "terms": {
+        "policy_url": "https://ocds-api.etenders.gov.za/Home/LearnMore",
+        "reuse_status": "cc-by-4.0_documented",
+        "must_recheck_before_ingestion": true,
+        "notes": "The portal states published data is licensed under CC BY 4.0 and asks republishers to link to the original source. Reconfirm terms on the exact dataset consumed."
+      },
+      "data_scope": {
+        "granularity": "procurement_records",
+        "personal_data_expectation": "unknown",
+        "datasets_or_content": [
+          "Monthly OCDS release data from May 2021",
+          "Procurement plans, tendering, awards and contracting stages where published"
+        ],
+        "collection_policy": "Retain OCID/release identity and source publication time where available. Use published fields only. Do not merge records across suppliers or buyers using name similarity alone; preserve unresolved matches."
+      },
+      "known_limitations": [
+        "Publisher states this portal includes only a subset of eTender data and only information shared with National Treasury; absence is not evidence of non-existence.",
+        "Published data may be incomplete, inaccurate, delayed or not independently verified by the portal.",
+        "Procurement anomalies are review leads, not findings of fraud, corruption, conflict of interest or misconduct.",
+        "Personal information may be excluded when publication has not been consented to, according to the portal's policy; this does not mean every published record is safe to combine with other datasets."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Metadata only. API path, OpenAPI version and downstream redistribution behavior remain to be verified against current publisher documentation."
+      }
+    },
+    {
+      "source_id": "za-treasury-municipal-finance",
+      "display_name": "National Treasury Municipal Finance Data",
+      "jurisdiction": "ZA",
+      "publisher": {
+        "name": "National Treasury of South Africa / OpenUp",
+        "url": "https://www.treasury.gov.za/"
+      },
+      "source_url": "https://municipaldata.treasury.gov.za/",
+      "documentation_url": "https://municipaldata.treasury.gov.za/docs",
+      "source_type": "municipal_finance_api",
+      "access": {
+        "mode": "public_api",
+        "documented_methods": [
+          "GET"
+        ],
+        "transport_policy": "https_only",
+        "transport_verification": "blocked_pending_source_confirmation",
+        "pagination_note": "The official overview links an HTTPS API base, but the API guide's usage section lists an HTTP endpoint. Do not silently downgrade transport. Confirm HTTPS behavior with the publisher before implementing an adapter. Documentation states pagination uses pagesize/page and defaults to at most 10,000 items per page."
+      },
+      "terms": {
+        "policy_url": "https://municipaldata.treasury.gov.za/docs",
+        "reuse_status": "terms_review_required",
+        "must_recheck_before_ingestion": true,
+        "notes": "The API documentation links separate Terms of Use. Review and record applicable terms before caching or redistributing extracts."
+      },
+      "data_scope": {
+        "granularity": "aggregate_financial",
+        "personal_data_expectation": "aggregate_no_personal_data_expected",
+        "datasets_or_content": [
+          "repmaint_v2 (repairs and maintenance from 2019-20 onwards)",
+          "income_and_expenditure_v2",
+          "capital_acquisition_v2",
+          "aged_creditor_v2"
+        ],
+        "collection_policy": "Use narrowly filtered queries for the City of Johannesburg and required periods only. Preserve the source value, amount type, financial year/period, units, source response digest and source-specific interpretation separately. Do not treat an absent row as zero."
+      },
+      "known_limitations": [
+        "Publisher says completeness and trustworthiness depend on municipal submissions; the site currently warns that 2026 Q2 figures are being verified for completeness and integrity.",
+        "Dataset versions differ before and after mSCOA-era changes; v2 datasets replace older cubes for periods from 2019-20 onwards where documented.",
+        "API documentation says monetary measures are integer South African rand values with no cents.",
+        "The API base URL scheme is inconsistent between the overview and usage sections; HTTPS behavior is not marked verified.",
+        "The API documentation's null semantics must be preserved as source-reported information and handled by an explicit, dataset-specific normalization rule. Do not globally rewrite raw nulls to zero.",
+        "Aggregate spending measures do not establish whether a particular asset was repaired, a supplier was paid, or an individual acted improperly."
+      ],
+      "ingestion": {
+        "status": "catalogue_only",
+        "enabled": false,
+        "reason": "Metadata only. No API requests, periodic jobs, caching or redistribution are implemented by this contract."
+      }
+    }
+  ],
+  "reviewed_on": "2026-10-15"
+}

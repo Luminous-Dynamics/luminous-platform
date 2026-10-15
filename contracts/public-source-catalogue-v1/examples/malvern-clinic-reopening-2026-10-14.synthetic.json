@@ -1,0 +1,75 @@
+{
+  "schema_version": "public-observation-v1",
+  "observation_id": "synthetic-malvern-clinic-reopening-v1",
+  "source_id": "za-gp-jhb-city-project-updates",
+  "source_uri": "https://joburg.org.za/media_/Newsroom/Pages/2026-News-Articles/Refurbished-Malvern-Clinic-restores-access-to-healthcare.aspx",
+  "retrieved_at": null,
+  "source_period": {
+    "period_label": "published-2026-10-14"
+  },
+  "dataset_id": "city-project-announcements-v1",
+  "field_path": "article.project.clinic.infrastructure_reopening",
+  "raw_value": {
+    "claim_kind": "publisher_statement",
+    "fixture_only": true,
+    "fixture_note": "Synthetic summary of a City announcement. No clinical, operational or resident-level data is included.",
+    "publication_date": "2026-10-14",
+    "project_subject": "Malvern Clinic refurbishment",
+    "city_reported_service_state": "reopened_after_refurbishment",
+    "article_reported_repairs": [
+      "electricity problems addressed",
+      "consultation rooms and toilets improved",
+      "connection to a water reticulation system"
+    ],
+    "historic_context_as_reported": "The article says previous water shortages sometimes forced the clinic to close.",
+    "affected_areas_as_reported": [
+      "Malvern",
+      "Jeppe",
+      "Bez Valley"
+    ],
+    "is_live_service_status": false,
+    "is_current_operational_status_independently_verified": false,
+    "is_independently_verified_outcome": false,
+    "prohibited_inferences": [
+      "Do not infer today's opening hours, staffing, stock availability or uninterrupted operation.",
+      "Do not infer clinical outcome improvement from the refurbishment announcement.",
+      "Do not ingest patient information or individual healthcare records into this public-source fixture."
+    ]
+  },
+  "raw_value_state": "reported_value",
+  "normalization": {
+    "applied": false,
+    "rule_id": null,
+    "rule_version": null,
+    "normalized_value": {
+      "claim_kind": "publisher_statement",
+      "fixture_only": true,
+      "fixture_note": "Synthetic summary of a City announcement. No clinical, operational or resident-level data is included.",
+      "publication_date": "2026-10-14",
+      "project_subject": "Malvern Clinic refurbishment",
+      "city_reported_service_state": "reopened_after_refurbishment",
+      "article_reported_repairs": [
+        "electricity problems addressed",
+        "consultation rooms and toilets improved",
+        "connection to a water reticulation system"
+      ],
+      "historic_context_as_reported": "The article says previous water shortages sometimes forced the clinic to close.",
+      "affected_areas_as_reported": [
+        "Malvern",
+        "Jeppe",
+        "Bez Valley"
+      ],
+      "is_live_service_status": false,
+      "is_current_operational_status_independently_verified": false,
+      "is_independently_verified_outcome": false,
+      "prohibited_inferences": [
+        "Do not infer today's opening hours, staffing, stock availability or uninterrupted operation.",
+        "Do not infer clinical outcome improvement from the refurbishment announcement.",
+        "Do not ingest patient information or individual healthcare records into this public-source fixture."
+      ]
+    },
+    "reason": "No transformation is applied. Preserve the reported reopening claim without asserting present-day operational availability or clinical outcomes."
+  },
+  "source_snapshot_sha256": null,
+  "fixture_only": true
+}

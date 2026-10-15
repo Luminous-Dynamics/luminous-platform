@@ -1,0 +1,154 @@
+name: Public Source and Civic Crosswalk Contracts
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'contracts/public-source-catalogue-v1/**'
+      - 'contracts/civic-record-crosswalk-v1/**'
+      - 'contracts/civic-evaluation-pack-v1/**'
+      - 'docs/LANGUAGE_AND_RUNTIME_POLICY.md'
+      - 'docs/PUBLIC_SERVICE_OPERATIONS_PROFILE_RFC.md'
+      - '.github/workflows/public-source-catalogue-v1.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'contracts/public-source-catalogue-v1/**'
+      - 'contracts/civic-record-crosswalk-v1/**'
+      - 'contracts/civic-evaluation-pack-v1/**'
+      - 'docs/LANGUAGE_AND_RUNTIME_POLICY.md'
+      - 'docs/PUBLIC_SERVICE_OPERATIONS_PROFILE_RFC.md'
+      - '.github/workflows/public-source-catalogue-v1.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-civic-contracts-v1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Rust contract and fixture validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact event revision without an external action
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            test -n "${PR_NUMBER}"
+            test -n "${PR_HEAD_SHA}"
+            git fetch --no-tags --depth=1 origin "refs/pull/${PR_NUMBER}/head"
+            git checkout --detach FETCH_HEAD
+            expected_sha="${PR_HEAD_SHA}"
+          else
+            git fetch --no-tags --depth=1 origin "${GITHUB_SHA}"
+            git checkout --detach FETCH_HEAD
+            expected_sha="${GITHUB_SHA}"
+          fi
+          actual_sha="$(git rev-parse HEAD)"
+          test "${actual_sha}" = "${expected_sha}"
+          printf 'Qualified source revision: %s\n' "${actual_sha}"
+
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.96.0 --profile minimal
+          rustup component add rustfmt --toolchain 1.96.0
+          rustc +1.96.0 --version
+          cargo +1.96.0 --version
+          cargo +1.96.0 fmt --version
+
+      - name: Reject handwritten JavaScript and TypeScript in these contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          if find contracts/public-source-catalogue-v1 contracts/civic-record-crosswalk-v1 contracts/civic-evaluation-pack-v1 \
+            -type f \
+            \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.ts' -o -name '*.tsx' \) \
+            -print -quit | grep -q .; then
+            echo 'Unexpected JS/TS source in the Rust-only civic contract directories.' >&2
+            exit 1
+          fi
+
+      - name: Check civic crosswalk Rust formatting on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 fmt --manifest-path contracts/civic-record-crosswalk-v1/rust/Cargo.toml --all -- --check
+
+      - name: Check civic evaluation-pack Rust formatting on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 fmt --manifest-path contracts/civic-evaluation-pack-v1/rust/Cargo.toml --all -- --check
+
+      - name: Check public-source catalogue Rust formatting on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 fmt --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --all -- --check
+
+      - name: Test contract validator on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 test --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --all-targets
+
+      - name: Validate canonical catalogue fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- catalogue contracts/public-source-catalogue-v1/examples/catalogue.json
+
+      - name: Validate synthetic observation fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 run --manifest-path contracts/public-source-catalogue-v1/rust/Cargo.toml --bin validate-public-source -- observation contracts/public-source-catalogue-v1/examples/observation-v1.json
+
+      - name: Test civic evaluation-pack validator on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 test --manifest-path contracts/civic-evaluation-pack-v1/rust/Cargo.toml --all-targets
+
+      - name: Validate synthetic civic evaluation pack
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 run --manifest-path contracts/civic-evaluation-pack-v1/rust/Cargo.toml --bin validate-evaluation-pack -- validate contracts/civic-evaluation-pack-v1/examples/joburg-water-synthetic-v1.json
+
+      - name: Test civic record crosswalk validator on this exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 test --manifest-path contracts/civic-record-crosswalk-v1/rust/Cargo.toml --all-targets
+
+      - name: Verify pinned public source blobs at their exact commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash contracts/civic-record-crosswalk-v1/verify-pinned-source-blobs.sh contracts/civic-record-crosswalk-v1/crosswalk.json
+
+      - name: Validate civic record crosswalk fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.96.0 run --manifest-path contracts/civic-record-crosswalk-v1/rust/Cargo.toml --bin validate-civic-crosswalk -- validate contracts/civic-record-crosswalk-v1/crosswalk.json
+
+      - name: Report qualification boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'PASS only means the public-source, civic crosswalk, and synthetic evaluation-pack Rust checks passed at GITHUB_SHA.'
+          echo 'This does not qualify network ingestion, legal access, semantic interoperability, production readiness or municipal integrations.'

@@ -1,0 +1,444 @@
+use civic_record_crosswalk_v1::parse_and_validate_json;
+
+#[test]
+fn checked_in_crosswalk_conforms_to_strict_rust_contract() {
+    let input = include_str!("../../crosswalk.json");
+    let result = parse_and_validate_json(input);
+    assert!(result.is_ok(), "crosswalk rejected: {result:?}");
+}
+
+#[test]
+fn public_observation_contract_pin_tracks_truthful_retrieval_provenance() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+    let contract = crosswalk
+        .contracts
+        .iter()
+        .find(|contract| contract.schema_id == "platform.public-observation-v1")
+        .expect("public observation schema is pinned");
+
+    assert_eq!(
+        contract.snapshot_commit_sha,
+        "f04951f8f1fed8f0ea1d244824e1d39d8f71089d"
+    );
+    assert_eq!(
+        contract.git_blob_sha1.as_deref(),
+        Some("4a50b82a8ed32deeb245e11b7e4d542860a6c2a2")
+    );
+    assert_eq!(contract.version.as_deref(), Some("public-observation-v1"));
+    assert_eq!(
+        contract.qualification_state,
+        civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+    );
+    assert!(
+        contract
+            .notes
+            .contains("fixture-only observations require null retrieved_at"),
+        "the pinned observation contract must document truthful capture provenance"
+    );
+}
+
+#[test]
+fn sol_atlas_civic_case_pin_tracks_current_source_and_stays_unqualified() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+    let contract = crosswalk
+        .contracts
+        .iter()
+        .find(|contract| contract.schema_id == "sol-atlas.civic-service-case-v1")
+        .expect("Sol-Atlas civic case source is pinned");
+
+    assert_eq!(
+        contract.snapshot_commit_sha,
+        "e5b68e0fd30667ac9712a839faadc951e939c42c"
+    );
+    assert_eq!(
+        contract.git_blob_sha1.as_deref(),
+        Some("d8897ac47fc78685b4f7e7fa3b06d6ea0724191a")
+    );
+    assert_eq!(contract.version.as_deref(), Some("1"));
+    assert_eq!(
+        contract.qualification_state,
+        civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+    );
+    assert!(
+        contract.notes.contains("public_projection"),
+        "public serialization must pass through the explicit projection boundary"
+    );
+}
+
+#[test]
+fn symthaea_life_civic_corpus_pin_tracks_v0_4_0_and_unqualified_state() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+    let contract = crosswalk
+        .contracts
+        .iter()
+        .find(|contract| contract.schema_id == "symthaea.life-civic-reference-corpus")
+        .expect("Symthaea life/civic corpus is pinned");
+
+    assert_eq!(
+        contract.snapshot_commit_sha,
+        "68a2e5384f737069bcd779c0eb0078d622e811a2"
+    );
+    assert_eq!(
+        contract.git_blob_sha1.as_deref(),
+        Some("f93d01a1832c991e9284c7e7ad92a90a40e5776f")
+    );
+    assert_eq!(contract.version.as_deref(), Some("0.4.0"));
+    assert_eq!(
+        contract.qualification_state,
+        civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+    );
+}
+
+#[test]
+fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+    let contract = crosswalk
+        .contracts
+        .iter()
+        .find(|contract| contract.schema_id == "mycelix.life-civic-service-reference-corpus")
+        .expect("Mycelix service-journey corpus is pinned");
+
+    assert_eq!(
+        contract.snapshot_commit_sha,
+        "1232b9aef477f3de4a36fb6d3548be4748f87015"
+    );
+    assert_eq!(
+        contract.git_blob_sha1.as_deref(),
+        Some("875fa72478ccd609b83d218bbae9b9facae8fd2e")
+    );
+    assert_eq!(contract.version.as_deref(), Some("0.6.0"));
+    assert_eq!(
+        contract.path.as_deref(),
+        Some("tests/reference/life-civic-service/cases-v0.6.0.json")
+    );
+    assert_eq!(
+        contract.qualification_state,
+        civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+    );
+
+    for (schema_id, expected_blob) in [
+        (
+            "mycelix.service-journey-reference-v0.3.0",
+            "7e2b8b3d963c9c5598c78927121fcf60203591f9",
+        ),
+        (
+            "mycelix.applicability-assessment",
+            "241d4c4abbd765c05e56ddfae3391cead0f26dbc",
+        ),
+    ] {
+        let source_schema = crosswalk
+            .contracts
+            .iter()
+            .find(|entry| entry.schema_id == schema_id)
+            .unwrap_or_else(|| panic!("missing pinned Mycelix schema {schema_id}"));
+        assert_eq!(
+            source_schema.snapshot_commit_sha,
+            "1232b9aef477f3de4a36fb6d3548be4748f87015"
+        );
+        assert_eq!(source_schema.git_blob_sha1.as_deref(), Some(expected_blob));
+    }
+
+    let mapping = crosswalk
+        .mappings
+        .iter()
+        .find(|rule| rule.mapping_id == "MYCELIX-SYMTHAEA-CAUSALITY-CORPORA")
+        .expect("cross-corpus semantic relationship is explicit");
+    assert_eq!(
+        mapping.from.schema_id,
+        "mycelix.life-civic-service-reference-corpus"
+    );
+    assert_eq!(mapping.to.schema_id, "symthaea.life-civic-reference-corpus");
+    assert_eq!(
+        mapping.relationship,
+        civic_record_crosswalk_v1::SemanticRelationship::PartialSemanticOverlap
+    );
+    assert_eq!(
+        mapping.conversion_policy,
+        civic_record_crosswalk_v1::ConversionPolicy::PreserveSeparately
+    );
+    assert_eq!(
+        mapping.disposition,
+        civic_record_crosswalk_v1::Disposition::PreserveSeparate
+    );
+    assert!(
+        mapping
+            .required_guards
+            .iter()
+            .any(|guard| guard.contains("incident-level cause")),
+        "the cross-corpus mapping must preserve its causal-inference guard"
+    );
+}
+
+#[test]
+fn mycelix_standards_and_gpsjs_precision_contracts_are_pinned_as_non_runtime() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+
+    for (schema_id, path, expected_blob, expected_version) in [
+        (
+            "mycelix.life-civic-standard-instrument-schema",
+            "schemas/life-civic/standard-instrument.schema.json",
+            "a4c87f4e7ca27140af590cf353b252c3ceee2ed3",
+            None,
+        ),
+        (
+            "mycelix.gpsjs-survey-quality-schema",
+            "schemas/life-civic/gpsjs-survey-quality.schema.json",
+            "5c79019dac237174015c169e3b893ffdc7e56cf7",
+            None,
+        ),
+        (
+            "mycelix.life-civic-standards-reference-corpus",
+            "tests/reference/life-civic-standards/cases.json",
+            "4aab141469b0b2f9971a2d2761e91ea2d5a884af",
+            Some("0.5.0"),
+        ),
+    ] {
+        let contract = crosswalk
+            .contracts
+            .iter()
+            .find(|contract| contract.schema_id == schema_id)
+            .unwrap_or_else(|| panic!("missing Mycelix evidence contract {schema_id}"));
+        assert_eq!(
+            contract.snapshot_commit_sha,
+            "1232b9aef477f3de4a36fb6d3548be4748f87015"
+        );
+        assert_eq!(contract.path.as_deref(), Some(path));
+        assert_eq!(contract.git_blob_sha1.as_deref(), Some(expected_blob));
+        assert_eq!(contract.version.as_deref(), expected_version);
+        assert_eq!(
+            contract.qualification_state,
+            civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+        );
+    }
+
+    let precision_mapping = crosswalk
+        .mappings
+        .iter()
+        .find(|rule| rule.mapping_id == "MYCELIX-SYMTHAEA-GPSJS-PRECISION-CORPORA")
+        .expect("statistical-precision semantic mapping is explicit");
+    assert_eq!(
+        precision_mapping.from.schema_id,
+        "mycelix.life-civic-standards-reference-corpus"
+    );
+    assert_eq!(
+        precision_mapping.to.schema_id,
+        "symthaea.life-civic-reference-corpus"
+    );
+    assert_eq!(
+        precision_mapping.conversion_policy,
+        civic_record_crosswalk_v1::ConversionPolicy::PreserveSeparately
+    );
+    assert_eq!(
+        precision_mapping.disposition,
+        civic_record_crosswalk_v1::Disposition::PreserveSeparate
+    );
+    assert!(
+        precision_mapping.required_guards.iter().any(|guard| {
+            guard.contains("Table 41")
+        }),
+        "precision mapping must prohibit reuse of unrelated prevalence CVs"
+    );
+    assert!(
+        precision_mapping.required_guards.iter().any(|guard| {
+            guard.contains("estimate-specific precision evidence")
+        }),
+        "precision mapping must require estimate-specific precision evidence"
+    );
+}
+
+#[test]
+fn evaluation_manifests_pin_current_corpus_versions_and_blob_identities() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid crosswalk");
+
+    for (manifest_id, path, blob, version, source_commit) in [
+        (
+            "mycelix.life-civic-service-reference-manifest",
+            "tests/reference/life-civic-service/manifest.json",
+            "8c0db89a4bcdc2f7dbe8456904474ce633339ae9",
+            Some("0.6.0"),
+            "1232b9aef477f3de4a36fb6d3548be4748f87015",
+        ),
+        (
+            "mycelix.life-civic-standards-reference-manifest",
+            "tests/reference/life-civic-standards/manifest.json",
+            "b2a267aeb04cbdd9da65cee0bc3d5f5f9ac76af6",
+            Some("0.5.0"),
+            "1232b9aef477f3de4a36fb6d3548be4748f87015",
+        ),
+        (
+            "symthaea.life-civic-reference-manifest",
+            "docs/research/life-civic/reference-scenarios.manifest.json",
+            "9c31f6e15101f0d9e3fb02c90d6dc5053587980e",
+            Some("0.4.0"),
+            "68a2e5384f737069bcd779c0eb0078d622e811a2",
+        ),
+    ] {
+        let manifest = crosswalk
+            .contracts
+            .iter()
+            .find(|entry| entry.schema_id == manifest_id)
+            .unwrap_or_else(|| panic!("missing evidence manifest {manifest_id}"));
+        assert_eq!(manifest.snapshot_commit_sha, source_commit);
+        assert_eq!(manifest.path.as_deref(), Some(path));
+        assert_eq!(manifest.git_blob_sha1.as_deref(), Some(blob));
+        assert_eq!(manifest.version.as_deref(), version);
+        assert_eq!(
+            manifest.artifact_kind,
+            civic_record_crosswalk_v1::ArtifactKind::EvidenceManifest
+        );
+        assert_eq!(
+            manifest.qualification_state,
+            civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+        );
+    }
+
+    for (manifest_id, corpus_id, corpus_path, corpus_blob, version) in [
+        (
+            "mycelix.life-civic-service-reference-manifest",
+            "mycelix.life-civic-service-reference-corpus",
+            "tests/reference/life-civic-service/cases-v0.6.0.json",
+            "875fa72478ccd609b83d218bbae9b9facae8fd2e",
+            "0.6.0",
+        ),
+        (
+            "mycelix.life-civic-standards-reference-manifest",
+            "mycelix.life-civic-standards-reference-corpus",
+            "tests/reference/life-civic-standards/cases.json",
+            "4aab141469b0b2f9971a2d2761e91ea2d5a884af",
+            "0.5.0",
+        ),
+        (
+            "symthaea.life-civic-reference-manifest",
+            "symthaea.life-civic-reference-corpus",
+            "docs/research/life-civic/reference-scenarios.json",
+            "f93d01a1832c991e9284c7e7ad92a90a40e5776f",
+            "0.4.0",
+        ),
+    ] {
+        let manifest = crosswalk
+            .contracts
+            .iter()
+            .find(|entry| entry.schema_id == manifest_id)
+            .expect("manifest entry exists");
+        let corpus = crosswalk
+            .contracts
+            .iter()
+            .find(|entry| entry.schema_id == corpus_id)
+            .unwrap_or_else(|| panic!("missing pinned corpus {corpus_id}"));
+        assert_eq!(manifest.snapshot_commit_sha, corpus.snapshot_commit_sha);
+        assert_eq!(manifest.version.as_deref(), Some(version));
+        assert_eq!(corpus.version.as_deref(), Some(version));
+        assert_eq!(corpus.path.as_deref(), Some(corpus_path));
+        assert_eq!(corpus.git_blob_sha1.as_deref(), Some(corpus_blob));
+        assert_eq!(
+            manifest.qualification_state,
+            civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+        );
+        assert_eq!(
+            corpus.qualification_state,
+            civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
+        );
+    }
+}
+
+#[test]
+fn work_case_and_operations_event_mappings_remain_blocked_after_narrow_contract_success() {
+    let input = include_str!("../../crosswalk.json");
+    let crosswalk = parse_and_validate_json(input).expect("valid mapping register");
+    for (schema_id, expected_sha, expected_blob) in [
+        (
+            "platform.work-case-v1",
+            "662aaf2bd2a3f873fd8f6fc0eb4181f061043794",
+            "6be2f6498630d76287034020d9e89eca76ee2711",
+        ),
+        (
+            "platform.operations-event-v1",
+            "c43a68adc9543fee67d67debfd7bcf6e1387395d",
+            "aa7364e5661125e04cc5e36b12269ec08b611448",
+        ),
+    ] {
+        let contract = crosswalk
+            .contracts
+            .iter()
+            .find(|entry| entry.schema_id == schema_id)
+            .unwrap_or_else(|| panic!("missing pinned Platform contract {schema_id}"));
+        assert_eq!(contract.snapshot_commit_sha, expected_sha);
+        assert_eq!(contract.git_blob_sha1.as_deref(), Some(expected_blob));
+        assert_eq!(
+            contract.qualification_state,
+            civic_record_crosswalk_v1::QualificationState::NarrowWorkflowSuccess
+        );
+    }
+
+    let work_state = crosswalk
+        .mappings
+        .iter()
+        .find(|rule| rule.mapping_id == "MYCELIX-CASE-STATE-TO-WORK-CASE-STATE")
+        .expect("Work Case mapping is explicit");
+    assert_eq!(
+        work_state.disposition,
+        civic_record_crosswalk_v1::Disposition::Blocked
+    );
+    assert_eq!(
+        work_state.conversion_policy,
+        civic_record_crosswalk_v1::ConversionPolicy::NoAutomaticMapping
+    );
+
+    let event = crosswalk
+        .mappings
+        .iter()
+        .find(|rule| rule.mapping_id == "SOL-EVENT-TO-OPERATIONS-EVENT")
+        .expect("Operations Event mapping is explicit");
+    assert_eq!(
+        event.disposition,
+        civic_record_crosswalk_v1::Disposition::Blocked
+    );
+    assert_eq!(
+        event.conversion_policy,
+        civic_record_crosswalk_v1::ConversionPolicy::ExplicitAdapterRequired
+    );
+}
+
+#[test]
+fn crosswalk_rejects_impossible_review_dates_and_accepts_leap_days() {
+    let fixture = include_str!("../../crosswalk.json");
+
+    let mut leap_day: serde_json::Value =
+        serde_json::from_str(fixture).expect("checked-in crosswalk is valid JSON");
+    leap_day["review_snapshot"] = serde_json::json!("2024-02-29");
+    let encoded = serde_json::to_string(&leap_day).expect("crosswalk serializes");
+    assert!(
+        parse_and_validate_json(&encoded).is_ok(),
+        "a valid leap day must be accepted"
+    );
+
+    for invalid_date in [
+        "2026-02-30",
+        "2026-04-31",
+        "2025-02-29",
+        "2026-13-01",
+        "2026-00-10",
+        "1899-12-31",
+        "2201-01-01",
+        "2026/10/15",
+    ] {
+        let mut value: serde_json::Value =
+            serde_json::from_str(fixture).expect("checked-in crosswalk is valid JSON");
+        value["review_snapshot"] = serde_json::json!(invalid_date);
+        let encoded = serde_json::to_string(&value).expect("crosswalk serializes");
+        let error = parse_and_validate_json(&encoded)
+            .expect_err("invalid review snapshot dates must fail closed");
+        assert!(
+            error
+                .to_string()
+                .contains("review_snapshot must be a real calendar date"),
+            "unexpected error for {invalid_date}: {error}"
+        );
+    }
+}

@@ -1,0 +1,13 @@
+[package]
+name = "public-source-catalogue-v1"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.96"
+publish = false
+license = "AGPL-3.0-or-later"
+description = "Strict offline validation for the Luminous public-source catalogue and observation contract"
+
+[dependencies]
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+url = "=2.5.8"
