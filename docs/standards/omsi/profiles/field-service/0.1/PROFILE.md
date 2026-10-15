@@ -205,6 +205,8 @@ This profile should compose with current public proposals without treating any d
 
 The cross-project contract should be IDs, versioned references, authority scope and evidence semantics—not shared database tables, implicit trust between services, or a circular crate dependency.
 
+- **OCA Field Service 19.0 — [pinned adapter mapping](adapters/OCA_FIELD_SERVICE_19_0_MAPPING.md):** source-inspected `fsm.order`, configurable `fsm.stage`, locations, equipment, assigned workers, the optional checklist Activity addon, and invoice linkage. The mapping is research only. It preserves source stage and instance IDs, explicitly distinguishes `res.company` from an OMSI tenant, and notes that signatures, checklist completion and invoice links cannot be promoted to approval, independent verification or payment truth. The inspected source commit is pinned in the mapping; the addons use AGPL-3, and the optional accounting addon declares Beta maturity.
+
 ## 14. Open questions for reviewers
 
 1. Is “Field Service” a suitable profile name, or should the profile split into “asset maintenance” and “project delivery” before 0.1?
