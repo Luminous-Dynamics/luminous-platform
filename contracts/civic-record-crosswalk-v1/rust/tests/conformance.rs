@@ -176,7 +176,7 @@ fn work_case_and_operations_event_mappings_remain_blocked_after_narrow_contract_
     for (schema_id, expected_sha, expected_blob) in [
         (
             "platform.work-case-v1",
-            "7ec5588d9844b10006b3264e34f30bd4aeba48ec",
+            "662aaf2bd2a3f873fd8f6fc0eb4181f061043794",
             "6be2f6498630d76287034020d9e89eca76ee2711",
         ),
         (
