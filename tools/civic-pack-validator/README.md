@@ -108,6 +108,8 @@ The runtime packages are pinned to exact versions in `requirements.txt`, includi
 
 ## What is checked
 
+The GitHub Actions workflow validates **every top-level `*.json` pack** in `examples/jurisdiction-packs/` against the common schema and semantic publication gates. An empty pack directory fails instead of reporting a vacuous success. It retains one JSON report per pack and summarizes all pack IDs, validation/publication states, evidence counts and SHA-256 digests. The evaluator smoke test currently targets the Johannesburg reference pack only; other packs get structural/semantic validation but are not yet exercised through a dedicated workflow evaluator scenario.
+
 - JSON Schema Draft 2020-12, including URI/date-time format checks;
 - stable uniqueness of source, requirement, and action identifiers;
 - resolution of every requirement `source_refs` value;
