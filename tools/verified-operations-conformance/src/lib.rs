@@ -229,7 +229,7 @@ fn classify(scenario: &Value) -> Option<(&'static str, &'static str)> {
             else {
                 return Some(("indeterminate", "OBJECTIVE_TIMELINE_UNKNOWN"));
             };
-            if window_end <= window_start || interval <= 0 || maximum_gap < interval {
+            if window_start < 0 || window_end <= window_start || interval <= 0 || maximum_gap < interval {
                 return Some(("indeterminate", "OBJECTIVE_WINDOW_POLICY_INVALID"));
             }
 
