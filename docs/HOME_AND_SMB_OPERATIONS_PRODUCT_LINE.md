@@ -197,4 +197,6 @@ Record a baseline before setting numerical service-level targets.
 5. [Tactical RMM — feature list](https://tacticalrmm.com/features/), reviewed 2026-10-15.
 6. [ConnectWise — Predictive Intelligence Platform announcement, 2026-06-08](https://www.connectwise.com/company/press/releases/connectwise-unveils-the-industrys-first-predictive-intelligence-platform-to-lead-the-era-of-predictive-it).
 
+Competitive update (15 October 2026): SolarWinds announced Avior on 14 October 2026, with goal-oriented agents, deterministic execution and risk-gated actions. This means “AI that pursues goals safely” is not, by itself, a defensible differentiator. The proposed distinction is an independent cross-vendor assurance layer with explicit outcome contracts, visible evidence coverage, met/missed/indeterminate outcomes, and measured net operator toil. See [SolarWinds Avior announcement](https://www.solarwinds.com/company/newsroom/press-releases/solarwinds-unveils-avior-bringing-deterministic-agentic-ai-to-enterprise-it) and [the outcome-assurance paradigm note](https://github.com/Luminous-Dynamics/luminous-platform/blob/docs/home-smb-operations-portfolio-2026-10-15/docs/OUTCOME_ASSURANCE_PARADIGM.md).
+
 External references provide context, not verification that Luminous has implemented or qualified any of the described capabilities.
