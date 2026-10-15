@@ -5,62 +5,148 @@
   "description": "Portable objective decision receipt. Schema validity is not source authentication.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["contract_version", "bundle_id", "mode", "evaluated_at", "scope", "decision", "evidence"],
+  "required": [
+    "contract_version",
+    "bundle_id",
+    "mode",
+    "evaluated_at",
+    "scope",
+    "decision",
+    "evidence"
+  ],
   "properties": {
-    "contract_version": { "const": "1.0.0" },
-    "bundle_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$" },
-    "mode": { "enum": ["synthetic", "redacted_pilot"] },
-    "evaluated_at": { "type": "string", "format": "date-time" },
+    "contract_version": {
+      "const": "1.0.0"
+    },
+    "bundle_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]{2,127}$"
+    },
+    "mode": {
+      "enum": [
+        "synthetic",
+        "redacted_pilot"
+      ]
+    },
+    "evaluated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "scope": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["scope_id", "scope_type", "window_start", "window_end"],
+      "required": [
+        "scope_id",
+        "scope_type",
+        "window_start",
+        "window_end"
+      ],
       "properties": {
-        "scope_id": { "type": "string", "minLength": 1, "maxLength": 128 },
-        "scope_type": { "enum": ["site", "asset", "service", "household"] },
-        "window_start": { "type": "string", "format": "date-time" },
-        "window_end": { "type": "string", "format": "date-time" }
+        "scope_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "scope_type": {
+          "enum": [
+            "site",
+            "asset",
+            "service",
+            "household"
+          ]
+        },
+        "window_start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "window_end": {
+          "type": "string",
+          "format": "date-time"
+        }
       }
     },
     "decision": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["classification", "reason_code", "objective", "evidence_refs", "automatic_mutation_allowed", "must_preserve_provenance"],
+      "required": [
+        "classification",
+        "reason_code",
+        "objective",
+        "evidence_refs",
+        "automatic_mutation_allowed",
+        "must_preserve_provenance"
+      ],
       "properties": {
         "classification": {
-          "enum": ["objective_met_within_observed_scope", "objective_target_missed", "indeterminate"]
+          "enum": [
+            "objective_met_within_observed_scope",
+            "objective_target_missed",
+            "indeterminate"
+          ]
         },
-        "reason_code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" },
+        "reason_code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+        },
         "objective": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["objective_id", "metric_name", "comparator", "target_value_decimal", "target_unit"],
+          "required": [
+            "objective_id",
+            "metric_name",
+            "comparator",
+            "target_value_decimal",
+            "target_unit"
+          ],
           "properties": {
-            "objective_id": { "type": "string", "minLength": 1, "maxLength": 128 },
-            "metric_name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
-            "comparator": { "enum": ["lte", "gte"] },
+            "objective_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "metric_name": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "comparator": {
+              "enum": [
+                "lte",
+                "gte"
+              ]
+            },
             "target_value_decimal": {
               "type": "string",
               "maxLength": 48,
               "pattern": "^-?(0|[1-9][0-9]*)([.][0-9]+)?$"
             },
-            "target_unit": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._/%:-]{0,31}$" }
+            "target_unit": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._/%:-]{0,31}$"
+            }
           }
         },
         "evidence_refs": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/evidenceId" }
+          "items": {
+            "$ref": "#/$defs/evidenceId"
+          }
         },
-        "automatic_mutation_allowed": { "const": false },
-        "must_preserve_provenance": { "const": true }
+        "automatic_mutation_allowed": {
+          "const": false
+        },
+        "must_preserve_provenance": {
+          "const": true
+        }
       }
     },
     "evidence": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/$defs/evidenceRecord" }
+      "items": {
+        "$ref": "#/$defs/evidenceRecord"
+      }
     }
   },
   "$defs": {
@@ -71,82 +157,256 @@
     "evidenceRecord": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["evidence_id", "kind", "source", "timestamps", "payload", "measurement", "derived_from"],
+      "required": [
+        "evidence_id",
+        "kind",
+        "source",
+        "timestamps",
+        "payload",
+        "measurement",
+        "normalization",
+        "derived_from"
+      ],
       "properties": {
-        "evidence_id": { "$ref": "#/$defs/evidenceId" },
+        "evidence_id": {
+          "$ref": "#/$defs/evidenceId"
+        },
         "kind": {
-          "enum": ["telemetry_sample", "backup_job", "restore_test", "configuration_snapshot", "provider_event", "independent_observation", "derived_measurement"]
+          "enum": [
+            "telemetry_sample",
+            "backup_job",
+            "restore_test",
+            "configuration_snapshot",
+            "provider_event",
+            "independent_observation",
+            "derived_measurement"
+          ]
         },
         "source": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["source_id", "source_type", "adapter_id", "adapter_version", "source_revision", "source_event_id"],
+          "required": [
+            "source_id",
+            "source_type",
+            "adapter_id",
+            "adapter_version",
+            "source_revision",
+            "source_event_id"
+          ],
           "properties": {
-            "source_id": { "type": "string", "minLength": 1, "maxLength": 256 },
-            "source_type": { "type": "string", "minLength": 1, "maxLength": 64 },
-            "adapter_id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
-            "adapter_version": { "type": "string", "minLength": 1, "maxLength": 64 },
-            "source_revision": { "type": "string", "minLength": 1, "maxLength": 128 },
-            "source_event_id": { "type": "string", "minLength": 1, "maxLength": 256 }
+            "source_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "source_type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "adapter_id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
+            "adapter_version": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "source_revision": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "source_event_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            }
           }
         },
         "timestamps": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["event_time", "received_at", "clock_status"],
+          "required": [
+            "event_time",
+            "received_at",
+            "clock_status"
+          ],
           "properties": {
             "event_time": {
               "anyOf": [
-                { "type": "string", "format": "date-time" },
-                { "type": "null" }
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
               ]
             },
-            "received_at": { "type": "string", "format": "date-time" },
-            "clock_status": { "enum": ["source_reported", "collector_assigned", "unknown"] }
+            "received_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "clock_status": {
+              "enum": [
+                "source_reported",
+                "collector_assigned",
+                "unknown"
+              ]
+            }
           }
         },
         "payload": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["media_type", "raw_utf8", "sha256_of_raw_utf8"],
+          "required": [
+            "media_type",
+            "raw_utf8",
+            "sha256_of_raw_utf8"
+          ],
           "properties": {
-            "media_type": { "const": "application/json" },
-            "raw_utf8": { "type": "string", "maxLength": 16384 },
-            "sha256_of_raw_utf8": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+            "media_type": {
+              "const": "application/json"
+            },
+            "raw_utf8": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "sha256_of_raw_utf8": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
           }
         },
         "measurement": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["metric_name", "value_decimal", "unit", "validity", "normalized_sha256"],
+          "required": [
+            "metric_name",
+            "value_decimal",
+            "unit",
+            "validity",
+            "normalized_sha256"
+          ],
           "properties": {
-            "metric_name": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$" },
+            "metric_name": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            },
             "value_decimal": {
               "type": "string",
               "maxLength": 48,
               "pattern": "^-?(0|[1-9][0-9]*)([.][0-9]+)?$"
             },
-            "unit": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._/%:-]{0,31}$" },
-            "validity": { "enum": ["valid", "invalid", "unknown"] },
-            "normalized_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+            "unit": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._/%:-]{0,31}$"
+            },
+            "validity": {
+              "enum": [
+                "valid",
+                "invalid",
+                "unknown"
+              ]
+            },
+            "normalized_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
           }
         },
         "derived_from": {
           "type": "array",
           "maxItems": 64,
           "uniqueItems": true,
-          "items": { "$ref": "#/$defs/evidenceId" }
+          "items": {
+            "$ref": "#/$defs/evidenceId"
+          }
+        },
+        "normalization": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "profile_id",
+            "profile_version"
+          ],
+          "properties": {
+            "profile_id": {
+              "enum": [
+                "home-assistant-energy-state-v1",
+                "derived-subtract-v1"
+              ]
+            },
+            "profile_version": {
+              "const": "1.0.0"
+            }
+          }
         }
       },
       "allOf": [
         {
           "if": {
-            "properties": { "kind": { "const": "derived_measurement" } },
-            "required": ["kind"]
+            "properties": {
+              "kind": {
+                "const": "derived_measurement"
+              }
+            },
+            "required": [
+              "kind"
+            ]
           },
           "then": {
             "properties": {
-              "derived_from": { "minItems": 2, "maxItems": 2 }
+              "derived_from": {
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "normalization": {
+                "properties": {
+                  "profile_id": {
+                    "const": "derived-subtract-v1"
+                  },
+                  "profile_version": {
+                    "const": "1.0.0"
+                  }
+                },
+                "required": [
+                  "profile_id",
+                  "profile_version"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "telemetry_sample"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "normalization": {
+                "properties": {
+                  "profile_id": {
+                    "const": "home-assistant-energy-state-v1"
+                  },
+                  "profile_version": {
+                    "const": "1.0.0"
+                  }
+                },
+                "required": [
+                  "profile_id",
+                  "profile_version"
+                ]
+              }
             }
           }
         }

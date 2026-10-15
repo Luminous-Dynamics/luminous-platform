@@ -1,4 +1,5 @@
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use verified_operations_conformance::{
     classify_for_test, validate_corpus, validate_document, validate_schema,
 };
@@ -474,5 +475,44 @@ fn evidence_bundle_rejects_a_validly_derived_measurement_that_misses_its_objecti
     assert!(
         errors.iter().any(|error| error.contains("decision classification does not match")),
         "expected false-green decision diagnostic, got {errors:#?}"
+    );
+}
+
+
+#[test]
+fn evidence_bundle_rejects_raw_to_normalized_mismatch_even_when_digest_is_recomputed() {
+    let schema = parsed_evidence_schema();
+    let mut bundle = parsed_evidence_bundle();
+    let measurement = &mut bundle["evidence"][0]["measurement"];
+    measurement["value_decimal"] = Value::String("999.0".into());
+    let framed = format!(
+        "luminous-operations-measurement-v1\\n{}\\n{}\\n{}\\n{}",
+        measurement["metric_name"].as_str().unwrap(),
+        measurement["value_decimal"].as_str().unwrap(),
+        measurement["unit"].as_str().unwrap(),
+        measurement["validity"].as_str().unwrap()
+    );
+    measurement["normalized_sha256"] =
+        Value::String(format!("{:x}", Sha256::digest(framed.as_bytes())));
+
+    let errors = verified_operations_conformance::validate_evidence_bundle(&schema, &bundle)
+        .expect_err("valid normalized-field digest cannot overrule the raw source state");
+    assert!(
+        errors.iter().any(|error| error.contains("raw source fields do not support the normalized energy measurement")),
+        "expected source-to-normalized binding diagnostic, got {errors:#?}"
+    );
+}
+
+#[test]
+fn evidence_bundle_rejects_an_unknown_normalization_profile() {
+    let schema = parsed_evidence_schema();
+    let mut bundle = parsed_evidence_bundle();
+    bundle["evidence"][0]["normalization"]["profile_id"] =
+        Value::String("unreviewed-normalizer".into());
+    let errors = verified_operations_conformance::validate_evidence_bundle(&schema, &bundle)
+        .expect_err("an unreviewed normalizer must not silently become trusted");
+    assert!(
+        errors.iter().any(|error| error.contains("schema")),
+        "schema should reject an unknown normalization profile, got {errors:#?}"
     );
 }

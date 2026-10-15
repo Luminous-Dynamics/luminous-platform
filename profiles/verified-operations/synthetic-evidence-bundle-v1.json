@@ -19,7 +19,11 @@
       "target_value_decimal": "8.0",
       "target_unit": "kWh"
     },
-    "evidence_refs": ["meter-start", "meter-end", "window-delta"],
+    "evidence_refs": [
+      "meter-start",
+      "meter-end",
+      "window-delta"
+    ],
     "automatic_mutation_allowed": false,
     "must_preserve_provenance": true
   },
@@ -52,7 +56,11 @@
         "validity": "valid",
         "normalized_sha256": "84b67b1e08f0289b7247648996218e8c6d8b8fef1da4d6593d3a7a630b793f2d"
       },
-      "derived_from": []
+      "derived_from": [],
+      "normalization": {
+        "profile_id": "home-assistant-energy-state-v1",
+        "profile_version": "1.0.0"
+      }
     },
     {
       "evidence_id": "meter-end",
@@ -82,7 +90,11 @@
         "validity": "valid",
         "normalized_sha256": "e93221baaf626aad764f0d2875e50f3961f3619ff7c3405fceedb6efb5aac95c"
       },
-      "derived_from": []
+      "derived_from": [],
+      "normalization": {
+        "profile_id": "home-assistant-energy-state-v1",
+        "profile_version": "1.0.0"
+      }
     },
     {
       "evidence_id": "window-delta",
@@ -112,7 +124,14 @@
         "validity": "valid",
         "normalized_sha256": "61def2e5a025b456b20e434d5f3c3c38584663035cbc5dc18d6327c97057a0fb"
       },
-      "derived_from": ["meter-start", "meter-end"]
+      "derived_from": [
+        "meter-start",
+        "meter-end"
+      ],
+      "normalization": {
+        "profile_id": "derived-subtract-v1",
+        "profile_version": "1.0.0"
+      }
     }
   ]
 }

@@ -441,6 +441,8 @@ pub fn validate_evidence_bundle(schema: &Value, bundle: &Value) -> Result<usize,
                 "evidence {id} cannot be encoded under normalized-measurement-v1"
             )),
         }
+
+        validate_source_normalization(record, id, &mut errors);
     }
 
     // Require each lineage edge to point backward in the bundle. This yields a
@@ -597,6 +599,92 @@ pub fn validate_evidence_bundle(schema: &Value, bundle: &Value) -> Result<usize,
         Ok(evidence.len())
     } else {
         Err(errors)
+    }
+}
+
+fn validate_source_normalization(record: &Value, id: &str, errors: &mut Vec<String>) {
+    let kind = record.get("kind").and_then(Value::as_str).unwrap_or("");
+    let profile = record
+        .get("normalization")
+        .and_then(|value| value.get("profile_id"))
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    match profile {
+        "home-assistant-energy-state-v1" => {
+            if kind != "telemetry_sample" {
+                errors.push(format!(
+                    "evidence {id} uses home-assistant-energy-state-v1 for unsupported kind {kind}"
+                ));
+                return;
+            }
+            let adapter_id = record
+                .get("source")
+                .and_then(|source| source.get("adapter_id"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            if !matches!(adapter_id, "synthetic-home-assistant" | "home-assistant") {
+                errors.push(format!(
+                    "evidence {id} adapter {adapter_id} is not allowed by home-assistant-energy-state-v1"
+                ));
+                return;
+            }
+            let raw_utf8 = record
+                .get("payload")
+                .and_then(|payload| payload.get("raw_utf8"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            let raw: Value = match serde_json::from_str(raw_utf8) {
+                Ok(value) => value,
+                Err(_) => {
+                    errors.push(format!("evidence {id} source payload is not valid JSON"));
+                    return;
+                }
+            };
+            let entity_id = raw.get("entity_id").and_then(Value::as_str).unwrap_or("");
+            let raw_state = raw.get("state").and_then(Value::as_str).unwrap_or("");
+            let raw_unit = raw
+                .get("unit_of_measurement")
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            let measurement = record.get("measurement");
+            let normalized_metric = measurement
+                .and_then(|value| value.get("metric_name"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            let normalized_value = measurement
+                .and_then(|value| value.get("value_decimal"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            let normalized_unit = measurement
+                .and_then(|value| value.get("unit"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            let normalized_validity = measurement
+                .and_then(|value| value.get("validity"))
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            if entity_id.is_empty()
+                || parse_decimal(raw_state).is_none()
+                || raw_state != normalized_value
+                || raw_unit != normalized_unit
+                || normalized_metric != "energy.total"
+                || normalized_validity != "valid"
+            {
+                errors.push(format!(
+                    "evidence {id} raw source fields do not support the normalized energy measurement"
+                ));
+            }
+        }
+        "derived-subtract-v1" => {
+            if kind != "derived_measurement" {
+                errors.push(format!(
+                    "evidence {id} uses derived-subtract-v1 for unsupported kind {kind}"
+                ));
+            }
+        }
+        _ => errors.push(format!(
+            "evidence {id} has unsupported normalization profile {profile}"
+        )),
     }
 }
 
