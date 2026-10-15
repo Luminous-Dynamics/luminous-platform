@@ -197,6 +197,69 @@ fn classify(scenario: &Value) -> Option<(&'static str, &'static str)> {
             "not_applicable" => Some(("indeterminate", "EVENT_STATE_NOT_APPLICABLE")),
             _ => None,
         },
+        "outcome_objective" => {
+            if fact_bool(scenario, "objective_scope_matches") != Some(true) {
+                return Some(("indeterminate", "OBJECTIVE_SCOPE_MISMATCH"));
+            }
+            if fact_bool(scenario, "objective_defined") != Some(true) {
+                return Some(("indeterminate", "OBJECTIVE_UNDEFINED"));
+            }
+            if fact_bool(scenario, "window_complete") != Some(true) {
+                return Some(("indeterminate", "OBJECTIVE_WINDOW_INCOMPLETE"));
+            }
+            if fact_bool(scenario, "measurement_valid") != Some(true) {
+                return Some(("indeterminate", "OBJECTIVE_MEASUREMENT_INVALID"));
+            }
+
+            let coverage = scenario
+                .get("facts")
+                .and_then(|facts| facts.get("coverage_ratio"))
+                .and_then(Value::as_f64);
+            let minimum_coverage = scenario
+                .get("facts")
+                .and_then(|facts| facts.get("minimum_coverage_ratio"))
+                .and_then(Value::as_f64);
+            let (Some(coverage), Some(minimum_coverage)) = (coverage, minimum_coverage) else {
+                return Some(("indeterminate", "OBJECTIVE_COVERAGE_UNKNOWN"));
+            };
+            if coverage < minimum_coverage {
+                return Some(("indeterminate", "OBJECTIVE_COVERAGE_INSUFFICIENT"));
+            }
+
+            let measured_unit = fact_str(scenario, "measured_unit");
+            let target_unit = fact_str(scenario, "target_unit");
+            if measured_unit.is_none() || target_unit.is_none() || measured_unit != target_unit {
+                return Some(("indeterminate", "OBJECTIVE_UNITS_INCOMPATIBLE"));
+            }
+
+            if fact_bool(scenario, "independent_measurement_present") != Some(true) {
+                return Some(("indeterminate", "OBJECTIVE_INDEPENDENT_MEASUREMENT_MISSING"));
+            }
+
+            let measured_value = scenario
+                .get("facts")
+                .and_then(|facts| facts.get("measured_value"))
+                .and_then(Value::as_f64);
+            let target_value = scenario
+                .get("facts")
+                .and_then(|facts| facts.get("target_value"))
+                .and_then(Value::as_f64);
+            let (Some(measured_value), Some(target_value)) = (measured_value, target_value) else {
+                return Some(("indeterminate", "OBJECTIVE_MEASUREMENT_INVALID"));
+            };
+
+            match fact_str(scenario, "comparator") {
+                Some("lte") if measured_value <= target_value => {
+                    Some(("objective_met_within_observed_scope", "OBJECTIVE_TARGET_MET"))
+                }
+                Some("lte") => Some(("objective_target_missed", "OBJECTIVE_TARGET_MISSED")),
+                Some("gte") if measured_value >= target_value => {
+                    Some(("objective_met_within_observed_scope", "OBJECTIVE_TARGET_MET"))
+                }
+                Some("gte") => Some(("objective_target_missed", "OBJECTIVE_TARGET_MISSED")),
+                _ => Some(("indeterminate", "OBJECTIVE_COMPARATOR_UNKNOWN")),
+            }
+        }
         "change_execution" => {
             match fact_str(scenario, "authorization")? {
                 "missing" => return Some(("denied", "AUTHORIZATION_MISSING")),
