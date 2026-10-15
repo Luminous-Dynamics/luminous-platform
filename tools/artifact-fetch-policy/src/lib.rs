@@ -65,20 +65,35 @@ pub enum PolicyError {
     EmptyOriginAllowlist,
     ZeroByteLimit,
     ZeroTimeout,
-    TimeoutExceedsTotal { phase: &'static str },
+    TimeoutExceedsTotal {
+        phase: &'static str,
+    },
     OriginNotAllowed(HttpsOrigin),
     EmptyDnsAnswer,
-    IpLiteralResolutionMismatch { expected: IpAddr },
+    IpLiteralResolutionMismatch {
+        expected: IpAddr,
+    },
     NonPublicDestination(IpAddr),
     ResolutionOriginMismatch {
         requested: HttpsOrigin,
         validated_for: HttpsOrigin,
     },
     ConnectedPeerNotValidated(IpAddr),
-    ConnectedPeerPortMismatch { expected: u16, actual: u16 },
-    RedirectLimitExceeded { limit: u8 },
-    DeclaredLengthExceeded { declared: u64, limit: u64 },
-    DownloadLimitExceeded { received: u64, limit: u64 },
+    ConnectedPeerPortMismatch {
+        expected: u16,
+        actual: u16,
+    },
+    RedirectLimitExceeded {
+        limit: u8,
+    },
+    DeclaredLengthExceeded {
+        declared: u64,
+        limit: u64,
+    },
+    DownloadLimitExceeded {
+        received: u64,
+        limit: u64,
+    },
     DownloadCounterOverflow,
     UnsupportedContentEncoding,
     InvalidContentLength,
@@ -561,7 +576,10 @@ fn normalize_host(host: &str) -> Result<String, PolicyError> {
 }
 
 fn is_legacy_ipv4_number(label: &str) -> bool {
-    if let Some(digits) = label.strip_prefix("0x").or_else(|| label.strip_prefix("0X")) {
+    if let Some(digits) = label
+        .strip_prefix("0x")
+        .or_else(|| label.strip_prefix("0X"))
+    {
         return digits.bytes().all(|byte| byte.is_ascii_hexdigit());
     }
 
@@ -796,10 +814,7 @@ mod tests {
     fn ip_literal_resolution_must_match_the_literal_exactly() {
         let p = policy();
         let direct = origin("8.8.8.8", 443);
-        assert!(
-            p.authorize_resolution(&direct, &[ip("8.8.8.8")])
-                .is_ok()
-        );
+        assert!(p.authorize_resolution(&direct, &[ip("8.8.8.8")]).is_ok());
         assert_eq!(
             p.authorize_resolution(&direct, &[ip("1.1.1.1")]),
             Err(PolicyError::IpLiteralResolutionMismatch {
@@ -807,10 +822,7 @@ mod tests {
             })
         );
         assert_eq!(
-            p.authorize_resolution(
-                &direct,
-                &[ip("8.8.8.8"), ip("1.1.1.1")]
-            ),
+            p.authorize_resolution(&direct, &[ip("8.8.8.8"), ip("1.1.1.1")]),
             Err(PolicyError::IpLiteralResolutionMismatch {
                 expected: ip("8.8.8.8"),
             })
@@ -903,35 +915,19 @@ mod tests {
         let registry = origin("registry.example.invalid", 443);
         let validated = p.authorize_resolution(&registry, &[ip("8.8.8.8")]).unwrap();
         assert!(
-            p.verify_connected_peer(
-                &registry,
-                &validated,
-                SocketAddr::new(ip("8.8.8.8"), 443)
-            )
+            p.verify_connected_peer(&registry, &validated, SocketAddr::new(ip("8.8.8.8"), 443))
                 .is_ok()
         );
         assert_eq!(
-            p.verify_connected_peer(
-                &registry,
-                &validated,
-                SocketAddr::new(ip("1.1.1.1"), 443)
-            ),
+            p.verify_connected_peer(&registry, &validated, SocketAddr::new(ip("1.1.1.1"), 443)),
             Err(PolicyError::ConnectedPeerNotValidated(ip("1.1.1.1")))
         );
         assert_eq!(
-            p.verify_connected_peer(
-                &registry,
-                &validated,
-                SocketAddr::new(ip("127.0.0.1"), 443)
-            ),
+            p.verify_connected_peer(&registry, &validated, SocketAddr::new(ip("127.0.0.1"), 443)),
             Err(PolicyError::NonPublicDestination(ip("127.0.0.1")))
         );
         assert_eq!(
-            p.verify_connected_peer(
-                &registry,
-                &validated,
-                SocketAddr::new(ip("8.8.8.8"), 8443)
-            ),
+            p.verify_connected_peer(&registry, &validated, SocketAddr::new(ip("8.8.8.8"), 8443)),
             Err(PolicyError::ConnectedPeerPortMismatch {
                 expected: 443,
                 actual: 8443,
@@ -944,9 +940,7 @@ mod tests {
         let p = policy();
         let registry = origin("registry.example.invalid", 443);
         let mirror = origin("mirror.example.invalid", 8443);
-        let validated = p
-            .authorize_resolution(&registry, &[ip("8.8.8.8")])
-            .unwrap();
+        let validated = p.authorize_resolution(&registry, &[ip("8.8.8.8")]).unwrap();
 
         assert_eq!(
             p.verify_connected_peer(
@@ -1096,7 +1090,10 @@ mod tests {
         let p = policy();
         assert_eq!(p.validate_content_length_headers(&[]), Ok(None));
         assert_eq!(p.validate_content_length_headers(&["0"]), Ok(Some(0)));
-        assert_eq!(p.validate_content_length_headers(&[" 1024\t"]), Ok(Some(1024)));
+        assert_eq!(
+            p.validate_content_length_headers(&[" 1024\t"]),
+            Ok(Some(1024))
+        );
         assert_eq!(
             p.validate_content_length_headers(&["1025"]),
             Err(PolicyError::DeclaredLengthExceeded {
