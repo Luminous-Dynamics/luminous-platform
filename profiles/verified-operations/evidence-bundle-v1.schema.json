@@ -174,11 +174,6 @@
         "kind": {
           "enum": [
             "telemetry_sample",
-            "backup_job",
-            "restore_test",
-            "configuration_snapshot",
-            "provider_event",
-            "independent_observation",
             "derived_measurement"
           ]
         },
@@ -191,7 +186,8 @@
             "adapter_id",
             "adapter_version",
             "source_revision",
-            "source_event_id"
+            "source_event_id",
+            "resource_id"
           ],
           "properties": {
             "source_id": {
@@ -219,6 +215,11 @@
               "maxLength": 128
             },
             "source_event_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            "resource_id": {
               "type": "string",
               "minLength": 1,
               "maxLength": 256

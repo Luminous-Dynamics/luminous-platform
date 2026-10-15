@@ -37,7 +37,8 @@
         "adapter_id": "synthetic-home-assistant",
         "adapter_version": "0.0.0-synthetic",
         "source_revision": "fixture:meter-01:v1",
-        "source_event_id": "synthetic-event-start"
+        "source_event_id": "synthetic-event-start",
+        "resource_id": "sensor.demo_energy"
       },
       "timestamps": {
         "event_time": "2026-10-15T19:00:00Z",
@@ -71,7 +72,8 @@
         "adapter_id": "synthetic-home-assistant",
         "adapter_version": "0.0.0-synthetic",
         "source_revision": "fixture:meter-01:v1",
-        "source_event_id": "synthetic-event-end"
+        "source_event_id": "synthetic-event-end",
+        "resource_id": "sensor.demo_energy"
       },
       "timestamps": {
         "event_time": "2026-10-15T20:00:00Z",
@@ -105,7 +107,8 @@
         "adapter_id": "objective-energy-evaluator",
         "adapter_version": "1.0.0",
         "source_revision": "synthetic-evaluator:v1",
-        "source_event_id": "synthetic-derived-window-delta"
+        "source_event_id": "synthetic-derived-window-delta",
+        "resource_id": "energy.delta_window"
       },
       "timestamps": {
         "event_time": null,
