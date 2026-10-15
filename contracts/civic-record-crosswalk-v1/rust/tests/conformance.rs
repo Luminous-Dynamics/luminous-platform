@@ -104,13 +104,17 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
 
     assert_eq!(
         contract.snapshot_commit_sha,
-        "4f74e4338d44e3523f6f9f629455beabd834b1ae"
+        "4325d01dbbf80df722b5f1529b83dad643286938"
     );
     assert_eq!(
         contract.git_blob_sha1.as_deref(),
-        Some("8674042a1d4d9fe4d8b27cfca759657ace4f07f5")
+        Some("875fa72478ccd609b83d218bbae9b9facae8fd2e")
     );
-    assert_eq!(contract.version.as_deref(), Some("0.4.0"));
+    assert_eq!(contract.version.as_deref(), Some("0.6.0"));
+    assert_eq!(
+        contract.path.as_deref(),
+        Some("tests/reference/life-civic-service/cases-v0.6.0.json")
+    );
     assert_eq!(
         contract.qualification_state,
         civic_record_crosswalk_v1::QualificationState::UnqualifiedDraft
@@ -133,7 +137,7 @@ fn mycelix_service_corpus_pin_and_cross_corpus_mapping_stay_non_runtime() {
             .unwrap_or_else(|| panic!("missing pinned Mycelix schema {schema_id}"));
         assert_eq!(
             source_schema.snapshot_commit_sha,
-            "4f74e4338d44e3523f6f9f629455beabd834b1ae"
+            "4325d01dbbf80df722b5f1529b83dad643286938"
         );
         assert_eq!(source_schema.git_blob_sha1.as_deref(), Some(expected_blob));
     }
