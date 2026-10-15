@@ -386,7 +386,7 @@ impl FetchPolicy {
 
         let decision = RedirectDecision {
             target: to.clone(),
-            same_origin_credentials_allowed: chain.current == *to,
+            same_origin_credentials_allowed: &chain.current == to,
         };
         chain.current = to.clone();
         chain.redirects_followed += 1;
