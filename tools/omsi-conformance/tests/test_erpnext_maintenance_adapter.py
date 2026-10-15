@@ -38,10 +38,19 @@ class TestErpnextMaintenanceLogAdapter(unittest.TestCase):
         self.assertEqual(adapter.map_maintenance_log(s, b, NOW)["maintenance"]["due_date"], "2026-12-01")
 
     def test_planned_future_maintenance_is_not_completed(self):
-        s, b = inputs(); s["log"].update(maintenance_status="Planned", docstatus=0, completion_date=None)
+        s, b = inputs()
+        s["log"].update(maintenance_status="Planned", docstatus=0, completion_date=None, due_date="2026-10-20")
         out = adapter.map_maintenance_log(s, b, NOW)
         self.assertEqual(out["maintenance"]["normalized_status"], "scheduled")
+        self.assertEqual(out["maintenance"]["due_date"], "2026-10-20")
         self.assertIsNone(out["maintenance"]["completion_date"])
+
+    def test_stale_planned_status_with_past_due_date_is_disclosed_as_conflict(self):
+        s, b = inputs()
+        s["log"].update(maintenance_status="Planned", docstatus=0, completion_date=None, due_date="2026-10-14")
+        out = adapter.map_maintenance_log(s, b, NOW)
+        self.assertEqual(out["maintenance"]["normalized_status"], "scheduled")
+        self.assertIn("planned_status_with_past_due_date", out["maintenance"]["mapping_conflicts"])
 
     def test_source_ids_are_instance_and_doctype_namespaced(self):
         s, b = inputs(); out = adapter.map_maintenance_log(s, b, NOW)

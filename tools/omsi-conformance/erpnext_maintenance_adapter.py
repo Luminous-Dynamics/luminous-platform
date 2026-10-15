@@ -106,6 +106,11 @@ def map_maintenance_log(snapshot: dict[str, Any], binding: dict[str, Any], now: 
         _fail("ERPNext task last-completion date is in the future")
 
     conflicts: set[str] = set()
+    # The pinned controller's validate() promotes past-due Planned logs to
+    # Overdue when the record is validated. A stale snapshot can still report
+    # Planned; preserve that source claim but make the inconsistency explicit.
+    if status == "Planned" and due is not None and due < site_today:
+        conflicts.add("planned_status_with_past_due_date")
     # Frappe document state and the custom maintenance status are separate.
     # Preserve their disagreement instead of assuming undocumented coupling.
     if docstatus == 2 and status != "Cancelled":
