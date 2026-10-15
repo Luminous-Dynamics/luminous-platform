@@ -1,6 +1,6 @@
 # Luminous Platform
 
-The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, fail-open, consciousness-aware runtime for NixOS hosts.
+The **Luminous Platform** is the infrastructure and operating environment for Luminous-Dynamics AI systems. It provides a sovereignty-first, fail-closed, consciousness-aware runtime for NixOS hosts.
 
 ## Architecture
 
@@ -43,6 +43,16 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 | [luminous-edge](https://github.com/Luminous-Dynamics/luminous-edge) | Meta-flake composing the platform layer | ✅ | v0.1 |
 | [xenia-peer](https://github.com/Luminous-Dynamics/xenia-peer) | Sovereign operations daemon (H.264, PQC handshake, consent ledger) | ✅ | Active |
 | [xenia-wire](https://github.com/Luminous-Dynamics/xenia-wire) | Wire protocol | ✅ | Active |
+
+## Architecture RFCs
+
+- [Xenia Operations Fabric](docs/XENIA_OPERATIONS_FABRIC_RFC.md) — proposed boundaries and integration plan for a sovereign, AI-native MSP/service-management platform, including a ConnectWise-first adoption path. This is a design proposal, not a production-readiness claim.
+- [Unified Platform Product and UI Decision](docs/UNIFIED_PLATFORM_PRODUCT_AND_UI_DECISION.md) — recommendation to build toward a broader sovereign operations platform, phase the ConnectWise alternative, and adopt Leptos for new Rust-native operator/customer web surfaces without coupling the platform API to the frontend framework.
+- [Durable SQLite Reference Model](contracts/operations-event-v1/DURABLE_SQLITE_REFERENCE_MODEL.md) — local conformance harness for event idempotency, atomic inbox/state/outbox writes, conservative revision handling, fault injection, and retryable outbox leases.
+- [ADR 0001 — Production Operational State Store](docs/adr/0001-production-operational-state-store.md) — proposed PostgreSQL system of record and production qualification gates.
+- [ADR 0002 — Holochain Trust and Coordination Boundary](docs/adr/0002-holochain-decentralized-trust-boundary.md) — selective use of Holochain for multi-party attestations and shared provenance, without replacing PostgreSQL or execution-boundary authorization.
+- [ADR 0003 — Outbox Failure and Recovery Contract](docs/adr/0003-outbox-failure-recovery.md) — finite delivery attempts, redacted failure classification, dead-letter inspection, and the authorization gate for replay.
+- [Holochain Attestation Share Package V1](contracts/holochain-attestation-v1/README.md) — minimized share-package schema, synthetic fixture, adversarial tests, and explicit privacy/authority limits.
 
 ## Safety Contracts
 

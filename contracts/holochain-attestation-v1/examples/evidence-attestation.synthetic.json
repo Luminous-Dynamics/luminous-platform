@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0",
+  "shareId": "8c2ac8f0-0b88-4a3c-971b-1a5b2de21972",
+  "caseRef": "case_0123456789abcdef0123456789abcdef",
+  "recordType": "evidence-attestation",
+  "issuerRef": "org_abcdef0123456789abcdef0123456789",
+  "issuerRoleClaim": "independent-reviewer",
+  "issuedAt": "2026-10-09T12:00:00Z",
+  "statementCode": "reviewed",
+  "evidenceManifest": [
+    {
+      "manifestRef": "manifest_23456789abcdef0123456789abcdef01",
+      "digestAlgorithm": "sha-256",
+      "digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "classification": "approved-shareable",
+      "assessmentClaim": "independent-review-reported"
+    }
+  ],
+  "privacyReview": {
+    "approvedForDht": true,
+    "policyRef": "policy_3456789abcdef0123456789abcdef012",
+    "dataClass": "partner-shareable",
+    "rawSensitiveDataIncluded": false
+  },
+  "authorityEffect": "none"
+}
