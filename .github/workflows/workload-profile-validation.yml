@@ -7,45 +7,16 @@ on:
       - "schemas/workload-profile.schema.json"
       - "profiles/workloads/**"
       - "tools/validate_workload_profiles.py"
-name: Workload profile schema
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - "schemas/workload-profile.schema.json"
-      - "profiles/workloads/**"
-      - "tools/validate_workload_profiles.py"
+      - "tools/requirements-workload-validation.txt"
+      - "tools/artifact-fetch-policy/**"
       - ".github/workflows/workload-profile-validation.yml"
   pull_request:
     paths:
       - "schemas/workload-profile.schema.json"
       - "profiles/workloads/**"
       - "tools/validate_workload_profiles.py"
-name: Workload profile schema
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - "schemas/workload-profile.schema.json"
-      - "profiles/workloads/**"
-      - "tools/validate_workload_profiles.py"
-name: Workload profile schema
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - "schemas/workload-profile.schema.json"
-      - "profiles/workloads/**"
-      - "tools/validate_workload_profiles.py"
-      - ".github/workflows/workload-profile-validation.yml"
-  pull_request:
-    paths:
-      - "schemas/workload-profile.schema.json"
-      - "profiles/workloads/**"
-      - "tools/validate_workload_profiles.py"
+      - "tools/requirements-workload-validation.txt"
+      - "tools/artifact-fetch-policy/**"
       - ".github/workflows/workload-profile-validation.yml"
 
 permissions:
