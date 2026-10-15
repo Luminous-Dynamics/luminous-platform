@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:manufacturing-replay-envelope:0.1",
+  "title": "OMSI Manufacturing Replay Envelope 0.1",
+  "description": "Unsigned envelope binding exact input bytes to a diagnostic semantic report. It provides replay consistency, not source authentication or production authorization.",
+  "type": "object",
+  "required": [
+    "envelope_contract",
+    "artifact_binding",
+    "report",
+    "limitations"
+  ],
+  "properties": {
+    "envelope_contract": {
+      "const": "omsi-manufacturing-replay-envelope/0.1"
+    },
+    "artifact_binding": {
+      "type": "object",
+      "required": [
+        "digest_algorithm",
+        "digest",
+        "digest_scope",
+        "canonicalization",
+        "byte_length"
+      ],
+      "properties": {
+        "digest_algorithm": {
+          "const": "sha256"
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "digest_scope": {
+          "const": "exact_input_bytes"
+        },
+        "canonicalization": {
+          "const": "none"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "report": {
+      "$ref": "semantic-report.schema.json"
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false
+}
