@@ -62,8 +62,10 @@ jobs:
         run: |
           set -euo pipefail
           rustup toolchain install 1.96.0 --profile minimal
+          rustup component add rustfmt --toolchain 1.96.0
           rustc +1.96.0 --version
           cargo +1.96.0 --version
+          cargo +1.96.0 fmt --version
 
       - name: Reject handwritten JavaScript and TypeScript in these contracts
         shell: bash
