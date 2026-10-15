@@ -226,3 +226,41 @@ fn existing_draft_work_case_and_operations_event_contracts_remain_blocked_until_
         civic_record_crosswalk_v1::ConversionPolicy::ExplicitAdapterRequired
     );
 }
+
+#[test]
+fn crosswalk_rejects_impossible_review_dates_and_accepts_leap_days() {
+    let fixture = include_str!("../../crosswalk.json");
+
+    let mut leap_day: serde_json::Value =
+        serde_json::from_str(fixture).expect("checked-in crosswalk is valid JSON");
+    leap_day["review_snapshot"] = serde_json::json!("2024-02-29");
+    let encoded = serde_json::to_string(&leap_day).expect("crosswalk serializes");
+    assert!(
+        parse_and_validate_json(&encoded).is_ok(),
+        "a valid leap day must be accepted"
+    );
+
+    for invalid_date in [
+        "2026-02-30",
+        "2026-04-31",
+        "2025-02-29",
+        "2026-13-01",
+        "2026-00-10",
+        "1899-12-31",
+        "2201-01-01",
+        "2026/10/15",
+    ] {
+        let mut value: serde_json::Value =
+            serde_json::from_str(fixture).expect("checked-in crosswalk is valid JSON");
+        value["review_snapshot"] = serde_json::json!(invalid_date);
+        let encoded = serde_json::to_string(&value).expect("crosswalk serializes");
+        let error = parse_and_validate_json(&encoded)
+            .expect_err("invalid review snapshot dates must fail closed");
+        assert!(
+            error
+                .to_string()
+                .contains("review_snapshot must be a real calendar date"),
+            "unexpected error for {invalid_date}: {error}"
+        );
+    }
+}
