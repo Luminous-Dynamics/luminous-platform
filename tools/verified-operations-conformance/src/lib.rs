@@ -204,26 +204,86 @@ fn classify(scenario: &Value) -> Option<(&'static str, &'static str)> {
             if fact_bool(scenario, "objective_defined") != Some(true) {
                 return Some(("indeterminate", "OBJECTIVE_UNDEFINED"));
             }
-            if fact_bool(scenario, "window_complete") != Some(true) {
-                return Some(("indeterminate", "OBJECTIVE_WINDOW_INCOMPLETE"));
-            }
             if fact_bool(scenario, "measurement_valid") != Some(true) {
                 return Some(("indeterminate", "OBJECTIVE_MEASUREMENT_INVALID"));
             }
 
-            let coverage = scenario
-                .get("facts")
-                .and_then(|facts| facts.get("coverage_ratio"))
-                .and_then(Value::as_f64);
+            // Derive coverage from observed sample positions and the declared schedule.
+            // Never trust a caller-supplied coverage ratio or "window complete" boolean.
+            let facts = scenario.get("facts")?;
+            let window_start = facts
+                .get("observation_window_start_epoch_seconds")
+                .and_then(Value::as_i64);
+            let window_end = facts
+                .get("observation_window_end_epoch_seconds")
+                .and_then(Value::as_i64);
+            let interval = facts
+                .get("expected_interval_seconds")
+                .and_then(Value::as_i64);
+            let maximum_gap = facts
+                .get("maximum_allowed_gap_seconds")
+                .and_then(Value::as_i64);
+            let offsets_value = facts.get("valid_sample_offsets_seconds");
+            let (Some(window_start), Some(window_end), Some(interval), Some(maximum_gap), Some(offsets_value)) =
+                (window_start, window_end, interval, maximum_gap, offsets_value)
+            else {
+                return Some(("indeterminate", "OBJECTIVE_TIMELINE_UNKNOWN"));
+            };
+            if window_end <= window_start || interval <= 0 || maximum_gap < interval {
+                return Some(("indeterminate", "OBJECTIVE_WINDOW_POLICY_INVALID"));
+            }
+
+            let duration = window_end - window_start;
+            if duration % interval != 0 {
+                return Some(("indeterminate", "OBJECTIVE_WINDOW_POLICY_INVALID"));
+            }
+
+            let Some(raw_offsets) = offsets_value.as_array() else {
+                return Some(("indeterminate", "OBJECTIVE_TIMELINE_INVALID"));
+            };
+            if raw_offsets.len() < 2 {
+                return Some(("indeterminate", "OBJECTIVE_TIMELINE_INVALID"));
+            }
+            let mut offsets = Vec::with_capacity(raw_offsets.len());
+            for value in raw_offsets {
+                let Some(offset) = value.as_i64() else {
+                    return Some(("indeterminate", "OBJECTIVE_TIMELINE_INVALID"));
+                };
+                if offset < 0 || offset > duration || offset % interval != 0 {
+                    return Some(("indeterminate", "OBJECTIVE_TIMELINE_INVALID"));
+                }
+                offsets.push(offset);
+            }
+            offsets.sort_unstable();
+            if offsets.windows(2).any(|pair| pair[0] == pair[1]) {
+                return Some(("indeterminate", "OBJECTIVE_TIMELINE_INVALID"));
+            }
+
+            if offsets.first() != Some(&0) || offsets.last() != Some(&duration) {
+                return Some(("indeterminate", "OBJECTIVE_WINDOW_INCOMPLETE"));
+            }
+
+            let expected_count = (duration / interval + 1) as f64;
+            let coverage = offsets.len() as f64 / expected_count;
             let minimum_coverage = scenario
                 .get("facts")
                 .and_then(|facts| facts.get("minimum_coverage_ratio"))
                 .and_then(Value::as_f64);
-            let (Some(coverage), Some(minimum_coverage)) = (coverage, minimum_coverage) else {
+            let Some(minimum_coverage) = minimum_coverage else {
                 return Some(("indeterminate", "OBJECTIVE_COVERAGE_UNKNOWN"));
             };
+            if !(0.0..=1.0).contains(&minimum_coverage) {
+                return Some(("indeterminate", "OBJECTIVE_COVERAGE_POLICY_INVALID"));
+            }
             if coverage < minimum_coverage {
                 return Some(("indeterminate", "OBJECTIVE_COVERAGE_INSUFFICIENT"));
+            }
+
+            if offsets
+                .windows(2)
+                .any(|pair| pair[1] - pair[0] > maximum_gap)
+            {
+                return Some(("indeterminate", "OBJECTIVE_GAP_TOO_LONG"));
             }
 
             let measured_unit = fact_str(scenario, "measured_unit");
