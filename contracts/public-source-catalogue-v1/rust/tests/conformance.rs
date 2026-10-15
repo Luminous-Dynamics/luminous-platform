@@ -2,6 +2,7 @@ use public_source_catalogue_v1::{validate_catalogue_json, validate_observation_j
 use serde_json::{json, Value};
 
 const CATALOGUE: &str = include_str!("../../examples/catalogue.json");
+const CATALOGUE_SCHEMA: &str = include_str!("../../schema.json");
 const OBSERVATION: &str = include_str!("../../examples/observation-v1.json");
 const OBSERVATION_SCHEMA: &str = include_str!("../../observation.schema.json");
 const JHB_POWER_WATER_STATEMENT: &str =
@@ -23,6 +24,56 @@ fn parse_observation_fixture() -> Value {
 
 fn encoded(value: &Value) -> String {
     serde_json::to_string(value).expect("test JSON must serialize")
+}
+
+#[test]
+fn catalogue_schema_is_versioned_strict_and_keeps_ingestion_disabled() {
+    let schema: Value =
+        serde_json::from_str(CATALOGUE_SCHEMA).expect("catalogue schema must be valid JSON");
+    assert_eq!(
+        schema["$schema"],
+        "https://json-schema.org/draft/2020-12/schema"
+    );
+    assert_eq!(
+        schema["$id"],
+        "https://luminousdynamics.io/schemas/public-source-catalogue-v1.json"
+    );
+    assert_eq!(
+        schema["properties"]["schema_version"]["const"],
+        "public-source-catalogue-v1"
+    );
+    assert_eq!(schema["additionalProperties"], false);
+    assert_eq!(schema["$defs"]["source"]["additionalProperties"], false);
+
+    for name in ["publisher", "access", "terms", "data_scope", "ingestion"] {
+        assert_eq!(
+            schema["$defs"]["source"]["properties"][name]["additionalProperties"],
+            false,
+            "{name} must reject unknown fields"
+        );
+    }
+
+    assert_eq!(
+        schema["$defs"]["source"]["properties"]["access"]["properties"]["transport_policy"]
+            ["const"],
+        "https_only"
+    );
+    assert_eq!(
+        schema["$defs"]["source"]["properties"]["ingestion"]["properties"]["status"]["const"],
+        "catalogue_only"
+    );
+    assert_eq!(
+        schema["$defs"]["source"]["properties"]["ingestion"]["properties"]["enabled"]["const"],
+        false
+    );
+    assert!(
+        schema["required"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|field| field == "reviewed_on"),
+        "the catalogue must be dated"
+    );
 }
 
 #[test]
