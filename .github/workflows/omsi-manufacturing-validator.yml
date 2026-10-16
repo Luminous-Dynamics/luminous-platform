@@ -200,6 +200,7 @@ jobs:
           jq empty tools/omsi-manufacturing-validator/schema/adapter-transform-vectors.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/adapter-transform-vector-report.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/provenance-manifest.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/provenance-verification-report.schema.json
           jq empty docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json
@@ -246,6 +247,20 @@ jobs:
             (.limitations | length) >= 5 and
             (has("signature") | not)
           ' "$manifest" > /dev/null
+
+          verification="$RUNNER_TEMP/omsi-provenance-verification.json"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            verify-provenance-manifest "$manifest" "$source_record" "$adapter_map" "$projection" \
+            "$semantic_input" "$semantic_report" "$replay_envelope" > "$verification"
+          jq -e '
+            .verifier_contract == "omsi-manufacturing-provenance-verifier/0.1" and
+            .status == "manifest_verified" and
+            .authority == "local_consistency_only" and
+            (.manifest_sha256 | test("^[0-9a-f]{64}$")) and
+            (.checks | length) == 3 and
+            ([.checks[].result] | all(. == "pass")) and
+            (has("signature") | not)
+          ' "$verification" > /dev/null
 
       - name: Clippy
         if: steps.source.outputs.present == 'true'
