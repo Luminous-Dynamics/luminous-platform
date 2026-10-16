@@ -102,32 +102,77 @@ pub fn create_provenance_manifest(
             artifact("semantic-report", "semantic_report", semantic_report_bytes),
             artifact("replay-envelope", "replay_envelope", replay_envelope_bytes)
         ],
-        "edges": [
+        "activities": [
             {
-                "from": "source-record",
-                "to": "adapter-map",
-                "relationship": "consumed_by"
+                "activity_id": "adapter-projection",
+                "activity_type": "adapter_projection",
+                "used": ["source-record", "adapter-map"],
+                "generated": ["projection-report"]
             },
             {
-                "from": "source-record",
-                "to": "projection-report",
-                "relationship": "projected_to",
-                "evidence": ["adapter-map"]
+                "activity_id": "semantic-input-extraction",
+                "activity_type": "semantic_input_extraction",
+                "used": ["projection-report"],
+                "generated": ["semantic-input"]
+            },
+            {
+                "activity_id": "semantic-evaluation",
+                "activity_type": "semantic_evaluation",
+                "used": ["semantic-input"],
+                "generated": ["semantic-report"]
+            },
+            {
+                "activity_id": "replay-envelope-creation",
+                "activity_type": "replay_envelope_creation",
+                "used": ["semantic-input"],
+                "generated": ["replay-envelope"]
+            }
+        ],
+        "edges": [
+            {
+                "from": "adapter-projection",
+                "to": "source-record",
+                "relationship": "used"
+            },
+            {
+                "from": "adapter-projection",
+                "to": "adapter-map",
+                "relationship": "used"
             },
             {
                 "from": "projection-report",
+                "to": "adapter-projection",
+                "relationship": "wasGeneratedBy"
+            },
+            {
+                "from": "semantic-input-extraction",
+                "to": "projection-report",
+                "relationship": "used"
+            },
+            {
+                "from": "semantic-input",
+                "to": "semantic-input-extraction",
+                "relationship": "wasGeneratedBy"
+            },
+            {
+                "from": "semantic-evaluation",
                 "to": "semantic-input",
-                "relationship": "payload_matches"
+                "relationship": "used"
             },
             {
-                "from": "semantic-input",
-                "to": "semantic-report",
-                "relationship": "evaluated_to"
+                "from": "semantic-report",
+                "to": "semantic-evaluation",
+                "relationship": "wasGeneratedBy"
             },
             {
-                "from": "semantic-input",
-                "to": "replay-envelope",
-                "relationship": "bound_by_exact_bytes"
+                "from": "replay-envelope-creation",
+                "to": "semantic-input",
+                "relationship": "used"
+            },
+            {
+                "from": "replay-envelope",
+                "to": "replay-envelope-creation",
+                "relationship": "wasGeneratedBy"
             }
         ],
         "limitations": LIMITATIONS
