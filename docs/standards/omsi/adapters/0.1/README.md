@@ -49,7 +49,7 @@ The versioned [transform-vector corpus](./TRANSFORM-VECTORS.json) declares exact
 
 ## Synthetic examples
 
-The `examples/` directory has two differently shaped examples: flat MES-like records and nested QMS-like records. CI checks field accounting and executable projection for both. These are synthetic fixtures, not evidence of conformance with any actual vendor or manufacturing standard.
+The `examples/` directory contains flat MES-like records, nested QMS-like records, and a record where two explicitly optional fields are absent. CI checks field accounting and executable projection for both shapes and verifies that absent optional fields are skipped/countable without being confused with dropped data. These are synthetic fixtures, not evidence of conformance with any actual vendor or manufacturing standard.
 
 ## Limitations
 
