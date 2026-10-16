@@ -1477,6 +1477,10 @@ mod tests {
                 "replay-envelope",
                 include_str!("../schema/replay-envelope.schema.json"),
             ),
+            (
+                "provenance-manifest",
+                include_str!("../schema/provenance-manifest.schema.json"),
+            ),
         ];
 
         for (label, schema_source) in schemas {
