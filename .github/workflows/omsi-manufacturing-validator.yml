@@ -229,7 +229,8 @@ jobs:
             (.targets | length) == 10 and
             ([.targets[].implementation_status] | all(. == "not_implemented")) and
             ([.targets[].conformance_status] | all(. == "not_assessed")) and
-            ([.targets[].benchmarks | length] | add) >= 10 and
+            ([.targets[].benchmarks | length] | add) >= 30 and
+            (.references | length) >= 10 and
             (.cross_cutting_gates | length) == 3 and
             (.non_claims | length) >= 4
           ' docs/standards/omsi/interoperability-targets-0.1.json > /dev/null
