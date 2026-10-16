@@ -98,6 +98,13 @@ jobs:
             .case_kind_counts.negative_control == 26 and
             .case_kind_counts.indeterminate_control == 9 and
             .metamorphic_checks > 100 and
+            .mutated_input_count == 10000 and
+            .distinct_claim_assignments > 7000 and
+            .policy_oracle_disagreements == 0 and
+            .nonrequired_claim_invariance_checks == 10000 and
+            .mutation_disposition_counts.eligible_for_lab_staging == 3334 and
+            .mutation_disposition_counts.indeterminate == 3333 and
+            .mutation_disposition_counts.blocked == 3333 and
             .physical_device_operations == 0 and
             .claim_ceiling == "synthetic_claim_policy_only_not_firmware_verification" and
             (.corpus_sha256 | test("^[0-9a-f]{64}$"))
