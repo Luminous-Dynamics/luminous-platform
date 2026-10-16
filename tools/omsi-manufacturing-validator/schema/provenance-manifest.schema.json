@@ -12,7 +12,7 @@
     "profile",
     "comparison_rule_id",
     "validator_version",
-    "transform_ids",
+    "declared_transform_ids",
     "artifacts",
     "edges",
     "limitations"
