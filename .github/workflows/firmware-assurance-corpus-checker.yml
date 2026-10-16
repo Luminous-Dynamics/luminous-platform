@@ -6,6 +6,8 @@ on:
       - 'docs/FIRMWARE_ASSURANCE_BENCHMARK_V1.md'
       - 'docs/fixtures/firmware-assurance-corpus-v1.json'
       - 'docs/schemas/firmware-assurance-corpus-v1.schema.json'
+      - 'docs/fixtures/secure-boot-lifecycle-corpus-v1.json'
+      - 'docs/schemas/secure-boot-lifecycle-corpus-v1.schema.json'
       - 'tools/firmware-assurance-corpus-checker/**'
       - '.github/workflows/firmware-assurance-corpus-checker.yml'
   push:
@@ -110,6 +112,32 @@ jobs:
             .mutation_disposition_counts.blocked == 3333 and
             .physical_device_operations == 0 and
             .claim_ceiling == "synthetic_claim_policy_only_not_firmware_verification" and
+            (.corpus_sha256 | test("^[0-9a-f]{64}$"))
+          ' "$report" > /dev/null
+
+      - name: Run independent Secure Boot lifecycle oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/secure-boot-lifecycle-oracle.json"
+          python3 tools/firmware-assurance-corpus-checker/tests/lifecycle_reference_oracle.py \
+            docs/fixtures/secure-boot-lifecycle-corpus-v1.json > "$report"
+          jq -e '
+            .report_version == "secure-boot-lifecycle-reference-oracle/1.0.0" and
+            .status == "passed" and
+            .case_count == 32 and
+            .baseline_decision_counts.blocked == 18 and
+            .baseline_decision_counts.indeterminate == 4 and
+            .baseline_decision_counts.configuration_preparation_allowed == 2 and
+            .baseline_decision_counts.manual_enrollment_review_allowed == 1 and
+            .baseline_decision_counts.secure_boot_verified == 1 and
+            .baseline_decision_counts.pending_post_reboot_verification == 5 and
+            .baseline_decision_counts.standard_boot_allowed_unsecured == 1 and
+            .mutation_trials == 10000 and
+            .distinct_mutated_assignments > 9000 and
+            .invariant_violations == 0 and
+            .physical_device_operations == 0 and
+            .firmware_mutations == 0 and
             (.corpus_sha256 | test("^[0-9a-f]{64}$"))
           ' "$report" > /dev/null
 
