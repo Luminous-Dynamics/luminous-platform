@@ -96,7 +96,8 @@ pub fn run(
         *counter = json!(counter.as_u64().unwrap_or(0) + 1);
     }
 
-    let parse_phase_started = Instant::now();
+    // Pass A collects per-operation latency samples. Pass B measures wall-clock
+    // throughput separately, without the per-operation timer/aggregation overhead.
     for _ in 0..iterations_per_case {
         for case in &cases {
             let started = Instant::now();
@@ -106,9 +107,16 @@ pub fn run(
             black_box(parsed);
         }
     }
+    let parse_phase_started = Instant::now();
+    for _ in 0..iterations_per_case {
+        for case in &cases {
+            let parsed = serde_json::from_slice::<Value>(black_box(case.bytes.as_slice()))
+                .map_err(|error| format!("throughput parse failed for {}: {error}", case.id))?;
+            black_box(parsed);
+        }
+    }
     let parse_phase_wall_nanos = elapsed_nanos(parse_phase_started);
 
-    let evaluation_phase_started = Instant::now();
     for _ in 0..iterations_per_case {
         for case in &cases {
             let started = Instant::now();
@@ -117,9 +125,15 @@ pub fn run(
             black_box(evaluated);
         }
     }
+    let evaluation_phase_started = Instant::now();
+    for _ in 0..iterations_per_case {
+        for case in &cases {
+            let evaluated = evaluate_input_value(black_box(&case.input));
+            black_box(evaluated);
+        }
+    }
     let evaluation_phase_wall_nanos = elapsed_nanos(evaluation_phase_started);
 
-    let envelope_create_phase_started = Instant::now();
     for _ in 0..iterations_per_case {
         for case in &cases {
             let started = Instant::now();
@@ -129,9 +143,16 @@ pub fn run(
             black_box(envelope);
         }
     }
+    let envelope_create_phase_started = Instant::now();
+    for _ in 0..iterations_per_case {
+        for case in &cases {
+            let envelope = create_replay_envelope(black_box(case.bytes.as_slice()))
+                .map_err(|error| format!("throughput envelope creation failed for {}: {error}", case.id))?;
+            black_box(envelope);
+        }
+    }
     let envelope_create_phase_wall_nanos = elapsed_nanos(envelope_create_phase_started);
 
-    let envelope_verify_phase_started = Instant::now();
     for _ in 0..iterations_per_case {
         for case in &cases {
             let started = Instant::now();
@@ -141,6 +162,20 @@ pub fn run(
             if verification.get("status").and_then(Value::as_str) != Some("replay_consistent") {
                 return Err(format!(
                     "replay consistency failed while benchmarking {}",
+                    case.id
+                ));
+            }
+            black_box(verification);
+        }
+    }
+    let envelope_verify_phase_started = Instant::now();
+    for _ in 0..iterations_per_case {
+        for case in &cases {
+            let verification =
+                verify_replay_envelope(black_box(&case.envelope), black_box(case.bytes.as_slice()));
+            if verification.get("status").and_then(Value::as_str) != Some("replay_consistent") {
+                return Err(format!(
+                    "replay consistency failed while measuring throughput for {}",
                     case.id
                 ));
             }
@@ -204,6 +239,7 @@ pub fn run(
             "outcome_counts_per_corpus_pass": outcome_counts
         },
         "run": {
+            "throughput_measurement_mode": "separate_batch_pass_without_per_operation_timers",
             "iterations_per_case": iterations_per_case,
             "warmup_iterations_per_case": WARMUP_ITERATIONS_PER_CASE,
             "sample_count_per_phase": total_samples,
@@ -213,7 +249,7 @@ pub fn run(
         "limitations": [
             "Microbenchmark only; no performance threshold is enforced and no measured value implies manufacturing correctness.",
             "Hardware, operating-system scheduling, power state, compiler profile, and background load affect results; compare only suitably controlled runs.",
-            "Wall-clock throughput is timed over a full phase batch and includes loop/dispatch overhead but excludes process startup; sampled-time rates are inverse-mean-latency equivalents, not end-to-end throughput.",
+            "Wall-clock throughput is timed over a separate full phase batch without per-operation timers; it includes loop/dispatch and black_box overhead but excludes process startup. Sampled-time rates are inverse-mean-latency equivalents, not end-to-end throughput.",
             "Inputs are the committed vector inputs serialized with the current serde_json build; the corpus SHA-256 binds the exact source vector document bytes, not a canonical JSON representation.",
             "This harness does not measure Holochain DHT latency, source-adapter latency, signature verification, factory telemetry throughput, or product-release workflows."
         ]
@@ -328,6 +364,10 @@ mod tests {
         assert_eq!(report["corpus"]["digest_scope"], "exact_vector_document_bytes");
         assert_eq!(report["corpus"]["case_ids"][0], "test-vector");
         assert_eq!(report["run"]["sample_count_per_phase"], 1);
+        assert_eq!(
+            report["run"]["throughput_measurement_mode"],
+            "separate_batch_pass_without_per_operation_timers"
+        );
         assert_eq!(
             report["phases"]["envelope_verification"]["phase"],
             "envelope_verification"
