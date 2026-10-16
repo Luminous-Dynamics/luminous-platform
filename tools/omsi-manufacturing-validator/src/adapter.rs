@@ -1489,6 +1489,12 @@ mod tests {
                 "adapter-schema-coverage-report",
                 include_str!("../schema/adapter-schema-coverage-report.schema.json"),
             ),
+            (
+                "independent-provenance-binding-verification-report",
+                include_str!(
+                    "../../omsi-provenance-verifier/schema/binding-verification-report.schema.json"
+                ),
+            ),
         ];
 
         for (label, schema_source) in schemas {
