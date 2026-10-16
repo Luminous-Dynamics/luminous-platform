@@ -8,7 +8,7 @@
       "id": "iso-8000-110-characteristic-data-exchange",
       "standard": "ISO 8000-110:2021",
       "domain": "Characteristic-data exchange",
-      "role": "Computer-checkable message syntax, semantic encoding and conformance to a data specification.",
+      "role": "Computer-checkable message syntax, semantic encoding, and conformance to a characteristic-data specification. ISO's published scope explicitly excludes provenance, accuracy and completeness assertions, which are addressed by separate parts.",
       "candidate_payload_family": "Characteristic-data messages with explicit data-specification identity and version.",
       "implementation_status": "not_implemented",
       "conformance_status": "not_assessed",
@@ -16,7 +16,8 @@
         "Authoritative specification version and lawful access to normative content",
         "Machine-readable syntax/data specification and independent validator version",
         "Positive and negative conformance messages",
-        "Reviewed mappings for unit, property identifier, scope and source revision"
+        "Reviewed mappings for unit, property identifier, scope and source revision",
+        "A scope decision identifying whether the project also needs ISO 8000-120 provenance, ISO 8000-130 accuracy, or ISO 8000-140 completeness assertions"
       ],
       "benchmarks": [
         {
@@ -39,6 +40,120 @@
           "unit": "count",
           "gate": "hard",
           "acceptance": "A construct outside the implemented and declared profile blocks qualification rather than being approximated."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-120-characteristic-data-provenance",
+      "standard": "ISO 8000-120:2016",
+      "domain": "Characteristic-data provenance",
+      "role": "Requirements and a data model for capturing and exchanging information about the provenance/pedigree of characteristic property values; supplements ISO 8000-110 and does not itself specify an exchange format.",
+      "candidate_payload_family": "Provenance statements about property values, source/derivation references and the named data specification; mapped to the OMSI derivation graph only under a reviewed profile.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO 8000-120:2016 edition and normative requirements",
+        "Reviewed provenance terms and mapping from property-value pedigree to OMSI entities/activities",
+        "Positive and negative fixtures for missing, conflicting and mutated provenance",
+        "A policy separating provenance assertions from source authentication and measurement truth"
+      ],
+      "benchmarks": [
+        {
+          "metric": "required_provenance_statement_coverage",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every required provenance element for the pinned use case is preserved or explicitly reported missing; no value is labeled proven solely because provenance fields exist."
+        },
+        {
+          "metric": "source_to_derived_value_lineage_reconstruction",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every fixture reconstructs the expected source/derivation chain with exact artifact references and versioned activity semantics."
+        },
+        {
+          "metric": "tampered_or_conflicting_provenance_unflagged_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Mutated digests, broken links and contradictory source/derived claims are detected and surfaced."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-130-characteristic-data-accuracy-assertions",
+      "standard": "ISO 8000-130:2016",
+      "domain": "Characteristic-data accuracy information",
+      "role": "Requirements and a conceptual model for representing/exchanging statements or assertions about characteristic-data accuracy; it does not define a universal accuracy requirement or measurement method.",
+      "candidate_payload_family": "Typed accuracy assertions with source, scope, method/reference, applicable population and evidence links; do not turn them into a universal numeric accuracy score.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO 8000-130:2016 edition and normative model",
+        "Explicit semantics for each accuracy assertion and its scope/population",
+        "Independent calculation or reference evidence where an assertion is derived",
+        "Metrology review to distinguish data accuracy statements from physical measurement uncertainty and calibration"
+      ],
+      "benchmarks": [
+        {
+          "metric": "accuracy_assertion_scope_and_source_completeness",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every reported accuracy assertion carries the approved scope and source/evidence references and retains its typed meaning."
+        },
+        {
+          "metric": "accuracy_assertion_conflated_with_measurement_truth_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "No syntax-valid or signed accuracy assertion alone upgrades the OMSI outcome to measurement-proven or quality-released."
+        },
+        {
+          "metric": "independent_accuracy_assertion_reproduction",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "release",
+          "acceptance": "A second implementation reproduces every explicitly computed accuracy assertion or flags it as issuer-provided rather than independently calculated."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-140-characteristic-data-completeness-assertions",
+      "standard": "ISO 8000-140:2016",
+      "domain": "Characteristic-data completeness information",
+      "role": "Requirements and a conceptual model for statements/assertions about completeness, optionally supplementing ISO 8000-120; it does not establish universal completeness requirements or specify a complete exchange format.",
+      "candidate_payload_family": "Completeness assertions bound to a named data specification, population, time/revision and expected field inventory.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO 8000-140:2016 edition and normative model",
+        "Declared completeness expectation per use case and data population",
+        "Versioned source schema/inventory and expected versus observed counts",
+        "Negative fixtures for omitted optional/required properties and incorrect population boundaries"
+      ],
+      "benchmarks": [
+        {
+          "metric": "completeness_assertion_bound_to_inventory_version",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every completeness assertion refers to a versioned field inventory and population; no count is interpreted without that boundary."
+        },
+        {
+          "metric": "missing_required_characteristics_detected",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every required field missing from a sample or a declared population is surfaced according to the profile; optional omissions remain distinguishable."
+        },
+        {
+          "metric": "completeness_target_misreported_as_observation_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Expected completeness thresholds are never confused with observed results."
         }
       ]
     },
@@ -119,6 +234,127 @@
       ]
     },
     {
+      "id": "iso-8000-210-sensor-data-quality-characteristics",
+      "standard": "ISO 8000-210:2024",
+      "domain": "Sensor-data quality characteristics",
+      "role": "Defines quality characteristics for streams of single, discrete digital sensor values, anomaly types and their relationships; it does not specify methods to measure or improve data quality.",
+      "candidate_payload_family": "Version-pinned discrete sensor observations plus typed data-quality characteristics/anomaly labels.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO 8000-210:2024 edition and characteristic/anomaly definitions",
+        "Representative sensor streams including missing, duplicated, stale, out-of-order and anomalous observations",
+        "Preserved acquisition timestamps, source identity, units and stream scope",
+        "Independent fixture oracle and documented sampling/window policy"
+      ],
+      "benchmarks": [
+        {
+          "metric": "sensor_anomaly_fixture_detection_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "All committed characteristic/anomaly fixtures match the independent oracle for the pinned profile."
+        },
+        {
+          "metric": "raw_observation_preservation_under_annotation",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Annotating anomalies does not silently rewrite the original observation bytes or timestamps."
+        },
+        {
+          "metric": "unknown_quality_characteristic_silent_acceptance_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Unknown or unsupported characteristics are retained as unknown and cannot be reported as conformant by default."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-220-sensor-data-quality-measurement",
+      "standard": "ISO 8000-220:2025",
+      "domain": "Quantitative sensor-data quality measurement",
+      "role": "Specifies quality measures for quantitatively measuring the sensor data quality characteristics defined by ISO 8000-210.",
+      "candidate_payload_family": "Version-pinned quality measures with named characteristic, calculation method, sample/window population, assumptions and result report.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO 8000-220:2025 measures and corresponding ISO 8000-210 characteristics",
+        "Documented assumptions and sampling/window definitions",
+        "Reference fixtures with independently calculated measure results",
+        "Controls preventing missing samples or invalid windows being treated as high quality"
+      ],
+      "benchmarks": [
+        {
+          "metric": "independent_sensor_quality_measure_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every pinned measure fixture matches an independent reference calculation within its declared numeric representation."
+        },
+        {
+          "metric": "measure_result_reproducibility_for_same_inputs",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Identical input bytes, algorithm/profile version and window produce equivalent results and identical provenance metadata."
+        },
+        {
+          "metric": "invalid_or_insufficient_population_accepted_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Missing, insufficient or structurally invalid populations are flagged and never given an optimistic quality result."
+        }
+      ]
+    },
+    {
+      "id": "iso-ts-8000-230-sensor-data-cleansing-guidelines",
+      "standard": "ISO/TS 8000-230:2026",
+      "domain": "Sensor-data cleansing process",
+      "role": "Guidelines for cleansing sensor-data anomalies and improving data quality; the published scope does not specify detailed anomaly-repair algorithms or real-time cleansing.",
+      "candidate_payload_family": "Auditable cleansing activity with preserved raw samples, anomaly classification, method/version, repair rationale, outputs and lineage.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO/TS 8000-230:2026 edition and applicable process guidance",
+        "Explicit policy for which anomalies may be corrected, flagged or left unresolved",
+        "Raw samples retained separately from cleaned outputs",
+        "Validation fixtures measuring false-positive repairs, missed anomalies and impact on downstream decision"
+      ],
+      "benchmarks": [
+        {
+          "metric": "raw_sample_retention_after_cleansing",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every cleaned output retains a reference to the immutable original sample and the named cleansing activity."
+        },
+        {
+          "metric": "cleansing_activity_reconstructability",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "A verifier reconstructs input samples, method/version, parameters, changed values and stated reason from the evidence bundle."
+        },
+        {
+          "metric": "unreviewed_repair_of_measurement_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "No cleanup heuristic silently overwrites a physical observation or upgrades a quality/release outcome."
+        },
+        {
+          "metric": "false_positive_and_missed_anomaly_rates_reported",
+          "target": 1,
+          "unit": "boolean",
+          "gate": "release",
+          "acceptance": "Both rates are measured against a labeled reference corpus; all performance targets are corpus-specific and disclosed."
+        }
+      ]
+    },
+    {
       "id": "mtconnect-opc-ua-device-interoperability",
       "standard": "MTConnect and OPC UA Companion Specifications (versions pinned per pilot)",
       "domain": "Machine/device observations and information-model interoperability",
@@ -191,7 +427,8 @@
     "No ISO, QIF, MTConnect, OPC UA or vendor conformance is currently asserted.",
     "Synthetic JSON fixtures do not replace normative schema assets or a real device/client-server integration path.",
     "A valid schema instance, mapping audit, hash or signature does not by itself prove producer authenticity or physical measurement truth.",
-    "Benchmark targets in this matrix are proposed acceptance objectives, not normative thresholds or measured outcomes."
+    "Benchmark targets in this matrix are proposed acceptance objectives, not normative thresholds or measured outcomes.",
+    "ISO 8000-120/130/140 cover provenance, accuracy and completeness information models/assertions; their existence does not establish that data is true, accurate, or complete without a defined use-case policy and evidence."
   ],
   "references": [
     {
@@ -213,6 +450,30 @@
     {
       "id": "NIST Digital Thread for Manufacturing",
       "url": "https://www.nist.gov/programs-projects/digital-thread-manufacturing"
+    },
+    {
+      "id": "ISO 8000-120:2016",
+      "url": "https://www.iso.org/standard/62393.html"
+    },
+    {
+      "id": "ISO 8000-130:2016",
+      "url": "https://www.iso.org/standard/62394.html"
+    },
+    {
+      "id": "ISO 8000-140:2016",
+      "url": "https://www.iso.org/standard/62395.html"
+    },
+    {
+      "id": "ISO 8000-210:2024",
+      "url": "https://www.iso.org/standard/84274.html"
+    },
+    {
+      "id": "ISO 8000-220:2025",
+      "url": "https://www.iso.org/standard/86062.html"
+    },
+    {
+      "id": "ISO/TS 8000-230:2026",
+      "url": "https://www.iso.org/standard/89681.html"
     }
   ]
 }
