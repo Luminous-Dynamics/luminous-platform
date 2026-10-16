@@ -57,6 +57,12 @@ The standards-research direction is to make the schema and conformance assets ex
 
 The next steps should avoid inventing an isolated proprietary trust format. Keep OMSI's semantic profile deterministic and offline; map provenance artifacts to [W3C PROV](https://www.w3.org/TR/2013/REC-prov-dm-20130430/) entity/activity relations and package authenticated step attestations using a standard such as [in-toto](https://github.com/in-toto/attestation/blob/main/spec/predicates/link.md). In parallel, test real interoperability against manufacturing-quality schemas and conformance vectors rather than claiming QIF/STEP/vendor conformance from synthetic JSON fixtures. NIST's Digital Thread for Manufacturing explicitly identifies semantic conformance testing and data-asset traceability as gaps, and ISO confirms that QIF (ISO 23952:2020) remains current as of its 2026 review. The architectural opportunity is to make meaning-preservation and evidence lineage machine-checkable at every boundary, then add signer identity and independent verifiers as separate trust layers.
 
+## Real-standards qualification matrix
+
+The new [Interoperability Targets 0.1](./interoperability-targets-0.1.md) and its [machine-readable contract](./interoperability-targets-0.1.json) separate four future integration targets from current capabilities: ISO 8000-110 characteristic-data exchange, ISO 8000-66 data-quality indicators, ISO 23952 QIF quality information, and MTConnect/OPC UA device interoperability. Each is explicitly labeled not implemented/not assessed; a synthetic JSON fixture is not conformance evidence.
+
+The next cross-industry milestone is to pin one target's exact standard/schema version, acquire its authoritative machine-readable assets, select an independent validator, and establish positive/negative source fixtures. For QIF, the intended test path is XML/XSD plus semantic field accounting; for MTConnect/OPC UA, it is a simulator or server/client integration path checking accurate receipt of varied observations. These gates should remain separate from local OMSI evaluation and its performance timings.
+
 ## Proposed benchmarks and release gates
 
 | Area | Proposed target | Gate type | Rationale |
@@ -124,6 +130,11 @@ After a read-only adapter exists, benchmark these separately from OMSI's local e
 Do not make Mycelix reputation or consensus a performance/correctness substitute for metrology. An authenticated issuer can provide a false reading; a quorum can agree on an incorrect reading.
 
 ## Research basis
+
+- [ISO 8000-110:2021](https://www.iso.org/standard/78501.html) specifies computer-checkable characteristics-data message syntax, semantic encoding, and conformance to a data specification.
+- [ISO 8000-66:2021](https://www.iso.org/standard/76390.html) describes assessment indicators for data-quality management in manufacturing operations.
+- [NIST testing of the MTConnect–OPC UA Companion Specification](https://www.nist.gov/publications/testing-mtconnect-opc-ua-companion-specification) is a model for integration testing: pass varying structures through a server/client path and verify accurate receipt.
+- [ISO 23952:2020 QIF](https://www.iso.org/standard/77461.html) remains a useful manufacturing-quality interoperability reference; OMSI does not currently claim QIF conformance.
 
 - NIST's [Digital Thread for Manufacturing](https://www.nist.gov/programs-projects/digital-thread-manufacturing) emphasizes product-lifecycle standards, conformance tooling and trust in data assets.
 - [ISO 8000-110:2021](https://www.iso.org/standard/78501.html) describes computer-checkable message syntax, semantic encoding and conformance to data specifications for characteristic-data exchange; [ISO 8000-66:2021](https://www.iso.org/standard/76390.html) provides data-quality process indicators for manufacturing operations. These support schema-derived coverage and measurable data-quality gates, but neither is a conformance claim for OMSI.
