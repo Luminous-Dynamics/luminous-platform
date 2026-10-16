@@ -8,6 +8,8 @@ on:
       - 'docs/schemas/firmware-assurance-corpus-v1.schema.json'
       - 'docs/fixtures/secure-boot-lifecycle-corpus-v1.json'
       - 'docs/schemas/secure-boot-lifecycle-corpus-v1.schema.json'
+      - 'docs/fixtures/secure-boot-lifecycle-corpus-v1.json'
+      - 'docs/schemas/secure-boot-lifecycle-corpus-v1.schema.json'
       - 'tools/firmware-assurance-corpus-checker/**'
       - '.github/workflows/firmware-assurance-corpus-checker.yml'
   push:
@@ -17,6 +19,8 @@ on:
       - 'docs/FIRMWARE_ASSURANCE_BENCHMARK_V1.md'
       - 'docs/fixtures/firmware-assurance-corpus-v1.json'
       - 'docs/schemas/firmware-assurance-corpus-v1.schema.json'
+      - 'docs/fixtures/secure-boot-lifecycle-corpus-v1.json'
+      - 'docs/schemas/secure-boot-lifecycle-corpus-v1.schema.json'
       - 'tools/firmware-assurance-corpus-checker/**'
       - '.github/workflows/firmware-assurance-corpus-checker.yml'
 
