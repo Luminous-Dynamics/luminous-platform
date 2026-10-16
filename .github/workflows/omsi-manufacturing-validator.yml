@@ -201,6 +201,7 @@ jobs:
           jq empty tools/omsi-manufacturing-validator/schema/adapter-transform-vector-report.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/provenance-manifest.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/provenance-verification-report.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/adapter-schema-coverage-report.schema.json
           jq empty docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json
@@ -208,6 +209,7 @@ jobs:
           jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-record.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-record.schema.json
 
       - name: Smoke-test verified provenance chain
         if: steps.source.outputs.present == 'true'
@@ -265,6 +267,73 @@ jobs:
             ([.checks[].result] | all(. == "pass")) and
             (has("signature") | not)
           ' "$verification" > /dev/null
+
+      - name: Smoke-test complete adapter schema coverage
+        if: steps.source.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="docs/standards/omsi/adapters/0.1/examples"
+          map="$base/mes-optional-map.json"
+          schema="$base/mes-optional-record.schema.json"
+          record="$base/mes-optional-record.json"
+          report="$RUNNER_TEMP/omsi-schema-coverage.json"
+          missing_map="$RUNNER_TEMP/omsi-schema-coverage-missing-map.json"
+          missing_report="$RUNNER_TEMP/omsi-schema-coverage-missing-report.json"
+          wrong_presence="$RUNNER_TEMP/omsi-schema-coverage-wrong-presence.json"
+          wrong_presence_report="$RUNNER_TEMP/omsi-schema-coverage-wrong-presence-report.json"
+          open_schema="$RUNNER_TEMP/omsi-schema-coverage-open-schema.json"
+          open_schema_report="$RUNNER_TEMP/omsi-schema-coverage-open-schema-report.json"
+
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$map" "$schema" "$record" > "$report"
+          jq -e '
+            .coverage_contract == "omsi-manufacturing-adapter-schema-coverage/0.1" and
+            .status == "schema_coverage_complete" and
+            .authority == "schema_field_path_coverage_only" and
+            .schema_field_count == 3 and
+            .covered_schema_field_count == 3 and
+            (.schema_paths_not_mapped | length) == 0 and
+            (.mapping_paths_outside_schema | length) == 0 and
+            (.presence_mismatches | length) == 0 and
+            (.schema_paths_not_observed_in_record | length) == 2 and
+            (.required_schema_paths_not_observed_in_record | length) == 0 and
+            .observed_field_accounting_status == "complete_accounting" and
+            .observed_silent_loss_count == 0
+          ' "$report" > /dev/null
+
+          jq '.mappings |= map(select(.source_path != "/operator_note"))' "$map" > "$missing_map"
+          if cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$missing_map" "$schema" "$record" > "$missing_report"; then
+            echo "expected absent optional schema field to be reported as unmapped" >&2
+            exit 1
+          fi
+          jq -e '
+            .status == "schema_coverage_incomplete" and
+            any(.schema_paths_not_mapped[]; .source_path == "/operator_note")
+          ' "$missing_report" > /dev/null
+
+          jq '(.mappings[] | select(.source_path == "/unit")) .presence = "required"' "$map" > "$wrong_presence"
+          if cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$wrong_presence" "$schema" "$record" > "$wrong_presence_report"; then
+            echo "expected presence mismatch to fail schema coverage" >&2
+            exit 1
+          fi
+          jq -e '
+            .status == "schema_coverage_incomplete" and
+            any(.presence_mismatches[]; .source_path == "/unit")
+          ' "$wrong_presence_report" > /dev/null
+
+          jq 'del(.additionalProperties)' "$schema" > "$open_schema"
+          if cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$map" "$open_schema" "$record" > "$open_schema_report"; then
+            echo "expected open-object schema to fail closed" >&2
+            exit 1
+          fi
+          jq -e '
+            .status == "unsupported_source_schema" and
+            any(.schema_errors[]; .reason == "object_must_set_additionalProperties_false")
+          ' "$open_schema_report" > /dev/null
 
       - name: Clippy
         if: steps.source.outputs.present == 'true'
