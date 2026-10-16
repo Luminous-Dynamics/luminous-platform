@@ -85,7 +85,15 @@ jobs:
             .status == "measured_no_acceptance_claim" and
             .authority == "performance_observation_only" and
             .run.sample_count_per_phase == (.corpus.case_count * .run.iterations_per_case) and
-            (.phases | has("json_parse") and has("semantic_evaluation") and has("envelope_creation") and has("envelope_verification"))
+            (.phases | has("json_parse") and has("semantic_evaluation") and has("envelope_creation") and has("envelope_verification")) and
+            .phases.json_parse.wall_clock_elapsed_ns > 0 and
+            .phases.json_parse.wall_clock_operations_per_second > 0 and
+            .phases.semantic_evaluation.wall_clock_elapsed_ns > 0 and
+            .phases.semantic_evaluation.wall_clock_operations_per_second > 0 and
+            .phases.envelope_creation.wall_clock_elapsed_ns > 0 and
+            .phases.envelope_creation.wall_clock_operations_per_second > 0 and
+            .phases.envelope_verification.wall_clock_elapsed_ns > 0 and
+            .phases.envelope_verification.wall_clock_operations_per_second > 0
           ' "$report_file" > /dev/null
       - name: Clippy
         if: steps.source.outputs.present == 'true'
