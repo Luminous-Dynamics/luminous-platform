@@ -241,6 +241,14 @@
                   "unknown",
                   "not_applicable"
                 ]
+              },
+              "management_scope": {
+                "enum": [
+                  "verified",
+                  "refuted",
+                  "unknown",
+                  "not_applicable"
+                ]
               }
             }
           },
