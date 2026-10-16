@@ -7,6 +7,8 @@ use std::time::Instant;
 
 const WARMUP_ITERATIONS_PER_CASE: usize = 5;
 const MAX_ITERATIONS_PER_CASE: usize = 100_000;
+const MAX_BENCHMARK_CASES: usize = 10_000;
+const MAX_TOTAL_SAMPLES_PER_PHASE: usize = 1_000_000;
 
 struct Case {
     id: String,
@@ -34,6 +36,21 @@ pub fn run(
         .ok_or_else(|| "benchmark corpus must contain a vectors array".to_owned())?;
     if vectors.is_empty() {
         return Err("benchmark corpus must contain at least one vector".to_owned());
+    }
+    if vectors.len() > MAX_BENCHMARK_CASES {
+        return Err(format!(
+            "benchmark corpus has {} cases; maximum is {MAX_BENCHMARK_CASES}",
+            vectors.len()
+        ));
+    }
+    let sample_count_per_phase = vectors
+        .len()
+        .checked_mul(iterations_per_case)
+        .ok_or_else(|| "benchmark sample-count arithmetic overflowed".to_owned())?;
+    if sample_count_per_phase > MAX_TOTAL_SAMPLES_PER_PHASE {
+        return Err(format!(
+            "benchmark requests {sample_count_per_phase} samples per phase; maximum is {MAX_TOTAL_SAMPLES_PER_PHASE}"
+        ));
     }
 
     let mut cases = Vec::with_capacity(vectors.len());
@@ -80,10 +97,10 @@ pub fn run(
     }
 
     let corpus_input_bytes: usize = cases.iter().map(|case| case.bytes.len()).sum();
-    let mut parse_samples = Vec::with_capacity(cases.len() * iterations_per_case);
-    let mut evaluation_samples = Vec::with_capacity(cases.len() * iterations_per_case);
-    let mut envelope_create_samples = Vec::with_capacity(cases.len() * iterations_per_case);
-    let mut envelope_verify_samples = Vec::with_capacity(cases.len() * iterations_per_case);
+    let mut parse_samples = Vec::with_capacity(sample_count_per_phase);
+    let mut evaluation_samples = Vec::with_capacity(sample_count_per_phase);
+    let mut envelope_create_samples = Vec::with_capacity(sample_count_per_phase);
+    let mut envelope_verify_samples = Vec::with_capacity(sample_count_per_phase);
     let mut outcome_counts = serde_json::Map::new();
 
     for case in &cases {
@@ -184,7 +201,7 @@ pub fn run(
     }
     let envelope_verify_phase_wall_nanos = elapsed_nanos(envelope_verify_phase_started);
 
-    let total_samples = cases.len() * iterations_per_case;
+    let total_samples = sample_count_per_phase;
     let corpus_sha256 = sha256_hex(vector_document_bytes);
     let total_input_bytes = corpus_input_bytes.saturating_mul(iterations_per_case);
     let phases = json!({
@@ -242,6 +259,8 @@ pub fn run(
             "throughput_measurement_mode": "separate_batch_pass_without_per_operation_timers",
             "iterations_per_case": iterations_per_case,
             "warmup_iterations_per_case": WARMUP_ITERATIONS_PER_CASE,
+            "max_cases": MAX_BENCHMARK_CASES,
+            "max_samples_per_phase": MAX_TOTAL_SAMPLES_PER_PHASE,
             "sample_count_per_phase": total_samples,
             "input_bytes_per_phase": total_input_bytes
         },
@@ -341,6 +360,14 @@ mod tests {
         assert!(run(&json!({"vectors": []}), b"{}", 1).is_err());
         assert!(run(&json!({"vectors": []}), b"{}", 0).is_err());
         assert!(run(&json!({"vectors": []}), b"{}", 100_001).is_err());
+    }
+
+    #[test]
+    fn excessive_total_sample_count_is_rejected_before_case_preparation() {
+        let vectors = (0..11)
+            .map(|index| json!({"id": format!("case-{index}"), "input": {"example": true}}))
+            .collect::<Vec<_>>();
+        assert!(run(&json!({"vectors": vectors}), b"{}", 100_000).is_err());
     }
 
     #[test]
