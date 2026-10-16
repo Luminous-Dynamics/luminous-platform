@@ -202,7 +202,10 @@
         "max_ns",
         "mean_ns",
         "observations_per_second_from_sampled_time",
-        "serialized_input_mib_per_second_from_sampled_time"
+        "serialized_input_mib_per_second_from_sampled_time",
+        "wall_clock_elapsed_ns",
+        "wall_clock_operations_per_second",
+        "wall_clock_serialized_input_mib_per_second"
       ],
       "properties": {
         "phase": {
@@ -246,6 +249,18 @@
           "exclusiveMinimum": 0
         },
         "serialized_input_mib_per_second_from_sampled_time": {
+          "type": "number",
+          "minimum": 0
+        },
+        "wall_clock_elapsed_ns": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "wall_clock_operations_per_second": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "wall_clock_serialized_input_mib_per_second": {
           "type": "number",
           "minimum": 0
         }
