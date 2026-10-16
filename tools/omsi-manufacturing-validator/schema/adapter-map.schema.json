@@ -4,7 +4,12 @@
   "title": "OMSI Manufacturing Adapter Map 0.1",
   "description": "Accounts for each observed source-record field as preserve, transform, drop, or explicitly unmapped. Accounting does not prove transform correctness.",
   "type": "object",
-  "required": ["adapter_contract", "adapter_id", "source_format", "mappings"],
+  "required": [
+    "adapter_contract",
+    "adapter_id",
+    "source_format",
+    "mappings"
+  ],
   "properties": {
     "adapter_contract": {
       "const": "omsi-manufacturing-adapter-map/0.1"
@@ -26,14 +31,22 @@
       "maxItems": 100000,
       "items": {
         "type": "object",
-        "required": ["source_path", "disposition"],
+        "required": [
+          "source_path",
+          "disposition"
+        ],
         "properties": {
           "source_path": {
             "type": "string",
             "pattern": "^/(?:[^~]|~[01])*$"
           },
           "disposition": {
-            "enum": ["preserve", "transform", "drop", "unmapped"]
+            "enum": [
+              "preserve",
+              "transform",
+              "drop",
+              "unmapped"
+            ]
           },
           "target_path": {
             "type": "string",
@@ -46,25 +59,117 @@
           "reason": {
             "type": "string",
             "minLength": 1
+          },
+          "presence": {
+            "enum": [
+              "required",
+              "optional"
+            ]
           }
         },
         "additionalProperties": false,
         "allOf": [
           {
-            "if": { "properties": { "disposition": { "const": "preserve" } }, "required": ["disposition"] },
-            "then": { "required": ["target_path"], "not": { "required": ["transform_id"] } }
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "preserve"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "required": [
+                "target_path"
+              ],
+              "not": {
+                "required": [
+                  "transform_id"
+                ]
+              }
+            }
           },
           {
-            "if": { "properties": { "disposition": { "const": "transform" } }, "required": ["disposition"] },
-            "then": { "required": ["target_path", "transform_id"] }
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "transform"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "required": [
+                "target_path",
+                "transform_id"
+              ]
+            }
           },
           {
-            "if": { "properties": { "disposition": { "const": "drop" } }, "required": ["disposition"] },
-            "then": { "required": ["reason"], "not": { "anyOf": [{ "required": ["target_path"] }, { "required": ["transform_id"] }] } }
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "drop"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "required": [
+                "reason"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "target_path"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "transform_id"
+                    ]
+                  }
+                ]
+              }
+            }
           },
           {
-            "if": { "properties": { "disposition": { "const": "unmapped" } }, "required": ["disposition"] },
-            "then": { "required": ["reason"], "not": { "anyOf": [{ "required": ["target_path"] }, { "required": ["transform_id"] }] } }
+            "if": {
+              "properties": {
+                "disposition": {
+                  "const": "unmapped"
+                }
+              },
+              "required": [
+                "disposition"
+              ]
+            },
+            "then": {
+              "required": [
+                "reason"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "target_path"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "transform_id"
+                    ]
+                  }
+                ]
+              }
+            }
           }
         ]
       }
