@@ -12,6 +12,7 @@ const MAX_ADAPTER_FIELDS: usize = 100_000;
 #[derive(Clone, Debug)]
 struct Mapping {
     disposition: String,
+    presence: String,
     target_path: Option<String>,
     transform_id: Option<String>,
     reason: Option<String>,
@@ -98,7 +99,7 @@ pub fn audit_adapter_map(
                 object,
                 &path,
                 &["source_path", "disposition"],
-                &["target_path", "transform_id", "reason"],
+                &["presence", "target_path", "transform_id", "reason"],
                 &mut errors,
             );
 
@@ -121,6 +122,26 @@ pub fn audit_adapter_map(
                 continue;
             }
 
+            let presence = match object.get("presence").and_then(Value::as_str) {
+                None => "required",
+                Some("required") => "required",
+                Some("optional") => "optional",
+                Some(_) => {
+                    errors.push(json!({
+                        "field":format!("{path}.presence"),
+                        "reason":"unknown_presence_requirement",
+                        "allowed":["required","optional"]
+                    }));
+                    continue;
+                }
+            };
+            if object.contains_key("presence") && !object.get("presence").is_some_and(Value::is_string) {
+                errors.push(json!({
+                    "field":format!("{path}.presence"),
+                    "reason":"expected_string"
+                }));
+                continue;
+            }
             let target_path = optional_nonempty_string(
                 object,
                 "target_path",
@@ -195,6 +216,7 @@ pub fn audit_adapter_map(
                 source_path,
                 Mapping {
                     disposition: disposition.unwrap_or_default().to_owned(),
+                    presence: presence.to_owned(),
                     target_path,
                     transform_id,
                     reason,
@@ -243,6 +265,13 @@ pub fn audit_adapter_map(
         .filter(|path| !source_path_set.contains(path.as_str()))
         .cloned()
         .collect();
+    let required_mapping_paths_not_observed: Vec<String> = mappings
+        .iter()
+        .filter(|(path, mapping)| {
+            mapping.presence == "required" && !source_path_set.contains(path.as_str())
+        })
+        .map(|(path, _)| path.clone())
+        .collect();
 
     let mut fields = Vec::with_capacity(source_paths.len());
     let mut counts = BTreeMap::from([
@@ -260,6 +289,7 @@ pub fn audit_adapter_map(
                 let mut field = Map::new();
                 field.insert("source_path".into(), json!(source_path));
                 field.insert("disposition".into(), json!(mapping.disposition));
+                field.insert("presence".into(), json!(mapping.presence));
                 insert_optional(&mut field, "target_path", mapping.target_path.as_deref());
                 insert_optional(&mut field, "transform_id", mapping.transform_id.as_deref());
                 insert_optional(&mut field, "reason", mapping.reason.as_deref());
@@ -276,7 +306,8 @@ pub fn audit_adapter_map(
         }
     }
 
-    let complete = unclassified_paths.is_empty();
+    let complete =
+        unclassified_paths.is_empty() && required_mapping_paths_not_observed.is_empty();
     json!({
         "audit_contract": AUDIT_REPORT_CONTRACT,
         "status": if complete { "complete_accounting" } else { "incomplete_accounting" },
@@ -301,6 +332,7 @@ pub fn audit_adapter_map(
         "silent_loss_count": unclassified_paths.len(),
         "unclassified_paths": unclassified_paths,
         "mapping_paths_not_observed_in_record": mapping_paths_not_observed,
+        "required_mapping_paths_not_observed_in_record": required_mapping_paths_not_observed,
         "fields": fields,
         "limitations": [
             "This report checks declared mapping coverage for one exact source-record artifact; audit all representative records and source-schema fields to find optional paths not present in this sample.",
@@ -335,7 +367,7 @@ pub fn apply_adapter_map(
         );
     }
     if audit
-        .get("mapping_paths_not_observed_in_record")
+        .get("required_mapping_paths_not_observed_in_record")
         .and_then(Value::as_array)
         .is_some_and(|paths| !paths.is_empty())
     {
@@ -343,7 +375,7 @@ pub fn apply_adapter_map(
             audit,
             vec![json!({
                 "field":"mappings",
-                "reason":"declared_mapping_path_absent_from_this_source_record"
+                "reason":"required_mapping_path_absent_from_this_source_record"
             })],
         );
     }
@@ -391,6 +423,7 @@ pub fn apply_adapter_map(
     let mut errors: Vec<Value> = Vec::new();
     let mut applied_count = 0usize;
     let mut dropped_count = 0usize;
+    let mut skipped_optional_count = 0usize;
 
     for (index, mapping) in mappings.iter().enumerate() {
         let Some(object) = mapping.as_object() else {
@@ -411,6 +444,10 @@ pub fn apply_adapter_map(
             }
             "preserve" | "transform" => {
                 let Some(value) = get_source_pointer(source_record, source_path) else {
+                    if object.get("presence").and_then(Value::as_str) == Some("optional") {
+                        skipped_optional_count += 1;
+                        continue;
+                    }
                     errors.push(json!({
                         "field":source_path,
                         "reason":"source_pointer_not_found_at_application_time"
@@ -463,6 +500,7 @@ pub fn apply_adapter_map(
         "source_format":root.get("source_format").and_then(Value::as_str),
         "applied_mapping_count":applied_count,
         "explicitly_dropped_count":dropped_count,
+        "skipped_optional_count":skipped_optional_count,
         "audit":audit,
         "projection":projection,
         "limitations":[
