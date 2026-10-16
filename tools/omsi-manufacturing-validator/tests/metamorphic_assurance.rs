@@ -250,14 +250,30 @@ fn deterministic_generated_assurance_sweep_covers_100000_cases() {
                 value_case
             }
             2 => {
-                // UTC+02 and Z spellings designate the same instants.
-                let mut time_case = base.clone();
+                // Pair two encodings of the exact same instants; vary seconds
+                // and nanoseconds without comparing against a different instant.
                 let seconds = generation % 60;
-                time_case["observed_time"] =
-                    json!(format!("2026-10-15T10:00:{seconds:02}+02:00"));
-                time_case["source_modified_time"] =
-                    json!(format!("2026-10-15T10:02:{seconds:02}+02:00"));
-                time_case
+                let nanos = generation % 1_000_000_000;
+                let fraction = format!("{nanos:09}");
+
+                let mut offset_case = base.clone();
+                offset_case["observed_time"] =
+                    json!(format!("2026-10-15T10:00:{seconds:02}.{fraction}+02:00"));
+                offset_case["source_modified_time"] =
+                    json!(format!("2026-10-15T10:02:{seconds:02}.{fraction}+02:00"));
+
+                let mut utc_case = base.clone();
+                utc_case["observed_time"] =
+                    json!(format!("2026-10-15T08:00:{seconds:02}.{fraction}Z"));
+                utc_case["source_modified_time"] =
+                    json!(format!("2026-10-15T08:02:{seconds:02}.{fraction}Z"));
+
+                assert_eq!(
+                    report_for(&offset_case),
+                    report_for(&utc_case),
+                    "timezone-equivalent timestamps diverged at generated case {index}"
+                );
+                continue;
             }
             3 => {
                 // Unknown units remain non-evaluable regardless of numeric value.
