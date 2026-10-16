@@ -3,7 +3,7 @@ mod benchmark;
 mod replay;
 
 use omsi_manufacturing_validator::{evaluate_input_value, validate_vector_document};
-use adapter::{apply_adapter_map, audit_adapter_map};
+use adapter::{apply_adapter_map, audit_adapter_map, verify_transform_vectors};
 use replay::{create_replay_envelope, verify_replay_envelope};
 use serde_json::Value;
 use std::env;
@@ -145,8 +145,22 @@ fn run() -> Result<u8, String> {
                 Ok(1)
             }
         }
+        Some("verify-transform-vectors") if args.len() == 3 => {
+            let document = read_json(&args[2])?;
+            let report = verify_transform_vectors(&document);
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&report)
+                    .map_err(|error| format!("failed to serialize transform-vector report: {error}"))?
+            );
+            if report.get("status").and_then(Value::as_str) == Some("passed") {
+                Ok(0)
+            } else {
+                Ok(1)
+            }
+        }
         _ => Err(
-            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator apply-adapter-map <adapter-map.json> <source-record.json>".into(),
+            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator apply-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator verify-transform-vectors <TRANSFORM-VECTORS.json>".into(),
         ),
     }
 }
