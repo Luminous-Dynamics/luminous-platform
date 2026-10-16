@@ -1592,6 +1592,62 @@ mod tests {
     }
 
     #[test]
+    fn independent_schema_engine_rejects_mutated_maps_and_reports() {
+        let map_schema: Value = serde_json::from_str(include_str!(
+            "../schema/adapter-map.schema.json"
+        ))
+        .expect("adapter map schema parses");
+        let map_validator = draft202012::new(&map_schema).expect("map schema compiles");
+        let mut invalid_map: Value = serde_json::from_str(include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json"
+        ))
+        .expect("MES map fixture parses");
+        invalid_map["mappings"][0]["presence"] = json!("sometimes");
+        assert!(!map_validator.is_valid(&invalid_map));
+
+        let audit_schema: Value = serde_json::from_str(include_str!(
+            "../schema/adapter-audit-report.schema.json"
+        ))
+        .expect("audit schema parses");
+        let audit_validator = draft202012::new(&audit_schema).expect("audit schema compiles");
+        let map_source = include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json"
+        );
+        let record_source = include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json"
+        );
+        let map: Value = serde_json::from_str(map_source).expect("MES map fixture parses");
+        let record: Value = serde_json::from_str(record_source).expect("MES record fixture parses");
+        let mut audit = audit_adapter_map(
+            &map,
+            map_source.as_bytes(),
+            &record,
+            record_source.as_bytes(),
+        );
+        assert!(audit_validator.is_valid(&audit));
+        audit
+            .as_object_mut()
+            .expect("audit report is an object")
+            .remove("required_mapping_paths_not_observed_in_record");
+        assert!(!audit_validator.is_valid(&audit));
+
+        let projection_schema: Value = serde_json::from_str(include_str!(
+            "../schema/adapter-projection-report.schema.json"
+        ))
+        .expect("projection schema parses");
+        let projection_validator =
+            draft202012::new(&projection_schema).expect("projection schema compiles");
+        let mut projection =
+            apply_adapter_map(&map, map_source.as_bytes(), &record, record_source.as_bytes());
+        assert!(projection_validator.is_valid(&projection));
+        projection
+            .as_object_mut()
+            .expect("projection report is an object")
+            .remove("skipped_optional_count");
+        assert!(!projection_validator.is_valid(&projection));
+    }
+
+    #[test]
     fn replay_envelope_and_benchmark_outputs_match_independent_schemas() {
         let vector_document_source = include_str!(
             "../../../docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json"
