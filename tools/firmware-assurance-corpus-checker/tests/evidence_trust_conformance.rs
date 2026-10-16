@@ -137,7 +137,6 @@ fn deterministic_ten_thousand_assignment_sweep_never_accepts_bad_or_unknown_evid
         } else {
             assert_eq!(decision, Decision::Accepted, "trial {trial}");
         }
-        assert_ne!(decision, Decision::Accepted, "synthetic bad/unknown guards are fail-closed");
     }
     assert!(distinct.len() > 9_000, "only {} distinct assignments", distinct.len());
 }
