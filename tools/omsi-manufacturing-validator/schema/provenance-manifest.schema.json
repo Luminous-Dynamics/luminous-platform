@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:manufacturing-provenance-manifest:0.1",
+  "title": "OMSI Manufacturing Provenance Manifest 0.1",
+  "description": "Unsigned manifest of locally rechecked manufacturing evidence artifacts. Digests bind exact bytes but do not authenticate sources or producers.",
+  "type": "object",
+  "required": [
+    "manifest_contract",
+    "status",
+    "authority",
+    "digest_profile",
+    "profile",
+    "comparison_rule_id",
+    "validator_version",
+    "transform_ids",
+    "artifacts",
+    "edges",
+    "limitations"
+  ],
+  "properties": {
+    "manifest_contract": {
+      "const": "omsi-manufacturing-provenance-manifest/0.1"
+    },
+    "status": {
+      "const": "local_chain_consistent"
+    },
+    "authority": {
+      "const": "local_consistency_only"
+    },
+    "digest_profile": {
+      "type": "object",
+      "required": ["algorithm", "scope", "canonicalization"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "scope": { "const": "exact_input_bytes" },
+        "canonicalization": { "const": "none" }
+      },
+      "additionalProperties": false
+    },
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "comparison_rule_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "validator_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "transform_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "required": ["artifact_id", "role", "sha256", "byte_length"],
+        "properties": {
+          "artifact_id": {
+            "enum": [
+              "source-record",
+              "adapter-map",
+              "projection-report",
+              "semantic-input",
+              "semantic-report",
+              "replay-envelope"
+            ]
+          },
+          "role": {
+            "enum": [
+              "source_record",
+              "adapter_map",
+              "projection_report",
+              "semantic_input",
+              "semantic_report",
+              "replay_envelope"
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "byte_length": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "relationship"],
+        "properties": {
+          "from": {
+            "enum": [
+              "source-record",
+              "adapter-map",
+              "projection-report",
+              "semantic-input",
+              "semantic-report",
+              "replay-envelope"
+            ]
+          },
+          "to": {
+            "enum": [
+              "source-record",
+              "adapter-map",
+              "projection-report",
+              "semantic-input",
+              "semantic-report",
+              "replay-envelope"
+            ]
+          },
+          "relationship": {
+            "enum": [
+              "consumed_by",
+              "projected_to",
+              "payload_matches",
+              "evaluated_to",
+              "bound_by_exact_bytes"
+            ]
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "source-record",
+                "adapter-map",
+                "projection-report",
+                "semantic-input",
+                "semantic-report",
+                "replay-envelope"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false
+}
