@@ -6,6 +6,7 @@
   "type": "object",
   "required": [
     "manifest_contract",
+    "provenance_model",
     "status",
     "authority",
     "digest_profile",
@@ -233,6 +234,9 @@
         },
         "additionalProperties": false
       }
+    },
+    "provenance_model": {
+      "const": "w3c-prov-dm-aligned-subset/0.1"
     }
   },
   "additionalProperties": false,
