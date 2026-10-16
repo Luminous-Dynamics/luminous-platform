@@ -347,7 +347,7 @@
         },
         {
           "metric": "false_positive_and_missed_anomaly_rates_reported",
-          "target": 1,
+          "target": true,
           "unit": "boolean",
           "gate": "release",
           "acceptance": "Both rates are measured against a labeled reference corpus; all performance targets are corpus-specific and disclosed."
