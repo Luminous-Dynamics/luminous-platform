@@ -51,6 +51,9 @@ jobs:
           jq -e '
             .report_version == "firmware-assurance-corpus-check/1.0.0" and
             .status == "passed" and
+            .checks.json_schema_meta == "passed" and
+            .checks.json_schema == "passed" and
+            .checks.semantic_contract == "passed" and
             .scope.profile_id == "synthetic-uefi-uki-v1" and
             .scope.physical_target == "none" and
             .scope.mutation_enabled == false and
