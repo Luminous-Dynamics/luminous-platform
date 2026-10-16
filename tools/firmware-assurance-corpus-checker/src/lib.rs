@@ -495,6 +495,104 @@ mod tests {
         assert_eq!(derive_disposition(&resolved_claims, &unknown_required).unwrap(), "eligible_for_lab_staging");
     }
 
+    fn next_deterministic_index(state: &mut u32, limit: usize) -> usize {
+        *state = state.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+        ((*state >> 16) as usize) % limit
+    }
+
+    #[test]
+    fn ten_thousand_deterministic_claim_mutations_preserve_stage_policy() {
+        use std::collections::BTreeSet;
+
+        const STATES: [&str; 4] = ["verified", "unknown", "refuted", "not_applicable"];
+        const NON_REJECTING_STATES: [&str; 3] = ["verified", "unknown", "not_applicable"];
+
+        let corpus = parsed_corpus();
+        let cases = corpus["cases"].as_array().unwrap();
+        let mut seed = 0xF17E_2026_u32;
+        let mut evaluated = 0_usize;
+
+        for trial in 0..10_000 {
+            let case = &cases[trial % cases.len()];
+            let mut claims = case["expected_claims"].as_object().unwrap().clone();
+            let required = case["required_claims"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|value| value.as_str().unwrap().to_string())
+                .collect::<Vec<_>>();
+            let required_set = required.iter().cloned().collect::<BTreeSet<_>>();
+            assert!(!required.is_empty(), "{}", case["case_id"]);
+
+            // Vary claims that this stage does not require. They must not
+            // influence this stage's decision.
+            let all_names = claims.keys().cloned().collect::<Vec<_>>();
+            for name in all_names {
+                if !required_set.contains(&name) {
+                    let state = STATES[next_deterministic_index(&mut seed, STATES.len())];
+                    claims.insert(name, json!(state));
+                }
+            }
+
+            let expected = match trial % 3 {
+                0 => {
+                    for name in &required {
+                        claims.insert(name.clone(), json!("verified"));
+                    }
+                    "eligible_for_lab_staging"
+                }
+                1 => {
+                    for name in &required {
+                        let state = NON_REJECTING_STATES
+                            [next_deterministic_index(&mut seed, NON_REJECTING_STATES.len())];
+                        claims.insert(name.clone(), json!(state));
+                    }
+                    let unknown_name =
+                        &required[next_deterministic_index(&mut seed, required.len())];
+                    claims.insert(unknown_name.clone(), json!("unknown"));
+                    "indeterminate"
+                }
+                _ => {
+                    for name in &required {
+                        let state = STATES[next_deterministic_index(&mut seed, STATES.len())];
+                        claims.insert(name.clone(), json!(state));
+                    }
+                    let rejected_name = &required[next_deterministic_index(&mut seed, required.len())];
+                    claims.insert(rejected_name.clone(), json!("refuted"));
+                    "blocked"
+                }
+            };
+
+            let actual = derive_disposition(&claims, &required).unwrap();
+            assert_eq!(
+                actual,
+                expected,
+                "trial {trial} on {}: required claims {required:?}",
+                case["case_id"]
+            );
+
+            let nonrequired = claims
+                .keys()
+                .find(|name| !required_set.contains(*name))
+                .cloned();
+            if let Some(name) = nonrequired {
+                let current = claims.get(&name).and_then(Value::as_str).unwrap();
+                let next = STATES
+                    [(STATES.iter().position(|state| *state == current).unwrap() + 1) % STATES.len()];
+                claims.insert(name, json!(next));
+                assert_eq!(
+                    derive_disposition(&claims, &required).unwrap(),
+                    actual,
+                    "non-required claim changed trial {trial} disposition"
+                );
+            }
+
+            evaluated += 1;
+        }
+
+        assert_eq!(evaluated, 10_000);
+    }
+
     #[test]
     fn corpus_digest_is_bound_to_exact_source_bytes() {
         let report = validate_corpus_bytes(CORPUS.as_bytes(), SCHEMA.as_bytes()).unwrap();
