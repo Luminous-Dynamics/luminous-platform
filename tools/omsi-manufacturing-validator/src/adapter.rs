@@ -957,10 +957,34 @@ fn sha256_hex(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::{apply_adapter_map, audit_adapter_map, ADAPTER_MAP_CONTRACT};
+    use jsonschema::draft202012;
     use serde_json::{json, Value};
 
     fn bytes(value: &Value) -> Vec<u8> {
         serde_json::to_vec(value).expect("test JSON must serialize")
+    }
+
+    fn assert_schema_document_is_valid(schema_source: &str, label: &str) -> Value {
+        let schema: Value = serde_json::from_str(schema_source)
+            .unwrap_or_else(|error| panic!("{label} schema is not JSON: {error}"));
+        assert!(
+            draft202012::meta::is_valid(&schema),
+            "{label} is not a valid JSON Schema Draft 2020-12 document"
+        );
+        draft202012::new(&schema)
+            .unwrap_or_else(|error| panic!("{label} schema cannot be compiled: {error}"));
+        schema
+    }
+
+    fn assert_instance_matches_schema(schema_source: &str, instance: &Value, label: &str) {
+        let schema = assert_schema_document_is_valid(schema_source, label);
+        let validator = draft202012::new(&schema)
+            .unwrap_or_else(|error| panic!("{label} schema cannot be compiled: {error}"));
+        assert!(
+            validator.is_valid(instance),
+            "{label} instance does not match schema: {}",
+            serde_json::to_string_pretty(instance).unwrap_or_else(|_| "<unserializable>".into())
+        );
     }
 
     fn audit(contract: Value, source: Value) -> Value {
@@ -1421,5 +1445,181 @@ mod tests {
             error["reason"] == "target_path_collision_or_prefix_overlap"
         }));
     }
+
+    #[test]
+    fn every_committed_contract_schema_is_valid_draft_2020_12() {
+        let schemas = [
+            (
+                "adapter-map",
+                include_str!("../schema/adapter-map.schema.json"),
+            ),
+            (
+                "adapter-audit-report",
+                include_str!("../schema/adapter-audit-report.schema.json"),
+            ),
+            (
+                "adapter-projection-report",
+                include_str!("../schema/adapter-projection-report.schema.json"),
+            ),
+            (
+                "transform-vectors",
+                include_str!("../schema/adapter-transform-vectors.schema.json"),
+            ),
+            (
+                "transform-vector-report",
+                include_str!("../schema/adapter-transform-vector-report.schema.json"),
+            ),
+            (
+                "benchmark-report",
+                include_str!("../schema/benchmark-report.schema.json"),
+            ),
+            (
+                "replay-envelope",
+                include_str!("../schema/replay-envelope.schema.json"),
+            ),
+        ];
+
+        for (label, schema_source) in schemas {
+            assert_schema_document_is_valid(schema_source, label);
+        }
+    }
+
+    #[test]
+    fn adapter_maps_and_transform_corpus_match_independent_schemas() {
+        let fixtures = [
+            (
+                "MES flat map",
+                include_str!(
+                    "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json"
+                ),
+            ),
+            (
+                "QMS nested map",
+                include_str!(
+                    "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json"
+                ),
+            ),
+            (
+                "MES optional map",
+                include_str!(
+                    "../../../docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json"
+                ),
+            ),
+        ];
+        let map_schema = include_str!("../schema/adapter-map.schema.json");
+        for (label, source) in fixtures {
+            let instance: Value = serde_json::from_str(source)
+                .unwrap_or_else(|error| panic!("{label} fixture is not JSON: {error}"));
+            assert_instance_matches_schema(map_schema, &instance, label);
+        }
+
+        let vectors: Value = serde_json::from_str(include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json"
+        ))
+        .expect("transform-vector fixture parses");
+        assert_instance_matches_schema(
+            include_str!("../schema/adapter-transform-vectors.schema.json"),
+            &vectors,
+            "transform-vector corpus",
+        );
+        let report = super::verify_transform_vectors(&vectors);
+        assert_instance_matches_schema(
+            include_str!("../schema/adapter-transform-vector-report.schema.json"),
+            &report,
+            "transform-vector report",
+        );
+    }
+
+    #[test]
+    fn real_audit_and_projection_reports_match_independent_schemas() {
+        let examples = [
+            (
+                include_str!(
+                    "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json"
+                ),
+                include_str!(
+                    "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json"
+                ),
+                "MES flat",
+            ),
+            (
+                include_str!(
+                    "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json"
+                ),
+                include_str!(
+                    "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json"
+                ),
+                "QMS nested",
+            ),
+            (
+                include_str!(
+                    "../../../docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json"
+                ),
+                include_str!(
+                    "../../../docs/standards/omsi/adapters/0.1/examples/mes-optional-record.json"
+                ),
+                "MES optional",
+            ),
+        ];
+
+        for (map_source, record_source, label) in examples {
+            let map: Value = serde_json::from_str(map_source).expect("adapter map parses");
+            let record: Value = serde_json::from_str(record_source).expect("source record parses");
+            let audit = audit_adapter_map(
+                &map,
+                map_source.as_bytes(),
+                &record,
+                record_source.as_bytes(),
+            );
+            assert_instance_matches_schema(
+                include_str!("../schema/adapter-audit-report.schema.json"),
+                &audit,
+                &format!("{label} audit"),
+            );
+
+            let projection = apply_adapter_map(
+                &map,
+                map_source.as_bytes(),
+                &record,
+                record_source.as_bytes(),
+            );
+            assert_instance_matches_schema(
+                include_str!("../schema/adapter-projection-report.schema.json"),
+                &projection,
+                &format!("{label} projection"),
+            );
+        }
+    }
+
+    #[test]
+    fn replay_envelope_and_benchmark_outputs_match_independent_schemas() {
+        let vector_document_source = include_str!(
+            "../../../docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json"
+        );
+        let vector_document: Value =
+            serde_json::from_str(vector_document_source).expect("conformance vectors parse");
+        let input = vector_document["vectors"][0]["input"].clone();
+        let input_bytes = bytes(&input);
+        let envelope = super::super::replay::create_replay_envelope(&input_bytes)
+            .expect("replay envelope can be created");
+        assert_instance_matches_schema(
+            include_str!("../schema/replay-envelope.schema.json"),
+            &envelope,
+            "replay envelope",
+        );
+
+        let benchmark = super::super::benchmark::run(
+            &vector_document,
+            vector_document_source.as_bytes(),
+            1,
+        )
+        .expect("one iteration benchmark completes");
+        assert_instance_matches_schema(
+            include_str!("../schema/benchmark-report.schema.json"),
+            &benchmark,
+            "benchmark report",
+        );
+    }
+
 
 }
