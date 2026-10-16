@@ -2,6 +2,7 @@ mod adapter;
 mod benchmark;
 mod replay;
 mod provenance;
+mod schema_coverage;
 
 use omsi_manufacturing_validator::{evaluate_input_value, validate_vector_document};
 use adapter::{apply_adapter_map, audit_adapter_map, verify_transform_vectors};
@@ -164,6 +165,35 @@ fn run() -> Result<u8, String> {
                 Ok(1)
             }
         }
+        Some("audit-adapter-schema-coverage") if args.len() == 5 => {
+            let adapter_map_bytes = read_bytes_bounded(&args[2], MAX_ADAPTER_INPUT_BYTES)?;
+            let source_schema_bytes = read_bytes_bounded(&args[3], MAX_ADAPTER_INPUT_BYTES)?;
+            let source_record_bytes = read_bytes_bounded(&args[4], MAX_ADAPTER_INPUT_BYTES)?;
+            let adapter_map: Value = serde_json::from_slice(&adapter_map_bytes)
+                .map_err(|error| format!("invalid JSON in {}: {error}", args[2]))?;
+            let source_schema: Value = serde_json::from_slice(&source_schema_bytes)
+                .map_err(|error| format!("invalid JSON in {}: {error}", args[3]))?;
+            let source_record: Value = serde_json::from_slice(&source_record_bytes)
+                .map_err(|error| format!("invalid JSON in {}: {error}", args[4]))?;
+            let report = schema_coverage::audit_adapter_schema_coverage(
+                &adapter_map,
+                &adapter_map_bytes,
+                &source_schema,
+                &source_schema_bytes,
+                &source_record,
+                &source_record_bytes,
+            );
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&report)
+                    .map_err(|error| format!("failed to serialize schema-coverage report: {error}"))?
+            );
+            if report.get("status").and_then(Value::as_str) == Some("schema_coverage_complete") {
+                Ok(0)
+            } else {
+                Ok(1)
+            }
+        }
         Some("create-provenance-manifest") if args.len() == 8 => {
             let source_record = read_bytes_bounded(&args[2], MAX_ADAPTER_INPUT_BYTES)?;
             let adapter_map = read_bytes_bounded(&args[3], MAX_ADAPTER_INPUT_BYTES)?;
@@ -215,7 +245,7 @@ fn run() -> Result<u8, String> {
             }
         }
         _ => Err(
-            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator apply-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator verify-transform-vectors <TRANSFORM-VECTORS.json>\n       omsi-manufacturing-validator create-provenance-manifest <source-record.json> <adapter-map.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>\n       omsi-manufacturing-validator verify-provenance-manifest <manifest.json> <source-record.json> <adapter-map.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>".into(),
+            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator apply-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator verify-transform-vectors <TRANSFORM-VECTORS.json>\n       omsi-manufacturing-validator create-provenance-manifest <source-record.json> <adapter-map.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>\n       omsi-manufacturing-validator audit-adapter-schema-coverage <adapter-map.json> <source-schema.json> <source-record.json>\n       omsi-manufacturing-validator verify-provenance-manifest <manifest.json> <source-record.json> <adapter-map.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>".into(),
         ),
     }
 }
