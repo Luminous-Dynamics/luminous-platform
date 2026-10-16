@@ -134,7 +134,9 @@
         "iterations_per_case",
         "warmup_iterations_per_case",
         "sample_count_per_phase",
-        "input_bytes_per_phase"
+        "input_bytes_per_phase",
+        "max_cases",
+        "max_samples_per_phase"
       ],
       "properties": {
         "iterations_per_case": {
@@ -155,6 +157,14 @@
         },
         "throughput_measurement_mode": {
           "const": "separate_batch_pass_without_per_operation_timers"
+        },
+        "max_cases": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_samples_per_phase": {
+          "type": "integer",
+          "minimum": 1
         }
       },
       "additionalProperties": false
