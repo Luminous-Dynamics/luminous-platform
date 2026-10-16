@@ -1,6 +1,6 @@
 # Firmware Assurance Benchmark v1
 
-**State:** proposed design and benchmark contract; not implementation, certification, or device qualification evidence.  
+**State:** executable synthetic claim/lifecycle/evidence-trust contract and benchmark; not a cryptographic firmware verifier, certification, or device qualification evidence.  
 **Parent:** [Luminous Platform #23 — global vendor adapters and firmware lifecycle](https://github.com/Luminous-Dynamics/luminous-platform/issues/23)  
 **Related:** [Nixward #17 — UKI signature and firmware trust authorization](https://github.com/Luminous-Dynamics/nixward/issues/17), [Nixward #30 — timestamped revocation](https://github.com/Luminous-Dynamics/nixward/issues/30), [Symthaea #7430 — Secure Boot state and consent](https://github.com/Luminous-Dynamics/symthaea/issues/7430), [Symthaea #4430 — typed device resources and firmware-operation boundaries](https://github.com/Luminous-Dynamics/symthaea/issues/4430).
 
@@ -238,3 +238,55 @@ Adopting a standard's vocabulary is not a claim of formal conformance. Record th
 This benchmark can establish deterministic behavior over a defined corpus and bounded lab profile. It cannot establish that every firmware image is safe, that a signed image is benign, that every OEM implementation follows its documentation, that hardware measurements are truthful, that every fleet device is covered, or that a target is certified or production-ready.
 
 A valid result should be comfortable saying **verified within this scope**, **refuted**, or **unknown**—and should clearly state what evidence would resolve the unknown.
+
+
+## 11. Adversarial evidence trust envelope: trust the verification chain, not booleans
+
+The lifecycle corpus tests transition logic; the new evidence-trust corpus stress-tests the inputs on which such decisions depend. A field that says `verified` is not self-authenticating. In production, each positive classification must be emitted by an independently qualified verifier bound to the exact subject, artifact bytes, policy revision, revocation snapshot, freshness inputs, challenge, monotonic state, and provenance record.
+
+The synthetic envelope models ten independently classified predicates:
+
+| Predicate | Positive | Explicit rejection | Unknown |
+|---|---|---|---|
+| Signature | `valid` | `invalid` | `unknown` |
+| Signer authorization | `authorized` | `unauthorized` | `unknown` |
+| Subject binding | `match` | `mismatch` | `unknown` |
+| Artifact binding | `match` | `mismatch` | `unknown` |
+| Policy binding | `match` | `mismatch` | `unknown` |
+| Revocation | `clear` | `revoked` | `unknown` |
+| Freshness | `fresh` | `expired` | `unknown` |
+| Challenge nonce | `current` | `replay` | `unknown` |
+| Anti-rollback counter | `monotonic` | `rollback` | `unknown` |
+| Provenance | `authenticated` | `unauthenticated` | `unknown` |
+
+### 11.1 Decision law
+
+1. Any explicit violation produces `rejected`, even if another predicate is unknown. One known revocation or subject mismatch must not disappear behind a second unresolved field.
+2. With no explicit violation, any unknown predicate produces `indeterminate`; it must never be silently coerced into success.
+3. `accepted` is reachable only when all ten predicates have their positive value.
+
+The checked-in synthetic fixture has 32 controls: 1 all-positive control, 20 rejected controls, and 11 indeterminate controls. A strict JSON Schema forbids missing fields, unsupported states, and unreviewed properties. The Rust evaluator is compared against a separately written standard-library Python oracle, including 10,000 deterministic assignments spanning all ten dimensions.
+
+### 11.2 Benchmark gates
+
+| Metric | Gate |
+|---|---:|
+| Acceptance with any explicit negative predicate | 0 |
+| Acceptance with any unknown predicate | 0 |
+| False acceptance in 10,000 deterministic assignments | 0 |
+| Invariant violations in the mutation sweep | 0 |
+| Rust fixture/oracle expected-decision disagreements | 0 |
+| Independent-oracle fixture disagreements | 0 |
+| Distinct assignments from 10,000 deterministic trials | >9,000 |
+| Physical device operations in this corpus | 0 |
+| Firmware mutations in this corpus | 0 |
+
+The CI oracle also reports the exact fixture SHA-256 so a result can be tied to the corpus bytes it assessed. The hash demonstrates input identity, not source authenticity or hardware truth.
+
+### 11.3 Threat model and boundary
+
+This is **policy-composition testing**, not a cryptographic implementation. The fixture's `valid`, `authorized`, and `authenticated` values are synthetic verifier classifications. The checker does not parse a firmware capsule, validate a signature, contact revocation infrastructure, establish secure time, read TPM PCRs, verify a nonce in hardware, inspect a counter, or prove device identity. Those tasks need independently tested verifiers and evidence provenance; having this model return `accepted` does not satisfy them.
+
+A high-value next milestone is to make each production predicate a versioned evidence object with: exact subject/artifact digest; issuer and verifier identity/version; policy digest; signed issuance time and expiry; challenge/nonce; revocation snapshot identity; monotonic counter source; and a parent-evidence graph. Trust must derive from actual verifiers checking those bytes and bindings, never from a model-generated summary. That milestone should add negative tests for substitution, cross-device replay, stale revocation snapshots, clock rollback, policy downgrade, and evidence produced by an untrusted verifier.
+
+This direction complements NIST's protect/detect/recover firmware-resilience model: validating that an update is authorized is only one stage; the platform also needs observable detection and a tested route to recover. No recovery-time claim is made by the current synthetic corpus.
