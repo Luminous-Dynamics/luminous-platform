@@ -20,7 +20,10 @@ fn corpus_matches_strict_schema_and_all_expected_decisions() {
     let schema: Value = serde_json::from_str(SCHEMA_TEXT).expect("schema JSON parses");
     meta::validate(&schema).expect("schema meta-validates");
     let validator = validator_for(&schema).expect("schema compiles");
-    let errors = validator.iter_errors(&value).map(|e| e.to_string()).collect::<Vec<_>>();
+    let errors = validator
+        .iter_errors(&value)
+        .map(|error| error.to_string())
+        .collect::<Vec<_>>();
     assert!(errors.is_empty(), "schema errors: {errors:#?}");
 
     let cases = value["cases"].as_array().expect("cases array exists");
@@ -32,15 +35,17 @@ fn corpus_matches_strict_schema_and_all_expected_decisions() {
         assert_eq!(id, format!("EV-{:03}", index + 1));
         assert!(seen.insert(id.to_string()), "duplicate case {id}");
         let input = EvidenceTrustInput::from_json(case).expect("all trust inputs present");
-        assert_eq!(input.evaluate().as_str(), case["expected_decision"].as_str().unwrap(), "{id}");
+        assert_eq!(
+            input.evaluate().as_str(),
+            case["expected_decision"].as_str().unwrap(),
+            "{id}"
+        );
     }
 }
 
 #[test]
 fn every_explicit_failure_rejects_and_every_unknown_stays_non_authorizing() {
-    let valid = EvidenceTrustInput::from_json(
-        &corpus()["cases"].as_array().unwrap()[20],
-    ).unwrap();
+    let valid = EvidenceTrustInput::from_json(&corpus()["cases"][20]).unwrap();
     // EV-021 is intentionally the all-positive baseline.
     assert_eq!(valid.evaluate(), Decision::Accepted);
     for field in EVIDENCE_FIELDS {
@@ -106,7 +111,8 @@ fn deterministic_ten_thousand_assignment_sweep_never_accepts_bad_or_unknown_evid
             seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
             changed[*field] = json!(allowed[index][((seed >> 16) as usize) % 3]);
         }
-        let key = EVIDENCE_FIELDS.iter()
+        let key = EVIDENCE_FIELDS
+            .iter()
             .map(|field| changed[*field].as_str().unwrap())
             .collect::<Vec<_>>()
             .join("|");
