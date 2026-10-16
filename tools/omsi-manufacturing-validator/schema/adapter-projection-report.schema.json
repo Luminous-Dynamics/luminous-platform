@@ -16,16 +16,25 @@
       "const": "omsi-manufacturing-adapter-projection/0.1"
     },
     "status": {
-      "enum": ["projection_created", "projection_blocked"]
+      "enum": [
+        "projection_created",
+        "projection_blocked"
+      ]
     },
     "authority": {
       "const": "adapter_projection_only"
     },
     "adapter_id": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "source_format": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "applied_mapping_count": {
       "type": "integer",
@@ -36,17 +45,29 @@
       "minimum": 0
     },
     "projection": {
-      "type": ["object", "null"]
+      "type": [
+        "object",
+        "null"
+      ]
     },
     "audit": {
       "type": "object",
-      "required": ["audit_contract", "status", "authority", "binding"],
+      "required": [
+        "audit_contract",
+        "status",
+        "authority",
+        "binding"
+      ],
       "properties": {
         "audit_contract": {
           "const": "omsi-manufacturing-adapter-audit/0.1"
         },
         "status": {
-          "enum": ["complete_accounting", "incomplete_accounting", "invalid_contract"]
+          "enum": [
+            "complete_accounting",
+            "incomplete_accounting",
+            "invalid_contract"
+          ]
         },
         "authority": {
           "const": "adapter_mapping_accounting_only"
@@ -70,6 +91,10 @@
         "type": "string",
         "minLength": 1
       }
+    },
+    "skipped_optional_count": {
+      "type": "integer",
+      "minimum": 0
     }
   },
   "allOf": [
@@ -80,14 +105,17 @@
             "const": "projection_created"
           }
         },
-        "required": ["status"]
+        "required": [
+          "status"
+        ]
       },
       "then": {
         "required": [
           "adapter_id",
           "source_format",
           "applied_mapping_count",
-          "explicitly_dropped_count"
+          "explicitly_dropped_count",
+          "skipped_optional_count"
         ],
         "properties": {
           "projection": {
@@ -102,11 +130,19 @@
                 "const": 0
               }
             },
-            "required": ["silent_loss_count"]
+            "required": [
+              "silent_loss_count"
+            ]
+          },
+          "skipped_optional_count": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "not": {
-          "required": ["errors"]
+          "required": [
+            "errors"
+          ]
         }
       }
     },
@@ -117,10 +153,14 @@
             "const": "projection_blocked"
           }
         },
-        "required": ["status"]
+        "required": [
+          "status"
+        ]
       },
       "then": {
-        "required": ["errors"],
+        "required": [
+          "errors"
+        ],
         "properties": {
           "projection": {
             "type": "null"
