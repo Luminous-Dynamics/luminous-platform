@@ -19,7 +19,7 @@ The machine-readable catalogue is [`targets-v1.json`](../benchmarks/home-systems
 | Area | Target | Gate? |
 |---|---|---|
 | Reference corpus | Evaluate all 11 current decision snapshots; zero unexpected typed decisions | Yes |
-| Safety mutations | Zero surviving critical mutants across the named authorization/retry/reconciliation predicates | Yes |
+| Safety mutations | Zero surviving critical mutants across the named authorization/retry/reconciliation predicates, including rejection of empty request fingerprints | Yes |
 | Exhaustive gate states | Enumerate 387,072 deterministic combinations of freshness, guards, bindings, journal identity/state, risk and attempt budget; zero invariant violations | Yes |
 | Temporal event histories | Enumerate all 1,000,000 six-event histories over ten event types; zero invariant violations in the declared state model | Yes, bounded scope only |
 | Cross-repo conformance | Zero decision divergences across shared vectors in the actual Hearth 004E runtime and Luminous adapter | Yes; blocked until runtime harness |
@@ -38,7 +38,7 @@ The machine-readable catalogue is [`targets-v1.json`](../benchmarks/home-systems
 - Publish p50, p95 and p99 rather than a single average. Separate cold start, warm decision, journal sync, provider round-trip and observed postcondition.
 - Run at least 30 timing batches for local gate latency and 10,000 journal commits for durability measurements. Preserve raw samples, including failures/timeouts.
 - The initial Rust gate-state sweep is exhaustive over its declared Cartesian product, not over all event histories. Preserve every counterexample as a regression vector; follow with sequence generation and model checking.
-- Use mutation testing to prove a check is exercised: intentionally disable each critical guard and require a specific regression test to fail. A test suite that remains green under a revoked-authority mutant is not acceptable.
+- Use mutation testing to prove a check is exercised: intentionally disable each critical guard and require a specific regression test to fail. Include a mutant that permits an empty/whitespace request fingerprint and require the gate-level regression test to fail; schema validation is not a substitute for checking a privileged boundary. A test suite that remains green under a revoked-authority mutant is not acceptable.
 - Run one workload on the pure Rust reference model and separately on the integrated edge runtime. Do not present reference-function speed as end-to-end household command latency.
 - Report availability separately for manual controls, local automation, remote control, cognition and cloud-dependent features. A single “uptime” metric hides degradation that matters to owners.
 - Physical-stop response time, force/torque limits, electrical safety, thermal cutoffs and hazardous-state bounds require a hazard analysis and named hardware profile. They should not receive a universal numeric threshold copied from this generic RFC.
