@@ -32,8 +32,6 @@
     },
     {
       "source_path": "/record/decision/status",
-      "disposition": "transform",
-      "target_path": "/source_quality_claim/raw_status",
       "disposition": "preserve",
       "target_path": "/source_quality_claim/raw_status"
     },
