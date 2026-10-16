@@ -20,6 +20,12 @@
       "presence": "optional",
       "disposition": "drop",
       "reason": "source free text is excluded from the neutral projection"
+    },
+    {
+      "source_path": "/metadata/note",
+      "presence": "optional",
+      "disposition": "drop",
+      "reason": "optional nested metadata is not part of the neutral projection"
     }
   ]
 }
