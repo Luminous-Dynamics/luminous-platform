@@ -1,0 +1,18 @@
+[package]
+name = "omsi-provenance-verifier"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.78"
+license = "AGPL-3.0-or-later"
+description = "Independent artifact-binding and provenance-graph verifier for OMSI manufacturing evidence"
+publish = false
+
+[dependencies]
+serde_json = "=1.0.154"
+sha2 = "=0.10.9"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
