@@ -423,6 +423,24 @@ mod tests {
     }
 
     #[test]
+    fn mapping_paths_outside_closed_schema_are_rejected_even_when_absent() {
+        let (mut map, schema, record) = fixture();
+        map["mappings"].as_array_mut().unwrap().push(json!({
+            "source_path":"/legacy_note",
+            "presence":"optional",
+            "disposition":"drop",
+            "reason":"legacy note is not part of the schema"
+        }));
+        let map_bytes = serde_json::to_vec(&map).unwrap();
+        let report = audit_adapter_schema_coverage(
+            &map, &map_bytes, &schema, SCHEMA.as_bytes(), &record, RECORD.as_bytes(),
+        );
+        assert_eq!(report["status"], "schema_coverage_incomplete", "{report:#}");
+        assert_eq!(report["mapping_paths_outside_schema"].as_array().unwrap().len(), 1);
+        assert_eq!(report["mapping_paths_outside_schema"][0]["source_path"], "/legacy_note");
+    }
+
+    #[test]
     fn presence_contract_must_match_schema_requiredness() {
         let (mut map, schema, record) = fixture();
         map["mappings"][1]["presence"] = json!("required");
