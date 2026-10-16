@@ -422,6 +422,17 @@ mod tests {
         let validator = draft202012::new(&schema).expect("manifest schema compiles");
         assert!(validator.is_valid(&manifest), "manifest does not match schema: {manifest:#}");
         assert_eq!(manifest["provenance_model"], "w3c-prov-dm-aligned-subset/0.2");
+        let source_schema: Value = serde_json::from_str(SOURCE_SCHEMA)
+            .expect("QMS source schema fixture parses");
+        assert!(draft202012::meta::is_valid(&source_schema));
+        let source_schema_validator = draft202012::new(&source_schema)
+            .expect("QMS source schema compiles");
+        let source_record: Value = serde_json::from_str(SOURCE)
+            .expect("QMS source record fixture parses");
+        assert!(
+            source_schema_validator.is_valid(&source_record),
+            "QMS source record fails schema: {source_record:#}"
+        );
         assert_eq!(manifest["status"], "local_chain_consistent");
         assert_eq!(manifest["authority"], "local_consistency_only");
         assert_eq!(manifest["schema_coverage"]["status"], "schema_coverage_complete");
