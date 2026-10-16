@@ -438,6 +438,19 @@ mod tests {
         assert_eq!(manifest["schema_coverage"]["status"], "schema_coverage_complete");
         assert_eq!(manifest["schema_coverage"]["schema_field_count"], 8);
         assert_eq!(manifest["schema_coverage"]["covered_schema_field_count"], 8);
+        assert_eq!(
+            manifest["schema_coverage"]["source_schema_sha256"],
+            manifest["artifacts"][1]["sha256"]
+        );
+        assert_eq!(
+            manifest["schema_coverage"]["coverage_report_sha256"],
+            manifest["artifacts"][3]["sha256"]
+        );
+        assert_eq!(manifest["artifacts"][1]["artifact_id"], "source-schema");
+        assert_eq!(
+            manifest["artifacts"][3]["artifact_id"],
+            "schema-coverage-report"
+        );
         assert_eq!(manifest["artifacts"].as_array().unwrap().len(), 8);
         assert_eq!(manifest["activities"].as_array().unwrap().len(), 5);
         assert_eq!(manifest["edges"].as_array().unwrap().len(), 14);
