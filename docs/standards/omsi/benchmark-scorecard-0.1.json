@@ -46,6 +46,15 @@
       "failure_policy": "Block release; unsigned digest binding must not be described as source authentication."
     },
     {
+      "id": "G0-provenance-chain",
+      "class": "hard_gate",
+      "metric": "locally_rechecked_provenance_chain_acceptance_rate",
+      "target": 1,
+      "unit": "fraction",
+      "acceptance": "Every valid source/map/projection/semantic-input/semantic-report/replay-envelope chain fixture must produce a manifest. Any inconsistent projection report, projection/input mismatch, semantic report mismatch, or replay envelope mismatch must block manifest creation. Record SHA-256 commitments over exact bytes and explicit derivation edges; do not claim producer authentication or cross-implementation verification.",
+      "failure_policy": "Block the chain; retain the smallest mutated artifact set as a regression fixture and require a separate verifier before any trust-bearing integration."
+    },
+    {
       "id": "G1-repeatability",
       "class": "hard_gate",
       "metric": "same_build_semantic_replay_equivalence",
@@ -172,7 +181,10 @@
     "measured_performance_baseline": null,
     "reference_hardware_pinned": false,
     "independent_schema_engine_run": false,
+    "provenance_manifest_command_authored": true,
+    "provenance_manifest_exact_head_ci_verified": false,
     "independent_cross_implementation_verifier": false,
+    "authenticated_provenance_signing": false,
     "mycelix_adapter_implemented": false,
     "production_readiness_claimed": false
   },
