@@ -4,6 +4,8 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 pub const ADAPTER_MAP_CONTRACT: &str = "omsi-manufacturing-adapter-map/0.1";
+pub const TRANSFORM_VECTOR_FORMAT: &str = "omsi-manufacturing-transform-vectors";
+pub const TRANSFORM_VECTOR_REPORT: &str = "omsi-manufacturing-transform-vector-report/0.1";
 const AUDIT_REPORT_CONTRACT: &str = "omsi-manufacturing-adapter-audit/0.1";
 const MAX_ADAPTER_FIELDS: usize = 100_000;
 
@@ -587,6 +589,178 @@ fn insert_nested_object(
         return Err("target_parent_is_not_object".to_owned());
     };
     insert_nested_object(child_object, tail, value)
+}
+
+
+/// Execute a committed, versioned transform corpus and compare every output or
+/// rejection reason exactly. This qualifies only the registry behavior represented
+/// in the corpus; it does not establish that a source-system crosswalk is correct.
+pub fn verify_transform_vectors(document: &Value) -> Value {
+    let mut failures = Vec::new();
+    let Some(root) = document.as_object() else {
+        return transform_vector_report(0, 0, vec![json!({
+            "field":"$",
+            "reason":"expected_object"
+        })]);
+    };
+
+    check_object_shape(
+        root,
+        "$",
+        &["format", "version", "vectors"],
+        &[],
+        &mut failures,
+    );
+    if root.get("format").and_then(Value::as_str) != Some(TRANSFORM_VECTOR_FORMAT) {
+        failures.push(json!({
+            "field":"format",
+            "reason":"unsupported_transform_vector_format",
+            "expected":TRANSFORM_VECTOR_FORMAT
+        }));
+    }
+    if root.get("version").and_then(Value::as_str) != Some("0.1") {
+        failures.push(json!({
+            "field":"version",
+            "reason":"unsupported_transform_vector_version",
+            "expected":"0.1"
+        }));
+    }
+
+    let vectors = root.get("vectors").and_then(Value::as_array);
+    if vectors.map_or(true, |items| items.is_empty()) {
+        failures.push(json!({
+            "field":"vectors",
+            "reason":"expected_nonempty_array"
+        }));
+    }
+    if vectors.is_some_and(|items| items.len() > MAX_ADAPTER_FIELDS) {
+        failures.push(json!({
+            "field":"vectors",
+            "reason":"vector_count_exceeds_limit",
+            "maximum":MAX_ADAPTER_FIELDS
+        }));
+    }
+
+    let Some(vectors) = vectors.filter(|items| items.len() <= MAX_ADAPTER_FIELDS) else {
+        return transform_vector_report(0, 0, failures);
+    };
+    let expected_count = vectors.len();
+    let mut tested_count = 0usize;
+    let mut seen_ids = BTreeSet::new();
+
+    for (index, vector) in vectors.iter().enumerate() {
+        let path = format!("vectors[{index}]");
+        let Some(object) = vector.as_object() else {
+            failures.push(json!({"field":path,"reason":"expected_object"}));
+            continue;
+        };
+        check_object_shape(
+            object,
+            &path,
+            &["id", "transform_id", "input", "expected"],
+            &[],
+            &mut failures,
+        );
+
+        let id = object.get("id").and_then(Value::as_str);
+        let transform_id = object.get("transform_id").and_then(Value::as_str);
+        let input = object.get("input");
+        let expected = object.get("expected").and_then(Value::as_object);
+
+        if !id.is_some_and(|value| !value.trim().is_empty()) {
+            failures.push(json!({"field":format!("{path}.id"),"reason":"expected_nonempty_string"}));
+            continue;
+        }
+        let id = id.unwrap_or_default();
+        if !seen_ids.insert(id.to_owned()) {
+            failures.push(json!({
+                "field":format!("{path}.id"),
+                "id":id,
+                "reason":"duplicate_vector_id"
+            }));
+            continue;
+        }
+        if !transform_id.is_some_and(|value| !value.trim().is_empty()) {
+            failures.push(json!({"field":format!("{path}.transform_id"),"reason":"expected_nonempty_string"}));
+            continue;
+        }
+        let transform_id = transform_id.unwrap_or_default();
+        let Some(input) = input else {
+            failures.push(json!({"field":format!("{path}.input"),"reason":"required_field_missing"}));
+            continue;
+        };
+        let Some(expected) = expected else {
+            failures.push(json!({"field":format!("{path}.expected"),"reason":"expected_object"}));
+            continue;
+        };
+        if expected.keys().any(|key| !matches!(key.as_str(), "status" | "output" | "reason")) {
+            failures.push(json!({"field":format!("{path}.expected"),"reason":"unrecognized_field"}));
+            continue;
+        }
+
+        let expected_status = expected.get("status").and_then(Value::as_str);
+        match (run_transform(transform_id, input), expected_status) {
+            (Ok(output), Some("transformed")) => {
+                tested_count += 1;
+                if expected.get("output") != Some(&output) || expected.contains_key("reason") {
+                    failures.push(json!({
+                        "id":id,
+                        "transform_id":transform_id,
+                        "reason":"transform_output_mismatch",
+                        "expected":expected.get("output"),
+                        "actual":output
+                    }));
+                }
+            }
+            (Err(error), Some("rejected")) => {
+                tested_count += 1;
+                let actual_reason = error.get("reason").and_then(Value::as_str);
+                let expected_reason = expected.get("reason").and_then(Value::as_str);
+                if actual_reason.is_none() || actual_reason != expected_reason || expected.contains_key("output") {
+                    failures.push(json!({
+                        "id":id,
+                        "transform_id":transform_id,
+                        "reason":"transform_rejection_mismatch",
+                        "expected_reason":expected_reason,
+                        "actual_error":error
+                    }));
+                }
+            }
+            (Ok(output), _) => failures.push(json!({
+                "id":id,
+                "transform_id":transform_id,
+                "reason":"expected_rejection_but_transform_succeeded",
+                "expected":expected,
+                "actual":output
+            })),
+            (Err(error), _) => failures.push(json!({
+                "id":id,
+                "transform_id":transform_id,
+                "reason":"expected_transform_but_transform_rejected",
+                "expected":expected,
+                "actual_error":error
+            })),
+        }
+    }
+
+    transform_vector_report(tested_count, expected_count, failures)
+}
+
+fn transform_vector_report(tested: usize, expected: usize, failures: Vec<Value>) -> Value {
+    json!({
+        "report_contract":TRANSFORM_VECTOR_REPORT,
+        "authority":"registered_transform_vector_agreement_only",
+        "status":if failures.is_empty() && tested == expected { "passed" } else { "failed" },
+        "vectors_expected":expected,
+        "vectors_tested":tested,
+        "failure_count":failures.len(),
+        "failures":failures,
+        "limitations":[
+            "A passing corpus proves only exact agreement with these committed vectors for the current registry implementation.",
+            "It does not prove that a vendor or standards-body crosswalk is semantically appropriate for any industrial deployment.",
+            "Unsupported transform IDs and unsupported unit labels must remain explicit failures, not silently normalized values."
+        ]
+    })
 }
 
 fn invalid_report(contract_bytes: &[u8], source_record_bytes: &[u8], errors: Vec<Value>) -> Value {
