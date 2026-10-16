@@ -53,6 +53,7 @@ pub fn audit_adapter_schema_coverage(
             "presence_mismatches": [],
             "duplicate_source_mappings": [],
             "schema_paths_not_observed_in_record": [],
+            "record_structure_errors": [],
             "required_schema_paths_not_observed_in_record": [],
             "observed_field_accounting_status": observation_audit.get("status").cloned().unwrap_or(Value::Null),
             "observed_silent_loss_count": observation_audit.get("silent_loss_count").cloned().unwrap_or(Value::Null),
@@ -65,6 +66,8 @@ pub fn audit_adapter_schema_coverage(
         .iter()
         .map(|field| (field.path.clone(), field.required))
         .collect();
+    let mut record_structure_errors = Vec::new();
+    validate_record_structure(source_schema, source_record, "", &mut record_structure_errors);
     let mut mapping_paths: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut presence_mismatches = Vec::new();
 
@@ -135,11 +138,20 @@ pub fn audit_adapter_schema_coverage(
         })
         .collect();
 
-    let required_schema_paths_not_observed_in_record: Vec<String> = fields_by_path
+    let mut required_missing: BTreeSet<String> = fields_by_path
         .iter()
         .filter(|(path, required)| **required && source_record.pointer(path).is_none())
         .map(|(path, _)| path.clone())
         .collect();
+    for error in &record_structure_errors {
+        if error.get("reason").and_then(Value::as_str) == Some("required_property_not_observed") {
+            if let Some(path) = error.get("source_path").and_then(Value::as_str) {
+                required_missing.insert(path.to_owned());
+            }
+        }
+    }
+    let required_schema_paths_not_observed_in_record: Vec<String> =
+        required_missing.into_iter().collect();
 
     let duplicate_source_mappings: Vec<Value> = mapping_paths
         .iter()
@@ -157,6 +169,7 @@ pub fn audit_adapter_schema_coverage(
         && mapping_paths_outside_schema.is_empty()
         && presence_mismatches.is_empty()
         && duplicate_source_mappings.is_empty()
+        && record_structure_errors.is_empty()
         && observation_audit.get("status").and_then(Value::as_str) == Some("complete_accounting");
 
     let schema_field_count = fields_by_path.len();
@@ -194,6 +207,7 @@ pub fn audit_adapter_schema_coverage(
         "duplicate_source_mappings": duplicate_source_mappings,
         "schema_paths_not_observed_in_record": schema_paths_not_observed_in_record,
         "required_schema_paths_not_observed_in_record": required_schema_paths_not_observed_in_record,
+        "record_structure_errors": record_structure_errors,
         "observed_field_accounting_status": observation_audit.get("status").cloned().unwrap_or(Value::Null),
         "observed_silent_loss_count": observation_audit.get("silent_loss_count").cloned().unwrap_or(Value::Null),
         "schema_errors": inventory.errors,
@@ -335,6 +349,143 @@ fn walk_schema(
             Ok(())
         }
         _ => Err(schema_error(path, "unsupported_schema_type")),
+    }
+}
+
+fn validate_record_structure(
+    schema: &Value,
+    record: &Value,
+    path: &str,
+    errors: &mut Vec<Value>,
+) {
+    let Some(type_name) = schema.get("type").and_then(Value::as_str) else {
+        errors.push(json!({
+            "source_path": if path.is_empty() { "/" } else { path },
+            "reason": "schema_node_missing_supported_type"
+        }));
+        return;
+    };
+
+    match type_name {
+        "object" => {
+            let Some(record_object) = record.as_object() else {
+                errors.push(json!({
+                    "source_path": if path.is_empty() { "/" } else { path },
+                    "reason": "record_type_mismatch",
+                    "expected_type": "object",
+                    "actual_type": actual_type_name(record)
+                }));
+                return;
+            };
+            let Some(properties) = schema.get("properties").and_then(Value::as_object) else {
+                errors.push(json!({
+                    "source_path": if path.is_empty() { "/" } else { path },
+                    "reason": "schema_object_properties_missing"
+                }));
+                return;
+            };
+            let required_names: BTreeSet<&str> = schema
+                .get("required")
+                .and_then(Value::as_array)
+                .map(|values| values.iter().filter_map(Value::as_str).collect())
+                .unwrap_or_default();
+
+            for name in &required_names {
+                if !record_object.contains_key(*name) {
+                    let escaped = name.replace('~', "~0").replace('/', "~1");
+                    errors.push(json!({
+                        "source_path": format!("{path}/{escaped}"),
+                        "reason": "required_property_not_observed"
+                    }));
+                }
+            }
+
+            for name in record_object.keys() {
+                if !properties.contains_key(name) {
+                    let escaped = name.replace('~', "~0").replace('/', "~1");
+                    errors.push(json!({
+                        "source_path": format!("{path}/{escaped}"),
+                        "reason": "record_property_not_declared_by_schema"
+                    }));
+                }
+            }
+
+            for (name, child_schema) in properties {
+                if let Some(child_record) = record_object.get(name) {
+                    let escaped = name.replace('~', "~0").replace('/', "~1");
+                    let child_path = format!("{path}/{escaped}");
+                    validate_record_structure(child_schema, child_record, &child_path, errors);
+                }
+            }
+        }
+        "array" => {
+            if !record.is_array() {
+                errors.push(json!({
+                    "source_path": if path.is_empty() { "/" } else { path },
+                    "reason": "record_type_mismatch",
+                    "expected_type": "array",
+                    "actual_type": actual_type_name(record)
+                }));
+            }
+        }
+        "string" => {
+            if !record.is_string() {
+                record_type_mismatch(record, path, "string", errors);
+            }
+        }
+        "integer" => {
+            let integer = record
+                .as_number()
+                .is_some_and(|number| number.as_i64().is_some() || number.as_u64().is_some());
+            if !integer {
+                record_type_mismatch(record, path, "integer", errors);
+            }
+        }
+        "number" => {
+            if !record.is_number() {
+                record_type_mismatch(record, path, "number", errors);
+            }
+        }
+        "boolean" => {
+            if !record.is_boolean() {
+                record_type_mismatch(record, path, "boolean", errors);
+            }
+        }
+        "null" => {
+            if !record.is_null() {
+                record_type_mismatch(record, path, "null", errors);
+            }
+        }
+        _ => errors.push(json!({
+            "source_path": if path.is_empty() { "/" } else { path },
+            "reason": "schema_node_has_unsupported_type"
+        })),
+    }
+}
+
+fn record_type_mismatch(record: &Value, path: &str, expected: &str, errors: &mut Vec<Value>) {
+    errors.push(json!({
+        "source_path": if path.is_empty() { "/" } else { path },
+        "reason": "record_type_mismatch",
+        "expected_type": expected,
+        "actual_type": actual_type_name(record)
+    }));
+}
+
+fn actual_type_name(value: &Value) -> &'static str {
+    match value {
+        Value::Null => "null",
+        Value::Bool(_) => "boolean",
+        Value::Number(number) => {
+            if number.as_i64().is_some() || number.as_u64().is_some() {
+                "integer"
+            } else {
+                "number"
+            }
+        }
+        Value::String(_) => "string",
+        Value::Array(_) => "array",
+        Value::Object(_) => "object",
     }
 }
 
