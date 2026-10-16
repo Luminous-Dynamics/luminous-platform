@@ -222,6 +222,17 @@ jobs:
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-record.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-record.schema.json
+          jq empty docs/standards/omsi/interoperability-targets-0.1.json
+          jq -e '
+            .contract == "omsi-interoperability-target-matrix/0.1" and
+            .status == "research_targets_only_not_conformance" and
+            (.targets | length) == 4 and
+            ([.targets[].implementation_status] | all(. == "not_implemented")) and
+            ([.targets[].conformance_status] | all(. == "not_assessed")) and
+            ([.targets[].benchmarks | length] | add) >= 10 and
+            ([.cross_cutting_gates | length] == 3) and
+            (.non_claims | length) >= 4
+          ' docs/standards/omsi/interoperability-targets-0.1.json > /dev/null
 
       - name: Smoke-test schema-bound provenance chain
         if: steps.source.outputs.present == 'true'
