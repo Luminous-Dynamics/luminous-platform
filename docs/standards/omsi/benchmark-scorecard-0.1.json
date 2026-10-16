@@ -99,7 +99,7 @@
       "target": 500,
       "unit": "observations_per_second",
       "workload": "At least 1000 representative cases across valid, reject, loss and conflict outcomes.",
-      "acceptance": "Report throughput with corpus digest, input-size distribution, compiler profile, CPU, OS and run count.",
+      "acceptance": "Use the phase wall_clock_operations_per_second and wall_clock_serialized_input_mib_per_second fields measured over the full phase batch. Keep sampled-time rates as inverse-mean-latency equivalents; they must not substitute for measured wall-clock throughput. Record corpus digest, input-size distribution, compiler profile, CPU, OS and run count.",
       "failure_policy": "A throughput result is not comparable without matching workload and environment."
     },
     {
