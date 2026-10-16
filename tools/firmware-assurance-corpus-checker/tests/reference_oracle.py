@@ -89,6 +89,9 @@ def audit(path: Path) -> dict[str, Any]:
 
     for index, case in enumerate(cases, start=1):
         expected_id = f"FWA-{index:03d}"
+        if not isinstance(case, dict):
+            errors.append(f"{expected_id}: case must be an object")
+            continue
         case_id = case.get("case_id")
         if case_id != expected_id or case_id in seen:
             errors.append(f"{expected_id}: invalid or duplicate identity")
@@ -97,6 +100,9 @@ def audit(path: Path) -> dict[str, Any]:
             errors.append(f"{expected_id}: profile mismatch")
 
         kind = case.get("case_kind")
+        if not isinstance(kind, str):
+            errors.append(f"{expected_id}: case kind must be a string")
+            continue
         expected_kind_disposition = DISPOSITION_BY_KIND.get(kind)
         if expected_kind_disposition is None:
             errors.append(f"{expected_id}: invalid case kind")
@@ -119,7 +125,11 @@ def audit(path: Path) -> dict[str, Any]:
             if state not in ALLOWED_STATES:
                 errors.append(f"{expected_id}: unsupported claim state {state}")
         assertions = case.get("required_assertions")
-        if not isinstance(assertions, list) or not REQUIRED_READ_ONLY.issubset(set(assertions)):
+        if (
+            not isinstance(assertions, list)
+            or not all(isinstance(value, str) for value in assertions)
+            or not REQUIRED_READ_ONLY.issubset(set(assertions))
+        ):
             errors.append(f"{expected_id}: read-only assertions missing")
 
         if kind == "positive_control":
