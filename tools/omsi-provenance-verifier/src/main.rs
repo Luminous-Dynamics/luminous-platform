@@ -1,4 +1,4 @@
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::env;
@@ -193,7 +193,7 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
         artifacts.get(2).and_then(Option::as_ref),
         artifacts.get(3).and_then(Option::as_ref),
     ) {
-        (Some(manifest), Some(source_record), Some(_source_schema), Some(adapter_map), Some(coverage)) => {
+        (Some(manifest), Some(source_record), Some(_source_schema), Some(_adapter_map), Some(coverage)) => {
             let coverage_digest = sha256_hex(artifact_bytes[3]);
             let source_digest = sha256_hex(artifact_bytes[1]);
             let record_digest = sha256_hex(artifact_bytes[0]);
@@ -223,8 +223,8 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
                     && schema_count.is_some_and(|count| count > 0)
                     && schema_count == covered_count
             });
-            let _source_record_has_json_shape = source_record.is_object();
-            status_and_contract && hashes_match && no_coverage_gaps && observed_audit_clean && manifest_section_matches
+            let source_record_shape_ok = source_record.is_object();
+            status_and_contract && hashes_match && no_coverage_gaps && observed_audit_clean && manifest_section_matches && source_record_shape_ok
         }
         _ => false,
     };
@@ -474,23 +474,18 @@ fn sha256_hex(bytes: &[u8]) -> String {
     encoded
 }
 
-fn exact_string_set(value: &Value) -> Option<BTreeSet<String>> {
-    value
-        .as_array()
-        .map(|items| items.iter().filter_map(Value::as_str).map(str::to_owned).collect())
-}
 
 #[cfg(test)]
 mod tests {
-    use super::{sha256_hex, verify_bundle, ARTIFACTS};
+    use super::{sha256_hex, verify_bundle, ARTIFACTS, COVERAGE_CONTRACT, LIMITATIONS};
     use serde_json::{json, Value};
-    use sha2::{Digest, Sha256};
+    use std::collections::BTreeSet;
 
     fn fixture_bundle() -> (Vec<u8>, [Vec<u8>; 8]) {
         let source_record = br#"{"value":"ok"}"#.to_vec();
         let source_schema = br#"{"type":"object","required":["value"],"properties":{"value":{"type":"string"}},"additionalProperties":false}"#.to_vec();
         let adapter_map = br#"{"adapter_contract":"omsi-manufacturing-adapter-map/0.1","adapter_id":"independent-fixture/0.1","source_format":"independent-fixture-json/0.1","mappings":[{"source_path":"/value","disposition":"transform","target_path":"/value","transform_id":"qms-decimal-normalization/0.1"}]}"#.to_vec();
-        let mut coverage = json!({
+        let coverage = json!({
             "coverage_contract": COVERAGE_CONTRACT,
             "status": "schema_coverage_complete",
             "authority": "schema_field_path_coverage_only",
@@ -517,7 +512,6 @@ mod tests {
                 "does not authorize release"
             ]
         });
-        coverage["source_schema_sha256"] = json!(sha256_hex(&source_schema));
         let coverage_bytes = serde_json::to_vec(&coverage).unwrap();
 
         let projection = br#"{"projection_contract":"omsi-manufacturing-adapter-projection/0.1","status":"projection_created","authority":"adapter_projection_only","projection":{"value":"ok"},"limitations":["synthetic fixture"]}"#.to_vec();
