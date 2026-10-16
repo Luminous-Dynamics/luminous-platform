@@ -1,37 +1,71 @@
 use crate::adapter::apply_adapter_map;
 use crate::replay::verify_replay_envelope;
+use crate::schema_coverage::audit_adapter_schema_coverage;
 use omsi_manufacturing_validator::evaluate_input_value;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
-const MANIFEST_CONTRACT: &str = "omsi-manufacturing-provenance-manifest/0.1";
+const MANIFEST_CONTRACT: &str = "omsi-manufacturing-provenance-manifest/0.2";
+const COVERAGE_CONTRACT: &str = "omsi-manufacturing-adapter-schema-coverage/0.1";
 const MAX_TRANSFORMS: usize = 100_000;
 const LIMITATIONS: &[&str] = &[
-    "The manifest records consistency and SHA-256 commitments over exact supplied bytes; it does not authenticate a producer, tenant, device, calibration issuer, or physical measurement.",
-    "The manifest is unsigned. A party able to replace artifacts and recompute the manifest can create a new internally consistent bundle.",
+    "The manifest commits to exact artifact bytes; it does not authenticate a producer, tenant, device, calibration issuer, or physical measurement.",
+    "The manifest is unsigned. A party able to replace artifacts and recompute the bundle can create another internally consistent bundle.",
     "JSON canonicalization is not performed. Whitespace or property-order changes alter artifact digests even when parsed values are equivalent.",
-    "Projection re-execution, semantic evaluation, and replay-envelope verification use this validator implementation; this is not independent cross-implementation verification.",
-    "A consistent evidence chain is not a measurement-uncertainty analysis, vendor-schema conformance claim, quality-release decision, regulatory certificate, or machine-control authorization.",
+    "Schema coverage is limited to the explicitly supported closed-object JSON Schema profile; it is not full JSON Schema, vendor conformance, XML/XSD/QIF validation, or proof of semantic equivalence.",
+    "Projection, schema coverage, semantic evaluation, and replay-envelope verification use this validator implementation; this is not independent cross-implementation verification.",
+    "A consistent evidence chain is not a measurement-uncertainty analysis, quality-release decision, regulatory certificate, or machine-control authorization.",
     "Artifact bytes are not embedded in the manifest. Verifiers must obtain each artifact and independently recompute its digest before relying on the references.",
 ];
 
-/// Builds a local-consistency manifest only after every supplied link is rechecked.
-/// All digests cover exact bytes; this function does not sign or authenticate them.
+/// Recomputes schema coverage, projection, semantic evaluation, and exact-byte
+/// replay checks before emitting an unsigned local-consistency manifest.
 pub fn create_provenance_manifest(
     source_record_bytes: &[u8],
+    source_schema_bytes: &[u8],
     adapter_map_bytes: &[u8],
+    schema_coverage_report_bytes: &[u8],
     projection_report_bytes: &[u8],
     semantic_input_bytes: &[u8],
     semantic_report_bytes: &[u8],
     replay_envelope_bytes: &[u8],
 ) -> Result<Value, String> {
     let source_record = parse_json(source_record_bytes, "source record")?;
+    let source_schema = parse_json(source_schema_bytes, "source schema")?;
     let adapter_map = parse_json(adapter_map_bytes, "adapter map")?;
+    let supplied_coverage = parse_json(schema_coverage_report_bytes, "schema coverage report")?;
     let supplied_projection = parse_json(projection_report_bytes, "projection report")?;
     let semantic_input = parse_json(semantic_input_bytes, "semantic input")?;
     let supplied_semantic_report = parse_json(semantic_report_bytes, "semantic report")?;
     let replay_envelope = parse_json(replay_envelope_bytes, "replay envelope")?;
+
+    let regenerated_coverage = audit_adapter_schema_coverage(
+        &adapter_map,
+        adapter_map_bytes,
+        &source_schema,
+        source_schema_bytes,
+        &source_record,
+        source_record_bytes,
+    );
+    if regenerated_coverage.get("status").and_then(Value::as_str)
+        != Some("schema_coverage_complete")
+    {
+        return Err(
+            "source schema coverage is not complete; refusing to create provenance manifest".into(),
+        );
+    }
+    if regenerated_coverage.get("coverage_contract").and_then(Value::as_str)
+        != Some(COVERAGE_CONTRACT)
+    {
+        return Err("unsupported source schema coverage contract".into());
+    }
+    if regenerated_coverage != supplied_coverage {
+        return Err(
+            "supplied schema coverage report differs from a fresh audit of exact source/schema/map bytes"
+                .into(),
+        );
+    }
 
     let regenerated_projection = apply_adapter_map(
         &adapter_map,
@@ -80,10 +114,18 @@ pub fn create_provenance_manifest(
     let profile = nonempty_string(&supplied_semantic_report, "profile")?;
     let comparison_rule_id = nonempty_string(&supplied_semantic_report, "comparison_rule_id")?;
     let validator_version = nonempty_string(&supplied_semantic_report, "validator_version")?;
+    let schema_field_count = regenerated_coverage
+        .get("schema_field_count")
+        .and_then(Value::as_u64)
+        .ok_or_else(|| "schema coverage report lacks schema_field_count".to_owned())?;
+    let covered_schema_field_count = regenerated_coverage
+        .get("covered_schema_field_count")
+        .and_then(Value::as_u64)
+        .ok_or_else(|| "schema coverage report lacks covered_schema_field_count".to_owned())?;
 
     Ok(json!({
         "manifest_contract": MANIFEST_CONTRACT,
-        "provenance_model": "w3c-prov-dm-aligned-subset/0.1",
+        "provenance_model": "w3c-prov-dm-aligned-subset/0.2",
         "status": "local_chain_consistent",
         "authority": "local_consistency_only",
         "digest_profile": {
@@ -94,10 +136,20 @@ pub fn create_provenance_manifest(
         "profile": profile,
         "comparison_rule_id": comparison_rule_id,
         "validator_version": validator_version,
+        "schema_coverage": {
+            "contract": COVERAGE_CONTRACT,
+            "status": "schema_coverage_complete",
+            "schema_field_count": schema_field_count,
+            "covered_schema_field_count": covered_schema_field_count,
+            "source_schema_sha256": sha256_hex(source_schema_bytes),
+            "coverage_report_sha256": sha256_hex(schema_coverage_report_bytes)
+        },
         "declared_transform_ids": transform_ids.into_iter().collect::<Vec<_>>(),
         "artifacts": [
             artifact("source-record", "source_record", source_record_bytes),
+            artifact("source-schema", "source_schema", source_schema_bytes),
             artifact("adapter-map", "adapter_map", adapter_map_bytes),
+            artifact("schema-coverage-report", "schema_coverage_report", schema_coverage_report_bytes),
             artifact("projection-report", "projection_report", projection_report_bytes),
             artifact("semantic-input", "semantic_input", semantic_input_bytes),
             artifact("semantic-report", "semantic_report", semantic_report_bytes),
@@ -105,9 +157,15 @@ pub fn create_provenance_manifest(
         ],
         "activities": [
             {
+                "activity_id": "schema-coverage-audit",
+                "activity_type": "schema_coverage_audit",
+                "used": ["source-record", "source-schema", "adapter-map"],
+                "generated": ["schema-coverage-report"]
+            },
+            {
                 "activity_id": "adapter-projection",
                 "activity_type": "adapter_projection",
-                "used": ["source-record", "adapter-map"],
+                "used": ["source-record", "adapter-map", "schema-coverage-report"],
                 "generated": ["projection-report"]
             },
             {
@@ -130,70 +188,41 @@ pub fn create_provenance_manifest(
             }
         ],
         "edges": [
-            {
-                "from": "adapter-projection",
-                "to": "source-record",
-                "relationship": "used"
-            },
-            {
-                "from": "adapter-projection",
-                "to": "adapter-map",
-                "relationship": "used"
-            },
-            {
-                "from": "projection-report",
-                "to": "adapter-projection",
-                "relationship": "wasGeneratedBy"
-            },
-            {
-                "from": "semantic-input-extraction",
-                "to": "projection-report",
-                "relationship": "used"
-            },
-            {
-                "from": "semantic-input",
-                "to": "semantic-input-extraction",
-                "relationship": "wasGeneratedBy"
-            },
-            {
-                "from": "semantic-evaluation",
-                "to": "semantic-input",
-                "relationship": "used"
-            },
-            {
-                "from": "semantic-report",
-                "to": "semantic-evaluation",
-                "relationship": "wasGeneratedBy"
-            },
-            {
-                "from": "replay-envelope-creation",
-                "to": "semantic-input",
-                "relationship": "used"
-            },
-            {
-                "from": "replay-envelope",
-                "to": "replay-envelope-creation",
-                "relationship": "wasGeneratedBy"
-            }
+            {"from": "schema-coverage-audit", "to": "source-record", "relationship": "used"},
+            {"from": "schema-coverage-audit", "to": "source-schema", "relationship": "used"},
+            {"from": "schema-coverage-audit", "to": "adapter-map", "relationship": "used"},
+            {"from": "schema-coverage-report", "to": "schema-coverage-audit", "relationship": "wasGeneratedBy"},
+            {"from": "adapter-projection", "to": "source-record", "relationship": "used"},
+            {"from": "adapter-projection", "to": "adapter-map", "relationship": "used"},
+            {"from": "adapter-projection", "to": "schema-coverage-report", "relationship": "used"},
+            {"from": "projection-report", "to": "adapter-projection", "relationship": "wasGeneratedBy"},
+            {"from": "semantic-input-extraction", "to": "projection-report", "relationship": "used"},
+            {"from": "semantic-input", "to": "semantic-input-extraction", "relationship": "wasGeneratedBy"},
+            {"from": "semantic-evaluation", "to": "semantic-input", "relationship": "used"},
+            {"from": "semantic-report", "to": "semantic-evaluation", "relationship": "wasGeneratedBy"},
+            {"from": "replay-envelope-creation", "to": "semantic-input", "relationship": "used"},
+            {"from": "replay-envelope", "to": "replay-envelope-creation", "relationship": "wasGeneratedBy"}
         ],
         "limitations": LIMITATIONS
     }))
 }
 
-const VERIFIER_CONTRACT: &str = "omsi-manufacturing-provenance-verifier/0.1";
+const VERIFIER_CONTRACT: &str = "omsi-manufacturing-provenance-verifier/0.2";
 const VERIFIER_LIMITATIONS: &[&str] = &[
     "This verifier reconstructs the manifest using the same implementation as the builder; it is not independent cross-implementation verification.",
     "The manifest is unsigned and does not authenticate a source, producer, tenant, device, calibration issuer, or physical measurement.",
+    "Schema coverage is limited to a restricted closed-object JSON Schema field-path profile; it is not vendor conformance or a full value-level schema validator.",
     "The verifier checks the supplied artifact bytes. It cannot establish that the physical source is truthful or that a consequential release decision is authorized.",
 ];
 
-/// Reconstructs the expected manifest from the six supplied artifacts and
-/// compares the full parsed manifest. A successful result is local consistency
-/// evidence only, not an authenticated attestation.
+/// Rebuilds the expected manifest from the source schema, coverage report,
+/// adapter and derived artifacts. Success means local consistency only.
 pub fn verify_provenance_manifest(
     manifest_bytes: &[u8],
     source_record_bytes: &[u8],
+    source_schema_bytes: &[u8],
     adapter_map_bytes: &[u8],
+    schema_coverage_report_bytes: &[u8],
     projection_report_bytes: &[u8],
     semantic_input_bytes: &[u8],
     semantic_report_bytes: &[u8],
@@ -205,7 +234,9 @@ pub fn verify_provenance_manifest(
 
     let reconstruction = create_provenance_manifest(
         source_record_bytes,
+        source_schema_bytes,
         adapter_map_bytes,
+        schema_coverage_report_bytes,
         projection_report_bytes,
         semantic_input_bytes,
         semantic_report_bytes,
@@ -238,7 +269,7 @@ pub fn verify_provenance_manifest(
             verifier_check(
                 "chain-reconstruction",
                 chain_reconstructed,
-                "all supplied artifacts reproduce a consistent adapter, semantic and replay chain",
+                "source schema, schema coverage, adapter, semantic and replay artifacts form a locally consistent chain",
                 if reconstruction_error.is_empty() {
                     "the supplied artifacts do not reproduce a consistent chain"
                 } else {
@@ -301,6 +332,7 @@ mod tests {
     use super::create_provenance_manifest;
     use crate::adapter::apply_adapter_map;
     use crate::replay::create_replay_envelope;
+    use crate::schema_coverage::audit_adapter_schema_coverage;
     use jsonschema::draft202012;
     use omsi_manufacturing_validator::evaluate_input_value;
     use serde_json::{json, Value};
@@ -311,9 +343,14 @@ mod tests {
     const SOURCE: &str = include_str!(
         "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json"
     );
+    const SOURCE_SCHEMA: &str = include_str!(
+        "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-record.schema.json"
+    );
     const SCHEMA: &str = include_str!("../schema/provenance-manifest.schema.json");
 
-    fn verify_bundle(manifest: &[u8], artifacts: &[Vec<u8>; 6]) -> Value {
+    type Bundle = [Vec<u8>; 8];
+
+    fn verify_bundle(manifest: &[u8], artifacts: &Bundle) -> Value {
         super::verify_provenance_manifest(
             manifest,
             &artifacts[0],
@@ -322,15 +359,30 @@ mod tests {
             &artifacts[3],
             &artifacts[4],
             &artifacts[5],
+            &artifacts[6],
+            &artifacts[7],
         )
     }
 
-    fn fixture_chain() -> (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>) {
+    fn fixture_chain() -> Bundle {
         let map: Value = serde_json::from_str(MAP).expect("map fixture parses");
+        let source_schema: Value =
+            serde_json::from_str(SOURCE_SCHEMA).expect("source schema fixture parses");
         let source: Value = serde_json::from_str(SOURCE).expect("source fixture parses");
+        let coverage = audit_adapter_schema_coverage(
+            &map,
+            MAP.as_bytes(),
+            &source_schema,
+            SOURCE_SCHEMA.as_bytes(),
+            &source,
+            SOURCE.as_bytes(),
+        );
+        assert_eq!(coverage["status"], "schema_coverage_complete", "{coverage:#}");
+        let coverage_bytes =
+            serde_json::to_vec_pretty(&coverage).expect("coverage report serializes");
+
         let projection = apply_adapter_map(&map, MAP.as_bytes(), &source, SOURCE.as_bytes());
         assert_eq!(projection["status"], "projection_created");
-
         let projection_bytes =
             serde_json::to_vec_pretty(&projection).expect("projection serializes");
         let semantic_input_bytes = serde_json::to_vec_pretty(&projection["projection"])
@@ -345,54 +397,53 @@ mod tests {
         let replay_envelope_bytes =
             serde_json::to_vec_pretty(&replay_envelope).expect("envelope serializes");
 
-        (
+        [
             SOURCE.as_bytes().to_vec(),
+            SOURCE_SCHEMA.as_bytes().to_vec(),
             MAP.as_bytes().to_vec(),
+            coverage_bytes,
             projection_bytes,
             semantic_input_bytes,
             semantic_report_bytes,
             replay_envelope_bytes,
-        )
+        ]
     }
 
     #[test]
-    fn manifest_rechecks_each_edge_and_matches_the_independent_schema() {
-        let (source, map, projection, input, report, envelope) = fixture_chain();
-        let manifest = create_provenance_manifest(
-            &source, &map, &projection, &input, &report, &envelope,
+    fn manifest_rechecks_schema_coverage_and_matches_the_independent_schema() {
+        let artifacts = fixture_chain();
+        let manifest = super::create_provenance_manifest(
+            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
+            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
         )
         .expect("consistent evidence chain emits a manifest");
         let schema: Value = serde_json::from_str(SCHEMA).expect("manifest schema parses");
         assert!(draft202012::meta::is_valid(&schema), "schema meta-validation failed");
         let validator = draft202012::new(&schema).expect("manifest schema compiles");
         assert!(validator.is_valid(&manifest), "manifest does not match schema: {manifest:#}");
-        assert_eq!(manifest["provenance_model"], "w3c-prov-dm-aligned-subset/0.1");
+        assert_eq!(manifest["provenance_model"], "w3c-prov-dm-aligned-subset/0.2");
         assert_eq!(manifest["status"], "local_chain_consistent");
         assert_eq!(manifest["authority"], "local_consistency_only");
-        assert_eq!(manifest["artifacts"].as_array().unwrap().len(), 6);
-        assert_eq!(manifest["activities"].as_array().unwrap().len(), 4);
-        assert_eq!(manifest["edges"].as_array().unwrap().len(), 9);
+        assert_eq!(manifest["schema_coverage"]["status"], "schema_coverage_complete");
+        assert_eq!(manifest["schema_coverage"]["schema_field_count"], 8);
+        assert_eq!(manifest["schema_coverage"]["covered_schema_field_count"], 8);
+        assert_eq!(manifest["artifacts"].as_array().unwrap().len(), 8);
+        assert_eq!(manifest["activities"].as_array().unwrap().len(), 5);
+        assert_eq!(manifest["edges"].as_array().unwrap().len(), 14);
         assert_eq!(manifest["declared_transform_ids"].as_array().unwrap().len(), 2);
         assert!(manifest.get("signature").is_none());
     }
 
     #[test]
     fn manifest_verifier_reconstructs_and_schema_validates_report() {
-        let (source, map, projection, input, report, envelope) = fixture_chain();
-        let manifest = create_provenance_manifest(
-            &source, &map, &projection, &input, &report, &envelope,
+        let artifacts = fixture_chain();
+        let manifest = super::create_provenance_manifest(
+            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
+            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
         )
-            .expect("consistent chain creates a manifest");
+        .expect("consistent chain creates a manifest");
         let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("manifest serializes");
-        let verification = super::verify_provenance_manifest(
-            &manifest_bytes,
-            &source,
-            &map,
-            &projection,
-            &input,
-            &report,
-            &envelope,
-        );
+        let verification = verify_bundle(&manifest_bytes, &artifacts);
         assert_eq!(verification["status"], "manifest_verified", "{verification:#}");
         assert_eq!(verification["authority"], "local_consistency_only");
         assert!(verification["checks"].as_array().unwrap().iter()
@@ -404,31 +455,21 @@ mod tests {
         .expect("verification schema parses");
         assert!(draft202012::meta::is_valid(&schema), "verification schema meta-validation failed");
         let validator = draft202012::new(&schema).expect("verification schema compiles");
-        assert!(
-            validator.is_valid(&verification),
-            "verification report does not match schema: {verification:#}"
-        );
+        assert!(validator.is_valid(&verification), "verification report does not match schema: {verification:#}");
     }
 
     #[test]
     fn manifest_verifier_rejects_tampered_manifest_digest() {
-        let (source, map, projection, input, report, envelope) = fixture_chain();
-        let mut manifest = create_provenance_manifest(
-            &source, &map, &projection, &input, &report, &envelope,
+        let artifacts = fixture_chain();
+        let manifest = super::create_provenance_manifest(
+            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
+            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
         )
         .expect("consistent chain creates a manifest");
+        let mut manifest = manifest;
         manifest["artifacts"][0]["sha256"] = json!("0".repeat(64));
-        let manifest_bytes =
-            serde_json::to_vec_pretty(&manifest).expect("mutated manifest serializes");
-        let verification = super::verify_provenance_manifest(
-            &manifest_bytes,
-            &source,
-            &map,
-            &projection,
-            &input,
-            &report,
-            &envelope,
-        );
+        let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("mutated manifest serializes");
+        let verification = verify_bundle(&manifest_bytes, &artifacts);
         assert_eq!(verification["status"], "rejected");
         assert!(verification["checks"].as_array().unwrap()
             .iter().any(|check| check["id"] == "manifest-equality" && check["result"] == "fail"));
@@ -436,40 +477,40 @@ mod tests {
 
     #[test]
     fn manifest_verifier_rejects_mutation_at_each_artifact_boundary() {
-        let (source, map, projection, input, report, envelope) = fixture_chain();
-        let artifacts = [source, map, projection, input, report, envelope];
-        let manifest = create_provenance_manifest(
-            &artifacts[0], &artifacts[1], &artifacts[2],
-            &artifacts[3], &artifacts[4], &artifacts[5],
-        ).expect("original evidence chain is consistent");
+        let artifacts = fixture_chain();
+        let manifest = super::create_provenance_manifest(
+            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
+            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
+        )
+        .expect("original evidence chain is consistent");
         let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("manifest serializes");
 
-        let mut source_value: Value =
-            serde_json::from_slice(&artifacts[0]).expect("source record parses");
+        let mut source_value: Value = serde_json::from_slice(&artifacts[0]).expect("source parses");
         source_value["record"]["asset"]["id"] = json!("PART-8");
-        let mut map_value: Value =
-            serde_json::from_slice(&artifacts[1]).expect("adapter map parses");
+        let mut schema_value: Value = serde_json::from_slice(&artifacts[1]).expect("schema parses");
+        schema_value["description"] = json!("mutated source schema");
+        let mut map_value: Value = serde_json::from_slice(&artifacts[2]).expect("map parses");
         map_value["mappings"][3]["transform_id"] = json!("unregistered-transform/9.0");
-        let mut projection_value: Value =
-            serde_json::from_slice(&artifacts[2]).expect("projection report parses");
+        let mut coverage_value: Value = serde_json::from_slice(&artifacts[3]).expect("coverage parses");
+        coverage_value["covered_schema_field_count"] = json!(7);
+        let mut projection_value: Value = serde_json::from_slice(&artifacts[4]).expect("projection parses");
         projection_value["projection"]["measurement"]["value_decimal"] = json!("0.009");
-        let mut input_value: Value =
-            serde_json::from_slice(&artifacts[3]).expect("semantic input parses");
+        let mut input_value: Value = serde_json::from_slice(&artifacts[5]).expect("input parses");
         input_value["measurement"]["value_decimal"] = json!("0.009");
-        let mut report_value: Value =
-            serde_json::from_slice(&artifacts[4]).expect("semantic report parses");
+        let mut report_value: Value = serde_json::from_slice(&artifacts[6]).expect("report parses");
         report_value["decision_trace"][0]["interpretation"] = json!("mutated interpretation");
-        let mut envelope_value: Value =
-            serde_json::from_slice(&artifacts[5]).expect("replay envelope parses");
+        let mut envelope_value: Value = serde_json::from_slice(&artifacts[7]).expect("envelope parses");
         envelope_value["artifact_binding"]["digest"] = json!("0".repeat(64));
 
         let mutations = [
             ("source record", 0usize, serde_json::to_vec(&source_value).unwrap()),
-            ("adapter map", 1usize, serde_json::to_vec(&map_value).unwrap()),
-            ("projection report", 2usize, serde_json::to_vec(&projection_value).unwrap()),
-            ("semantic input", 3usize, serde_json::to_vec(&input_value).unwrap()),
-            ("semantic report", 4usize, serde_json::to_vec(&report_value).unwrap()),
-            ("replay envelope", 5usize, serde_json::to_vec(&envelope_value).unwrap()),
+            ("source schema", 1usize, serde_json::to_vec(&schema_value).unwrap()),
+            ("adapter map", 2usize, serde_json::to_vec(&map_value).unwrap()),
+            ("schema coverage report", 3usize, serde_json::to_vec(&coverage_value).unwrap()),
+            ("projection report", 4usize, serde_json::to_vec(&projection_value).unwrap()),
+            ("semantic input", 5usize, serde_json::to_vec(&input_value).unwrap()),
+            ("semantic report", 6usize, serde_json::to_vec(&report_value).unwrap()),
+            ("replay envelope", 7usize, serde_json::to_vec(&envelope_value).unwrap()),
         ];
 
         for (label, index, changed_bytes) in mutations {
@@ -486,37 +527,53 @@ mod tests {
 
     #[test]
     fn manifest_rejects_projection_report_drift() {
-        let (source, map, mut projection, input, report, envelope) = fixture_chain();
-        let mut parsed: Value =
-            serde_json::from_slice(&projection).expect("projection report parses");
-        parsed["projection"]["source_quality_claim"]["raw_status"] = json!("ACCEPTED");
-        projection = serde_json::to_vec_pretty(&parsed).expect("mutated projection serializes");
-        let result = create_provenance_manifest(
-            &source, &map, &projection, &input, &report, &envelope,
+        let artifacts = fixture_chain();
+        let mut projection: Value = serde_json::from_slice(&artifacts[4]).expect("projection parses");
+        projection["projection"]["source_quality_claim"]["raw_status"] = json!("ACCEPTED");
+        let projection_bytes = serde_json::to_vec_pretty(&projection).expect("projection serializes");
+        let result = super::create_provenance_manifest(
+            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
+            &projection_bytes, &artifacts[5], &artifacts[6], &artifacts[7],
         );
         assert!(result.unwrap_err().contains("differs from a fresh adapter re-execution"));
     }
 
     #[test]
+    fn manifest_rejects_mutated_schema_coverage_report() {
+        let artifacts = fixture_chain();
+        let mut coverage: Value = serde_json::from_slice(&artifacts[3]).expect("coverage parses");
+        coverage["status"] = json!("schema_coverage_incomplete");
+        let coverage_bytes = serde_json::to_vec_pretty(&coverage).expect("coverage serializes");
+        let result = super::create_provenance_manifest(
+            &artifacts[0], &artifacts[1], &artifacts[2], &coverage_bytes,
+            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
+        );
+        assert!(result.unwrap_err().contains("differs from a fresh audit"));
+    }
+
+    #[test]
     fn manifest_rejects_replay_envelope_bound_to_different_bytes() {
-        let (source, map, projection, input, report, mut envelope) = fixture_chain();
-        let mut parsed: Value =
-            serde_json::from_slice(&envelope).expect("replay envelope parses");
-        parsed["artifact_binding"]["digest"] = json!("0".repeat(64));
-        envelope = serde_json::to_vec_pretty(&parsed).expect("tampered envelope serializes");
-        let result = create_provenance_manifest(
-            &source, &map, &projection, &input, &report, &envelope,
+        let artifacts = fixture_chain();
+        let mut envelope: Value = serde_json::from_slice(&artifacts[7]).expect("envelope parses");
+        envelope["artifact_binding"]["digest"] = json!("0".repeat(64));
+        let envelope_bytes = serde_json::to_vec_pretty(&envelope).expect("envelope serializes");
+        let result = super::create_provenance_manifest(
+            &artifacts[0], &artifacts[1], &artifacts[2], &artifacts[3],
+            &artifacts[4], &artifacts[5], &artifacts[6], &envelope_bytes,
         );
         assert!(result.unwrap_err().contains("replay envelope does not verify"));
     }
 
     #[test]
-    fn byte_level_change_to_source_is_not_silently_ignored() {
-        let (mut source, map, projection, input, report, envelope) = fixture_chain();
-        source.push(b' ');
-        let result = create_provenance_manifest(
-            &source, &map, &projection, &input, &report, &envelope,
+    fn unsupported_source_schema_blocks_manifest_creation() {
+        let artifacts = fixture_chain();
+        let mut schema: Value = serde_json::from_slice(&artifacts[1]).expect("schema parses");
+        schema.as_object_mut().unwrap().remove("additionalProperties");
+        let schema_bytes = serde_json::to_vec(&schema).unwrap();
+        let result = super::create_provenance_manifest(
+            &artifacts[0], &schema_bytes, &artifacts[2], &artifacts[3],
+            &artifacts[4], &artifacts[5], &artifacts[6], &artifacts[7],
         );
-        assert!(result.unwrap_err().contains("differs from a fresh adapter re-execution"));
+        assert!(result.unwrap_err().contains("schema coverage is not complete"));
     }
 }
