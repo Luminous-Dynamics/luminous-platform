@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:manufacturing-transform-vector-report:0.1",
+  "title": "OMSI Manufacturing Transform Vector Report 0.1",
+  "type": "object",
+  "required": [
+    "report_contract",
+    "authority",
+    "status",
+    "vectors_expected",
+    "vectors_tested",
+    "failure_count",
+    "failures",
+    "limitations"
+  ],
+  "properties": {
+    "report_contract": {
+      "const": "omsi-manufacturing-transform-vector-report/0.1"
+    },
+    "authority": {
+      "const": "registered_transform_vector_agreement_only"
+    },
+    "status": {
+      "enum": ["passed", "failed"]
+    },
+    "vectors_expected": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "vectors_tested": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failure_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "passed"
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "vectors_expected": {
+            "minimum": 1
+          },
+          "vectors_tested": {
+            "minimum": 1
+          },
+          "failure_count": {
+            "const": 0
+          },
+          "failures": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
