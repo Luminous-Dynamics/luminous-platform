@@ -47,6 +47,12 @@ Two differently shaped synthetic examples are checked by CI: [flat MES-like mapp
 - A separate deterministic assurance sweep has now been authored for **100,000 generated cases** in the test suite: 20,000 each for nominal numeric-range behavior (including boundary-adjacent values), equivalent decimal spellings, equivalent explicit timestamp offsets, missing-unit non-evaluability, and tenant-mismatch rejection. It is not counted as part of the eight-vector timing corpus, and it has not yet been compiled or executed in this environment.
 - The benchmark command has been authored but not compiled or run locally in this environment. A current exact-head CI conclusion is not available. Do not quote performance numbers until an actual report is captured with the report and environment pinned.
 
+## Next paradigm shift: evidence as a reproducible derivation graph
+
+A report should not be treated as a free-standing JSON verdict. It should be the output node of a derivation graph whose source bytes, adapter contract, transformation identifiers, projection, semantic input, evaluator report, and replay envelope are all explicit artifacts. The new `create-provenance-manifest` command is the first executable slice of that idea: it replays each local link and refuses to emit a manifest when the projection, semantic report, or raw-byte envelope no longer agrees.
+
+The next steps should avoid inventing an isolated proprietary trust format. Keep OMSI's semantic profile deterministic and offline; map provenance artifacts to [W3C PROV](https://www.w3.org/TR/2013/REC-prov-dm-20130430/) entity/activity relations and package authenticated step attestations using a standard such as [in-toto](https://github.com/in-toto/attestation/blob/main/spec/predicates/link.md). In parallel, test real interoperability against manufacturing-quality schemas and conformance vectors rather than claiming QIF/STEP/vendor conformance from synthetic JSON fixtures. NIST's Digital Thread for Manufacturing explicitly identifies semantic conformance testing and data-asset traceability as gaps, and ISO confirms that QIF (ISO 23952:2020) remains current as of its 2026 review. The architectural opportunity is to make meaning-preservation and evidence lineage machine-checkable at every boundary, then add signer identity and independent verifiers as separate trust layers.
+
 ## Proposed benchmarks and release gates
 
 | Area | Proposed target | Gate type | Rationale |
@@ -55,6 +61,7 @@ Two differently shaped synthetic examples are checked by CI: [flat MES-like mapp
 | Negative controls | Zero unexpected acceptances in cross-tenant, malformed, incompatible-unit and contradiction suites | Hard | False acceptance matters more than speed |
 | Independent schema checks | 100% of schemas and representative outputs validate with an independent Draft 2020-12 engine; mutated invalid reports are rejected | Hard | Parsing JSON is not schema validation |
 | Replay tamper suite | 100% detection for every named mutation to input, digest, envelope contract, report and limitations | Hard | Digest and report claims must be checked, not trusted |
+| Provenance-chain reconstruction | 100% of valid chain fixtures produce manifests; every enumerated source/map/projection/input/report/envelope mismatch blocks creation | Hard | Evidence must be reproducible across each derivation edge, not just represented by an isolated digest |
 | Repeatability | 100% semantic report equality for same bytes/profile/rule/build | Hard | Reproducible interpretation |
 | Property testing | At least 100,000 deterministic generated cases per profile version | Release | Boundary and metamorphic coverage |
 | Coverage-guided fuzzing | At least 24 hours per release candidate, with crash corpus retained | Release | Parser/resource robustness |
