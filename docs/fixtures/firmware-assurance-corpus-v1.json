@@ -3,7 +3,7 @@
   "status": "synthetic_only",
   "physical_target": "none",
   "profile_id": "synthetic-uefi-uki-v1",
-  "benchmark_goal": "Verify claim-level firmware/boot assurance semantics without authorizing or performing any mutation.",
+  "benchmark_goal": "Test claim-level UEFI Secure Boot/UKI trust and generic update-metadata assurance semantics without authorizing or performing any mutation; not a physical OEM firmware qualification.",
   "mutation_enabled": false,
   "case_count": 36,
   "cases": [
@@ -369,7 +369,7 @@
       "setup": "The endpoint/capability profile is stale and its current revision cannot be established.",
       "mutation": "replace_current_profile_with_stale_revision",
       "expected_claims": {
-        "compatibility": "unknown",
+        "management_scope": "unknown",
         "authorization": "unknown"
       },
       "expected_disposition": "indeterminate",
@@ -388,8 +388,8 @@
       "setup": "The approved endpoint redirects the request to a different origin.",
       "mutation": "inject_cross_origin_redirect",
       "expected_claims": {
-        "authorization": "refuted",
-        "target_identity": "refuted"
+        "management_scope": "refuted",
+        "authorization": "refuted"
       },
       "expected_disposition": "blocked",
       "required_assertions": [
@@ -407,7 +407,7 @@
       "setup": "Credential authentication succeeds but the server returns an organization/tenant different from the approved scope.",
       "mutation": "substitute_tenant_identity",
       "expected_claims": {
-        "target_identity": "refuted",
+        "management_scope": "refuted",
         "authorization": "refuted"
       },
       "expected_disposition": "blocked",
@@ -438,7 +438,7 @@
     },
     {
       "case_id": "FWA-023",
-      "case_kind": "positive_control",
+      "case_kind": "negative_control",
       "family": "transaction_ambiguity",
       "profile_id": "synthetic-uefi-uki-v1",
       "setup": "A synthetic command fails before dispatch and a trustworthy local effect journal proves no request was sent.",
