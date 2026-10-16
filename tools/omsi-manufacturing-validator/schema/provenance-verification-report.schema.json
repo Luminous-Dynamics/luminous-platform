@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:manufacturing-provenance-verification-report:0.1",
+  "title": "OMSI Manufacturing Provenance Verification Report 0.1",
+  "description": "Result from reconstructing a local-consistency manifest from six supplied artifacts. It is not an authenticated attestation.",
+  "type": "object",
+  "required": [
+    "verifier_contract",
+    "status",
+    "authority",
+    "manifest_sha256",
+    "checks",
+    "limitations"
+  ],
+  "properties": {
+    "verifier_contract": {
+      "const": "omsi-manufacturing-provenance-verifier/0.1"
+    },
+    "status": {
+      "enum": ["manifest_verified", "rejected"]
+    },
+    "authority": {
+      "const": "local_consistency_only"
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["id", "result", "explanation"],
+        "properties": {
+          "id": {
+            "enum": [
+              "manifest-json",
+              "chain-reconstruction",
+              "manifest-equality"
+            ]
+          },
+          "result": {
+            "enum": ["pass", "fail"]
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false
+}
