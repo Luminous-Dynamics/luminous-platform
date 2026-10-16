@@ -71,9 +71,13 @@ cargo run --release --manifest-path tools/omsi-manufacturing-validator/Cargo.tom
   create-provenance-manifest "$base/qms-nested-record.json" "$base/qms-nested-map.json" \
   "$tmp/projection.json" "$tmp/semantic-input.json" "$tmp/semantic-report.json" \
   "$tmp/replay-envelope.json" > "$tmp/provenance-manifest.json"
+cargo run --release --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+  verify-provenance-manifest "$tmp/provenance-manifest.json" "$base/qms-nested-record.json" \
+  "$base/qms-nested-map.json" "$tmp/projection.json" "$tmp/semantic-input.json" \
+  "$tmp/semantic-report.json" "$tmp/replay-envelope.json"
 ```
 
-The contract is defined in [provenance-manifest.schema.json](../../../../../tools/omsi-manufacturing-validator/schema/provenance-manifest.schema.json). `provenance.rs` tests independently schema-validate a generated manifest and mutate the projection/envelope to require rejection. The workflow smoke test exercises the full command composition.
+The contract is defined in [provenance-manifest.schema.json](../../../../../tools/omsi-manufacturing-validator/schema/provenance-manifest.schema.json); the verifier report uses [provenance-verification-report.schema.json](../../../../../tools/omsi-manufacturing-validator/schema/provenance-verification-report.schema.json). `verify-provenance-manifest` rebuilds the expected manifest from all six supplied artifacts and compares the full parsed value, returning a structured success/rejection report. Tests schema-validate both outputs and mutate artifact/report/envelope content to require rejection. The workflow smoke test exercises both commands end to end. This verifier currently shares the builder's implementation; it is a downstream recheck, not the future independent cross-implementation verifier.
 
 **Trust boundary:** this is a local consistency and mutation-detection aid, not an authenticated attestation. Because the manifest is unsigned, an actor able to replace the inputs and recompute all outputs can produce another consistent bundle. A production-grade next stage should package the manifest as a standard attestation with authenticated signer identity and explicit predicate type, then verify it independently; never confuse signing with measurement truth.
 
