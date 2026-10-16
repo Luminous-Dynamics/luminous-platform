@@ -82,5 +82,26 @@ jobs:
           jq -e '.status == "blocked" and .checks.semantic_contract == "failed"' \
             "$report" > /dev/null
 
+      - name: Run independent standard-library policy oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/firmware-assurance-reference-oracle.json"
+          python3 tools/firmware-assurance-corpus-checker/tests/reference_oracle.py \
+            docs/fixtures/firmware-assurance-corpus-v1.json > "$report"
+          jq -e '
+            .report_version == "firmware-assurance-reference-oracle/1.0.0" and
+            .status == "passed" and
+            .oracle_implementation == "python-standard-library-independent-from-rust" and
+            .case_count == 44 and
+            .case_kind_counts.positive_control == 9 and
+            .case_kind_counts.negative_control == 26 and
+            .case_kind_counts.indeterminate_control == 9 and
+            .metamorphic_checks > 100 and
+            .physical_device_operations == 0 and
+            .claim_ceiling == "synthetic_claim_policy_only_not_firmware_verification" and
+            (.corpus_sha256 | test("^[0-9a-f]{64}$"))
+          ' "$report" > /dev/null
+
       - name: Clippy
         run: cargo clippy --manifest-path tools/firmware-assurance-corpus-checker/Cargo.toml --all-targets -- -D warnings
