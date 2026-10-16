@@ -1485,6 +1485,10 @@ mod tests {
                 "provenance-verification-report",
                 include_str!("../schema/provenance-verification-report.schema.json"),
             ),
+            (
+                "adapter-schema-coverage-report",
+                include_str!("../schema/adapter-schema-coverage-report.schema.json"),
+            ),
         ];
 
         for (label, schema_source) in schemas {
