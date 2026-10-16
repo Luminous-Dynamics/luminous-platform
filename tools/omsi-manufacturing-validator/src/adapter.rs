@@ -1196,6 +1196,33 @@ mod tests {
     }
 
     #[test]
+    fn committed_transform_vector_corpus_passes_exactly() {
+        let vectors: Value = serde_json::from_str(include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json"
+        ))
+        .expect("committed transform-vector corpus parses");
+        let report = super::verify_transform_vectors(&vectors);
+        assert_eq!(report["status"], "passed");
+        assert_eq!(report["vectors_expected"], 10);
+        assert_eq!(report["vectors_tested"], 10);
+        assert_eq!(report["failure_count"], 0);
+        assert_eq!(report["authority"], "registered_transform_vector_agreement_only");
+    }
+
+    #[test]
+    fn transform_vector_verifier_rejects_changed_expected_output() {
+        let mut vectors: Value = serde_json::from_str(include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json"
+        ))
+        .expect("committed transform-vector corpus parses");
+        vectors["vectors"][0]["expected"]["output"] = json!("72.4000");
+        let report = super::verify_transform_vectors(&vectors);
+        assert_eq!(report["status"], "failed");
+        assert_eq!(report["failure_count"], 1);
+        assert_eq!(report["failures"][0]["reason"], "transform_output_mismatch");
+    }
+
+    #[test]
     fn absent_declared_source_path_blocks_projection() {
         let report = apply(
             contract(vec![
