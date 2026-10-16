@@ -56,7 +56,8 @@
           "expected_claims",
           "expected_disposition",
           "required_assertions",
-          "rationale"
+          "rationale",
+          "required_claims"
         ],
         "properties": {
           "case_id": {
@@ -275,6 +276,35 @@
           "rationale": {
             "type": "string",
             "minLength": 15
+          },
+          "required_claims": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "artifact_integrity",
+                "authorization",
+                "boot_success",
+                "boot_target_match",
+                "compatibility",
+                "effect_outcome_known",
+                "evidence_privacy",
+                "freshness",
+                "lineage_integrity",
+                "management_scope",
+                "observation_consistency",
+                "provenance_completeness",
+                "recovery_readiness",
+                "revocation_status",
+                "schema_support",
+                "signature_present",
+                "signature_validity",
+                "signer_authorization",
+                "target_identity",
+                "verifier_availability"
+              ]
+            }
           }
         }
       }
