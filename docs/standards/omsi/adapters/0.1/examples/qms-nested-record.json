@@ -6,7 +6,7 @@
       "tenant": "tenant:synthetic-a"
     },
     "measurement": {
-      "value": "0.0072",
+      "value": "0.007200",
       "unit": "mm"
     },
     "decision": {
