@@ -16,7 +16,7 @@ This design composes existing standards instead of creating a new firmware signa
 
 ## 2. Scope and authority boundaries
 
-The first milestone is **read-only firmware assurance for one exact, supported lab target**. Do not implement production flashing in this benchmark slice. The initial JSON corpus is deliberately synthetic: it exercises UEFI Secure Boot/UKI trust predicates together with generic update-metadata threat cases. It names no physical device and does not qualify an OEM BIOS, embedded-controller, router, or switch firmware updater. That requires a later exact-model/revision lab profile.
+The first milestone is **read-only firmware assurance for one exact, supported lab target**. Do not implement production flashing in this benchmark slice. The initial JSON corpus uses profile ID `synthetic-uefi-uki-v1` and is deliberately synthetic: it exercises UEFI Secure Boot/UKI trust predicates together with generic update-metadata threat cases. It names no physical device and does not qualify an OEM BIOS, embedded-controller, router, or switch firmware updater. That requires a later exact-model/revision lab profile.
 
 - **Symthaea:** proposes diagnoses, candidate Rust patches, test cases, and remediation plans. Its model-generated conclusions are proposals, never independent acceptance evidence or execution authority.
 - **Nixward:** owns local NixOS/system-transaction policy, exact target and pre-state binding, authorization, execution journal, post-state verification, and recovery disposition.
