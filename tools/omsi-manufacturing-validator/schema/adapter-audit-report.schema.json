@@ -147,6 +147,12 @@
           },
           "reason": {
             "type": "string"
+          },
+          "presence": {
+            "enum": [
+              "required",
+              "optional"
+            ]
           }
         },
         "additionalProperties": false
@@ -164,6 +170,12 @@
       "items": {
         "type": "string",
         "minLength": 1
+      }
+    },
+    "required_mapping_paths_not_observed_in_record": {
+      "type": "array",
+      "items": {
+        "type": "string"
       }
     }
   },
