@@ -240,7 +240,7 @@ jobs:
             .digest_profile.canonicalization == "none" and
             (.artifacts | length) == 6 and
             (.edges | length) == 5 and
-            (.transform_ids | sort) == ["qms-decimal-normalization/0.1", "qms-unit-code-crosswalk/0.1"] and
+            (.declared_transform_ids | sort) == ["qms-decimal-normalization/0.1", "qms-unit-code-crosswalk/0.1"] and
             ([.artifacts[].sha256 | test("^[0-9a-f]{64}$")] | all) and
             ([.artifacts[].byte_length | numbers] | length) == 6 and
             (.limitations | length) >= 5 and
