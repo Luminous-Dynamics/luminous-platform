@@ -1495,6 +1495,10 @@ mod tests {
                     "../../omsi-provenance-verifier/schema/binding-verification-report.schema.json"
                 ),
             ),
+            (
+                "interoperability-target-matrix",
+                include_str!("../schema/interoperability-target-matrix.schema.json"),
+            ),
         ];
 
         for (label, schema_source) in schemas {
@@ -1663,6 +1667,31 @@ mod tests {
             .expect("projection report is an object")
             .remove("skipped_optional_count");
         assert!(!projection_validator.is_valid(&projection));
+    }
+
+    #[test]
+    fn interoperability_target_matrix_matches_schema_and_blocks_false_conformance() {
+        let matrix: Value = serde_json::from_str(include_str!(
+            "../../../docs/standards/omsi/interoperability-targets-0.1.json"
+        ))
+        .expect("interoperability target matrix parses");
+        let schema: Value = serde_json::from_str(include_str!(
+            "../schema/interoperability-target-matrix.schema.json"
+        ))
+        .expect("interoperability target schema parses");
+
+        assert!(draft202012::meta::is_valid(&schema));
+        let validator = draft202012::new(&schema)
+            .expect("interoperability target schema compiles");
+        assert_eq!(matrix["targets"].as_array().unwrap().len(), 10);
+        assert!(validator.is_valid(&matrix), "matrix failed schema: {matrix:#}");
+
+        let mut false_conformance = matrix.clone();
+        false_conformance["targets"][0]["conformance_status"] = json!("conformant");
+        assert!(
+            !validator.is_valid(&false_conformance),
+            "a not_implemented target must not declare conformance"
+        );
     }
 
     #[test]
