@@ -28,6 +28,12 @@ The command uses the exact vector-document bytes for a corpus SHA-256 and serial
 
 It emits a versioned JSON report with case IDs, corpus digest scope, OS/architecture, iteration and warm-up counts, sample count, min/p50/p95/p99/max/mean latency, latency-derived inverse-mean rates, separately measured phase wall-clock operations/sec and serialized-input MiB/sec, OS/architecture/build profile, optional host/CPU labels and a compiler version when `RUSTC_VERSION` is captured. The report explicitly states `performance_observation_only` and `measured_no_acceptance_claim`.
 
+### New adapter field-accounting audit
+
+The Rust CLI also has `audit-adapter-map <adapter-map.json> <source-record.json>`. It enumerates observed source-record leaf paths and requires each to have exactly one explicit `preserve`, `transform`, `drop`, or `unmapped` disposition. Duplicate declarations and uncovered observed paths fail accounting. Transformations require a named rule and target path; intentional drops and unresolved mappings carry a reason and remain separately counted. The report binds the exact map and source-record bytes by SHA-256 and grants no semantic or release authority.
+
+Two differently shaped synthetic examples are checked by CI: [flat MES-like mapping](./adapters/0.1/examples/mes-flat-map.json) and [nested QMS-like mapping](./adapters/0.1/examples/qms-nested-map.json). This is field-accounting evidence only: it does not execute transformations, prove cross-system semantic equivalence, or cover optional fields absent from the supplied fixture.
+
 ### Reproducibility contract
 
 - The corpus digest is SHA-256 over the **exact bytes of the vector document**; it does not claim canonical JSON semantics.
@@ -55,7 +61,7 @@ It emits a versioned JSON report with case IDs, corpus digest scope, OS/architec
 | Replay verification latency | p95 ≤ 20 ms for one input ≤ 64 KiB | Provisional | Includes fresh evaluation, parsing and digest |
 | Semantic throughput | ≥ 500 observations/s over ≥ 1,000 representative cases | Provisional | Compare only matching workloads and environments |
 | Memory | Peak RSS ≤ 64 MiB for one bounded input/replay process | Provisional | Must be measured externally, not inferred from timing |
-| Adapter fidelity | Zero silent field loss across at least two differently shaped synthetic source adapters | Hard | Fields must be preserved, explicitly transformed or recorded as lost/unmapped |
+| Adapter fidelity | 100% of observed leaf paths accounted exactly once across at least two differently shaped adapters; zero silent loss | Hard | Missing/duplicate field classifications fail; explicit drops and unmapped fields remain visible and do not count as preserved |
 | Independent verifier | 100% agreement with the public vector/mutation catalogue | Release | A single implementation must not define and attest its own correctness |
 | Public receipt privacy | Zero prohibited raw telemetry, confidential parameters, operator PII or unauthorized tenant identifiers | Hard | Public DHT records require a conservative disclosure boundary |
 | Multi-agent behavior | At least two Holochain agents exercise receipt publication, resolution, disputes and revocation observations | Release | Unit tests do not qualify DHT/bridge semantics |
