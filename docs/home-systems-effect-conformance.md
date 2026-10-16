@@ -15,7 +15,7 @@ The shared corpus lives at [`tests/home-effect-conformance/v1/traces.json`](../t
 3. **Negative controls reach the intended boundary.** A trace must exercise the intended authority/admission/journal rule, not fail on unrelated malformed input.
 4. **Time is part of the input.** Check expiry and freshness at the retry boundary, not only when a plan was created.
 5. **Ambiguity is a reconciliation problem.** `Dispatching`, `ProviderAccepted` and `OutcomeUnknown` do not permit blind redispatch. A transport/API acknowledgement is not physical truth.
-6. **Request identity is semantic.** One idempotency key binds one canonical request fingerprint; retries cannot silently change target, operation, risk class or arguments.
+6. **Request identity is semantic.** One idempotency key binds one canonical request fingerprint; retries cannot silently change target, operation, risk class or arguments. The gate also rejects an empty or whitespace-only fingerprint when called without schema validation; it still does not recompute or authenticate the digest.
 7. **Conformance has a claim ceiling.** The vectors do not authenticate authority, verify the fingerprint, acquire a lease, prove crash durability, enforce OS permissions or control devices.
 
 ## Required Mycelix Hearth adapter
