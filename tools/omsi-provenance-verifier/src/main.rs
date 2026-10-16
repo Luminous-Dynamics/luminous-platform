@@ -450,7 +450,27 @@ fn independently_audit_schema_coverage(
             Some("optional") => "optional",
             Some(_) => return false,
         };
-        if !fields.contains_key(path) {
+        if !fields.contains_key(path) || !is_json_pointer(path) {
+            return false;
+        }
+        let disposition = match mapping.get("disposition").and_then(Value::as_str) {
+            Some("preserve") => {
+                mapping.get("target_path").and_then(Value::as_str)
+                    .is_some_and(is_json_pointer)
+            }
+            Some("transform") => {
+                mapping.get("target_path").and_then(Value::as_str)
+                    .is_some_and(is_json_pointer)
+                    && mapping.get("transform_id").and_then(Value::as_str)
+                        .is_some_and(|value| !value.trim().is_empty())
+            }
+            Some("drop" | "unmapped") => {
+                mapping.get("reason").and_then(Value::as_str)
+                    .is_some_and(|value| !value.trim().is_empty())
+            }
+            _ => false,
+        };
+        if !disposition {
             return false;
         }
         declarations.entry(path.to_owned()).or_default().push(presence.to_owned());
@@ -502,6 +522,25 @@ fn independently_audit_schema_coverage(
         && coverage.get("observed_silent_loss_count").and_then(Value::as_u64) == Some(0)
         && unobserved_fields_match
         && clean_lists
+}
+
+fn is_json_pointer(pointer: &str) -> bool {
+    if pointer.is_empty() || !pointer.starts_with('/') {
+        return false;
+    }
+    let bytes = pointer.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() {
+        if bytes[index] == b'~' {
+            if index + 1 >= bytes.len() || !matches!(bytes[index + 1], b'0' | b'1') {
+                return false;
+            }
+            index += 2;
+        } else {
+            index += 1;
+        }
+    }
+    true
 }
 
 fn derive_schema_fields(
@@ -895,6 +934,31 @@ mod tests {
         assert!(result["checks"].as_array().unwrap().iter().any(|check| {
             check["id"] == "independent-source-schema-coverage" && check["result"] == "fail"
         }), "independent recomputation must detect the forged field count");
+    }
+
+    #[test]
+    fn invalid_mapping_disposition_fails_independent_schema_coverage() {
+        let (manifest, artifacts) = fixture_bundle();
+        let _ = manifest;
+        let source_record: Value = serde_json::from_slice(&artifacts[0]).unwrap();
+        let source_schema: Value = serde_json::from_slice(&artifacts[1]).unwrap();
+        let mut adapter_map: Value = serde_json::from_slice(&artifacts[2]).unwrap();
+        let coverage: Value = serde_json::from_slice(&artifacts[3]).unwrap();
+        adapter_map["mappings"][0]["disposition"] = json!("preserve-or-guess");
+        assert!(!super::independently_audit_schema_coverage(
+            &source_schema,
+            &source_record,
+            &adapter_map,
+            &coverage,
+        ));
+        adapter_map["mappings"][0]["disposition"] = json!("transform");
+        adapter_map["mappings"][0]["target_path"] = json!("/invalid~2pointer");
+        assert!(!super::independently_audit_schema_coverage(
+            &source_schema,
+            &source_record,
+            &adapter_map,
+            &coverage,
+        ));
     }
 
     #[test]
