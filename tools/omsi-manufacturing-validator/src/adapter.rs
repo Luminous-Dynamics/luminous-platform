@@ -374,7 +374,7 @@ fn insert_optional(object: &mut Map<String, Value>, key: &str, value: Option<&st
 }
 
 fn valid_pointer(pointer: &str) -> bool {
-    if !pointer.starts_with('/') || pointer.contains("//") {
+    if !pointer.starts_with('/') {
         return false;
     }
     let bytes = pointer.as_bytes();
@@ -552,6 +552,37 @@ mod tests {
         );
         assert_eq!(report["status"], "complete_accounting");
         assert_eq!(report["fields"][0]["source_path"], "/a~1b/~0key");
+    }
+
+    #[test]
+    fn empty_json_object_keys_are_preserved_by_pointer_escaping() {
+        let report = audit(
+            contract(vec![json!({
+                "source_path":"//",
+                "disposition":"preserve",
+                "target_path":"/neutral/empty-key"
+            })]),
+            json!({"":{"":"value"}}),
+        );
+        assert_eq!(report["status"], "complete_accounting");
+        assert_eq!(report["fields"][0]["source_path"], "//");
+    }
+
+    #[test]
+    fn malformed_optional_properties_are_rejected_not_treated_as_absent() {
+        let invalid = audit(
+            contract(vec![json!({
+                "source_path":"/temperature",
+                "disposition":"drop",
+                "reason":"intentionally omitted",
+                "target_path":17
+            })]),
+            json!({"temperature":"72.4"}),
+        );
+        assert_eq!(invalid["status"], "invalid_contract");
+        assert!(invalid["errors"].as_array().unwrap().iter().any(|entry| {
+            entry["reason"] == "expected_nonempty_string"
+        }));
     }
 
     #[test]
