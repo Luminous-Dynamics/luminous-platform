@@ -40,6 +40,14 @@ pub fn audit_adapter_map(
         &["description"],
         &mut errors,
     );
+    if root.contains_key("description")
+        && !root.get("description").is_some_and(Value::is_string)
+    {
+        errors.push(json!({
+            "field":"description",
+            "reason":"expected_string"
+        }));
+    }
     if root.get("adapter_contract").and_then(Value::as_str) != Some(ADAPTER_MAP_CONTRACT) {
         errors.push(json!({
             "field":"adapter_contract",
@@ -205,17 +213,21 @@ pub fn audit_adapter_map(
 
     let mut source_paths = Vec::new();
     for (key, value) in source_object {
-        collect_leaf_paths(value, &format!("/{}", pointer_escape(key)), &mut source_paths);
+        if !collect_leaf_paths(
+            value,
+            &format!("/{}", pointer_escape(key)),
+            &mut source_paths,
+            MAX_ADAPTER_FIELDS,
+        ) {
+            errors.push(json!({
+                "field":"source_record",
+                "reason":"source_field_count_exceeds_limit",
+                "maximum":MAX_ADAPTER_FIELDS
+            }));
+            return invalid_report(contract_bytes, source_record_bytes, errors);
+        }
     }
     source_paths.sort();
-    if source_paths.len() > MAX_ADAPTER_FIELDS {
-        errors.push(json!({
-            "field":"source_record",
-            "reason":"source_field_count_exceeds_limit",
-            "maximum":MAX_ADAPTER_FIELDS
-        }));
-        return invalid_report(contract_bytes, source_record_bytes, errors);
-    }
 
     if !errors.is_empty() {
         let mut report = invalid_report(contract_bytes, source_record_bytes, errors);
@@ -679,14 +691,33 @@ fn pointer_escape(key: &str) -> String {
 
 /// Objects recurse to leaves; arrays are atomic fields because adapting an
 /// array's item shape is a separate explicit transformation.
-fn collect_leaf_paths(value: &Value, path: &str, output: &mut Vec<String>) {
+fn collect_leaf_paths(
+    value: &Value,
+    path: &str,
+    output: &mut Vec<String>,
+    maximum_fields: usize,
+) -> bool {
     match value {
         Value::Object(object) if !object.is_empty() => {
             for (key, child) in object {
-                collect_leaf_paths(child, &format!("{path}/{}", pointer_escape(key)), output);
+                if !collect_leaf_paths(
+                    child,
+                    &format!("{path}/{}", pointer_escape(key)),
+                    output,
+                    maximum_fields,
+                ) {
+                    return false;
+                }
             }
+            true
         }
-        _ => output.push(path.to_owned()),
+        _ => {
+            if output.len() >= maximum_fields {
+                return false;
+            }
+            output.push(path.to_owned());
+            true
+        }
     }
 }
 
@@ -839,6 +870,14 @@ mod tests {
         );
         assert_eq!(report["status"], "complete_accounting");
         assert_eq!(report["fields"][0]["source_path"], "/a~1b/~0key");
+    }
+
+    #[test]
+    fn leaf_collection_stops_at_the_configured_field_limit() {
+        let source = json!({"a":1,"b":2,"c":3});
+        let mut paths = Vec::new();
+        assert!(!super::collect_leaf_paths(&source, "", &mut paths, 2));
+        assert_eq!(paths.len(), 2);
     }
 
     #[test]
