@@ -9,7 +9,8 @@
     "authority",
     "binding",
     "silent_loss_count",
-    "limitations"
+    "limitations",
+    "mapping_paths_not_observed_in_record"
   ],
   "properties": {
     "audit_contract": {
@@ -208,7 +209,8 @@
           "unclassified_field_count",
           "unclassified_paths",
           "mapping_paths_not_observed_in_record",
-          "fields"
+          "fields",
+          "required_mapping_paths_not_observed_in_record"
         ]
       }
     },
