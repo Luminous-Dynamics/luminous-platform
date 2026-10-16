@@ -51,7 +51,7 @@
         "value": 0,
         "unit": "mutants"
       },
-      "workload": "At least the critical mutants enumerated in this plan: ignore revocation, accept stale adapter admission, skip lease/journal/postcondition guard, bypass role binding, allow changed request fingerprints, and redispatch ambiguous outcomes.",
+      "workload": "At least the critical mutants enumerated in this plan: ignore revocation, accept stale adapter admission, skip lease/journal/postcondition guard, bypass role binding, allow changed request fingerprints, allow empty/whitespace request fingerprints, and redispatch ambiguous outcomes.",
       "method": "Introduce one narrowly scoped fault in the relevant enforcement predicate at a time; verify a named test kills each mutant. A mutant that cannot be exercised is not counted as killed.",
       "sample_plan": "Every release candidate and any change to effect authorization/retry/reconciliation code.",
       "release_gate": true,
