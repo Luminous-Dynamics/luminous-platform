@@ -8,8 +8,8 @@ on:
       - 'docs/schemas/firmware-assurance-corpus-v1.schema.json'
       - 'docs/fixtures/secure-boot-lifecycle-corpus-v1.json'
       - 'docs/schemas/secure-boot-lifecycle-corpus-v1.schema.json'
-      - 'docs/fixtures/secure-boot-lifecycle-corpus-v1.json'
-      - 'docs/schemas/secure-boot-lifecycle-corpus-v1.schema.json'
+      - 'docs/fixtures/firmware-evidence-trust-corpus-v1.json'
+      - 'docs/schemas/firmware-evidence-trust-corpus-v1.schema.json'
       - 'tools/firmware-assurance-corpus-checker/**'
       - '.github/workflows/firmware-assurance-corpus-checker.yml'
   push:
@@ -21,6 +21,8 @@ on:
       - 'docs/schemas/firmware-assurance-corpus-v1.schema.json'
       - 'docs/fixtures/secure-boot-lifecycle-corpus-v1.json'
       - 'docs/schemas/secure-boot-lifecycle-corpus-v1.schema.json'
+      - 'docs/fixtures/firmware-evidence-trust-corpus-v1.json'
+      - 'docs/schemas/firmware-evidence-trust-corpus-v1.schema.json'
       - 'tools/firmware-assurance-corpus-checker/**'
       - '.github/workflows/firmware-assurance-corpus-checker.yml'
 
@@ -142,6 +144,29 @@ jobs:
             .invariant_violations == 0 and
             .physical_device_operations == 0 and
             .firmware_mutations == 0 and
+            (.corpus_sha256 | test("^[0-9a-f]{64}$"))
+          ' "$report" > /dev/null
+
+      - name: Run independent evidence-trust oracle
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/firmware-evidence-trust-oracle.json"
+          python3 tools/firmware-assurance-corpus-checker/tests/evidence_trust_oracle.py \
+            docs/fixtures/firmware-evidence-trust-corpus-v1.json > "$report"
+          jq -e '
+            .report_version == "firmware-evidence-trust-oracle/1.0.0" and
+            .status == "passed" and
+            .case_count == 32 and
+            .baseline_decision_counts.accepted == 1 and
+            .baseline_decision_counts.rejected == 20 and
+            .baseline_decision_counts.indeterminate == 11 and
+            .mutation_trials == 10000 and
+            .distinct_assignments > 9000 and
+            .invariant_violations == 0 and
+            .physical_device_operations == 0 and
+            .firmware_mutations == 0 and
+            .cryptographic_verification_performed == false and
             (.corpus_sha256 | test("^[0-9a-f]{64}$"))
           ' "$report" > /dev/null
 
