@@ -445,7 +445,7 @@
       "mutation": "simulate_pre_dispatch_timeout",
       "expected_claims": {
         "effect_outcome_known": "verified",
-        "authorization": "verified"
+        "authorization": "refuted"
       },
       "expected_disposition": "blocked",
       "required_assertions": [
