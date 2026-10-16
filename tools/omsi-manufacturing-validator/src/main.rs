@@ -124,8 +124,8 @@ fn run() -> Result<u8, String> {
             }
         }
         Some("apply-adapter-map") if args.len() == 4 => {
-            let contract_bytes = read_bytes(&args[2])?;
-            let source_bytes = read_bytes(&args[3])?;
+            let contract_bytes = read_bytes_bounded(&args[2], MAX_ADAPTER_INPUT_BYTES)?;
+            let source_bytes = read_bytes_bounded(&args[3], MAX_ADAPTER_INPUT_BYTES)?;
             let contract: Value = serde_json::from_slice(&contract_bytes)
                 .map_err(|error| format!("invalid JSON in {}: {error}", args[2]))?;
             let source_record: Value = serde_json::from_slice(&source_bytes)
