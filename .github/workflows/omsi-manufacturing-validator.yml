@@ -117,15 +117,44 @@ jobs:
               .source_field_count == .accounted_field_count
             ' "$report_file" > /dev/null
           done
-          jq -e '.dropped_count == 1 and .preserved_count == 4 and .transformed_count == 1' \
+          jq -e '.dropped_count == 1 and .preserved_count == 5 and .transformed_count == 0' \
             "$RUNNER_TEMP/omsi-adapter-mes-flat-audit.json" > /dev/null
-          jq -e '.source_field_count == 8 and .transformed_count == 3 and .explicitly_unmapped_count == 0' \
+          jq -e '.source_field_count == 8 and .transformed_count == 2 and .preserved_count == 6 and .explicitly_unmapped_count == 0' \
             "$RUNNER_TEMP/omsi-adapter-qms-nested-audit.json" > /dev/null
+
+      - name: Smoke-test executable adapter projections
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="docs/standards/omsi/adapters/0.1/examples"
+          for adapter in mes-flat qms-nested; do
+            report_file="$RUNNER_TEMP/omsi-adapter-$adapter-projection.json"
+            cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+              apply-adapter-map "$base/$adapter-map.json" "$base/$adapter-record.json" > "$report_file"
+            jq -e '
+              .projection_contract == "omsi-manufacturing-adapter-projection/0.1" and
+              .status == "projection_created" and
+              .authority == "adapter_projection_only" and
+              .projection != null and
+              .audit.silent_loss_count == 0
+            ' "$report_file" > /dev/null
+          done
+          jq -e '
+            .projection.measurement.value_decimal == "0.0072" and
+            .projection.measurement.unit_code == "mm" and
+            .projection.source_quality_claim.raw_status == "REVIEW"
+          ' "$RUNNER_TEMP/omsi-adapter-qms-nested-projection.json" > /dev/null
+          jq -e '
+            .explicitly_dropped_count == 1 and
+            .projection.source_quality_claim.raw_status == "Accepted" and
+            (.projection | has("operator_note") | not)
+          ' "$RUNNER_TEMP/omsi-adapter-mes-flat-projection.json" > /dev/null
 
       - name: Parse adapter contract schemas and fixtures
         run: |
           jq empty tools/omsi-manufacturing-validator/schema/adapter-map.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/adapter-audit-report.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/adapter-projection-report.schema.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json
           jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json
