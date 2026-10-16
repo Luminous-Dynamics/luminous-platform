@@ -162,6 +162,23 @@ Passing an earlier stage never implies passing a later one.
 
 A queued hosted workflow is neither success nor failure evidence. Local deterministic work can proceed while CI is queued, but no test should be described as passed unless it actually executed against the exact reported source.
 
+## 11. Stage 0 corpus checker increment
+
+A Rust-first corpus checker now lives under `tools/firmware-assurance-corpus-checker/` on the associated research branch. It is deliberately narrower than the Stage 1 firmware verifier.
+
+The checker:
+- accepts explicit corpus and schema paths and bounds each input at 4 MiB;
+- uses a pinned JSON Schema validator dependency and then enforces cross-field contract rules;
+- enforces sequential case IDs, exact case counts/profile binding, case-kind/disposition consistency, positive/negative/indeterminate claim semantics, and mandatory read-only assertions;
+- emits a deterministic report containing the exact input byte lengths and SHA-256 digests, schema/contract results, case distribution, and an explicit claim ceiling;
+- reports zero executed cases and zero physical device operations by construction.
+
+The repository workflow is defined in `.github/workflows/firmware-assurance-corpus-checker.yml`; it runs formatting, unit tests, a positive corpus check, a deliberate case-count mutation, and Clippy. A workflow definition is not itself evidence that any step ran.
+
+The authoring environment for this increment has no `rustc`, `cargo`, or `rustfmt`. Therefore the Rust crate and authored tests have **not** been compiled, formatted or executed locally, and hosted status for the latest branch head must be checked before interpreting any CI result. A connector-backed structural audit of the checked-in JSON fixture/schema found 44 sequential unique IDs, matching claim and case-property inventories, consistent case-kind/disposition mapping, all required read-only assertions, and no structural invariant errors. That audit is not execution of the Rust validator and is not JSON Schema meta-validation.
+
+Remaining Stage 0 gates: run the Rust tests and formatter on the exact reported head; run schema meta-validation with the pinned validator; commit a reproducible dependency lock once Cargo resolution can execute; and preserve exact-head test output. Passing Stage 0 still means only that the corpus contract is internally acceptable—not that the cases execute or firmware is verified.
+
 ## 9. Standards to reuse
 
 - [NIST SP 800-193 — Platform Firmware Resiliency Guidelines](https://csrc.nist.gov/pubs/sp/800/193/final): protect firmware from unauthorized change, detect compromise, and recover.
