@@ -163,8 +163,8 @@
       "metric": "independent_verifier_vector_agreement",
       "target": 1,
       "unit": "fraction",
-      "acceptance": "A separately implemented verifier reproduces all public vector outcomes and independently detects every envelope mutation in the shared fixture pack.",
-      "failure_policy": "No trust or release policy may rely on a single producer/verifier implementation."
+      "acceptance": "The separate OMSI provenance-verifier crate independently checks exact-byte digests, artifact roles/order, the fixed provenance graph, source-schema leaf inventory, required/optional mapping agreement, and absent optional field lists. Before trust-bearing integration, a separate semantic evaluator must additionally reproduce all public semantic-vector outcomes and detect every replay-envelope mutation.",
+      "failure_policy": "Do not treat artifact binding as semantic equivalence. No trust or release policy may rely on a single producer/verifier implementation; source-authentication and signer lifecycle remain separate requirements."
     },
     {
       "id": "G3-privacy",
@@ -205,7 +205,10 @@
     "source_schema_coverage_fixture_field_counts": [
       4,
       8
-    ]
+    ],
+    "independent_artifact_binding_verifier_authored": true,
+    "independent_artifact_binding_verifier_exact_head_ci_verified": false,
+    "independent_source_schema_inventory_check_authored": true
   },
   "scorecard_schema_reference": "benchmark-scorecard-0.1.md"
 }
