@@ -52,6 +52,12 @@ The command compares every schema-declared scalar or array leaf path against the
 
 The versioned report [schema](../../../../../tools/omsi-manufacturing-validator/schema/adapter-schema-coverage-report.schema.json) binds the exact adapter-map, source-schema and sample-record bytes by SHA-256. The coverage rate is a hard gate only for the field-inventory subset that the command explicitly supports, not proof of semantic equivalence. Before qualifying a real vendor adapter, derive the inventory from the full source schema and add representative records that exercise optional, repeated, null, nested and vendor-extension cases.
 
+## Real-standards interoperability backlog
+
+The [OMSI interoperability target matrix 0.1](../../interoperability-targets-0.1.md) is the next qualification layer after this synthetic JSON path. Its [machine-readable target contract](../../interoperability-targets-0.1.json) defines four deliberately unimplemented targets: ISO 8000-110 characteristic-data exchange, ISO 8000-66 manufacturing data-quality indicators, ISO 23952 QIF quality information, and an MTConnect/OPC UA device-information path.
+
+The matrix separates source-standard semantics from OMSI's current limited field-inventory engine. QIF requires a pinned XML/XSD path and authoritative schema assets; MTConnect/OPC UA requires a version-pinned device/server/client test, not only fixture parsing. Every target stays labeled `not_implemented` and `not_assessed` until its normative assets, positive/negative fixtures, independent validator and evidence chain are pinned and checked. Synthetic maps and a successful JSON schema audit are not a standards-conformance claim.
+
 ## Executing projections
 
 `apply-adapter-map` uses the same field-accounting contract and then applies a small, explicit transform registry:
