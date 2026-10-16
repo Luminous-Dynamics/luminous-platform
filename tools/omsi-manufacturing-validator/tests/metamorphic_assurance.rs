@@ -202,3 +202,98 @@ fn unknown_root_fields_fail_closed_instead_of_being_silently_ignored() {
     assert_eq!(report["quality_release_authority"], "none");
     assert_eq!(report["equipment_control_authority"], "none");
 }
+
+#[test]
+fn deterministic_generated_assurance_sweep_covers_100000_cases() {
+    const GENERATED_CASES: usize = 100_000;
+    const CASES_PER_PROPERTY: usize = GENERATED_CASES / 5;
+
+    let base = input_for("MFG-OBS-001");
+    let expected_base_report = report_for(&base);
+    let scoped_references = [
+        "/asset_ref",
+        "/work_order_ref",
+        "/measurement/instrument_ref",
+        "/measurement/calibration_ref",
+        "/specification/spec_ref",
+    ];
+
+    for index in 0..GENERATED_CASES {
+        let generation = index / 5;
+        let candidate = match index % 5 {
+            0 => {
+                // 20,000 exact millidegree values span 68.000 through 87.999,
+                // including the acceptance edges and their adjacent values.
+                let ticks = 68_000_i64 + generation as i64;
+                let mut value_case = base.clone();
+                value_case["measurement"]["value_decimal"] =
+                    json!(format!("{}.{:03}", ticks / 1_000, ticks % 1_000));
+                let report = report_for(&value_case);
+                let expected = if (70_000_i64..=75_000_i64).contains(&(ticks)) {
+                    "inside_declared_bounds_point_estimate_only"
+                } else {
+                    "outside_declared_bounds_point_estimate_only"
+                };
+                assert_eq!(
+                    report["measurement_evaluation"], expected,
+                    "generated numeric case {index}, value ticks={ticks}"
+                );
+                assert_eq!(report["quality_release_authority"], "none");
+                continue;
+            }
+            1 => {
+                // Equivalent decimal spellings cannot change semantic results.
+                let mut value_case = base.clone();
+                let extra_zeroes = 1 + generation % 6;
+                value_case["measurement"]["value_decimal"] =
+                    json!(format!("72.4{}", "0".repeat(extra_zeroes)));
+                value_case
+            }
+            2 => {
+                // UTC+02 and Z spellings designate the same instants.
+                let mut time_case = base.clone();
+                let seconds = generation % 60;
+                time_case["observed_time"] =
+                    json!(format!("2026-10-15T10:00:{seconds:02}+02:00"));
+                time_case["source_modified_time"] =
+                    json!(format!("2026-10-15T10:02:{seconds:02}+02:00"));
+                time_case
+            }
+            3 => {
+                // Unknown units remain non-evaluable regardless of numeric value.
+                let mut unit_case = base.clone();
+                unit_case["measurement"]["unit_code"] = Value::Null;
+                let ticks = 68_000_i64 + (generation % 20_000) as i64;
+                unit_case["measurement"]["value_decimal"] =
+                    json!(format!("{}.{:03}", ticks / 1_000, ticks % 1_000));
+                let report = report_for(&unit_case);
+                assert_eq!(report["measurement_evaluation"], "not_evaluable");
+                assert_eq!(report["outcome"], "preserve_with_conflict");
+                assert_eq!(report["quality_release_authority"], "none");
+                continue;
+            }
+            _ => {
+                // Every scoped reference must fail closed under a tenant change.
+                let mut scope_case = base.clone();
+                let pointer = scoped_references[generation % scoped_references.len()];
+                scope_case
+                    .pointer_mut(pointer)
+                    .unwrap_or_else(|| panic!("missing scoped reference at {pointer}"))["tenant_ref"] =
+                    json!(format!("tenant:generated-negative-{generation}"));
+                let report = report_for(&scope_case);
+                assert_eq!(report["outcome"], "reject", "generated scope case {index}: {report}");
+                assert_eq!(report["quality_release_authority"], "none");
+                assert_eq!(report["equipment_control_authority"], "none");
+                continue;
+            }
+        };
+
+        assert_eq!(
+            expected_base_report,
+            report_for(&candidate),
+            "metamorphic report changed for generated case {index}"
+        );
+    }
+
+    assert_eq!(CASES_PER_PROPERTY * 5, GENERATED_CASES);
+}
