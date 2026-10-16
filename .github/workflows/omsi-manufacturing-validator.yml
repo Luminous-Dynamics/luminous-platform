@@ -207,23 +207,39 @@ jobs:
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json
           jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-record.schema.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-record.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-record.schema.json
 
-      - name: Smoke-test verified provenance chain
+      - name: Smoke-test schema-bound provenance chain
         if: steps.source.outputs.present == 'true'
         shell: bash
         run: |
           set -euo pipefail
           base="docs/standards/omsi/adapters/0.1/examples"
           source_record="$base/qms-nested-record.json"
+          source_schema="$base/qms-nested-record.schema.json"
           adapter_map="$base/qms-nested-map.json"
+          schema_coverage="$RUNNER_TEMP/omsi-qms-schema-coverage.json"
           projection="$RUNNER_TEMP/omsi-projection.json"
           semantic_input="$RUNNER_TEMP/omsi-semantic-input.json"
           replay_envelope="$RUNNER_TEMP/omsi-replay-envelope.json"
           semantic_report="$RUNNER_TEMP/omsi-semantic-report.json"
           manifest="$RUNNER_TEMP/omsi-provenance-manifest.json"
+
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$adapter_map" "$source_schema" "$source_record" > "$schema_coverage"
+          jq -e '
+            .coverage_contract == "omsi-manufacturing-adapter-schema-coverage/0.1" and
+            .status == "schema_coverage_complete" and
+            .schema_field_count == 8 and
+            .covered_schema_field_count == 8 and
+            (.schema_paths_not_mapped | length) == 0 and
+            (.mapping_paths_outside_schema | length) == 0 and
+            (.presence_mismatches | length) == 0 and
+            (.record_structure_errors | length) == 0
+          ' "$schema_coverage" > /dev/null
 
           cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
             apply-adapter-map "$adapter_map" "$source_record" > "$projection"
@@ -232,34 +248,42 @@ jobs:
             create-envelope "$semantic_input" > "$replay_envelope"
           jq '.report' "$replay_envelope" > "$semantic_report"
           cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
-            create-provenance-manifest "$source_record" "$adapter_map" "$projection" \
-            "$semantic_input" "$semantic_report" "$replay_envelope" > "$manifest"
+            create-provenance-manifest "$source_record" "$source_schema" "$adapter_map" \
+            "$schema_coverage" "$projection" "$semantic_input" "$semantic_report" \
+            "$replay_envelope" > "$manifest"
           jq -e '
-            .manifest_contract == "omsi-manufacturing-provenance-manifest/0.1" and
-            .provenance_model == "w3c-prov-dm-aligned-subset/0.1" and
+            .manifest_contract == "omsi-manufacturing-provenance-manifest/0.2" and
+            .provenance_model == "w3c-prov-dm-aligned-subset/0.2" and
             .status == "local_chain_consistent" and
             .authority == "local_consistency_only" and
             .digest_profile.algorithm == "sha256" and
             .digest_profile.scope == "exact_input_bytes" and
             .digest_profile.canonicalization == "none" and
-            (.artifacts | length) == 6 and
-            (.activities | length) == 4 and
-            (.edges | length) == 9 and
-            ([.edges[].relationship] | map(select(. == "used")) | length) == 5 and
-            ([.edges[].relationship] | map(select(. == "wasGeneratedBy")) | length) == 4 and
+            .schema_coverage.contract == "omsi-manufacturing-adapter-schema-coverage/0.1" and
+            .schema_coverage.status == "schema_coverage_complete" and
+            .schema_coverage.schema_field_count == 8 and
+            .schema_coverage.covered_schema_field_count == 8 and
+            (.schema_coverage.source_schema_sha256 | test("^[0-9a-f]{64}$")) and
+            (.schema_coverage.coverage_report_sha256 | test("^[0-9a-f]{64}$")) and
+            (.artifacts | length) == 8 and
+            (.activities | length) == 5 and
+            (.edges | length) == 14 and
+            ([.edges[].relationship] | map(select(. == "used")) | length) == 9 and
+            ([.edges[].relationship] | map(select(. == "wasGeneratedBy")) | length) == 5 and
             (.declared_transform_ids | sort) == ["qms-decimal-normalization/0.1", "qms-unit-code-crosswalk/0.1"] and
             ([.artifacts[].sha256 | test("^[0-9a-f]{64}$")] | all) and
-            ([.artifacts[].byte_length | numbers] | length) == 6 and
-            (.limitations | length) >= 5 and
+            ([.artifacts[].byte_length | numbers] | length) == 8 and
+            (.limitations | length) >= 7 and
             (has("signature") | not)
           ' "$manifest" > /dev/null
 
           verification="$RUNNER_TEMP/omsi-provenance-verification.json"
           cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
-            verify-provenance-manifest "$manifest" "$source_record" "$adapter_map" "$projection" \
-            "$semantic_input" "$semantic_report" "$replay_envelope" > "$verification"
+            verify-provenance-manifest "$manifest" "$source_record" "$source_schema" \
+            "$adapter_map" "$schema_coverage" "$projection" "$semantic_input" \
+            "$semantic_report" "$replay_envelope" > "$verification"
           jq -e '
-            .verifier_contract == "omsi-manufacturing-provenance-verifier/0.1" and
+            .verifier_contract == "omsi-manufacturing-provenance-verifier/0.2" and
             .status == "manifest_verified" and
             .authority == "local_consistency_only" and
             (.manifest_sha256 | test("^[0-9a-f]{64}$")) and
