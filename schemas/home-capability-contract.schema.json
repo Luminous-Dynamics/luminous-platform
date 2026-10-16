@@ -1,0 +1,779 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/home-capability-contract.schema.json",
+  "title": "Home Workload Capability Contract",
+  "description": "A workload-authored declaration/request. It is not an owner authorization, effective policy, or proof that declared controls are enforced.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract_id",
+    "contract_version",
+    "readiness",
+    "subject",
+    "purpose",
+    "owner_control",
+    "permissions",
+    "data",
+    "network",
+    "resources",
+    "failure",
+    "authority",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "contract_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 160,
+      "pattern": "^[a-z][a-z0-9.-]*$"
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$"
+    },
+    "readiness": {
+      "enum": [
+        "design_only",
+        "implemented_unqualified",
+        "qualified"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "version",
+        "sha256"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "service",
+            "plugin",
+            "model",
+            "compute_job",
+            "device_adapter",
+            "system_component"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "sha256": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          ]
+        }
+      }
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "owner_control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "activation_mode",
+        "owner_can_revoke",
+        "revocation_effect",
+        "removal_procedure"
+      ],
+      "properties": {
+        "activation_mode": {
+          "enum": [
+            "explicit_owner_enablement",
+            "essential_system_component",
+            "owner_opt_in_per_job"
+          ]
+        },
+        "owner_can_revoke": {
+          "type": "boolean"
+        },
+        "revocation_effect": {
+          "enum": [
+            "stop_and_revoke_credentials",
+            "disable_future_jobs",
+            "remove_from_deployment",
+            "not_applicable"
+          ]
+        },
+        "removal_procedure": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "host_admin_access",
+        "filesystem_read_paths",
+        "filesystem_write_paths",
+        "host_sockets",
+        "secret_access",
+        "device_access",
+        "physical_effects"
+      ],
+      "properties": {
+        "host_admin_access": {
+          "type": "boolean"
+        },
+        "filesystem_read_paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "filesystem_write_paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "host_sockets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "secret_access": {
+          "enum": [
+            "none",
+            "named_secret_references",
+            "broad_secret_store"
+          ]
+        },
+        "device_access": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "physical_effects": {
+          "enum": [
+            "none",
+            "request_only",
+            "bounded_dispatch"
+          ]
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_classes",
+        "output_classes",
+        "retention",
+        "external_transfer_policy",
+        "deletion_behavior"
+      ],
+      "properties": {
+        "input_classes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "public",
+              "local_configuration",
+              "operational_metadata",
+              "household_sensitive",
+              "credentials",
+              "health_sensitive",
+              "safety_sensitive",
+              "user_content",
+              "synthetic_test_data"
+            ]
+          }
+        },
+        "output_classes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "public",
+              "local_configuration",
+              "operational_metadata",
+              "household_sensitive",
+              "credentials",
+              "health_sensitive",
+              "safety_sensitive",
+              "user_content",
+              "synthetic_test_data"
+            ]
+          }
+        },
+        "retention": {
+          "enum": [
+            "ephemeral",
+            "owner_controlled",
+            "persistent_declared"
+          ]
+        },
+        "external_transfer_policy": {
+          "enum": [
+            "never",
+            "only_under_separate_owner_policy",
+            "required_for_declared_function"
+          ]
+        },
+        "deletion_behavior": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      }
+    },
+    "network": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "egress_policy",
+        "allowed_destinations",
+        "ingress_policy",
+        "requires_public_dns"
+      ],
+      "properties": {
+        "egress_policy": {
+          "enum": [
+            "deny",
+            "allowlist",
+            "separate_owner_policy"
+          ]
+        },
+        "allowed_destinations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          }
+        },
+        "ingress_policy": {
+          "enum": [
+            "none",
+            "owner_enabled_only"
+          ]
+        },
+        "requires_public_dns": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "egress_policy": {
+                "const": "deny"
+              }
+            },
+            "required": [
+              "egress_policy"
+            ]
+          },
+          "then": {
+            "properties": {
+              "allowed_destinations": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "egress_policy": {
+                "const": "allowlist"
+              }
+            },
+            "required": [
+              "egress_policy"
+            ]
+          },
+          "then": {
+            "properties": {
+              "allowed_destinations": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_mode",
+        "cpu_cores",
+        "memory_mib",
+        "storage_mib",
+        "network_egress_mib_per_hour",
+        "max_runtime_seconds"
+      ],
+      "properties": {
+        "execution_mode": {
+          "enum": [
+            "daemon",
+            "one_shot"
+          ]
+        },
+        "cpu_cores": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 256
+        },
+        "memory_mib": {
+          "type": "integer",
+          "minimum": 16,
+          "maximum": 1048576
+        },
+        "storage_mib": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 104857600
+        },
+        "network_egress_mib_per_hour": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 104857600
+        },
+        "max_runtime_seconds": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 31536000
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "execution_mode": {
+                "const": "daemon"
+              }
+            },
+            "required": [
+              "execution_mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "max_runtime_seconds": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "execution_mode": {
+                "const": "one_shot"
+              }
+            },
+            "required": [
+              "execution_mode"
+            ]
+          },
+          "then": {
+            "properties": {
+              "max_runtime_seconds": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startup_failure_behavior",
+        "timeout_behavior",
+        "maximum_retries",
+        "cancellation_supported",
+        "partial_output_policy",
+        "unknown_outcome"
+      ],
+      "properties": {
+        "startup_failure_behavior": {
+          "enum": [
+            "disable_optional",
+            "continue_core_without_this",
+            "block_dependent_capability",
+            "safe_stop"
+          ]
+        },
+        "timeout_behavior": {
+          "enum": [
+            "cancel",
+            "fail_closed",
+            "safe_stop"
+          ]
+        },
+        "maximum_retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "cancellation_supported": {
+          "type": "boolean"
+        },
+        "partial_output_policy": {
+          "enum": [
+            "discard",
+            "quarantine",
+            "validate_before_use"
+          ]
+        },
+        "unknown_outcome": {
+          "const": "unknown_needs_reconciliation"
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "owner_authorization_required",
+        "independent_postcondition_observation",
+        "physical_stop_required",
+        "risk_class",
+        "reversible"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "observation_only",
+            "proposal_only",
+            "bounded_execution",
+            "physical_effect_request"
+          ]
+        },
+        "owner_authorization_required": {
+          "type": "boolean"
+        },
+        "independent_postcondition_observation": {
+          "type": "boolean"
+        },
+        "physical_stop_required": {
+          "type": "boolean"
+        },
+        "risk_class": {
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "reversible": {
+          "type": "boolean"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "current_evidence_class",
+        "minimum_evidence_class",
+        "required_test_ids",
+        "maximum_evidence_age_days",
+        "public_output_policy",
+        "claim_ceiling"
+      ],
+      "properties": {
+        "current_evidence_class": {
+          "enum": [
+            "design_only",
+            "static",
+            "unit_test",
+            "vm_or_simulated",
+            "bench_measured",
+            "field_observed",
+            "independent_review"
+          ]
+        },
+        "minimum_evidence_class": {
+          "enum": [
+            "static",
+            "unit_test",
+            "vm_or_simulated",
+            "bench_measured",
+            "field_observed",
+            "independent_review"
+          ]
+        },
+        "required_test_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._-]{2,127}$"
+          }
+        },
+        "maximum_evidence_age_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3650
+        },
+        "public_output_policy": {
+          "enum": [
+            "none",
+            "redacted_metadata_only",
+            "explicitly_approved_public_outputs"
+          ]
+        },
+        "claim_ceiling": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 3000
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "readiness": {
+            "const": "design_only"
+          }
+        },
+        "required": [
+          "readiness"
+        ]
+      },
+      "then": {
+        "properties": {
+          "subject": {
+            "properties": {
+              "sha256": {
+                "type": "null"
+              }
+            }
+          },
+          "evidence": {
+            "properties": {
+              "current_evidence_class": {
+                "const": "design_only"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "readiness": {
+            "enum": [
+              "implemented_unqualified",
+              "qualified"
+            ]
+          }
+        },
+        "required": [
+          "readiness"
+        ]
+      },
+      "then": {
+        "properties": {
+          "subject": {
+            "properties": {
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "permissions": {
+            "properties": {
+              "physical_effects": {
+                "const": "bounded_dispatch"
+              }
+            },
+            "required": [
+              "physical_effects"
+            ]
+          }
+        },
+        "required": [
+          "permissions"
+        ]
+      },
+      "then": {
+        "properties": {
+          "authority": {
+            "properties": {
+              "owner_authorization_required": {
+                "const": true
+              },
+              "independent_postcondition_observation": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "authority": {
+            "properties": {
+              "risk_class": {
+                "enum": [
+                  "high",
+                  "critical"
+                ]
+              }
+            },
+            "required": [
+              "risk_class"
+            ]
+          }
+        },
+        "required": [
+          "authority"
+        ]
+      },
+      "then": {
+        "properties": {
+          "authority": {
+            "properties": {
+              "owner_authorization_required": {
+                "const": true
+              },
+              "independent_postcondition_observation": {
+                "const": true
+              },
+              "physical_stop_required": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "permissions": {
+            "properties": {
+              "host_admin_access": {
+                "const": true
+              }
+            },
+            "required": [
+              "host_admin_access"
+            ]
+          }
+        },
+        "required": [
+          "permissions"
+        ]
+      },
+      "then": {
+        "properties": {
+          "authority": {
+            "properties": {
+              "owner_authorization_required": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "data": {
+            "properties": {
+              "output_classes": {
+                "contains": {
+                  "const": "credentials"
+                }
+              }
+            },
+            "required": [
+              "output_classes"
+            ]
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "then": {
+        "properties": {
+          "evidence": {
+            "properties": {
+              "public_output_policy": {
+                "const": "none"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/home-system-profile-v1.json",
+  "title": "Luminous Home System Profile v1",
+  "description": "A versioned product/workload profile. Schema conformance is structural evidence only and never qualifies hardware or safety.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema", "schema_version", "profile_id", "profile_version", "product_class",
+    "readiness", "declared_scope", "subject", "platform_targets", "capabilities",
+    "openness", "hardware", "network_security", "owner_controls", "authority",
+    "recovery", "qualification", "claim_ceiling"
+  ],
+  "properties": {
+    "$schema": { "const": "https://json-schema.org/draft/2020-12/schema" },
+    "schema_version": { "const": 1 },
+    "profile_id": { "type": "string", "pattern": "^[a-z0-9]+([.-][a-z0-9]+)*$", "minLength": 3 },
+    "profile_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "product_class": {
+      "enum": ["hearth_node", "arc_console", "commons_compute", "robotics_platform", "robotics_lab"]
+    },
+    "readiness": {
+      "enum": ["design_only", "implemented_unqualified", "qualified", "suspended", "retired"]
+    },
+    "declared_scope": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "subject": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "revision", "sha256"],
+      "properties": {
+        "kind": { "enum": ["design_profile", "hardware_configuration", "software_profile", "test_fixture"] },
+        "id": { "type": "string", "minLength": 1 },
+        "revision": { "type": "string", "minLength": 1 },
+        "sha256": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+          ]
+        }
+      }
+    },
+    "platform_targets": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["architecture", "host_os"],
+        "properties": {
+          "architecture": { "enum": ["x86_64", "aarch64", "armv7", "wasm32"] },
+          "host_os": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "capabilities": {
+      "type": "array", "minItems": 1,
+      "items": { "$ref": "#/$defs/capability" }
+    },
+    "openness": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hardware", "firmware", "software", "documentation"],
+      "properties": {
+        "hardware": { "$ref": "#/$defs/openness_record" },
+        "firmware": { "$ref": "#/$defs/openness_record" },
+        "software": { "$ref": "#/$defs/openness_record" },
+        "documentation": { "$ref": "#/$defs/openness_record" }
+      }
+    },
+    "hardware": {
+      "type": "object", "additionalProperties": false,
+      "required": ["sku_selected", "bom_frozen", "prototype_exists", "measured_benchmarks"],
+      "properties": {
+        "sku_selected": { "type": "boolean" },
+        "bom_frozen": { "type": "boolean" },
+        "prototype_exists": { "type": "boolean" },
+        "measured_benchmarks": { "type": "boolean" }
+      }
+    },
+    "network_security": {
+      "type": "object", "additionalProperties": false,
+      "required": ["untrusted_workload_egress_default", "home_lan_access_for_untrusted_workloads", "remote_management_default"],
+      "properties": {
+        "untrusted_workload_egress_default": { "const": "deny" },
+        "home_lan_access_for_untrusted_workloads": { "const": "deny" },
+        "remote_management_default": { "enum": ["disabled", "explicitly_configured"] }
+      }
+    },
+    "owner_controls": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "compute_contribution_requires_opt_in", "local_disable_available",
+        "remote_access_requires_explicit_enablement", "data_export_available",
+        "secrets_exposed_to_model_context"
+      ],
+      "properties": {
+        "compute_contribution_requires_opt_in": { "const": true },
+        "local_disable_available": { "const": true },
+        "remote_access_requires_explicit_enablement": { "const": true },
+        "data_export_available": { "const": true },
+        "secrets_exposed_to_model_context": { "const": false }
+      }
+    },
+    "authority": {
+      "type": "object", "additionalProperties": false,
+      "required": [
+        "model_can_dispatch_physical_effects", "host_boot_requires_optional_cognition",
+        "operator_override_available", "physical_stop_required", "physical_stop_verified"
+      ],
+      "properties": {
+        "model_can_dispatch_physical_effects": { "const": false },
+        "host_boot_requires_optional_cognition": { "const": false },
+        "operator_override_available": { "const": true },
+        "physical_stop_required": { "type": "boolean" },
+        "physical_stop_verified": { "type": "boolean" }
+      }
+    },
+    "recovery": {
+      "type": "object", "additionalProperties": false,
+      "required": ["manual_recovery_documented", "backup_restore_tested"],
+      "properties": {
+        "manual_recovery_documented": { "type": "boolean" },
+        "backup_restore_tested": { "type": "boolean" }
+      }
+    },
+    "qualification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["records"],
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/qualification_record" }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "openness_record": {
+      "type": "object", "additionalProperties": false,
+      "required": ["target_level", "current_level", "limitations"],
+      "properties": {
+        "target_level": { "$ref": "#/$defs/openness_level" },
+        "current_level": { "$ref": "#/$defs/openness_level" },
+        "limitations": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "openness_level": { "enum": ["O0", "O1", "O2", "O3", "O4"] },
+    "capability": {
+      "type": "object", "additionalProperties": false,
+      "required": ["capability_id", "state", "evidence_refs", "limitations"],
+      "properties": {
+        "capability_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "state": { "enum": ["designed", "implemented_unqualified", "qualified", "unavailable", "deferred"] },
+        "evidence_refs": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } },
+        "limitations": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "state": { "const": "qualified" } }, "required": ["state"] },
+          "then": { "properties": { "evidence_refs": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "state": { "const": "implemented_unqualified" } }, "required": ["state"] },
+          "then": { "properties": { "evidence_refs": { "minItems": 1 } } }
+        }
+      ]
+    },
+    "qualification_record": {
+      "type": "object", "additionalProperties": false,
+      "required": ["profile_id", "subject_sha256", "result", "receipt_ref", "verifier_profile", "observed_at"],
+      "properties": {
+        "profile_id": { "type": "string", "minLength": 1 },
+        "subject_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "result": { "enum": ["pass", "fail", "incomplete", "unknown"] },
+        "receipt_ref": { "type": "string", "minLength": 1 },
+        "verifier_profile": { "type": "string", "minLength": 1 },
+        "observed_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "readiness": { "const": "design_only" } }, "required": ["readiness"] },
+      "then": {
+        "properties": {
+          "subject": { "properties": { "sha256": { "type": "null" } } },
+          "capabilities": {
+            "items": { "properties": { "state": { "enum": ["designed", "unavailable", "deferred"] } } }
+          },
+          "openness": {
+            "properties": {
+              "hardware": { "properties": { "current_level": { "const": "O0" } } },
+              "firmware": { "properties": { "current_level": { "const": "O0" } } },
+              "software": { "properties": { "current_level": { "const": "O0" } } },
+              "documentation": { "properties": { "current_level": { "const": "O0" } } }
+            }
+          },
+          "hardware": {
+            "properties": {
+              "sku_selected": { "const": false },
+              "bom_frozen": { "const": false },
+              "prototype_exists": { "const": false },
+              "measured_benchmarks": { "const": false }
+            }
+          },
+          "authority": { "properties": { "physical_stop_verified": { "const": false } } },
+          "recovery": {
+            "properties": {
+              "manual_recovery_documented": { "const": false },
+              "backup_restore_tested": { "const": false }
+            }
+          },
+          "qualification": { "properties": { "records": { "maxItems": 0 } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "readiness": { "const": "qualified" } }, "required": ["readiness"] },
+      "then": {
+        "properties": {
+          "subject": { "properties": { "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" } } },
+          "hardware": { "properties": { "prototype_exists": { "const": true } } },
+          "qualification": {
+            "properties": {
+              "records": {
+                "minItems": 1,
+                "items": { "properties": { "result": { "const": "pass" } } }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "product_class": { "enum": ["robotics_platform", "robotics_lab"] } },
+        "required": ["product_class"]
+      },
+      "then": { "properties": { "authority": { "properties": { "physical_stop_required": { "const": true } } } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "readiness": { "const": "qualified" },
+          "product_class": { "enum": ["robotics_platform", "robotics_lab"] }
+        },
+        "required": ["readiness", "product_class"]
+      },
+      "then": { "properties": { "authority": { "properties": { "physical_stop_verified": { "const": true } } } } }
+    }
+  ]
+}

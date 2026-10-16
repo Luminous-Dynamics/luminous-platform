@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": 1,
+  "envelope_id": "invalid-provider-ack-as-proof",
+  "home_contract": {
+    "contract_id": "hearth.local-lighting-proposal",
+    "contract_version": "0.1.0",
+    "readiness": "design_only",
+    "subject_sha256": null
+  },
+  "household_context": {
+    "hearth_ref": "local-only:synthetic-hearth-reference",
+    "requester_ref": "local-only:synthetic-requester-reference"
+  },
+  "plan_binding": {
+    "plan_id": "synthetic-plan-001",
+    "step_id": "synthetic-step-001",
+    "role": "primary",
+    "capability": "home.lighting",
+    "operation": "light.turn_on"
+  },
+  "provider_binding": {
+    "provider_family": "home_assistant",
+    "provider_instance_ref": "local-only:ha-instance",
+    "adapter_id": "ha-observation-adapter",
+    "implementation_ref": "design-reference:not-implemented",
+    "implementation_sha256": null,
+    "profile_ref": "design-reference:HA-SourceObservation",
+    "profile_sha256": null,
+    "rule_id": "light-observation-only"
+  },
+  "request": {
+    "mode": "proposal_only",
+    "target_ref": "local-only:synthetic-light-target",
+    "arguments_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "risk_class": "low"
+  },
+  "validity": {
+    "idempotency_key": "synthetic-hearth-light-001",
+    "expires_at": "2030-01-01T00:00:00Z",
+    "max_attempts": 1,
+    "unknown_outcome": "reconcile_without_redispatch"
+  },
+  "authority_boundary": {
+    "dispatch_route": "mycelix_hearth_edge_004e",
+    "this_envelope_grants_authority": false,
+    "current_household_authority_required": true,
+    "exact_adapter_admission_required": true,
+    "current_admission_before_each_attempt": true,
+    "exclusive_physical_lease_required": true,
+    "durable_journal_required": true
+  },
+  "outcome_policy": {
+    "service_response_is_physical_proof": true,
+    "provider_state_is_physical_proof": false,
+    "physical_success_requires": "independent_postcondition_reconciliation",
+    "ambiguous_result": "reconcile_without_redispatch"
+  },
+  "privacy": {
+    "payload_mode": "local_only",
+    "public_evidence": "redacted_digest_only",
+    "include_credentials": false,
+    "include_raw_telemetry": false,
+    "include_device_names": false
+  }
+}

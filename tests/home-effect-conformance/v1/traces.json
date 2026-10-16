@@ -1,0 +1,701 @@
+{
+  "schema_version": 1,
+  "protocol": "mycelix-hearth.home-effect",
+  "claim_ceiling": "Cross-implementation synthetic decision conformance only; not proof of authority authenticity, runtime enforcement, provider correctness, or physical effect.",
+  "traces": [
+    {
+      "id": "revocation-before-retry",
+      "purpose": "A retry after definitive no-effect must revalidate household authority and be denied after revocation.",
+      "steps": [
+        {
+          "id": "initial-attempt",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-original-v1",
+            "journal_idempotency_key": null,
+            "journal_request_fingerprint": null,
+            "now_unix_seconds": 100,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 0,
+            "journal_state": "not_started",
+            "household_authority_current": true,
+            "adapter_admission_current": true,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "low",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "allow_dispatch"
+          }
+        },
+        {
+          "id": "retry-after-no-effect-and-revocation",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-original-v1",
+            "journal_idempotency_key": "request-key-0001",
+            "journal_request_fingerprint": "sha256:request-original-v1",
+            "now_unix_seconds": 101,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 1,
+            "journal_state": "definitive_no_effect",
+            "household_authority_current": false,
+            "adapter_admission_current": true,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "low",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "deny",
+            "reason": "household_authority_unavailable_or_revoked"
+          }
+        }
+      ]
+    },
+    {
+      "id": "adapter-implementation-changed",
+      "purpose": "A registered implementation that differs from the exact admitted implementation is rejected before dispatch.",
+      "steps": [
+        {
+          "id": "implementation-mismatch",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@changed",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-original-v1",
+            "journal_idempotency_key": null,
+            "journal_request_fingerprint": null,
+            "now_unix_seconds": 100,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 0,
+            "journal_state": "not_started",
+            "household_authority_current": true,
+            "adapter_admission_current": true,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "low",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "deny",
+            "reason": "registration_binding_mismatch"
+          }
+        }
+      ]
+    },
+    {
+      "id": "adapter-profile-changed",
+      "purpose": "A registered profile change after admission invalidates the binding.",
+      "steps": [
+        {
+          "id": "profile-mismatch",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:unexpected",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-original-v1",
+            "journal_idempotency_key": null,
+            "journal_request_fingerprint": null,
+            "now_unix_seconds": 100,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 0,
+            "journal_state": "not_started",
+            "household_authority_current": true,
+            "adapter_admission_current": true,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "low",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "deny",
+            "reason": "registration_binding_mismatch"
+          }
+        }
+      ]
+    },
+    {
+      "id": "crash-after-dispatch-before-reconciliation",
+      "purpose": "An in-flight attempt remains reconciliation-only after expiry or authority loss.",
+      "steps": [
+        {
+          "id": "recover-ambiguous-dispatch",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-original-v1",
+            "journal_idempotency_key": "request-key-0001",
+            "journal_request_fingerprint": "sha256:request-original-v1",
+            "now_unix_seconds": 300,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 1,
+            "journal_state": "dispatching",
+            "household_authority_current": false,
+            "adapter_admission_current": false,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "low",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "reconcile_only"
+          }
+        }
+      ]
+    },
+    {
+      "id": "same-key-different-request",
+      "purpose": "Reusing an idempotency key for a changed canonical request must fail before any retry.",
+      "steps": [
+        {
+          "id": "changed-fingerprint",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-changed-target-v2",
+            "journal_idempotency_key": "request-key-0001",
+            "journal_request_fingerprint": "sha256:request-original-v1",
+            "now_unix_seconds": 100,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 1,
+            "journal_state": "definitive_no_effect",
+            "household_authority_current": true,
+            "adapter_admission_current": true,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "low",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "deny",
+            "reason": "request_fingerprint_mismatch"
+          }
+        }
+      ]
+    },
+    {
+      "id": "provider-accepted-is-not-physical-success",
+      "purpose": "Provider acknowledgement with unreconciled outcome is never permission to resend.",
+      "steps": [
+        {
+          "id": "observe-provider-accepted",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-original-v1",
+            "journal_idempotency_key": "request-key-0001",
+            "journal_request_fingerprint": "sha256:request-original-v1",
+            "now_unix_seconds": 300,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 1,
+            "journal_state": "provider_accepted",
+            "household_authority_current": false,
+            "adapter_admission_current": true,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "low",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "reconcile_only"
+          }
+        }
+      ]
+    },
+    {
+      "id": "compensation-needs-own-admission",
+      "purpose": "A compensation step cannot borrow the primary step's admission.",
+      "steps": [
+        {
+          "id": "compensation-role-mismatch",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "compensation",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-original-v1",
+            "journal_idempotency_key": null,
+            "journal_request_fingerprint": null,
+            "now_unix_seconds": 100,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 0,
+            "journal_state": "not_started",
+            "household_authority_current": true,
+            "adapter_admission_current": true,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "low",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "deny",
+            "reason": "admission_binding_mismatch"
+          }
+        }
+      ]
+    },
+    {
+      "id": "high-risk-needs-independent-stop",
+      "purpose": "High-risk action eligibility requires an independently ready physical stop.",
+      "steps": [
+        {
+          "id": "stop-missing",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-original-v1",
+            "journal_idempotency_key": null,
+            "journal_request_fingerprint": null,
+            "now_unix_seconds": 100,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 0,
+            "journal_state": "not_started",
+            "household_authority_current": true,
+            "adapter_admission_current": true,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "high",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "deny",
+            "reason": "missing_physical_stop"
+          }
+        }
+      ]
+    },
+    {
+      "id": "terminal-request-cannot-be-replayed",
+      "purpose": "A reconciled terminal outcome cannot be redispatched with the same identity.",
+      "steps": [
+        {
+          "id": "replay-reconciled-request",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-original-v1",
+            "journal_idempotency_key": "request-key-0001",
+            "journal_request_fingerprint": "sha256:request-original-v1",
+            "now_unix_seconds": 100,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 1,
+            "journal_state": "reconciled_success",
+            "household_authority_current": true,
+            "adapter_admission_current": true,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "low",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "terminal"
+          }
+        }
+      ]
+    },
+    {
+      "id": "journal-state-without-identity",
+      "purpose": "A retry-state journal without key and fingerprint is inconsistent.",
+      "steps": [
+        {
+          "id": "missing-journal-binding",
+          "input": {
+            "requested": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "admitted": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "registered": {
+              "plan_id": "plan-01",
+              "step_id": "step-01",
+              "role": "primary",
+              "capability": "home.lighting",
+              "operation": "light.turn_on",
+              "adapter_id": "ha-adapter-v1",
+              "implementation_ref": "git:adapter@abc123",
+              "profile_ref": "profile:ha-light-v1",
+              "rule_id": "light-on-low-risk"
+            },
+            "request_idempotency_key": "request-key-0001",
+            "request_fingerprint": "sha256:request-original-v1",
+            "journal_idempotency_key": null,
+            "journal_request_fingerprint": null,
+            "now_unix_seconds": 100,
+            "expires_at_unix_seconds": 200,
+            "max_attempts": 2,
+            "attempts_started": 0,
+            "journal_state": "definitive_no_effect",
+            "household_authority_current": true,
+            "adapter_admission_current": true,
+            "exclusive_executor_lease_held": true,
+            "durable_journal_ready": true,
+            "postcondition_observer_available": true,
+            "risk_class": "low",
+            "independent_physical_stop_ready": false
+          },
+          "expect": {
+            "kind": "deny",
+            "reason": "inconsistent_journal_state"
+          }
+        }
+      ]
+    }
+  ]
+}
