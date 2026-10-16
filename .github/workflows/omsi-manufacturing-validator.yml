@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - 'tools/omsi-manufacturing-validator/**'
+      - 'tools/omsi-provenance-verifier/**'
       - 'docs/standards/omsi/**'
   push:
     branches: [main]
     paths:
       - 'tools/omsi-manufacturing-validator/**'
+      - 'tools/omsi-provenance-verifier/**'
       - 'docs/standards/omsi/**'
 
 permissions:
@@ -39,6 +41,10 @@ jobs:
         if: steps.source.outputs.present == 'true'
         run: cargo fmt --manifest-path tools/omsi-manufacturing-validator/Cargo.toml --all -- --check
 
+      - name: Check independent verifier formatting
+        if: steps.source.outputs.present == 'true'
+        run: cargo fmt --manifest-path tools/omsi-provenance-verifier/Cargo.toml --all -- --check
+
   test:
     name: Rust semantic conformance
     runs-on: ubuntu-24.04
@@ -62,6 +68,10 @@ jobs:
       - name: Run executable conformance tests
         if: steps.source.outputs.present == 'true'
         run: cargo test --manifest-path tools/omsi-manufacturing-validator/Cargo.toml
+
+      - name: Test independent artifact-binding verifier
+        if: steps.source.outputs.present == 'true'
+        run: cargo test --manifest-path tools/omsi-provenance-verifier/Cargo.toml
       - name: Run semantic validator against the committed profile vectors
         if: steps.source.outputs.present == 'true'
         run: cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- validate-vectors docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json
@@ -202,6 +212,7 @@ jobs:
           jq empty tools/omsi-manufacturing-validator/schema/provenance-manifest.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/provenance-verification-report.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/adapter-schema-coverage-report.schema.json
+          jq empty tools/omsi-provenance-verifier/schema/binding-verification-report.schema.json
           jq empty docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json
@@ -292,6 +303,20 @@ jobs:
             (has("signature") | not)
           ' "$verification" > /dev/null
 
+          independent_verification="$RUNNER_TEMP/omsi-independent-provenance-verification.json"
+          cargo run --manifest-path tools/omsi-provenance-verifier/Cargo.toml -- \
+            verify-bundle "$manifest" "$source_record" "$source_schema" "$adapter_map" \
+            "$schema_coverage" "$projection" "$semantic_input" "$semantic_report" \
+            "$replay_envelope" > "$independent_verification"
+          jq -e '
+            .verifier_contract == "omsi-independent-provenance-binding-verifier/0.1" and
+            .status == "artifact_bindings_verified" and
+            .authority == "artifact_binding_and_graph_consistency_only" and
+            (.checks | length) == 17 and
+            ([.checks[].result] | all(. == "pass")) and
+            (has("signature") | not)
+          ' "$independent_verification" > /dev/null
+
       - name: Smoke-test complete adapter schema coverage
         if: steps.source.outputs.present == 'true'
         shell: bash
@@ -376,3 +401,7 @@ jobs:
       - name: Clippy
         if: steps.source.outputs.present == 'true'
         run: cargo clippy --manifest-path tools/omsi-manufacturing-validator/Cargo.toml --all-targets -- -D warnings
+
+      - name: Clippy independent artifact-binding verifier
+        if: steps.source.outputs.present == 'true'
+        run: cargo clippy --manifest-path tools/omsi-provenance-verifier/Cargo.toml --all-targets -- -D warnings
