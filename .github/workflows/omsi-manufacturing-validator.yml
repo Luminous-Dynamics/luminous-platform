@@ -313,7 +313,7 @@ jobs:
             any(.schema_paths_not_mapped[]; .source_path == "/operator_note")
           ' "$missing_report" > /dev/null
 
-          jq '(.mappings[] | select(.source_path == "/unit")) .presence = "required"' "$map" > "$wrong_presence"
+          jq '.mappings |= map(if .source_path == "/unit" then .presence = "required" else . end)' "$map" > "$wrong_presence"
           if cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
             audit-adapter-schema-coverage "$wrong_presence" "$schema" "$record" > "$wrong_presence_report"; then
             echo "expected presence mismatch to fail schema coverage" >&2
