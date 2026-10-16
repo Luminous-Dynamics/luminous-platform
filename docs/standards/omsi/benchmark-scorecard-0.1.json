@@ -33,8 +33,8 @@
       "metric": "independent_json_schema_validation_rate",
       "target": 1,
       "unit": "fraction",
-      "acceptance": "All success, reject, conflict, loss and replay-verification reports validate with an independent JSON Schema Draft 2020-12 implementation; mutated reports are rejected.",
-      "failure_policy": "Block release; serde parsing is not a substitute for JSON Schema validation."
+      "acceptance": "All committed Draft 2020-12 schemas must pass meta-validation and compilation through the pinned independent Rust jsonschema implementation; representative real audit, projection, transform-vector, replay-envelope and benchmark reports must validate. Mutated reports must be rejected.",
+      "failure_policy": "Block release; JSON parsing and self-asserted serde structures are not a substitute for independent schema validation."
     },
     {
       "id": "G0-replay-tamper",
