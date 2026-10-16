@@ -1,0 +1,700 @@
+{
+  "schema_version": "firmware-assurance-corpus/1.0.0",
+  "status": "synthetic_only",
+  "physical_target": "none",
+  "profile_id": "synthetic-uefi-uki-v1",
+  "benchmark_goal": "Verify claim-level firmware/boot assurance semantics without authorizing or performing any mutation.",
+  "mutation_enabled": false,
+  "case_count": 36,
+  "cases": [
+    {
+      "case_id": "FWA-001",
+      "case_kind": "positive_control",
+      "family": "baseline",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "All required synthetic evidence is present, current, internally consistent, and authorized for the synthetic profile.",
+      "mutation": "none",
+      "expected_claims": {
+        "target_identity": "verified",
+        "artifact_integrity": "verified",
+        "signature_present": "verified",
+        "signature_validity": "verified",
+        "signer_authorization": "verified",
+        "revocation_status": "verified",
+        "compatibility": "verified",
+        "freshness": "verified",
+        "provenance_completeness": "verified",
+        "authorization": "verified",
+        "lineage_integrity": "verified",
+        "evidence_privacy": "verified",
+        "boot_target_match": "verified",
+        "boot_success": "unknown",
+        "recovery_readiness": "verified",
+        "effect_outcome_known": "unknown",
+        "verifier_availability": "verified",
+        "schema_support": "verified",
+        "observation_consistency": "verified"
+      },
+      "expected_disposition": "eligible_for_lab_staging",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Establish a positive control. Eligibility means only that the synthetic case may advance to a separately authorized lab stage."
+    },
+    {
+      "case_id": "FWA-002",
+      "case_kind": "negative_control",
+      "family": "artifact_integrity",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Artifact digest and length were computed for a valid fixture.",
+      "mutation": "flip_one_artifact_byte",
+      "expected_claims": {
+        "artifact_integrity": "refuted",
+        "signature_validity": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Corruption must invalidate exact-byte integrity and the signature predicate where the signature binds the changed bytes."
+    },
+    {
+      "case_id": "FWA-003",
+      "case_kind": "negative_control",
+      "family": "signature",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Artifact has no signature envelope; policy requires a signed artifact.",
+      "mutation": "remove_signature",
+      "expected_claims": {
+        "signature_present": "refuted",
+        "signature_validity": "unknown",
+        "signer_authorization": "unknown"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Missing signature is distinguishable from a mathematically invalid signature; required signing is not satisfied."
+    },
+    {
+      "case_id": "FWA-004",
+      "case_kind": "negative_control",
+      "family": "signature",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Artifact carries a malformed signature envelope.",
+      "mutation": "truncate_signature_encoding",
+      "expected_claims": {
+        "signature_present": "verified",
+        "signature_validity": "refuted",
+        "signer_authorization": "unknown"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Malformed cryptographic material must not be treated as a missing optional field or a successful signature."
+    },
+    {
+      "case_id": "FWA-005",
+      "case_kind": "negative_control",
+      "family": "signer_authorization",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Signature verifies cryptographically but signer is not authorized by the frozen policy.",
+      "mutation": "replace_signer_with_valid_untrusted_key",
+      "expected_claims": {
+        "signature_validity": "verified",
+        "signer_authorization": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Cryptographic validity does not imply policy authorization."
+    },
+    {
+      "case_id": "FWA-006",
+      "case_kind": "negative_control",
+      "family": "revocation",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Signer is otherwise trusted, but exact signer matches a definite applicable revocation entry.",
+      "mutation": "add_exact_revocation_match",
+      "expected_claims": {
+        "revocation_status": "refuted",
+        "signer_authorization": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "A definite applicable revocation must veto authorization."
+    },
+    {
+      "case_id": "FWA-007",
+      "case_kind": "indeterminate_control",
+      "family": "revocation",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Firmware signature matches a timestamped revocation record whose trusted timestamp evidence is unavailable.",
+      "mutation": "remove_trusted_timestamp_evidence",
+      "expected_claims": {
+        "revocation_status": "unknown",
+        "signer_authorization": "unknown"
+      },
+      "expected_disposition": "indeterminate",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Unresolved timestamped revocation cannot be silently treated as allowed or definitely revoked."
+    },
+    {
+      "case_id": "FWA-008",
+      "case_kind": "negative_control",
+      "family": "compatibility",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Signed image is authorized but targets a different product model.",
+      "mutation": "change_target_model",
+      "expected_claims": {
+        "compatibility": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "A valid image for another model is not compatible merely because the signer is trusted."
+    },
+    {
+      "case_id": "FWA-009",
+      "case_kind": "negative_control",
+      "family": "compatibility",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Model matches but hardware revision differs from the allow-listed revision.",
+      "mutation": "change_hardware_revision",
+      "expected_claims": {
+        "compatibility": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Support scope is exact-model and hardware-revision bound."
+    },
+    {
+      "case_id": "FWA-010",
+      "case_kind": "negative_control",
+      "family": "compatibility",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Target identity matches but the firmware component/slot identifier differs.",
+      "mutation": "substitute_component_identity",
+      "expected_claims": {
+        "compatibility": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Image compatibility must include the target component, not just the device family."
+    },
+    {
+      "case_id": "FWA-011",
+      "case_kind": "negative_control",
+      "family": "anti_rollback",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Candidate version is below the trusted anti-rollback version floor.",
+      "mutation": "decrease_candidate_version",
+      "expected_claims": {
+        "freshness": "refuted",
+        "compatibility": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Version policy must reject prohibited rollback independently of signature validity."
+    },
+    {
+      "case_id": "FWA-012",
+      "case_kind": "negative_control",
+      "family": "update_metadata",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Signed update metadata is expired at the fixed update-start time.",
+      "mutation": "expire_metadata",
+      "expected_claims": {
+        "freshness": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Expired metadata cannot authorize a fresh update."
+    },
+    {
+      "case_id": "FWA-013",
+      "case_kind": "negative_control",
+      "family": "update_metadata",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Each metadata object is individually signed but the combination does not belong to one valid snapshot.",
+      "mutation": "mix_metadata_from_two_snapshots",
+      "expected_claims": {
+        "freshness": "refuted",
+        "lineage_integrity": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Detect mix-and-match; individually valid signatures do not establish a coherent metadata set."
+    },
+    {
+      "case_id": "FWA-014",
+      "case_kind": "negative_control",
+      "family": "update_metadata",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Policy requires threshold signatures and the supplied metadata has fewer valid authorized signatures than required.",
+      "mutation": "remove_one_required_signer",
+      "expected_claims": {
+        "signer_authorization": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "A signature count or presence flag must not replace threshold-policy evaluation."
+    },
+    {
+      "case_id": "FWA-015",
+      "case_kind": "indeterminate_control",
+      "family": "provenance",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "The synthetic profile requires a current firmware component inventory/SBOM but none is available.",
+      "mutation": "remove_required_sbom",
+      "expected_claims": {
+        "provenance_completeness": "unknown"
+      },
+      "expected_disposition": "indeterminate",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Missing inventory is unknown, not proof that the component set is complete or vulnerability-free."
+    },
+    {
+      "case_id": "FWA-016",
+      "case_kind": "negative_control",
+      "family": "provenance",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "An SBOM is present but its stated digest does not match the exact supplied bytes.",
+      "mutation": "alter_sbom_without_updating_subject_binding",
+      "expected_claims": {
+        "provenance_completeness": "refuted",
+        "lineage_integrity": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Provenance must bind to exact artifact bytes and identity."
+    },
+    {
+      "case_id": "FWA-017",
+      "case_kind": "negative_control",
+      "family": "target_identity",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "A familiar device path is reused after hot-plug, but the observed hardware identity changes.",
+      "mutation": "reuse_device_path_for_different_device",
+      "expected_claims": {
+        "target_identity": "refuted",
+        "observation_consistency": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Mutable device paths are locators, not stable authority identities."
+    },
+    {
+      "case_id": "FWA-018",
+      "case_kind": "indeterminate_control",
+      "family": "freshness",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Required evidence is available but the local clock cannot be trusted for freshness/expiry checks.",
+      "mutation": "mark_clock_untrusted",
+      "expected_claims": {
+        "freshness": "unknown"
+      },
+      "expected_disposition": "indeterminate",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Time-sensitive claims remain unresolved when required time confidence is absent."
+    },
+    {
+      "case_id": "FWA-019",
+      "case_kind": "indeterminate_control",
+      "family": "scope",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "The endpoint/capability profile is stale and its current revision cannot be established.",
+      "mutation": "replace_current_profile_with_stale_revision",
+      "expected_claims": {
+        "compatibility": "unknown",
+        "authorization": "unknown"
+      },
+      "expected_disposition": "indeterminate",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Stale adapter or endpoint profiles cannot support current authorization."
+    },
+    {
+      "case_id": "FWA-020",
+      "case_kind": "negative_control",
+      "family": "endpoint_security",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "The approved endpoint redirects the request to a different origin.",
+      "mutation": "inject_cross_origin_redirect",
+      "expected_claims": {
+        "authorization": "refuted",
+        "target_identity": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Do not forward credentials or accept observations from unapproved origins."
+    },
+    {
+      "case_id": "FWA-021",
+      "case_kind": "negative_control",
+      "family": "tenant_scope",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Credential authentication succeeds but the server returns an organization/tenant different from the approved scope.",
+      "mutation": "substitute_tenant_identity",
+      "expected_claims": {
+        "target_identity": "refuted",
+        "authorization": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Authentication alone does not prove authorization to the intended tenant."
+    },
+    {
+      "case_id": "FWA-022",
+      "case_kind": "negative_control",
+      "family": "read_only_enforcement",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "An adapter registered as read-only attempts a mutating API method/path.",
+      "mutation": "submit_mutating_operation_to_read_only_adapter",
+      "expected_claims": {
+        "authorization": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Read-only status must be enforced by operation allow-list and adapter contract, not UI intent."
+    },
+    {
+      "case_id": "FWA-023",
+      "case_kind": "positive_control",
+      "family": "transaction_ambiguity",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "A synthetic command fails before dispatch and a trustworthy local effect journal proves no request was sent.",
+      "mutation": "simulate_pre_dispatch_timeout",
+      "expected_claims": {
+        "effect_outcome_known": "verified",
+        "authorization": "verified"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Even a proven no-effect result does not authorize mutation in this read-only benchmark stage; it tests outcome classification."
+    },
+    {
+      "case_id": "FWA-024",
+      "case_kind": "indeterminate_control",
+      "family": "transaction_ambiguity",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Request dispatch may have happened but the acknowledgment is lost and no independent state observation is available.",
+      "mutation": "simulate_timeout_after_dispatch",
+      "expected_claims": {
+        "effect_outcome_known": "unknown"
+      },
+      "expected_disposition": "indeterminate",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "A lost acknowledgment is not proof that no effect occurred; do not blindly retry."
+    },
+    {
+      "case_id": "FWA-025",
+      "case_kind": "negative_control",
+      "family": "boot_selection",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "The approved image is signed, but authoritative loader evidence maps the next boot to a different artifact/closure.",
+      "mutation": "select_wrong_boot_target",
+      "expected_claims": {
+        "boot_target_match": "refuted",
+        "boot_success": "unknown"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Signature validity, configured profile, and selected next boot are distinct claims."
+    },
+    {
+      "case_id": "FWA-026",
+      "case_kind": "indeterminate_control",
+      "family": "boot_outcome",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "The target is observed as selected/attempted, but no authoritative evidence proves successful boot of the exact target.",
+      "mutation": "remove_boot_success_evidence",
+      "expected_claims": {
+        "boot_target_match": "verified",
+        "boot_success": "unknown"
+      },
+      "expected_disposition": "indeterminate",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Selection or attempted boot must not be reported as successful boot."
+    },
+    {
+      "case_id": "FWA-027",
+      "case_kind": "negative_control",
+      "family": "recovery",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "No documented and tested recovery route exists for the exact device/revision and update path.",
+      "mutation": "remove_recovery_evidence",
+      "expected_claims": {
+        "recovery_readiness": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "The system must not authorize a high-risk update without the policy-required recovery path."
+    },
+    {
+      "case_id": "FWA-028",
+      "case_kind": "negative_control",
+      "family": "evidence_lineage",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "A derived claim references a missing parent record or contains a cyclic lineage edge.",
+      "mutation": "delete_parent_or_add_cycle",
+      "expected_claims": {
+        "lineage_integrity": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Dangling or cyclic evidence lineage cannot be accepted as a closed assurance graph."
+    },
+    {
+      "case_id": "FWA-029",
+      "case_kind": "negative_control",
+      "family": "evidence_lineage",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "An outer manifest digest is recomputed after altering an inner claim, but the independent verifier's derived result no longer matches.",
+      "mutation": "alter_claim_and_recompute_outer_digest",
+      "expected_claims": {
+        "lineage_integrity": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "A self-consistent digest envelope does not authenticate or validate semantic claims."
+    },
+    {
+      "case_id": "FWA-030",
+      "case_kind": "indeterminate_control",
+      "family": "verifier_availability",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "The independent verifier is unavailable or exits without a verifiable report.",
+      "mutation": "disable_independent_verifier",
+      "expected_claims": {
+        "verifier_availability": "unknown",
+        "lineage_integrity": "unknown"
+      },
+      "expected_disposition": "indeterminate",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "A producer cannot certify its own evidence when required independent verification is unavailable."
+    },
+    {
+      "case_id": "FWA-031",
+      "case_kind": "indeterminate_control",
+      "family": "offline_behavior",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Mycelix/network is unavailable and no fresh locally cached authorization evidence exists.",
+      "mutation": "remove_network_and_cached_authorization",
+      "expected_claims": {
+        "authorization": "unknown"
+      },
+      "expected_disposition": "indeterminate",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Local read-only observation may remain available; consequential update authorization is not inferred from network absence."
+    },
+    {
+      "case_id": "FWA-032",
+      "case_kind": "negative_control",
+      "family": "schema_validation",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Record uses an unsupported critical schema version or an unrecognized critical predicate that the verifier cannot safely interpret.",
+      "mutation": "replace_schema_version_with_unsupported_value",
+      "expected_claims": {
+        "schema_support": "refuted",
+        "lineage_integrity": "unknown"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Unsupported semantics cannot be approximated as compatible."
+    },
+    {
+      "case_id": "FWA-033",
+      "case_kind": "negative_control",
+      "family": "human_authorization",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "The machine has no explicit valid authorization for this precise operation digest and target.",
+      "mutation": "remove_operator_approval",
+      "expected_claims": {
+        "authorization": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Model intent, prior consent, or a default UI path is not approval for this action."
+    },
+    {
+      "case_id": "FWA-034",
+      "case_kind": "negative_control",
+      "family": "replay_protection",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "A previously consumed operation nonce/request ID is replayed against the same or a new target.",
+      "mutation": "replay_consumed_operation_id",
+      "expected_claims": {
+        "freshness": "refuted",
+        "authorization": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Replay must be rejected without reinterpreting it as a new approved action."
+    },
+    {
+      "case_id": "FWA-035",
+      "case_kind": "indeterminate_control",
+      "family": "observation_conflict",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Two independent sources produce contradictory identity/version observations and there is no reconciliation evidence.",
+      "mutation": "inject_conflicting_observations",
+      "expected_claims": {
+        "observation_consistency": "unknown",
+        "target_identity": "unknown"
+      },
+      "expected_disposition": "indeterminate",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Conflicting observations must be preserved and investigated, not averaged into a pass."
+    },
+    {
+      "case_id": "FWA-036",
+      "case_kind": "negative_control",
+      "family": "privacy",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "A secret marker is present in raw adapter output that would otherwise be written to the evidence record.",
+      "mutation": "inject_secret_into_adapter_error",
+      "expected_claims": {
+        "evidence_privacy": "refuted"
+      },
+      "expected_disposition": "blocked",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change",
+        "no_secret_in_emitted_evidence"
+      ],
+      "rationale": "Evidence emission must redact or reject sensitive fields; a security receipt must not leak credentials."
+    }
+  ]
+}
