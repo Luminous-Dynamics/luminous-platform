@@ -1,0 +1,38 @@
+{
+  "adapter_contract": "omsi-manufacturing-adapter-map/0.1",
+  "adapter_id": "synthetic-mes-flat/0.1",
+  "source_format": "synthetic-mes-flat-json/0.1",
+  "mappings": [
+    {
+      "source_path": "/asset_id",
+      "disposition": "preserve",
+      "target_path": "/asset_ref/external_id"
+    },
+    {
+      "source_path": "/record_revision",
+      "disposition": "preserve",
+      "target_path": "/source/record_revision"
+    },
+    {
+      "source_path": "/temperature",
+      "disposition": "preserve",
+      "target_path": "/measurement/value_decimal"
+    },
+    {
+      "source_path": "/unit",
+      "disposition": "preserve",
+      "target_path": "/measurement/unit_code"
+    },
+    {
+      "source_path": "/quality_status",
+      "disposition": "transform",
+      "target_path": "/source_quality_claim/raw_status",
+      "transform_id": "mes-quality-status-normalization/0.1"
+    },
+    {
+      "source_path": "/operator_note",
+      "disposition": "drop",
+      "reason": "source free text is intentionally excluded from this synthetic neutral projection"
+    }
+  ]
+}
