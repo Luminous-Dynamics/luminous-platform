@@ -130,6 +130,7 @@
     "run": {
       "type": "object",
       "required": [
+        "throughput_measurement_mode",
         "iterations_per_case",
         "warmup_iterations_per_case",
         "sample_count_per_phase",
@@ -151,6 +152,9 @@
         "input_bytes_per_phase": {
           "type": "integer",
           "minimum": 0
+        },
+        "throughput_measurement_mode": {
+          "const": "separate_batch_pass_without_per_operation_timers"
         }
       },
       "additionalProperties": false
