@@ -155,15 +155,15 @@ Passing an earlier stage never implies passing a later one.
 
 1. Review and cross-link the current Symthaea Secure Boot consent/state code, Nixward UKI trust verifier and timestamped-revocation work, and platform issue #23's adapter/maturity registry. Do not fork a second command authority, journal, generic evidence envelope, or verifier if an existing canonical owner already supplies it.
 2. Freeze the claim vocabulary and required-claim policy over the 44-case language-neutral JSON corpus.
-3. Use the Rust-first, offline corpus checker in `tools/firmware-assurance-corpus-checker/` as Stage 0. It validates schema and bookkeeping and derives stage dispositions over supplied claim-state assignments; it does not verify artifacts or hardware.
-4. Add an independently implemented policy oracle and a versioned mutation harness. Keep expected decisions separate from producer outputs and use source hashes, executed case counts and explicit limitations.
-5. Run formatting, compilation and tests against the exact source revision when a Rust toolchain is available. Preserve logs and tool versions.
-5. Select one exact, authorized lab target for read-only observations. Do not infer support from a vendor brand, mock, API success or an emulator.
-6. Add firmware execution only by satisfying the separate Stage 3 gate and existing Nixward transaction/recovery contracts.
+3. Use the Rust-first, offline corpus checker in `tools/firmware-assurance-corpus-checker/` as Stage 0. It validates schema/bookkeeping and derives stage dispositions over supplied claim-state assignments; it does not verify artifacts or hardware.
+4. Use `tools/firmware-assurance-corpus-checker/tests/reference_oracle.py` as a test-only, standard-library implementation that independently derives claim-state dispositions and runs metamorphic policy checks; keep Python out of the production path.
+5. Run formatting, compilation, unit tests and both oracle paths against the exact source revision when a Rust toolchain is available. Preserve logs, tool versions and exact corpus/schema digests.
+6. Select one exact, authorized lab target for read-only observations. Do not infer support from a vendor brand, mock, API success or an emulator.
+7. Add firmware execution only by satisfying the separate Stage 3 gate and existing Nixward transaction/recovery contracts.
 
 A queued hosted workflow is neither success nor failure evidence. Local deterministic work can proceed while CI is queued, but no test should be described as passed unless it actually executed against the exact reported source.
 
-## 11. Stage 0 corpus checker increment
+## 9. Stage 0 corpus checker increment
 
 A Rust-first corpus checker now lives under `tools/firmware-assurance-corpus-checker/` on the associated research branch. It is deliberately narrower than the Stage 1 firmware verifier.
 
@@ -175,13 +175,13 @@ The checker:
 - emits a deterministic report containing the exact input byte lengths and SHA-256 digests, schema/contract results, case distribution, and an explicit claim ceiling;
 - evaluates claim-state policy combinations but reports zero physical device operations by construction.
 
-The repository workflow is defined in `.github/workflows/firmware-assurance-corpus-checker.yml`; it runs formatting, unit tests, a positive corpus check, a deliberate case-count mutation, and Clippy. A workflow definition is not itself evidence that any step ran.
+The repository workflow is defined in `.github/workflows/firmware-assurance-corpus-checker.yml`; it runs formatting, unit tests, a positive corpus check, a deliberate case-count mutation, the separate Python reference oracle with metamorphic checks, and Clippy. The Python file is test-only; the production checker and intended firmware implementation are Rust. A workflow definition is not itself evidence that any step ran.
 
 The authoring environment for this increment has no `rustc`, `cargo`, or `rustfmt`. Therefore the Rust crate and authored tests have **not** been compiled, formatted or executed locally, and hosted status for the latest branch head must be checked before interpreting any CI result. A connector-backed structural audit of the checked-in JSON fixture/schema found 44 sequential unique IDs, matching claim and case-property inventories, consistent case-kind/disposition mapping, all required read-only assertions, and no structural invariant errors. That audit is not execution of the Rust validator, not JSON Schema meta-validation, and not evidence that the described firmware attacks were executed.
 
-Remaining Stage 0 gates: run the Rust tests and formatter on the exact reported head; run explicit schema meta-validation with the pinned validator; commit a reproducible dependency lock once Cargo resolution can execute; add independent test-oracle review; and preserve exact-head test output. Passing Stage 0 means the corpus contract and synthetic claim-policy compositions are internally consistent—not that the described attacks execute or firmware is verified.
+Remaining Stage 0 gates: run the Rust tests and formatter on the exact reported head; explicitly meta-validate the schema; commit a reproducible dependency lock once Cargo resolution can execute; review whether the test-only oracle independently matches the intended stage policy; and preserve exact-head test output. Passing Stage 0 means the corpus contract and synthetic claim-policy compositions are internally consistent—not that the described attacks execute or firmware is verified.
 
-## 9. Standards to reuse
+## 10. Standards to reuse
 
 - [NIST SP 800-193 — Platform Firmware Resiliency Guidelines](https://csrc.nist.gov/pubs/sp/800/193/final): protect firmware from unauthorized change, detect compromise, and recover.
 - [NIST IR 8259 Rev. 1 (April 2026) — Foundational Cybersecurity Activities for IoT Product Manufacturers](https://csrc.nist.gov/pubs/ir/8259/r1/final): lifecycle security activities and manufacturer/customer information.
@@ -191,7 +191,7 @@ Remaining Stage 0 gates: run the Rust tests and formatter on the exact reported 
 
 Adopting a standard's vocabulary is not a claim of formal conformance. Record the exact version and tested subset. Vendor documentation and the exact hardware profile remain authoritative for supported operations and compatibility.
 
-## 10. Claim ceiling
+## 11. Claim ceiling
 
 This benchmark can establish deterministic behavior over a defined corpus and bounded lab profile. It cannot establish that every firmware image is safe, that a signed image is benign, that every OEM implementation follows its documentation, that hardware measurements are truthful, that every fleet device is covered, or that a target is certified or production-ready.
 
