@@ -1,0 +1,50 @@
+{
+  "adapter_contract": "omsi-manufacturing-adapter-map/0.1",
+  "adapter_id": "synthetic-qms-nested/0.1",
+  "source_format": "synthetic-qms-nested-json/0.1",
+  "mappings": [
+    {
+      "source_path": "/record/revision",
+      "disposition": "preserve",
+      "target_path": "/source/record_revision"
+    },
+    {
+      "source_path": "/record/asset/id",
+      "disposition": "preserve",
+      "target_path": "/asset_ref/external_id"
+    },
+    {
+      "source_path": "/record/asset/tenant",
+      "disposition": "preserve",
+      "target_path": "/asset_ref/tenant_ref"
+    },
+    {
+      "source_path": "/record/measurement/value",
+      "disposition": "transform",
+      "target_path": "/measurement/value_decimal",
+      "transform_id": "qms-decimal-normalization/0.1"
+    },
+    {
+      "source_path": "/record/measurement/unit",
+      "disposition": "transform",
+      "target_path": "/measurement/unit_code",
+      "transform_id": "qms-unit-code-crosswalk/0.1"
+    },
+    {
+      "source_path": "/record/decision/status",
+      "disposition": "transform",
+      "target_path": "/source_quality_claim/raw_status",
+      "transform_id": "qms-decision-state-crosswalk/0.1"
+    },
+    {
+      "source_path": "/record/decision/rule",
+      "disposition": "preserve",
+      "target_path": "/source_quality_claim/source_rule_ref"
+    },
+    {
+      "source_path": "/attachments",
+      "disposition": "preserve",
+      "target_path": "/source_attachments"
+    }
+  ]
+}
