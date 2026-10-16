@@ -256,6 +256,6 @@ mod tests {
         let result = read_bytes_bounded(path_text, 4);
         fs::remove_file(&path).expect("temporary fixture can be removed");
 
-        assert_eq!(result.expect("input at limit should be accepted"), b"1234");
+        assert_eq!(result.expect("input at limit should be accepted"), b"1234".to_vec());
     }
 }
