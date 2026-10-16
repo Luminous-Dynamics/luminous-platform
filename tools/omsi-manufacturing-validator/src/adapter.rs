@@ -1481,6 +1481,10 @@ mod tests {
                 "provenance-manifest",
                 include_str!("../schema/provenance-manifest.schema.json"),
             ),
+            (
+                "provenance-verification-report",
+                include_str!("../schema/provenance-verification-report.schema.json"),
+            ),
         ];
 
         for (label, schema_source) in schemas {
