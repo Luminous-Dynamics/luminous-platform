@@ -124,7 +124,8 @@
         "type": "object",
         "required": [
           "source_path",
-          "disposition"
+          "disposition",
+          "presence"
         ],
         "properties": {
           "source_path": {
