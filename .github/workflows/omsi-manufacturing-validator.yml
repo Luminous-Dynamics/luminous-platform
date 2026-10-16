@@ -167,6 +167,31 @@ jobs:
             (.projection | has("operator_note") | not)
           ' "$RUNNER_TEMP/omsi-adapter-mes-flat-projection.json" > /dev/null
 
+      - name: Verify optional source fields stay explicit
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="docs/standards/omsi/adapters/0.1/examples"
+          audit_file="$RUNNER_TEMP/omsi-adapter-mes-optional-audit.json"
+          projection_file="$RUNNER_TEMP/omsi-adapter-mes-optional-projection.json"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-map "$base/mes-optional-map.json" "$base/mes-optional-record.json" > "$audit_file"
+          jq -e '
+            .status == "complete_accounting" and
+            .silent_loss_count == 0 and
+            (.mapping_paths_not_observed_in_record | length) == 2 and
+            (.required_mapping_paths_not_observed_in_record | length) == 0
+          ' "$audit_file" > /dev/null
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            apply-adapter-map "$base/mes-optional-map.json" "$base/mes-optional-record.json" > "$projection_file"
+          jq -e '
+            .status == "projection_created" and
+            .skipped_optional_count == 2 and
+            .explicitly_dropped_count == 0 and
+            .projection.measurement.value_decimal == "72.4" and
+            (.projection.measurement | has("unit_code") | not)
+          ' "$projection_file" > /dev/null
+
       - name: Parse adapter contract schemas and fixtures
         run: |
           jq empty tools/omsi-manufacturing-validator/schema/adapter-map.schema.json
@@ -179,6 +204,8 @@ jobs:
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json
           jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-record.json
 
       - name: Clippy
         if: steps.source.outputs.present == 'true'
