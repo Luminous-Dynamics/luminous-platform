@@ -61,7 +61,7 @@ The next steps should avoid inventing an isolated proprietary trust format. Keep
 | Negative controls | Zero unexpected acceptances in cross-tenant, malformed, incompatible-unit and contradiction suites | Hard | False acceptance matters more than speed |
 | Independent schema checks | 100% of schemas and representative outputs validate with an independent Draft 2020-12 engine; mutated invalid reports are rejected | Hard | Parsing JSON is not schema validation |
 | Replay tamper suite | 100% detection for every named mutation to input, digest, envelope contract, report and limitations | Hard | Digest and report claims must be checked, not trusted |
-| Provenance-chain reconstruction | 100% of valid chain fixtures produce manifests; every enumerated source/map/projection/input/report/envelope mismatch blocks creation | Hard | Evidence must be reproducible across each derivation edge, not just represented by an isolated digest |
+| Provenance-chain reconstruction | 100% of valid chain fixtures produce and verify manifests; inconsistent source/map/projection/input/report/envelope chains and a mutated manifest digest are rejected | Hard | Evidence must be reproducible across each derivation edge, not just represented by an isolated digest |
 | Repeatability | 100% semantic report equality for same bytes/profile/rule/build | Hard | Reproducible interpretation |
 | Property testing | At least 100,000 deterministic generated cases per profile version | Release | Boundary and metamorphic coverage |
 | Coverage-guided fuzzing | At least 24 hours per release candidate, with crash corpus retained | Release | Parser/resource robustness |
