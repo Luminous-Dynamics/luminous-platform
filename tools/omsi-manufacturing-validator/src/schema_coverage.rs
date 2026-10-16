@@ -51,6 +51,7 @@ pub fn audit_adapter_schema_coverage(
             "schema_paths_not_mapped": [],
             "mapping_paths_outside_schema": [],
             "presence_mismatches": [],
+            "duplicate_source_mappings": [],
             "schema_paths_not_observed_in_record": [],
             "required_schema_paths_not_observed_in_record": [],
             "observed_field_accounting_status": observation_audit.get("status").cloned().unwrap_or(Value::Null),
@@ -443,6 +444,13 @@ mod tests {
         );
         assert_eq!(report["status"], "unsupported_source_schema");
         assert_eq!(report["schema_errors"][0]["reason"], "object_must_set_additionalProperties_false");
+        let report_schema: Value = serde_json::from_str(include_str!(
+            "../schema/adapter-schema-coverage-report.schema.json"
+        ))
+        .expect("coverage report schema parses");
+        let report_validator = draft202012::new(&report_schema)
+            .expect("coverage report schema compiles");
+        assert!(report_validator.is_valid(&report), "unsupported-schema report invalid: {report:#}");
 
         let (_, mut schema, _) = fixture();
         schema["$ref"] = json!("#/$defs/fields");
