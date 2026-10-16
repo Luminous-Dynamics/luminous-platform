@@ -182,7 +182,54 @@ The authoring environment for this increment has no `rustc`, `cargo`, or `rustfm
 
 Remaining Stage 0 gates: run formatting, compilation, Rust tests, Clippy and the checked-in Python oracle on the exact reported head; confirm schema meta-validation executes successfully; commit a reproducible dependency lock once Cargo resolution can execute; review whether the reference oracle matches the intended stage policy; and preserve exact-head logs and digests. Passing Stage 0 means the corpus contract and synthetic claim-policy compositions are internally consistent—not that the described attacks execute or firmware is verified.
 
-## 10. Standards to reuse
+## 10. Profile-bound lifecycle qualification
+
+Stage 0 validates synthetic claim-state composition. It does not yet qualify whether a real orchestration state machine can safely generate an update/boot configuration. The next benchmark tier must test the *transition authority* as well as the evidence values.
+
+The Secure Boot slice under review in [Symthaea PR #7668](https://github.com/Luminous-Dynamics/symthaea/pull/7668) addresses the following invariants:
+- `Enabled`, `Disabled`, `SetupMode`, and `Unknown` remain separate states; Setup Mode is pending key enrollment, not equivalent to Disabled, and Unknown is indeterminate.
+- An unanswered/unsure choice cannot be converted into explicit consent. The legacy `UseShim` route cannot authorize config generation.
+- A newly observed state or changed hardware-profile fingerprint invalidates an older approval.
+- Configuration generation requires a same-session profile approval containing exact target/firmware/software identifiers, an explicit human confirmation, a profile qualification decision, and a verified recovery-path decision.
+- The approved PKI bundle is `/var/lib/sbctl` for this profile, and generated config must use the identical path. Lanzaboote key generation and firmware enrollment remain separate operations.
+- Profile approval and method selection are non-persistent; deserializing an orchestrator cannot restore authority from an earlier session.
+- Standard unsigned systemd-boot configuration is allowed only when the current target observation says Secure Boot is Disabled. A successful command or generated configuration is not evidence of a successful verified boot.
+
+### Proposed transition corpus
+
+Freeze a separate `SB-LIFECYCLE-v1` suite with at least these independently authored cases before scoring the implementation:
+
+| Case family | Required behavior |
+|---|---|
+| No probe / missing EFI variable | Block config generation or return indeterminate |
+| Explicit `Unknown` | Never enable key generation or report a verified boot chain |
+| `SetupMode` | Preserve pending-enrollment status; never normalize to Disabled |
+| Unanswered query / unsure / legacy `UseShim` | Consent remains false; config generation is rejected |
+| Known state with no approval | Reject Lanzaboote configuration generation |
+| Hardware-profile mutation | Invalidate the prior approval |
+| Firmware-state change after review | Invalidate the prior approval |
+| Model/firmware/NixOS/Lanzaboote mismatch | Reject the profile approval |
+| PKI-bundle path mismatch | Reject instead of producing divergent signing-key paths |
+| Missing recovery qualification | Reject profile approval |
+| Serialize/restore orchestration | Same-session authorization is absent after restore |
+| Key-generation flag disabled without verified existing keys | Reject this initial-key profile rather than emit a non-bootable config |
+| Enrollment command returns success but post-reboot state is absent | Remain pending/indeterminate; do not claim Secure Boot is active |
+| User Mode/boot target/recovery independently observed | Only then may the post-enrollment claims be evaluated |
+
+### Target thresholds
+
+These are acceptance targets, not measured results:
+
+- **0** config-generation accepts from unknown, stale, mismatched, or unapproved state across the frozen negative corpus.
+- **100%** rejection of approvals after any mutation to the observed state or exact hardware-profile bytes.
+- **100%** of `SetupMode` cases remain pending until observed enrollment plus post-reboot evidence.
+- **0** automatic firmware-enrollment operations in the configuration-generation stage.
+- **100%** agreement between an independent lifecycle oracle and the implementation on frozen cases and deterministic state-transition mutations.
+- **0** persisted authorization decisions restored after a serialization/restart boundary.
+
+The profile's BLAKE3 is an input-binding fingerprint, not proof that the hardware facts are authentic. Likewise, `exact_profile_qualified` and `recovery_path_verified` booleans are not acceptable terminal evidence for production certification by themselves; a production verifier must resolve them to a signed/immutable profile manifest and an independently checked recovery receipt. The PR's new tests are authored code, not yet executed test results. No device-level, QEMU, or production qualification follows from this tier.
+
+## 11. Standards to reuse
 
 - [NIST SP 800-193 — Platform Firmware Resiliency Guidelines](https://csrc.nist.gov/pubs/sp/800/193/final): protect firmware from unauthorized change, detect compromise, and recover.
 - [NIST IR 8259 Rev. 1 (April 2026) — Foundational Cybersecurity Activities for IoT Product Manufacturers](https://csrc.nist.gov/pubs/ir/8259/r1/final): lifecycle security activities and manufacturer/customer information.
@@ -192,7 +239,7 @@ Remaining Stage 0 gates: run formatting, compilation, Rust tests, Clippy and the
 
 Adopting a standard's vocabulary is not a claim of formal conformance. Record the exact version and tested subset. Vendor documentation and the exact hardware profile remain authoritative for supported operations and compatibility.
 
-## 11. Claim ceiling
+## 12. Claim ceiling
 
 This benchmark can establish deterministic behavior over a defined corpus and bounded lab profile. It cannot establish that every firmware image is safe, that a signed image is benign, that every OEM implementation follows its documentation, that hardware measurements are truthful, that every fleet device is covered, or that a target is certified or production-ready.
 
