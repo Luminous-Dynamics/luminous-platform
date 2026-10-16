@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
-pub const MANIFEST_CONTRACT: &str = "omsi-manufacturing-provenance-manifest/0.1";
+const MANIFEST_CONTRACT: &str = "omsi-manufacturing-provenance-manifest/0.1";
 const MAX_TRANSFORMS: usize = 100_000;
 const LIMITATIONS: &[&str] = &[
     "The manifest records consistency and SHA-256 commitments over exact supplied bytes; it does not authenticate a producer, tenant, device, calibration issuer, or physical measurement.",
@@ -285,7 +285,8 @@ mod tests {
         let projection = apply_adapter_map(&map, MAP.as_bytes(), &source, SOURCE.as_bytes());
         assert_eq!(projection["status"], "projection_created");
 
-        let projection_bytes = serde_json::to_vec_pretty(&projection).expect("projection serializes");
+        let projection_bytes =
+            serde_json::to_vec_pretty(&projection).expect("projection serializes");
         let semantic_input_bytes = serde_json::to_vec_pretty(&projection["projection"])
             .expect("semantic input serializes");
         let semantic_input: Value =
@@ -311,8 +312,10 @@ mod tests {
     #[test]
     fn manifest_rechecks_each_edge_and_matches_the_independent_schema() {
         let (source, map, projection, input, report, envelope) = fixture_chain();
-        let manifest = create_provenance_manifest(&source, &map, &projection, &input, &report, &envelope)
-            .expect("consistent evidence chain emits a manifest");
+        let manifest = create_provenance_manifest(
+            &source, &map, &projection, &input, &report, &envelope,
+        )
+        .expect("consistent evidence chain emits a manifest");
         let schema: Value = serde_json::from_str(SCHEMA).expect("manifest schema parses");
         assert!(draft202012::meta::is_valid(&schema), "schema meta-validation failed");
         let validator = draft202012::new(&schema).expect("manifest schema compiles");
@@ -332,29 +335,49 @@ mod tests {
             .expect("consistent chain creates a manifest");
         let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("manifest serializes");
         let verification = super::verify_provenance_manifest(
-            &manifest_bytes, &source, &map, &projection, &input, &report, &envelope,
+            &manifest_bytes,
+            &source,
+            &map,
+            &projection,
+            &input,
+            &report,
+            &envelope,
         );
         assert_eq!(verification["status"], "manifest_verified", "{verification:#}");
         assert_eq!(verification["authority"], "local_consistency_only");
         assert!(verification["checks"].as_array().unwrap().iter()
             .all(|check| check["result"] == "pass"));
 
-        let schema: Value = serde_json::from_str(include_str!("../schema/provenance-verification-report.schema.json"))
-            .expect("verification schema parses");
+        let schema: Value = serde_json::from_str(include_str!(
+            "../schema/provenance-verification-report.schema.json"
+        ))
+        .expect("verification schema parses");
         assert!(draft202012::meta::is_valid(&schema), "verification schema meta-validation failed");
         let validator = draft202012::new(&schema).expect("verification schema compiles");
-        assert!(validator.is_valid(&verification), "verification report does not match schema: {verification:#}");
+        assert!(
+            validator.is_valid(&verification),
+            "verification report does not match schema: {verification:#}"
+        );
     }
 
     #[test]
     fn manifest_verifier_rejects_tampered_manifest_digest() {
         let (source, map, projection, input, report, envelope) = fixture_chain();
-        let mut manifest = create_provenance_manifest(&source, &map, &projection, &input, &report, &envelope)
-            .expect("consistent chain creates a manifest");
+        let mut manifest = create_provenance_manifest(
+            &source, &map, &projection, &input, &report, &envelope,
+        )
+        .expect("consistent chain creates a manifest");
         manifest["artifacts"][0]["sha256"] = json!("0".repeat(64));
-        let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("mutated manifest serializes");
+        let manifest_bytes =
+            serde_json::to_vec_pretty(&manifest).expect("mutated manifest serializes");
         let verification = super::verify_provenance_manifest(
-            &manifest_bytes, &source, &map, &projection, &input, &report, &envelope,
+            &manifest_bytes,
+            &source,
+            &map,
+            &projection,
+            &input,
+            &report,
+            &envelope,
         );
         assert_eq!(verification["status"], "rejected");
         assert!(verification["checks"].as_array().unwrap()
@@ -418,7 +441,9 @@ mod tests {
             serde_json::from_slice(&projection).expect("projection report parses");
         parsed["projection"]["source_quality_claim"]["raw_status"] = json!("ACCEPTED");
         projection = serde_json::to_vec_pretty(&parsed).expect("mutated projection serializes");
-        let result = create_provenance_manifest(&source, &map, &projection, &input, &report, &envelope);
+        let result = create_provenance_manifest(
+            &source, &map, &projection, &input, &report, &envelope,
+        );
         assert!(result.unwrap_err().contains("differs from a fresh adapter re-execution"));
     }
 
@@ -429,7 +454,9 @@ mod tests {
             serde_json::from_slice(&envelope).expect("replay envelope parses");
         parsed["artifact_binding"]["digest"] = json!("0".repeat(64));
         envelope = serde_json::to_vec_pretty(&parsed).expect("tampered envelope serializes");
-        let result = create_provenance_manifest(&source, &map, &projection, &input, &report, &envelope);
+        let result = create_provenance_manifest(
+            &source, &map, &projection, &input, &report, &envelope,
+        );
         assert!(result.unwrap_err().contains("replay envelope does not verify"));
     }
 
@@ -437,7 +464,9 @@ mod tests {
     fn byte_level_change_to_source_is_not_silently_ignored() {
         let (mut source, map, projection, input, report, envelope) = fixture_chain();
         source.push(b' ');
-        let result = create_provenance_manifest(&source, &map, &projection, &input, &report, &envelope);
+        let result = create_provenance_manifest(
+            &source, &map, &projection, &input, &report, &envelope,
+        );
         assert!(result.unwrap_err().contains("differs from a fresh adapter re-execution"));
     }
 }
