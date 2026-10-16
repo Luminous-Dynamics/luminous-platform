@@ -249,10 +249,27 @@
             "properties": {
               "activity_id": {
                 "const": "adapter-projection"
+              },
+              "activity_type": {
+                "const": "adapter_projection"
+              },
+              "used": {
+                "const": [
+                  "source-record",
+                  "adapter-map"
+                ]
+              },
+              "generated": {
+                "const": [
+                  "projection-report"
+                ]
               }
             },
             "required": [
-              "activity_id"
+              "activity_id",
+              "activity_type",
+              "used",
+              "generated"
             ]
           }
         }
@@ -266,10 +283,26 @@
             "properties": {
               "activity_id": {
                 "const": "semantic-input-extraction"
+              },
+              "activity_type": {
+                "const": "semantic_input_extraction"
+              },
+              "used": {
+                "const": [
+                  "projection-report"
+                ]
+              },
+              "generated": {
+                "const": [
+                  "semantic-input"
+                ]
               }
             },
             "required": [
-              "activity_id"
+              "activity_id",
+              "activity_type",
+              "used",
+              "generated"
             ]
           }
         }
@@ -283,10 +316,26 @@
             "properties": {
               "activity_id": {
                 "const": "semantic-evaluation"
+              },
+              "activity_type": {
+                "const": "semantic_evaluation"
+              },
+              "used": {
+                "const": [
+                  "semantic-input"
+                ]
+              },
+              "generated": {
+                "const": [
+                  "semantic-report"
+                ]
               }
             },
             "required": [
-              "activity_id"
+              "activity_id",
+              "activity_type",
+              "used",
+              "generated"
             ]
           }
         }
@@ -300,10 +349,26 @@
             "properties": {
               "activity_id": {
                 "const": "replay-envelope-creation"
+              },
+              "activity_type": {
+                "const": "replay_envelope_creation"
+              },
+              "used": {
+                "const": [
+                  "semantic-input"
+                ]
+              },
+              "generated": {
+                "const": [
+                  "replay-envelope"
+                ]
               }
             },
             "required": [
-              "activity_id"
+              "activity_id",
+              "activity_type",
+              "used",
+              "generated"
             ]
           }
         }
