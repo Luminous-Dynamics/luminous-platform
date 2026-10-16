@@ -118,8 +118,17 @@
       "metric": "observed_source_field_accounting_rate",
       "target": 1,
       "unit": "fraction",
-      "acceptance": "For each representative source-record fixture, every observed leaf JSON Pointer must have exactly one valid preserve, transform, drop, or unmapped disposition. Missing or duplicate mappings fail. Explicit drops and unmapped fields remain visible, are counted separately, and never count as preserved. Transform dispositions require a named transform ID and target pointer.",
+      "acceptance": "For each representative source-record fixture, every observed leaf JSON Pointer must have exactly one valid preserve, transform, drop, or unmapped disposition. Missing or duplicate mappings fail. Explicit drops and unmapped fields remain visible and never count as preserved. Transform dispositions require a named transform ID and target pointer.",
       "failure_policy": "Block adapter qualification; add a minimized source fixture for the uncovered or duplicate path. Complete accounting does not prove the transformation correct."
+    },
+    {
+      "id": "G0-registered-transform-vectors",
+      "class": "hard_gate",
+      "metric": "registered_transform_exact_vector_agreement",
+      "target": 1,
+      "unit": "fraction",
+      "acceptance": "Every registered, versioned transformation must match committed exact input/output vectors. Unsupported transform IDs, unsupported unit codes, absent declared source paths, unmapped fields and overlapping targets must block projection with no partial projection output.",
+      "failure_policy": "Block adapter qualification and add a regression vector for every discovered mismatch. A passing vector suite is bounded evidence and does not prove vendor-wide semantic equivalence."
     },
     {
       "id": "G3-interoperability",
