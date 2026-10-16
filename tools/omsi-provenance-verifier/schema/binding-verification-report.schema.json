@@ -1,0 +1,408 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:independent-provenance-binding-verification-report:0.1",
+  "title": "OMSI Independent Provenance Binding Verification Report 0.1",
+  "description": "Separate implementation report for exact-byte artifact bindings and the v0.2 provenance graph. This is not an independent semantic evaluator or source authenticator.",
+  "type": "object",
+  "required": [
+    "verifier_contract",
+    "status",
+    "authority",
+    "manifest_sha256",
+    "checks",
+    "limitations"
+  ],
+  "properties": {
+    "verifier_contract": {
+      "const": "omsi-independent-provenance-binding-verifier/0.1"
+    },
+    "status": {
+      "enum": [
+        "artifact_bindings_verified",
+        "rejected"
+      ]
+    },
+    "authority": {
+      "const": "artifact_binding_and_graph_consistency_only"
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 17,
+      "maxItems": 17,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "result",
+          "explanation"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "manifest-json",
+              "manifest-contract",
+              "manifest-shape",
+              "artifact-bytes-source-record",
+              "artifact-bytes-source-schema",
+              "artifact-bytes-adapter-map",
+              "artifact-bytes-schema-coverage-report",
+              "artifact-bytes-projection-report",
+              "artifact-bytes-semantic-input",
+              "artifact-bytes-semantic-report",
+              "artifact-bytes-replay-envelope",
+              "schema-coverage-bindings",
+              "declared-transform-ids",
+              "projection-input-link",
+              "semantic-report-metadata",
+              "replay-envelope-binding",
+              "provenance-graph"
+            ]
+          },
+          "result": {
+            "enum": [
+              "pass",
+              "fail"
+            ]
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 6,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "allOf": [
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "manifest-json"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "manifest-contract"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "manifest-shape"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "artifact-bytes-source-record"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "artifact-bytes-source-schema"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "artifact-bytes-adapter-map"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "artifact-bytes-schema-coverage-report"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "artifact-bytes-projection-report"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "artifact-bytes-semantic-input"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "artifact-bytes-semantic-report"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "artifact-bytes-replay-envelope"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "schema-coverage-bindings"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "declared-transform-ids"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "projection-input-link"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "semantic-report-metadata"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "replay-envelope-binding"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "checks": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "provenance-graph"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "artifact_bindings_verified"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "checks": {
+            "items": {
+              "properties": {
+                "result": {
+                  "const": "pass"
+                }
+              },
+              "required": [
+                "result"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
