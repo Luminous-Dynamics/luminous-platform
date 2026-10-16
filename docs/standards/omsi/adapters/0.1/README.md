@@ -40,7 +40,7 @@ A missing or duplicate mapping fails accounting. Explicit `drop` and `unmapped` 
 
 Unknown transform IDs, unsupported unit codes, unmapped fields, missing declared source paths, or colliding/overlapping output pointers block the entire projection. No partial projection is emitted. Explicitly dropped fields remain visible in the audit report. Adding a transformation requires named vectors and a version change; do not silently broaden an existing crosswalk.
 
-The projection CLI emits `omsi-manufacturing-adapter-projection/0.1`, validated against [the projection report schema](../../../../tools/omsi-manufacturing-validator/schema/adapter-projection-report.schema.json). CI asserts the QMS example normalizes `0.007200` to `0.0072` and `millimeter` to `mm`, while preserving the raw `REVIEW` status. It also checks that the MES projection preserves the raw `Accepted` status and explicitly counts the intentionally dropped note.
+The projection CLI emits `omsi-manufacturing-adapter-projection/0.1`, validated against [the projection report schema](../../../../../tools/omsi-manufacturing-validator/schema/adapter-projection-report.schema.json). CI asserts the QMS example normalizes `0.007200` to `0.0072` and `millimeter` to `mm`, while preserving the raw `REVIEW` status. It also checks that the MES projection preserves the raw `Accepted` status and explicitly counts the intentionally dropped note.
 
 ## Synthetic examples
 
