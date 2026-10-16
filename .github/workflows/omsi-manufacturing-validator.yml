@@ -291,13 +291,14 @@ jobs:
             .coverage_contract == "omsi-manufacturing-adapter-schema-coverage/0.1" and
             .status == "schema_coverage_complete" and
             .authority == "schema_field_path_coverage_only" and
-            .schema_field_count == 3 and
-            .covered_schema_field_count == 3 and
+            .schema_field_count == 4 and
+            .covered_schema_field_count == 4 and
             (.schema_paths_not_mapped | length) == 0 and
             (.mapping_paths_outside_schema | length) == 0 and
             (.presence_mismatches | length) == 0 and
-            (.schema_paths_not_observed_in_record | length) == 2 and
+            (.schema_paths_not_observed_in_record | length) == 3 and
             (.required_schema_paths_not_observed_in_record | length) == 0 and
+            (.record_structure_errors | length) == 0 and
             .observed_field_accounting_status == "complete_accounting" and
             .observed_silent_loss_count == 0
           ' "$report" > /dev/null
@@ -323,6 +324,19 @@ jobs:
             .status == "schema_coverage_incomplete" and
             any(.presence_mismatches[]; .source_path == "/unit")
           ' "$wrong_presence_report" > /dev/null
+
+          conditional_record="$RUNNER_TEMP/omsi-schema-coverage-conditional-required-record.json"
+          conditional_report="$RUNNER_TEMP/omsi-schema-coverage-conditional-required-report.json"
+          jq '.metadata = {}' "$record" > "$conditional_record"
+          if cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$map" "$schema" "$conditional_record" > "$conditional_report"; then
+            echo "expected a missing required nested child to fail when its optional parent is present" >&2
+            exit 1
+          fi
+          jq -e '
+            .status == "schema_coverage_incomplete" and
+            any(.record_structure_errors[]; .source_path == "/metadata/note" and .reason == "required_property_not_observed")
+          ' "$conditional_report" > /dev/null
 
           jq 'del(.additionalProperties)' "$schema" > "$open_schema"
           if cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
