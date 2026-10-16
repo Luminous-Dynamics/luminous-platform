@@ -51,8 +51,8 @@
       "metric": "locally_rechecked_provenance_chain_acceptance_rate",
       "target": 1,
       "unit": "fraction",
-      "acceptance": "Every valid source/map/projection/semantic-input/semantic-report/replay-envelope chain fixture must produce and verify a manifest. Any inconsistent projection report, projection/input mismatch, semantic report mismatch, replay envelope mismatch, or mutated manifest digest must be rejected. The verifier reconstructs expected manifest fields from the supplied artifacts. Record SHA-256 commitments over exact bytes and explicit derivation edges; do not claim producer authentication or cross-implementation verification.",
-      "failure_policy": "Block the chain; retain the smallest mutated artifact set as a regression fixture and require a separate verifier before any trust-bearing integration."
+      "acceptance": "Every valid source-record/source-schema/adapter-map/schema-coverage/projection/semantic-input/semantic-report/replay-envelope fixture must produce and verify a manifest. The builder re-runs schema coverage over exact record/schema/map bytes and requires the supplied report to match with schema_coverage_complete before projection. Any unsupported/incomplete/stale coverage report, schema/map/record/projection/input/report/envelope mismatch, or mutated manifest digest must be rejected. The manifest binds exact bytes for all eight artifacts and records a PROV-aligned schema-coverage activity. Do not claim producer authentication or cross-implementation verification.",
+      "failure_policy": "Block the chain; retain the smallest mutated artifact set as a regression fixture. No receipt or trust-bearing integration may rely on a single-implementation unsigned manifest."
     },
     {
       "id": "G1-repeatability",
@@ -199,7 +199,10 @@
     "production_readiness_claimed": false,
     "source_schema_coverage_command_authored": true,
     "source_schema_coverage_exact_head_ci_verified": false,
-    "supported_source_schema_field_count": 4
+    "supported_source_schema_field_count": 4,
+    "provenance_manifest_contract_version": "0.2",
+    "schema_bound_provenance_manifest_authored": true,
+    "provenance_schema_coverage_artifact_binding_authored": true
   },
   "scorecard_schema_reference": "benchmark-scorecard-0.1.md"
 }
