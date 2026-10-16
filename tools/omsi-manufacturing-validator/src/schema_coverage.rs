@@ -223,7 +223,7 @@ struct SchemaInventory {
 fn schema_inventory(schema: &Value) -> SchemaInventory {
     let mut fields = Vec::new();
     let mut errors = Vec::new();
-    if let Err(error) = walk_schema(schema, "", true, &mut fields, &mut errors) {
+    if let Err(error) = walk_schema(schema, "", true, &mut fields) {
         errors.push(error);
     }
     if fields.len() > MAX_SCHEMA_FIELDS {
@@ -252,7 +252,6 @@ fn walk_schema(
     path: &str,
     required: bool,
     fields: &mut Vec<SchemaField>,
-    errors: &mut Vec<Value>,
 ) -> Result<(), Value> {
     let Some(object) = schema.as_object() else {
         return Err(schema_error(path, "schema_node_must_be_an_object"));
@@ -320,7 +319,7 @@ fn walk_schema(
                 let escaped = name.replace('~', "~0").replace('/', "~1");
                 let child_path = format!("{path}/{escaped}");
                 let child_required = required && required_names.contains(name.as_str());
-                walk_schema(child, &child_path, child_required, fields, errors)?;
+                walk_schema(child, &child_path, child_required, fields)?;
                 if fields.len() > MAX_SCHEMA_FIELDS {
                     return Err(json!({
                         "field": child_path,
