@@ -690,7 +690,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{audit_adapter_map, ADAPTER_MAP_CONTRACT};
+    use super::{apply_adapter_map, audit_adapter_map, ADAPTER_MAP_CONTRACT};
     use serde_json::{json, Value};
 
     fn bytes(value: &Value) -> Vec<u8> {
@@ -727,6 +727,12 @@ mod tests {
             "source_format":"synthetic-mes-flat-json/0.1",
             "mappings":mappings
         })
+    }
+
+    fn apply(contract: Value, source: Value) -> Value {
+        let contract_bytes = bytes(&contract);
+        let source_bytes = bytes(&source);
+        apply_adapter_map(&contract, &contract_bytes, &source, &source_bytes)
     }
 
     #[test]
@@ -870,4 +876,123 @@ mod tests {
             item.as_str().is_some_and(|text| text.contains("does not execute or prove"))
         }));
     }
+    #[test]
+    fn qms_fixture_executes_named_decimal_and_unit_transforms() {
+        let contract: Value = serde_json::from_str(include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json"
+        )).expect("QMS map fixture parses");
+        let source: Value = serde_json::from_str(include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json"
+        )).expect("QMS record fixture parses");
+        let contract_bytes = include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json"
+        ).as_bytes();
+        let source_bytes = include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json"
+        ).as_bytes();
+
+        let report = apply_adapter_map(&contract, contract_bytes, &source, source_bytes);
+        assert_eq!(report["status"], "projection_created");
+        assert_eq!(report["authority"], "adapter_projection_only");
+        assert_eq!(report["projection"]["measurement"]["value_decimal"], "0.0072");
+        assert_eq!(report["projection"]["measurement"]["unit_code"], "mm");
+        assert_eq!(report["projection"]["source_quality_claim"]["raw_status"], "REVIEW");
+        assert_eq!(report["audit"]["silent_loss_count"], 0);
+        assert_eq!(report["audit"]["transformed_count"], 2);
+        assert_eq!(report["applied_mapping_count"], 8);
+    }
+
+    #[test]
+    fn mes_fixture_preserves_raw_status_and_surfaces_intentional_drop() {
+        let contract: Value = serde_json::from_str(include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json"
+        )).expect("MES map fixture parses");
+        let source: Value = serde_json::from_str(include_str!(
+            "../../../docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json"
+        )).expect("MES record fixture parses");
+        let report = apply(contract, source);
+
+        assert_eq!(report["status"], "projection_created");
+        assert_eq!(report["projection"]["source_quality_claim"]["raw_status"], "Accepted");
+        assert_eq!(report["explicitly_dropped_count"], 1);
+        assert_eq!(report["audit"]["dropped_count"], 1);
+        assert!(report["projection"].pointer("/operator_note").is_none());
+    }
+
+    #[test]
+    fn explicit_unmapped_fields_block_projection_even_with_complete_accounting() {
+        let report = apply(
+            contract(vec![json!({
+                "source_path":"/temperature",
+                "disposition":"unmapped",
+                "reason":"no agreed target"
+            })]),
+            json!({"temperature":"72.4"}),
+        );
+        assert_eq!(report["status"], "projection_blocked");
+        assert_eq!(report["projection"], Value::Null);
+        assert_eq!(report["audit"]["status"], "complete_accounting");
+        assert_eq!(report["audit"]["explicitly_unmapped_count"], 1);
+    }
+
+    #[test]
+    fn unknown_transform_blocks_projection_without_emitting_partial_output() {
+        let report = apply(
+            contract(vec![json!({
+                "source_path":"/temperature",
+                "disposition":"transform",
+                "target_path":"/measurement/value_decimal",
+                "transform_id":"unregistered-transform/0.1"
+            })]),
+            json!({"temperature":"72.4"}),
+        );
+        assert_eq!(report["status"], "projection_blocked");
+        assert_eq!(report["projection"], Value::Null);
+        assert!(report["errors"].as_array().unwrap().iter().any(|error| {
+            error["reason"] == "transform_id_not_registered"
+        }));
+    }
+
+    #[test]
+    fn unit_outside_the_explicit_crosswalk_blocks_projection() {
+        let report = apply(
+            contract(vec![json!({
+                "source_path":"/unit",
+                "disposition":"transform",
+                "target_path":"/measurement/unit_code",
+                "transform_id":"qms-unit-code-crosswalk/0.1"
+            })]),
+            json!({"unit":"parsec"}),
+        );
+        assert_eq!(report["status"], "projection_blocked");
+        assert_eq!(report["projection"], Value::Null);
+        assert!(report["errors"].as_array().unwrap().iter().any(|error| {
+            error["reason"] == "unit_code_not_in_crosswalk"
+        }));
+    }
+
+    #[test]
+    fn overlapping_target_paths_block_projection_before_writes() {
+        let report = apply(
+            contract(vec![
+                json!({
+                    "source_path":"/temperature",
+                    "disposition":"preserve",
+                    "target_path":"/measurement"
+                }),
+                json!({
+                    "source_path":"/unit",
+                    "disposition":"preserve",
+                    "target_path":"/measurement/unit_code"
+                }),
+            ]),
+            json!({"temperature":"72.4","unit":"Cel"}),
+        );
+        assert_eq!(report["status"], "projection_blocked");
+        assert_eq!(report["projection"], Value::Null);
+        assert!(report["errors"].as_array().unwrap().iter().any(|error| {
+            error["reason"] == "target_path_collision_or_prefix_overlap"
+        }));
+    }
+
 }
