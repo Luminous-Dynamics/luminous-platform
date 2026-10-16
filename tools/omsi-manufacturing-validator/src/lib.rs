@@ -1172,6 +1172,33 @@ impl Decimal {
 
 }
 
+impl Decimal {
+    fn canonical_string(self) -> String {
+        let digits = self.coefficient.abs().to_string();
+        let sign = if self.coefficient < 0 { "-" } else { "" };
+        if self.scale == 0 {
+            return format!("{sign}{digits}");
+        }
+
+        let scale = self.scale as usize;
+        if digits.len() > scale {
+            let split = digits.len() - scale;
+            format!("{sign}{}.{}", &digits[..split], &digits[split..])
+        } else {
+            format!(
+                "{sign}0.{}{}",
+                "0".repeat(scale - digits.len()),
+                digits
+            )
+        }
+    }
+}
+
+/// Normalize a profile decimal without using binary floating-point arithmetic.
+pub fn normalize_decimal_literal(text: &str) -> Result<String, &'static str> {
+    Decimal::parse(text).map(Decimal::canonical_string)
+}
+
 impl Ord for Decimal {
     fn cmp(&self, other: &Self) -> Ordering {
         let scale = self.scale.max(other.scale);
@@ -1374,6 +1401,19 @@ mod decimal_boundary_tests {
         assert!(tiny_positive > zero);
         assert!(below_one < one);
         assert!(above_one > one);
+    }
+
+    #[test]
+    fn decimal_normalization_is_exact_and_canonical() {
+        assert_eq!(super::normalize_decimal_literal("72.4000"), Ok("72.4".to_owned()));
+        assert_eq!(super::normalize_decimal_literal("0.00010"), Ok("0.0001".to_owned()));
+        assert_eq!(super::normalize_decimal_literal("-0.000"), Ok("0".to_owned()));
+        assert_eq!(
+            super::normalize_decimal_literal("999999999999999999.999999999999999999"),
+            Ok("999999999999999999.999999999999999999".to_owned())
+        );
+        assert!(super::normalize_decimal_literal("1e3").is_err());
+        assert!(super::normalize_decimal_literal("+1").is_err());
     }
 
     #[test]
