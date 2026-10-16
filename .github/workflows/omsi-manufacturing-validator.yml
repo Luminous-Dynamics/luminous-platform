@@ -312,7 +312,7 @@ jobs:
             .verifier_contract == "omsi-independent-provenance-binding-verifier/0.1" and
             .status == "artifact_bindings_verified" and
             .authority == "artifact_binding_and_graph_consistency_only" and
-            (.checks | length) == 17 and
+            (.checks | length) == 18 and
             ([.checks[].result] | all(. == "pass")) and
             (has("signature") | not)
           ' "$independent_verification" > /dev/null
