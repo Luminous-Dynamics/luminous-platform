@@ -7,6 +7,7 @@ use std::time::Instant;
 
 const WARMUP_ITERATIONS_PER_CASE: usize = 5;
 const MAX_ITERATIONS_PER_CASE: usize = 100_000;
+// Keep caller-supplied corpora and four per-phase sample buffers bounded.
 const MAX_BENCHMARK_CASES: usize = 10_000;
 const MAX_TOTAL_SAMPLES_PER_PHASE: usize = 1_000_000;
 
