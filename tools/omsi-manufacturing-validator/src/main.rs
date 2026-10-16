@@ -122,7 +122,7 @@ fn run() -> Result<u8, String> {
             }
         }
         _ => Err(
-            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case>\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>".into(),
+            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>".into(),
         ),
     }
 }
