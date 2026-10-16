@@ -84,7 +84,7 @@ Author expected outcomes independently from the verifier being tested. Each case
 | Privacy/availability | Secret injected into source output; evidence store unavailable; Mycelix/network partition; verifier unavailable | No secret leakage; local policy remains enforceable; consequential action remains blocked where required evidence cannot be checked |
 | Parser/schema | Unknown schema version, duplicate IDs, dangling/cyclic lineage, oversized input, unsupported critical field or malformed encoding | Bounded parser rejects or returns explicit unknown; no permissive interpretation |
 
-Freeze case IDs and expected dispositions before scoring. The initial synthetic corpus is [`docs/fixtures/firmware-assurance-corpus-v1.json`](fixtures/firmware-assurance-corpus-v1.json), with **44 reviewable cases (9 positive, 26 negative, 9 indeterminate controls)** and a strict Draft 2020-12 schema at [`docs/schemas/firmware-assurance-corpus-v1.schema.json`](schemas/firmware-assurance-corpus-v1.schema.json). It is explicitly synthetic and names no physical target. The next validator must check sequential/unique IDs, `case_count == cases.len()`, scope invariants, and expected-disposition/case-kind consistency beyond JSON Schema. Add deterministic mutations to reach **10,000 evaluated inputs per profile**. The corpus and generated mutations must be reproducible from a versioned seed and digest. Expand based on observed failure modes, not just case count.
+Freeze case IDs and expected dispositions before scoring. The initial synthetic corpus is [`docs/fixtures/firmware-assurance-corpus-v1.json`](fixtures/firmware-assurance-corpus-v1.json), with **44 reviewable cases (9 positive, 26 negative, 9 indeterminate controls)** and a strict Draft 2020-12 schema at [`docs/schemas/firmware-assurance-corpus-v1.schema.json`](schemas/firmware-assurance-corpus-v1.schema.json). It is explicitly synthetic and names no physical target. Every case contains a `required_claims` list that selects which declared claim states participate in the stage decision. The simple policy composer blocks when any required claim is refuted; otherwise it returns indeterminate when any required claim is unknown or not applicable; only all-verified required claims are eligible for lab staging. This makes claim-state composition executable while leaving the prose descriptions as documentation rather than executable firmware attacks. Add deterministic mutations to reach **10,000 evaluated inputs per profile**. The corpus and generated mutations must be reproducible from a versioned seed and digest. Expand based on observed failure modes, not just case count.
 
 ## 6. Benchmark protocol and comparative baselines
 
@@ -154,9 +154,10 @@ Passing an earlier stage never implies passing a later one.
 ## 8. Implementation sequence — work independent of CI queue
 
 1. Review and cross-link the current Symthaea Secure Boot consent/state code, Nixward UKI trust verifier and timestamped-revocation work, and platform issue #23's adapter/maturity registry. Do not fork a second command authority, journal, generic evidence envelope, or verifier if an existing canonical owner already supplies it.
-2. Freeze the claim vocabulary and validate the 44-case machine-readable corpus/schema linked above before writing a clever verifier.
-3. Implement a small Rust-first, offline schema/semantic validator with bounded input sizes and stable reason codes. Keep schemas and expected cases language-neutral so an independent implementation can be written.
-4. Add an independent verifier and mutation tests; run available local formatting, compilation and tests against the exact local source revision. Preserve logs, tool versions, source hashes, executed case counts and explicit limitations.
+2. Freeze the claim vocabulary and required-claim policy over the 44-case language-neutral JSON corpus.
+3. Use the Rust-first, offline corpus checker in `tools/firmware-assurance-corpus-checker/` as Stage 0. It validates schema and bookkeeping and derives stage dispositions over supplied claim-state assignments; it does not verify artifacts or hardware.
+4. Add an independently implemented policy oracle and a versioned mutation harness. Keep expected decisions separate from producer outputs and use source hashes, executed case counts and explicit limitations.
+5. Run formatting, compilation and tests against the exact source revision when a Rust toolchain is available. Preserve logs and tool versions.
 5. Select one exact, authorized lab target for read-only observations. Do not infer support from a vendor brand, mock, API success or an emulator.
 6. Add firmware execution only by satisfying the separate Stage 3 gate and existing Nixward transaction/recovery contracts.
 
@@ -169,15 +170,16 @@ A Rust-first corpus checker now lives under `tools/firmware-assurance-corpus-che
 The checker:
 - accepts explicit corpus and schema paths and bounds each input at 4 MiB;
 - uses a pinned JSON Schema validator dependency and then enforces cross-field contract rules;
-- enforces sequential case IDs, exact case counts/profile binding, case-kind/disposition consistency, positive/negative/indeterminate claim semantics, and mandatory read-only assertions;
+- enforces sequential case IDs, exact case counts/profile binding, unique required-claim references, claim-state/disposition consistency, and mandatory read-only assertions;
+- derives a stage disposition over synthetic claim states: any required refutation blocks; otherwise unresolved required evidence remains indeterminate; only all-verified required claims are eligible for synthetic lab staging;
 - emits a deterministic report containing the exact input byte lengths and SHA-256 digests, schema/contract results, case distribution, and an explicit claim ceiling;
-- reports zero executed cases and zero physical device operations by construction.
+- evaluates claim-state policy combinations but reports zero physical device operations by construction.
 
 The repository workflow is defined in `.github/workflows/firmware-assurance-corpus-checker.yml`; it runs formatting, unit tests, a positive corpus check, a deliberate case-count mutation, and Clippy. A workflow definition is not itself evidence that any step ran.
 
-The authoring environment for this increment has no `rustc`, `cargo`, or `rustfmt`. Therefore the Rust crate and authored tests have **not** been compiled, formatted or executed locally, and hosted status for the latest branch head must be checked before interpreting any CI result. A connector-backed structural audit of the checked-in JSON fixture/schema found 44 sequential unique IDs, matching claim and case-property inventories, consistent case-kind/disposition mapping, all required read-only assertions, and no structural invariant errors. That audit is not execution of the Rust validator and is not JSON Schema meta-validation.
+The authoring environment for this increment has no `rustc`, `cargo`, or `rustfmt`. Therefore the Rust crate and authored tests have **not** been compiled, formatted or executed locally, and hosted status for the latest branch head must be checked before interpreting any CI result. A connector-backed structural audit of the checked-in JSON fixture/schema found 44 sequential unique IDs, matching claim and case-property inventories, consistent case-kind/disposition mapping, all required read-only assertions, and no structural invariant errors. That audit is not execution of the Rust validator, not JSON Schema meta-validation, and not evidence that the described firmware attacks were executed.
 
-Remaining Stage 0 gates: run the Rust tests and formatter on the exact reported head; run schema meta-validation with the pinned validator; commit a reproducible dependency lock once Cargo resolution can execute; and preserve exact-head test output. Passing Stage 0 still means only that the corpus contract is internally acceptable—not that the cases execute or firmware is verified.
+Remaining Stage 0 gates: run the Rust tests and formatter on the exact reported head; run explicit schema meta-validation with the pinned validator; commit a reproducible dependency lock once Cargo resolution can execute; add independent test-oracle review; and preserve exact-head test output. Passing Stage 0 means the corpus contract and synthetic claim-policy compositions are internally consistent—not that the described attacks execute or firmware is verified.
 
 ## 9. Standards to reuse
 
