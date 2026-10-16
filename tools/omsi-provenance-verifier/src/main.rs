@@ -1,6 +1,6 @@
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs;
 use std::io::{self, Read};
@@ -25,7 +25,7 @@ const ARTIFACTS: [(&str, &str); 8] = [
 
 const LIMITATIONS: &[&str] = &[
     "This tool independently checks exact-byte artifact digests, cross-artifact references, and a fixed provenance graph; it does not re-execute the main validator.",
-    "Schema coverage is checked for report/input binding and asserted summary fields only. This verifier does not independently traverse the source schema or prove that the reported coverage is correct.",
+    "Schema coverage is independently recomputed for a restricted closed-object JSON Schema field-inventory subset; this is not full JSON Schema validation, and array item values are not recursively validated.",
     "The verifier does not execute adapter transformations or independently recalculate the manufacturing semantic decision.",
     "A well-bound manifest does not authenticate the source, producer, tenant, calibration issuer, instrument, or physical measurement.",
     "The manifest and this report are unsigned; successful verification is not authorization, regulatory certification, quality release, or machine-control permission.",
@@ -229,6 +229,18 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
         _ => false,
     };
 
+    let independent_schema_coverage_ok = match (
+        artifacts.get(0).and_then(Option::as_ref),
+        artifacts.get(1).and_then(Option::as_ref),
+        artifacts.get(2).and_then(Option::as_ref),
+        artifacts.get(3).and_then(Option::as_ref),
+    ) {
+        (Some(source_record), Some(source_schema), Some(adapter_map), Some(coverage)) => {
+            independently_audit_schema_coverage(source_schema, source_record, adapter_map, coverage)
+        }
+        _ => false,
+    };
+
     let transform_declarations_ok = match (manifest.as_ref(), artifacts.get(2).and_then(Option::as_ref)) {
         (Some(manifest), Some(adapter_map)) => {
             let mut found = BTreeSet::new();
@@ -353,6 +365,12 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
         "coverage report, schema/record/map digests, coverage counts or gap lists are inconsistent",
     ));
     checks.push(check(
+        "independent-source-schema-coverage",
+        independent_schema_coverage_ok,
+        "a separate implementation derives the closed-schema leaf inventory, requiredness, record structure, and mapping coverage",
+        "independently derived source-schema coverage differs from the report, or the schema uses an unsupported construct",
+    ));
+    checks.push(check(
         "declared-transform-ids",
         transform_declarations_ok,
         "manifest transform declarations match the adapter-map declarations",
@@ -395,6 +413,221 @@ pub fn verify_bundle(manifest_bytes: &[u8], artifact_bytes: [&[u8]; 8]) -> Value
         "checks": checks,
         "limitations": LIMITATIONS
     })
+}
+
+
+/// Independently derives the source schema's field inventory and checks
+/// that the coverage report's summary agrees with the actual schema/map/record.
+/// This deliberately supports a closed-object subset rather than all JSON Schema.
+fn independently_audit_schema_coverage(
+    source_schema: &Value,
+    source_record: &Value,
+    adapter_map: &Value,
+    coverage: &Value,
+) -> bool {
+    let mut fields = BTreeMap::new();
+    if !derive_schema_fields(source_schema, "", true, &mut fields) || fields.is_empty() {
+        return false;
+    }
+    if fields.len() > 100_000 || !record_matches_closed_schema(source_schema, source_record) {
+        return false;
+    }
+
+    let Some(mappings) = adapter_map.get("mappings").and_then(Value::as_array) else {
+        return false;
+    };
+    if mappings.len() > 100_000 {
+        return false;
+    }
+    let mut declarations: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for mapping in mappings {
+        let Some(path) = mapping.get("source_path").and_then(Value::as_str) else {
+            return false;
+        };
+        let presence = match mapping.get("presence").and_then(Value::as_str) {
+            None => "required",
+            Some("required") => "required",
+            Some("optional") => "optional",
+            Some(_) => return false,
+        };
+        if !fields.contains_key(path) {
+            return false;
+        }
+        declarations.entry(path.to_owned()).or_default().push(presence.to_owned());
+    }
+
+    for (path, schema_required) in &fields {
+        let expected = if *schema_required { "required" } else { "optional" };
+        match declarations.get(path) {
+            Some(values) if values.len() == 1 && values[0] == expected => {}
+            _ => return false,
+        }
+    }
+    if declarations.len() != fields.len() {
+        return false;
+    }
+
+    let schema_count = coverage.get("schema_field_count").and_then(Value::as_u64);
+    let covered_count = coverage.get("covered_schema_field_count").and_then(Value::as_u64);
+    let clean_lists = [
+        "schema_paths_not_mapped",
+        "mapping_paths_outside_schema",
+        "presence_mismatches",
+        "duplicate_source_mappings",
+        "required_schema_paths_not_observed_in_record",
+        "schema_errors",
+        "record_structure_errors",
+    ]
+    .iter()
+    .all(|key| coverage.get(*key).and_then(Value::as_array).is_some_and(Vec::is_empty));
+
+    coverage.get("coverage_contract").and_then(Value::as_str)
+        == Some(COVERAGE_CONTRACT)
+        && coverage.get("status").and_then(Value::as_str) == Some("schema_coverage_complete")
+        && coverage.get("authority").and_then(Value::as_str) == Some("schema_field_path_coverage_only")
+        && schema_count == Some(fields.len() as u64)
+        && covered_count == Some(fields.len() as u64)
+        && coverage.get("observed_field_accounting_status").and_then(Value::as_str)
+            == Some("complete_accounting")
+        && coverage.get("observed_silent_loss_count").and_then(Value::as_u64) == Some(0)
+        && clean_lists
+}
+
+fn derive_schema_fields(
+    schema: &Value,
+    path: &str,
+    ancestors_required: bool,
+    fields: &mut BTreeMap<String, bool>,
+) -> bool {
+    let Some(object) = schema.as_object() else {
+        return false;
+    };
+    if path.is_empty() && object.get("type").and_then(Value::as_str) != Some("object") {
+        return false;
+    }
+    const UNSUPPORTED: &[&str] = &[
+        "$ref",
+        "$dynamicRef",
+        "allOf",
+        "anyOf",
+        "oneOf",
+        "not",
+        "if",
+        "patternProperties",
+        "propertyNames",
+        "dependentSchemas",
+        "unevaluatedProperties",
+        "unevaluatedItems",
+    ];
+    if UNSUPPORTED.iter().any(|key| object.contains_key(*key)) {
+        return false;
+    }
+    let Some(type_name) = object.get("type").and_then(Value::as_str) else {
+        return false;
+    };
+
+    match type_name {
+        "object" => {
+            if object.get("additionalProperties") != Some(&Value::Bool(false)) {
+                return false;
+            }
+            let Some(properties) = object.get("properties").and_then(Value::as_object) else {
+                return false;
+            };
+            if properties.is_empty() {
+                return false;
+            }
+            let Some(required_names) = declared_required_names(object, properties) else {
+                return false;
+            };
+            for (name, child_schema) in properties {
+                let escaped = name.replace('~', "~0").replace('/', "~1");
+                let child_path = format!("{path}/{escaped}");
+                let child_required =
+                    ancestors_required && required_names.contains(name.as_str());
+                if !derive_schema_fields(child_schema, &child_path, child_required, fields) {
+                    return false;
+                }
+                if fields.len() > 100_000 {
+                    return false;
+                }
+            }
+            true
+        }
+        "array" => {
+            if !object.contains_key("items") {
+                return false;
+            }
+            fields.insert(path.to_owned(), ancestors_required).is_none()
+        }
+        "string" | "number" | "integer" | "boolean" | "null" => {
+            fields.insert(path.to_owned(), ancestors_required).is_none()
+        }
+        _ => false,
+    }
+}
+
+fn declared_required_names<'a>(
+    schema: &'a serde_json::Map<String, Value>,
+    properties: &'a serde_json::Map<String, Value>,
+) -> Option<BTreeSet<&'a str>> {
+    match schema.get("required") {
+        None => Some(BTreeSet::new()),
+        Some(Value::Array(items)) => {
+            let mut required = BTreeSet::new();
+            for item in items {
+                let name = item.as_str()?;
+                if !properties.contains_key(name) || !required.insert(name) {
+                    return None;
+                }
+            }
+            Some(required)
+        }
+        Some(_) => None,
+    }
+}
+
+fn record_matches_closed_schema(schema: &Value, record: &Value) -> bool {
+    let Some(object) = schema.as_object() else {
+        return false;
+    };
+    let Some(type_name) = object.get("type").and_then(Value::as_str) else {
+        return false;
+    };
+    match type_name {
+        "object" => {
+            if object.get("additionalProperties") != Some(&Value::Bool(false)) {
+                return false;
+            }
+            let Some(properties) = object.get("properties").and_then(Value::as_object) else {
+                return false;
+            };
+            let Some(record_object) = record.as_object() else {
+                return false;
+            };
+            let Some(required) = declared_required_names(object, properties) else {
+                return false;
+            };
+            if required.iter().any(|name| !record_object.contains_key(*name))
+                || record_object.keys().any(|name| !properties.contains_key(name))
+            {
+                return false;
+            }
+            properties.iter().all(|(name, child_schema)| match record_object.get(name) {
+                Some(value) => record_matches_closed_schema(child_schema, value),
+                None => true,
+            })
+        }
+        "array" => record.is_array() && object.contains_key("items"),
+        "string" => record.is_string(),
+        "integer" => record.as_number().is_some_and(|number| {
+            number.as_i64().is_some() || number.as_u64().is_some()
+        }),
+        "number" => record.is_number(),
+        "boolean" => record.is_boolean(),
+        "null" => record.is_null(),
+        _ => false,
+    }
 }
 
 fn expected_activities() -> Value {
