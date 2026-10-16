@@ -34,6 +34,24 @@ Every observed source leaf must be covered exactly once:
 
 Every observed source leaf must have exactly one classification. A missing or duplicate mapping for a field present in the record fails accounting. Explicit `drop` and `unmapped` dispositions remain visible in separate counters; they are never counted as preserved. Each mapping may set `presence` to `required` or `optional`; omitted `presence` defaults to `required` for backward compatibility. A declared required path missing from a record blocks projection. A declared optional path missing from that record is skipped and counted, but remains visible in `mapping_paths_not_observed_in_record`. The report binds exact source-record and contract bytes with SHA-256 and explicitly declares no canonicalization. CI uses a separately implemented, pinned Rust JSON Schema Draft 2020-12 validator as a dev-only dependency to validate the schema documents and real audit/projection/vector/replay/benchmark/provenance-manifest reports; this is stronger than JSON parsing alone. Those Rust tests still require an exact-head CI pass. The adapter-map, source-record, transform-vector and benchmark-vector CLI inputs are capped at 16 MiB per artifact; source-field collection is capped at 100,000 observed leaf paths.
 
+## Source-schema coverage beyond one sample
+
+`audit-adapter-map` can only account for paths observed in a supplied record. A field may therefore appear fully accounted-for when an optional source property simply did not occur in that record. `audit-adapter-schema-coverage` adds a second, schema-derived inventory:
+
+```sh
+cargo run --release --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+  audit-adapter-schema-coverage \
+  docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json \
+  docs/standards/omsi/adapters/0.1/examples/mes-optional-record.schema.json \
+  docs/standards/omsi/adapters/0.1/examples/mes-optional-record.json
+```
+
+The command compares every schema-declared scalar or array leaf path against the adapter map, detects mappings outside the declared field inventory, and checks that each mapping's `presence` agrees with the source schema. In the committed example, three schema paths are mapped although only `/temperature` appears in the sample record; `/unit` and `/operator_note` remain covered and explicitly listed as absent from that record. Removing the mapping for an absent optional field, misdeclaring its presence, or supplying an open-object schema must fail the gate.
+
+**Fail-closed scope:** this is a field-path inventory profile, not a full JSON Schema implementation. It accepts an object root with explicit `properties`, `required`, and `additionalProperties: false`; nested closed objects are traversed; arrays are atomic paths. It rejects `$ref`, conditional/composition keywords, pattern-based fields, open objects and unsupported type shapes rather than guessing. The command does not prove every source value meets every schema constraint or that a vendor schema is authentic. The Draft 2020-12 test dependency separately meta-validates the synthetic schema fixture and checks its sample instance; the coverage command itself does not claim runtime source-schema validation.
+
+The versioned report [schema](../../../../../tools/omsi-manufacturing-validator/schema/adapter-schema-coverage-report.schema.json) binds the exact adapter-map, source-schema and sample-record bytes by SHA-256. The coverage rate is a hard gate only for the field-inventory subset that the command explicitly supports, not proof of semantic equivalence. Before qualifying a real vendor adapter, derive the inventory from the full source schema and add representative records that exercise optional, repeated, null, nested and vendor-extension cases.
+
 ## Executing projections
 
 `apply-adapter-map` uses the same field-accounting contract and then applies a small, explicit transform registry:
@@ -87,7 +105,7 @@ The `examples/` directory contains flat MES-like records, nested QMS-like record
 
 ## Limitations
 
-- The audit covers fields observed in the supplied record. Repeat it across representative records and add coverage from the source schema to discover optional fields that do not appear in one sample.
+- The record audit covers fields observed in the supplied record. `audit-adapter-schema-coverage` adds a restricted closed-object schema-path inventory so absent optional properties are still required to have mappings; unsupported schema constructs fail closed. This inventory is not full JSON Schema conformance and does not establish semantic correctness.
 - Transformation vectors exercise only the enumerated cases; they do not prove vendor-wide semantic equivalence, standard-body ontology alignment, or dimensional unit conversion. Expand vectors from reviewed source schemas and independent reference implementations.
 - Complete accounting does not prove that the target mapping is correct, that the source is authentic, that a measurement is true, or that a quality-release decision is authorized.
 - Unknown or secret fields are not safe merely because they are classified. Data owners must review whether each field may enter an OMSI report or a public Mycelix receipt.
