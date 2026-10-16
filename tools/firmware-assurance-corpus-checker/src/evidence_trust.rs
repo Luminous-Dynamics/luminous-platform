@@ -112,10 +112,10 @@ impl EvidenceTrustInput {
             (&self.counter_status, "monotonic", "rollback"),
             (&self.provenance_status, "authenticated", "unauthenticated"),
         ];
-        if statuses.iter().any(|(actual, _, negative)| actual == negative) {
+        if statuses.iter().any(|(actual, _, negative)| actual.as_str() == *negative) {
             return Decision::Rejected;
         }
-        if statuses.iter().all(|(actual, positive, _)| actual == positive) {
+        if statuses.iter().all(|(actual, positive, _)| actual.as_str() == *positive) {
             return Decision::Accepted;
         }
         Decision::Indeterminate
