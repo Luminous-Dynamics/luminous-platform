@@ -1,0 +1,218 @@
+{
+  "contract": "omsi-interoperability-target-matrix/0.1",
+  "status": "research_targets_only_not_conformance",
+  "purpose": "Versioned qualification backlog for real manufacturing interoperability targets; distinguishes published standard scope, candidate payloads, required evidence, benchmark targets and implemented capability.",
+  "authority": "planning_only",
+  "targets": [
+    {
+      "id": "iso-8000-110-characteristic-data-exchange",
+      "standard": "ISO 8000-110:2021",
+      "domain": "Characteristic-data exchange",
+      "role": "Computer-checkable message syntax, semantic encoding and conformance to a data specification.",
+      "candidate_payload_family": "Characteristic-data messages with explicit data-specification identity and version.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative specification version and lawful access to normative content",
+        "Machine-readable syntax/data specification and independent validator version",
+        "Positive and negative conformance messages",
+        "Reviewed mappings for unit, property identifier, scope and source revision"
+      ],
+      "benchmarks": [
+        {
+          "metric": "authoritative_schema_instance_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every committed positive/negative message agrees with the pinned independent validator; source/spec versions and digests are recorded."
+        },
+        {
+          "metric": "schema_declared_field_accounting",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every inventory field is preserved, explicitly transformed, explicitly dropped with reviewed reason, or listed as unmapped; absent optional fields still count."
+        },
+        {
+          "metric": "unsupported_constructs_optimistically_accepted",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "A construct outside the implemented and declared profile blocks qualification rather than being approximated."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-66-manufacturing-data-quality-indicators",
+      "standard": "ISO 8000-66:2021",
+      "domain": "Manufacturing operations data-quality management",
+      "role": "Assessment indicators for data-quality management processes; not a source-record wire format.",
+      "candidate_payload_family": "Versioned evidence for a data-quality indicator definition, population, calculation and result.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Indicator definition/version and assessment boundary",
+        "Data-processing work products from a representative workflow",
+        "Evidence distinguishing observed results from targets/self-reported status",
+        "Reviewed aggregation and sampling policy"
+      ],
+      "benchmarks": [
+        {
+          "metric": "indicator_evidence_traceability",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every indicator result links to definition/version, population, time window, evidence inputs and calculation activity."
+        },
+        {
+          "metric": "target_reported_as_measurement_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Targets and missing measurements remain explicitly labeled; a target is never emitted as an observed pass."
+        },
+        {
+          "metric": "independent_indicator_recalculation_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "release",
+          "acceptance": "A separate implementation reproduces committed calculation fixtures and detects tampered inputs or calculation metadata."
+        }
+      ]
+    },
+    {
+      "id": "iso-23952-qif-quality-information-framework",
+      "standard": "ISO 23952:2020 (QIF)",
+      "domain": "Manufacturing quality information",
+      "role": "Integrated model for manufacturing quality information, including inspection and measurement information.",
+      "candidate_payload_family": "Version-pinned QIF XML with the normative schema assets for that version.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative QIF version and schema bundle",
+        "Pinned XML/XSD validator and schema-bundle digests",
+        "Representative valid/invalid QIF measurement and inspection fixtures",
+        "Reviewed mapping for identifiers, units, specification/revision, uncertainty where represented, and source-versus-derived claims"
+      ],
+      "benchmarks": [
+        {
+          "metric": "authoritative_qif_schema_acceptance_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "100% agreement with the pinned independent XSD validator on positive and negative fixtures."
+        },
+        {
+          "metric": "qif_source_field_accounting",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every source field has exactly one reviewed disposition; no silent loss or unreviewed unit/identifier reinterpretation."
+        },
+        {
+          "metric": "round_trip_semantic_equivalence_for_declared_lossless_fields",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "release",
+          "acceptance": "Declared lossless fields survive import/export exactly or under an approved semantic comparison; known-loss fields have explicit tests and disclosure."
+        }
+      ]
+    },
+    {
+      "id": "mtconnect-opc-ua-device-interoperability",
+      "standard": "MTConnect and OPC UA Companion Specifications (versions pinned per pilot)",
+      "domain": "Machine/device observations and information-model interoperability",
+      "role": "Device observations and companion information models across machine, server, client and adapter boundaries.",
+      "candidate_payload_family": "Version-pinned MTConnect observations and OPC UA nodeset/address-space fixtures through a simulator or server/client integration.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Specific MTConnect and OPC UA Companion Specification versions",
+        "Authoritative schemas/nodesets and provenance/licensing records",
+        "Simulator/server/client test path returning varied device/observation structures",
+        "Reviewed identifier, timestamp, unit, asset-scope and source-revision mapping rules"
+      ],
+      "benchmarks": [
+        {
+          "metric": "end_to_end_observation_receipt_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every positive fixture reaches the client/receipt with expected identifiers, scope, times, units and values; malformed and unauthorized cases reject."
+        },
+        {
+          "metric": "semantic_retention_for_declared_lossless_fields",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Declared lossless fields preserve semantic values across device model, adapter and evidence receipt; intentional loss remains explicit and counted."
+        },
+        {
+          "metric": "unknown_node_or_version_silent_acceptance_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Unknown nodes and version mismatches are surfaced; no qualified/conformant state is emitted optimistically."
+        },
+        {
+          "metric": "independent_agent_verification_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "release",
+          "acceptance": "Two independently provisioned verifier agents agree on artifact/graph and fixture outcomes; agreement is not asserted to prove physical truth."
+        }
+      ]
+    }
+  ],
+  "cross_cutting_gates": [
+    {
+      "id": "pinned-evidence",
+      "metric": "schema_spec_source_map_tool_report_digest_completeness",
+      "target": 1,
+      "unit": "fraction",
+      "acceptance": "Each result binds source bytes, schema/spec version and bytes, adapter-map bytes, tool identity/version and output report; digests do not authenticate the producer."
+    },
+    {
+      "id": "negative-controls",
+      "metric": "unexpected_negative_acceptance",
+      "target": 0,
+      "unit": "count",
+      "acceptance": "Mutations to unit, identifier, tenant scope, source revision, required presence, schema version, malformed XML/JSON, replay bytes and schema constraints remain negative controls."
+    },
+    {
+      "id": "independent-qualification",
+      "metric": "same-implementation_only_qualification_claims",
+      "target": 0,
+      "unit": "count",
+      "acceptance": "Schema validation, field mapping, semantic evaluation, artifact binding and authentication are reported as separate checks; an implementation may not be the sole oracle for its own conformance."
+    }
+  ],
+  "non_claims": [
+    "No ISO, QIF, MTConnect, OPC UA or vendor conformance is currently asserted.",
+    "Synthetic JSON fixtures do not replace normative schema assets or a real device/client-server integration path.",
+    "A valid schema instance, mapping audit, hash or signature does not by itself prove producer authenticity or physical measurement truth.",
+    "Benchmark targets in this matrix are proposed acceptance objectives, not normative thresholds or measured outcomes."
+  ],
+  "references": [
+    {
+      "id": "ISO 8000-110:2021",
+      "url": "https://www.iso.org/standard/78501.html"
+    },
+    {
+      "id": "ISO 8000-66:2021",
+      "url": "https://www.iso.org/standard/76390.html"
+    },
+    {
+      "id": "ISO 23952:2020 QIF",
+      "url": "https://www.iso.org/standard/77461.html"
+    },
+    {
+      "id": "NIST testing of the MTConnect–OPC UA Companion Specification",
+      "url": "https://www.nist.gov/publications/testing-mtconnect-opc-ua-companion-specification"
+    },
+    {
+      "id": "NIST Digital Thread for Manufacturing",
+      "url": "https://www.nist.gov/programs-projects/digital-thread-manufacturing"
+    }
+  ]
+}
