@@ -59,7 +59,7 @@ The next steps should avoid inventing an isolated proprietary trust format. Keep
 
 ## Real-standards qualification matrix
 
-The new [Interoperability Targets 0.1](./interoperability-targets-0.1.md) and its [machine-readable contract](./interoperability-targets-0.1.json) separate four future integration targets from current capabilities: ISO 8000-110 characteristic-data exchange, ISO 8000-66 data-quality indicators, ISO 23952 QIF quality information, and MTConnect/OPC UA device interoperability. Each is explicitly labeled not implemented/not assessed; a synthetic JSON fixture is not conformance evidence.
+The new [Interoperability Targets 0.1](./interoperability-targets-0.1.md) and its [machine-readable contract](./interoperability-targets-0.1.json) define ten future qualification targets separately from current capabilities: ISO 8000-110/120/130/140 for characteristic-data exchange, provenance, accuracy and completeness; ISO 8000-66 data-quality indicators; ISO 8000-210/220 sensor-data quality; ISO/TS 8000-230 sensor cleansing; ISO 23952 QIF; and MTConnect/OPC UA device interoperability. ISO 8000-110 explicitly excludes provenance, accuracy and completeness information, referring to separate parts for those concerns; do not flatten these into one general data-validity flag. Each target is labeled not implemented/not assessed; a synthetic JSON fixture is not conformance evidence.
 
 The next cross-industry milestone is to pin one target's exact standard/schema version, acquire its authoritative machine-readable assets, select an independent validator, and establish positive/negative source fixtures. For QIF, the intended test path is XML/XSD plus semantic field accounting; for MTConnect/OPC UA, it is a simulator or server/client integration path checking accurate receipt of varied observations. These gates should remain separate from local OMSI evaluation and its performance timings.
 
@@ -131,16 +131,15 @@ Do not make Mycelix reputation or consensus a performance/correctness substitute
 
 ## Research basis
 
-- [ISO 8000-110:2021](https://www.iso.org/standard/78501.html) specifies computer-checkable characteristics-data message syntax, semantic encoding, and conformance to a data specification.
+- [ISO 8000-110:2021](https://www.iso.org/standard/78501.html) specifies computer-checkable characteristic-data message syntax, semantic encoding and conformance to a data specification. Its published scope explicitly excludes provenance, accuracy and completeness.
+- [ISO 8000-120:2016](https://www.iso.org/standard/62393.html), [ISO 8000-130:2016](https://www.iso.org/standard/62394.html), and [ISO 8000-140:2016](https://www.iso.org/standard/62395.html) address provenance, accuracy assertions and completeness assertions as separate concepts. These are not proof of physical truth or universal requirements.
 - [ISO 8000-66:2021](https://www.iso.org/standard/76390.html) describes assessment indicators for data-quality management in manufacturing operations.
-- [NIST testing of the MTConnect–OPC UA Companion Specification](https://www.nist.gov/publications/testing-mtconnect-opc-ua-companion-specification) is a model for integration testing: pass varying structures through a server/client path and verify accurate receipt.
-- [ISO 23952:2020 QIF](https://www.iso.org/standard/77461.html) remains a useful manufacturing-quality interoperability reference; OMSI does not currently claim QIF conformance.
-
-- NIST's [Digital Thread for Manufacturing](https://www.nist.gov/programs-projects/digital-thread-manufacturing) emphasizes product-lifecycle standards, conformance tooling and trust in data assets.
-- [ISO 8000-110:2021](https://www.iso.org/standard/78501.html) describes computer-checkable message syntax, semantic encoding and conformance to data specifications for characteristic-data exchange; [ISO 8000-66:2021](https://www.iso.org/standard/76390.html) provides data-quality process indicators for manufacturing operations. These support schema-derived coverage and measurable data-quality gates, but neither is a conformance claim for OMSI.
-- [ISO 23952:2020 QIF](https://www.iso.org/standard/77461.html) is a manufacturing-quality information model and was confirmed current by ISO in 2026. Its scope is a useful interoperability reference, not evidence that OMSI is QIF-conformant.
-- [ILAC G8 and G17 guidance](https://ilac.org/publications-and-resources/ilac-guidance-series/) reinforces the distinction between a measurement result, uncertainty and a named decision rule. This is why the existing nominal-only rule is not to be silently reinterpreted.
-- [Holochain validation guidance](https://developer.holochain.org/build/validation/) describes determinism, addressable DHT dependencies and the need for single- and multi-agent tests. It supports separating deterministic integrity checks from dynamic trust/status lookups.
+- [ISO 8000-210:2024](https://www.iso.org/standard/84274.html) specifies sensor-data quality characteristics; [ISO 8000-220:2025](https://www.iso.org/standard/86062.html) defines corresponding measures; [ISO/TS 8000-230:2026](https://www.iso.org/standard/89681.html) provides sensor-cleansing guidelines and does not specify real-time cleansing algorithms.
+- [ISO 23952:2020 QIF](https://www.iso.org/standard/77461.html) remains current after its 2026 review. Its scope is an interoperability reference, not evidence that OMSI conforms.
+- [NIST testing of the MTConnect–OPC UA Companion Specification](https://www.nist.gov/publications/testing-mtconnect-opc-ua-companion-specification) demonstrates an integration-test approach that sends varying data structures through a server/client path and checks accurate receipt.
+- NIST's [Digital Thread for Manufacturing](https://www.nist.gov/programs-projects/digital-thread-manufacturing) and [machine-readable manufacturing standards production method](https://www.nist.gov/publications/production-method-machine-readable-manufacturing-data-standards) support executable standards artifacts and traceable evidence chains.
+- [ILAC G8/G17 guidance](https://ilac.org/publications-and-resources/ilac-guidance-series/) reinforces the distinction between a measurement result, uncertainty and a named decision rule. This is why the current nominal-only rule must not be silently reinterpreted.
+- [Holochain validation guidance](https://developer.holochain.org/build/validation/) describes determinism, addressable DHT dependencies and single/multi-agent testing, supporting separation of deterministic integrity checks from dynamic trust/status lookups.
 
 ## Current evidence status
 
