@@ -322,6 +322,19 @@ pub fn apply_adapter_map(
             vec![json!({"field":"mappings","reason":"explicitly_unmapped_source_fields_block_projection"})],
         );
     }
+    if audit
+        .get("mapping_paths_not_observed_in_record")
+        .and_then(Value::as_array)
+        .is_some_and(|paths| !paths.is_empty())
+    {
+        return projection_blocked(
+            audit,
+            vec![json!({
+                "field":"mappings",
+                "reason":"declared_mapping_path_absent_from_this_source_record"
+            })],
+        );
+    }
 
     let Some(root) = contract.as_object() else {
         return projection_blocked(
