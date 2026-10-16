@@ -194,16 +194,20 @@ fn run() -> Result<u8, String> {
                 Ok(1)
             }
         }
-        Some("create-provenance-manifest") if args.len() == 8 => {
+        Some("create-provenance-manifest") if args.len() == 10 => {
             let source_record = read_bytes_bounded(&args[2], MAX_ADAPTER_INPUT_BYTES)?;
-            let adapter_map = read_bytes_bounded(&args[3], MAX_ADAPTER_INPUT_BYTES)?;
-            let projection_report = read_bytes_bounded(&args[4], MAX_ADAPTER_INPUT_BYTES)?;
-            let semantic_input = read_bytes_bounded(&args[5], MAX_ADAPTER_INPUT_BYTES)?;
-            let semantic_report = read_bytes_bounded(&args[6], MAX_ADAPTER_INPUT_BYTES)?;
-            let replay_envelope = read_bytes_bounded(&args[7], MAX_ADAPTER_INPUT_BYTES)?;
+            let source_schema = read_bytes_bounded(&args[3], MAX_ADAPTER_INPUT_BYTES)?;
+            let adapter_map = read_bytes_bounded(&args[4], MAX_ADAPTER_INPUT_BYTES)?;
+            let schema_coverage_report = read_bytes_bounded(&args[5], MAX_ADAPTER_INPUT_BYTES)?;
+            let projection_report = read_bytes_bounded(&args[6], MAX_ADAPTER_INPUT_BYTES)?;
+            let semantic_input = read_bytes_bounded(&args[7], MAX_ADAPTER_INPUT_BYTES)?;
+            let semantic_report = read_bytes_bounded(&args[8], MAX_ADAPTER_INPUT_BYTES)?;
+            let replay_envelope = read_bytes_bounded(&args[9], MAX_ADAPTER_INPUT_BYTES)?;
             let manifest = provenance::create_provenance_manifest(
                 &source_record,
+                &source_schema,
                 &adapter_map,
+                &schema_coverage_report,
                 &projection_report,
                 &semantic_input,
                 &semantic_report,
@@ -216,18 +220,22 @@ fn run() -> Result<u8, String> {
             );
             Ok(0)
         }
-        Some("verify-provenance-manifest") if args.len() == 9 => {
+        Some("verify-provenance-manifest") if args.len() == 11 => {
             let manifest = read_bytes_bounded(&args[2], MAX_ADAPTER_INPUT_BYTES)?;
             let source_record = read_bytes_bounded(&args[3], MAX_ADAPTER_INPUT_BYTES)?;
-            let adapter_map = read_bytes_bounded(&args[4], MAX_ADAPTER_INPUT_BYTES)?;
-            let projection_report = read_bytes_bounded(&args[5], MAX_ADAPTER_INPUT_BYTES)?;
-            let semantic_input = read_bytes_bounded(&args[6], MAX_ADAPTER_INPUT_BYTES)?;
-            let semantic_report = read_bytes_bounded(&args[7], MAX_ADAPTER_INPUT_BYTES)?;
-            let replay_envelope = read_bytes_bounded(&args[8], MAX_ADAPTER_INPUT_BYTES)?;
+            let source_schema = read_bytes_bounded(&args[4], MAX_ADAPTER_INPUT_BYTES)?;
+            let adapter_map = read_bytes_bounded(&args[5], MAX_ADAPTER_INPUT_BYTES)?;
+            let schema_coverage_report = read_bytes_bounded(&args[6], MAX_ADAPTER_INPUT_BYTES)?;
+            let projection_report = read_bytes_bounded(&args[7], MAX_ADAPTER_INPUT_BYTES)?;
+            let semantic_input = read_bytes_bounded(&args[8], MAX_ADAPTER_INPUT_BYTES)?;
+            let semantic_report = read_bytes_bounded(&args[9], MAX_ADAPTER_INPUT_BYTES)?;
+            let replay_envelope = read_bytes_bounded(&args[10], MAX_ADAPTER_INPUT_BYTES)?;
             let verification = provenance::verify_provenance_manifest(
                 &manifest,
                 &source_record,
+                &source_schema,
                 &adapter_map,
+                &schema_coverage_report,
                 &projection_report,
                 &semantic_input,
                 &semantic_report,
@@ -245,7 +253,7 @@ fn run() -> Result<u8, String> {
             }
         }
         _ => Err(
-            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator apply-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator verify-transform-vectors <TRANSFORM-VECTORS.json>\n       omsi-manufacturing-validator create-provenance-manifest <source-record.json> <adapter-map.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>\n       omsi-manufacturing-validator audit-adapter-schema-coverage <adapter-map.json> <source-schema.json> <source-record.json>\n       omsi-manufacturing-validator verify-provenance-manifest <manifest.json> <source-record.json> <adapter-map.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>".into(),
+            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator apply-adapter-map <adapter-map.json> <source-record.json>\n       omsi-manufacturing-validator verify-transform-vectors <TRANSFORM-VECTORS.json>\n       omsi-manufacturing-validator create-provenance-manifest <source-record.json> <source-schema.json> <adapter-map.json> <schema-coverage-report.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>\n       omsi-manufacturing-validator audit-adapter-schema-coverage <adapter-map.json> <source-schema.json> <source-record.json>\n       omsi-manufacturing-validator verify-provenance-manifest <manifest.json> <source-record.json> <source-schema.json> <adapter-map.json> <schema-coverage-report.json> <projection-report.json> <semantic-input.json> <semantic-report.json> <replay-envelope.json>".into(),
         ),
     }
 }
