@@ -131,6 +131,15 @@
       "failure_policy": "Block adapter qualification; add a minimized source fixture for the uncovered or duplicate path. Complete accounting does not prove the transformation correct."
     },
     {
+      "id": "G0-source-schema-coverage",
+      "class": "hard_gate",
+      "metric": "source_schema_leaf_mapping_coverage_rate",
+      "target": 1,
+      "unit": "fraction",
+      "acceptance": "For the explicitly supported closed-object schema subset, every scalar/array leaf path has exactly one adapter mapping; every mapping points to a declared schema path; mapping presence must match the schema's effective required/optional semantics. Missing optional mappings fail even when absent from the sample record. Open objects, $ref, conditional/composition constructs and unsupported schema forms must be rejected rather than approximated. This is field-path inventory coverage, not full JSON Schema validation or vendor conformance.",
+      "failure_policy": "Block adapter qualification. Add a minimized fixture for every missing/extra/duplicate/misclassified path or unsupported schema construct; expand supported semantics only with explicit tests."
+    },
+    {
       "id": "G0-registered-transform-vectors",
       "class": "hard_gate",
       "metric": "registered_transform_exact_vector_agreement",
@@ -187,7 +196,10 @@
     "independent_cross_implementation_verifier": false,
     "authenticated_provenance_signing": false,
     "mycelix_adapter_implemented": false,
-    "production_readiness_claimed": false
+    "production_readiness_claimed": false,
+    "source_schema_coverage_command_authored": true,
+    "source_schema_coverage_exact_head_ci_verified": false,
+    "supported_source_schema_field_count": 3
   },
   "scorecard_schema_reference": "benchmark-scorecard-0.1.md"
 }
