@@ -546,8 +546,8 @@ mod tests {
             &map, MAP.as_bytes(), &schema, SCHEMA.as_bytes(), &record, RECORD.as_bytes(),
         );
         assert_eq!(report["status"], "schema_coverage_complete", "{report:#}");
-        assert_eq!(report["schema_field_count"], 3);
-        assert_eq!(report["covered_schema_field_count"], 3);
+        assert_eq!(report["schema_field_count"], 4);
+        assert_eq!(report["covered_schema_field_count"], 4);
         let report_schema: Value = serde_json::from_str(include_str!(
             "../schema/adapter-schema-coverage-report.schema.json"
         ))
@@ -558,7 +558,7 @@ mod tests {
         assert!(report_validator.is_valid(&report), "report failed schema: {report:#}");
         assert_eq!(report["schema_paths_not_mapped"], json!([]));
         assert_eq!(report["presence_mismatches"], json!([]));
-        assert_eq!(report["schema_paths_not_observed_in_record"].as_array().unwrap().len(), 2);
+        assert_eq!(report["schema_paths_not_observed_in_record"].as_array().unwrap().len(), 3);
         assert_eq!(report["required_schema_paths_not_observed_in_record"], json!([]));
     }
 
@@ -685,6 +685,28 @@ mod tests {
         assert_eq!(report["covered_schema_field_count"], 4);
         assert_eq!(report["schema_paths_not_observed_in_record"].as_array().unwrap().len(), 2);
         assert_eq!(report["required_schema_paths_not_observed_in_record"], json!([]));
+    }
+
+    #[test]
+    fn required_child_of_present_optional_object_is_not_silently_skipped() {
+        let (map, schema, _) = fixture();
+        let record = json!({
+            "temperature":"72.4",
+            "metadata": {}
+        });
+        let map_bytes = serde_json::to_vec(&map).unwrap();
+        let schema_bytes = serde_json::to_vec(&schema).unwrap();
+        let record_bytes = serde_json::to_vec(&record).unwrap();
+        let report = audit_adapter_schema_coverage(
+            &map, &map_bytes, &schema, &schema_bytes, &record, &record_bytes,
+        );
+        assert_eq!(report["status"], "schema_coverage_incomplete", "{report:#}");
+        assert!(report["record_structure_errors"].as_array().unwrap().iter().any(|error| {
+            error["source_path"] == "/metadata/note"
+                && error["reason"] == "required_property_not_observed"
+        }));
+        assert!(report["required_schema_paths_not_observed_in_record"]
+            .as_array().unwrap().iter().any(|path| path == "/metadata/note"));
     }
 
     #[test]
