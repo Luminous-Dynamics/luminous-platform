@@ -44,6 +44,9 @@ pub fn validate_corpus_bytes(corpus_bytes: &[u8], schema_bytes: &[u8]) -> Result
     let schema: Value = serde_json::from_slice(schema_bytes)
         .map_err(|error| format!("invalid schema JSON: {error}"))?;
 
+    jsonschema::meta::validate(&schema)
+        .map_err(|error| format!("schema meta-validation failed: {error}"))?;
+
     let validator = validator_for(&schema)
         .map_err(|error| format!("schema compilation failed: {error}"))?;
 
@@ -100,6 +103,7 @@ pub fn validate_corpus_bytes(corpus_bytes: &[u8], schema_bytes: &[u8]) -> Result
         "case_kind_counts": Value::Object(kind_counts),
         "checks": {
             "json_parse": "passed",
+            "json_schema_meta": "passed",
             "json_schema": if schema_errors.is_empty() { "passed" } else { "failed" },
             "semantic_contract": if contract_errors.is_empty() { "passed" } else { "failed" }
         },
@@ -546,6 +550,17 @@ mod tests {
         let report = validate_corpus_bytes(&altered, SCHEMA.as_bytes()).unwrap();
         assert_eq!(report["status"], "blocked");
         assert_eq!(report["checks"]["json_schema"], "failed");
+    }
+
+    #[test]
+    fn invalid_schema_is_rejected_by_meta_validation() {
+        let invalid_schema = br#"{
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "not-a-json-type"
+        }"#;
+        assert!(validate_corpus_bytes(CORPUS.as_bytes(), invalid_schema)
+            .unwrap_err()
+            .contains("schema meta-validation failed"));
     }
 
     #[test]
