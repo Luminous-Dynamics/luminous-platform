@@ -1261,7 +1261,7 @@ mod tests {
     }
 
     #[test]
-    fn absent_declared_source_path_blocks_projection() {
+    fn absent_required_source_path_blocks_projection() {
         let report = apply(
             contract(vec![
                 json!({
@@ -1271,6 +1271,7 @@ mod tests {
                 }),
                 json!({
                     "source_path":"/optional_unit",
+                    "presence":"required",
                     "disposition":"preserve",
                     "target_path":"/measurement/unit_code"
                 }),
@@ -1279,10 +1280,58 @@ mod tests {
         );
         assert_eq!(report["status"], "projection_blocked");
         assert_eq!(report["projection"], Value::Null);
+        assert_eq!(report["audit"]["status"], "incomplete_accounting");
         assert_eq!(
-            report["audit"]["mapping_paths_not_observed_in_record"][0],
+            report["audit"]["required_mapping_paths_not_observed_in_record"][0],
             "/optional_unit"
         );
+    }
+
+    #[test]
+    fn absent_optional_source_path_is_skipped_but_remains_auditable() {
+        let report = apply(
+            contract(vec![
+                json!({
+                    "source_path":"/temperature",
+                    "disposition":"preserve",
+                    "target_path":"/measurement/value_decimal"
+                }),
+                json!({
+                    "source_path":"/unit",
+                    "presence":"optional",
+                    "disposition":"preserve",
+                    "target_path":"/measurement/unit_code"
+                }),
+            ]),
+            json!({"temperature":"72.4"}),
+        );
+        assert_eq!(report["status"], "projection_created");
+        assert_eq!(report["projection"]["measurement"]["value_decimal"], "72.4");
+        assert!(report["projection"].pointer("/measurement/unit_code").is_none());
+        assert_eq!(report["skipped_optional_count"], 1);
+        assert_eq!(report["audit"]["status"], "complete_accounting");
+        assert_eq!(
+            report["audit"]["mapping_paths_not_observed_in_record"][0],
+            "/unit"
+        );
+        assert_eq!(report["audit"]["required_mapping_paths_not_observed_in_record"], json!([]));
+    }
+
+    #[test]
+    fn invalid_presence_value_fails_closed() {
+        let report = audit(
+            contract(vec![json!({
+                "source_path":"/temperature",
+                "presence":"sometimes",
+                "disposition":"preserve",
+                "target_path":"/measurement/value_decimal"
+            })]),
+            json!({"temperature":"72.4"}),
+        );
+        assert_eq!(report["status"], "invalid_contract");
+        assert!(report["errors"].as_array().unwrap().iter().any(|error| {
+            error["reason"] == "unknown_presence_requirement"
+        }));
     }
 
     #[test]
