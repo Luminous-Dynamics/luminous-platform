@@ -55,6 +55,7 @@ pub enum JournalState {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DenialReason {
     EmptyIdempotencyKey,
+    EmptyRequestFingerprint,
     InvalidAttemptLimit,
     ExpiredRequest,
     HouseholdAuthorityUnavailableOrRevoked,
@@ -119,6 +120,13 @@ pub struct DispatchGateInput<'a> {
 pub fn evaluate_dispatch_gate(input: &DispatchGateInput<'_>) -> DispatchDecision {
     if input.request_idempotency_key.trim().is_empty() {
         return DispatchDecision::Deny(DenialReason::EmptyIdempotencyKey);
+    }
+    // Structural schema validation normally rejects this too, but the gate is a
+    // defense-in-depth boundary and must remain safe when called independently.
+    // Non-empty is only a minimum check; the caller still owns digest computation
+    // and a trusted verifier must bind it to the canonical request bytes.
+    if input.request_fingerprint.trim().is_empty() {
+        return DispatchDecision::Deny(DenialReason::EmptyRequestFingerprint);
     }
 
     // One idempotency key identifies one exact request, not merely one action name.
@@ -259,6 +267,17 @@ mod tests {
     fn permits_only_a_fully_bound_fresh_low_risk_attempt() {
         let binding = binding();
         assert_eq!(evaluate_dispatch_gate(&valid_input(&binding)), DispatchDecision::AllowDispatch);
+    }
+
+    #[test]
+    fn rejects_empty_request_fingerprint_even_without_schema_validation() {
+        let binding = binding();
+        let mut input = valid_input(&binding);
+        input.request_fingerprint = "  ";
+        assert_eq!(
+            evaluate_dispatch_gate(&input),
+            DispatchDecision::Deny(DenialReason::EmptyRequestFingerprint)
+        );
     }
 
     #[test]
@@ -551,6 +570,7 @@ mod tests {
             "deny" => {
                 let reason = match conformance_str(value, "reason") {
                     "empty_idempotency_key" => DenialReason::EmptyIdempotencyKey,
+                    "empty_request_fingerprint" => DenialReason::EmptyRequestFingerprint,
                     "invalid_attempt_limit" => DenialReason::InvalidAttemptLimit,
                     "expired_request" => DenialReason::ExpiredRequest,
                     "household_authority_unavailable_or_revoked" => DenialReason::HouseholdAuthorityUnavailableOrRevoked,
