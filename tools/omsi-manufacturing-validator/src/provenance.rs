@@ -267,6 +267,18 @@ mod tests {
     );
     const SCHEMA: &str = include_str!("../schema/provenance-manifest.schema.json");
 
+    fn verify_bundle(manifest: &[u8], artifacts: &[Vec<u8>; 6]) -> Value {
+        super::verify_provenance_manifest(
+            manifest,
+            &artifacts[0],
+            &artifacts[1],
+            &artifacts[2],
+            &artifacts[3],
+            &artifacts[4],
+            &artifacts[5],
+        )
+    }
+
     fn fixture_chain() -> (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>) {
         let map: Value = serde_json::from_str(MAP).expect("map fixture parses");
         let source: Value = serde_json::from_str(SOURCE).expect("source fixture parses");
@@ -347,6 +359,56 @@ mod tests {
         assert_eq!(verification["status"], "rejected");
         assert!(verification["checks"].as_array().unwrap()
             .iter().any(|check| check["id"] == "manifest-equality" && check["result"] == "fail"));
+    }
+
+    #[test]
+    fn manifest_verifier_rejects_mutation_at_each_artifact_boundary() {
+        let (source, map, projection, input, report, envelope) = fixture_chain();
+        let artifacts = [source, map, projection, input, report, envelope];
+        let manifest = create_provenance_manifest(
+            &artifacts[0], &artifacts[1], &artifacts[2],
+            &artifacts[3], &artifacts[4], &artifacts[5],
+        ).expect("original evidence chain is consistent");
+        let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("manifest serializes");
+
+        let mut source_value: Value =
+            serde_json::from_slice(&artifacts[0]).expect("source record parses");
+        source_value["record"]["asset"]["id"] = json!("PART-8");
+        let mut map_value: Value =
+            serde_json::from_slice(&artifacts[1]).expect("adapter map parses");
+        map_value["mappings"][3]["transform_id"] = json!("unregistered-transform/9.0");
+        let mut projection_value: Value =
+            serde_json::from_slice(&artifacts[2]).expect("projection report parses");
+        projection_value["projection"]["measurement"]["value_decimal"] = json!("0.009");
+        let mut input_value: Value =
+            serde_json::from_slice(&artifacts[3]).expect("semantic input parses");
+        input_value["measurement"]["value_decimal"] = json!("0.009");
+        let mut report_value: Value =
+            serde_json::from_slice(&artifacts[4]).expect("semantic report parses");
+        report_value["decision_trace"][0]["interpretation"] = json!("mutated interpretation");
+        let mut envelope_value: Value =
+            serde_json::from_slice(&artifacts[5]).expect("replay envelope parses");
+        envelope_value["artifact_binding"]["digest"] = json!("0".repeat(64));
+
+        let mutations = [
+            ("source record", 0usize, serde_json::to_vec(&source_value).unwrap()),
+            ("adapter map", 1usize, serde_json::to_vec(&map_value).unwrap()),
+            ("projection report", 2usize, serde_json::to_vec(&projection_value).unwrap()),
+            ("semantic input", 3usize, serde_json::to_vec(&input_value).unwrap()),
+            ("semantic report", 4usize, serde_json::to_vec(&report_value).unwrap()),
+            ("replay envelope", 5usize, serde_json::to_vec(&envelope_value).unwrap()),
+        ];
+
+        for (label, index, changed_bytes) in mutations {
+            let mut case = artifacts.clone();
+            case[index] = changed_bytes;
+            let verification = verify_bundle(&manifest_bytes, &case);
+            assert_eq!(
+                verification["status"],
+                "rejected",
+                "{label} mutation unexpectedly verified: {verification:#}"
+            );
+        }
     }
 
     #[test]
