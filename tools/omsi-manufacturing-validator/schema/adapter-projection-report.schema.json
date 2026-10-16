@@ -9,8 +9,7 @@
     "authority",
     "projection",
     "audit",
-    "limitations",
-    "skipped_optional_count"
+    "limitations"
   ],
   "properties": {
     "projection_contract": {
@@ -115,7 +114,8 @@
           "adapter_id",
           "source_format",
           "applied_mapping_count",
-          "explicitly_dropped_count"
+          "explicitly_dropped_count",
+          "skipped_optional_count"
         ],
         "properties": {
           "projection": {
