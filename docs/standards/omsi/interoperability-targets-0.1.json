@@ -1,0 +1,479 @@
+{
+  "contract": "omsi-interoperability-target-matrix/0.1",
+  "status": "research_targets_only_not_conformance",
+  "purpose": "Versioned qualification backlog for real manufacturing interoperability targets; distinguishes published standard scope, candidate payloads, required evidence, benchmark targets and implemented capability.",
+  "authority": "planning_only",
+  "targets": [
+    {
+      "id": "iso-8000-110-characteristic-data-exchange",
+      "standard": "ISO 8000-110:2021",
+      "domain": "Characteristic-data exchange",
+      "role": "Computer-checkable message syntax, semantic encoding, and conformance to a characteristic-data specification. ISO's published scope explicitly excludes provenance, accuracy and completeness assertions, which are addressed by separate parts.",
+      "candidate_payload_family": "Characteristic-data messages with explicit data-specification identity and version.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative specification version and lawful access to normative content",
+        "Machine-readable syntax/data specification and independent validator version",
+        "Positive and negative conformance messages",
+        "Reviewed mappings for unit, property identifier, scope and source revision",
+        "A scope decision identifying whether the project also needs ISO 8000-120 provenance, ISO 8000-130 accuracy, or ISO 8000-140 completeness assertions"
+      ],
+      "benchmarks": [
+        {
+          "metric": "authoritative_schema_instance_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every committed positive/negative message agrees with the pinned independent validator; source/spec versions and digests are recorded."
+        },
+        {
+          "metric": "schema_declared_field_accounting",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every inventory field is preserved, explicitly transformed, explicitly dropped with reviewed reason, or listed as unmapped; absent optional fields still count."
+        },
+        {
+          "metric": "unsupported_constructs_optimistically_accepted",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "A construct outside the implemented and declared profile blocks qualification rather than being approximated."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-120-characteristic-data-provenance",
+      "standard": "ISO 8000-120:2016",
+      "domain": "Characteristic-data provenance",
+      "role": "Requirements and a data model for capturing and exchanging information about the provenance/pedigree of characteristic property values; supplements ISO 8000-110 and does not itself specify an exchange format.",
+      "candidate_payload_family": "Provenance statements about property values, source/derivation references and the named data specification; mapped to the OMSI derivation graph only under a reviewed profile.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO 8000-120:2016 edition and normative requirements",
+        "Reviewed provenance terms and mapping from property-value pedigree to OMSI entities/activities",
+        "Positive and negative fixtures for missing, conflicting and mutated provenance",
+        "A policy separating provenance assertions from source authentication and measurement truth"
+      ],
+      "benchmarks": [
+        {
+          "metric": "required_provenance_statement_coverage",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every required provenance element for the pinned use case is preserved or explicitly reported missing; no value is labeled proven solely because provenance fields exist."
+        },
+        {
+          "metric": "source_to_derived_value_lineage_reconstruction",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every fixture reconstructs the expected source/derivation chain with exact artifact references and versioned activity semantics."
+        },
+        {
+          "metric": "tampered_or_conflicting_provenance_unflagged_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Mutated digests, broken links and contradictory source/derived claims are detected and surfaced."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-130-characteristic-data-accuracy-assertions",
+      "standard": "ISO 8000-130:2016",
+      "domain": "Characteristic-data accuracy information",
+      "role": "Requirements and a conceptual model for representing/exchanging statements or assertions about characteristic-data accuracy; it does not define a universal accuracy requirement or measurement method.",
+      "candidate_payload_family": "Typed accuracy assertions with source, scope, method/reference, applicable population and evidence links; do not turn them into a universal numeric accuracy score.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO 8000-130:2016 edition and normative model",
+        "Explicit semantics for each accuracy assertion and its scope/population",
+        "Independent calculation or reference evidence where an assertion is derived",
+        "Metrology review to distinguish data accuracy statements from physical measurement uncertainty and calibration"
+      ],
+      "benchmarks": [
+        {
+          "metric": "accuracy_assertion_scope_and_source_completeness",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every reported accuracy assertion carries the approved scope and source/evidence references and retains its typed meaning."
+        },
+        {
+          "metric": "accuracy_assertion_conflated_with_measurement_truth_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "No syntax-valid or signed accuracy assertion alone upgrades the OMSI outcome to measurement-proven or quality-released."
+        },
+        {
+          "metric": "independent_accuracy_assertion_reproduction",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "release",
+          "acceptance": "A second implementation reproduces every explicitly computed accuracy assertion or flags it as issuer-provided rather than independently calculated."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-140-characteristic-data-completeness-assertions",
+      "standard": "ISO 8000-140:2016",
+      "domain": "Characteristic-data completeness information",
+      "role": "Requirements and a conceptual model for statements/assertions about completeness, optionally supplementing ISO 8000-120; it does not establish universal completeness requirements or specify a complete exchange format.",
+      "candidate_payload_family": "Completeness assertions bound to a named data specification, population, time/revision and expected field inventory.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO 8000-140:2016 edition and normative model",
+        "Declared completeness expectation per use case and data population",
+        "Versioned source schema/inventory and expected versus observed counts",
+        "Negative fixtures for omitted optional/required properties and incorrect population boundaries"
+      ],
+      "benchmarks": [
+        {
+          "metric": "completeness_assertion_bound_to_inventory_version",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every completeness assertion refers to a versioned field inventory and population; no count is interpreted without that boundary."
+        },
+        {
+          "metric": "missing_required_characteristics_detected",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every required field missing from a sample or a declared population is surfaced according to the profile; optional omissions remain distinguishable."
+        },
+        {
+          "metric": "completeness_target_misreported_as_observation_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Expected completeness thresholds are never confused with observed results."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-66-manufacturing-data-quality-indicators",
+      "standard": "ISO 8000-66:2021",
+      "domain": "Manufacturing operations data-quality management",
+      "role": "Assessment indicators for data-quality management processes; not a source-record wire format.",
+      "candidate_payload_family": "Versioned evidence for a data-quality indicator definition, population, calculation and result.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Indicator definition/version and assessment boundary",
+        "Data-processing work products from a representative workflow",
+        "Evidence distinguishing observed results from targets/self-reported status",
+        "Reviewed aggregation and sampling policy"
+      ],
+      "benchmarks": [
+        {
+          "metric": "indicator_evidence_traceability",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every indicator result links to definition/version, population, time window, evidence inputs and calculation activity."
+        },
+        {
+          "metric": "target_reported_as_measurement_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Targets and missing measurements remain explicitly labeled; a target is never emitted as an observed pass."
+        },
+        {
+          "metric": "independent_indicator_recalculation_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "release",
+          "acceptance": "A separate implementation reproduces committed calculation fixtures and detects tampered inputs or calculation metadata."
+        }
+      ]
+    },
+    {
+      "id": "iso-23952-qif-quality-information-framework",
+      "standard": "ISO 23952:2020 (QIF)",
+      "domain": "Manufacturing quality information",
+      "role": "Integrated model for manufacturing quality information, including inspection and measurement information.",
+      "candidate_payload_family": "Version-pinned QIF XML with the normative schema assets for that version.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative QIF version and schema bundle",
+        "Pinned XML/XSD validator and schema-bundle digests",
+        "Representative valid/invalid QIF measurement and inspection fixtures",
+        "Reviewed mapping for identifiers, units, specification/revision, uncertainty where represented, and source-versus-derived claims"
+      ],
+      "benchmarks": [
+        {
+          "metric": "authoritative_qif_schema_acceptance_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "100% agreement with the pinned independent XSD validator on positive and negative fixtures."
+        },
+        {
+          "metric": "qif_source_field_accounting",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every source field has exactly one reviewed disposition; no silent loss or unreviewed unit/identifier reinterpretation."
+        },
+        {
+          "metric": "round_trip_semantic_equivalence_for_declared_lossless_fields",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "release",
+          "acceptance": "Declared lossless fields survive import/export exactly or under an approved semantic comparison; known-loss fields have explicit tests and disclosure."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-210-sensor-data-quality-characteristics",
+      "standard": "ISO 8000-210:2024",
+      "domain": "Sensor-data quality characteristics",
+      "role": "Defines quality characteristics for streams of single, discrete digital sensor values, anomaly types and their relationships; it does not specify methods to measure or improve data quality.",
+      "candidate_payload_family": "Version-pinned discrete sensor observations plus typed data-quality characteristics/anomaly labels.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO 8000-210:2024 edition and characteristic/anomaly definitions",
+        "Representative sensor streams including missing, duplicated, stale, out-of-order and anomalous observations",
+        "Preserved acquisition timestamps, source identity, units and stream scope",
+        "Independent fixture oracle and documented sampling/window policy"
+      ],
+      "benchmarks": [
+        {
+          "metric": "sensor_anomaly_fixture_detection_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "All committed characteristic/anomaly fixtures match the independent oracle for the pinned profile."
+        },
+        {
+          "metric": "raw_observation_preservation_under_annotation",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Annotating anomalies does not silently rewrite the original observation bytes or timestamps."
+        },
+        {
+          "metric": "unknown_quality_characteristic_silent_acceptance_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Unknown or unsupported characteristics are retained as unknown and cannot be reported as conformant by default."
+        }
+      ]
+    },
+    {
+      "id": "iso-8000-220-sensor-data-quality-measurement",
+      "standard": "ISO 8000-220:2025",
+      "domain": "Quantitative sensor-data quality measurement",
+      "role": "Specifies quality measures for quantitatively measuring the sensor data quality characteristics defined by ISO 8000-210.",
+      "candidate_payload_family": "Version-pinned quality measures with named characteristic, calculation method, sample/window population, assumptions and result report.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO 8000-220:2025 measures and corresponding ISO 8000-210 characteristics",
+        "Documented assumptions and sampling/window definitions",
+        "Reference fixtures with independently calculated measure results",
+        "Controls preventing missing samples or invalid windows being treated as high quality"
+      ],
+      "benchmarks": [
+        {
+          "metric": "independent_sensor_quality_measure_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every pinned measure fixture matches an independent reference calculation within its declared numeric representation."
+        },
+        {
+          "metric": "measure_result_reproducibility_for_same_inputs",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Identical input bytes, algorithm/profile version and window produce equivalent results and identical provenance metadata."
+        },
+        {
+          "metric": "invalid_or_insufficient_population_accepted_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Missing, insufficient or structurally invalid populations are flagged and never given an optimistic quality result."
+        }
+      ]
+    },
+    {
+      "id": "iso-ts-8000-230-sensor-data-cleansing-guidelines",
+      "standard": "ISO/TS 8000-230:2026",
+      "domain": "Sensor-data cleansing process",
+      "role": "Guidelines for cleansing sensor-data anomalies and improving data quality; the published scope does not specify detailed anomaly-repair algorithms or real-time cleansing.",
+      "candidate_payload_family": "Auditable cleansing activity with preserved raw samples, anomaly classification, method/version, repair rationale, outputs and lineage.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Authoritative ISO/TS 8000-230:2026 edition and applicable process guidance",
+        "Explicit policy for which anomalies may be corrected, flagged or left unresolved",
+        "Raw samples retained separately from cleaned outputs",
+        "Validation fixtures measuring false-positive repairs, missed anomalies and impact on downstream decision"
+      ],
+      "benchmarks": [
+        {
+          "metric": "raw_sample_retention_after_cleansing",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every cleaned output retains a reference to the immutable original sample and the named cleansing activity."
+        },
+        {
+          "metric": "cleansing_activity_reconstructability",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "A verifier reconstructs input samples, method/version, parameters, changed values and stated reason from the evidence bundle."
+        },
+        {
+          "metric": "unreviewed_repair_of_measurement_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "No cleanup heuristic silently overwrites a physical observation or upgrades a quality/release outcome."
+        },
+        {
+          "metric": "false_positive_and_missed_anomaly_rates_reported",
+          "target": true,
+          "unit": "boolean",
+          "gate": "release",
+          "acceptance": "Both rates are measured against a labeled reference corpus; all performance targets are corpus-specific and disclosed."
+        }
+      ]
+    },
+    {
+      "id": "mtconnect-opc-ua-device-interoperability",
+      "standard": "MTConnect and OPC UA Companion Specifications (versions pinned per pilot)",
+      "domain": "Machine/device observations and information-model interoperability",
+      "role": "Device observations and companion information models across machine, server, client and adapter boundaries.",
+      "candidate_payload_family": "Version-pinned MTConnect observations and OPC UA nodeset/address-space fixtures through a simulator or server/client integration.",
+      "implementation_status": "not_implemented",
+      "conformance_status": "not_assessed",
+      "required_inputs": [
+        "Specific MTConnect and OPC UA Companion Specification versions",
+        "Authoritative schemas/nodesets and provenance/licensing records",
+        "Simulator/server/client test path returning varied device/observation structures",
+        "Reviewed identifier, timestamp, unit, asset-scope and source-revision mapping rules"
+      ],
+      "benchmarks": [
+        {
+          "metric": "end_to_end_observation_receipt_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Every positive fixture reaches the client/receipt with expected identifiers, scope, times, units and values; malformed and unauthorized cases reject."
+        },
+        {
+          "metric": "semantic_retention_for_declared_lossless_fields",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "hard",
+          "acceptance": "Declared lossless fields preserve semantic values across device model, adapter and evidence receipt; intentional loss remains explicit and counted."
+        },
+        {
+          "metric": "unknown_node_or_version_silent_acceptance_count",
+          "target": 0,
+          "unit": "count",
+          "gate": "hard",
+          "acceptance": "Unknown nodes and version mismatches are surfaced; no qualified/conformant state is emitted optimistically."
+        },
+        {
+          "metric": "independent_agent_verification_agreement",
+          "target": 1,
+          "unit": "fraction",
+          "gate": "release",
+          "acceptance": "Two independently provisioned verifier agents agree on artifact/graph and fixture outcomes; agreement is not asserted to prove physical truth."
+        }
+      ]
+    }
+  ],
+  "cross_cutting_gates": [
+    {
+      "id": "pinned-evidence",
+      "metric": "schema_spec_source_map_tool_report_digest_completeness",
+      "target": 1,
+      "unit": "fraction",
+      "acceptance": "Each result binds source bytes, schema/spec version and bytes, adapter-map bytes, tool identity/version and output report; digests do not authenticate the producer."
+    },
+    {
+      "id": "negative-controls",
+      "metric": "unexpected_negative_acceptance",
+      "target": 0,
+      "unit": "count",
+      "acceptance": "Mutations to unit, identifier, tenant scope, source revision, required presence, schema version, malformed XML/JSON, replay bytes and schema constraints remain negative controls."
+    },
+    {
+      "id": "independent-qualification",
+      "metric": "same-implementation_only_qualification_claims",
+      "target": 0,
+      "unit": "count",
+      "acceptance": "Schema validation, field mapping, semantic evaluation, artifact binding and authentication are reported as separate checks; an implementation may not be the sole oracle for its own conformance."
+    }
+  ],
+  "non_claims": [
+    "No ISO, QIF, MTConnect, OPC UA or vendor conformance is currently asserted.",
+    "Synthetic JSON fixtures do not replace normative schema assets or a real device/client-server integration path.",
+    "A valid schema instance, mapping audit, hash or signature does not by itself prove producer authenticity or physical measurement truth.",
+    "Benchmark targets in this matrix are proposed acceptance objectives, not normative thresholds or measured outcomes.",
+    "ISO 8000-120/130/140 cover provenance, accuracy and completeness information models/assertions; their existence does not establish that data is true, accurate, or complete without a defined use-case policy and evidence."
+  ],
+  "references": [
+    {
+      "id": "ISO 8000-110:2021",
+      "url": "https://www.iso.org/standard/78501.html"
+    },
+    {
+      "id": "ISO 8000-66:2021",
+      "url": "https://www.iso.org/standard/76390.html"
+    },
+    {
+      "id": "ISO 23952:2020 QIF",
+      "url": "https://www.iso.org/standard/77461.html"
+    },
+    {
+      "id": "NIST testing of the MTConnect–OPC UA Companion Specification",
+      "url": "https://www.nist.gov/publications/testing-mtconnect-opc-ua-companion-specification"
+    },
+    {
+      "id": "NIST Digital Thread for Manufacturing",
+      "url": "https://www.nist.gov/programs-projects/digital-thread-manufacturing"
+    },
+    {
+      "id": "ISO 8000-120:2016",
+      "url": "https://www.iso.org/standard/62393.html"
+    },
+    {
+      "id": "ISO 8000-130:2016",
+      "url": "https://www.iso.org/standard/62394.html"
+    },
+    {
+      "id": "ISO 8000-140:2016",
+      "url": "https://www.iso.org/standard/62395.html"
+    },
+    {
+      "id": "ISO 8000-210:2024",
+      "url": "https://www.iso.org/standard/84274.html"
+    },
+    {
+      "id": "ISO 8000-220:2025",
+      "url": "https://www.iso.org/standard/86062.html"
+    },
+    {
+      "id": "ISO/TS 8000-230:2026",
+      "url": "https://www.iso.org/standard/89681.html"
+    }
+  ]
+}

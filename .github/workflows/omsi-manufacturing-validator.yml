@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - 'tools/omsi-manufacturing-validator/**'
-      - 'docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json'
+      - 'tools/omsi-provenance-verifier/**'
+      - 'docs/standards/omsi/**'
   push:
     branches: [main]
     paths:
       - 'tools/omsi-manufacturing-validator/**'
-      - 'docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json'
+      - 'tools/omsi-provenance-verifier/**'
+      - 'docs/standards/omsi/**'
 
 permissions:
   contents: read
@@ -39,6 +41,10 @@ jobs:
         if: steps.source.outputs.present == 'true'
         run: cargo fmt --manifest-path tools/omsi-manufacturing-validator/Cargo.toml --all -- --check
 
+      - name: Check independent verifier formatting
+        if: steps.source.outputs.present == 'true'
+        run: cargo fmt --manifest-path tools/omsi-provenance-verifier/Cargo.toml --all -- --check
+
   test:
     name: Rust semantic conformance
     runs-on: ubuntu-24.04
@@ -62,9 +68,353 @@ jobs:
       - name: Run executable conformance tests
         if: steps.source.outputs.present == 'true'
         run: cargo test --manifest-path tools/omsi-manufacturing-validator/Cargo.toml
+
+      - name: Test independent artifact-binding verifier
+        if: steps.source.outputs.present == 'true'
+        run: cargo test --manifest-path tools/omsi-provenance-verifier/Cargo.toml
       - name: Run semantic validator against the committed profile vectors
         if: steps.source.outputs.present == 'true'
         run: cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- validate-vectors docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json
+      - name: Smoke-test raw-byte replay envelope
+        if: steps.source.outputs.present == 'true'
+        shell: bash
+        run: |
+          input_file="$RUNNER_TEMP/omsi-replay-input.json"
+          envelope_file="$RUNNER_TEMP/omsi-replay-envelope.json"
+          jq '.vectors[0].input' docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json > "$input_file"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- create-envelope "$input_file" > "$envelope_file"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- verify-envelope "$envelope_file" "$input_file"
+      - name: Smoke-test non-gating benchmark report
+        if: steps.source.outputs.present == 'true'
+        shell: bash
+        run: |
+          report_file="$RUNNER_TEMP/omsi-benchmark-report.json"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- benchmark-vectors docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json 10 > "$report_file"
+          jq -e '
+            .benchmark_contract == "omsi-manufacturing-benchmark-report/0.1" and
+            .status == "measured_no_acceptance_claim" and
+            .authority == "performance_observation_only" and
+            .run.sample_count_per_phase == (.corpus.case_count * .run.iterations_per_case) and
+            .run.max_cases == 10000 and
+            .run.max_samples_per_phase == 1000000 and
+            .run.sample_count_per_phase <= .run.max_samples_per_phase and
+            .run.throughput_measurement_mode == "separate_batch_pass_without_per_operation_timers" and
+            (.phases | has("json_parse") and has("semantic_evaluation") and has("envelope_creation") and has("envelope_verification")) and
+            .phases.json_parse.wall_clock_elapsed_ns > 0 and
+            .phases.json_parse.wall_clock_operations_per_second > 0 and
+            .phases.semantic_evaluation.wall_clock_elapsed_ns > 0 and
+            .phases.semantic_evaluation.wall_clock_operations_per_second > 0 and
+            .phases.envelope_creation.wall_clock_elapsed_ns > 0 and
+            .phases.envelope_creation.wall_clock_operations_per_second > 0 and
+            .phases.envelope_verification.wall_clock_elapsed_ns > 0 and
+            .phases.envelope_verification.wall_clock_operations_per_second > 0
+          ' "$report_file" > /dev/null
+
+      - name: Smoke-test explicit adapter field accounting
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="docs/standards/omsi/adapters/0.1/examples"
+          for adapter in mes-flat qms-nested; do
+            report_file="$RUNNER_TEMP/omsi-adapter-$adapter-audit.json"
+            cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+              audit-adapter-map "$base/$adapter-map.json" "$base/$adapter-record.json" > "$report_file"
+            jq -e '
+              .audit_contract == "omsi-manufacturing-adapter-audit/0.1" and
+              .status == "complete_accounting" and
+              .authority == "adapter_mapping_accounting_only" and
+              .silent_loss_count == 0 and
+              .source_field_count == .accounted_field_count
+            ' "$report_file" > /dev/null
+          done
+          jq -e '.dropped_count == 1 and .preserved_count == 5 and .transformed_count == 0' \
+            "$RUNNER_TEMP/omsi-adapter-mes-flat-audit.json" > /dev/null
+          jq -e '.source_field_count == 8 and .transformed_count == 2 and .preserved_count == 6 and .explicitly_unmapped_count == 0' \
+            "$RUNNER_TEMP/omsi-adapter-qms-nested-audit.json" > /dev/null
+
+      - name: Verify registered transformation vectors
+        shell: bash
+        run: |
+          set -euo pipefail
+          report_file="$RUNNER_TEMP/omsi-transform-vector-report.json"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            verify-transform-vectors docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json > "$report_file"
+          jq -e '
+            .report_contract == "omsi-manufacturing-transform-vector-report/0.1" and
+            .authority == "registered_transform_vector_agreement_only" and
+            .status == "passed" and
+            .vectors_expected == 10 and
+            .vectors_tested == 10 and
+            .failure_count == 0 and
+            (.failures | length) == 0
+          ' "$report_file" > /dev/null
+
+      - name: Smoke-test executable adapter projections
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="docs/standards/omsi/adapters/0.1/examples"
+          for adapter in mes-flat qms-nested; do
+            report_file="$RUNNER_TEMP/omsi-adapter-$adapter-projection.json"
+            cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+              apply-adapter-map "$base/$adapter-map.json" "$base/$adapter-record.json" > "$report_file"
+            jq -e '
+              .projection_contract == "omsi-manufacturing-adapter-projection/0.1" and
+              .status == "projection_created" and
+              .authority == "adapter_projection_only" and
+              .projection != null and
+              .audit.silent_loss_count == 0
+            ' "$report_file" > /dev/null
+          done
+          jq -e '
+            .projection.measurement.value_decimal == "0.0072" and
+            .projection.measurement.unit_code == "mm" and
+            .projection.source_quality_claim.raw_status == "REVIEW"
+          ' "$RUNNER_TEMP/omsi-adapter-qms-nested-projection.json" > /dev/null
+          jq -e '
+            .explicitly_dropped_count == 1 and
+            .projection.source_quality_claim.raw_status == "Accepted" and
+            (.projection | has("operator_note") | not)
+          ' "$RUNNER_TEMP/omsi-adapter-mes-flat-projection.json" > /dev/null
+
+      - name: Verify optional source fields stay explicit
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="docs/standards/omsi/adapters/0.1/examples"
+          audit_file="$RUNNER_TEMP/omsi-adapter-mes-optional-audit.json"
+          projection_file="$RUNNER_TEMP/omsi-adapter-mes-optional-projection.json"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-map "$base/mes-optional-map.json" "$base/mes-optional-record.json" > "$audit_file"
+          jq -e '
+            .status == "complete_accounting" and
+            .silent_loss_count == 0 and
+            (.mapping_paths_not_observed_in_record | length) == 2 and
+            (.required_mapping_paths_not_observed_in_record | length) == 0
+          ' "$audit_file" > /dev/null
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            apply-adapter-map "$base/mes-optional-map.json" "$base/mes-optional-record.json" > "$projection_file"
+          jq -e '
+            .status == "projection_created" and
+            .skipped_optional_count == 2 and
+            .explicitly_dropped_count == 0 and
+            .projection.measurement.value_decimal == "72.4" and
+            (.projection.measurement | has("unit_code") | not)
+          ' "$projection_file" > /dev/null
+
+      - name: Parse adapter contract schemas and fixtures
+        run: |
+          jq empty tools/omsi-manufacturing-validator/schema/adapter-map.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/adapter-audit-report.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/adapter-projection-report.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/adapter-transform-vectors.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/adapter-transform-vector-report.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/provenance-manifest.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/provenance-verification-report.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/adapter-schema-coverage-report.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/interoperability-target-matrix.schema.json
+          jq empty tools/omsi-provenance-verifier/schema/binding-verification-report.schema.json
+          jq empty docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-record.schema.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-record.json
+          jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-record.schema.json
+          jq empty docs/standards/omsi/interoperability-targets-0.1.json
+          jq -e '
+            .contract == "omsi-interoperability-target-matrix/0.1" and
+            .status == "research_targets_only_not_conformance" and
+            (.targets | length) == 10 and
+            ([.targets[].implementation_status] | all(. == "not_implemented")) and
+            ([.targets[].conformance_status] | all(. == "not_assessed")) and
+            ([.targets[].benchmarks | length] | add) >= 30 and
+            (.references | length) >= 10 and
+            (.cross_cutting_gates | length) == 3 and
+            (.non_claims | length) >= 4
+          ' docs/standards/omsi/interoperability-targets-0.1.json > /dev/null
+
+      - name: Smoke-test schema-bound provenance chain
+        if: steps.source.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="docs/standards/omsi/adapters/0.1/examples"
+          source_record="$base/qms-nested-record.json"
+          source_schema="$base/qms-nested-record.schema.json"
+          adapter_map="$base/qms-nested-map.json"
+          schema_coverage="$RUNNER_TEMP/omsi-qms-schema-coverage.json"
+          projection="$RUNNER_TEMP/omsi-projection.json"
+          semantic_input="$RUNNER_TEMP/omsi-semantic-input.json"
+          replay_envelope="$RUNNER_TEMP/omsi-replay-envelope.json"
+          semantic_report="$RUNNER_TEMP/omsi-semantic-report.json"
+          manifest="$RUNNER_TEMP/omsi-provenance-manifest.json"
+
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$adapter_map" "$source_schema" "$source_record" > "$schema_coverage"
+          jq -e '
+            .coverage_contract == "omsi-manufacturing-adapter-schema-coverage/0.1" and
+            .status == "schema_coverage_complete" and
+            .schema_field_count == 8 and
+            .covered_schema_field_count == 8 and
+            (.schema_paths_not_mapped | length) == 0 and
+            (.mapping_paths_outside_schema | length) == 0 and
+            (.presence_mismatches | length) == 0 and
+            (.record_structure_errors | length) == 0
+          ' "$schema_coverage" > /dev/null
+
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            apply-adapter-map "$adapter_map" "$source_record" > "$projection"
+          jq '.projection' "$projection" > "$semantic_input"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            create-envelope "$semantic_input" > "$replay_envelope"
+          jq '.report' "$replay_envelope" > "$semantic_report"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            create-provenance-manifest "$source_record" "$source_schema" "$adapter_map" \
+            "$schema_coverage" "$projection" "$semantic_input" "$semantic_report" \
+            "$replay_envelope" > "$manifest"
+          jq -e '
+            .manifest_contract == "omsi-manufacturing-provenance-manifest/0.2" and
+            .provenance_model == "w3c-prov-dm-aligned-subset/0.2" and
+            .status == "local_chain_consistent" and
+            .authority == "local_consistency_only" and
+            .digest_profile.algorithm == "sha256" and
+            .digest_profile.scope == "exact_input_bytes" and
+            .digest_profile.canonicalization == "none" and
+            .schema_coverage.contract == "omsi-manufacturing-adapter-schema-coverage/0.1" and
+            .schema_coverage.status == "schema_coverage_complete" and
+            .schema_coverage.schema_field_count == 8 and
+            .schema_coverage.covered_schema_field_count == 8 and
+            (.schema_coverage.source_schema_sha256 | test("^[0-9a-f]{64}$")) and
+            (.schema_coverage.coverage_report_sha256 | test("^[0-9a-f]{64}$")) and
+            (.artifacts | length) == 8 and
+            (.activities | length) == 5 and
+            (.edges | length) == 14 and
+            ([.edges[].relationship] | map(select(. == "used")) | length) == 9 and
+            ([.edges[].relationship] | map(select(. == "wasGeneratedBy")) | length) == 5 and
+            (.declared_transform_ids | sort) == ["qms-decimal-normalization/0.1", "qms-unit-code-crosswalk/0.1"] and
+            ([.artifacts[].sha256 | test("^[0-9a-f]{64}$")] | all) and
+            ([.artifacts[].byte_length | numbers] | length) == 8 and
+            (.limitations | length) >= 7 and
+            (has("signature") | not)
+          ' "$manifest" > /dev/null
+
+          verification="$RUNNER_TEMP/omsi-provenance-verification.json"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            verify-provenance-manifest "$manifest" "$source_record" "$source_schema" \
+            "$adapter_map" "$schema_coverage" "$projection" "$semantic_input" \
+            "$semantic_report" "$replay_envelope" > "$verification"
+          jq -e '
+            .verifier_contract == "omsi-manufacturing-provenance-verifier/0.2" and
+            .status == "manifest_verified" and
+            .authority == "local_consistency_only" and
+            (.manifest_sha256 | test("^[0-9a-f]{64}$")) and
+            (.checks | length) == 3 and
+            ([.checks[].result] | all(. == "pass")) and
+            (has("signature") | not)
+          ' "$verification" > /dev/null
+
+          independent_verification="$RUNNER_TEMP/omsi-independent-provenance-verification.json"
+          cargo run --manifest-path tools/omsi-provenance-verifier/Cargo.toml -- \
+            verify-bundle "$manifest" "$source_record" "$source_schema" "$adapter_map" \
+            "$schema_coverage" "$projection" "$semantic_input" "$semantic_report" \
+            "$replay_envelope" > "$independent_verification"
+          jq -e '
+            .verifier_contract == "omsi-independent-provenance-binding-verifier/0.1" and
+            .status == "artifact_bindings_verified" and
+            .authority == "artifact_binding_and_graph_consistency_only" and
+            (.checks | length) == 18 and
+            ([.checks[].result] | all(. == "pass")) and
+            (has("signature") | not)
+          ' "$independent_verification" > /dev/null
+
+      - name: Smoke-test complete adapter schema coverage
+        if: steps.source.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="docs/standards/omsi/adapters/0.1/examples"
+          map="$base/mes-optional-map.json"
+          schema="$base/mes-optional-record.schema.json"
+          record="$base/mes-optional-record.json"
+          report="$RUNNER_TEMP/omsi-schema-coverage.json"
+          missing_map="$RUNNER_TEMP/omsi-schema-coverage-missing-map.json"
+          missing_report="$RUNNER_TEMP/omsi-schema-coverage-missing-report.json"
+          wrong_presence="$RUNNER_TEMP/omsi-schema-coverage-wrong-presence.json"
+          wrong_presence_report="$RUNNER_TEMP/omsi-schema-coverage-wrong-presence-report.json"
+          open_schema="$RUNNER_TEMP/omsi-schema-coverage-open-schema.json"
+          open_schema_report="$RUNNER_TEMP/omsi-schema-coverage-open-schema-report.json"
+
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$map" "$schema" "$record" > "$report"
+          jq -e '
+            .coverage_contract == "omsi-manufacturing-adapter-schema-coverage/0.1" and
+            .status == "schema_coverage_complete" and
+            .authority == "schema_field_path_coverage_only" and
+            .schema_field_count == 4 and
+            .covered_schema_field_count == 4 and
+            (.schema_paths_not_mapped | length) == 0 and
+            (.mapping_paths_outside_schema | length) == 0 and
+            (.presence_mismatches | length) == 0 and
+            (.schema_paths_not_observed_in_record | length) == 3 and
+            (.required_schema_paths_not_observed_in_record | length) == 0 and
+            (.record_structure_errors | length) == 0 and
+            .observed_field_accounting_status == "complete_accounting" and
+            .observed_silent_loss_count == 0
+          ' "$report" > /dev/null
+
+          jq '.mappings |= map(select(.source_path != "/operator_note"))' "$map" > "$missing_map"
+          if cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$missing_map" "$schema" "$record" > "$missing_report"; then
+            echo "expected absent optional schema field to be reported as unmapped" >&2
+            exit 1
+          fi
+          jq -e '
+            .status == "schema_coverage_incomplete" and
+            any(.schema_paths_not_mapped[]; .source_path == "/operator_note")
+          ' "$missing_report" > /dev/null
+
+          jq '.mappings |= map(if .source_path == "/unit" then .presence = "required" else . end)' "$map" > "$wrong_presence"
+          if cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$wrong_presence" "$schema" "$record" > "$wrong_presence_report"; then
+            echo "expected presence mismatch to fail schema coverage" >&2
+            exit 1
+          fi
+          jq -e '
+            .status == "schema_coverage_incomplete" and
+            any(.presence_mismatches[]; .source_path == "/unit")
+          ' "$wrong_presence_report" > /dev/null
+
+          conditional_record="$RUNNER_TEMP/omsi-schema-coverage-conditional-required-record.json"
+          conditional_report="$RUNNER_TEMP/omsi-schema-coverage-conditional-required-report.json"
+          jq '.metadata = {}' "$record" > "$conditional_record"
+          if cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$map" "$schema" "$conditional_record" > "$conditional_report"; then
+            echo "expected a missing required nested child to fail when its optional parent is present" >&2
+            exit 1
+          fi
+          jq -e '
+            .status == "schema_coverage_incomplete" and
+            any(.record_structure_errors[]; .source_path == "/metadata/note" and .reason == "required_property_not_observed")
+          ' "$conditional_report" > /dev/null
+
+          jq 'del(.additionalProperties)' "$schema" > "$open_schema"
+          if cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            audit-adapter-schema-coverage "$map" "$open_schema" "$record" > "$open_schema_report"; then
+            echo "expected open-object schema to fail closed" >&2
+            exit 1
+          fi
+          jq -e '
+            .status == "unsupported_source_schema" and
+            any(.schema_errors[]; .reason == "object_must_set_additionalProperties_false")
+          ' "$open_schema_report" > /dev/null
+
       - name: Clippy
         if: steps.source.outputs.present == 'true'
         run: cargo clippy --manifest-path tools/omsi-manufacturing-validator/Cargo.toml --all-targets -- -D warnings
+
+      - name: Clippy independent artifact-binding verifier
+        if: steps.source.outputs.present == 'true'
+        run: cargo clippy --manifest-path tools/omsi-provenance-verifier/Cargo.toml --all-targets -- -D warnings

@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:manufacturing-semantic-report:0.1",
+  "title": "OMSI Manufacturing Semantic Report 0.1",
+  "description": "Versioned diagnostic report from the synthetic Manufacturing Asset Operations validator. It is not a quality certificate, authenticated provenance receipt, source-truth attestation, or operational authorization.",
+  "type": "object",
+  "required": [
+    "report_contract",
+    "profile",
+    "validator_version",
+    "decision_authority",
+    "quality_release_authority",
+    "equipment_control_authority",
+    "origin_authentication",
+    "outcome",
+    "dispositions",
+    "comparison_rule_id",
+    "assurance_limitations",
+    "decision_trace"
+  ],
+  "properties": {
+    "report_contract": {
+      "const": "omsi-manufacturing-semantic-report/0.1"
+    },
+    "profile": {
+      "const": "manufacturing-asset-operations/0.1-incubation"
+    },
+    "validator_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision_authority": {
+      "const": "diagnostic_only"
+    },
+    "quality_release_authority": {
+      "const": "none"
+    },
+    "equipment_control_authority": {
+      "const": "none"
+    },
+    "origin_authentication": {
+      "const": "not_performed"
+    },
+    "outcome": {
+      "enum": [
+        "accepted_projection",
+        "accepted_projection_with_loss",
+        "preserve_with_conflict",
+        "reject"
+      ]
+    },
+    "dispositions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "field",
+          "reason"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "reject",
+              "conflict",
+              "loss",
+              "unmapped",
+              "not_provided"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "comparison_rule_id": {
+      "const": "nominal-point-estimate-range/0.1"
+    },
+    "assurance_limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "measurement_evaluation": {
+      "enum": [
+        "not_evaluated",
+        "not_evaluable",
+        "inside_declared_bounds_point_estimate_only",
+        "inside_declared_bounds_point_estimate_only_calibration_assurance_limited",
+        "outside_declared_bounds_point_estimate_only"
+      ]
+    },
+    "projection_emitted": {
+      "type": "boolean"
+    },
+    "source_revision_metadata": {
+      "enum": [
+        "provided",
+        "not_provided"
+      ]
+    },
+    "decision_trace": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_id",
+          "result",
+          "inputs",
+          "interpretation"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "result": {
+            "type": "string",
+            "minLength": 1
+          },
+          "inputs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "interpretation": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

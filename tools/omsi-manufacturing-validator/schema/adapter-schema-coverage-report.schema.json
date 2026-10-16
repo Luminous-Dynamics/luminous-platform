@@ -1,0 +1,375 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:manufacturing-adapter-schema-coverage:0.1",
+  "title": "OMSI Manufacturing Adapter Schema Coverage Report 0.1",
+  "description": "Bounded field-path inventory coverage against a restricted closed-object JSON Schema profile. Does not assert full source-schema or vendor conformance.",
+  "type": "object",
+  "required": [
+    "coverage_contract",
+    "status",
+    "authority",
+    "adapter_map_sha256",
+    "source_schema_sha256",
+    "source_record_sha256",
+    "schema_field_count",
+    "covered_schema_field_count",
+    "schema_paths_not_mapped",
+    "mapping_paths_outside_schema",
+    "presence_mismatches",
+    "duplicate_source_mappings",
+    "schema_paths_not_observed_in_record",
+    "required_schema_paths_not_observed_in_record",
+    "record_structure_errors",
+    "observed_field_accounting_status",
+    "observed_silent_loss_count",
+    "schema_errors",
+    "limitations"
+  ],
+  "properties": {
+    "coverage_contract": {
+      "const": "omsi-manufacturing-adapter-schema-coverage/0.1"
+    },
+    "status": {
+      "enum": [
+        "schema_coverage_complete",
+        "schema_coverage_incomplete",
+        "unsupported_source_schema",
+        "invalid_contract"
+      ]
+    },
+    "authority": {
+      "const": "schema_field_path_coverage_only"
+    },
+    "adapter_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_format": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "adapter_map_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_schema_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source_record_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "schema_field_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "covered_schema_field_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "schema_paths_not_mapped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_path",
+          "schema_presence"
+        ],
+        "properties": {
+          "source_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schema_presence": {
+            "enum": [
+              "required",
+              "optional"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "mapping_paths_outside_schema": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_path",
+          "mapping_declaration_count",
+          "reason"
+        ],
+        "properties": {
+          "source_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mapping_declaration_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reason": {
+            "const": "mapping_path_not_declared_by_source_schema"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "presence_mismatches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "mapping_index",
+          "source_path",
+          "declared_presence",
+          "schema_presence",
+          "reason"
+        ],
+        "properties": {
+          "mapping_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "declared_presence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schema_presence": {
+            "enum": [
+              "required",
+              "optional"
+            ]
+          },
+          "reason": {
+            "const": "mapping_presence_differs_from_source_schema"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "duplicate_source_mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_path",
+          "mapping_declaration_count",
+          "reason"
+        ],
+        "properties": {
+          "source_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mapping_declaration_count": {
+            "type": "integer",
+            "minimum": 2
+          },
+          "reason": {
+            "const": "source_path_must_have_exactly_one_mapping"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "schema_paths_not_observed_in_record": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_path",
+          "schema_presence"
+        ],
+        "properties": {
+          "source_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "schema_presence": {
+            "enum": [
+              "required",
+              "optional"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "required_schema_paths_not_observed_in_record": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "observed_field_accounting_status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "observed_silent_loss_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "schema_errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "field",
+          "reason"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "record_structure_errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "source_path",
+          "reason"
+        ],
+        "properties": {
+          "source_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "enum": [
+              "required_property_not_observed",
+              "record_property_not_declared_by_schema",
+              "record_type_mismatch",
+              "schema_node_missing_supported_type",
+              "schema_object_properties_missing",
+              "schema_node_has_unsupported_type"
+            ]
+          },
+          "expected_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actual_type": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "schema_coverage_complete"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "schema_paths_not_mapped": {
+            "maxItems": 0
+          },
+          "mapping_paths_outside_schema": {
+            "maxItems": 0
+          },
+          "presence_mismatches": {
+            "maxItems": 0
+          },
+          "duplicate_source_mappings": {
+            "maxItems": 0
+          },
+          "observed_field_accounting_status": {
+            "const": "complete_accounting"
+          },
+          "observed_silent_loss_count": {
+            "const": 0
+          },
+          "schema_errors": {
+            "maxItems": 0
+          },
+          "record_structure_errors": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "unsupported_source_schema"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "schema_field_count": {
+            "const": 0
+          },
+          "covered_schema_field_count": {
+            "const": 0
+          },
+          "schema_paths_not_mapped": {
+            "maxItems": 0
+          },
+          "mapping_paths_outside_schema": {
+            "maxItems": 0
+          },
+          "presence_mismatches": {
+            "maxItems": 0
+          },
+          "schema_errors": {
+            "minItems": 1
+          },
+          "record_structure_errors": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
