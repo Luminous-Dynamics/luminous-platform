@@ -212,6 +212,7 @@ jobs:
           jq empty tools/omsi-manufacturing-validator/schema/provenance-manifest.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/provenance-verification-report.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/adapter-schema-coverage-report.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/interoperability-target-matrix.schema.json
           jq empty tools/omsi-provenance-verifier/schema/binding-verification-report.schema.json
           jq empty docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json
