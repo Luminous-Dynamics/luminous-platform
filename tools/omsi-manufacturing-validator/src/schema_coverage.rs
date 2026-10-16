@@ -243,6 +243,10 @@ fn walk_schema(
         return Err(schema_error(path, "schema_node_must_be_an_object"));
     };
 
+    if path.is_empty() && object.get("type").and_then(Value::as_str) != Some("object") {
+        return Err(schema_error(path, "schema_root_must_be_an_object"));
+    }
+
     for unsupported in [
         "$ref",
         "$dynamicRef",
@@ -373,6 +377,14 @@ mod tests {
             serde_json::from_str(SCHEMA).expect("source schema parses"),
             serde_json::from_str(RECORD).expect("source record parses"),
         )
+    }
+
+    #[test]
+    fn source_schema_fixture_is_meta_valid_and_sample_conforms() {
+        let (_, schema, record) = fixture();
+        assert!(draft202012::meta::is_valid(&schema));
+        let validator = draft202012::new(&schema).expect("source schema compiles");
+        assert!(validator.is_valid(&record), "sample should conform to schema: {record:#}");
     }
 
     #[test]
