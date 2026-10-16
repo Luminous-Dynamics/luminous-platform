@@ -433,6 +433,15 @@ fn independently_audit_schema_coverage(
         return false;
     }
 
+    if adapter_map.get("adapter_contract").and_then(Value::as_str)
+        != Some("omsi-manufacturing-adapter-map/0.1")
+        || adapter_map.get("adapter_id").and_then(Value::as_str)
+            .is_none_or(|value| value.trim().is_empty())
+        || adapter_map.get("source_format").and_then(Value::as_str)
+            .is_none_or(|value| value.trim().is_empty())
+    {
+        return false;
+    }
     let Some(mappings) = adapter_map.get("mappings").and_then(Value::as_array) else {
         return false;
     };
@@ -944,6 +953,14 @@ mod tests {
         let source_schema: Value = serde_json::from_slice(&artifacts[1]).unwrap();
         let mut adapter_map: Value = serde_json::from_slice(&artifacts[2]).unwrap();
         let coverage: Value = serde_json::from_slice(&artifacts[3]).unwrap();
+        adapter_map["adapter_contract"] = json!("omsi-manufacturing-adapter-map/9.0");
+        assert!(!super::independently_audit_schema_coverage(
+            &source_schema,
+            &source_record,
+            &adapter_map,
+            &coverage,
+        ));
+        adapter_map["adapter_contract"] = json!("omsi-manufacturing-adapter-map/0.1");
         adapter_map["mappings"][0]["disposition"] = json!("preserve-or-guess");
         assert!(!super::independently_audit_schema_coverage(
             &source_schema,
