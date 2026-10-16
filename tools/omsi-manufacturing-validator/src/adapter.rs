@@ -84,7 +84,6 @@ pub fn audit_adapter_map(
     }
 
     let mut mappings: BTreeMap<String, Mapping> = BTreeMap::new();
-    let mut duplicate_paths = BTreeSet::new();
 
     if let Some(items) = mapping_values.filter(|items| items.len() <= MAX_ADAPTER_FIELDS) {
         for (index, item) in items.iter().enumerate() {
@@ -112,7 +111,6 @@ pub fn audit_adapter_map(
             }
             let source_path = source_path.unwrap_or_default().to_owned();
             if mappings.contains_key(&source_path) {
-                duplicate_paths.insert(source_path.clone());
                 errors.push(json!({
                     "field":format!("{path}.source_path"),
                     "source_path":source_path,
@@ -1021,6 +1019,31 @@ mod tests {
         assert!(report["errors"].as_array().unwrap().iter().any(|error| {
             error["reason"] == "unit_code_not_in_crosswalk"
         }));
+    }
+
+    #[test]
+    fn absent_declared_source_path_blocks_projection() {
+        let report = apply(
+            contract(vec![
+                json!({
+                    "source_path":"/temperature",
+                    "disposition":"preserve",
+                    "target_path":"/measurement/value_decimal"
+                }),
+                json!({
+                    "source_path":"/optional_unit",
+                    "disposition":"preserve",
+                    "target_path":"/measurement/unit_code"
+                }),
+            ]),
+            json!({"temperature":"72.4"}),
+        );
+        assert_eq!(report["status"], "projection_blocked");
+        assert_eq!(report["projection"], Value::Null);
+        assert_eq!(
+            report["audit"]["mapping_paths_not_observed_in_record"][0],
+            "/optional_unit"
+        );
     }
 
     #[test]
