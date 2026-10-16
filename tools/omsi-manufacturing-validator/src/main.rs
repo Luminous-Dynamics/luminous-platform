@@ -1,7 +1,9 @@
+mod adapter;
 mod benchmark;
 mod replay;
 
 use omsi_manufacturing_validator::{evaluate_input_value, validate_vector_document};
+use adapter::audit_adapter_map;
 use replay::{create_replay_envelope, verify_replay_envelope};
 use serde_json::Value;
 use std::env;
@@ -95,8 +97,32 @@ fn run() -> Result<u8, String> {
             );
             Ok(0)
         }
+        Some("audit-adapter-map") if args.len() == 4 => {
+            let contract_bytes = read_bytes(&args[2])?;
+            let source_bytes = read_bytes(&args[3])?;
+            let contract: Value = serde_json::from_slice(&contract_bytes)
+                .map_err(|error| format!("invalid JSON in {}: {error}", args[2]))?;
+            let source_record: Value = serde_json::from_slice(&source_bytes)
+                .map_err(|error| format!("invalid JSON in {}: {error}", args[3]))?;
+            let report = audit_adapter_map(
+                &contract,
+                &contract_bytes,
+                &source_record,
+                &source_bytes,
+            );
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&report)
+                    .map_err(|error| format!("failed to serialize adapter audit: {error}"))?
+            );
+            if report.get("status").and_then(Value::as_str) == Some("complete_accounting") {
+                Ok(0)
+            } else {
+                Ok(1)
+            }
+        }
         _ => Err(
-            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case]".into(),
+            "usage: omsi-manufacturing-validator validate-vectors <vectors.json>\n       omsi-manufacturing-validator evaluate-input <input.json | ->\n       omsi-manufacturing-validator create-envelope <input.json | ->\n       omsi-manufacturing-validator verify-envelope <envelope.json> <input.json | ->\n       omsi-manufacturing-validator benchmark-vectors <vectors.json> [iterations_per_case>\n       omsi-manufacturing-validator audit-adapter-map <adapter-map.json> <source-record.json>".into(),
         ),
     }
 }
