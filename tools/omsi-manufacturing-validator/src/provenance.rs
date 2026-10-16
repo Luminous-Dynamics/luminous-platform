@@ -368,7 +368,8 @@ mod tests {
         assert_eq!(manifest["status"], "local_chain_consistent");
         assert_eq!(manifest["authority"], "local_consistency_only");
         assert_eq!(manifest["artifacts"].as_array().unwrap().len(), 6);
-        assert_eq!(manifest["edges"].as_array().unwrap().len(), 5);
+        assert_eq!(manifest["activities"].as_array().unwrap().len(), 4);
+        assert_eq!(manifest["edges"].as_array().unwrap().len(), 9);
         assert_eq!(manifest["declared_transform_ids"].as_array().unwrap().len(), 2);
         assert!(manifest.get("signature").is_none());
     }
