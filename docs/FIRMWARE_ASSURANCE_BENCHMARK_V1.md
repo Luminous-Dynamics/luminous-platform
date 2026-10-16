@@ -16,7 +16,7 @@ This design composes existing standards instead of creating a new firmware signa
 
 ## 2. Scope and authority boundaries
 
-The first milestone is **read-only firmware assurance for one exact, supported lab target**. Do not implement production flashing in this benchmark slice.
+The first milestone is **read-only firmware assurance for one exact, supported lab target**. Do not implement production flashing in this benchmark slice. The initial JSON corpus is deliberately synthetic: it exercises UEFI Secure Boot/UKI trust predicates together with generic update-metadata threat cases. It names no physical device and does not qualify an OEM BIOS, embedded-controller, router, or switch firmware updater. That requires a later exact-model/revision lab profile.
 
 - **Symthaea:** proposes diagnoses, candidate Rust patches, test cases, and remediation plans. Its model-generated conclusions are proposals, never independent acceptance evidence or execution authority.
 - **Nixward:** owns local NixOS/system-transaction policy, exact target and pre-state binding, authorization, execution journal, post-state verification, and recovery disposition.
@@ -31,7 +31,8 @@ No production mutation, OEM access-control bypass, signature bypass, arbitrary r
 Keep these predicates separate; never infer one from another:
 
 1. **Subject identity:** exact vendor, product family, model, hardware revision, component identity where available, and the evidence binding the observation to that subject.
-2. **Artifact integrity:** digest and byte length of the exact firmware/update artifact; digest algorithm and canonicalization are explicit.
+2. **Management scope:** exact endpoint origin/profile, tenant or account binding, adapter identity and source revision, and any channel/jurisdiction dimensions that change support or authority. Management scope is not physical device identity.
+3. **Artifact integrity:** digest and byte length of the exact firmware/update artifact; digest algorithm and canonicalization are explicit.
 3. **Signature validity:** cryptographic verification of the exact artifact/signature bytes.
 4. **Signer authorization:** whether the verified signer is trusted by the applicable, versioned policy for this subject and operation.
 5. **Revocation status:** the result of applicable revocation sources, timestamps, and policy. Unsupported or unresolved revocation conditions remain unknown/non-authorizing.
@@ -51,7 +52,7 @@ Every record should be canonical, versioned, schema-validated, and digest-bound.
 
 - schema and predicate version;
 - stable record ID and parent/subject record references;
-- exact target and scope profile ID, revision and digest;
+- exact target identity and management-scope profile ID, revision and digest as separate fields;
 - exact firmware artifact digest, size, component/version, source reference, and signer/key identity when observed;
 - evidence kind, source/collector identity and source revision, capture method, observation time, clock status and freshness limit;
 - raw-evidence digest plus redacted reference to customer-controlled storage (never put secrets, private keys, full customer configuration, or unredacted topology in a public receipt);
