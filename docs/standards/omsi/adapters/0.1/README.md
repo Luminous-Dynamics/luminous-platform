@@ -32,7 +32,7 @@ Every observed source leaf must be covered exactly once:
 | `drop` | `reason` | Field is intentionally omitted with a reason |
 | `unmapped` | `reason` | Field is known but no target mapping is agreed yet |
 
-A missing or duplicate mapping fails accounting. Explicit `drop` and `unmapped` dispositions remain visible in separate counters; they are never counted as preserved. The report binds exact source-record and contract bytes with SHA-256 and explicitly declares no canonicalization. The adapter-map, source-record, transform-vector and benchmark-vector CLI inputs are capped at 16 MiB per artifact; source-field collection is capped at 100,000 observed leaf paths.
+Every observed source leaf must have exactly one classification. A missing or duplicate mapping for a field present in the record fails accounting. Explicit `drop` and `unmapped` dispositions remain visible in separate counters; they are never counted as preserved. Each mapping may set `presence` to `required` or `optional`; omitted `presence` defaults to `required` for backward compatibility. A declared required path missing from a record blocks projection. A declared optional path missing from that record is skipped and counted, but remains visible in `mapping_paths_not_observed_in_record`. The report binds exact source-record and contract bytes with SHA-256 and explicitly declares no canonicalization. The adapter-map, source-record, transform-vector and benchmark-vector CLI inputs are capped at 16 MiB per artifact; source-field collection is capped at 100,000 observed leaf paths.
 
 ## Executing projections
 
