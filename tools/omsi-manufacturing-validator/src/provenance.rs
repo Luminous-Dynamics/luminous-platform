@@ -93,7 +93,7 @@ pub fn create_provenance_manifest(
         "profile": profile,
         "comparison_rule_id": comparison_rule_id,
         "validator_version": validator_version,
-        "transform_ids": transform_ids.into_iter().collect::<Vec<_>>(),
+        "declared_transform_ids": transform_ids.into_iter().collect::<Vec<_>>(),
         "artifacts": [
             artifact("source-record", "source_record", source_record_bytes),
             artifact("adapter-map", "adapter_map", adapter_map_bytes),
@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(manifest["authority"], "local_consistency_only");
         assert_eq!(manifest["artifacts"].as_array().unwrap().len(), 6);
         assert_eq!(manifest["edges"].as_array().unwrap().len(), 5);
-        assert_eq!(manifest["transform_ids"].as_array().unwrap().len(), 2);
+        assert_eq!(manifest["declared_transform_ids"].as_array().unwrap().len(), 2);
         assert!(manifest.get("signature").is_none());
     }
 
