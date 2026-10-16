@@ -159,7 +159,15 @@ pub fn audit_adapter_schema_coverage(
         && observation_audit.get("status").and_then(Value::as_str) == Some("complete_accounting");
 
     let schema_field_count = fields_by_path.len();
-    let covered_schema_field_count = schema_field_count.saturating_sub(schema_paths_not_mapped.len());
+    let covered_schema_field_count = fields_by_path
+        .iter()
+        .filter(|(path, schema_required)| {
+            let expected_presence = if **schema_required { "required" } else { "optional" };
+            mapping_paths.get(*path).is_some_and(|declared| {
+                declared.len() == 1 && declared[0] == expected_presence
+            })
+        })
+        .count();
     let status = if schema_coverage_complete {
         "schema_coverage_complete"
     } else if observation_audit.get("status").and_then(Value::as_str) == Some("invalid_contract") {
@@ -346,6 +354,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::audit_adapter_schema_coverage;
+    use jsonschema::draft202012;
     use serde_json::{json, Value};
 
     const MAP: &str = include_str!(
@@ -375,6 +384,14 @@ mod tests {
         assert_eq!(report["status"], "schema_coverage_complete", "{report:#}");
         assert_eq!(report["schema_field_count"], 3);
         assert_eq!(report["covered_schema_field_count"], 3);
+        let report_schema: Value = serde_json::from_str(include_str!(
+            "../schema/adapter-schema-coverage-report.schema.json"
+        ))
+        .expect("coverage report schema parses");
+        assert!(draft202012::meta::is_valid(&report_schema));
+        let report_validator = draft202012::new(&report_schema)
+            .expect("coverage report schema compiles");
+        assert!(report_validator.is_valid(&report), "report failed schema: {report:#}");
         assert_eq!(report["schema_paths_not_mapped"], json!([]));
         assert_eq!(report["presence_mismatches"], json!([]));
         assert_eq!(report["schema_paths_not_observed_in_record"].as_array().unwrap().len(), 2);
