@@ -214,3 +214,48 @@ fn read_bytes(path: &str) -> Result<Vec<u8>, String> {
         fs::read(path).map_err(|error| format!("failed to read {path}: {error}"))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::read_bytes_bounded;
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn bounded_reader_rejects_oversized_file_before_parsing() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock is after the Unix epoch")
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "omsi-bounded-reader-{}-{nonce}.json",
+            std::process::id()
+        ));
+        fs::write(&path, b"12345").expect("temporary fixture can be written");
+        let path_text = path.to_str().expect("temporary path is UTF-8");
+
+        let result = read_bytes_bounded(path_text, 4);
+        fs::remove_file(&path).expect("temporary fixture can be removed");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn bounded_reader_accepts_input_at_the_limit() {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock is after the Unix epoch")
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "omsi-bounded-reader-{}-{nonce}.json",
+            std::process::id()
+        ));
+        fs::write(&path, b"1234").expect("temporary fixture can be written");
+        let path_text = path.to_str().expect("temporary path is UTF-8");
+
+        let result = read_bytes_bounded(path_text, 4);
+        fs::remove_file(&path).expect("temporary fixture can be removed");
+
+        assert_eq!(result.expect("input at limit should be accepted"), b"1234");
+    }
+}
