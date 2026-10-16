@@ -146,7 +146,7 @@ pub fn audit_adapter_map(
                     }
                 }
                 Some("transform") => {
-                    if target_path.as_deref().is_none_or(|value| !valid_pointer(value)) {
+                    if target_path.as_deref().map_or(true, |value| !valid_pointer(value)) {
                         errors.push(json!({
                             "field":format!("{path}.target_path"),
                             "reason":"transform_requires_valid_target_path"
