@@ -184,7 +184,10 @@ fn read_bytes_bounded(path: &str, maximum_bytes: usize) -> Result<Vec<u8>, Strin
             .map_err(|error| format!("failed to read stdin: {error}"))?;
         source
     } else {
-        let metadata = fs::metadata(path)
+        let file = fs::File::open(path)
+            .map_err(|error| format!("failed to open {path}: {error}"))?;
+        let metadata = file
+            .metadata()
             .map_err(|error| format!("failed to inspect {path}: {error}"))?;
         if metadata.len() > maximum_bytes as u64 {
             return Err(format!(
@@ -192,7 +195,11 @@ fn read_bytes_bounded(path: &str, maximum_bytes: usize) -> Result<Vec<u8>, Strin
                 metadata.len()
             ));
         }
-        fs::read(path).map_err(|error| format!("failed to read {path}: {error}"))?
+        let mut source = Vec::with_capacity(maximum_bytes.min(64 * 1024));
+        file.take(maximum_bytes as u64 + 1)
+            .read_to_end(&mut source)
+            .map_err(|error| format!("failed to read {path}: {error}"))?;
+        source
     };
 
     if source.len() > maximum_bytes {
