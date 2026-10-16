@@ -218,8 +218,8 @@ pub fn audit_adapter_map(
 
     if !errors.is_empty() {
         let mut report = invalid_report(contract_bytes, source_record_bytes, errors);
-        report["adapter_id"] = root.get("adapter_id").cloned().unwrap_or(Value::Null);
-        report["source_format"] = root.get("source_format").cloned().unwrap_or(Value::Null);
+        report["adapter_id"] = json!(root.get("adapter_id").and_then(Value::as_str));
+        report["source_format"] = json!(root.get("source_format").and_then(Value::as_str));
         report["source_field_count"] = json!(source_paths.len());
         return report;
     }
