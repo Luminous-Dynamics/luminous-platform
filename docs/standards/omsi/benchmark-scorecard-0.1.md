@@ -53,7 +53,7 @@ Two differently shaped synthetic examples are checked by CI: [flat MES-like mapp
 |---|---|---|---|
 | Semantic conformance | 100% of expected versioned fields match every committed vector | Hard | No silent semantic drift |
 | Negative controls | Zero unexpected acceptances in cross-tenant, malformed, incompatible-unit and contradiction suites | Hard | False acceptance matters more than speed |
-| Independent schema checks | 100% valid reports; mutated schema-invalid reports rejected by an independent Draft 2020-12 engine | Hard | Parsing JSON is not schema validation |
+| Independent schema checks | 100% of schemas and representative outputs validate with an independent Draft 2020-12 engine; mutated invalid reports are rejected | Hard | Parsing JSON is not schema validation |
 | Replay tamper suite | 100% detection for every named mutation to input, digest, envelope contract, report and limitations | Hard | Digest and report claims must be checked, not trusted |
 | Repeatability | 100% semantic report equality for same bytes/profile/rule/build | Hard | Reproducible interpretation |
 | Property testing | At least 100,000 deterministic generated cases per profile version | Release | Boundary and metamorphic coverage |
@@ -119,4 +119,4 @@ Do not make Mycelix reputation or consensus a performance/correctness substitute
 
 ## Current evidence status
 
-The scorecard is deliberately set to `targets_not_measured`. Current checked-in vector count is eight. The new benchmark harness, its tests and CI smoke step are implementation work but have not been locally compiled or executed here. No reference hardware has been pinned, no independent JSON Schema engine has been confirmed running, no independent cross-implementation verifier is complete, and the Mycelix adapter is not implemented. The next honest milestone is to get the current branch tested, capture the first baseline report, then expand the corpus before claiming the targets above are met.
+The scorecard is deliberately set to `targets_not_measured`. Current semantic benchmark corpus count is eight. The benchmark harness, 100,000-case assurance sweep, adapter projections, transform vectors, and independent Draft 2020-12 validation tests are authored but have not been locally compiled or executed in this environment. The exact-head CI run must confirm schema/meta-validation and emitted-report validation. No reference hardware has been pinned, no independent cross-implementation replay verifier is complete, and the Mycelix runtime adapter is not implemented. The next honest milestone is a verified exact-head test run, followed by a controlled baseline report and expansion of the performance corpus.
