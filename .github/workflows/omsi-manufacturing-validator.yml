@@ -4,12 +4,12 @@ on:
   pull_request:
     paths:
       - 'tools/omsi-manufacturing-validator/**'
-      - 'docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json'
+      - 'docs/standards/omsi/**'
   push:
     branches: [main]
     paths:
       - 'tools/omsi-manufacturing-validator/**'
-      - 'docs/standards/omsi/profiles/manufacturing-asset-operations/0.1/CONFORMANCE-VECTORS.json'
+      - 'docs/standards/omsi/**'
 
 permissions:
   contents: read
@@ -199,6 +199,7 @@ jobs:
           jq empty tools/omsi-manufacturing-validator/schema/adapter-projection-report.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/adapter-transform-vectors.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/adapter-transform-vector-report.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/provenance-manifest.schema.json
           jq empty docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json
@@ -206,6 +207,45 @@ jobs:
           jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-record.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-optional-record.json
+
+      - name: Smoke-test verified provenance chain
+        if: steps.source.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="docs/standards/omsi/adapters/0.1/examples"
+          source_record="$base/qms-nested-record.json"
+          adapter_map="$base/qms-nested-map.json"
+          projection="$RUNNER_TEMP/omsi-projection.json"
+          semantic_input="$RUNNER_TEMP/omsi-semantic-input.json"
+          replay_envelope="$RUNNER_TEMP/omsi-replay-envelope.json"
+          semantic_report="$RUNNER_TEMP/omsi-semantic-report.json"
+          manifest="$RUNNER_TEMP/omsi-provenance-manifest.json"
+
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            apply-adapter-map "$adapter_map" "$source_record" > "$projection"
+          jq '.projection' "$projection" > "$semantic_input"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            create-envelope "$semantic_input" > "$replay_envelope"
+          jq '.report' "$replay_envelope" > "$semantic_report"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            create-provenance-manifest "$source_record" "$adapter_map" "$projection" \
+            "$semantic_input" "$semantic_report" "$replay_envelope" > "$manifest"
+          jq -e '
+            .manifest_contract == "omsi-manufacturing-provenance-manifest/0.1" and
+            .status == "local_chain_consistent" and
+            .authority == "local_consistency_only" and
+            .digest_profile.algorithm == "sha256" and
+            .digest_profile.scope == "exact_input_bytes" and
+            .digest_profile.canonicalization == "none" and
+            (.artifacts | length) == 6 and
+            (.edges | length) == 5 and
+            (.transform_ids | sort) == ["qms-decimal-normalization/0.1", "qms-unit-code-crosswalk/0.1"] and
+            ([.artifacts[].sha256 | test("^[0-9a-f]{64}$")] | all) and
+            ([.artifacts[].byte_length | numbers] | length) == 6 and
+            (.limitations | length) >= 5 and
+            (has("signature") | not)
+          ' "$manifest" > /dev/null
 
       - name: Clippy
         if: steps.source.outputs.present == 'true'
