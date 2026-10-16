@@ -1,0 +1,66 @@
+{
+  "format": "omsi-manufacturing-transform-vectors",
+  "version": "0.1",
+  "vectors": [
+    {
+      "id": "decimal-trailing-zeroes",
+      "transform_id": "qms-decimal-normalization/0.1",
+      "input": "72.4000",
+      "expected": { "status": "transformed", "output": "72.4" }
+    },
+    {
+      "id": "decimal-small-fraction",
+      "transform_id": "qms-decimal-normalization/0.1",
+      "input": "0.00010",
+      "expected": { "status": "transformed", "output": "0.0001" }
+    },
+    {
+      "id": "decimal-negative-zero",
+      "transform_id": "qms-decimal-normalization/0.1",
+      "input": "-0.000",
+      "expected": { "status": "transformed", "output": "0" }
+    },
+    {
+      "id": "decimal-maximum-supported-precision",
+      "transform_id": "qms-decimal-normalization/0.1",
+      "input": "999999999999999999.999999999999999999",
+      "expected": { "status": "transformed", "output": "999999999999999999.999999999999999999" }
+    },
+    {
+      "id": "decimal-scientific-notation-rejected",
+      "transform_id": "qms-decimal-normalization/0.1",
+      "input": "1e3",
+      "expected": { "status": "rejected", "reason": "decimal_transform_rejected_input" }
+    },
+    {
+      "id": "unit-millimeter",
+      "transform_id": "qms-unit-code-crosswalk/0.1",
+      "input": "millimeter",
+      "expected": { "status": "transformed", "output": "mm" }
+    },
+    {
+      "id": "unit-millimetre-spelling",
+      "transform_id": "qms-unit-code-crosswalk/0.1",
+      "input": "millimetre",
+      "expected": { "status": "transformed", "output": "mm" }
+    },
+    {
+      "id": "unit-meter",
+      "transform_id": "qms-unit-code-crosswalk/0.1",
+      "input": "meter",
+      "expected": { "status": "transformed", "output": "m" }
+    },
+    {
+      "id": "unit-degree-celsius",
+      "transform_id": "qms-unit-code-crosswalk/0.1",
+      "input": "degree Celsius",
+      "expected": { "status": "transformed", "output": "Cel" }
+    },
+    {
+      "id": "unit-unknown-rejected",
+      "transform_id": "qms-unit-code-crosswalk/0.1",
+      "input": "parsec",
+      "expected": { "status": "rejected", "reason": "unit_code_not_in_crosswalk" }
+    }
+  ]
+}
