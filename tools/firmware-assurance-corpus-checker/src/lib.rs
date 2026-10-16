@@ -88,7 +88,7 @@ pub fn validate_corpus_bytes(corpus_bytes: &[u8], schema_bytes: &[u8]) -> Result
             "profile_id": REQUIRED_PROFILE,
             "physical_target": "none",
             "mutation_enabled": false,
-            "claim_ceiling": "corpus_structure_only_not_firmware_verification"
+            "claim_ceiling": "synthetic_claim_policy_only_not_firmware_verification"
         },
         "inputs": {
             "corpus_sha256": sha256_hex(corpus_bytes),
@@ -105,7 +105,7 @@ pub fn validate_corpus_bytes(corpus_bytes: &[u8], schema_bytes: &[u8]) -> Result
         },
         "schema_errors": schema_errors,
         "contract_errors": contract_errors,
-        "executed_cases": 0,
+        "claim_state_policy_cases_evaluated": derived_case_count(&corpus),
         "physical_device_operations": 0
     }))
 }
@@ -259,6 +259,48 @@ pub fn validate_contract(corpus: &Value) -> Vec<String> {
             _ => {}
         }
 
+        let Some(required_claim_values) = case.get("required_claims").and_then(Value::as_array) else {
+            errors.push(format!("{label}: required_claims must be an array"));
+            continue;
+        };
+        let mut required_claim_names = Vec::new();
+        let mut unique_required_claims = BTreeSet::new();
+        for claim_value in required_claim_values {
+            let Some(claim_name) = claim_value.as_str() else {
+                errors.push(format!("{label}: each required_claim must be a string"));
+                continue;
+            };
+            if !unique_required_claims.insert(claim_name.to_string()) {
+                errors.push(format!("{label}: duplicate required_claim {claim_name}"));
+                continue;
+            }
+            if !claims.contains_key(claim_name) {
+                errors.push(format!(
+                    "{label}: required_claim {claim_name} is absent from expected_claims"
+                ));
+                continue;
+            }
+            required_claim_names.push(claim_name.to_string());
+        }
+
+        match derive_disposition(claims, &required_claim_names) {
+            Ok(derived) if disposition == Some(derived) => {}
+            Ok(derived) => errors.push(format!(
+                "{label}: expected_disposition does not match derived claim-state disposition {derived}"
+            )),
+            Err(error) => errors.push(format!("{label}: cannot derive disposition: {error}")),
+        }
+
+        let kind_matches_derived = matches!(
+            (case_kind, disposition),
+            (Some("positive_control"), Some("eligible_for_lab_staging"))
+                | (Some("negative_control"), Some("blocked"))
+                | (Some("indeterminate_control"), Some("indeterminate"))
+        );
+        if !kind_matches_derived {
+            errors.push(format!("{label}: case_kind does not match derived claim-state disposition"));
+        }
+
         let Some(assertions) = case.get("required_assertions").and_then(Value::as_array) else {
             errors.push(format!("{label}: required_assertions must be an array"));
             continue;
@@ -301,6 +343,64 @@ pub fn validate_contract(corpus: &Value) -> Vec<String> {
     errors
 }
 
+/// Derive the stage disposition from the states of explicitly required claims.
+///
+/// Any required refutation blocks the case. Otherwise, any unknown or unresolved
+/// required state makes it indeterminate. Only all-verified required claims are
+/// eligible for the synthetic lab-staging stage. A not-applicable required claim
+/// is unresolved until a profile-specific applicability rule exists.
+pub fn derive_disposition(
+    claims: &Map<String, Value>,
+    required_claims: &[String],
+) -> Result<&'static str, String> {
+    if required_claims.is_empty() {
+        return Err("required_claims must not be empty".to_string());
+    }
+
+    let mut unresolved = false;
+    for claim_name in required_claims {
+        let state = claims
+            .get(claim_name)
+            .and_then(Value::as_str)
+            .ok_or_else(|| format!("missing or malformed required claim {claim_name}"))?;
+        match state {
+            "verified" => {}
+            "refuted" => return Ok("blocked"),
+            "unknown" | "not_applicable" => unresolved = true,
+            other => return Err(format!("unsupported state {other} for claim {claim_name}")),
+        }
+    }
+
+    if unresolved {
+        Ok("indeterminate")
+    } else {
+        Ok("eligible_for_lab_staging")
+    }
+}
+
+fn derived_case_count(corpus: &Value) -> usize {
+    corpus
+        .get("cases")
+        .and_then(Value::as_array)
+        .map(|cases| {
+            cases.iter().filter(|case| {
+                let Some(claims) = case.get("expected_claims").and_then(Value::as_object) else {
+                    return false;
+                };
+                let Some(required) = case.get("required_claims").and_then(Value::as_array) else {
+                    return false;
+                };
+                let names = required
+                    .iter()
+                    .filter_map(Value::as_str)
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>();
+                derive_disposition(claims, &names).is_ok()
+            }).count()
+        })
+        .unwrap_or(0)
+}
+
 fn expect_string(corpus: &Value, key: &str, expected: &str, errors: &mut Vec<String>) {
     if corpus.get(key).and_then(Value::as_str) != Some(expected) {
         errors.push(format!("{key} must equal {expected:?}"));
@@ -319,7 +419,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{validate_contract, validate_corpus_bytes, MAX_DOCUMENT_BYTES};
+    use super::{derive_disposition, validate_contract, validate_corpus_bytes, MAX_DOCUMENT_BYTES};
     use serde_json::{json, Value};
 
     const CORPUS: &str = include_str!("../../../docs/fixtures/firmware-assurance-corpus-v1.json");
@@ -335,7 +435,60 @@ mod tests {
             .expect("validator can compile schema and parse inputs");
         assert_eq!(report["status"], "passed", "{report:#}");
         assert_eq!(report["case_count"], json!(44));
-        assert_eq!(report["scope"]["claim_ceiling"], "corpus_structure_only_not_firmware_verification");
+        assert_eq!(report["claim_state_policy_cases_evaluated"], json!(44));
+        assert_eq!(report["scope"]["claim_ceiling"], "synthetic_claim_policy_only_not_firmware_verification");
+    }
+
+    #[test]
+    fn every_declared_case_disposition_is_derived_from_required_claim_states() {
+        let corpus = parsed_corpus();
+        for case in corpus["cases"].as_array().unwrap() {
+            let claims = case["expected_claims"].as_object().unwrap();
+            let required = case["required_claims"]
+                .as_array().unwrap()
+                .iter().map(|value| value.as_str().unwrap().to_string())
+                .collect::<Vec<_>>();
+            assert_eq!(
+                derive_disposition(claims, &required).unwrap(),
+                case["expected_disposition"].as_str().unwrap(),
+                "{}",
+                case["case_id"]
+            );
+        }
+    }
+
+    #[test]
+    fn required_claim_mutations_change_disposition_fail_closed() {
+        let corpus = parsed_corpus();
+        let positive = &corpus["cases"][0];
+        let positive_required = positive["required_claims"].as_array().unwrap()
+            .iter().map(|v| v.as_str().unwrap().to_string()).collect::<Vec<_>>();
+        let positive_claims = positive["expected_claims"].as_object().unwrap();
+        let changed_name = positive_required[0].clone();
+
+        let mut claims = positive_claims.clone();
+        claims.insert(changed_name.clone(), json!("unknown"));
+        assert_eq!(derive_disposition(&claims, &positive_required).unwrap(), "indeterminate");
+        claims.insert(changed_name, json!("refuted"));
+        assert_eq!(derive_disposition(&claims, &positive_required).unwrap(), "blocked");
+
+        let negative = &corpus["cases"][1];
+        let negative_required = negative["required_claims"].as_array().unwrap()
+            .iter().map(|v| v.as_str().unwrap().to_string()).collect::<Vec<_>>();
+        let mut repaired_claims = negative["expected_claims"].as_object().unwrap().clone();
+        for name in &negative_required {
+            repaired_claims.insert(name.clone(), json!("verified"));
+        }
+        assert_eq!(derive_disposition(&repaired_claims, &negative_required).unwrap(), "eligible_for_lab_staging");
+
+        let indeterminate = &corpus["cases"][6];
+        let unknown_required = indeterminate["required_claims"].as_array().unwrap()
+            .iter().map(|v| v.as_str().unwrap().to_string()).collect::<Vec<_>>();
+        let mut resolved_claims = indeterminate["expected_claims"].as_object().unwrap().clone();
+        for name in &unknown_required {
+            resolved_claims.insert(name.clone(), json!("verified"));
+        }
+        assert_eq!(derive_disposition(&resolved_claims, &unknown_required).unwrap(), "eligible_for_lab_staging");
     }
 
     #[test]
