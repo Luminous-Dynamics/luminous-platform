@@ -122,6 +122,23 @@ jobs:
           jq -e '.source_field_count == 8 and .transformed_count == 2 and .preserved_count == 6 and .explicitly_unmapped_count == 0' \
             "$RUNNER_TEMP/omsi-adapter-qms-nested-audit.json" > /dev/null
 
+      - name: Verify registered transformation vectors
+        shell: bash
+        run: |
+          set -euo pipefail
+          report_file="$RUNNER_TEMP/omsi-transform-vector-report.json"
+          cargo run --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+            verify-transform-vectors docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json > "$report_file"
+          jq -e '
+            .report_contract == "omsi-manufacturing-transform-vector-report/0.1" and
+            .authority == "registered_transform_vector_agreement_only" and
+            .status == "passed" and
+            .vectors_expected == 10 and
+            .vectors_tested == 10 and
+            .failure_count == 0 and
+            (.failures | length) == 0
+          ' "$report_file" > /dev/null
+
       - name: Smoke-test executable adapter projections
         shell: bash
         run: |
@@ -155,6 +172,9 @@ jobs:
           jq empty tools/omsi-manufacturing-validator/schema/adapter-map.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/adapter-audit-report.schema.json
           jq empty tools/omsi-manufacturing-validator/schema/adapter-projection-report.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/adapter-transform-vectors.schema.json
+          jq empty tools/omsi-manufacturing-validator/schema/adapter-transform-vector-report.schema.json
+          jq empty docs/standards/omsi/adapters/0.1/TRANSFORM-VECTORS.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-map.json
           jq empty docs/standards/omsi/adapters/0.1/examples/mes-flat-record.json
           jq empty docs/standards/omsi/adapters/0.1/examples/qms-nested-map.json
