@@ -26,13 +26,14 @@ The command uses the exact vector-document bytes for a corpus SHA-256 and serial
 - replay-envelope creation (including parsing, evaluation and digest);
 - replay-envelope verification (including digest, parsing and fresh evaluation).
 
-It emits a versioned JSON report with case IDs, corpus digest scope, OS/architecture, iteration and warm-up counts, sample count, min/p50/p95/p99/max/mean latency, observations per second, serialized-input throughput, OS/architecture/build profile, optional host/CPU labels and a compiler version when `RUSTC_VERSION` is captured. The report explicitly states `performance_observation_only` and `measured_no_acceptance_claim`.
+It emits a versioned JSON report with case IDs, corpus digest scope, OS/architecture, iteration and warm-up counts, sample count, min/p50/p95/p99/max/mean latency, latency-derived inverse-mean rates, separately measured phase wall-clock operations/sec and serialized-input MiB/sec, OS/architecture/build profile, optional host/CPU labels and a compiler version when `RUSTC_VERSION` is captured. The report explicitly states `performance_observation_only` and `measured_no_acceptance_claim`.
 
 ### Reproducibility contract
 
 - The corpus digest is SHA-256 over the **exact bytes of the vector document**; it does not claim canonical JSON semantics.
 - Benchmark inputs are the fixture input objects serialized by the current `serde_json` build. They are a stable per-build workload, not a claim that every JSON implementation produces the same bytes.
 - The harness warms each case, uses `black_box`, records per-operation samples, and reports quantiles by nearest-rank selection.
+- Each phase is measured as a separate full-corpus batch. The outer wall-clock timer includes loop/dispatch overhead but excludes process startup; the individual operation timers produce latency quantiles. The existing `*_from_sampled_time` rates are inverse-mean-latency equivalents, **not** the actual wall-clock throughput measurement.
 - Results vary with CPU, compiler version/profile, host scheduling and background load. This CLI is a reproducible workload/report format, not a laboratory-grade isolation system.
 - Timing thresholds are intentionally not enforced by shared hosted CI. The current committed vector set contains eight cases and is useful as a microbenchmark smoke corpus, **not** yet large or representative enough to establish a production SLO.
 - The benchmark command has been authored but not compiled or run locally in this environment. A current exact-head CI conclusion is not available. Do not quote performance numbers until an actual report is captured with the report and environment pinned.
@@ -81,7 +82,7 @@ For an initial comparable baseline:
 3. Set `RUSTC_VERSION="$(rustc --version)"` and the optional anonymized `OMSI_BENCHMARK_HOST_LABEL` / `OMSI_BENCHMARK_CPU_LABEL` variables. The report must never silently infer a hostname or expose it by default.
 4. Run one warm-up process followed by at least 10 measured repetitions; report p50/p95/p99 and variance across runs, not only a best-case run.
 5. Separate local evaluator timings from source-adapter I/O, Holochain DHT latency, credential status checks and any external service. Measure them separately, then measure an end-to-end synthetic receipt flow.
-6. Compare only equivalent semantic rule/profile versions. Treat different corpus digests or toolchain environments as different benchmark configurations.
+6. Compare both latency quantiles and `wall_clock_operations_per_second` / `wall_clock_serialized_input_mib_per_second` only across equivalent semantic rule/profile versions, corpus digests, input-size distributions and toolchain environments. Keep latency-derived rates labeled as such.
 7. Do not fail shared hosted PR CI on wall-clock thresholds until a stable reference host and measurement procedure have been established. CI should first verify that the harness runs and emits structurally valid metrics.
 8. Do not optimize by skipping validation, treating unknown as accepted, removing negative controls or reducing evidence retention.
 
