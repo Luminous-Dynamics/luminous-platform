@@ -1,0 +1,25 @@
+{
+  "adapter_contract": "omsi-manufacturing-adapter-map/0.1",
+  "adapter_id": "synthetic-mes-optional/0.1",
+  "source_format": "synthetic-mes-json/0.1",
+  "mappings": [
+    {
+      "source_path": "/temperature",
+      "presence": "required",
+      "disposition": "preserve",
+      "target_path": "/measurement/value_decimal"
+    },
+    {
+      "source_path": "/unit",
+      "presence": "optional",
+      "disposition": "preserve",
+      "target_path": "/measurement/unit_code"
+    },
+    {
+      "source_path": "/operator_note",
+      "presence": "optional",
+      "disposition": "drop",
+      "reason": "source free text is excluded from the neutral projection"
+    }
+  ]
+}
