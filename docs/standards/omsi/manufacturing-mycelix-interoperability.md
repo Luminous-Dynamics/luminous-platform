@@ -34,6 +34,16 @@ Sources above were inspected on 2026-10-15; paths and maturity can change. Sourc
 MES / QMS / metrology / fabrication exporter
                     |
                     v
+      source record + source schema + adapter map
+                    |
+                    v
+      OMSI schema-coverage audit
+       - bounded closed-object inventory
+       - required/optional mapping agreement
+       - absent optional paths remain visible
+       - unsupported schema forms fail closed
+                    |
+                    v
       OMSI profile adapter (read-only)
                     |
                     v
@@ -44,10 +54,13 @@ MES / QMS / metrology / fabrication exporter
        - named comparison rule
                     |
                     v
-      OMSI raw-byte replay envelope
-      (exact input digest + report)
+       OMSI provenance manifest v0.2
+       - eight exact-byte artifacts/digests
+       - schema-coverage report is bound to projection
+       - derivation activities + replay envelope
                     |
-        local independent verification
+      same-implementation local recheck
+       (independent verifier is a future gate)
                     |
                     v
     Mycelix interop adapter / coordinator
@@ -70,12 +83,23 @@ MES / QMS / metrology / fabrication exporter
 
 The diagram is a target architecture. No adapter or Holochain entry type is implemented in the OMSI validator by this document.
 
+## Schema-bound provenance (OMSI manifest v0.2)
+
+The OMSI implementation draft now has `audit-adapter-schema-coverage`, `create-provenance-manifest`, and `verify-provenance-manifest`. The schema coverage command is a restricted field-path/structural audit for closed-object JSON Schema inputs, not a full JSON Schema runtime or vendor certification. It deliberately rejects unsupported/open schema forms rather than treating unenumerated fields as covered. Its synthetic MES-style fixture inventories four leaf paths, and a QMS-style fixture inventories eight.
+
+Manifest v0.2 includes eight artifacts: source record, source schema, adapter map, schema-coverage report, projection report, semantic input, semantic report, and replay envelope. It re-runs coverage from the exact source/schema/map bytes, requires `schema_coverage_complete` and equality with the supplied report, and only then admits the projection into the evidence chain. Five activities and 14 typed edges track coverage audit, projection, semantic-input extraction, semantic evaluation, and replay-envelope creation.
+
+This is an **unsigned same-implementation consistency check**. It is not source authentication, a physical-measurement truth claim, an independent verifier, full W3C PROV serialization, or release authority. A Mycelix receipt must not treat `local_chain_consistent` or `manifest_verified` as an authenticated issuer identity or product disposition. The next gates are a genuinely independent implementation, standard authenticated step attestations with signer/key policy, and reviewed vendor-specific conformance assets. The exact-head workflow for the implementation branch remains without a conclusion; no pass is claimed.
+
+
 ## Responsibility matrix
 
 | Concern | OMSI | Mycelix | Boundary |
 |---|---|---|---|
 | Manufacturing profile meaning and versions | Owner | Consumes pinned profile | No divergent semantic clones |
 | Deterministic per-record validation | Owner | Replays or verifies via adapter | No online trust lookup inside the semantic rule |
+| Source-schema/mapping coverage | Owner of bounded coverage contract/report | Consumes coverage report and references its digest | Coverage is not full JSON Schema/vendor conformance or mapping-semantic proof |
+| Provenance graph and local reconstruction | Owner of versioned OMSI manifest | References manifest/schema/coverage digests; independently verifies in a future implementation | The current builder/verifier share code and the manifest is unsigned |
 | Input/report digest and replay consistency | Owner | Verifies and references envelope | Digest is not source authentication |
 | Issuer/operator/lab DID and credentials | Consumes credential references if needed | Identity and credential services | Valid credential is not proof that measurement is accurate |
 | Credential expiry/revocation | Declares evidence requirements | Resolves current status and records when/how checked | Historical decisions must preserve the status evidence used then |
@@ -96,6 +120,8 @@ A future Mycelix evidence receipt should be deliberately small. Exact Rust/HDI f
 | `profile_id` / `profile_version` | Exact OMSI semantic contract used |
 | `rule_id` / `rule_version` | Exact interpretation rule; never infer rule from current defaults |
 | `input_digest` | Digest algorithm, digest, byte length and scope from the envelope |
+| `source_schema_digest` / `coverage_report_digest` | Exact byte digests for the reviewed schema and the successful versioned coverage report; required when an adapter claims schema coverage |
+| `provenance_manifest_digest` | Digest/reference to the v0.2 eight-artifact derivation manifest; do not treat the unsigned local status as authentication |
 | `envelope_digest` | Digest of the preserved envelope artifact using explicitly named byte semantics |
 | `validator_identity` / `version` | Evaluator that produced the diagnostic report |
 | `outcome` | OMSI outcome copied without reinterpretation |
