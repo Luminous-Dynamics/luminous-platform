@@ -41,7 +41,26 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Establish a positive control. Eligibility means only that the synthetic case may advance to a separately authorized lab stage."
+      "rationale": "Establish a positive control. Eligibility means only that the synthetic case may advance to a separately authorized lab stage.",
+      "required_claims": [
+        "target_identity",
+        "artifact_integrity",
+        "signature_present",
+        "signature_validity",
+        "signer_authorization",
+        "revocation_status",
+        "compatibility",
+        "freshness",
+        "provenance_completeness",
+        "authorization",
+        "lineage_integrity",
+        "evidence_privacy",
+        "boot_target_match",
+        "recovery_readiness",
+        "verifier_availability",
+        "schema_support",
+        "observation_consistency"
+      ]
     },
     {
       "case_id": "FWA-002",
@@ -60,7 +79,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Corruption must invalidate exact-byte integrity and the signature predicate where the signature binds the changed bytes."
+      "rationale": "Corruption must invalidate exact-byte integrity and the signature predicate where the signature binds the changed bytes.",
+      "required_claims": [
+        "artifact_integrity",
+        "signature_validity"
+      ]
     },
     {
       "case_id": "FWA-003",
@@ -80,7 +103,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Missing signature is distinguishable from a mathematically invalid signature; required signing is not satisfied."
+      "rationale": "Missing signature is distinguishable from a mathematically invalid signature; required signing is not satisfied.",
+      "required_claims": [
+        "signature_present"
+      ]
     },
     {
       "case_id": "FWA-004",
@@ -100,7 +126,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Malformed cryptographic material must not be treated as a missing optional field or a successful signature."
+      "rationale": "Malformed cryptographic material must not be treated as a missing optional field or a successful signature.",
+      "required_claims": [
+        "signature_present",
+        "signature_validity"
+      ]
     },
     {
       "case_id": "FWA-005",
@@ -119,7 +149,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Cryptographic validity does not imply policy authorization."
+      "rationale": "Cryptographic validity does not imply policy authorization.",
+      "required_claims": [
+        "signature_validity",
+        "signer_authorization"
+      ]
     },
     {
       "case_id": "FWA-006",
@@ -138,7 +172,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "A definite applicable revocation must veto authorization."
+      "rationale": "A definite applicable revocation must veto authorization.",
+      "required_claims": [
+        "revocation_status",
+        "signer_authorization"
+      ]
     },
     {
       "case_id": "FWA-007",
@@ -157,7 +195,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Unresolved timestamped revocation cannot be silently treated as allowed or definitely revoked."
+      "rationale": "Unresolved timestamped revocation cannot be silently treated as allowed or definitely revoked.",
+      "required_claims": [
+        "revocation_status",
+        "signer_authorization"
+      ]
     },
     {
       "case_id": "FWA-008",
@@ -175,7 +217,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "A valid image for another model is not compatible merely because the signer is trusted."
+      "rationale": "A valid image for another model is not compatible merely because the signer is trusted.",
+      "required_claims": [
+        "compatibility"
+      ]
     },
     {
       "case_id": "FWA-009",
@@ -193,7 +238,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Support scope is exact-model and hardware-revision bound."
+      "rationale": "Support scope is exact-model and hardware-revision bound.",
+      "required_claims": [
+        "compatibility"
+      ]
     },
     {
       "case_id": "FWA-010",
@@ -211,7 +259,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Image compatibility must include the target component, not just the device family."
+      "rationale": "Image compatibility must include the target component, not just the device family.",
+      "required_claims": [
+        "compatibility"
+      ]
     },
     {
       "case_id": "FWA-011",
@@ -230,7 +281,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Version policy must reject prohibited rollback independently of signature validity."
+      "rationale": "Version policy must reject prohibited rollback independently of signature validity.",
+      "required_claims": [
+        "freshness",
+        "compatibility"
+      ]
     },
     {
       "case_id": "FWA-012",
@@ -248,7 +303,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Expired metadata cannot authorize a fresh update."
+      "rationale": "Expired metadata cannot authorize a fresh update.",
+      "required_claims": [
+        "freshness"
+      ]
     },
     {
       "case_id": "FWA-013",
@@ -267,7 +325,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Detect mix-and-match; individually valid signatures do not establish a coherent metadata set."
+      "rationale": "Detect mix-and-match; individually valid signatures do not establish a coherent metadata set.",
+      "required_claims": [
+        "freshness",
+        "lineage_integrity"
+      ]
     },
     {
       "case_id": "FWA-014",
@@ -285,7 +347,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "A signature count or presence flag must not replace threshold-policy evaluation."
+      "rationale": "A signature count or presence flag must not replace threshold-policy evaluation.",
+      "required_claims": [
+        "signer_authorization"
+      ]
     },
     {
       "case_id": "FWA-015",
@@ -303,7 +368,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Missing inventory is unknown, not proof that the component set is complete or vulnerability-free."
+      "rationale": "Missing inventory is unknown, not proof that the component set is complete or vulnerability-free.",
+      "required_claims": [
+        "provenance_completeness"
+      ]
     },
     {
       "case_id": "FWA-016",
@@ -322,7 +390,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Provenance must bind to exact artifact bytes and identity."
+      "rationale": "Provenance must bind to exact artifact bytes and identity.",
+      "required_claims": [
+        "provenance_completeness",
+        "lineage_integrity"
+      ]
     },
     {
       "case_id": "FWA-017",
@@ -341,7 +413,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Mutable device paths are locators, not stable authority identities."
+      "rationale": "Mutable device paths are locators, not stable authority identities.",
+      "required_claims": [
+        "target_identity",
+        "observation_consistency"
+      ]
     },
     {
       "case_id": "FWA-018",
@@ -359,7 +435,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Time-sensitive claims remain unresolved when required time confidence is absent."
+      "rationale": "Time-sensitive claims remain unresolved when required time confidence is absent.",
+      "required_claims": [
+        "freshness"
+      ]
     },
     {
       "case_id": "FWA-019",
@@ -378,7 +457,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Stale adapter or endpoint profiles cannot support current authorization."
+      "rationale": "Stale adapter or endpoint profiles cannot support current authorization.",
+      "required_claims": [
+        "management_scope",
+        "authorization"
+      ]
     },
     {
       "case_id": "FWA-020",
@@ -397,7 +480,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Do not forward credentials or accept observations from unapproved origins."
+      "rationale": "Do not forward credentials or accept observations from unapproved origins.",
+      "required_claims": [
+        "management_scope",
+        "authorization"
+      ]
     },
     {
       "case_id": "FWA-021",
@@ -416,7 +503,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Authentication alone does not prove authorization to the intended tenant."
+      "rationale": "Authentication alone does not prove authorization to the intended tenant.",
+      "required_claims": [
+        "management_scope",
+        "authorization"
+      ]
     },
     {
       "case_id": "FWA-022",
@@ -434,7 +525,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Read-only status must be enforced by operation allow-list and adapter contract, not UI intent."
+      "rationale": "Read-only status must be enforced by operation allow-list and adapter contract, not UI intent.",
+      "required_claims": [
+        "authorization"
+      ]
     },
     {
       "case_id": "FWA-023",
@@ -453,7 +547,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Even a proven no-effect result does not authorize mutation in this read-only benchmark stage; it tests outcome classification."
+      "rationale": "Even a proven no-effect result does not authorize mutation in this read-only benchmark stage; it tests outcome classification.",
+      "required_claims": [
+        "effect_outcome_known",
+        "authorization"
+      ]
     },
     {
       "case_id": "FWA-024",
@@ -471,7 +569,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "A lost acknowledgment is not proof that no effect occurred; do not blindly retry."
+      "rationale": "A lost acknowledgment is not proof that no effect occurred; do not blindly retry.",
+      "required_claims": [
+        "effect_outcome_known"
+      ]
     },
     {
       "case_id": "FWA-025",
@@ -490,7 +591,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Signature validity, configured profile, and selected next boot are distinct claims."
+      "rationale": "Signature validity, configured profile, and selected next boot are distinct claims.",
+      "required_claims": [
+        "boot_target_match"
+      ]
     },
     {
       "case_id": "FWA-026",
@@ -509,7 +613,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Selection or attempted boot must not be reported as successful boot."
+      "rationale": "Selection or attempted boot must not be reported as successful boot.",
+      "required_claims": [
+        "boot_target_match",
+        "boot_success"
+      ]
     },
     {
       "case_id": "FWA-027",
@@ -527,7 +635,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "The system must not authorize a high-risk update without the policy-required recovery path."
+      "rationale": "The system must not authorize a high-risk update without the policy-required recovery path.",
+      "required_claims": [
+        "recovery_readiness"
+      ]
     },
     {
       "case_id": "FWA-028",
@@ -545,7 +656,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Dangling or cyclic evidence lineage cannot be accepted as a closed assurance graph."
+      "rationale": "Dangling or cyclic evidence lineage cannot be accepted as a closed assurance graph.",
+      "required_claims": [
+        "lineage_integrity"
+      ]
     },
     {
       "case_id": "FWA-029",
@@ -563,7 +677,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "A self-consistent digest envelope does not authenticate or validate semantic claims."
+      "rationale": "A self-consistent digest envelope does not authenticate or validate semantic claims.",
+      "required_claims": [
+        "lineage_integrity"
+      ]
     },
     {
       "case_id": "FWA-030",
@@ -582,7 +699,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "A producer cannot certify its own evidence when required independent verification is unavailable."
+      "rationale": "A producer cannot certify its own evidence when required independent verification is unavailable.",
+      "required_claims": [
+        "verifier_availability",
+        "lineage_integrity"
+      ]
     },
     {
       "case_id": "FWA-031",
@@ -600,7 +721,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Local read-only observation may remain available; consequential update authorization is not inferred from network absence."
+      "rationale": "Local read-only observation may remain available; consequential update authorization is not inferred from network absence.",
+      "required_claims": [
+        "authorization"
+      ]
     },
     {
       "case_id": "FWA-032",
@@ -619,7 +743,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Unsupported semantics cannot be approximated as compatible."
+      "rationale": "Unsupported semantics cannot be approximated as compatible.",
+      "required_claims": [
+        "schema_support"
+      ]
     },
     {
       "case_id": "FWA-033",
@@ -637,7 +764,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Model intent, prior consent, or a default UI path is not approval for this action."
+      "rationale": "Model intent, prior consent, or a default UI path is not approval for this action.",
+      "required_claims": [
+        "authorization"
+      ]
     },
     {
       "case_id": "FWA-034",
@@ -656,7 +786,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Replay must be rejected without reinterpreting it as a new approved action."
+      "rationale": "Replay must be rejected without reinterpreting it as a new approved action.",
+      "required_claims": [
+        "freshness",
+        "authorization"
+      ]
     },
     {
       "case_id": "FWA-035",
@@ -675,7 +809,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Conflicting observations must be preserved and investigated, not averaged into a pass."
+      "rationale": "Conflicting observations must be preserved and investigated, not averaged into a pass.",
+      "required_claims": [
+        "observation_consistency",
+        "target_identity"
+      ]
     },
     {
       "case_id": "FWA-036",
@@ -694,7 +832,10 @@
         "no_boot_configuration_change",
         "no_secret_in_emitted_evidence"
       ],
-      "rationale": "Evidence emission must redact or reject sensitive fields; a security receipt must not leak credentials."
+      "rationale": "Evidence emission must redact or reject sensitive fields; a security receipt must not leak credentials.",
+      "required_claims": [
+        "evidence_privacy"
+      ]
     },
     {
       "case_id": "FWA-037",
@@ -712,7 +853,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Satisfied threshold must pass; a count of signatures alone is insufficient."
+      "rationale": "Satisfied threshold must pass; a count of signatures alone is insufficient.",
+      "required_claims": [
+        "signer_authorization"
+      ]
     },
     {
       "case_id": "FWA-038",
@@ -731,7 +875,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Positive control for update freshness and anti-mix-and-match checks."
+      "rationale": "Positive control for update freshness and anti-mix-and-match checks.",
+      "required_claims": [
+        "freshness",
+        "lineage_integrity"
+      ]
     },
     {
       "case_id": "FWA-039",
@@ -749,7 +897,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Explicit compatibility evidence should permit the synthetic profile to advance."
+      "rationale": "Explicit compatibility evidence should permit the synthetic profile to advance.",
+      "required_claims": [
+        "compatibility"
+      ]
     },
     {
       "case_id": "FWA-040",
@@ -768,7 +919,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Agreement is useful only when sources and captured inputs are distinct and identified."
+      "rationale": "Agreement is useful only when sources and captured inputs are distinct and identified.",
+      "required_claims": [
+        "target_identity",
+        "observation_consistency"
+      ]
     },
     {
       "case_id": "FWA-041",
@@ -788,7 +943,12 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Positive control for exact management-scope binding without authorizing mutation."
+      "rationale": "Positive control for exact management-scope binding without authorizing mutation.",
+      "required_claims": [
+        "management_scope",
+        "target_identity",
+        "authorization"
+      ]
     },
     {
       "case_id": "FWA-042",
@@ -808,7 +968,12 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Local read-only behavior should not depend on the presence of a remote ledger when required evidence is already valid; no update is performed."
+      "rationale": "Local read-only behavior should not depend on the presence of a remote ledger when required evidence is already valid; no update is performed.",
+      "required_claims": [
+        "management_scope",
+        "authorization",
+        "freshness"
+      ]
     },
     {
       "case_id": "FWA-043",
@@ -827,7 +992,11 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "Positive control for verification of a complete and internally consistent evidence graph."
+      "rationale": "Positive control for verification of a complete and internally consistent evidence graph.",
+      "required_claims": [
+        "lineage_integrity",
+        "verifier_availability"
+      ]
     },
     {
       "case_id": "FWA-044",
@@ -845,7 +1014,10 @@
         "no_key_enrollment",
         "no_boot_configuration_change"
       ],
-      "rationale": "A documented and tested recovery route is a required predicate, not a decorative note."
+      "rationale": "A documented and tested recovery route is a required predicate, not a decorative note.",
+      "required_claims": [
+        "recovery_readiness"
+      ]
     }
   ]
 }
