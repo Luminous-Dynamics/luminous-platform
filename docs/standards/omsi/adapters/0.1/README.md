@@ -67,9 +67,9 @@ The versioned [transform-vector corpus](./TRANSFORM-VECTORS.json) declares exact
 
 ## Rechecking the entire evidence chain
 
-The `create-provenance-manifest` command verifies the submitted artifacts as one chain before it emits a manifest. It re-runs `apply-adapter-map` against the original source-record/map bytes and requires the supplied projection report to match; it requires the semantic input to equal the projection payload; it recomputes the semantic report; and it verifies the replay envelope against the **exact semantic-input bytes**. Any inconsistency blocks manifest creation.
+The v0.2 `create-provenance-manifest` command requires schema coverage before it emits a manifest. It re-runs `audit-adapter-schema-coverage` against the exact source-record, source-schema, and adapter-map bytes and requires the submitted coverage report to match with `schema_coverage_complete`. It then re-runs `apply-adapter-map`, requires the supplied projection report to match, requires semantic input to equal the projection payload, recomputes the semantic report, and verifies the replay envelope against the **exact semantic-input bytes**. Any missing or inconsistent schema/coverage/derivation link blocks manifest creation.
 
-The six-artifact manifest records SHA-256 and byte length for the source record, adapter map, projection report, semantic input, semantic report, and replay envelope, then emits typed provenance edges linking the stages plus four explicit activities for adapter projection, semantic-input extraction, semantic evaluation, and replay-envelope creation. The manifest declares `w3c-prov-dm-aligned-subset/0.1`: it uses the `used` and `wasGeneratedBy` relations, but is a constrained local profile rather than a claim of complete W3C PROV serialization conformance. The manifest records declared transform IDs from the adapter map; that list does not imply every declaration ran when an optional source field was absent. Digests cover exact bytes with no JSON canonicalization. Source contents and local filesystem paths are not copied into the manifest.
+The eight-artifact v0.2 manifest binds the source record, source schema, adapter map, schema-coverage report, projection report, semantic input, semantic report, and replay envelope by SHA-256 and byte length. Five explicit activities record schema-coverage audit, adapter projection, semantic-input extraction, semantic evaluation, and replay-envelope creation, connected by 14 typed edges. The `schema_coverage` section repeats the schema/coverage digests and field counts for convenient downstream policy checks; the builder regenerates that report instead of trusting its claims. The graph declares `w3c-prov-dm-aligned-subset/0.2`, using `used` and `wasGeneratedBy` without claiming complete W3C PROV serialization conformance. Declared transform IDs do not imply that every optional field's transformation executed. All digests cover exact bytes with no JSON canonicalization; source values and local filesystem paths are not embedded.
 
 Example using the committed synthetic QMS-like fixture:
 
@@ -80,22 +80,28 @@ tmp=${TMPDIR:-/tmp}/omsi-provenance
 mkdir -p "$tmp"
 
 cargo run --release --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
+  audit-adapter-schema-coverage "$base/qms-nested-map.json" \
+  "$base/qms-nested-record.schema.json" "$base/qms-nested-record.json" \
+  > "$tmp/schema-coverage.json"
+cargo run --release --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
   apply-adapter-map "$base/qms-nested-map.json" "$base/qms-nested-record.json" > "$tmp/projection.json"
 jq '.projection' "$tmp/projection.json" > "$tmp/semantic-input.json"
 cargo run --release --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
   create-envelope "$tmp/semantic-input.json" > "$tmp/replay-envelope.json"
 jq '.report' "$tmp/replay-envelope.json" > "$tmp/semantic-report.json"
 cargo run --release --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
-  create-provenance-manifest "$base/qms-nested-record.json" "$base/qms-nested-map.json" \
-  "$tmp/projection.json" "$tmp/semantic-input.json" "$tmp/semantic-report.json" \
-  "$tmp/replay-envelope.json" > "$tmp/provenance-manifest.json"
+  create-provenance-manifest "$base/qms-nested-record.json" "$base/qms-nested-record.schema.json" \
+  "$base/qms-nested-map.json" "$tmp/schema-coverage.json" "$tmp/projection.json" \
+  "$tmp/semantic-input.json" "$tmp/semantic-report.json" "$tmp/replay-envelope.json" \
+  > "$tmp/provenance-manifest.json"
 cargo run --release --manifest-path tools/omsi-manufacturing-validator/Cargo.toml -- \
   verify-provenance-manifest "$tmp/provenance-manifest.json" "$base/qms-nested-record.json" \
-  "$base/qms-nested-map.json" "$tmp/projection.json" "$tmp/semantic-input.json" \
+  "$base/qms-nested-record.schema.json" "$base/qms-nested-map.json" \
+  "$tmp/schema-coverage.json" "$tmp/projection.json" "$tmp/semantic-input.json" \
   "$tmp/semantic-report.json" "$tmp/replay-envelope.json"
 ```
 
-The contract is defined in [provenance-manifest.schema.json](../../../../../tools/omsi-manufacturing-validator/schema/provenance-manifest.schema.json); the verifier report uses [provenance-verification-report.schema.json](../../../../../tools/omsi-manufacturing-validator/schema/provenance-verification-report.schema.json). `verify-provenance-manifest` rebuilds the expected manifest from all six supplied artifacts and compares the full parsed value, returning a structured success/rejection report. Tests schema-validate both outputs and mutate artifact/report/envelope content to require rejection. The workflow smoke test exercises both commands end to end. This verifier currently shares the builder's implementation; it is a downstream recheck, not the future independent cross-implementation verifier.
+The contract is defined in [provenance-manifest.schema.json](../../../../../tools/omsi-manufacturing-validator/schema/provenance-manifest.schema.json); the verifier report uses [provenance-verification-report.schema.json](../../../../../tools/omsi-manufacturing-validator/schema/provenance-verification-report.schema.json). `verify-provenance-manifest` requires the manifest plus all eight original artifact inputs (the source schema and coverage report are separate inputs) and reconstructs the full expected manifest. Tests schema-validate the manifest/verifier outputs and reject mutation across all eight artifact boundaries, including schema and coverage report. The workflow smoke path builds and verifies the schema-bound chain. The builder and verifier still share an implementation, so this is a downstream consistency recheck, not the future independent cross-implementation verifier.
 
 **Trust boundary:** this is a local consistency and mutation-detection aid, not an authenticated attestation. Because the manifest is unsigned, an actor able to replace the inputs and recompute all outputs can produce another consistent bundle. A production-grade next stage should package the manifest as a standard attestation with authenticated signer identity and explicit predicate type, then verify it independently; never confuse signing with measurement truth.
 
