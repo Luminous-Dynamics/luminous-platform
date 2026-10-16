@@ -25,9 +25,8 @@
     },
     {
       "source_path": "/quality_status",
-      "disposition": "transform",
-      "target_path": "/source_quality_claim/raw_status",
-      "transform_id": "mes-quality-status-normalization/0.1"
+      "disposition": "preserve",
+      "target_path": "/source_quality_claim/raw_status"
     },
     {
       "source_path": "/operator_note",
