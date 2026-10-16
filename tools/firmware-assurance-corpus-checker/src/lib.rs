@@ -10,6 +10,8 @@ use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
+pub mod lifecycle;
+
 pub const MAX_DOCUMENT_BYTES: usize = 4 * 1024 * 1024;
 pub const MAX_CASES: usize = 10_000;
 pub const REQUIRED_PROFILE: &str = "synthetic-uefi-uki-v1";
