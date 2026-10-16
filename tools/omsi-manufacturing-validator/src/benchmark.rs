@@ -247,7 +247,7 @@ fn summarize(
     let sampled_time_mib_per_second =
         total_input_bytes as f64 / (1024.0 * 1024.0) / sampled_seconds;
     // The outer timer measures actual full-phase elapsed wall time.
-    let wall_seconds = f64::from(wall_clock_elapsed_ns) / 1_000_000_000.0;
+    let wall_seconds = wall_clock_elapsed_ns as f64 / 1_000_000_000.0;
     let wall_clock_operations_per_second = count as f64 / wall_seconds;
     let wall_clock_mib_per_second =
         total_input_bytes as f64 / (1024.0 * 1024.0) / wall_seconds;
