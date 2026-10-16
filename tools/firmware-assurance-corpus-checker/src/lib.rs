@@ -11,6 +11,7 @@ use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
 pub mod lifecycle;
+pub mod evidence_trust;
 
 pub const MAX_DOCUMENT_BYTES: usize = 4 * 1024 * 1024;
 pub const MAX_CASES: usize = 10_000;
