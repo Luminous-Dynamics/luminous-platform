@@ -331,7 +331,9 @@ mod tests {
     #[test]
     fn manifest_verifier_reconstructs_and_schema_validates_report() {
         let (source, map, projection, input, report, envelope) = fixture_chain();
-        let manifest = create_provenance_manifest(&source, &map, &projection, &input, &report, &envelope)
+        let manifest = create_provenance_manifest(
+            &source, &map, &projection, &input, &report, &envelope,
+        )
             .expect("consistent chain creates a manifest");
         let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("manifest serializes");
         let verification = super::verify_provenance_manifest(
