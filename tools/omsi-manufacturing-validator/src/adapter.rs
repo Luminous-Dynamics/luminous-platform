@@ -434,13 +434,25 @@ pub fn apply_adapter_map(
         let disposition = object.get("disposition").and_then(Value::as_str).unwrap_or("");
         match disposition {
             "drop" => {
-                dropped_count += 1;
+                if object.get("presence").and_then(Value::as_str) == Some("optional")
+                    && get_source_pointer(source_record, source_path).is_none()
+                {
+                    skipped_optional_count += 1;
+                } else {
+                    dropped_count += 1;
+                }
             }
             "unmapped" => {
-                errors.push(json!({
-                    "field":source_path,
-                    "reason":"explicitly_unmapped_source_field"
-                }));
+                if object.get("presence").and_then(Value::as_str) == Some("optional")
+                    && get_source_pointer(source_record, source_path).is_none()
+                {
+                    skipped_optional_count += 1;
+                } else {
+                    errors.push(json!({
+                        "field":source_path,
+                        "reason":"explicitly_unmapped_source_field"
+                    }));
+                }
             }
             "preserve" | "transform" => {
                 let Some(value) = get_source_pointer(source_record, source_path) else {
@@ -1332,6 +1344,58 @@ mod tests {
         assert!(report["errors"].as_array().unwrap().iter().any(|error| {
             error["reason"] == "unknown_presence_requirement"
         }));
+    }
+
+
+    #[test]
+    fn absent_optional_drop_is_counted_as_skipped_not_dropped() {
+        let report = apply(
+            contract(vec![
+                json!({
+                    "source_path":"/temperature",
+                    "disposition":"preserve",
+                    "target_path":"/measurement/value_decimal"
+                }),
+                json!({
+                    "source_path":"/operator_note",
+                    "presence":"optional",
+                    "disposition":"drop",
+                    "reason":"free text intentionally excluded"
+                }),
+            ]),
+            json!({"temperature":"72.4"}),
+        );
+        assert_eq!(report["status"], "projection_created");
+        assert_eq!(report["skipped_optional_count"], 1);
+        assert_eq!(report["explicitly_dropped_count"], 0);
+        assert_eq!(report["audit"]["dropped_count"], 0);
+    }
+
+    #[test]
+    fn absent_optional_unmapped_path_does_not_block_record_projection() {
+        let report = apply(
+            contract(vec![
+                json!({
+                    "source_path":"/temperature",
+                    "disposition":"preserve",
+                    "target_path":"/measurement/value_decimal"
+                }),
+                json!({
+                    "source_path":"/legacy_annotation",
+                    "presence":"optional",
+                    "disposition":"unmapped",
+                    "reason":"no neutral equivalent is agreed"
+                }),
+            ]),
+            json!({"temperature":"72.4"}),
+        );
+        assert_eq!(report["status"], "projection_created");
+        assert_eq!(report["skipped_optional_count"], 1);
+        assert_eq!(report["audit"]["explicitly_unmapped_count"], 0);
+        assert_eq!(
+            report["audit"]["mapping_paths_not_observed_in_record"][0],
+            "/legacy_annotation"
+        );
     }
 
     #[test]
