@@ -1346,3 +1346,44 @@ fn days_from_civil(year: i64, month: u32, day: u32) -> i64 {
     let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
     era * 146_097 + day_of_era - 719_468
 }
+
+#[cfg(test)]
+mod decimal_boundary_tests {
+    use super::Decimal;
+
+    #[test]
+    fn maximum_supported_decimal_precision_orders_exactly() {
+        let larger = Decimal::parse("999999999999999999.999999999999999999")
+            .expect("maximum supported positive precision is valid");
+        let smaller = Decimal::parse("999999999999999999.999999999999999998")
+            .expect("adjacent maximum-precision value is valid");
+
+        assert!(larger > smaller);
+        assert!(smaller < larger);
+        assert_ne!(larger, smaller);
+    }
+
+    #[test]
+    fn scale_alignment_preserves_integer_and_fractional_ordering() {
+        let tiny_positive = Decimal::parse("0.000000000000000001").unwrap();
+        let zero = Decimal::parse("0").unwrap();
+        let below_one = Decimal::parse("0.999999999999999999").unwrap();
+        let one = Decimal::parse("1").unwrap();
+        let above_one = Decimal::parse("1.000000000000000001").unwrap();
+
+        assert!(tiny_positive > zero);
+        assert!(below_one < one);
+        assert!(above_one > one);
+    }
+
+    #[test]
+    fn decimal_equivalence_and_negative_ordering_are_exact() {
+        let canonical = Decimal::parse("12.34").unwrap();
+        let trailing_zeroes = Decimal::parse("12.340000").unwrap();
+        let negative_larger_magnitude = Decimal::parse("-999.1").unwrap();
+        let negative_smaller_magnitude = Decimal::parse("-999.0").unwrap();
+
+        assert_eq!(canonical, trailing_zeroes);
+        assert!(negative_larger_magnitude < negative_smaller_magnitude);
+    }
+}
