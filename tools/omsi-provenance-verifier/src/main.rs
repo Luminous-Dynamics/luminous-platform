@@ -898,6 +898,45 @@ mod tests {
     }
 
     #[test]
+    fn omitted_optional_path_inventory_is_rejected_even_when_report_hashes_match() {
+        let (mut manifest_bytes, artifacts) = fixture_bundle();
+        let mut manifest: Value = serde_json::from_slice(&manifest_bytes).unwrap();
+        let mut coverage: Value = serde_json::from_slice(&artifacts[3]).unwrap();
+        coverage["schema_paths_not_observed_in_record"] = json!([]);
+        let forged_coverage_bytes = serde_json::to_vec(&coverage).unwrap();
+
+        manifest["artifacts"][3]["sha256"] = json!(sha256_hex(&forged_coverage_bytes));
+        manifest["artifacts"][3]["byte_length"] = json!(forged_coverage_bytes.len());
+        manifest["schema_coverage"]["coverage_report_sha256"] =
+            json!(sha256_hex(&forged_coverage_bytes));
+        manifest_bytes = serde_json::to_vec(&manifest).unwrap();
+
+        let mut changed = artifacts.clone();
+        changed[3] = forged_coverage_bytes;
+        let result = verify_bundle(
+            &manifest_bytes,
+            [
+                changed[0].as_slice(),
+                changed[1].as_slice(),
+                changed[2].as_slice(),
+                changed[3].as_slice(),
+                changed[4].as_slice(),
+                changed[5].as_slice(),
+                changed[6].as_slice(),
+                changed[7].as_slice(),
+            ],
+        );
+
+        assert_eq!(result["status"], "rejected", "{result:#}");
+        assert!(result["checks"].as_array().unwrap().iter().any(|check| {
+            check["id"] == "schema-coverage-bindings" && check["result"] == "pass"
+        }), "byte bindings should pass when hashes are recalculated");
+        assert!(result["checks"].as_array().unwrap().iter().any(|check| {
+            check["id"] == "independent-source-schema-coverage" && check["result"] == "fail"
+        }), "independent recomputation must restore the absent optional path");
+    }
+
+    #[test]
     fn every_artifact_byte_mutation_is_rejected() {
         let (manifest, artifacts) = fixture_bundle();
         for index in 0..ARTIFACTS.len() {
