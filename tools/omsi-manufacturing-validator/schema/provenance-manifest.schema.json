@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:luminous-dynamics:omsi:manufacturing-provenance-manifest:0.1",
-  "title": "OMSI Manufacturing Provenance Manifest 0.1",
-  "description": "Unsigned manifest of locally rechecked manufacturing evidence artifacts. Digests bind exact bytes but do not authenticate sources or producers.",
+  "$id": "urn:luminous-dynamics:omsi:manufacturing-provenance-manifest:0.2",
+  "title": "OMSI Manufacturing Provenance Manifest 0.2",
+  "description": "Unsigned manifest that rechecks source-schema field coverage before linking the adapter, semantic evaluation and replay artifacts. Digests bind exact bytes but do not authenticate sources or producers.",
   "type": "object",
   "required": [
     "manifest_contract",
@@ -13,6 +13,7 @@
     "profile",
     "comparison_rule_id",
     "validator_version",
+    "schema_coverage",
     "declared_transform_ids",
     "artifacts",
     "activities",
@@ -21,7 +22,10 @@
   ],
   "properties": {
     "manifest_contract": {
-      "const": "omsi-manufacturing-provenance-manifest/0.1"
+      "const": "omsi-manufacturing-provenance-manifest/0.2"
+    },
+    "provenance_model": {
+      "const": "w3c-prov-dm-aligned-subset/0.2"
     },
     "status": {
       "const": "local_chain_consistent"
@@ -61,10 +65,56 @@
       "type": "string",
       "minLength": 1
     },
+    "schema_coverage": {
+      "type": "object",
+      "required": [
+        "contract",
+        "status",
+        "schema_field_count",
+        "covered_schema_field_count",
+        "source_schema_sha256",
+        "coverage_report_sha256"
+      ],
+      "properties": {
+        "contract": {
+          "const": "omsi-manufacturing-adapter-schema-coverage/0.1"
+        },
+        "status": {
+          "const": "schema_coverage_complete"
+        },
+        "schema_field_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "covered_schema_field_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "source_schema_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "coverage_report_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "declared_transform_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "artifacts": {
       "type": "array",
-      "minItems": 6,
-      "maxItems": 6,
+      "minItems": 8,
+      "maxItems": 8,
       "items": {
         "type": "object",
         "required": [
@@ -77,7 +127,9 @@
           "artifact_id": {
             "enum": [
               "source-record",
+              "source-schema",
               "adapter-map",
+              "schema-coverage-report",
               "projection-report",
               "semantic-input",
               "semantic-report",
@@ -87,7 +139,9 @@
           "role": {
             "enum": [
               "source_record",
+              "source_schema",
               "adapter_map",
+              "schema_coverage_report",
               "projection_report",
               "semantic_input",
               "semantic_report",
@@ -106,76 +160,10 @@
         "additionalProperties": false
       }
     },
-    "edges": {
-      "type": "array",
-      "minItems": 9,
-      "maxItems": 9,
-      "items": {
-        "type": "object",
-        "required": [
-          "from",
-          "to",
-          "relationship"
-        ],
-        "properties": {
-          "from": {
-            "enum": [
-              "adapter-projection",
-              "semantic-input-extraction",
-              "semantic-evaluation",
-              "replay-envelope-creation",
-              "source-record",
-              "adapter-map",
-              "projection-report",
-              "semantic-input",
-              "semantic-report",
-              "replay-envelope"
-            ]
-          },
-          "to": {
-            "enum": [
-              "adapter-projection",
-              "semantic-input-extraction",
-              "semantic-evaluation",
-              "replay-envelope-creation",
-              "source-record",
-              "adapter-map",
-              "projection-report",
-              "semantic-input",
-              "semantic-report",
-              "replay-envelope"
-            ]
-          },
-          "relationship": {
-            "enum": [
-              "used",
-              "wasGeneratedBy"
-            ]
-          }
-        },
-        "additionalProperties": false
-      }
-    },
-    "limitations": {
-      "type": "array",
-      "minItems": 5,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
-    "declared_transform_ids": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
     "activities": {
       "type": "array",
-      "minItems": 4,
-      "maxItems": 4,
+      "minItems": 5,
+      "maxItems": 5,
       "items": {
         "type": "object",
         "required": [
@@ -187,6 +175,7 @@
         "properties": {
           "activity_id": {
             "enum": [
+              "schema-coverage-audit",
               "adapter-projection",
               "semantic-input-extraction",
               "semantic-evaluation",
@@ -195,6 +184,7 @@
           },
           "activity_type": {
             "enum": [
+              "schema_coverage_audit",
               "adapter_projection",
               "semantic_input_extraction",
               "semantic_evaluation",
@@ -208,7 +198,9 @@
             "items": {
               "enum": [
                 "source-record",
+                "source-schema",
                 "adapter-map",
+                "schema-coverage-report",
                 "projection-report",
                 "semantic-input",
                 "semantic-report",
@@ -223,7 +215,9 @@
             "items": {
               "enum": [
                 "source-record",
+                "source-schema",
                 "adapter-map",
+                "schema-coverage-report",
                 "projection-report",
                 "semantic-input",
                 "semantic-report",
@@ -235,12 +229,107 @@
         "additionalProperties": false
       }
     },
-    "provenance_model": {
-      "const": "w3c-prov-dm-aligned-subset/0.1"
+    "edges": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "relationship"
+        ],
+        "properties": {
+          "from": {
+            "enum": [
+              "source-record",
+              "source-schema",
+              "adapter-map",
+              "schema-coverage-report",
+              "projection-report",
+              "semantic-input",
+              "semantic-report",
+              "replay-envelope",
+              "schema-coverage-audit",
+              "adapter-projection",
+              "semantic-input-extraction",
+              "semantic-evaluation",
+              "replay-envelope-creation"
+            ]
+          },
+          "to": {
+            "enum": [
+              "source-record",
+              "source-schema",
+              "adapter-map",
+              "schema-coverage-report",
+              "projection-report",
+              "semantic-input",
+              "semantic-report",
+              "replay-envelope",
+              "schema-coverage-audit",
+              "adapter-projection",
+              "semantic-input-extraction",
+              "semantic-evaluation",
+              "replay-envelope-creation"
+            ]
+          },
+          "relationship": {
+            "enum": [
+              "used",
+              "wasGeneratedBy"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 7,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     }
   },
-  "additionalProperties": false,
   "allOf": [
+    {
+      "properties": {
+        "activities": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "activity_id": {
+                "const": "schema-coverage-audit"
+              },
+              "activity_type": {
+                "const": "schema_coverage_audit"
+              },
+              "used": {
+                "const": [
+                  "source-record",
+                  "source-schema",
+                  "adapter-map"
+                ]
+              },
+              "generated": {
+                "const": [
+                  "schema-coverage-report"
+                ]
+              }
+            },
+            "required": [
+              "activity_id",
+              "activity_type",
+              "used",
+              "generated"
+            ]
+          }
+        }
+      }
+    },
     {
       "properties": {
         "activities": {
@@ -256,7 +345,8 @@
               "used": {
                 "const": [
                   "source-record",
-                  "adapter-map"
+                  "adapter-map",
+                  "schema-coverage-report"
                 ]
               },
               "generated": {
@@ -381,6 +471,106 @@
             "type": "object",
             "properties": {
               "from": {
+                "const": "schema-coverage-audit"
+              },
+              "to": {
+                "const": "source-record"
+              },
+              "relationship": {
+                "const": "used"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "schema-coverage-audit"
+              },
+              "to": {
+                "const": "source-schema"
+              },
+              "relationship": {
+                "const": "used"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "schema-coverage-audit"
+              },
+              "to": {
+                "const": "adapter-map"
+              },
+              "relationship": {
+                "const": "used"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "schema-coverage-report"
+              },
+              "to": {
+                "const": "schema-coverage-audit"
+              },
+              "relationship": {
+                "const": "wasGeneratedBy"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
                 "const": "adapter-projection"
               },
               "to": {
@@ -410,6 +600,31 @@
               },
               "to": {
                 "const": "adapter-map"
+              },
+              "relationship": {
+                "const": "used"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "adapter-projection"
+              },
+              "to": {
+                "const": "schema-coverage-report"
               },
               "relationship": {
                 "const": "used"
@@ -598,6 +813,157 @@
           }
         }
       }
+    },
+    {
+      "properties": {
+        "artifacts": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "artifact_id": {
+                "const": "source-record"
+              }
+            },
+            "required": [
+              "artifact_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "artifacts": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "artifact_id": {
+                "const": "source-schema"
+              }
+            },
+            "required": [
+              "artifact_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "artifacts": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "artifact_id": {
+                "const": "adapter-map"
+              }
+            },
+            "required": [
+              "artifact_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "artifacts": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "artifact_id": {
+                "const": "schema-coverage-report"
+              }
+            },
+            "required": [
+              "artifact_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "artifacts": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "artifact_id": {
+                "const": "projection-report"
+              }
+            },
+            "required": [
+              "artifact_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "artifacts": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "artifact_id": {
+                "const": "semantic-input"
+              }
+            },
+            "required": [
+              "artifact_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "artifacts": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "artifact_id": {
+                "const": "semantic-report"
+              }
+            },
+            "required": [
+              "artifact_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "artifacts": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "artifact_id": {
+                "const": "replay-envelope"
+              }
+            },
+            "required": [
+              "artifact_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "schema_coverage": {
+          "properties": {
+            "covered_schema_field_count": {
+              "minimum": 1
+            }
+          }
+        },
+        "artifacts": {
+          "minItems": 8
+        }
+      }
     }
-  ]
+  ],
+  "additionalProperties": false
 }
