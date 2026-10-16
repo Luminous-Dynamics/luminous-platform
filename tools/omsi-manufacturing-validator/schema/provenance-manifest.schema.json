@@ -14,6 +14,7 @@
     "validator_version",
     "declared_transform_ids",
     "artifacts",
+    "activities",
     "edges",
     "limitations"
   ],
@@ -29,11 +30,21 @@
     },
     "digest_profile": {
       "type": "object",
-      "required": ["algorithm", "scope", "canonicalization"],
+      "required": [
+        "algorithm",
+        "scope",
+        "canonicalization"
+      ],
       "properties": {
-        "algorithm": { "const": "sha256" },
-        "scope": { "const": "exact_input_bytes" },
-        "canonicalization": { "const": "none" }
+        "algorithm": {
+          "const": "sha256"
+        },
+        "scope": {
+          "const": "exact_input_bytes"
+        },
+        "canonicalization": {
+          "const": "none"
+        }
       },
       "additionalProperties": false
     },
@@ -49,21 +60,18 @@
       "type": "string",
       "minLength": 1
     },
-    "transform_ids": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
-    },
     "artifacts": {
       "type": "array",
       "minItems": 6,
       "maxItems": 6,
       "items": {
         "type": "object",
-        "required": ["artifact_id", "role", "sha256", "byte_length"],
+        "required": [
+          "artifact_id",
+          "role",
+          "sha256",
+          "byte_length"
+        ],
         "properties": {
           "artifact_id": {
             "enum": [
@@ -99,14 +107,22 @@
     },
     "edges": {
       "type": "array",
-      "minItems": 5,
-      "maxItems": 5,
+      "minItems": 9,
+      "maxItems": 9,
       "items": {
         "type": "object",
-        "required": ["from", "to", "relationship"],
+        "required": [
+          "from",
+          "to",
+          "relationship"
+        ],
         "properties": {
           "from": {
             "enum": [
+              "adapter-projection",
+              "semantic-input-extraction",
+              "semantic-evaluation",
+              "replay-envelope-creation",
               "source-record",
               "adapter-map",
               "projection-report",
@@ -117,6 +133,10 @@
           },
           "to": {
             "enum": [
+              "adapter-projection",
+              "semantic-input-extraction",
+              "semantic-evaluation",
+              "replay-envelope-creation",
               "source-record",
               "adapter-map",
               "projection-report",
@@ -127,15 +147,78 @@
           },
           "relationship": {
             "enum": [
-              "consumed_by",
-              "projected_to",
-              "payload_matches",
-              "evaluated_to",
-              "bound_by_exact_bytes"
+              "used",
+              "wasGeneratedBy"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "declared_transform_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "activities": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "activity_id",
+          "activity_type",
+          "used",
+          "generated"
+        ],
+        "properties": {
+          "activity_id": {
+            "enum": [
+              "adapter-projection",
+              "semantic-input-extraction",
+              "semantic-evaluation",
+              "replay-envelope-creation"
             ]
           },
-          "evidence": {
+          "activity_type": {
+            "enum": [
+              "adapter_projection",
+              "semantic_input_extraction",
+              "semantic_evaluation",
+              "replay_envelope_creation"
+            ]
+          },
+          "used": {
             "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "source-record",
+                "adapter-map",
+                "projection-report",
+                "semantic-input",
+                "semantic-report",
+                "replay-envelope"
+              ]
+            }
+          },
+          "generated": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
             "items": {
               "enum": [
                 "source-record",
@@ -150,15 +233,302 @@
         },
         "additionalProperties": false
       }
-    },
-    "limitations": {
-      "type": "array",
-      "minItems": 5,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "properties": {
+        "activities": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "activity_id": {
+                "const": "adapter-projection"
+              }
+            },
+            "required": [
+              "activity_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "activities": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "activity_id": {
+                "const": "semantic-input-extraction"
+              }
+            },
+            "required": [
+              "activity_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "activities": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "activity_id": {
+                "const": "semantic-evaluation"
+              }
+            },
+            "required": [
+              "activity_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "activities": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "activity_id": {
+                "const": "replay-envelope-creation"
+              }
+            },
+            "required": [
+              "activity_id"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "adapter-projection"
+              },
+              "to": {
+                "const": "source-record"
+              },
+              "relationship": {
+                "const": "used"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "adapter-projection"
+              },
+              "to": {
+                "const": "adapter-map"
+              },
+              "relationship": {
+                "const": "used"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "projection-report"
+              },
+              "to": {
+                "const": "adapter-projection"
+              },
+              "relationship": {
+                "const": "wasGeneratedBy"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "semantic-input-extraction"
+              },
+              "to": {
+                "const": "projection-report"
+              },
+              "relationship": {
+                "const": "used"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "semantic-input"
+              },
+              "to": {
+                "const": "semantic-input-extraction"
+              },
+              "relationship": {
+                "const": "wasGeneratedBy"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "semantic-evaluation"
+              },
+              "to": {
+                "const": "semantic-input"
+              },
+              "relationship": {
+                "const": "used"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "semantic-report"
+              },
+              "to": {
+                "const": "semantic-evaluation"
+              },
+              "relationship": {
+                "const": "wasGeneratedBy"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "replay-envelope-creation"
+              },
+              "to": {
+                "const": "semantic-input"
+              },
+              "relationship": {
+                "const": "used"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "edges": {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "const": "replay-envelope"
+              },
+              "to": {
+                "const": "replay-envelope-creation"
+              },
+              "relationship": {
+                "const": "wasGeneratedBy"
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "relationship"
+            ]
+          }
+        }
+      }
+    }
+  ]
 }
