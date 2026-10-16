@@ -60,7 +60,7 @@ pub fn audit_adapter_map(
     }
 
     let mapping_values = root.get("mappings").and_then(Value::as_array);
-    if mapping_values.is_none_or(|items| items.is_empty()) {
+    if mapping_values.map_or(true, |items| items.is_empty()) {
         errors.push(json!({
             "field":"mappings",
             "reason":"expected_nonempty_array"
@@ -112,12 +112,27 @@ pub fn audit_adapter_map(
                 continue;
             }
 
-            let target_path = optional_nonempty_string(object, "target_path");
-            let transform_id = optional_nonempty_string(object, "transform_id");
-            let reason = optional_nonempty_string(object, "reason");
+            let target_path = optional_nonempty_string(
+                object,
+                "target_path",
+                &format!("{path}.target_path"),
+                &mut errors,
+            );
+            let transform_id = optional_nonempty_string(
+                object,
+                "transform_id",
+                &format!("{path}.transform_id"),
+                &mut errors,
+            );
+            let reason = optional_nonempty_string(
+                object,
+                "reason",
+                &format!("{path}.reason"),
+                &mut errors,
+            );
             match disposition {
                 Some("preserve") => {
-                    if target_path.as_deref().is_none_or(|value| !valid_pointer(value)) {
+                    if target_path.as_deref().map_or(true, |value| !valid_pointer(value)) {
                         errors.push(json!({
                             "field":format!("{path}.target_path"),
                             "reason":"preserve_requires_valid_target_path"
@@ -145,7 +160,7 @@ pub fn audit_adapter_map(
                     }
                 }
                 Some("drop" | "unmapped") => {
-                    if target_path.is_some() || transform_id.is_some() {
+                    if object.contains_key("target_path") || object.contains_key("transform_id") {
                         errors.push(json!({
                             "field":path,
                             "reason":"drop_or_unmapped_must_not_declare_target_or_transform"
@@ -330,13 +345,26 @@ fn check_object_shape(
     }
 }
 
-fn optional_nonempty_string(object: &Map<String, Value>, key: &str) -> Option<String> {
-    object
-        .get(key)
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(ToOwned::to_owned)
+fn optional_nonempty_string(
+    object: &Map<String, Value>,
+    key: &str,
+    path: &str,
+    errors: &mut Vec<Value>,
+) -> Option<String> {
+    match object.get(key) {
+        None => None,
+        Some(Value::String(value)) if !value.trim().is_empty() => {
+            Some(value.trim().to_owned())
+        }
+        Some(Value::String(_)) => {
+            errors.push(json!({"field":path,"reason":"empty_string_not_allowed"}));
+            None
+        }
+        Some(_) => {
+            errors.push(json!({"field":path,"reason":"expected_nonempty_string"}));
+            None
+        }
+    }
 }
 
 fn insert_optional(object: &mut Map<String, Value>, key: &str, value: Option<&str>) {
