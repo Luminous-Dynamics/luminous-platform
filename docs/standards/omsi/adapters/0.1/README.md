@@ -51,7 +51,7 @@ The versioned [transform-vector corpus](./TRANSFORM-VECTORS.json) declares exact
 
 The `create-provenance-manifest` command verifies the submitted artifacts as one chain before it emits a manifest. It re-runs `apply-adapter-map` against the original source-record/map bytes and requires the supplied projection report to match; it requires the semantic input to equal the projection payload; it recomputes the semantic report; and it verifies the replay envelope against the **exact semantic-input bytes**. Any inconsistency blocks manifest creation.
 
-The six-artifact manifest records SHA-256 and byte length for the source record, adapter map, projection report, semantic input, semantic report, and replay envelope, then emits typed provenance edges linking the stages. Digests cover exact bytes with no JSON canonicalization. Source contents and local filesystem paths are not copied into the manifest.
+The six-artifact manifest records SHA-256 and byte length for the source record, adapter map, projection report, semantic input, semantic report, and replay envelope, then emits typed provenance edges linking the stages. The manifest records declared transform IDs from the adapter map; that list does not imply every declaration ran when an optional source field was absent. Digests cover exact bytes with no JSON canonicalization. Source contents and local filesystem paths are not copied into the manifest.
 
 Example using the committed synthetic QMS-like fixture:
 
