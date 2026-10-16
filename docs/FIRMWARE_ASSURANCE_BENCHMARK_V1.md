@@ -184,7 +184,7 @@ Remaining Stage 0 gates: run formatting, compilation, Rust tests, Clippy and the
 
 ## 10. Profile-bound lifecycle qualification
 
-Stage 0 validates synthetic claim-state composition. It does not yet qualify whether a real orchestration state machine can safely generate an update/boot configuration. The next benchmark tier must test the *transition authority* as well as the evidence values.
+Stage 0 validates synthetic claim-state composition. The next increment adds an executable transition-policy slice for boot-configuration authority, manual enrollment review, and post-reboot verification. It remains synthetic-only: it does not run `sbctl`, generate a NixOS configuration for a real target, mutate firmware, or qualify hardware.
 
 The Secure Boot slice under review in [Symthaea PR #7668](https://github.com/Luminous-Dynamics/symthaea/pull/7668) addresses the following invariants:
 - `Enabled`, `Disabled`, `SetupMode`, and `Unknown` remain separate states; Setup Mode is pending key enrollment, not equivalent to Disabled, and Unknown is indeterminate.
@@ -195,26 +195,20 @@ The Secure Boot slice under review in [Symthaea PR #7668](https://github.com/Lum
 - Profile approval and method selection are non-persistent; deserializing an orchestrator cannot restore authority from an earlier session.
 - Standard unsigned systemd-boot configuration is allowed only when the current target observation says Secure Boot is Disabled. A successful command or generated configuration is not evidence of a successful verified boot.
 
-### Proposed transition corpus
+### Executable transition corpus
 
-Freeze a separate `SB-LIFECYCLE-v1` suite with at least these independently authored cases before scoring the implementation:
+The frozen corpus is `docs/fixtures/secure-boot-lifecycle-corpus-v1.json`, with strict Draft 2020-12 schema `docs/schemas/secure-boot-lifecycle-corpus-v1.schema.json`. It contains **32 cases across seven decisions**: blocked (18), indeterminate (4), configuration-preparation allowed (2), manual-enrollment review allowed (1), secure-boot verified after reboot (1), pending post-reboot verification (5), and standard boot allowed without a Secure Boot claim (1).
 
-| Case family | Required behavior |
-|---|---|
-| No probe / missing EFI variable | Block config generation or return indeterminate |
-| Explicit `Unknown` | Never enable key generation or report a verified boot chain |
-| `SetupMode` | Preserve pending-enrollment status; never normalize to Disabled |
-| Unanswered query / unsure / legacy `UseShim` | Consent remains false; config generation is rejected |
-| Known state with no approval | Reject Lanzaboote configuration generation |
-| Hardware-profile mutation | Invalidate the prior approval |
-| Firmware-state change after review | Invalidate the prior approval |
-| Model/firmware/NixOS/Lanzaboote mismatch | Reject the profile approval |
-| PKI-bundle path mismatch | Reject instead of producing divergent signing-key paths |
-| Missing recovery qualification | Reject profile approval |
-| Serialize/restore orchestration | Same-session authorization is absent after restore |
-| Key-generation flag disabled without verified existing keys | Reject this initial-key profile rather than emit a non-bootable config |
-| Enrollment command returns success but post-reboot state is absent | Remain pending/indeterminate; do not claim Secure Boot is active |
-| User Mode/boot target/recovery independently observed | Only then may the post-enrollment claims be evaluated |
+The Rust policy model is `tools/firmware-assurance-corpus-checker/src/lifecycle.rs`; `tests/lifecycle_conformance.rs` meta-validates the schema, checks every frozen expected disposition, mutates post-reboot evidence to ensure it cannot remain verified, and runs 10,000 deterministic fail-closed state mutations. A separate standard-library script, `tests/lifecycle_reference_oracle.py`, independently re-evaluates all fixture cases and runs its own 10,000-input sweep. The repository workflow runs both through Rust tests and an explicit oracle step.
+
+Decision semantics are deliberately different by stage:
+- **Configuration preparation allowed** is not enrollment and does not claim a verified boot chain.
+- **Manual enrollment review allowed** requires Setup Mode, prepared configuration, verified signing key and boot artifacts, reviewed command, and recovery qualification. The tool never executes the enrollment.
+- **Secure Boot verified** is the only positive post-enrollment decision and requires observed Secure Boot Enabled/User Mode, the expected boot target selected, successful post-boot health evidence, and a successful recovery re-test.
+- **Pending post-reboot verification** means the system cannot yet claim success. Unknown observed state yields **indeterminate**, never success.
+- The standard unsigned boot path is permitted only as `standard_boot_allowed_unsecured`, with a current Disabled observation; it is explicitly not a Secure Boot assurance result.
+
+A separate tool-mode simulation over the fetched corpus found **32/32 expected-decision matches, zero structural errors, and zero decision mismatches**. A deterministic 10,000-assignment simulation produced 10,000 distinct assignments and zero fail-closed invariant violations. This simulation is not execution of the checked-in Rust or Python source, schema meta-validation, or CI evidence. Actual exact-head tests remain required.
 
 ### Target thresholds
 
