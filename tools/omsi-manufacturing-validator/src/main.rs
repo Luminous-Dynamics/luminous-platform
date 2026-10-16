@@ -11,6 +11,8 @@ use std::fs;
 use std::io::{self, Read};
 use std::process::ExitCode;
 
+const MAX_ADAPTER_INPUT_BYTES: usize = 16 * 1024 * 1024;
+
 fn main() -> ExitCode {
     match run() {
         Ok(code) => ExitCode::from(code),
@@ -77,7 +79,7 @@ fn run() -> Result<u8, String> {
             }
         }
         Some("benchmark-vectors") if args.len() == 3 || args.len() == 4 => {
-            let source = read_bytes(&args[2])?;
+            let source = read_bytes_bounded(&args[2], MAX_ADAPTER_INPUT_BYTES)?;
             let document: Value = serde_json::from_slice(&source)
                 .map_err(|error| format!("invalid JSON in {}: {error}", args[2]))?;
             let iterations = args
@@ -98,8 +100,8 @@ fn run() -> Result<u8, String> {
             Ok(0)
         }
         Some("audit-adapter-map") if args.len() == 4 => {
-            let contract_bytes = read_bytes(&args[2])?;
-            let source_bytes = read_bytes(&args[3])?;
+            let contract_bytes = read_bytes_bounded(&args[2], MAX_ADAPTER_INPUT_BYTES)?;
+            let source_bytes = read_bytes_bounded(&args[3], MAX_ADAPTER_INPUT_BYTES)?;
             let contract: Value = serde_json::from_slice(&contract_bytes)
                 .map_err(|error| format!("invalid JSON in {}: {error}", args[2]))?;
             let source_record: Value = serde_json::from_slice(&source_bytes)
@@ -146,7 +148,9 @@ fn run() -> Result<u8, String> {
             }
         }
         Some("verify-transform-vectors") if args.len() == 3 => {
-            let document = read_json(&args[2])?;
+            let source = read_bytes_bounded(&args[2], MAX_ADAPTER_INPUT_BYTES)?;
+            let document: Value = serde_json::from_slice(&source)
+                .map_err(|error| format!("invalid JSON in {}: {error}", args[2]))?;
             let report = verify_transform_vectors(&document);
             println!(
                 "{}",
@@ -168,6 +172,35 @@ fn run() -> Result<u8, String> {
 fn read_json(path: &str) -> Result<Value, String> {
     let source = read_bytes(path)?;
     serde_json::from_slice(&source).map_err(|error| format!("invalid JSON in {path}: {error}"))
+}
+
+fn read_bytes_bounded(path: &str, maximum_bytes: usize) -> Result<Vec<u8>, String> {
+    let source = if path == "-" {
+        let mut source = Vec::with_capacity(maximum_bytes.min(64 * 1024));
+        let stdin = io::stdin();
+        stdin
+            .take(maximum_bytes as u64 + 1)
+            .read_to_end(&mut source)
+            .map_err(|error| format!("failed to read stdin: {error}"))?;
+        source
+    } else {
+        let metadata = fs::metadata(path)
+            .map_err(|error| format!("failed to inspect {path}: {error}"))?;
+        if metadata.len() > maximum_bytes as u64 {
+            return Err(format!(
+                "input {path} is {} bytes; adapter command maximum is {maximum_bytes} bytes",
+                metadata.len()
+            ));
+        }
+        fs::read(path).map_err(|error| format!("failed to read {path}: {error}"))?
+    };
+
+    if source.len() > maximum_bytes {
+        return Err(format!(
+            "input {path} exceeds adapter command maximum of {maximum_bytes} bytes"
+        ));
+    }
+    Ok(source)
 }
 
 fn read_bytes(path: &str) -> Result<Vec<u8>, String> {
