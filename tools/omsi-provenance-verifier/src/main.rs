@@ -469,6 +469,16 @@ fn independently_audit_schema_coverage(
 
     let schema_count = coverage.get("schema_field_count").and_then(Value::as_u64);
     let covered_count = coverage.get("covered_schema_field_count").and_then(Value::as_u64);
+    let expected_unobserved: Vec<Value> = fields
+        .iter()
+        .filter(|(path, _)| source_record.pointer(path).is_none())
+        .map(|(path, required)| json!({
+            "source_path": path,
+            "schema_presence": if *required { "required" } else { "optional" }
+        }))
+        .collect();
+    let unobserved_fields_match =
+        coverage.get("schema_paths_not_observed_in_record") == Some(&Value::Array(expected_unobserved));
     let clean_lists = [
         "schema_paths_not_mapped",
         "mapping_paths_outside_schema",
@@ -490,6 +500,7 @@ fn independently_audit_schema_coverage(
         && coverage.get("observed_field_accounting_status").and_then(Value::as_str)
             == Some("complete_accounting")
         && coverage.get("observed_silent_loss_count").and_then(Value::as_u64) == Some(0)
+        && unobserved_fields_match
         && clean_lists
 }
 
@@ -716,8 +727,8 @@ mod tests {
 
     fn fixture_bundle() -> (Vec<u8>, [Vec<u8>; 8]) {
         let source_record = br#"{"value":"ok"}"#.to_vec();
-        let source_schema = br#"{"type":"object","required":["value"],"properties":{"value":{"type":"string"}},"additionalProperties":false}"#.to_vec();
-        let adapter_map = br#"{"adapter_contract":"omsi-manufacturing-adapter-map/0.1","adapter_id":"independent-fixture/0.1","source_format":"independent-fixture-json/0.1","mappings":[{"source_path":"/value","disposition":"transform","target_path":"/value","transform_id":"qms-decimal-normalization/0.1"}]}"#.to_vec();
+        let source_schema = br#"{"type":"object","required":["value"],"properties":{"value":{"type":"string"},"optional_note":{"type":"string"}},"additionalProperties":false}"#.to_vec();
+        let adapter_map = br#"{"adapter_contract":"omsi-manufacturing-adapter-map/0.1","adapter_id":"independent-fixture/0.1","source_format":"independent-fixture-json/0.1","mappings":[{"source_path":"/value","disposition":"transform","target_path":"/value","transform_id":"qms-decimal-normalization/0.1"},{"source_path":"/optional_note","presence":"optional","disposition":"preserve","target_path":"/optional_note"}]}"#.to_vec();
         let coverage = json!({
             "coverage_contract": COVERAGE_CONTRACT,
             "status": "schema_coverage_complete",
@@ -725,13 +736,15 @@ mod tests {
             "adapter_map_sha256": sha256_hex(&adapter_map),
             "source_schema_sha256": sha256_hex(&source_schema),
             "source_record_sha256": sha256_hex(&source_record),
-            "schema_field_count": 1,
-            "covered_schema_field_count": 1,
+            "schema_field_count": 2,
+            "covered_schema_field_count": 2,
             "schema_paths_not_mapped": [],
             "mapping_paths_outside_schema": [],
             "presence_mismatches": [],
             "duplicate_source_mappings": [],
-            "schema_paths_not_observed_in_record": [],
+            "schema_paths_not_observed_in_record": [
+                {"source_path":"/optional_note","schema_presence":"optional"}
+            ],
             "required_schema_paths_not_observed_in_record": [],
             "observed_field_accounting_status": "complete_accounting",
             "observed_silent_loss_count": 0,
@@ -795,8 +808,8 @@ mod tests {
             "schema_coverage":{
                 "contract":COVERAGE_CONTRACT,
                 "status":"schema_coverage_complete",
-                "schema_field_count":1,
-                "covered_schema_field_count":1,
+                "schema_field_count":2,
+                "covered_schema_field_count":2,
                 "source_schema_sha256":sha256_hex(&artifact_bytes[1]),
                 "coverage_report_sha256":sha256_hex(&artifact_bytes[3])
             },
