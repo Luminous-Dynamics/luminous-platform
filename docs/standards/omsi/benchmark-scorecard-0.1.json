@@ -199,10 +199,13 @@
     "production_readiness_claimed": false,
     "source_schema_coverage_command_authored": true,
     "source_schema_coverage_exact_head_ci_verified": false,
-    "supported_source_schema_field_count": 4,
     "provenance_manifest_contract_version": "0.2",
     "schema_bound_provenance_manifest_authored": true,
-    "provenance_schema_coverage_artifact_binding_authored": true
+    "provenance_schema_coverage_artifact_binding_authored": true,
+    "source_schema_coverage_fixture_field_counts": [
+      4,
+      8
+    ]
   },
   "scorecard_schema_reference": "benchmark-scorecard-0.1.md"
 }
