@@ -838,8 +838,50 @@ mod tests {
         );
         assert_eq!(result["status"], "artifact_bindings_verified", "{result:#}");
         assert_eq!(result["authority"], "artifact_binding_and_graph_consistency_only");
-        assert_eq!(result["checks"].as_array().unwrap().len(), 17);
+        assert_eq!(result["checks"].as_array().unwrap().len(), 18);
         assert!(result["checks"].as_array().unwrap().iter().all(|check| check["result"] == "pass"));
+    }
+
+    #[test]
+    fn forged_coverage_counts_fail_independent_recomputation_even_with_updated_hashes() {
+        let (mut manifest_bytes, artifacts) = fixture_bundle();
+        let mut manifest: Value = serde_json::from_slice(&manifest_bytes).unwrap();
+        let mut coverage: Value = serde_json::from_slice(&artifacts[3]).unwrap();
+        coverage["schema_field_count"] = json!(17);
+        coverage["covered_schema_field_count"] = json!(17);
+        let forged_coverage_bytes = serde_json::to_vec(&coverage).unwrap();
+
+        manifest["artifacts"][3]["sha256"] = json!(sha256_hex(&forged_coverage_bytes));
+        manifest["artifacts"][3]["byte_length"] = json!(forged_coverage_bytes.len());
+        manifest["schema_coverage"]["coverage_report_sha256"] =
+            json!(sha256_hex(&forged_coverage_bytes));
+        manifest["schema_coverage"]["schema_field_count"] = json!(17);
+        manifest["schema_coverage"]["covered_schema_field_count"] = json!(17);
+        manifest_bytes = serde_json::to_vec(&manifest).unwrap();
+
+        let mut changed = artifacts.clone();
+        changed[3] = forged_coverage_bytes;
+        let result = verify_bundle(
+            &manifest_bytes,
+            [
+                changed[0].as_slice(),
+                changed[1].as_slice(),
+                changed[2].as_slice(),
+                changed[3].as_slice(),
+                changed[4].as_slice(),
+                changed[5].as_slice(),
+                changed[6].as_slice(),
+                changed[7].as_slice(),
+            ],
+        );
+
+        assert_eq!(result["status"], "rejected", "{result:#}");
+        assert!(result["checks"].as_array().unwrap().iter().any(|check| {
+            check["id"] == "schema-coverage-bindings" && check["result"] == "pass"
+        }), "the forged report should remain byte-bound and internally self-consistent");
+        assert!(result["checks"].as_array().unwrap().iter().any(|check| {
+            check["id"] == "independent-source-schema-coverage" && check["result"] == "fail"
+        }), "independent recomputation must detect the forged field count");
     }
 
     #[test]
