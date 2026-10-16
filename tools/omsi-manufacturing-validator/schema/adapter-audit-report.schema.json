@@ -8,65 +8,214 @@
     "status",
     "authority",
     "binding",
-    "source_field_count",
-    "accounted_field_count",
-    "preserved_count",
-    "transformed_count",
-    "dropped_count",
-    "explicitly_unmapped_count",
-    "unclassified_field_count",
     "silent_loss_count",
-    "unclassified_paths",
-    "mapping_paths_not_observed_in_record",
-    "fields",
     "limitations"
   ],
   "properties": {
-    "audit_contract": { "const": "omsi-manufacturing-adapter-audit/0.1" },
-    "status": { "enum": ["complete_accounting", "incomplete_accounting", "invalid_contract"] },
-    "authority": { "const": "adapter_mapping_accounting_only" },
-    "adapter_id": { "type": ["string", "null"] },
-    "source_format": { "type": ["string", "null"] },
+    "audit_contract": {
+      "const": "omsi-manufacturing-adapter-audit/0.1"
+    },
+    "status": {
+      "enum": [
+        "complete_accounting",
+        "incomplete_accounting",
+        "invalid_contract"
+      ]
+    },
+    "authority": {
+      "const": "adapter_mapping_accounting_only"
+    },
+    "adapter_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_format": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "binding": {
       "type": "object",
-      "required": ["digest_algorithm", "contract_digest", "contract_digest_scope", "source_record_digest", "source_record_digest_scope", "canonicalization"],
+      "required": [
+        "digest_algorithm",
+        "contract_digest",
+        "contract_digest_scope",
+        "source_record_digest",
+        "source_record_digest_scope",
+        "canonicalization"
+      ],
       "properties": {
-        "digest_algorithm": { "const": "sha256" },
-        "contract_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-        "contract_digest_scope": { "const": "exact_contract_bytes" },
-        "source_record_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-        "source_record_digest_scope": { "const": "exact_source_record_bytes" },
-        "canonicalization": { "const": "none" }
+        "digest_algorithm": {
+          "const": "sha256"
+        },
+        "contract_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "contract_digest_scope": {
+          "const": "exact_contract_bytes"
+        },
+        "source_record_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_record_digest_scope": {
+          "const": "exact_source_record_bytes"
+        },
+        "canonicalization": {
+          "const": "none"
+        }
       },
       "additionalProperties": false
     },
-    "source_field_count": { "type": "integer", "minimum": 0 },
-    "accounted_field_count": { "type": "integer", "minimum": 0 },
-    "preserved_count": { "type": "integer", "minimum": 0 },
-    "transformed_count": { "type": "integer", "minimum": 0 },
-    "dropped_count": { "type": "integer", "minimum": 0 },
-    "explicitly_unmapped_count": { "type": "integer", "minimum": 0 },
-    "unclassified_field_count": { "type": "integer", "minimum": 0 },
-    "silent_loss_count": { "type": ["integer", "null"], "minimum": 0 },
-    "unclassified_paths": { "type": "array", "items": { "type": "string" } },
-    "mapping_paths_not_observed_in_record": { "type": "array", "items": { "type": "string" } },
+    "source_field_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "accounted_field_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "preserved_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "transformed_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "dropped_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "explicitly_unmapped_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unclassified_field_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "silent_loss_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "unclassified_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "mapping_paths_not_observed_in_record": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "fields": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["source_path", "disposition"],
+        "required": [
+          "source_path",
+          "disposition"
+        ],
         "properties": {
-          "source_path": { "type": "string" },
-          "disposition": { "enum": ["preserve", "transform", "drop", "unmapped", "unclassified"] },
-          "target_path": { "type": "string" },
-          "transform_id": { "type": "string" },
-          "reason": { "type": "string" }
+          "source_path": {
+            "type": "string"
+          },
+          "disposition": {
+            "enum": [
+              "preserve",
+              "transform",
+              "drop",
+              "unmapped",
+              "unclassified"
+            ]
+          },
+          "target_path": {
+            "type": "string"
+          },
+          "transform_id": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
         },
         "additionalProperties": false
       }
     },
-    "errors": { "type": "array", "items": { "type": "object" } },
-    "limitations": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "complete_accounting",
+              "incomplete_accounting"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "adapter_id",
+          "source_format",
+          "source_field_count",
+          "accounted_field_count",
+          "preserved_count",
+          "transformed_count",
+          "dropped_count",
+          "explicitly_unmapped_count",
+          "unclassified_field_count",
+          "unclassified_paths",
+          "mapping_paths_not_observed_in_record",
+          "fields"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "invalid_contract"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "errors"
+        ]
+      }
+    }
+  ]
 }
