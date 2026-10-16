@@ -435,10 +435,14 @@ fn independently_audit_schema_coverage(
 
     if adapter_map.get("adapter_contract").and_then(Value::as_str)
         != Some("omsi-manufacturing-adapter-map/0.1")
-        || adapter_map.get("adapter_id").and_then(Value::as_str)
-            .is_none_or(|value| value.trim().is_empty())
-        || adapter_map.get("source_format").and_then(Value::as_str)
-            .is_none_or(|value| value.trim().is_empty())
+        || !adapter_map
+            .get("adapter_id")
+            .and_then(Value::as_str)
+            .is_some_and(|value| !value.trim().is_empty())
+        || !adapter_map
+            .get("source_format")
+            .and_then(Value::as_str)
+            .is_some_and(|value| !value.trim().is_empty())
     {
         return false;
     }
