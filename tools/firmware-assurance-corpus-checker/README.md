@@ -9,6 +9,8 @@ It checks that the synthetic benchmark corpus:
 - keeps case kind and expected disposition aligned;
 - keeps positive, negative and indeterminate fixtures semantically distinguishable;
 - requires explicit read-only assertions in every case;
+- computes each case's stage disposition from a versioned subset of required claim states: any required refutation blocks; otherwise any unknown/not-applicable requirement is indeterminate; only all-verified requirements are eligible for synthetic lab staging;
+- runs deterministic mutation tests against this small policy composer;
 - remains bound to exact corpus/schema bytes by SHA-256 in its deterministic report.
 
 ## Usage
@@ -33,6 +35,6 @@ Inputs are each capped at 4 MiB and the corpus is capped at 10,000 cases. The re
 
 ## Claim ceiling
 
-A passed report means only that the **test corpus is structurally fit for the next validation stage**. It does not execute the described cases. It does not check a real UKI, verify a firmware signature, establish key authorization/revocation, prove hardware identity, assess OEM compatibility, authorize an update, or qualify rollback/recovery.
+A passed report means only that the **test corpus is schema/contract-valid and its declared claim-state combinations agree with the simple synthetic stage policy**. It does not execute the prose-described attacks or verify a real UKI, verify a firmware signature, establish key authorization/revocation, prove hardware identity, assess OEM compatibility, authorize an update, or qualify rollback/recovery. The expected claim states are test inputs, not facts discovered from a device.
 
 The next stage must implement executable case inputs and a separate oracle/verifier before any firmware-level correctness claim can be made. Do not feed these corpus descriptions into an update executor.
