@@ -47,6 +47,20 @@ def derive(claims: dict[str, str], required: list[str]) -> str:
     return "eligible_for_lab_staging"
 
 
+def derive_by_counts(claims: dict[str, str], required: list[str]) -> str:
+    """Second, separately expressed oracle used only for differential checks."""
+    values = [claims[name] for name in required]
+    refutation_count = sum(value == "refuted" for value in values)
+    unresolved_count = sum(value in {"unknown", "not_applicable"} for value in values)
+    if refutation_count:
+        return "blocked"
+    if unresolved_count:
+        return "indeterminate"
+    if values and all(value == "verified" for value in values):
+        return "eligible_for_lab_staging"
+    raise ValueError("cannot derive a disposition from an empty or invalid required set")
+
+
 def audit(path: Path) -> dict[str, Any]:
     raw = path.read_bytes()
     if len(raw) > 4 * 1024 * 1024:
@@ -157,19 +171,102 @@ def audit(path: Path) -> dict[str, Any]:
                     break
                 mutation_checks += 1
 
+    # Deterministic mutation sweep over synthetic claim-state inputs. This is a
+    # policy-composition test, not a firmware/artifact/cryptographic test.
+    rng_state = 0xF17E2026
+    state_values = ["verified", "unknown", "refuted", "not_applicable"]
+    mutated_input_count = 10_000
+    unique_assignments: set[tuple[str, tuple[tuple[str, str], ...]]] = set()
+    mutation_dispositions: Counter[str] = Counter()
+    policy_oracle_disagreements = 0
+    nonrequired_claim_invariance_checks = 0
+
+    def next_index(limit: int) -> int:
+        nonlocal rng_state
+        rng_state = (1664525 * rng_state + 1013904223) & 0xFFFFFFFF
+        return (rng_state >> 16) % limit
+
+    for trial in range(mutated_input_count):
+        case = cases[trial % len(cases)]
+        claims = dict(case["expected_claims"])
+        required = list(case["required_claims"])
+        required_set = set(required)
+        if not required or len(required_set) != len(required):
+            errors.append(f"mutation {trial}: required claims are empty or duplicated")
+            continue
+
+        # Vary non-required post-stage facts to check stage isolation.
+        for name in claims:
+            if name not in required_set:
+                claims[name] = state_values[next_index(len(state_values))]
+
+        mode = trial % 3
+        if mode == 0:
+            for name in required:
+                claims[name] = "verified"
+            expected_mutation_disposition = "eligible_for_lab_staging"
+        elif mode == 1:
+            allowed_unresolved = ["verified", "unknown", "not_applicable"]
+            for name in required:
+                claims[name] = allowed_unresolved[next_index(len(allowed_unresolved))]
+            claims[required[next_index(len(required))]] = "unknown"
+            expected_mutation_disposition = "indeterminate"
+        else:
+            for name in required:
+                claims[name] = state_values[next_index(len(state_values))]
+            claims[required[next_index(len(required))]] = "refuted"
+            expected_mutation_disposition = "blocked"
+
+        try:
+            result_a = derive(claims, required)
+            result_b = derive_by_counts(claims, required)
+        except (KeyError, ValueError) as error:
+            errors.append(f"mutation {trial}: {error}")
+            continue
+
+        if result_a != result_b:
+            policy_oracle_disagreements += 1
+            errors.append(f"mutation {trial}: independent policy oracles disagree")
+        if result_a != expected_mutation_disposition:
+            errors.append(f"mutation {trial}: disposition violates the selected mutation mode")
+        mutation_dispositions[result_a] += 1
+        unique_assignments.add((str(case["case_id"]), tuple(sorted(claims.items()))))
+
+        # Changing a claim explicitly outside this stage's required set must not
+        # change the disposition for the current stage.
+        nonrequired = [name for name in claims if name not in required_set]
+        if nonrequired:
+            name = nonrequired[next_index(len(nonrequired))]
+            changed = dict(claims)
+            current_index = state_values.index(changed[name])
+            changed[name] = state_values[(current_index + 1) % len(state_values)]
+            if derive(changed, required) != result_a:
+                errors.append(f"mutation {trial}: a non-required claim changed the stage disposition")
+            nonrequired_claim_invariance_checks += 1
+
     if len(seen) != len(cases):
         errors.append("not every case identity was unique")
     if set(kind_counts) != set(DISPOSITION_BY_KIND):
         errors.append("all three control kinds must be represented")
+    if policy_oracle_disagreements:
+        errors.append("independent policy implementations disagreed")
+    if sum(mutation_dispositions.values()) != mutated_input_count:
+        errors.append("not every deterministic mutation received a terminal disposition")
 
     return {
         "report_version": "firmware-assurance-reference-oracle/1.0.0",
         "status": "passed" if not errors else "blocked",
         "oracle_implementation": "python-standard-library-independent-from-rust",
         "corpus_sha256": hashlib.sha256(raw).hexdigest(),
+        "profile_id": PROFILE_ID,
         "case_count": len(cases),
         "case_kind_counts": dict(sorted(kind_counts.items())),
         "derived_disposition_counts": dict(sorted(disposition_counts.items())),
+        "mutated_input_count": mutated_input_count,
+        "distinct_claim_assignments": len(unique_assignments),
+        "mutation_disposition_counts": dict(sorted(mutation_dispositions.items())),
+        "policy_oracle_disagreements": policy_oracle_disagreements,
+        "nonrequired_claim_invariance_checks": nonrequired_claim_invariance_checks,
         "metamorphic_checks": mutation_checks,
         "errors": errors[:100],
         "physical_device_operations": 0,
