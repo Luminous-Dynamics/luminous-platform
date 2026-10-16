@@ -83,6 +83,7 @@ pub fn create_provenance_manifest(
 
     Ok(json!({
         "manifest_contract": MANIFEST_CONTRACT,
+        "provenance_model": "w3c-prov-dm-aligned-subset/0.1",
         "status": "local_chain_consistent",
         "authority": "local_consistency_only",
         "digest_profile": {
@@ -365,6 +366,7 @@ mod tests {
         assert!(draft202012::meta::is_valid(&schema), "schema meta-validation failed");
         let validator = draft202012::new(&schema).expect("manifest schema compiles");
         assert!(validator.is_valid(&manifest), "manifest does not match schema: {manifest:#}");
+        assert_eq!(manifest["provenance_model"], "w3c-prov-dm-aligned-subset/0.1");
         assert_eq!(manifest["status"], "local_chain_consistent");
         assert_eq!(manifest["authority"], "local_consistency_only");
         assert_eq!(manifest["artifacts"].as_array().unwrap().len(), 6);
