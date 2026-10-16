@@ -113,12 +113,21 @@
       "failure_policy": "Investigate allocations and bounds; do not infer memory usage from latency."
     },
     {
+      "id": "G0-adapter-accounting",
+      "class": "hard_gate",
+      "metric": "observed_source_field_accounting_rate",
+      "target": 1,
+      "unit": "fraction",
+      "acceptance": "For each representative source-record fixture, every observed leaf JSON Pointer must have exactly one valid preserve, transform, drop, or unmapped disposition. Missing or duplicate mappings fail. Explicit drops and unmapped fields remain visible, are counted separately, and never count as preserved. Transform dispositions require a named transform ID and target pointer.",
+      "failure_policy": "Block adapter qualification; add a minimized source fixture for the uncovered or duplicate path. Complete accounting does not prove the transformation correct."
+    },
+    {
       "id": "G3-interoperability",
       "class": "hard_gate",
       "metric": "silent_field_loss_across_qualified_adapters",
       "target": 0,
       "unit": "count",
-      "acceptance": "Qualify at least two independently-shaped synthetic source adapters; every source field must be preserved, explicitly transformed by a named rule, or recorded as loss/unmapped. No silent field loss.",
+      "acceptance": "At least two differently shaped synthetic adapters have zero silent field loss; each observed source leaf is accounted exactly once as preserved, explicitly transformed, dropped with reason, or explicitly unmapped. Qualification additionally requires transformation-vector and source-schema coverage.",
       "failure_policy": "Block federation until the semantic crosswalk and known-loss register are reviewed."
     },
     {
