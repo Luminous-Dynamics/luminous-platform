@@ -1,3 +1,4 @@
+use omsi_manufacturing_validator::normalize_decimal_literal;
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
@@ -296,6 +297,273 @@ pub fn audit_adapter_map(
             "The source record and adapter-map digests bind exact bytes, not canonicalized JSON."
         ]
     })
+}
+
+
+/// Apply a fully accounted adapter map using the small, versioned transform
+/// registry below. Any unrecognized transform, target collision, or unmapped
+/// source field blocks projection instead of silently producing a partial record.
+pub fn apply_adapter_map(
+    contract: &Value,
+    contract_bytes: &[u8],
+    source_record: &Value,
+    source_record_bytes: &[u8],
+) -> Value {
+    let audit = audit_adapter_map(contract, contract_bytes, source_record, source_record_bytes);
+    if audit.get("status").and_then(Value::as_str) != Some("complete_accounting") {
+        return projection_blocked(
+            audit,
+            vec![json!({"field":"adapter_map","reason":"adapter_map_accounting_not_complete"})],
+        );
+    }
+    if audit.get("explicitly_unmapped_count").and_then(Value::as_u64).unwrap_or(0) > 0 {
+        return projection_blocked(
+            audit,
+            vec![json!({"field":"mappings","reason":"explicitly_unmapped_source_fields_block_projection"})],
+        );
+    }
+
+    let Some(root) = contract.as_object() else {
+        return projection_blocked(
+            audit,
+            vec![json!({"field":"adapter_map","reason":"expected_object"})],
+        );
+    };
+    let Some(mappings) = root.get("mappings").and_then(Value::as_array) else {
+        return projection_blocked(
+            audit,
+            vec![json!({"field":"mappings","reason":"expected_array"})],
+        );
+    };
+
+    let mut target_paths: Vec<String> = Vec::new();
+    for (index, mapping) in mappings.iter().enumerate() {
+        let Some(object) = mapping.as_object() else {
+            return projection_blocked(
+                audit,
+                vec![json!({"field":format!("mappings[{index}]"),"reason":"expected_object"})],
+            );
+        };
+        let disposition = object.get("disposition").and_then(Value::as_str).unwrap_or("");
+        if !matches!(disposition, "preserve" | "transform") {
+            continue;
+        }
+        let target = object.get("target_path").and_then(Value::as_str).unwrap_or("");
+        if target_paths.iter().any(|existing| target_paths_conflict(existing, target)) {
+            return projection_blocked(
+                audit,
+                vec![json!({
+                    "field":format!("mappings[{index}].target_path"),
+                    "target_path":target,
+                    "reason":"target_path_collision_or_prefix_overlap"
+                })],
+            );
+        }
+        target_paths.push(target.to_owned());
+    }
+
+    let mut projection = Value::Object(Map::new());
+    let mut errors: Vec<Value> = Vec::new();
+    let mut applied_count = 0usize;
+    let mut dropped_count = 0usize;
+
+    for (index, mapping) in mappings.iter().enumerate() {
+        let Some(object) = mapping.as_object() else {
+            errors.push(json!({"field":format!("mappings[{index}]"),"reason":"expected_object"}));
+            continue;
+        };
+        let source_path = object.get("source_path").and_then(Value::as_str).unwrap_or("");
+        let disposition = object.get("disposition").and_then(Value::as_str).unwrap_or("");
+        match disposition {
+            "drop" => {
+                dropped_count += 1;
+            }
+            "unmapped" => {
+                errors.push(json!({
+                    "field":source_path,
+                    "reason":"explicitly_unmapped_source_field"
+                }));
+            }
+            "preserve" | "transform" => {
+                let Some(value) = get_source_pointer(source_record, source_path) else {
+                    errors.push(json!({
+                        "field":source_path,
+                        "reason":"source_pointer_not_found_at_application_time"
+                    }));
+                    continue;
+                };
+                let mapped_value = if disposition == "preserve" {
+                    Ok(value.clone())
+                } else {
+                    let transform_id = object.get("transform_id").and_then(Value::as_str).unwrap_or("");
+                    run_transform(transform_id, value).map_err(|reason| {
+                        json!({
+                            "field":source_path,
+                            "transform_id":transform_id,
+                            "reason":reason
+                        })
+                    })
+                };
+                match mapped_value {
+                    Ok(value) => {
+                        let target_path = object.get("target_path").and_then(Value::as_str).unwrap_or("");
+                        match write_target_pointer(&mut projection, target_path, value) {
+                            Ok(()) => applied_count += 1,
+                            Err(reason) => errors.push(json!({
+                                "field":target_path,
+                                "source_path":source_path,
+                                "reason":reason
+                            })),
+                        }
+                    }
+                    Err(error) => errors.push(error),
+                }
+            }
+            _ => errors.push(json!({
+                "field":format!("mappings[{index}].disposition"),
+                "reason":"unknown_disposition"
+            })),
+        }
+    }
+
+    if !errors.is_empty() {
+        return projection_blocked(audit, errors);
+    }
+
+    json!({
+        "projection_contract":"omsi-manufacturing-adapter-projection/0.1",
+        "status":"projection_created",
+        "authority":"adapter_projection_only",
+        "adapter_id":root.get("adapter_id").and_then(Value::as_str),
+        "source_format":root.get("source_format").and_then(Value::as_str),
+        "applied_mapping_count":applied_count,
+        "explicitly_dropped_count":dropped_count,
+        "audit":audit,
+        "projection":projection,
+        "limitations":[
+            "Projection applies only the small versioned transformation registry; it does not certify conformance with an external vendor schema.",
+            "A created projection is not evidence of source authenticity, physical measurement truth, calibration validity, product conformity, or release authority.",
+            "Any source fields that were intentionally dropped are listed by the nested audit; their omission still requires data-owner authorization and privacy review.",
+            "The emitted projection is not signed and has no public-receipt or equipment-control authority."
+        ]
+    })
+}
+
+fn projection_blocked(audit: Value, errors: Vec<Value>) -> Value {
+    json!({
+        "projection_contract":"omsi-manufacturing-adapter-projection/0.1",
+        "status":"projection_blocked",
+        "authority":"adapter_projection_only",
+        "projection":null,
+        "audit":audit,
+        "errors":errors,
+        "limitations":[
+            "No partial projection is emitted when adapter accounting, transform execution, scope of mapping, or target insertion fails.",
+            "The adapter audit and projection do not authenticate the source record or establish manufacturing correctness."
+        ]
+    })
+}
+
+fn run_transform(transform_id: &str, value: &Value) -> Result<Value, Value> {
+    match transform_id {
+        "qms-decimal-normalization/0.1" => {
+            let text = value.as_str().ok_or_else(|| json!({
+                "reason":"decimal_transform_requires_string_value"
+            }))?;
+            normalize_decimal_literal(text)
+                .map(Value::String)
+                .map_err(|reason| json!({"reason":"decimal_transform_rejected_input","detail":reason}))
+        }
+        "qms-unit-code-crosswalk/0.1" => {
+            let code = value.as_str().ok_or_else(|| json!({
+                "reason":"unit_crosswalk_requires_string_value"
+            }))?;
+            let normalized = match code {
+                "millimeter" | "millimetre" | "mm" => "mm",
+                "meter" | "metre" | "m" => "m",
+                "micrometer" | "micrometre" | "um" => "um",
+                "degree Celsius" | "degrees Celsius" | "degC" | "Cel" => "Cel",
+                _ => return Err(json!({
+                    "reason":"unit_code_not_in_crosswalk",
+                    "source_unit_code":code,
+                    "crosswalk_id":transform_id
+                })),
+            };
+            Ok(Value::String(normalized.to_owned()))
+        }
+        _ => Err(json!({
+            "reason":"transform_id_not_registered",
+            "transform_id":transform_id
+        })),
+    }
+}
+
+fn pointer_tokens(pointer: &str) -> Option<Vec<String>> {
+    if !valid_pointer(pointer) {
+        return None;
+    }
+    Some(
+        pointer[1..]
+            .split('/')
+            .map(|token| token.replace("~1", "/").replace("~0", "~"))
+            .collect(),
+    )
+}
+
+fn get_source_pointer<'a>(source: &'a Value, pointer: &str) -> Option<&'a Value> {
+    let tokens = pointer_tokens(pointer)?;
+    let mut current = source;
+    for token in tokens {
+        current = current.as_object()?.get(&token)?;
+    }
+    Some(current)
+}
+
+fn target_paths_conflict(left: &str, right: &str) -> bool {
+    let Some(left_tokens) = pointer_tokens(left) else {
+        return true;
+    };
+    let Some(right_tokens) = pointer_tokens(right) else {
+        return true;
+    };
+    let shared = left_tokens.len().min(right_tokens.len());
+    left_tokens[..shared] == right_tokens[..shared]
+}
+
+fn write_target_pointer(root: &mut Value, pointer: &str, value: Value) -> Result<(), String> {
+    let tokens = pointer_tokens(pointer).ok_or_else(|| "invalid_target_pointer".to_owned())?;
+    let Some(root_object) = root.as_object_mut() else {
+        return Err("projection_root_is_not_object".to_owned());
+    };
+    insert_nested_object(root_object, &tokens, value)
+}
+
+fn insert_nested_object(
+    object: &mut Map<String, Value>,
+    tokens: &[String],
+    value: Value,
+) -> Result<(), String> {
+    let Some((head, tail)) = tokens.split_first() else {
+        return Err("empty_target_pointer".to_owned());
+    };
+    if tail.is_empty() {
+        if object.contains_key(head) {
+            return Err("target_key_already_exists".to_owned());
+        }
+        object.insert(head.clone(), value);
+        return Ok(());
+    }
+
+    if !object.contains_key(head) {
+        object.insert(head.clone(), json!({}));
+    }
+    let Some(child) = object.get_mut(head) else {
+        return Err("target_parent_not_found".to_owned());
+    };
+    let Some(child_object) = child.as_object_mut() else {
+        return Err("target_parent_is_not_object".to_owned());
+    };
+    insert_nested_object(child_object, tail, value)
 }
 
 fn invalid_report(contract_bytes: &[u8], source_record_bytes: &[u8], errors: Vec<Value>) -> Value {
