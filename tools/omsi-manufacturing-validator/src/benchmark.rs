@@ -96,6 +96,7 @@ pub fn run(
         *counter = json!(counter.as_u64().unwrap_or(0) + 1);
     }
 
+    let parse_phase_started = Instant::now();
     for _ in 0..iterations_per_case {
         for case in &cases {
             let started = Instant::now();
@@ -103,18 +104,36 @@ pub fn run(
                 .map_err(|error| format!("benchmark parse failed for {}: {error}", case.id))?;
             parse_samples.push(elapsed_nanos(started));
             black_box(parsed);
+        }
+    }
+    let parse_phase_wall_nanos = elapsed_nanos(parse_phase_started);
 
+    let evaluation_phase_started = Instant::now();
+    for _ in 0..iterations_per_case {
+        for case in &cases {
             let started = Instant::now();
             let evaluated = evaluate_input_value(black_box(&case.input));
             evaluation_samples.push(elapsed_nanos(started));
             black_box(evaluated);
+        }
+    }
+    let evaluation_phase_wall_nanos = elapsed_nanos(evaluation_phase_started);
 
+    let envelope_create_phase_started = Instant::now();
+    for _ in 0..iterations_per_case {
+        for case in &cases {
             let started = Instant::now();
             let envelope = create_replay_envelope(black_box(case.bytes.as_slice()))
                 .map_err(|error| format!("benchmark envelope failed for {}: {error}", case.id))?;
             envelope_create_samples.push(elapsed_nanos(started));
             black_box(envelope);
+        }
+    }
+    let envelope_create_phase_wall_nanos = elapsed_nanos(envelope_create_phase_started);
 
+    let envelope_verify_phase_started = Instant::now();
+    for _ in 0..iterations_per_case {
+        for case in &cases {
             let started = Instant::now();
             let verification =
                 verify_replay_envelope(black_box(&case.envelope), black_box(case.bytes.as_slice()));
@@ -128,15 +147,36 @@ pub fn run(
             black_box(verification);
         }
     }
+    let envelope_verify_phase_wall_nanos = elapsed_nanos(envelope_verify_phase_started);
 
     let total_samples = cases.len() * iterations_per_case;
     let corpus_sha256 = sha256_hex(vector_document_bytes);
     let total_input_bytes = corpus_input_bytes.saturating_mul(iterations_per_case);
     let phases = json!({
-        "json_parse": summarize("json_parse", parse_samples, total_input_bytes),
-        "semantic_evaluation": summarize("semantic_evaluation", evaluation_samples, total_input_bytes),
-        "envelope_creation": summarize("envelope_creation", envelope_create_samples, total_input_bytes),
-        "envelope_verification": summarize("envelope_verification", envelope_verify_samples, total_input_bytes)
+        "json_parse": summarize(
+            "json_parse",
+            parse_samples,
+            total_input_bytes,
+            parse_phase_wall_nanos
+        ),
+        "semantic_evaluation": summarize(
+            "semantic_evaluation",
+            evaluation_samples,
+            total_input_bytes,
+            evaluation_phase_wall_nanos
+        ),
+        "envelope_creation": summarize(
+            "envelope_creation",
+            envelope_create_samples,
+            total_input_bytes,
+            envelope_create_phase_wall_nanos
+        ),
+        "envelope_verification": summarize(
+            "envelope_verification",
+            envelope_verify_samples,
+            total_input_bytes,
+            envelope_verify_phase_wall_nanos
+        )
     });
 
     Ok(json!({
@@ -173,6 +213,7 @@ pub fn run(
         "limitations": [
             "Microbenchmark only; no performance threshold is enforced and no measured value implies manufacturing correctness.",
             "Hardware, operating-system scheduling, power state, compiler profile, and background load affect results; compare only suitably controlled runs.",
+            "Wall-clock throughput is timed over a full phase batch and includes loop/dispatch overhead but excludes process startup; sampled-time rates are inverse-mean-latency equivalents, not end-to-end throughput.",
             "Inputs are the committed vector inputs serialized with the current serde_json build; the corpus SHA-256 binds the exact source vector document bytes, not a canonical JSON representation.",
             "This harness does not measure Holochain DHT latency, source-adapter latency, signature verification, factory telemetry throughput, or product-release workflows."
         ]
@@ -190,28 +231,42 @@ fn elapsed_nanos(started: Instant) -> u64 {
     started.elapsed().as_nanos().max(1).min(u64::MAX as u128) as u64
 }
 
-fn summarize(phase: &str, mut samples: Vec<u64>, total_input_bytes: usize) -> Value {
+fn summarize(
+    phase: &str,
+    mut samples: Vec<u64>,
+    total_input_bytes: usize,
+    wall_clock_elapsed_ns: u64,
+) -> Value {
     samples.sort_unstable();
     let count = samples.len();
     let total_nanos: u128 = samples.iter().map(|value| u128::from(*value)).sum();
     let mean_nanos = total_nanos as f64 / count as f64;
-    let elapsed_seconds = total_nanos as f64 / 1_000_000_000.0;
-    let operations_per_second = count as f64 / elapsed_seconds;
-    let mebibytes_per_second =
-        total_input_bytes as f64 / (1024.0 * 1024.0) / elapsed_seconds;
+    // This is an inverse-mean-latency equivalent, not measured batch throughput.
+    let sampled_seconds = total_nanos as f64 / 1_000_000_000.0;
+    let sampled_time_rate = count as f64 / sampled_seconds;
+    let sampled_time_mib_per_second =
+        total_input_bytes as f64 / (1024.0 * 1024.0) / sampled_seconds;
+    // The outer timer measures actual full-phase elapsed wall time.
+    let wall_seconds = f64::from(wall_clock_elapsed_ns) / 1_000_000_000.0;
+    let wall_clock_operations_per_second = count as f64 / wall_seconds;
+    let wall_clock_mib_per_second =
+        total_input_bytes as f64 / (1024.0 * 1024.0) / wall_seconds;
 
     json!({
         "phase": phase,
         "sample_count": count,
         "total_sampled_time_ns": total_nanos.to_string(),
+        "wall_clock_elapsed_ns": wall_clock_elapsed_ns,
+        "wall_clock_operations_per_second": wall_clock_operations_per_second,
+        "wall_clock_serialized_input_mib_per_second": wall_clock_mib_per_second,
         "min_ns": samples[0],
         "p50_ns": percentile(&samples, 0.50),
         "p95_ns": percentile(&samples, 0.95),
         "p99_ns": percentile(&samples, 0.99),
         "max_ns": samples[count - 1],
         "mean_ns": mean_nanos,
-        "observations_per_second_from_sampled_time": operations_per_second,
-        "serialized_input_mib_per_second_from_sampled_time": mebibytes_per_second
+        "observations_per_second_from_sampled_time": sampled_time_rate,
+        "serialized_input_mib_per_second_from_sampled_time": sampled_time_mib_per_second
     })
 }
 
@@ -276,6 +331,16 @@ mod tests {
         assert_eq!(
             report["phases"]["envelope_verification"]["phase"],
             "envelope_verification"
+        );
+        assert!(
+            report["phases"]["semantic_evaluation"]["wall_clock_elapsed_ns"]
+                .as_u64()
+                .is_some_and(|value| value > 0)
+        );
+        assert!(
+            report["phases"]["semantic_evaluation"]["wall_clock_operations_per_second"]
+                .as_f64()
+                .is_some_and(|value| value > 0.0)
         );
     }
 }
