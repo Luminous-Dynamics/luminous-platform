@@ -5,7 +5,7 @@
   "profile_id": "synthetic-uefi-uki-v1",
   "benchmark_goal": "Test claim-level UEFI Secure Boot/UKI trust and generic update-metadata assurance semantics without authorizing or performing any mutation; not a physical OEM firmware qualification.",
   "mutation_enabled": false,
-  "case_count": 36,
+  "case_count": 44,
   "cases": [
     {
       "case_id": "FWA-001",
@@ -695,6 +695,157 @@
         "no_secret_in_emitted_evidence"
       ],
       "rationale": "Evidence emission must redact or reject sensitive fields; a security receipt must not leak credentials."
+    },
+    {
+      "case_id": "FWA-037",
+      "case_kind": "positive_control",
+      "family": "threshold_policy",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "All signatures required by the frozen synthetic threshold policy verify and belong to distinct authorized keys.",
+      "mutation": "verify_all_required_threshold_signatures",
+      "expected_claims": {
+        "signer_authorization": "verified"
+      },
+      "expected_disposition": "eligible_for_lab_staging",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Satisfied threshold must pass; a count of signatures alone is insufficient."
+    },
+    {
+      "case_id": "FWA-038",
+      "case_kind": "positive_control",
+      "family": "coherent_fresh_metadata",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Root/targets/snapshot metadata versions and expiries form a coherent, current set at the fixed check time.",
+      "mutation": "use_coherent_fresh_metadata",
+      "expected_claims": {
+        "freshness": "verified",
+        "lineage_integrity": "verified"
+      },
+      "expected_disposition": "eligible_for_lab_staging",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Positive control for update freshness and anti-mix-and-match checks."
+    },
+    {
+      "case_id": "FWA-039",
+      "case_kind": "positive_control",
+      "family": "exact_compatibility",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "The exact synthetic model, hardware revision, component, software train and prerequisite set match the versioned allow-list.",
+      "mutation": "use_exact_compatible_profile",
+      "expected_claims": {
+        "compatibility": "verified"
+      },
+      "expected_disposition": "eligible_for_lab_staging",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Explicit compatibility evidence should permit the synthetic profile to advance."
+    },
+    {
+      "case_id": "FWA-040",
+      "case_kind": "positive_control",
+      "family": "concordant_identity",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Two independently identified read-only observations agree on the exact synthetic target and artifact digest.",
+      "mutation": "provide_concordant_independent_observations",
+      "expected_claims": {
+        "target_identity": "verified",
+        "observation_consistency": "verified"
+      },
+      "expected_disposition": "eligible_for_lab_staging",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Agreement is useful only when sources and captured inputs are distinct and identified."
+    },
+    {
+      "case_id": "FWA-041",
+      "case_kind": "positive_control",
+      "family": "approved_endpoint",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Pinned endpoint profile, peer TLS identity, adapter revision and tenant scope all match; operation is allow-listed read-only.",
+      "mutation": "use_approved_endpoint_profile",
+      "expected_claims": {
+        "management_scope": "verified",
+        "target_identity": "verified",
+        "authorization": "verified"
+      },
+      "expected_disposition": "eligible_for_lab_staging",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Positive control for exact management-scope binding without authorizing mutation."
+    },
+    {
+      "case_id": "FWA-042",
+      "case_kind": "positive_control",
+      "family": "offline_with_verified_cache",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "Network/Mycelix is unavailable, but locally cached signed authorization and policy evidence is current and independently verifiable for read-only staging.",
+      "mutation": "disconnect_network_keep_fresh_verified_evidence",
+      "expected_claims": {
+        "management_scope": "verified",
+        "authorization": "verified",
+        "freshness": "verified"
+      },
+      "expected_disposition": "eligible_for_lab_staging",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Local read-only behavior should not depend on the presence of a remote ledger when required evidence is already valid; no update is performed."
+    },
+    {
+      "case_id": "FWA-043",
+      "case_kind": "positive_control",
+      "family": "independent_lineage",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "An independently implemented verifier recomputes the expected claims from an intact, acyclic evidence graph and exact artifact bytes.",
+      "mutation": "verify_intact_graph_with_independent_implementation",
+      "expected_claims": {
+        "lineage_integrity": "verified",
+        "verifier_availability": "verified"
+      },
+      "expected_disposition": "eligible_for_lab_staging",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "Positive control for verification of a complete and internally consistent evidence graph."
+    },
+    {
+      "case_id": "FWA-044",
+      "case_kind": "positive_control",
+      "family": "recovery_route_qualified",
+      "profile_id": "synthetic-uefi-uki-v1",
+      "setup": "A synthetic target profile contains exact, current recovery instructions and independently checked qualification evidence for the declared recovery path.",
+      "mutation": "provide_exact_profile_recovery_evidence",
+      "expected_claims": {
+        "recovery_readiness": "verified"
+      },
+      "expected_disposition": "eligible_for_lab_staging",
+      "required_assertions": [
+        "no_firmware_write",
+        "no_key_enrollment",
+        "no_boot_configuration_change"
+      ],
+      "rationale": "A documented and tested recovery route is a required predicate, not a decorative note."
     }
   ]
 }
