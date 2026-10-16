@@ -190,7 +190,7 @@
       "metric": "unsupported_or_unassessed_standards_claims",
       "target": 0,
       "unit": "count",
-      "acceptance": "Do not claim ISO 8000-110/120/130/140/66/210/220/230, QIF, MTConnect, OPC UA or vendor conformance unless the exact normative version/schema/model assets, an independent reference validator, representative positive/negative fixtures and a reproducible evidence bundle have been pinned and checked. The interoperability target matrix must retain not_implemented/not_assessed until those gates are complete.",
+      "acceptance": "Do not claim ISO 8000-110/120/130/140/66/210/220/230, QIF, MTConnect, OPC UA or vendor conformance unless the exact normative version/schema/model assets, an independent reference validator, representative positive/negative fixtures and a reproducible evidence bundle have been pinned and checked. The machine-readable ten-target matrix must pass its Draft 2020-12 schema, and the schema must reject conformance_status=conformant when implementation_status=not_implemented. All targets remain not_implemented/not_assessed until their qualification gates are complete.",
       "failure_policy": "Block conformance wording and qualified-adapter status; use an explicitly synthetic/research-only label until authoritative assets and independent validation exist."
     }
   ],
@@ -230,7 +230,9 @@
     "iso_8000_140_completeness_assertion_conformance": false,
     "iso_8000_210_sensor_quality_conformance": false,
     "iso_8000_220_sensor_quality_measurement_conformance": false,
-    "iso_ts_8000_230_sensor_cleansing_conformance": false
+    "iso_ts_8000_230_sensor_cleansing_conformance": false,
+    "interoperability_matrix_schema_authored": true,
+    "interoperability_matrix_status_integrity_test_authored": true
   },
   "scorecard_schema_reference": "benchmark-scorecard-0.1.md",
   "references": [
