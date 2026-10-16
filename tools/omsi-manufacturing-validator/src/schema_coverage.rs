@@ -454,6 +454,63 @@ mod tests {
     }
 
     #[test]
+    fn nested_optional_parent_inherits_optional_presence_and_arrays_are_atomic() {
+        let map = json!({
+            "adapter_contract": "omsi-manufacturing-adapter-map/0.1",
+            "adapter_id": "nested-presence-test/0.1",
+            "source_format": "nested-presence-json/0.1",
+            "mappings": [
+                {"source_path":"/measurement/value","presence":"required","disposition":"preserve","target_path":"/value"},
+                {"source_path":"/measurement/unit","presence":"optional","disposition":"preserve","target_path":"/unit"},
+                {"source_path":"/metadata/note","presence":"optional","disposition":"drop","reason":"optional metadata excluded"},
+                {"source_path":"/attachments","presence":"required","disposition":"preserve","target_path":"/attachments"}
+            ]
+        });
+        let schema = json!({
+            "$schema":"https://json-schema.org/draft/2020-12/schema",
+            "type":"object",
+            "required":["measurement","attachments"],
+            "properties":{
+                "measurement":{
+                    "type":"object",
+                    "required":["value"],
+                    "properties":{
+                        "value":{"type":"string"},
+                        "unit":{"type":"string"}
+                    },
+                    "additionalProperties":false
+                },
+                "metadata":{
+                    "type":"object",
+                    "required":["note"],
+                    "properties":{"note":{"type":"string"}},
+                    "additionalProperties":false
+                },
+                "attachments":{
+                    "type":"array",
+                    "items":{"type":"string"}
+                }
+            },
+            "additionalProperties":false
+        });
+        let record = json!({
+            "measurement":{"value":"1"},
+            "attachments":["sha256:a","sha256:b"]
+        });
+        let map_bytes = serde_json::to_vec(&map).unwrap();
+        let schema_bytes = serde_json::to_vec(&schema).unwrap();
+        let record_bytes = serde_json::to_vec(&record).unwrap();
+        let report = audit_adapter_schema_coverage(
+            &map, &map_bytes, &schema, &schema_bytes, &record, &record_bytes,
+        );
+        assert_eq!(report["status"], "schema_coverage_complete", "{report:#}");
+        assert_eq!(report["schema_field_count"], 4);
+        assert_eq!(report["covered_schema_field_count"], 4);
+        assert_eq!(report["schema_paths_not_observed_in_record"].as_array().unwrap().len(), 2);
+        assert_eq!(report["required_schema_paths_not_observed_in_record"], json!([]));
+    }
+
+    #[test]
     fn pointer_escaping_preserves_slash_and_tilde_keys() {
         let map = json!({
             "adapter_contract":"omsi-manufacturing-adapter-map/0.1",
