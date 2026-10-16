@@ -9,8 +9,7 @@
     "authority",
     "binding",
     "silent_loss_count",
-    "limitations",
-    "mapping_paths_not_observed_in_record"
+    "limitations"
   ],
   "properties": {
     "audit_contract": {
