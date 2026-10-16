@@ -75,7 +75,8 @@ The next steps should avoid inventing an isolated proprietary trust format. Keep
 | Memory | Peak RSS ≤ 64 MiB for one bounded input/replay process | Provisional | Must be measured externally, not inferred from timing |
 | Adapter fidelity | 100% of observed leaf paths accounted exactly once across at least two differently shaped adapters; zero silent loss | Hard | Missing/duplicate field classifications fail; explicit drops and unmapped fields remain visible and do not count as preserved |
 | Source-schema coverage | 100% of leaf paths in the supported closed-object inventory have one mapping with matching required/optional presence; zero mappings outside schema; unsupported schema constructs fail closed | Hard | Prevents absent optional fields from escaping review merely because they do not occur in a sample record |
-| Independent verifier | 100% agreement with the public vector/mutation catalogue | Release | A single implementation must not define and attest its own correctness |
+| Independent artifact/graph verifier | 100% verification of exact-byte bindings, fixed provenance activities/edges, source-schema field inventory, required/optional mapping agreement, and reported absent optional paths; forged summaries must be rejected even after hashes are recomputed | Hard for local evidence-chain qualification | A self-consistent hash does not prove a self-reported coverage count is true |
+| Independent semantic verifier | 100% agreement with the public semantic-vector/mutation catalogue from a separately implemented evaluator | Release | Artifact binding is not the same as independently reproducing a manufacturing decision |
 | Public receipt privacy | Zero prohibited raw telemetry, confidential parameters, operator PII or unauthorized tenant identifiers | Hard | Public DHT records require a conservative disclosure boundary |
 | Multi-agent behavior | At least two Holochain agents exercise receipt publication, resolution, disputes and revocation observations | Release | Unit tests do not qualify DHT/bridge semantics |
 
@@ -83,7 +84,7 @@ These are engineering targets proposed for the pilot—not sourced industrial be
 
 ## Corpus growth targets
 
-The current eight conformance vectors are too small to represent full interop and security behavior. Grow the corpus by behavior and semantic risk, not by duplicating records:
+The current eight conformance vectors are too small to represent full interop and security behavior. Source-schema coverage now rejects mappings outside the declared inventory, missing optional mappings, presence mismatches, invalid required-child structure, and unsupported schema constructs; the independent verifier separately re-derives the field inventory and checks reported path coverage. It does not yet implement the full semantic evaluator, validate constraints inside array items, authenticate signatures, or prove vendor conformance. Grow the corpus by behavior and semantic risk, not by duplicating records:
 
 1. **Core semantic:** lower/upper bound minus, at and plus one representable decimal step; precision limits; equivalent decimal spellings; incompatible units; missing required units; malformed values.
 2. **Time and snapshots:** equivalent explicit offsets; leap/invalid dates; naive time; reversed calibration interval; non-atomic snapshot; stale export with a new source revision and its converse.
