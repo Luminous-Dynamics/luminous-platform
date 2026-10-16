@@ -134,6 +134,90 @@ pub fn create_provenance_manifest(
     }))
 }
 
+const VERIFIER_CONTRACT: &str = "omsi-manufacturing-provenance-verifier/0.1";
+const VERIFIER_LIMITATIONS: &[&str] = &[
+    "This verifier reconstructs the manifest using the same implementation as the builder; it is not independent cross-implementation verification.",
+    "The manifest is unsigned and does not authenticate a source, producer, tenant, device, calibration issuer, or physical measurement.",
+    "The verifier checks the supplied artifact bytes. It cannot establish that the physical source is truthful or that a consequential release decision is authorized.",
+];
+
+/// Reconstructs the expected manifest from the six supplied artifacts and
+/// compares the full parsed manifest. A successful result is local consistency
+/// evidence only, not an authenticated attestation.
+pub fn verify_provenance_manifest(
+    manifest_bytes: &[u8],
+    source_record_bytes: &[u8],
+    adapter_map_bytes: &[u8],
+    projection_report_bytes: &[u8],
+    semantic_input_bytes: &[u8],
+    semantic_report_bytes: &[u8],
+    replay_envelope_bytes: &[u8],
+) -> Value {
+    let parsed_manifest = parse_json(manifest_bytes, "provenance manifest");
+    let manifest_json_ok = parsed_manifest.is_ok();
+    let supplied_manifest = parsed_manifest.ok();
+
+    let reconstruction = create_provenance_manifest(
+        source_record_bytes,
+        adapter_map_bytes,
+        projection_report_bytes,
+        semantic_input_bytes,
+        semantic_report_bytes,
+        replay_envelope_bytes,
+    );
+    let chain_reconstructed = reconstruction.is_ok();
+    let reconstruction_error = reconstruction
+        .as_ref()
+        .err()
+        .map(String::as_str)
+        .unwrap_or("");
+    let manifest_matches = match (supplied_manifest.as_ref(), reconstruction.as_ref()) {
+        (Some(supplied), Ok(expected)) => supplied == expected,
+        _ => false,
+    };
+    let verified = manifest_json_ok && chain_reconstructed && manifest_matches;
+
+    json!({
+        "verifier_contract": VERIFIER_CONTRACT,
+        "status": if verified { "manifest_verified" } else { "rejected" },
+        "authority": "local_consistency_only",
+        "manifest_sha256": sha256_hex(manifest_bytes),
+        "checks": [
+            verifier_check(
+                "manifest-json",
+                manifest_json_ok,
+                "the supplied manifest parses as JSON",
+                "the supplied manifest is not valid JSON"
+            ),
+            verifier_check(
+                "chain-reconstruction",
+                chain_reconstructed,
+                "all supplied artifacts reproduce a consistent adapter, semantic and replay chain",
+                if reconstruction_error.is_empty() {
+                    "the supplied artifacts do not reproduce a consistent chain"
+                } else {
+                    reconstruction_error
+                }
+            ),
+            verifier_check(
+                "manifest-equality",
+                manifest_matches,
+                "the supplied manifest exactly matches the reconstructed manifest fields",
+                "the supplied manifest differs from the manifest reconstructed from the artifacts"
+            )
+        ],
+        "limitations": VERIFIER_LIMITATIONS
+    })
+}
+
+fn verifier_check(id: &str, passed: bool, pass_reason: &str, fail_reason: &str) -> Value {
+    json!({
+        "id": id,
+        "result": if passed { "pass" } else { "fail" },
+        "explanation": if passed { pass_reason } else { fail_reason }
+    })
+}
+
 fn parse_json(bytes: &[u8], label: &str) -> Result<Value, String> {
     serde_json::from_slice(bytes).map_err(|error| format!("{label} is not valid JSON: {error}"))
 }
@@ -227,6 +311,42 @@ mod tests {
         assert_eq!(manifest["edges"].as_array().unwrap().len(), 5);
         assert_eq!(manifest["declared_transform_ids"].as_array().unwrap().len(), 2);
         assert!(manifest.get("signature").is_none());
+    }
+
+    #[test]
+    fn manifest_verifier_reconstructs_and_schema_validates_report() {
+        let (source, map, projection, input, report, envelope) = fixture_chain();
+        let manifest = create_provenance_manifest(&source, &map, &projection, &input, &report, &envelope)
+            .expect("consistent chain creates a manifest");
+        let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("manifest serializes");
+        let verification = super::verify_provenance_manifest(
+            &manifest_bytes, &source, &map, &projection, &input, &report, &envelope,
+        );
+        assert_eq!(verification["status"], "manifest_verified", "{verification:#}");
+        assert_eq!(verification["authority"], "local_consistency_only");
+        assert!(verification["checks"].as_array().unwrap().iter()
+            .all(|check| check["result"] == "pass"));
+
+        let schema: Value = serde_json::from_str(include_str!("../schema/provenance-verification-report.schema.json"))
+            .expect("verification schema parses");
+        assert!(draft202012::meta::is_valid(&schema), "verification schema meta-validation failed");
+        let validator = draft202012::new(&schema).expect("verification schema compiles");
+        assert!(validator.is_valid(&verification), "verification report does not match schema: {verification:#}");
+    }
+
+    #[test]
+    fn manifest_verifier_rejects_tampered_manifest_digest() {
+        let (source, map, projection, input, report, envelope) = fixture_chain();
+        let mut manifest = create_provenance_manifest(&source, &map, &projection, &input, &report, &envelope)
+            .expect("consistent chain creates a manifest");
+        manifest["artifacts"][0]["sha256"] = json!("0".repeat(64));
+        let manifest_bytes = serde_json::to_vec_pretty(&manifest).expect("mutated manifest serializes");
+        let verification = super::verify_provenance_manifest(
+            &manifest_bytes, &source, &map, &projection, &input, &report, &envelope,
+        );
+        assert_eq!(verification["status"], "rejected");
+        assert!(verification["checks"].as_array().unwrap()
+            .iter().any(|check| check["id"] == "manifest-equality" && check["result"] == "fail"));
     }
 
     #[test]
