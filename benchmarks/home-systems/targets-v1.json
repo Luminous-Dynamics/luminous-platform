@@ -314,6 +314,49 @@
         "Invariant assertion result",
         "Counterexample history fixtures if any"
       ]
+    },
+    {
+      "id": "ha-subscription-correlation",
+      "category": "interoperability",
+      "metric": "accepted_events_with_wrong_subscription_id",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "events"
+      },
+      "workload": "Protocol-model and runtime vectors send state_changed frames with correct, stale, unknown and mismatched subscription IDs across authentication, subscription acknowledgement, bootstrap, live and reconnect phases.",
+      "method": "Require exact active subscription-ID matching before buffering or forwarding any event. Wrong IDs fail closed; stale connection epochs cannot advance the active session. Track every accepted/buffered/delivered event and preserve mismatches as regression vectors.",
+      "sample_plan": "Every protocol conformance run; runtime promotion additionally exercises the exact decoded Home Assistant frame path and records source SHA, corpus version and transport build identity.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source SHA",
+        "Versioned protocol vector corpus",
+        "Per-frame subscription and session epoch decision log",
+        "Mutant proving mismatched subscription ID is rejected"
+      ]
+    },
+    {
+      "id": "ha-snapshot-stream-loss",
+      "category": "resilience",
+      "metric": "lost_or_out_of_order_events",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "events"
+      },
+      "workload": "At least 10,000 deterministic event interleavings around state_changed subscription acknowledgement, initial get_states request/response, snapshot application, buffered-event drain, and reconnect epoch change.",
+      "method": "Subscribe before requesting the snapshot; buffer matching events while the snapshot is in flight; apply the snapshot before replaying buffered events in original receive order; require explicit bootstrap completion before live delivery. Compare the resulting projection to the same ordered event oracle and retain every counterexample.",
+      "sample_plan": "Every release candidate for the native read-only transport and any change to snapshot/bootstrap/reconnect sequencing. Synthetic model results and real transport results are reported separately.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source and transport build SHAs",
+        "Event schedule/corpus digest",
+        "Initial snapshot and ordered event-oracle digests",
+        "Raw interleaving outcomes and counterexamples",
+        "Evidence class distinguishing synthetic from live transport"
+      ]
     }
   ]
 }
