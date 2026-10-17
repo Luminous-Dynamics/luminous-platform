@@ -345,8 +345,8 @@
         "value": 0,
         "unit": "events"
       },
-      "workload": "At least 10,000 deterministic event interleavings around state_changed subscription acknowledgement, initial get_states request/response, snapshot application, buffered-event drain, and reconnect epoch change.",
-      "method": "Subscribe before requesting the snapshot; buffer matching events while the snapshot is in flight; apply the snapshot before replaying buffered events in original receive order; require explicit bootstrap completion before live delivery. Compare the resulting projection to the same ordered event oracle and retain every counterexample.",
+      "workload": "At least 10,000 deterministic event interleavings around native subscribe_entities acknowledgement, initial compact snapshot, incremental add/change/remove frames, application acknowledgement, and reconnect epoch change.",
+      "method": "Prefer Home Assistant's native subscribe_entities stream, restricting entity_ids to the exact validated profile allowlist. Validate the subscription ID; apply its initial compact snapshot before processing later deltas on the same serialized receive loop; apply additions, field-level changes/removals and entity removals only for allowlisted IDs. For any future provider that exposes separate snapshot and event subscriptions, require subscribe-first plus buffered replay. Compare final projection against an ordered event oracle and retain counterexamples.",
       "sample_plan": "Every release candidate for the native read-only transport and any change to snapshot/bootstrap/reconnect sequencing. Synthetic model results and real transport results are reported separately.",
       "release_gate": true,
       "measurement_status": "blocked_runtime_not_ready",
