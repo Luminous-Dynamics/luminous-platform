@@ -2,7 +2,7 @@
 
 **State:** executable synthetic claim/lifecycle/evidence-trust contract and benchmark; not a cryptographic firmware verifier, certification, or device qualification evidence.  
 **Parent:** [Luminous Platform #23 — global vendor adapters and firmware lifecycle](https://github.com/Luminous-Dynamics/luminous-platform/issues/23)  
-**Related:** [Nixward #17 — UKI signature and firmware trust authorization](https://github.com/Luminous-Dynamics/nixward/issues/17), [Nixward #30 — timestamped revocation](https://github.com/Luminous-Dynamics/nixward/issues/30), [Symthaea #7430 — Secure Boot state and consent](https://github.com/Luminous-Dynamics/symthaea/issues/7430), [Symthaea #4430 — typed device resources and firmware-operation boundaries](https://github.com/Luminous-Dynamics/symthaea/issues/4430), [Symthaea #7710 — replace approval booleans with verifiable evidence receipts](https://github.com/Luminous-Dynamics/symthaea/issues/7710).
+**Related:** [Nixward #17 — UKI signature and firmware trust authorization](https://github.com/Luminous-Dynamics/nixward/issues/17), [Nixward #30 — timestamped revocation](https://github.com/Luminous-Dynamics/nixward/issues/30), [Symthaea #7430 — Secure Boot state and consent](https://github.com/Luminous-Dynamics/symthaea/issues/7430), [Symthaea #4430 — typed device resources and firmware-operation boundaries](https://github.com/Luminous-Dynamics/symthaea/issues/4430), [Symthaea #7710 — replace approval booleans with verifiable evidence receipts](https://github.com/Luminous-Dynamics/symthaea/issues/7710). [Luminous Platform #56 — TUF/Uptane-aligned firmware update attack corpus](https://github.com/Luminous-Dynamics/luminous-platform/issues/56).
 
 ## 1. Thesis: assurance is a graph of bounded claims, not a security score
 
