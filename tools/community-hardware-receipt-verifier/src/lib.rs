@@ -374,7 +374,13 @@ fn validate_references(receipt: &Value, errors: &mut Vec<Diagnostic>) {
     }
 
     let results = array_at(receipt, "/results").unwrap_or(&[]);
+    let mut test_ids = BTreeSet::new();
     for (result_index, result) in results.iter().enumerate() {
+        let test_id = result.get("test_id").and_then(Value::as_str).unwrap_or_default();
+        if !test_ids.insert(test_id.to_owned()) {
+            push(errors, "duplicate_test_id", &format!("/results/{result_index}/test_id"),
+                "Test identifiers must be unique within a receipt.");
+        }
         if let Some(refs) = result.get("evidence_refs").and_then(Value::as_array) {
             for (ref_index, reference) in refs.iter().enumerate() {
                 let digest = reference.as_str().unwrap_or_default();
