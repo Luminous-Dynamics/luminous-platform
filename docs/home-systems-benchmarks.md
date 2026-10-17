@@ -12,7 +12,7 @@
 6. **From vendor lock-in to migration evidence.** Export/import every promised data class on a clean system, with an explicit plan for re-provisioning secrets.
 7. **From “supports updates” to rollback-tested lifecycle support.** Inject update failure at the specified boundaries and verify return to a previously verified state.
 
-The machine-readable catalogue is [`targets-v1.json`](../benchmarks/home-systems/targets-v1.json), validated by [`home-systems-benchmark-targets.schema.json`](../schemas/home-systems-benchmark-targets.schema.json). Every item currently says `not_measured` or `blocked_runtime_not_ready`; the catalogue deliberately contains thresholds and methods, not fabricated score values.
+The machine-readable catalogue is [`targets-v1.json`](../benchmarks/home-systems/targets-v1.json), validated by [`home-systems-benchmark-targets.schema.json`](../schemas/home-systems-benchmark-targets.schema.json). It now contains 22 objectives, including lifecycle invalidation, stale/duplicate replay resistance and projector delta scaling. Every item says `not_measured` or `blocked_runtime_not_ready`; the catalogue deliberately contains thresholds and methods, not fabricated score values.
 
 ## Proposed acceptance targets
 
@@ -27,6 +27,9 @@ The machine-readable catalogue is [`targets-v1.json`](../benchmarks/home-systems
 | HA snapshot-to-stream continuity | Zero lost or out-of-order events across subscription, snapshot, buffered replay, and reconnect interleavings | Yes; blocked until native transport |
 | HA allowlist projection | Zero non-allowlisted entities or unapproved fields in projected/cache state across compact added/changed/removed frames | Yes; blocked until native transport |
 | HA semantic freshness | Zero observation freshness refreshes caused only by ignored attributes/context/timestamp updates | Yes; pure projector target, not yet measured |
+| HA stale-positive invalidation | Zero prior positive observations remain current after `unknown`, `unavailable`, invalid current samples, removals or reconnect-snapshot omission; exactly one explicit invalidation per affected entity | Yes; blocked until lifecycle consumer/runtime exists |
+| HA stale/duplicate replay resistance | Zero equal/older per-entity versions applied; delayed upserts cannot overwrite newer invalidations across reconnect or restart | Yes; blocked until durable consumer/store exists |
+| HA delta cache-size scaling | For a one-entity delta, p95 at 1,024 cached entities ≤3× p95 at 16 entities on the same host/build; report raw samples and allocations | Measurement target; runtime/transport integration not ready |
 | Ambiguous recovery | Zero new dispatches while prior outcome is `Dispatching`, `ProviderAccepted` or `OutcomeUnknown`; inject faults at six defined boundaries | Yes |
 | Local gate latency | p95 ≤ 10 ms and separately report p50/p99 on a Raspberry Pi 5 and low-power x86-64 host at 100 decisions/s | Measurement target, not current SLO |
 | Durable journal | p99 ≤ 25 ms with durability sync enabled on a named SSD-backed profile | Measurement target; never relax durability to hit it |
