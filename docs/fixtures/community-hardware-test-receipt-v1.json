@@ -1,0 +1,104 @@
+{
+  "schema_version": "luminous.hardware-test-receipt.v1",
+  "record_status": "synthetic_example",
+  "receipt_id": "fixture:community-hardware:vm-only:001",
+  "generated_at": "2026-10-17T00:00:00Z",
+  "subject": {
+    "portfolio_item_id": null,
+    "manufacturer": "synthetic fixture — not a real manufacturer",
+    "model": "synthetic DIY x86 node",
+    "hardware_revision": "not-applicable-synthetic-fixture",
+    "unit_ref": "unit:synthetic-example-001",
+    "unit_identity_method": "synthetic_fixture",
+    "firmware_components": [
+      {
+        "component": "UEFI/BIOS",
+        "version": null,
+        "digest_sha256": null,
+        "source_url": null,
+        "openness": "unknown"
+      },
+      {
+        "component": "device firmware inventory",
+        "version": null,
+        "digest_sha256": null,
+        "source_url": null,
+        "openness": "unknown"
+      }
+    ],
+    "source_manifest_digest": null
+  },
+  "campaign": {
+    "campaign_id": "campaign:synthetic-home-vm",
+    "suite_id": "luminous.home-systems-vm",
+    "suite_version": "synthetic-fixture-v1",
+    "suite_source_revision": null,
+    "suite_sha256": "1dd7c0999d5686372bd1637e87c3b35f4923d55c8fe7438c1fd499b159e5dcdd",
+    "runner_source_revision": null,
+    "runner_sha256": "a4a3664ccedf030eff34aeaa597a07c267c7415f4839a839d99ffc2ae1c89a81",
+    "profile_id": "synthetic-vm-service-dependency",
+    "diagnostic_output_format": "json",
+    "diagnostic_format_revision": "luminous.hardware-test-receipt.v1",
+    "parameters_sha256": "7d2ab2a762880ca3e12636b64f59243d323810081d1771622442a2d2b12f8ed7"
+  },
+  "environment": {
+    "execution_mode": "vm_simulated",
+    "host_os": "NixOS (synthetic fixture description)",
+    "kernel_or_runtime": "QEMU guest; exact version omitted in synthetic fixture",
+    "architecture": "x86_64 synthetic VM",
+    "deployment_lock_sha256": null,
+    "network_isolated": true,
+    "operator_ref": "contributor:synthetic-fixture",
+    "location_class": "vm_or_simulator",
+    "instrumentation": [],
+    "conditions": [
+      {
+        "name": "test fixture",
+        "value": 1,
+        "unit": "synthetic-example-only"
+      }
+    ]
+  },
+  "results": [
+    {
+      "test_id": "optional-inference-failure-keeps-core",
+      "test_version": "synthetic-fixture-v1",
+      "status": "pass",
+      "expected": "Core service sentinel stays active/restartable when optional inference sentinel fails in VM.",
+      "observed_summary": "Synthetic example status only; no underlying workflow was run when creating this fixture.",
+      "measurements": [],
+      "evidence_refs": [
+        "ec343cc7a760e3ba328ff381409b91858ef77a4e6c09fa2f8c2de74401271563"
+      ]
+    },
+    {
+      "test_id": "physical-thermal-soak",
+      "test_version": "synthetic-fixture-v1",
+      "status": "not_run",
+      "expected": "Measure thermal behavior on exact physical unit under a frozen workload.",
+      "observed_summary": "Not run: fixture contains no physical device, sensor or calibrated instrument.",
+      "measurements": [],
+      "evidence_refs": []
+    }
+  ],
+  "overall_disposition": "incomplete",
+  "evidence_class": "vm_simulated",
+  "limitations": [
+    "Entire record is synthetic schema example; its PASS label is not a test result.",
+    "No physical hardware was identified, accessed or measured.",
+    "The example cannot establish boot, thermal, electrical, RF, firmware, security, reliability or supply suitability.",
+    "Maturity promotion and deployment authorization are explicitly absent."
+  ],
+  "evidence_artifacts": [
+    {
+      "digest_sha256": "ec343cc7a760e3ba328ff381409b91858ef77a4e6c09fa2f8c2de74401271563",
+      "media_type": "application/json",
+      "purpose": "Digest of a synthetic example artifact label, not an observed test output.",
+      "visibility": "public",
+      "redaction_state": "not_sensitive"
+    }
+  ],
+  "review_refs": [],
+  "deployment_authorization": "not_conveyed",
+  "maturity_promotion": "none"
+}
