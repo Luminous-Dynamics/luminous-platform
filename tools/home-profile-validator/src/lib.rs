@@ -160,7 +160,7 @@ pub fn validate_structural_document(schema: &Value, document: &Value) -> Result<
 
     let errors = validator
         .iter_errors(document)
-        .map(|error| format!("schema instance path '{}', schema path '{}': {}", error.instance_path.as_str(), error.schema_path.as_str(), error))
+        .map(|error| format!("schema instance path '{}', schema path '{}': {}", error.instance_path().as_str(), error.schema_path().as_str(), error))
         .collect::<Vec<_>>();
 
     if errors.is_empty() { Ok(()) } else { Err(errors) }
