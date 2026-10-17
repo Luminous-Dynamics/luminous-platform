@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/secure-boot-lifecycle-corpus-v1.schema.json",
+  "title": "Secure Boot lifecycle transition corpus v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "physical_target",
+    "profile_id",
+    "mutation_enabled",
+    "benchmark_goal",
+    "case_count",
+    "cases"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "secure-boot-lifecycle-corpus/1.0.0"
+    },
+    "status": {
+      "const": "synthetic_only"
+    },
+    "physical_target": {
+      "const": "none"
+    },
+    "profile_id": {
+      "const": "sb-lifecycle-v1-synthetic"
+    },
+    "mutation_enabled": {
+      "const": false
+    },
+    "benchmark_goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "case_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 25,
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "stage",
+          "observed_state",
+          "method",
+          "profile_id_present",
+          "version_pins_present",
+          "user_confirmed",
+          "exact_profile_qualified",
+          "recovery_path_verified",
+          "hardware_profile_matches",
+          "state_matches_approval",
+          "pki_bundle_matches",
+          "key_generation_enabled",
+          "configuration_prepared",
+          "signing_key_verified",
+          "boot_artifacts_verified",
+          "operator_reviewed_command",
+          "enrollment_attempted",
+          "secure_boot_user_mode",
+          "expected_boot_target_selected",
+          "post_boot_health_observed",
+          "recovery_retested",
+          "expected_decision"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "pattern": "^SBL-[0-9]{3}$"
+          },
+          "stage": {
+            "enum": [
+              "prepare",
+              "enroll",
+              "verify_post_reboot"
+            ]
+          },
+          "observed_state": {
+            "enum": [
+              "enabled",
+              "disabled",
+              "setup_mode",
+              "unknown"
+            ]
+          },
+          "method": {
+            "enum": [
+              "secure_boot",
+              "standard_boot",
+              "unresolved"
+            ]
+          },
+          "profile_id_present": {
+            "type": "boolean"
+          },
+          "version_pins_present": {
+            "type": "boolean"
+          },
+          "user_confirmed": {
+            "type": "boolean"
+          },
+          "exact_profile_qualified": {
+            "type": "boolean"
+          },
+          "recovery_path_verified": {
+            "type": "boolean"
+          },
+          "hardware_profile_matches": {
+            "type": "boolean"
+          },
+          "state_matches_approval": {
+            "type": "boolean"
+          },
+          "pki_bundle_matches": {
+            "type": "boolean"
+          },
+          "key_generation_enabled": {
+            "type": "boolean"
+          },
+          "configuration_prepared": {
+            "type": "boolean"
+          },
+          "signing_key_verified": {
+            "type": "boolean"
+          },
+          "boot_artifacts_verified": {
+            "type": "boolean"
+          },
+          "operator_reviewed_command": {
+            "type": "boolean"
+          },
+          "enrollment_attempted": {
+            "type": "boolean"
+          },
+          "secure_boot_user_mode": {
+            "type": "boolean"
+          },
+          "expected_boot_target_selected": {
+            "type": "boolean"
+          },
+          "post_boot_health_observed": {
+            "type": "boolean"
+          },
+          "recovery_retested": {
+            "type": "boolean"
+          },
+          "expected_decision": {
+            "enum": [
+              "blocked",
+              "indeterminate",
+              "standard_boot_allowed_unsecured",
+              "configuration_preparation_allowed",
+              "manual_enrollment_review_allowed",
+              "pending_post_reboot_verification",
+              "secure_boot_verified"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
