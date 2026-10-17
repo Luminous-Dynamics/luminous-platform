@@ -357,6 +357,28 @@
         "Raw interleaving outcomes and counterexamples",
         "Evidence class distinguishing synthetic from live transport"
       ]
+    },
+    {
+      "id": "ha-allowlist-projection",
+      "category": "privacy",
+      "metric": "nonallowlisted_entities_or_unapproved_fields_in_projection",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "items"
+      },
+      "workload": "Adversarial subscribe_entities payloads containing added, changed and removed entities; unexpected fields; context/friendly-name/secret markers; malformed state/metadata; duplicate IDs across groups; and valid profile-allowlisted updates.",
+      "method": "Project only entity IDs declared in the validated HA-0.1 profile, retaining only primary state, unit_of_measurement and device_class. Ignore nonallowlisted IDs without storing their payloads; reject malformed allowlisted data transactionally and reject duplicate/conflicting update groups. Verify that arbitrary attributes, context, and credentials never enter projected frames or cache.",
+      "sample_plan": "Every compact-stream projector test run and every native transport release candidate. Distinguish pure projector outcomes from transport and field evidence.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source SHA",
+        "Versioned compact-stream payload corpus digest",
+        "Exact HA-0.1 profile digest",
+        "Per-vector projected entity/field inventory",
+        "Mutation showing allowlist or metadata filtering disabled"
+      ]
     }
   ]
 }
