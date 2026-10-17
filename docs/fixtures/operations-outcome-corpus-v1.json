@@ -1,0 +1,441 @@
+{
+  "schema_version": "1.0.0",
+  "status": "synthetic_proposal",
+  "description": "Expected dispositions for synthetic cross-component operational outcome scenarios; not implementation or execution evidence.",
+  "source_contracts": [
+    "https://github.com/Luminous-Dynamics/luminous-platform/issues/5",
+    "https://github.com/Luminous-Dynamics/luminous-platform/issues/7",
+    "https://github.com/Luminous-Dynamics/luminous-platform/issues/10",
+    "https://github.com/Luminous-Dynamics/luminous-platform/issues/33",
+    "https://github.com/Luminous-Dynamics/luminous-platform/issues/42",
+    "https://github.com/Luminous-Dynamics/luminous-platform/issues/43",
+    "https://github.com/Luminous-Dynamics/luminous-platform/issues/44"
+  ],
+  "scenarios": [
+    {
+      "id": "authorized_change_verified",
+      "category": "positive",
+      "stage": "end_to_end",
+      "setup": [
+        "Approved immutable manifest and unexpired grant match target pre-state."
+      ],
+      "stimulus": "Execute in disposable sandbox, independently observe post-state.",
+      "expected": {
+        "disposition": "allow_and_verify",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": true,
+        "retry_policy": "same_operation_only",
+        "preserve_preexisting_state": false,
+        "forbidden_claims": [
+          "verified_before_post_state_observation"
+        ]
+      },
+      "metrics": [
+        "end_to_end_latency",
+        "receipt_retrieval_latency"
+      ]
+    },
+    {
+      "id": "duplicate_event_same_content",
+      "category": "idempotency",
+      "stage": "ingress",
+      "setup": [
+        "Event already committed for same authenticated source and event ID."
+      ],
+      "stimulus": "Redeliver identical semantic content, including concurrency.",
+      "expected": {
+        "disposition": "deduplicate",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": false,
+        "retry_policy": "same_operation_only",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "second_business_effect"
+        ]
+      },
+      "metrics": [
+        "duplicate_suppression_rate"
+      ]
+    },
+    {
+      "id": "event_identity_content_conflict",
+      "category": "negative",
+      "stage": "ingress",
+      "setup": [
+        "Committed event ID is reused with changed semantic content."
+      ],
+      "stimulus": "Submit changed event.",
+      "expected": {
+        "disposition": "conflict",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": false,
+        "retry_policy": "prohibited",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "silently_overwrite_original_event"
+        ]
+      },
+      "metrics": [
+        "conflict_detection_latency"
+      ]
+    },
+    {
+      "id": "idempotency_key_changed_manifest",
+      "category": "negative",
+      "stage": "admission",
+      "setup": [
+        "Scoped key is bound to immutable manifest commitment."
+      ],
+      "stimulus": "Reuse key with changed target or arguments.",
+      "expected": {
+        "disposition": "conflict",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": false,
+        "retry_policy": "prohibited",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "reinterpret_existing_key"
+        ]
+      },
+      "metrics": [
+        "conflict_detection_latency"
+      ]
+    },
+    {
+      "id": "cross_tenant_source_mismatch",
+      "category": "security",
+      "stage": "authorization",
+      "setup": [
+        "Authenticated connector tenant A payload attempts tenant B target."
+      ],
+      "stimulus": "Submit cross-tenant operation.",
+      "expected": {
+        "disposition": "deny",
+        "max_primary_effects": 0,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": false,
+        "retry_policy": "new_authorization_required",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "cross_tenant_read",
+          "cross_tenant_mutation"
+        ]
+      },
+      "metrics": [
+        "authorization_latency"
+      ]
+    },
+    {
+      "id": "target_changes_after_approval",
+      "category": "security",
+      "stage": "pre_execution",
+      "setup": [
+        "Target or manifest changes after exact approval."
+      ],
+      "stimulus": "Attempt execution using prior approval.",
+      "expected": {
+        "disposition": "deny",
+        "max_primary_effects": 0,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": true,
+        "retry_policy": "new_authorization_required",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "reuse_stale_approval"
+        ]
+      },
+      "metrics": [
+        "pre_dispatch_rejection_latency"
+      ]
+    },
+    {
+      "id": "stale_precondition_requires_replan",
+      "category": "negative",
+      "stage": "pre_execution",
+      "setup": [
+        "Target revision changes after planning."
+      ],
+      "stimulus": "Attempt execution without refreshed plan and authorization.",
+      "expected": {
+        "disposition": "replan_required",
+        "max_primary_effects": 0,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": true,
+        "retry_policy": "new_authorization_required",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "apply_against_stale_prestate"
+        ]
+      },
+      "metrics": [
+        "stale_state_detection_latency"
+      ]
+    },
+    {
+      "id": "expired_or_wrong_audience_grant",
+      "category": "security",
+      "stage": "authorization",
+      "setup": [
+        "Grant expired or executor/audience/target/scope mismatch."
+      ],
+      "stimulus": "Submit with invalid grant.",
+      "expected": {
+        "disposition": "deny",
+        "max_primary_effects": 0,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": false,
+        "retry_policy": "new_authorization_required",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "mutation_under_invalid_grant"
+        ]
+      },
+      "metrics": [
+        "authorization_latency"
+      ]
+    },
+    {
+      "id": "dispatch_disconnect_unknown_outcome",
+      "category": "fault_injection",
+      "stage": "dispatch",
+      "setup": [
+        "Effect may have dispatched; acknowledgment is lost."
+      ],
+      "stimulus": "Drop transport after dispatch, restart and attempt retry.",
+      "expected": {
+        "disposition": "reconcile_required",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": true,
+        "retry_policy": "only_after_reconcile",
+        "preserve_preexisting_state": false,
+        "forbidden_claims": [
+          "assume_no_effect_from_timeout",
+          "blind_non_idempotent_retry"
+        ]
+      },
+      "metrics": [
+        "time_to_reconcile"
+      ]
+    },
+    {
+      "id": "crash_before_transaction_commit",
+      "category": "fault_injection",
+      "stage": "durable_commit",
+      "setup": [
+        "Business state, inbox and outbox intent are atomic; process may stop pre-commit."
+      ],
+      "stimulus": "Crash before commit, restart and retry.",
+      "expected": {
+        "disposition": "safe_retry_after_no_commit",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": false,
+        "retry_policy": "safe_after_no_commit_evidence",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "partial_business_inbox_outbox_commit"
+        ]
+      },
+      "metrics": [
+        "restart_recovery_latency"
+      ]
+    },
+    {
+      "id": "commit_before_ack_loss",
+      "category": "fault_injection",
+      "stage": "durable_commit",
+      "setup": [
+        "Atomic commit completes, then acknowledgment is lost."
+      ],
+      "stimulus": "Restart and redeliver same event.",
+      "expected": {
+        "disposition": "replay_existing",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": false,
+        "retry_policy": "same_operation_only",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "second_business_effect",
+          "discard_committed_outbox"
+        ]
+      },
+      "metrics": [
+        "replay_latency"
+      ]
+    },
+    {
+      "id": "exit_zero_postcondition_mismatch",
+      "category": "negative",
+      "stage": "verification",
+      "setup": [
+        "Command exits zero but observed post-state violates a required condition."
+      ],
+      "stimulus": "Evaluate the operation receipt.",
+      "expected": {
+        "disposition": "failed_not_verified",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": true,
+        "retry_policy": "only_after_reconcile",
+        "preserve_preexisting_state": false,
+        "forbidden_claims": [
+          "verified",
+          "success"
+        ]
+      },
+      "metrics": [
+        "false_success_count"
+      ]
+    },
+    {
+      "id": "receipt_observation_missing_or_stale",
+      "category": "negative",
+      "stage": "verification",
+      "setup": [
+        "Evidence is absent, stale, wrong-target/scope or unbound to operation."
+      ],
+      "stimulus": "Run independent receipt verifier.",
+      "expected": {
+        "disposition": "blocked_not_verified",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": true,
+        "retry_policy": "only_after_reconcile",
+        "preserve_preexisting_state": false,
+        "forbidden_claims": [
+          "verified",
+          "observation_inferred_from_exit_code"
+        ]
+      },
+      "metrics": [
+        "false_success_count"
+      ]
+    },
+    {
+      "id": "primary_failure_recovery_verified",
+      "category": "recovery",
+      "stage": "recovery",
+      "setup": [
+        "Primary operation failed after possible partial effect; recovery has separate authority."
+      ],
+      "stimulus": "Run recovery then independently observe postconditions.",
+      "expected": {
+        "disposition": "recovered_with_primary_failure",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 1,
+        "fresh_observation_required": true,
+        "retry_policy": "only_after_reconcile",
+        "preserve_preexisting_state": false,
+        "forbidden_claims": [
+          "primary_operation_success",
+          "recovery_assumed_from_command_exit"
+        ]
+      },
+      "metrics": [
+        "time_to_safe_state"
+      ]
+    },
+    {
+      "id": "recovery_fails_or_unknown",
+      "category": "recovery",
+      "stage": "recovery",
+      "setup": [
+        "Recovery fails or its postcondition cannot be observed."
+      ],
+      "stimulus": "Inject recovery failure and inspect outcome.",
+      "expected": {
+        "disposition": "indeterminate",
+        "max_primary_effects": 1,
+        "max_recovery_attempts": 1,
+        "fresh_observation_required": true,
+        "retry_policy": "only_after_reconcile",
+        "preserve_preexisting_state": false,
+        "forbidden_claims": [
+          "rollback_verified",
+          "safe_state_assumed",
+          "primary_operation_success"
+        ]
+      },
+      "metrics": [
+        "indeterminate_duration"
+      ]
+    },
+    {
+      "id": "stale_external_revision",
+      "category": "negative",
+      "stage": "reconciliation",
+      "setup": [
+        "Local case is newer than late or ambiguous external snapshot."
+      ],
+      "stimulus": "Ingest snapshot and compare local state.",
+      "expected": {
+        "disposition": "quarantine_no_regression",
+        "max_primary_effects": 0,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": false,
+        "retry_policy": "not_applicable",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "silent_state_rollback",
+          "guessed_resource_mapping"
+        ]
+      },
+      "metrics": [
+        "stale_revision_detection_latency"
+      ]
+    },
+    {
+      "id": "secret_like_operation_input",
+      "category": "security",
+      "stage": "admission",
+      "setup": [
+        "Synthetic manifest includes credential-shaped value where reference is required."
+      ],
+      "stimulus": "Submit and inspect storage and diagnostics.",
+      "expected": {
+        "disposition": "reject_or_redact",
+        "max_primary_effects": 0,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": false,
+        "retry_policy": "new_authorization_required",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "secret_persisted_in_receipt_or_log",
+          "secret_echoed_to_operator"
+        ]
+      },
+      "metrics": [
+        "secret_leak_count"
+      ]
+    },
+    {
+      "id": "missing_capability_declaration",
+      "category": "negative",
+      "stage": "adapter_conformance",
+      "setup": [
+        "Adapter omits catalog operation rather than planned/unsupported."
+      ],
+      "stimulus": "Run closed-world conformance evaluation.",
+      "expected": {
+        "disposition": "deny",
+        "max_primary_effects": 0,
+        "max_recovery_attempts": 0,
+        "fresh_observation_required": false,
+        "retry_policy": "not_applicable",
+        "preserve_preexisting_state": true,
+        "forbidden_claims": [
+          "omission_interpreted_as_supported"
+        ]
+      },
+      "metrics": [
+        "false_capability_count"
+      ]
+    }
+  ]
+}
