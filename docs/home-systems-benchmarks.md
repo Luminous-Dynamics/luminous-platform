@@ -23,6 +23,8 @@ The machine-readable catalogue is [`targets-v1.json`](../benchmarks/home-systems
 | Exhaustive gate states | Enumerate 387,072 deterministic combinations of freshness, guards, bindings, journal identity/state, risk and attempt budget; zero invariant violations | Yes |
 | Temporal event histories | Enumerate all 1,000,000 six-event histories over ten event types; zero invariant violations in the declared state model | Yes, bounded scope only |
 | Cross-repo conformance | Zero decision divergences across shared vectors in the actual Hearth 004E runtime and Luminous adapter | Yes; blocked until runtime harness |
+| HA subscription correlation | Zero accepted events with a mismatched subscription ID or stale session epoch | Yes; blocked until runtime harness |
+| HA snapshot-to-stream continuity | Zero lost or out-of-order events across subscription, snapshot, buffered replay, and reconnect interleavings | Yes; blocked until native transport |
 | Ambiguous recovery | Zero new dispatches while prior outcome is `Dispatching`, `ProviderAccepted` or `OutcomeUnknown`; inject faults at six defined boundaries | Yes |
 | Local gate latency | p95 ≤ 10 ms and separately report p50/p99 on a Raspberry Pi 5 and low-power x86-64 host at 100 decisions/s | Measurement target, not current SLO |
 | Durable journal | p99 ≤ 25 ms with durability sync enabled on a named SSD-backed profile | Measurement target; never relax durability to hit it |
@@ -40,6 +42,7 @@ The machine-readable catalogue is [`targets-v1.json`](../benchmarks/home-systems
 - The initial Rust gate-state sweep is exhaustive over its declared Cartesian product, not over all event histories. Preserve every counterexample as a regression vector; follow with sequence generation and model checking.
 - Use mutation testing to prove a check is exercised: intentionally disable each critical guard and require a specific regression test to fail. Include a mutant that permits an empty/whitespace request fingerprint and require the gate-level regression test to fail; schema validation is not a substitute for checking a privileged boundary. A test suite that remains green under a revoked-authority mutant is not acceptable.
 - Run one workload on the pure Rust reference model and separately on the integrated edge runtime. Do not present reference-function speed as end-to-end household command latency.
+- Home Assistant exposes `get_states` and `subscribe_events` as separate WebSocket messages. Subscribe first, bind events to the exact subscription ID, buffer while the snapshot is in flight, apply the snapshot, then replay buffered events in receive order before marking the stream live. Benchmark event loss/order and stale-session rejection separately; synthetic protocol-state results are not live-transport evidence.
 - Report availability separately for manual controls, local automation, remote control, cognition and cloud-dependent features. A single “uptime” metric hides degradation that matters to owners.
 - Physical-stop response time, force/torque limits, electrical safety, thermal cutoffs and hazardous-state bounds require a hazard analysis and named hardware profile. They should not receive a universal numeric threshold copied from this generic RFC.
 
