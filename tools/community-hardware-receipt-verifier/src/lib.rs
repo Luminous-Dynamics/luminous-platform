@@ -606,7 +606,7 @@ mod tests {
     fn synthetic_incomplete_fixture_validates_without_promoting_hardware() {
         let report = verify_bytes(SCHEMA, FIXTURE, None);
         assert!(report.valid, "unexpected diagnostics: {report:?}");
-        assert_eq!(report.schema_meta_valid, true);
+        assert!(report.schema_meta_valid);
         assert_eq!(report.artifact_verification.mode, "not_requested");
     }
 
