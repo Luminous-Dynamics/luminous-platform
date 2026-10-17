@@ -549,8 +549,8 @@ fn reject_remote_references(value: &Value, path: &str, errors: &mut Vec<Diagnost
     }
 }
 
-fn array_at<'a>(value: &'a Value, pointer: &str) -> Option<&'a Vec<Value>> {
-    value.pointer(pointer).and_then(Value::as_array)
+fn array_at<'a>(value: &'a Value, pointer: &str) -> Option<&'a [Value]> {
+    value.pointer(pointer).and_then(Value::as_array).map(Vec::as_slice)
 }
 
 fn array_at_value(value: &Value, key: &str) -> &[Value] {
