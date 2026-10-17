@@ -265,7 +265,7 @@ The synthetic envelope models ten independently classified predicates:
 2. With no explicit violation, any unknown predicate produces `indeterminate`; it must never be silently coerced into success.
 3. `accepted` is reachable only when all ten predicates have their positive value.
 
-The checked-in synthetic fixture has 32 controls: 1 all-positive control, 20 rejected controls, and 11 indeterminate controls. A strict JSON Schema forbids missing fields, unsupported states, and unreviewed properties. The Rust evaluator is compared against a separately written standard-library Python oracle, including 10,000 deterministic assignments spanning all ten dimensions.
+The checked-in synthetic fixture has 32 controls: 1 all-positive control, 20 rejected controls, and 11 indeterminate controls. A strict JSON Schema forbids missing fields, unsupported states, and unreviewed properties. The Rust evaluator is compared against a separately written standard-library Python oracle. In addition to a 10,000-assignment deterministic sample, both implementations now exhaust the finite 3^10 = 59,049 state space: 1 tuple must be accepted, 58,025 rejected, and 1,023 indeterminate. This proves the decision-table behavior over the modeled predicates, not the truth of upstream cryptographic classifications.
 
 ### 11.2 Benchmark gates
 
@@ -278,6 +278,9 @@ The checked-in synthetic fixture has 32 controls: 1 all-positive control, 20 rej
 | Rust fixture/oracle expected-decision disagreements | 0 |
 | Independent-oracle fixture disagreements | 0 |
 | Distinct assignments from 10,000 deterministic trials | >9,000 |
+| Exhaustive evidence-state tuples evaluated | 59,049 / 59,049 |
+| Exhaustive accepted / rejected / indeterminate counts | 1 / 58,025 / 1,023 |
+| Exhaustive decision-table invariant violations | 0 |
 | Physical device operations in this corpus | 0 |
 | Firmware mutations in this corpus | 0 |
 
