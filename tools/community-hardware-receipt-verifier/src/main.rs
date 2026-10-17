@@ -2,7 +2,7 @@ use community_hardware_receipt_verifier::verify_bytes;
 use std::env;
 use std::fs;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 const MAX_SCHEMA_BYTES: u64 = 4 * 1024 * 1024;
@@ -60,7 +60,7 @@ fn run() -> Result<bool, String> {
     Ok(valid)
 }
 
-fn read_bounded(path: &PathBuf, limit: u64, label: &str) -> Result<Vec<u8>, String> {
+fn read_bounded(path: &Path, limit: u64, label: &str) -> Result<Vec<u8>, String> {
     let metadata = fs::symlink_metadata(path)
         .map_err(|_| format!("Cannot stat {label} file."))?;
     if metadata.file_type().is_symlink() || !metadata.is_file() {
