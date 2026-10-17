@@ -401,6 +401,72 @@
         "Assertion that metadata-only updates emit no new frame",
         "Raw counterexample on mismatch"
       ]
+    },
+    {
+      "id": "ha-stale-positive-invalidation",
+      "category": "safety",
+      "metric": "stale_positive_observations_after_invalidation",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "observations"
+      },
+      "workload": "Home Assistant lifecycle events: unknown, unavailable, invalid current sample (codec/range/metadata drift), entity removal, and allowlisted entity omitted from a reconnect snapshot.",
+      "method": "Convert each current projected sample into one explicit upsert or invalidation per entity. Require the consumer to clear the prior positive observation for every invalidation, with one atomic batch application. The pure mapper's output is not itself proof that a downstream store applied it.",
+      "sample_plan": "Every candidate that changes provider observation mapping or lifecycle semantics; runtime promotion must include a real store adapter and exact run evidence.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source and consumer build SHAs",
+        "Versioned lifecycle-vector corpus digest",
+        "Before/after per-entity store snapshots",
+        "Invalidation reason and version per entity",
+        "Proof that the batch was applied atomically"
+      ]
+    },
+    {
+      "id": "ha-observation-stale-replay",
+      "category": "safety",
+      "metric": "equal_or_older_observation_versions_applied",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "updates"
+      },
+      "workload": "Deliver delayed upserts from an earlier connection generation after a newer invalidation, duplicate event batches, equal sequence IDs, and out-of-order deltas across reconnects and process restarts.",
+      "method": "Version every lifecycle batch by durable monotonic connection generation and event sequence. Persist each entity's last-applied version atomically with its upsert/invalidation; accept only a strictly newer version. Equal means replay; older means stale. Verify generation monotonicity across restart rather than resetting it at process start.",
+      "sample_plan": "Every candidate for lifecycle persistence/versioning. Runtime promotion requires the actual consumer/store implementation; a pure comparison helper alone is insufficient.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source and database adapter SHAs",
+        "Lifecycle corpus digest",
+        "Generation persistence/restart trace",
+        "Per-entity version before/after transaction",
+        "Delayed-upsert-after-invalidation negative control"
+      ]
+    },
+    {
+      "id": "ha-projector-delta-cache-scaling",
+      "category": "performance",
+      "metric": "single_entity_delta_p95_growth_ratio",
+      "threshold": {
+        "operator": "at_most",
+        "value": 3,
+        "unit": "ratio"
+      },
+      "workload": "Replay the same one-entity compact delta on the same host/build against projector caches with 16 and 1,024 admitted entities; report p50/p95/p99, allocation count, and retained cache size.",
+      "method": "Measure projection-only and end-to-end decode/project/map separately. Compute p95(1,024 entities) / p95(16 entities); require a ratio <= 3 while retaining transactional all-or-nothing behavior. Include multi-entity malformed negative controls to prove optimization does not weaken atomicity.",
+      "sample_plan": "Each performance candidate for the compact projector; use at least 5 independent runs and 100 timed samples after warm-up per cache size.",
+      "release_gate": false,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source SHA and compiler/build flags",
+        "Host CPU/memory/OS profile",
+        "Input event corpus digest",
+        "Raw timing samples and percentiles",
+        "Allocation counts and transactional negative-control result"
+      ]
     }
   ]
 }
