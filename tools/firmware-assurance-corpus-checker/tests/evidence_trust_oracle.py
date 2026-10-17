@@ -98,6 +98,47 @@ def audit(path: Path) -> dict[str, object]:
         if result == "accepted" and (has_bad or has_unknown):
             violations += 1
 
+    # Exhaust every combination in the finite 3^10 policy state space.
+    # This is a complete enumeration of the synthetic decision table, not
+    # random sampling and not a cryptographic-verifier test.
+    exhaustive_combinations = 3 ** len(FIELDS)
+    exhaustive_counts: Counter[str] = Counter()
+    exhaustive_invariant_violations = 0
+    for encoded in range(exhaustive_combinations):
+        cursor = encoded
+        assignment: dict[str, str] = {}
+        for field, states in FIELDS.items():
+            assignment[field] = states[cursor % len(states)]
+            cursor //= len(states)
+        result = decide(assignment)
+        has_bad = any(assignment[field] == NEGATIVE[field] for field in FIELDS)
+        has_unknown = any(assignment[field] == UNKNOWN for field in FIELDS)
+        expected_result = (
+            "rejected" if has_bad
+            else "indeterminate" if has_unknown
+            else "accepted"
+        )
+        if result != expected_result:
+            exhaustive_invariant_violations += 1
+        if result == "accepted" and (has_bad or has_unknown):
+            exhaustive_invariant_violations += 1
+        exhaustive_counts[result] += 1
+
+    expected_exhaustive_counts = {
+        "accepted": 1,
+        "rejected": 58_025,
+        "indeterminate": 1_023,
+    }
+    if dict(exhaustive_counts) != expected_exhaustive_counts:
+        errors.append(
+            "exhaustive decision table counts differ from the expected truth table: "
+            f"{dict(exhaustive_counts)}"
+        )
+    if exhaustive_invariant_violations:
+        errors.append(
+            f"{exhaustive_invariant_violations} exhaustive policy invariant violations"
+        )
+
     if counts["accepted"] < 1 or counts["rejected"] < 10 or counts["indeterminate"] < 10:
         errors.append("baseline corpus lacks accepted/negative/indeterminate controls")
     if violations:
@@ -111,6 +152,9 @@ def audit(path: Path) -> dict[str, object]:
         "mutation_trials": trials,
         "distinct_assignments": len(distinct),
         "invariant_violations": violations,
+        "exhaustive_combinations": exhaustive_combinations,
+        "exhaustive_decision_counts": dict(sorted(exhaustive_counts.items())),
+        "exhaustive_invariant_violations": exhaustive_invariant_violations,
         "physical_device_operations": 0,
         "firmware_mutations": 0,
         "cryptographic_verification_performed": False,
