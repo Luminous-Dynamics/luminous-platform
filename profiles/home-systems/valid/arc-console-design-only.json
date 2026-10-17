@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": 1,
+  "profile_id": "arc-console-design-only",
+  "profile_version": "0.1.0",
+  "product_class": "arc_console",
+  "readiness": "design_only",
+  "declared_scope": [
+    "Controller-first gaming UI",
+    "Per-title compatibility evidence",
+    "Replaceable commodity hardware"
+  ],
+  "subject": {
+    "kind": "design_profile",
+    "id": "arc-console-design-only",
+    "revision": "0.1.0",
+    "sha256": null
+  },
+  "platform_targets": [
+    {
+      "architecture": "x86_64",
+      "host_os": "NixOS"
+    }
+  ],
+  "capabilities": [
+    {
+      "capability_id": "linux_game_runtime",
+      "state": "designed",
+      "evidence_refs": [],
+      "limitations": [
+        "Native Linux and compatibility-layer results must be reported per exact profile."
+      ]
+    },
+    {
+      "capability_id": "game_compatibility_corpus",
+      "state": "designed",
+      "evidence_refs": [],
+      "limitations": [
+        "No titles have been tested by this profile."
+      ]
+    },
+    {
+      "capability_id": "controller_suspend_audio",
+      "state": "designed",
+      "evidence_refs": [],
+      "limitations": [
+        "Input and lifecycle behavior remain unverified."
+      ]
+    }
+  ],
+  "openness": {
+    "hardware": {
+      "target_level": "O2",
+      "current_level": "O0",
+      "limitations": [
+        "Target only; no production CAD, complete BOM, or prototype is established."
+      ]
+    },
+    "firmware": {
+      "target_level": "O2",
+      "current_level": "O0",
+      "limitations": [
+        "Target only; firmware inventory and boot/update implementation are not yet evidenced."
+      ]
+    },
+    "software": {
+      "target_level": "O4",
+      "current_level": "O0",
+      "limitations": [
+        "Target only; no integrated product image or reproducible product build is qualified."
+      ]
+    },
+    "documentation": {
+      "target_level": "O4",
+      "current_level": "O0",
+      "limitations": [
+        "Architecture is published; service manuals and per-component licensing are not yet complete."
+      ]
+    }
+  },
+  "hardware": {
+    "sku_selected": false,
+    "bom_frozen": false,
+    "prototype_exists": false,
+    "measured_benchmarks": false
+  },
+  "network_security": {
+    "untrusted_workload_egress_default": "deny",
+    "home_lan_access_for_untrusted_workloads": "deny",
+    "remote_management_default": "disabled"
+  },
+  "owner_controls": {
+    "compute_contribution_requires_opt_in": true,
+    "local_disable_available": true,
+    "remote_access_requires_explicit_enablement": true,
+    "data_export_available": true,
+    "secrets_exposed_to_model_context": false
+  },
+  "authority": {
+    "model_can_dispatch_physical_effects": false,
+    "host_boot_requires_optional_cognition": false,
+    "operator_override_available": true,
+    "physical_stop_required": false,
+    "physical_stop_verified": false
+  },
+  "recovery": {
+    "manual_recovery_documented": false,
+    "backup_restore_tested": false
+  },
+  "qualification": {
+    "records": []
+  },
+  "claim_ceiling": [
+    "Design-only profile; not a finished product or qualified implementation.",
+    "No hardware, firmware, cost, energy, reliability, privacy, or safety performance is established.",
+    "Schema validity does not independently verify receipts, source code, hardware, or real-world behavior."
+  ]
+}

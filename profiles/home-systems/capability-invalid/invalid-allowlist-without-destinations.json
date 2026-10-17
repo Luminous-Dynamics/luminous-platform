@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": 1,
+  "contract_id": "invalid.unbounded-egress",
+  "contract_version": "0.1.0",
+  "readiness": "design_only",
+  "subject": {
+    "kind": "service",
+    "id": "hearth-core-local-status",
+    "version": "0.1.0",
+    "sha256": null
+  },
+  "purpose": "Expose local core-service health to the owner without requiring a remote account or cognitive service.",
+  "owner_control": {
+    "activation_mode": "essential_system_component",
+    "owner_can_revoke": true,
+    "revocation_effect": "remove_from_deployment",
+    "removal_procedure": "Remove the module from the declarative host profile and verify remaining local services."
+  },
+  "permissions": {
+    "host_admin_access": false,
+    "filesystem_read_paths": [
+      "/etc/hostname"
+    ],
+    "filesystem_write_paths": [
+      "/var/lib/hearth-core-local-status"
+    ],
+    "host_sockets": [],
+    "secret_access": "none",
+    "device_access": [],
+    "physical_effects": "none"
+  },
+  "data": {
+    "input_classes": [
+      "local_configuration"
+    ],
+    "output_classes": [
+      "operational_metadata"
+    ],
+    "retention": "owner_controlled",
+    "external_transfer_policy": "never",
+    "deletion_behavior": "Delete local status history with a documented command; preserve only owner-requested export."
+  },
+  "network": {
+    "egress_policy": "allowlist",
+    "allowed_destinations": [],
+    "ingress_policy": "none",
+    "requires_public_dns": false
+  },
+  "resources": {
+    "execution_mode": "daemon",
+    "cpu_cores": 0.25,
+    "memory_mib": 128,
+    "storage_mib": 128,
+    "network_egress_mib_per_hour": 0,
+    "max_runtime_seconds": null
+  },
+  "failure": {
+    "startup_failure_behavior": "continue_core_without_this",
+    "timeout_behavior": "fail_closed",
+    "maximum_retries": 3,
+    "cancellation_supported": true,
+    "partial_output_policy": "discard",
+    "unknown_outcome": "unknown_needs_reconciliation"
+  },
+  "authority": {
+    "mode": "observation_only",
+    "owner_authorization_required": false,
+    "independent_postcondition_observation": false,
+    "physical_stop_required": false,
+    "risk_class": "none",
+    "reversible": true
+  },
+  "evidence": {
+    "current_evidence_class": "design_only",
+    "minimum_evidence_class": "vm_or_simulated",
+    "required_test_ids": [
+      "hearth.core.offline",
+      "hearth.core.inference-failure",
+      "hearth.core.restore"
+    ],
+    "maximum_evidence_age_days": 180,
+    "public_output_policy": "redacted_metadata_only",
+    "claim_ceiling": "Design-only contract fixture. No implementation, offline operation, service isolation, recovery, or hardware behaviour has been demonstrated."
+  }
+}

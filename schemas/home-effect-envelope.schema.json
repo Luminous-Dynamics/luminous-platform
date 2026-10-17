@@ -1,0 +1,522 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/home-effect-envelope.schema.json",
+  "title": "Mycelix Hearth Home Effect Request Envelope",
+  "description": "Non-authoritative request envelope for home observations, proposals and future narrowly scoped effect requests. It is not a household grant, adapter admission, dispatch token, runtime policy, physical-effect proof, or qualification receipt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "envelope_id",
+    "home_contract",
+    "household_context",
+    "plan_binding",
+    "provider_binding",
+    "request",
+    "validity",
+    "authority_boundary",
+    "outcome_policy",
+    "privacy"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://json-schema.org/draft/2020-12/schema"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "envelope_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[a-z0-9][a-z0-9.-]*$"
+    },
+    "home_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_id",
+        "contract_version",
+        "readiness",
+        "subject_sha256"
+      ],
+      "properties": {
+        "contract_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "pattern": "^[a-z][a-z0-9.-]*$"
+        },
+        "contract_version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$"
+        },
+        "readiness": {
+          "enum": [
+            "design_only",
+            "implemented_unqualified"
+          ]
+        },
+        "subject_sha256": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          ]
+        }
+      }
+    },
+    "household_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hearth_ref",
+        "requester_ref"
+      ],
+      "properties": {
+        "hearth_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Opaque local reference to Hearth context; do not export household names or raw identity material."
+        },
+        "requester_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Opaque local requester reference; Hearth must resolve current authority independently."
+        }
+      }
+    },
+    "plan_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plan_id",
+        "step_id",
+        "role",
+        "capability",
+        "operation"
+      ],
+      "properties": {
+        "plan_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "step_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "role": {
+          "enum": [
+            "primary",
+            "compensation"
+          ]
+        },
+        "capability": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[a-z][a-z0-9._-]*$"
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[a-z][a-z0-9._-]*$"
+        }
+      }
+    },
+    "provider_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_family",
+        "provider_instance_ref",
+        "adapter_id",
+        "implementation_ref",
+        "implementation_sha256",
+        "profile_ref",
+        "profile_sha256",
+        "rule_id"
+      ],
+      "properties": {
+        "provider_family": {
+          "enum": [
+            "home_assistant",
+            "matter",
+            "mqtt",
+            "ocpp",
+            "openadr",
+            "other"
+          ]
+        },
+        "provider_instance_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Opaque local-only provider reference."
+        },
+        "adapter_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "implementation_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "implementation_sha256": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          ]
+        },
+        "profile_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "profile_sha256": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          ]
+        },
+        "rule_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        }
+      }
+    },
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "target_ref",
+        "arguments_sha256",
+        "risk_class"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "observation_only",
+            "proposal_only",
+            "effect_request"
+          ]
+        },
+        "target_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Opaque local target. Do not export entity names, device identifiers or household topology."
+        },
+        "arguments_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Digest of locally held typed arguments; never embed raw command arguments or secrets."
+        },
+        "risk_class": {
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        }
+      }
+    },
+    "validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "idempotency_key",
+        "expires_at",
+        "max_attempts",
+        "unknown_outcome"
+      ],
+      "properties": {
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "unknown_outcome": {
+          "const": "reconcile_without_redispatch"
+        }
+      }
+    },
+    "authority_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dispatch_route",
+        "this_envelope_grants_authority",
+        "current_household_authority_required",
+        "exact_adapter_admission_required",
+        "current_admission_before_each_attempt",
+        "exclusive_physical_lease_required",
+        "durable_journal_required"
+      ],
+      "properties": {
+        "dispatch_route": {
+          "const": "mycelix_hearth_edge_004e"
+        },
+        "this_envelope_grants_authority": {
+          "const": false
+        },
+        "current_household_authority_required": {
+          "const": true
+        },
+        "exact_adapter_admission_required": {
+          "const": true
+        },
+        "current_admission_before_each_attempt": {
+          "const": true
+        },
+        "exclusive_physical_lease_required": {
+          "const": true
+        },
+        "durable_journal_required": {
+          "const": true
+        }
+      }
+    },
+    "outcome_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "service_response_is_physical_proof",
+        "provider_state_is_physical_proof",
+        "physical_success_requires",
+        "ambiguous_result"
+      ],
+      "properties": {
+        "service_response_is_physical_proof": {
+          "const": false
+        },
+        "provider_state_is_physical_proof": {
+          "const": false
+        },
+        "physical_success_requires": {
+          "const": "independent_postcondition_reconciliation"
+        },
+        "ambiguous_result": {
+          "const": "reconcile_without_redispatch"
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "payload_mode",
+        "public_evidence",
+        "include_credentials",
+        "include_raw_telemetry",
+        "include_device_names"
+      ],
+      "properties": {
+        "payload_mode": {
+          "const": "local_only"
+        },
+        "public_evidence": {
+          "const": "redacted_digest_only"
+        },
+        "include_credentials": {
+          "const": false
+        },
+        "include_raw_telemetry": {
+          "const": false
+        },
+        "include_device_names": {
+          "const": false
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "home_contract"
+        ],
+        "properties": {
+          "home_contract": {
+            "required": [
+              "readiness"
+            ],
+            "properties": {
+              "readiness": {
+                "const": "design_only"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "home_contract": {
+            "properties": {
+              "subject_sha256": {
+                "type": "null"
+              }
+            }
+          },
+          "provider_binding": {
+            "properties": {
+              "implementation_sha256": {
+                "type": "null"
+              },
+              "profile_sha256": {
+                "type": "null"
+              }
+            }
+          },
+          "request": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "observation_only",
+                  "proposal_only"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "home_contract"
+        ],
+        "properties": {
+          "home_contract": {
+            "required": [
+              "readiness"
+            ],
+            "properties": {
+              "readiness": {
+                "const": "implemented_unqualified"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "home_contract": {
+            "properties": {
+              "subject_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "provider_binding": {
+            "properties": {
+              "implementation_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "profile_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "request"
+        ],
+        "properties": {
+          "request": {
+            "required": [
+              "mode"
+            ],
+            "properties": {
+              "mode": {
+                "const": "effect_request"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "home_contract": {
+            "required": [
+              "readiness"
+            ],
+            "properties": {
+              "readiness": {
+                "const": "implemented_unqualified"
+              }
+            }
+          },
+          "request": {
+            "properties": {
+              "risk_class": {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ]
+              }
+            }
+          },
+          "provider_binding": {
+            "properties": {
+              "implementation_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "profile_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,472 @@
+{
+  "schema_version": 1,
+  "status": "targets_not_results",
+  "claim_ceiling": "This file defines proposed acceptance targets. It contains no measured benchmark results and does not qualify any runtime, device or physical safety property.",
+  "benchmarks": [
+    {
+      "id": "reference-corpus-execution",
+      "category": "conformance",
+      "metric": "decision_snapshots_evaluated",
+      "threshold": {
+        "operator": "at_least",
+        "value": 11,
+        "unit": "snapshots"
+      },
+      "workload": "The committed home-effect conformance corpus v1.",
+      "method": "Load the schema and corpus, reject malformed/duplicate trace IDs and step IDs, evaluate every snapshot against the reference model, and count evaluated snapshots.",
+      "sample_plan": "Every test invocation; record corpus version and source SHA.",
+      "release_gate": true,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Exact-head Rust test output",
+        "Source commit SHA",
+        "Corpus version"
+      ]
+    },
+    {
+      "id": "reference-model-decision-mismatches",
+      "category": "safety",
+      "metric": "unexpected_decisions",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "decisions"
+      },
+      "workload": "Every committed adversarial vector plus all newly added vectors.",
+      "method": "Compare the full typed decision, including denial reason, not only allow/deny.",
+      "sample_plan": "Every test invocation, including the positive control.",
+      "release_gate": true,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Exact-head Rust test output",
+        "Versioned corpus digest"
+      ]
+    },
+    {
+      "id": "unauthorized-dispatch-mutants",
+      "category": "safety",
+      "metric": "surviving_critical_mutants",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "mutants"
+      },
+      "workload": "At least the critical mutants enumerated in this plan: ignore revocation, accept stale adapter admission, skip lease/journal/postcondition guard, bypass role binding, allow changed request fingerprints, allow empty/whitespace request fingerprints, and redispatch ambiguous outcomes.",
+      "method": "Introduce one narrowly scoped fault in the relevant enforcement predicate at a time; verify a named test kills each mutant. A mutant that cannot be exercised is not counted as killed.",
+      "sample_plan": "Every release candidate and any change to effect authorization/retry/reconciliation code.",
+      "release_gate": true,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Mutation inventory",
+        "Per-mutant killed/survived report",
+        "Exact source SHA"
+      ]
+    },
+    {
+      "id": "exhaustive-gate-state-combinations",
+      "category": "safety",
+      "metric": "gate_input_combinations_checked_without_invariant_violation",
+      "threshold": {
+        "operator": "at_least",
+        "value": 387072,
+        "unit": "input_combinations"
+      },
+      "workload": "The Cartesian product of six gate booleans, four risk classes, seven journal states, three binding cases, four journal identity cases, two expiry states, three attempt limits and three attempt counts.",
+      "method": "Enumerate 64 × 4 × 7 × 3 × 4 × 2 × 3 × 3 = 387072 deterministic input combinations. For every AllowDispatch outcome, assert current authority/admission, exact binding, lease, durable journal, observer, risk stop, freshness, retry budget and consistent journal state. For unresolved or terminal journal states, assert that AllowDispatch is impossible.",
+      "sample_plan": "Run on every Rust test invocation. Extend with temporal sequence generation and a finite-state model checker before making claims about arbitrary event histories.",
+      "release_gate": true,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Exact source commit SHA",
+        "Declared Cartesian dimensions and evaluated combination count",
+        "Invariant assertion result",
+        "Counterexample inputs retained as regression fixtures if any"
+      ]
+    },
+    {
+      "id": "cross-implementation-divergence",
+      "category": "interoperability",
+      "metric": "reference_runtime_decision_divergences",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "decisions"
+      },
+      "workload": "Every supported corpus vector executed by both Luminous and the actual Mycelix Hearth 004E edge path.",
+      "method": "Compare decisions keyed by corpus version, trace ID and step ID; unsupported and unevaluable vectors fail closed and cannot count as passes.",
+      "sample_plan": "Required when either repository changes authority, admission, physical executor, journal/recovery, compensation, provider dispatch or outcome reconciliation.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Both exact source SHAs",
+        "Corpus digest",
+        "Per-step outputs from both implementations",
+        "Redacted divergence report"
+      ]
+    },
+    {
+      "id": "local-effect-gate-p95",
+      "category": "performance",
+      "metric": "local_pre_dispatch_gate_latency",
+      "threshold": {
+        "operator": "at_most",
+        "value": 10,
+        "unit": "milliseconds_p95"
+      },
+      "workload": "Reference Raspberry Pi 5 and one documented low-power x86-64 host; warmed process; 1 KB and 16 KB representative inputs; 100 decisions/second; no network in the measured decision function.",
+      "method": "Report p50/p95/p99, CPU model, OS, compiler mode, input size and request count. Benchmark the production runtime gate separately when it exists; do not substitute the pure reference model.",
+      "sample_plan": "At least 30 batches per host and input size, with raw timing samples retained.",
+      "release_gate": false,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Hardware/OS manifest",
+        "Build profile",
+        "Raw timing samples",
+        "p50/p95/p99 summary"
+      ]
+    },
+    {
+      "id": "durable-journal-p99",
+      "category": "resilience",
+      "metric": "durable_journal_commit_latency",
+      "threshold": {
+        "operator": "at_most",
+        "value": 25,
+        "unit": "milliseconds_p99"
+      },
+      "workload": "The actual durable journal on a documented SSD-backed reference host, with sync semantics enabled.",
+      "method": "Measure the end-to-end durable commit boundary under normal and bounded concurrent load. Never relax fsync/durability guarantees to meet a timing target.",
+      "sample_plan": "At least 10000 journal commits per host/storage profile; report tail latency and errors.",
+      "release_gate": false,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Journal implementation SHA",
+        "Filesystem/mount/storage details",
+        "Raw latency histogram",
+        "Durability configuration"
+      ]
+    },
+    {
+      "id": "ambiguous-outcome-duplicate-dispatch",
+      "category": "resilience",
+      "metric": "new_dispatches_after_ambiguous_attempt",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "dispatches"
+      },
+      "workload": "Crash injection before journal commit, after dispatch intent, immediately after provider call, after provider acknowledgement, after observed postcondition, and before terminal journal commit.",
+      "method": "At each failpoint restart the executor; assert unresolved attempts enter reconciliation only, and count physical/provider dispatch invocations using an instrumented test adapter.",
+      "sample_plan": "Every failpoint and provider profile; repeat each failpoint at least 100 times once an executable runtime harness exists.",
+      "release_gate": true,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Failpoint inventory",
+        "Instrumented adapter dispatch count",
+        "Recovery journal snapshots",
+        "Exact source SHA"
+      ]
+    },
+    {
+      "id": "offline-core-continuity",
+      "category": "resilience",
+      "metric": "essential_local_probe_success",
+      "threshold": {
+        "operator": "at_least",
+        "value": 99.9,
+        "unit": "percent_over_24h"
+      },
+      "workload": "A named essential-local-service inventory during a 24-hour network partition, including loss of internet, remote identity and optional inference.",
+      "method": "Probe every defined essential operation on a fixed cadence; separately verify that cloud-dependent/authority-sensitive new effects fail closed when freshness cannot be established.",
+      "sample_plan": "At least one full 24-hour run per supported host profile and each declared degradation mode.",
+      "release_gate": false,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Essential-service inventory",
+        "Probe logs",
+        "Fault injection timeline",
+        "Explicitly unavailable features"
+      ]
+    },
+    {
+      "id": "backup-restore-rto",
+      "category": "recovery",
+      "metric": "clean_room_restore_duration",
+      "threshold": {
+        "operator": "at_most",
+        "value": 30,
+        "unit": "minutes"
+      },
+      "workload": "Restore a documented household configuration and encrypted backup onto a clean test installation with secrets provisioned through the documented local process.",
+      "method": "Time from declared recovery start to owner-verifiable service availability; verify checksums and actual configuration/data completeness, not merely successful process start.",
+      "sample_plan": "At least 10 clean-room restores across supported release updates.",
+      "release_gate": false,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Backup manifest and digest",
+        "Restore logs",
+        "Completeness checklist",
+        "Host profile"
+      ]
+    },
+    {
+      "id": "backup-restore-rpo",
+      "category": "recovery",
+      "metric": "maximum_acknowledged_configuration_loss",
+      "threshold": {
+        "operator": "at_most",
+        "value": 5,
+        "unit": "minutes"
+      },
+      "workload": "Acknowledged household configuration changes before a forced host/storage failure.",
+      "method": "Inject faults at defined points, restore from the documented backup/journal strategy, and measure lost acknowledged configuration against a timestamped test log.",
+      "sample_plan": "At least 10 fault-injected restore cycles per storage strategy.",
+      "release_gate": false,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Timestamped mutation log",
+        "Failure injection log",
+        "Restored-state diff",
+        "Storage profile"
+      ]
+    },
+    {
+      "id": "public-evidence-privacy",
+      "category": "privacy",
+      "metric": "secret_or_raw_household_marker_leaks",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "leaks"
+      },
+      "workload": "Evidence manifests, CI logs, trace outputs, exported diagnostics and public artifacts containing seeded secret markers, household names, stable entity identifiers and synthetic occupancy traces.",
+      "method": "Inject unique markers into each sensitive field class and scan all public/shareable outputs; verify expected local-only evidence still remains available for diagnosis.",
+      "sample_plan": "Every release candidate and every change to logging, evidence export, telemetry or CI artifacts.",
+      "release_gate": true,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Marker inventory",
+        "Scan command/version",
+        "Scanned artifact list and digests",
+        "Redacted failure examples if any"
+      ]
+    },
+    {
+      "id": "configuration-export-import",
+      "category": "portability",
+      "metric": "declared_exportable_data_classes_round_trip",
+      "threshold": {
+        "operator": "equals",
+        "value": 100,
+        "unit": "percent"
+      },
+      "workload": "Every data class advertised as exportable in the product's portability manifest, excluding secrets that must be re-provisioned rather than copied.",
+      "method": "Export, import on a clean test instance, compare canonical manifests and verify the owner can inspect the result without a vendor cloud account.",
+      "sample_plan": "Every supported upgrade/migration path and release format version.",
+      "release_gate": false,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Export manifest",
+        "Redacted import report",
+        "Per-class checksums/comparison",
+        "Documented secret re-provisioning steps"
+      ]
+    },
+    {
+      "id": "safe-update-rollback",
+      "category": "lifecycle",
+      "metric": "rollback_success_for_declared_failure_modes",
+      "threshold": {
+        "operator": "equals",
+        "value": 100,
+        "unit": "percent"
+      },
+      "workload": "Declared update failure modes: interrupted download, invalid signature, failed health check and interrupted activation.",
+      "method": "Inject each failure against a disposable test system; confirm return to a previously verified bootable service state and verify journal/data integrity.",
+      "sample_plan": "Every supported update mechanism and boot layout; at least 20 repeats per failure mode before hardware qualification.",
+      "release_gate": true,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Signed artifact/manifest digests",
+        "Fault injection record",
+        "Boot/service verification",
+        "Data/journal integrity report"
+      ]
+    },
+    {
+      "id": "temporal-event-history-replay",
+      "category": "safety",
+      "metric": "six_event_histories_checked_without_invariant_violation",
+      "threshold": {
+        "operator": "at_least",
+        "value": 1000000,
+        "unit": "six_event_histories"
+      },
+      "workload": "All 1,000,000 length-six histories over a ten-event alphabet: attempt/retry, household-authority revocation, adapter drift, admission revalidation, lease loss, crash/restart, late provider acknowledgement, definitive no-effect observation, reconciled success, and time advancement.",
+      "method": "Enumerate the complete finite set of length-six event strings. Reset the synthetic household to a clean initial state for every history; replay events; evaluate each attempt through the reference gate; assert no dispatch from an unresolved/terminal journal state, no dispatch with revoked authority/stale admission/missing lease/expired request, and no attempt-budget or modeled-journal-count violation. Preserve any counterexample as a named regression trace.",
+      "sample_plan": "Run in the Rust test suite on each candidate. This is exhaustive only for the declared event alphabet and history length; expand history length or use a finite-state model checker before making unbounded temporal claims.",
+      "release_gate": true,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Exact source commit SHA",
+        "Event alphabet and history length",
+        "Exact history count evaluated",
+        "Invariant assertion result",
+        "Counterexample history fixtures if any"
+      ]
+    },
+    {
+      "id": "ha-subscription-correlation",
+      "category": "interoperability",
+      "metric": "accepted_events_with_wrong_subscription_id",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "events"
+      },
+      "workload": "Protocol-model and runtime vectors send state_changed frames with correct, stale, unknown and mismatched subscription IDs across authentication, subscription acknowledgement, bootstrap, live and reconnect phases.",
+      "method": "Require exact active subscription-ID matching before buffering or forwarding any event. Wrong IDs fail closed; stale connection epochs cannot advance the active session. Track every accepted/buffered/delivered event and preserve mismatches as regression vectors.",
+      "sample_plan": "Every protocol conformance run; runtime promotion additionally exercises the exact decoded Home Assistant frame path and records source SHA, corpus version and transport build identity.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source SHA",
+        "Versioned protocol vector corpus",
+        "Per-frame subscription and session epoch decision log",
+        "Mutant proving mismatched subscription ID is rejected"
+      ]
+    },
+    {
+      "id": "ha-snapshot-stream-loss",
+      "category": "resilience",
+      "metric": "lost_or_out_of_order_events",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "events"
+      },
+      "workload": "At least 10,000 deterministic event interleavings around native subscribe_entities acknowledgement, initial compact snapshot, incremental add/change/remove frames, application acknowledgement, and reconnect epoch change.",
+      "method": "Prefer Home Assistant's native subscribe_entities stream, restricting entity_ids to the exact validated profile allowlist. Validate the subscription ID; apply its initial compact snapshot before processing later deltas on the same serialized receive loop; apply additions, field-level changes/removals and entity removals only for allowlisted IDs. For any future provider that exposes separate snapshot and event subscriptions, require subscribe-first plus buffered replay. Compare final projection against an ordered event oracle and retain counterexamples.",
+      "sample_plan": "Every release candidate for the native read-only transport and any change to snapshot/bootstrap/reconnect sequencing. Synthetic model results and real transport results are reported separately.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source and transport build SHAs",
+        "Event schedule/corpus digest",
+        "Initial snapshot and ordered event-oracle digests",
+        "Raw interleaving outcomes and counterexamples",
+        "Evidence class distinguishing synthetic from live transport"
+      ]
+    },
+    {
+      "id": "ha-allowlist-projection",
+      "category": "privacy",
+      "metric": "nonallowlisted_entities_or_unapproved_fields_in_projection",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "items"
+      },
+      "workload": "Adversarial subscribe_entities payloads containing added, changed and removed entities; unexpected fields; context/friendly-name/secret markers; malformed state/metadata; duplicate IDs across groups; and valid profile-allowlisted updates.",
+      "method": "Project only entity IDs declared in the validated HA-0.1 profile, retaining only primary state, unit_of_measurement and device_class. Ignore nonallowlisted IDs without storing their payloads; reject malformed allowlisted data transactionally and reject duplicate/conflicting update groups. Verify that arbitrary attributes, context, and credentials never enter projected frames or cache.",
+      "sample_plan": "Every compact-stream projector test run and every native transport release candidate. Distinguish pure projector outcomes from transport and field evidence.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source SHA",
+        "Versioned compact-stream payload corpus digest",
+        "Exact HA-0.1 profile digest",
+        "Per-vector projected entity/field inventory",
+        "Mutation showing allowlist or metadata filtering disabled"
+      ]
+    },
+    {
+      "id": "ha-semantic-freshness",
+      "category": "safety",
+      "metric": "nonsemantic_updates_that_refresh_observation_freshness",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "updates"
+      },
+      "workload": "Compact entity-stream deltas that change only ignored attributes such as friendly_name, context, icon or timestamps while leaving the allowlisted primary state, unit_of_measurement and device_class unchanged.",
+      "method": "Require zero new semantic observation frames and zero freshness-window extension for updates that do not alter admitted semantic fields. Conversely, an actual primary state or admitted metadata change must be emitted through the HA-0.1 mapper. Use only local receive time for freshness; remote source timestamps remain diagnostic.",
+      "sample_plan": "Every release candidate for the pure projector and native read-only transport; preserve a counterexample for any metadata-only update that refreshes semantic freshness.",
+      "release_gate": true,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Exact source SHA",
+        "Profile and compact-payload corpus digests",
+        "Per-update before/after semantic projection",
+        "Assertion that metadata-only updates emit no new frame",
+        "Raw counterexample on mismatch"
+      ]
+    },
+    {
+      "id": "ha-stale-positive-invalidation",
+      "category": "safety",
+      "metric": "stale_positive_observations_after_invalidation",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "observations"
+      },
+      "workload": "Home Assistant lifecycle events: unknown, unavailable, invalid current sample (codec/range/metadata drift), entity removal, and allowlisted entity omitted from a reconnect snapshot.",
+      "method": "Convert each current projected sample into one explicit upsert or invalidation per entity. Require the consumer to clear the prior positive observation for every invalidation, with one atomic batch application. The pure mapper's output is not itself proof that a downstream store applied it.",
+      "sample_plan": "Every candidate that changes provider observation mapping or lifecycle semantics; runtime promotion must include a real store adapter and exact run evidence.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source and consumer build SHAs",
+        "Versioned lifecycle-vector corpus digest",
+        "Before/after per-entity store snapshots",
+        "Invalidation reason and version per entity",
+        "Proof that the batch was applied atomically"
+      ]
+    },
+    {
+      "id": "ha-observation-stale-replay",
+      "category": "safety",
+      "metric": "equal_or_older_observation_versions_applied",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "updates"
+      },
+      "workload": "Deliver delayed upserts from an earlier connection generation after a newer invalidation, duplicate event batches, equal sequence IDs, and out-of-order deltas across reconnects and process restarts.",
+      "method": "Version every lifecycle batch by durable monotonic connection generation and event sequence. Persist each entity's last-applied version atomically with its upsert/invalidation; accept only a strictly newer version. Equal means replay; older means stale. Verify generation monotonicity across restart rather than resetting it at process start.",
+      "sample_plan": "Every candidate for lifecycle persistence/versioning. Runtime promotion requires the actual consumer/store implementation; a pure comparison helper alone is insufficient.",
+      "release_gate": true,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source and database adapter SHAs",
+        "Lifecycle corpus digest",
+        "Generation persistence/restart trace",
+        "Per-entity version before/after transaction",
+        "Delayed-upsert-after-invalidation negative control"
+      ]
+    },
+    {
+      "id": "ha-projector-delta-cache-scaling",
+      "category": "performance",
+      "metric": "single_entity_delta_p95_growth_ratio",
+      "threshold": {
+        "operator": "at_most",
+        "value": 3,
+        "unit": "ratio"
+      },
+      "workload": "Replay the same one-entity compact delta on the same host/build against projector caches with 16 and 1,024 admitted entities; report p50/p95/p99, allocation count, and retained cache size.",
+      "method": "Measure projection-only and end-to-end decode/project/map separately. Compute p95(1,024 entities) / p95(16 entities); require a ratio <= 3 while retaining transactional all-or-nothing behavior. Include multi-entity malformed negative controls to prove optimization does not weaken atomicity.",
+      "sample_plan": "Each performance candidate for the compact projector; use at least 5 independent runs and 100 timed samples after warm-up per cache size.",
+      "release_gate": false,
+      "measurement_status": "blocked_runtime_not_ready",
+      "evidence_required": [
+        "Exact source SHA and compiler/build flags",
+        "Host CPU/memory/OS profile",
+        "Input event corpus digest",
+        "Raw timing samples and percentiles",
+        "Allocation counts and transactional negative-control result"
+      ]
+    }
+  ]
+}

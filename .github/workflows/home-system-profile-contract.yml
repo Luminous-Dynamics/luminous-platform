@@ -1,0 +1,71 @@
+name: Home system profile contract
+
+on:
+  pull_request:
+    paths:
+      - "schemas/home-system-profile.schema.json"
+      - "schemas/home-capability-contract.schema.json"
+      - "schemas/home-effect-envelope.schema.json"
+      - "schemas/home-effect-conformance-traces.schema.json"
+      - "schemas/home-systems-benchmark-targets.schema.json"
+      - "docs/home-systems-*.md"
+      - "profiles/home-systems/**"
+      - "tests/home-effect-conformance/**"
+      - "benchmarks/home-systems/**"
+      - "tools/home-profile-validator/**"
+      - ".github/workflows/home-system-profile-contract.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "schemas/home-system-profile.schema.json"
+      - "schemas/home-capability-contract.schema.json"
+      - "schemas/home-effect-envelope.schema.json"
+      - "schemas/home-effect-conformance-traces.schema.json"
+      - "schemas/home-systems-benchmark-targets.schema.json"
+      - "docs/home-systems-*.md"
+      - "profiles/home-systems/**"
+      - "tests/home-effect-conformance/**"
+      - "benchmarks/home-systems/**"
+      - "tools/home-profile-validator/**"
+      - ".github/workflows/home-system-profile-contract.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: home-system-profile-contract-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-profiles:
+    name: Validate schema, positive and negative fixtures
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # immutable action revision
+        with:
+          toolchain: 1.99.0
+      - name: Run Rust contract tests
+        run: cargo test --manifest-path tools/home-profile-validator/Cargo.toml
+      - name: Validate capability declaration contract fixtures
+        run: >-
+          cargo run --manifest-path tools/home-profile-validator/Cargo.toml
+          --bin capability-contract-validator --
+          schemas/home-capability-contract.schema.json
+          profiles/home-systems/capabilities
+          profiles/home-systems/capability-invalid
+      - name: Validate Mycelix Hearth effect-envelope fixtures
+        run: >-
+          cargo run --manifest-path tools/home-profile-validator/Cargo.toml --bin home-profile-validator --
+          schemas/home-effect-envelope.schema.json
+          profiles/home-systems/effect-requests
+          profiles/home-systems/effect-invalid
+      - name: Validate checked-in fixture directories
+        run: >-
+          cargo run --manifest-path tools/home-profile-validator/Cargo.toml --bin home-profile-validator --
+          schemas/home-system-profile.schema.json
+          profiles/home-systems/valid
+          profiles/home-systems/invalid

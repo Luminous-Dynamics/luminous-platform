@@ -1,0 +1,321 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/home-effect-conformance-traces.schema.json",
+  "title": "Mycelix Hearth home-effect conformance trace corpus",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "protocol",
+    "claim_ceiling",
+    "traces"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "protocol": {
+      "const": "mycelix-hearth.home-effect"
+    },
+    "claim_ceiling": {
+      "type": "string",
+      "minLength": 1
+    },
+    "traces": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/trace"
+      }
+    }
+  },
+  "$defs": {
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "plan_id",
+        "step_id",
+        "role",
+        "capability",
+        "operation",
+        "adapter_id",
+        "implementation_ref",
+        "profile_ref",
+        "rule_id"
+      ],
+      "properties": {
+        "plan_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "step_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "primary",
+            "compensation"
+          ]
+        },
+        "capability": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "adapter_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "implementation_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rule_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requested",
+        "admitted",
+        "registered",
+        "request_idempotency_key",
+        "request_fingerprint",
+        "journal_idempotency_key",
+        "journal_request_fingerprint",
+        "now_unix_seconds",
+        "expires_at_unix_seconds",
+        "max_attempts",
+        "attempts_started",
+        "journal_state",
+        "household_authority_current",
+        "adapter_admission_current",
+        "exclusive_executor_lease_held",
+        "durable_journal_ready",
+        "postcondition_observer_available",
+        "risk_class",
+        "independent_physical_stop_ready"
+      ],
+      "properties": {
+        "requested": {
+          "$ref": "#/$defs/binding"
+        },
+        "admitted": {
+          "$ref": "#/$defs/binding"
+        },
+        "registered": {
+          "$ref": "#/$defs/binding"
+        },
+        "request_idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "request_fingerprint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "journal_idempotency_key": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "journal_request_fingerprint": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "now_unix_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expires_at_unix_seconds": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "attempts_started": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "journal_state": {
+          "enum": [
+            "not_started",
+            "dispatching",
+            "provider_accepted",
+            "outcome_unknown",
+            "definitive_no_effect",
+            "reconciled_success",
+            "reconciled_failure"
+          ]
+        },
+        "household_authority_current": {
+          "type": "boolean"
+        },
+        "adapter_admission_current": {
+          "type": "boolean"
+        },
+        "exclusive_executor_lease_held": {
+          "type": "boolean"
+        },
+        "durable_journal_ready": {
+          "type": "boolean"
+        },
+        "postcondition_observer_available": {
+          "type": "boolean"
+        },
+        "risk_class": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "independent_physical_stop_ready": {
+          "type": "boolean"
+        }
+      }
+    },
+    "decision": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "allow_dispatch"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "reconcile_only"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "terminal"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "reason"
+          ],
+          "properties": {
+            "kind": {
+              "const": "deny"
+            },
+            "reason": {
+              "enum": [
+                "empty_idempotency_key",
+                "invalid_attempt_limit",
+                "expired_request",
+                "household_authority_unavailable_or_revoked",
+                "adapter_admission_stale_or_unverified",
+                "admission_binding_mismatch",
+                "registration_binding_mismatch",
+                "missing_exclusive_executor_lease",
+                "missing_durable_journal",
+                "missing_postcondition_observer",
+                "missing_physical_stop",
+                "attempts_exhausted",
+                "idempotency_key_mismatch",
+                "request_fingerprint_mismatch",
+                "inconsistent_journal_state"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "input",
+        "expect"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "input": {
+          "$ref": "#/$defs/input"
+        },
+        "expect": {
+          "$ref": "#/$defs/decision"
+        }
+      }
+    },
+    "trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "purpose",
+        "steps"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        }
+      }
+    }
+  }
+}

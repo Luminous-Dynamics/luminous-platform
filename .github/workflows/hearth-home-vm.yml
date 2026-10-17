@@ -1,0 +1,110 @@
+name: Hearth Node VM contract
+
+on:
+  pull_request:
+    paths:
+      - "tests/home-systems-vm/**"
+      - "docs/home-systems-*.md"
+      - ".github/workflows/hearth-home-vm.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "tests/home-systems-vm/**"
+      - ".github/workflows/hearth-home-vm.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hearth-home-vm-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hearth-foundation:
+    name: QEMU service-failure isolation contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install Nix with flakes enabled
+        uses: cachix/install-nix-action@448cde739abec1eaf0646249e3d25bb8d9bc7702 # immutable commit
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Verify pinned Nixpkgs input
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="151fa4e8ddfdd8dd25d945ad94ed54a13de9f6e4"
+          actual="$(jq -r '.nodes.nixpkgs.locked.rev' tests/home-systems-vm/flake.lock)"
+          test "$actual" = "$expected"
+          echo "Pinned Nixpkgs revision verified: $actual"
+      - name: Run pinned NixOS/QEMU test and record evidence
+        shell: bash
+        run: |
+          set -uo pipefail
+          evidence_dir="$RUNNER_TEMP/home-systems-vm-evidence"
+          mkdir -p "$evidence_dir"
+          start="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          lock_digest="$(sha256sum tests/home-systems-vm/flake.lock | cut -d ' ' -f 1)"
+          nix_version="$(nix --version)"
+          nixpkgs_revision="$(jq -r '.nodes.nixpkgs.locked.rev' tests/home-systems-vm/flake.lock)"
+
+          set +e
+          nix flake check --no-update-lock-file --print-build-logs ./tests/home-systems-vm 2>&1 | tee "$evidence_dir/vm-test.log"
+          test_status=${PIPESTATUS[0]}
+          set -e
+
+          end="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          if [ "$test_status" -eq 0 ]; then result="pass"; else result="fail"; fi
+
+          jq -n \
+            --arg result "$result" \
+            --arg started_at "$start" \
+            --arg completed_at "$end" \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg commit_sha "$GITHUB_SHA" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg nix_version "$nix_version" \
+            --arg nixpkgs_revision "$nixpkgs_revision" \
+            --arg flake_lock_sha256 "$lock_digest" \
+            '{
+              schema_version: 1,
+              evidence_class: "vm_or_simulated",
+              test_id: "hearth-foundation-failure-isolation",
+              product_scope: "systemd dependency contract using test doubles",
+              result: $result,
+              repository: $repository,
+              commit_sha: $commit_sha,
+              workflow_run_id: $run_id,
+              run_attempt: $run_attempt,
+              started_at: $started_at,
+              completed_at: $completed_at,
+              nix_version: $nix_version,
+              nixpkgs_revision: $nixpkgs_revision,
+              flake_lock_sha256: $flake_lock_sha256,
+              claim_ceiling: "Does not qualify an implemented Hearth Node, Home Assistant integration, household safety, or physical hardware."
+            }' > "$evidence_dir/evidence-manifest.json"
+
+          {
+            echo "### Hearth Node VM contract"
+            echo ""
+            echo "- Result: **$result**"
+            echo "- Evidence class: vm_or_simulated"
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Nixpkgs: $nixpkgs_revision"
+            echo "- Lock SHA-256: $lock_digest"
+            echo "- Claim ceiling: test-double service-dependency contract only."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit "$test_status"
+      - name: Upload VM logs and evidence manifest
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # immutable commit
+        with:
+          name: hearth-vm-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/home-systems-vm-evidence/
+          if-no-files-found: warn
+          retention-days: 30
