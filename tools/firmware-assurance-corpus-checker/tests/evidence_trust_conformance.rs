@@ -146,3 +146,79 @@ fn deterministic_ten_thousand_assignment_sweep_never_accepts_bad_or_unknown_evid
     }
     assert!(distinct.len() > 9_000, "only {} distinct assignments", distinct.len());
 }
+
+
+#[test]
+fn exhaustively_checks_the_complete_three_valued_state_space() {
+    const EXPECTED_COMBINATIONS: usize = 59_049; // 3^10
+    let base = corpus()["cases"][20].clone();
+    let choices: [&[&str]; 10] = [
+        &["valid", "invalid", "unknown"],
+        &["authorized", "unauthorized", "unknown"],
+        &["match", "mismatch", "unknown"],
+        &["match", "mismatch", "unknown"],
+        &["match", "mismatch", "unknown"],
+        &["clear", "revoked", "unknown"],
+        &["fresh", "expired", "unknown"],
+        &["current", "replay", "unknown"],
+        &["monotonic", "rollback", "unknown"],
+        &["authenticated", "unauthenticated", "unknown"],
+    ];
+    let mut counts = [0_usize; 3]; // accepted, rejected, indeterminate
+    let mut invariant_violations = 0_usize;
+
+    // Base-3 decoding is a bijection over every possible input tuple. Unlike
+    // random sampling, this establishes policy coverage for the full finite model.
+    for encoded in 0..EXPECTED_COMBINATIONS {
+        let mut ordinal = encoded;
+        let mut changed = base.clone();
+        for (index, field) in EVIDENCE_FIELDS.iter().enumerate() {
+            changed[*field] = json!(choices[index][ordinal % 3][..]);
+            ordinal /= 3;
+        }
+
+        let has_bad = EVIDENCE_FIELDS.iter().any(|field| {
+            let actual = changed[*field].as_str().unwrap();
+            match *field {
+                "signature_status" => actual == "invalid",
+                "signer_status" => actual == "unauthorized",
+                "subject_status" => actual == "mismatch",
+                "artifact_status" => actual == "mismatch",
+                "policy_status" => actual == "mismatch",
+                "revocation_status" => actual == "revoked",
+                "freshness_status" => actual == "expired",
+                "nonce_status" => actual == "replay",
+                "counter_status" => actual == "rollback",
+                "provenance_status" => actual == "unauthenticated",
+                _ => false,
+            }
+        });
+        let has_unknown = EVIDENCE_FIELDS
+            .iter()
+            .any(|field| changed[*field] == "unknown");
+        let expected = if has_bad {
+            Decision::Rejected
+        } else if has_unknown {
+            Decision::Indeterminate
+        } else {
+            Decision::Accepted
+        };
+        let actual = EvidenceTrustInput::from_json(&changed)
+            .expect("exhaustive tuple uses only supported states")
+            .evaluate();
+
+        if actual != expected || (actual == Decision::Accepted && (has_bad || has_unknown)) {
+            invariant_violations += 1;
+        }
+        assert_eq!(actual, expected, "state tuple {encoded}");
+        match actual {
+            Decision::Accepted => counts[0] += 1,
+            Decision::Rejected => counts[1] += 1,
+            Decision::Indeterminate => counts[2] += 1,
+        }
+    }
+
+    assert_eq!(invariant_violations, 0);
+    assert_eq!(counts, [1, 58_025, 1_023]);
+    assert_eq!(counts.iter().sum::<usize>(), EXPECTED_COMBINATIONS);
+}
