@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/docs/fixtures/operations-outcome-corpus-v1.schema.json",
+  "title": "Luminous Operations Outcome Corpus v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "description",
+    "source_contracts",
+    "scenarios"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "status": {
+      "const": "synthetic_proposal"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_contracts": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "format": "uri",
+        "pattern": "^https://"
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "category",
+          "stage",
+          "setup",
+          "stimulus",
+          "expected",
+          "metrics"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
+          },
+          "category": {
+            "enum": [
+              "positive",
+              "negative",
+              "security",
+              "idempotency",
+              "fault_injection",
+              "recovery"
+            ]
+          },
+          "stage": {
+            "enum": [
+              "end_to_end",
+              "ingress",
+              "admission",
+              "authorization",
+              "pre_execution",
+              "dispatch",
+              "durable_commit",
+              "verification",
+              "recovery",
+              "reconciliation",
+              "adapter_conformance"
+            ]
+          },
+          "setup": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "stimulus": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expected": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "disposition",
+              "max_primary_effects",
+              "max_recovery_attempts",
+              "fresh_observation_required",
+              "retry_policy",
+              "preserve_preexisting_state",
+              "forbidden_claims"
+            ],
+            "properties": {
+              "disposition": {
+                "enum": [
+                  "allow_and_verify",
+                  "deduplicate",
+                  "conflict",
+                  "deny",
+                  "replan_required",
+                  "reconcile_required",
+                  "safe_retry_after_no_commit",
+                  "replay_existing",
+                  "failed_not_verified",
+                  "blocked_not_verified",
+                  "recovered_with_primary_failure",
+                  "indeterminate",
+                  "quarantine_no_regression",
+                  "reject_or_redact"
+                ]
+              },
+              "max_primary_effects": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "max_recovery_attempts": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "fresh_observation_required": {
+                "type": "boolean"
+              },
+              "retry_policy": {
+                "enum": [
+                  "same_operation_only",
+                  "only_after_reconcile",
+                  "safe_after_no_commit_evidence",
+                  "new_authorization_required",
+                  "prohibited",
+                  "not_applicable"
+                ]
+              },
+              "preserve_preexisting_state": {
+                "type": "boolean"
+              },
+              "forbidden_claims": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "metrics": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          }
+        }
+      }
+    }
+  }
+}
