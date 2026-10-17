@@ -683,6 +683,25 @@ mod tests {
             ),
             "cross-implementation benchmark must explicitly state that its runtime adapter is not ready"
         );
+
+        for (id, metric) in [
+            ("ha-stale-positive-invalidation", "stale_positive_observations_after_invalidation"),
+            ("ha-observation-stale-replay", "equal_or_older_observation_versions_applied"),
+            ("ha-projector-delta-cache-scaling", "single_entity_delta_p95_growth_ratio"),
+        ] {
+            let target = benchmarks.iter().find(|benchmark| conformance_str(benchmark, "id") == id)
+                .unwrap_or_else(|| panic!("required Home Assistant lifecycle benchmark is missing: {id}"));
+            assert_eq!(
+                conformance_str(target, "metric"),
+                metric,
+                "Home Assistant benchmark metric drifted for {id}"
+            );
+            assert_eq!(
+                conformance_str(target, "measurement_status"),
+                "blocked_runtime_not_ready",
+                "runtime-dependent Home Assistant benchmark cannot claim results before the runtime exists: {id}"
+            );
+        }
     }
 
 
