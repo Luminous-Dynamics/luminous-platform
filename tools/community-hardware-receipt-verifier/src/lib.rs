@@ -301,6 +301,17 @@ fn validate_semantics(receipt: &Value, errors: &mut Vec<Diagnostic>) {
             push(errors, "unknown_subject_identity", "/subject/unit_identity_method",
                 "A passing community submission requires an explicit device identity method.");
         }
+        if record_status == "community_submission" {
+            for pointer in [
+                "/campaign/suite_source_revision",
+                "/campaign/runner_source_revision",
+            ] {
+                if !string_at(receipt, pointer).is_some_and(is_immutable_revision) {
+                    push(errors, "mutable_test_identity", pointer,
+                        "A passing community submission requires a full immutable 40- or 64-character lowercase hexadecimal revision.");
+                }
+            }
+        }
         if matches!(evidence_class, "bench_measured" | "field_observed") {
             let measured = array_at(receipt, "/results").is_some_and(|results| {
                 results.iter().any(|r| r.get("measurements").and_then(Value::as_array).is_some_and(|m| !m.is_empty()))
@@ -552,6 +563,11 @@ fn is_sha256(value: &str) -> bool {
     value.len() == 64 && value.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
 }
 
+fn is_immutable_revision(value: &str) -> bool {
+    matches!(value.len(), 40 | 64)
+        && value.bytes().all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase())
+}
+
 fn sha256_hex(bytes: &[u8]) -> String {
     hex::encode(Sha256::digest(bytes))
 }
@@ -627,6 +643,14 @@ mod tests {
         let report = checked(&fixture);
         assert!(!report.valid);
         assert!(has_code(&report, "vm_cannot_prove_physical_claim"));
+    }
+
+    #[test]
+    fn bench_measured_claim_requires_physical_execution_mode() {
+        let mut fixture = parsed_fixture();
+        fixture["evidence_class"] = json!("bench_measured");
+        let report = checked(&fixture);
+        assert!(!report.valid);
         assert!(has_code(&report, "evidence_mode_mismatch"));
     }
 
@@ -642,7 +666,7 @@ mod tests {
     #[test]
     fn schema_remote_references_are_rejected_for_offline_safety() {
         let mut schema: Value = serde_json::from_slice(SCHEMA).expect("schema JSON");
-        schema["properties"]["$ref"] = json!("https://example.invalid/remote.json");
+        schema["$defs"]["remote_test"] = json!({"$ref": "https://example.invalid/remote.json"});
         let receipt = parsed_fixture();
         let report = verify_bytes(&serde_json::to_vec(&schema).unwrap(), &serde_json::to_vec(&receipt).unwrap(), None);
         assert!(!report.valid);
