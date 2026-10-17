@@ -173,7 +173,7 @@ fn exhaustively_checks_the_complete_three_valued_state_space() {
         let mut ordinal = encoded;
         let mut changed = base.clone();
         for (index, field) in EVIDENCE_FIELDS.iter().enumerate() {
-            changed[*field] = json!(choices[index][ordinal % 3][..]);
+            changed[*field] = json!(choices[index][ordinal % 3]);
             ordinal /= 3;
         }
 
