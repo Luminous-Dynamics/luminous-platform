@@ -1,6 +1,7 @@
 use community_hardware_receipt_verifier::verify_bytes;
 use std::env;
 use std::fs;
+use std::io::Read;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -68,7 +69,15 @@ fn read_bounded(path: &PathBuf, limit: u64, label: &str) -> Result<Vec<u8>, Stri
     if metadata.len() > limit {
         return Err(format!("{label} exceeds configured size limit."));
     }
-    fs::read(path).map_err(|_| format!("Cannot read {label} file."))
+    let file = fs::File::open(path).map_err(|_| format!("Cannot open {label} file."))?;
+    let mut bytes = Vec::new();
+    file.take(limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .map_err(|_| format!("Cannot read {label} file."))?;
+    if bytes.len() as u64 > limit {
+        return Err(format!("{label} exceeds configured size limit."));
+    }
+    Ok(bytes)
 }
 
 fn usage() -> String {
