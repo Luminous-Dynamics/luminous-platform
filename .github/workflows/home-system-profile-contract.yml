@@ -59,13 +59,13 @@ jobs:
           profiles/home-systems/capability-invalid
       - name: Validate Mycelix Hearth effect-envelope fixtures
         run: >-
-          cargo run --manifest-path tools/home-profile-validator/Cargo.toml --
+          cargo run --manifest-path tools/home-profile-validator/Cargo.toml --bin home-profile-validator --
           schemas/home-effect-envelope.schema.json
           profiles/home-systems/effect-requests
           profiles/home-systems/effect-invalid
       - name: Validate checked-in fixture directories
         run: >-
-          cargo run --manifest-path tools/home-profile-validator/Cargo.toml --
+          cargo run --manifest-path tools/home-profile-validator/Cargo.toml --bin home-profile-validator --
           schemas/home-system-profile.schema.json
           profiles/home-systems/valid
           profiles/home-systems/invalid
