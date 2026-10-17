@@ -451,6 +451,12 @@ mod tests {
     fn reconciled_terminal_outcomes_do_not_reuse_the_same_request() {
         let binding = binding();
         let mut input = valid_input(&binding);
+        // A terminal journal row must carry the identity and attempt count of
+        // the effect that actually ran. Missing journal identity is itself an
+        // inconsistent state and must fail closed before terminal replay rules.
+        input.attempts_started = 1;
+        input.journal_idempotency_key = Some(input.request_idempotency_key);
+        input.journal_request_fingerprint = Some(input.request_fingerprint);
         input.journal_state = JournalState::ReconciledSuccess;
         assert_eq!(evaluate_dispatch_gate(&input), DispatchDecision::Terminal);
         input.journal_state = JournalState::ReconciledFailure;
