@@ -18,6 +18,7 @@ The competitive unit is not the appliance. It is the complete lifecycle: install
 | A smart-home hub is the product | A household operating environment is the product | Multiple replaceable services; component upgrades do not erase local authority |
 | Cloud account is the connective tissue | Local control is the baseline; remote connectivity is an optional adapter | Essential flows pass tests with WAN and public DNS unavailable |
 | Integration count tells the compatibility story | Exact capability and version contracts tell the compatibility story | Each integration records device/model, firmware, protocol, software version, tested scope, limitations, and evidence freshness |
+| Initial state snapshot is assumed to cover the live stream | Subscribe first, then take the snapshot and replay buffered events in receive order | Zero lost/out-of-order events and zero accepted mismatched subscription/session IDs across named interleavings |
 | An app's permissions are implicit | Every service declares required capabilities before enablement | No service starts without a reviewed permission/data/network/resource manifest |
 | A sent command equals success | Dispatch and verified effect are separate states | Missing or contradictory observations produce “unknown / needs reconciliation” |
 | AI is promoted as the user-facing brain | Cognition is an optional advisor behind a narrow policy boundary | Host boot, manual controls, and essential automations work with inference removed |
@@ -78,6 +79,7 @@ Traditional availability numbers can hide unacceptable failure modes. Define ess
 - Backup target unavailable, then restored.
 - Administrator credential revoked.
 - Peer/network coordinator unavailable.
+- Home Assistant reconnect during initial snapshot/bootstrap, including delayed events, stale session epochs, and incorrect subscription IDs.
 
 For each scenario declare what **must continue**, what may degrade, what must stop, what must be observable, and how a human can recover. Test actual service dependencies, not only whether a VM boots.
 
