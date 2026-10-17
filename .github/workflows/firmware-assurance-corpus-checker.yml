@@ -164,6 +164,11 @@ jobs:
             .mutation_trials == 10000 and
             .distinct_assignments > 9000 and
             .invariant_violations == 0 and
+            .exhaustive_combinations == 59049 and
+            .exhaustive_decision_counts.accepted == 1 and
+            .exhaustive_decision_counts.rejected == 58025 and
+            .exhaustive_decision_counts.indeterminate == 1023 and
+            .exhaustive_invariant_violations == 0 and
             .physical_device_operations == 0 and
             .firmware_mutations == 0 and
             .cryptographic_verification_performed == false and
