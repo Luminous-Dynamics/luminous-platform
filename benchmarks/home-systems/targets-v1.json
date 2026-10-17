@@ -379,6 +379,28 @@
         "Per-vector projected entity/field inventory",
         "Mutation showing allowlist or metadata filtering disabled"
       ]
+    },
+    {
+      "id": "ha-semantic-freshness",
+      "category": "safety",
+      "metric": "nonsemantic_updates_that_refresh_observation_freshness",
+      "threshold": {
+        "operator": "equals",
+        "value": 0,
+        "unit": "updates"
+      },
+      "workload": "Compact entity-stream deltas that change only ignored attributes such as friendly_name, context, icon or timestamps while leaving the allowlisted primary state, unit_of_measurement and device_class unchanged.",
+      "method": "Require zero new semantic observation frames and zero freshness-window extension for updates that do not alter admitted semantic fields. Conversely, an actual primary state or admitted metadata change must be emitted through the HA-0.1 mapper. Use only local receive time for freshness; remote source timestamps remain diagnostic.",
+      "sample_plan": "Every release candidate for the pure projector and native read-only transport; preserve a counterexample for any metadata-only update that refreshes semantic freshness.",
+      "release_gate": true,
+      "measurement_status": "not_measured",
+      "evidence_required": [
+        "Exact source SHA",
+        "Profile and compact-payload corpus digests",
+        "Per-update before/after semantic projection",
+        "Assertion that metadata-only updates emit no new frame",
+        "Raw counterexample on mismatch"
+      ]
     }
   ]
 }
