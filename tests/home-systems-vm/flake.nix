@@ -11,7 +11,9 @@
     in
     {
       checks.${system}.hearth-foundation = hearthFoundation;
-      packages.${system}.hearth-foundation = hearthFoundation;
-      packages.${system}.default = hearthFoundation;
+      packages.${system} = {
+        hearth-foundation = hearthFoundation;
+        default = hearthFoundation;
+      };
     };
 }
