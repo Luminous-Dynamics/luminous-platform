@@ -20,7 +20,7 @@
   },
   "rows": [],
   "explicit_non_claims": [
-    "No device or OS compatibility has been established by this empty template.",
+    "No device or OS compatibility is established by this template alone.",
     "No OpenRoaming federation membership or credential entitlement is conveyed.",
     "No upstream sharing, resale, spectrum or deployment authorization is conveyed.",
     "A passing row applies only to the exact recorded client, OS, profile, AP, AAA, federation and site combination."
