@@ -5,6 +5,10 @@ on:
     paths:
       - "tools/connectivity-unit-economics-core/**"
       - "docs/CONNECTIVITY_UNIT_ECONOMICS_V1.md"
+      - "profiles/connectivity-price-observations-south-africa-v1.json"
+      - "schemas/connectivity-price-observations-south-africa-v1.schema.json"
+      - "profiles/connectivity-price-observations-south-africa-v1.json"
+      - "schemas/connectivity-price-observations-south-africa-v1.schema.json"
       - ".github/workflows/connectivity-economics-contracts.yml"
   push:
     branches: [main, feat/connectivity-unit-economics-v1]
