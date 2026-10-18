@@ -11,7 +11,7 @@ on:
       - "docs/CONNECTIVITY_OUTCOME_BENCHMARKS_V1.md"
       - ".github/workflows/connectivity-broker-contracts.yml"
   push:
-    branches: [main]
+    branches: [main, feat/provider-neutral-connectivity-broker-v1]
     paths:
       - "tools/connectivity-policy-core/**"
       - "tools/connectivity-benchmark-profile-validator/**"
