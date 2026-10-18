@@ -14,7 +14,7 @@ This crate is a bounded, in-memory metadata reference model for queue admission,
 
 ## State model
 
-Admission validates identifier/digest shape, payload size, destination allowlist, creation-time skew, expiry/TTL, sensitive-message protection declaration, total and sender quotas, and bounded dedupe history. Identical duplicate IDs are idempotent while the original record remains in retention; same ID with changed metadata is rejected. Batch selection sorts essential before ordinary before bulk, then earliest expiry, creation time and stable ID. It respects per-batch byte and item budgets but does not claim a starvation-free scheduling policy.
+Admission validates identifier/digest shape, payload size, destination allowlist, creation-time skew, expiry/TTL, sensitive-message protection declaration, total and sender quotas, and bounded dedupe history. Identical duplicate IDs are idempotent while the original record remains in retention; same ID with changed metadata is rejected. Batch selection applies bounded priority aging: each elapsed aging interval raises effective priority by one rank up to Essential, and longest wait is the tie-break before expiry/creation/ID. It respects per-batch byte and item budgets. This improves the model's starvation behaviour but does not prove a live adapter is starvation-free; test queue pressure, message expiry and class-level delays on a named workload.
 
 A verified acknowledgement is supplied by a trusted adapter and is checked against the message ID, destination, payload digest and accepted timestamp window. The verifier here checks matching metadata only, not the acknowledgement signature itself.
 
