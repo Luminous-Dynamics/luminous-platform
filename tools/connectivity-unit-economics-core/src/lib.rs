@@ -551,6 +551,41 @@ mod tests {
     }
 
     #[test]
+    fn dated_price_observation_profile_passes_schema_and_stays_non_comparable() {
+        let schema: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../schemas/connectivity-price-observations-south-africa-v1.schema.json"
+        ))
+        .expect("price observation schema must parse");
+        let profile: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../profiles/connectivity-price-observations-south-africa-v1.json"
+        ))
+        .expect("dated price observation profile must parse");
+
+        let meta = jsonschema::meta::validator_for(&schema)
+            .expect("must construct JSON Schema meta-validator");
+        assert!(meta.evaluate(&schema).flag().valid, "schema must pass meta-validation");
+
+        let validator = jsonschema::draft202012::options()
+            .should_validate_formats(true)
+            .build(&schema)
+            .expect("must construct Draft 2020-12 validator");
+        let errors: Vec<String> = validator
+            .iter_errors(&profile)
+            .map(|error| error.to_string())
+            .collect();
+        assert!(errors.is_empty(), "profile schema errors: {errors:#?}");
+
+        let observations = profile["observations"].as_array().expect("observations array");
+        assert_eq!(observations.len(), 2);
+        assert!(observations.iter().all(|item| {
+            item["comparison_eligibility"] == "not_comparable_until_scope_matched"
+        }));
+        assert_eq!(observations[0]["currency"], "ZAR");
+        assert_eq!(observations[1]["currency"], "ZAR");
+        assert_eq!(profile["comparison_contract"]["unmatched_products_must_not_be_ranked_as_direct_savings"], true);
+    }
+
+    #[test]
     fn economic_model_is_deterministic() {
         let model = input();
         assert_eq!(calculate(&model).unwrap(), calculate(&model).unwrap());
