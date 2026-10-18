@@ -1,0 +1,273 @@
+{
+  "schema_version": "luminous.community-connectivity-profile.v1",
+  "profile_id": "community-connectivity-basic-access-v1",
+  "status": "draft_research_only",
+  "reviewed_at": "2026-10-18",
+  "authority": {
+    "issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/61",
+    "design_document": "docs/OPEN_COMMUNITY_CONNECTIVITY_REFERENCE_DESIGN_V1.md",
+    "evidence_contract": "https://github.com/Luminous-Dynamics/luminous-platform/pull/58",
+    "verifier": "https://github.com/Luminous-Dynamics/luminous-platform/pull/60"
+  },
+  "claims_not_conveyed": [
+    "hardware qualification",
+    "regulatory authorization",
+    "Starlink service availability",
+    "provider permission to share or resell",
+    "production readiness",
+    "performance guarantee"
+  ],
+  "topology": {
+    "required_roles": [
+      "wan_gateway",
+      "community_access_point",
+      "local_services_node"
+    ],
+    "optional_roles": [
+      "point_to_point_backhaul",
+      "mesh_relay",
+      "backup_power",
+      "secondary_wan"
+    ],
+    "preferred_backhaul_order": [
+      "fiber_or_existing_wired",
+      "point_to_point_wireless",
+      "authorized_fixed_wireless",
+      "authorized_cellular",
+      "authorized_satellite"
+    ],
+    "routing_policy": "standards_based_ip",
+    "mesh_policy": "use_only_when_measured_cost_or_resilience_justifies_each_hop",
+    "local_services_must_not_require_wan": true,
+    "cognitive_components_must_not_be_required_for_packet_forwarding": true
+  },
+  "wan_adapters": [
+    {
+      "id": "generic-ethernet-wan-v1",
+      "transport": "ethernet_ip",
+      "address_acquisition": [
+        "dhcp",
+        "static_if_required_by_provider"
+      ],
+      "status": "initial_lab_baseline"
+    },
+    {
+      "id": "starlink-ethernet-wan-v1",
+      "transport": "supported_kit_ethernet_ip",
+      "address_acquisition": [
+        "dhcp_where_supported"
+      ],
+      "kit_specific_adapter_or_cable": true,
+      "bypass_mode": "conditional_on_exact_kit_and_topology",
+      "vendor_private_api_required": false,
+      "terminal_modification_allowed": false,
+      "power_injection_without_model_specific_approval": false,
+      "local_service_authorization_status": "not_verified",
+      "service_plan_sharing_permission_status": "not_verified",
+      "deployment_blocked_until_authorization_verified": true
+    }
+  ],
+  "trust_zones": [
+    {
+      "id": "client",
+      "default_forwarding": "deny_between_clients_unless_explicitly_allowed"
+    },
+    {
+      "id": "local_services",
+      "default_forwarding": "allow_only_declared_services"
+    },
+    {
+      "id": "wan",
+      "default_forwarding": "stateful_firewall_only"
+    },
+    {
+      "id": "management",
+      "default_forwarding": "deny_from_client_and_guest_zones"
+    }
+  ],
+  "service_contracts": {
+    "local_essential": {
+      "charge_per_request": 0,
+      "examples": [
+        "locally hosted public information",
+        "rights-cleared cached resources",
+        "community notices"
+      ],
+      "available_without_wan": true,
+      "scope_note": "Does not imply access to the global Internet without an upstream link."
+    },
+    "internet_basic": {
+      "user_charge_target": 0,
+      "requires_sustainable_external_funding_or_cross_subsidy": true,
+      "capacity_and_fair_use_must_be_published": true,
+      "deployment_status": "not_operational"
+    }
+  },
+  "benchmarks": [
+    {
+      "id": "BASIC_COVERAGE_001",
+      "metric": "predeclared_survey_points_meeting_basic_access",
+      "target": 0.95,
+      "comparator": ">=",
+      "threshold": {
+        "download_mbps": 10,
+        "upload_mbps": 2
+      },
+      "sampling_window": "declared_busy_hour",
+      "evidence_required": [
+        "field_observed"
+      ],
+      "status": "proposed_target"
+    },
+    {
+      "id": "LOCAL_RTT_001",
+      "metric": "client_to_local_gateway_rtt_p95_ms",
+      "target": 20,
+      "comparator": "<=",
+      "minimum_samples_per_point": 1000,
+      "evidence_required": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "status": "proposed_target"
+    },
+    {
+      "id": "WAN_FAILOVER_001",
+      "metric": "new_outbound_sessions_recovered_within_seconds_after_primary_wan_failure",
+      "target": 30,
+      "comparator": "<=",
+      "minimum_trials": 100,
+      "required_trial_success_ratio": 0.99,
+      "existing_sessions_may_reset": true,
+      "evidence_required": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "status": "proposed_target"
+    },
+    {
+      "id": "LOCAL_CONTINUITY_001",
+      "metric": "hours_local_essential_services_available_with_all_wans_disconnected",
+      "target": 24,
+      "comparator": ">=",
+      "site_power_must_remain_available": true,
+      "evidence_required": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "status": "proposed_target"
+    },
+    {
+      "id": "SERVICE_AVAILABILITY_001",
+      "metric": "monthly_availability_ratio",
+      "target": 0.995,
+      "comparator": ">=",
+      "report_separately_for": [
+        "local_services",
+        "lan",
+        "each_wan",
+        "global_internet"
+      ],
+      "evidence_required": [
+        "field_observed"
+      ],
+      "status": "proposed_target"
+    },
+    {
+      "id": "CACHE_EFFICIENCY_001",
+      "metric": "cache_eligible_byte_hit_ratio_after_warmup",
+      "target": 0.5,
+      "comparator": ">=",
+      "mandatory_separate_metric": "whole_traffic_upstream_bytes_avoided",
+      "rights_cleared_test_content_required": true,
+      "evidence_required": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "status": "proposed_target"
+    },
+    {
+      "id": "ENERGY_AUTONOMY_001",
+      "metric": "hours_required_local_services_operate_on_selected_backup_power_profile",
+      "target": 8,
+      "comparator": ">=",
+      "record_wh_per_day": true,
+      "record_idle_typical_peak_watts": true,
+      "evidence_required": [
+        "bench_measured"
+      ],
+      "status": "proposed_target"
+    },
+    {
+      "id": "OPEN_ARTIFACTS_001",
+      "metric": "critical_artifacts_with_source_revision_and_license_status_recorded",
+      "target": 1,
+      "comparator": "==",
+      "critical_unknowns_must_block_qualification": true,
+      "evidence_required": [
+        "static_checked",
+        "independently_reviewed_qualified"
+      ],
+      "status": "proposed_target"
+    },
+    {
+      "id": "SECURITY_ISOLATION_001",
+      "metric": "unauthorized_flows_accepted_in_negative_test_corpus",
+      "target": 0,
+      "comparator": "==",
+      "required_boundaries": [
+        "client_to_client",
+        "guest_to_management",
+        "wan_to_management"
+      ],
+      "invalid_update_signatures_must_be_rejected": true,
+      "evidence_required": [
+        "unit_contract_tested",
+        "bench_measured"
+      ],
+      "status": "proposed_target"
+    },
+    {
+      "id": "ECONOMIC_ADVANTAGE_001",
+      "metric": "fully_burdened_cost_per_active_household_reduction_vs_best_feasible_legal_baseline",
+      "target": 0.3,
+      "comparator": ">=",
+      "denominator_requires_mean_active_households": true,
+      "cost_items_required": [
+        "amortized_capex",
+        "upstream_service_and_transit",
+        "electricity_and_power_storage",
+        "site_access_and_mounting",
+        "installation_and_paid_maintenance",
+        "support_and_replacement_spares",
+        "compliance_and_insurance",
+        "expected_failure_and_recovery_cost"
+      ],
+      "report_donated_resources_separately": true,
+      "status": "proposed_target"
+    }
+  ],
+  "hard_gates": [
+    "Do not claim global Internet without authorized working upstream.",
+    "Do not share or resell any WAN service without applicable provider permission.",
+    "Do not deploy radio equipment without the required local authorization and type approval.",
+    "Do not expose management interfaces to client or guest networks.",
+    "Do not promote hardware maturity from a synthetic fixture, VM simulation or document review alone.",
+    "Do not treat Starlink Ethernet interoperability as evidence of South African service authorization.",
+    "Do not treat a draft target as a measured result."
+  ],
+  "evidence_package_requirements": [
+    "exact hardware model and revision",
+    "immutable software and firmware revisions",
+    "per-artifact license and source-availability inventory",
+    "BOM status, substitutes, vendor and supply evidence",
+    "site profile and network topology revision",
+    "test suite and runner revisions",
+    "parameters and raw-artifact SHA-256 digests",
+    "calibration evidence for instrumented measurements",
+    "failures, skipped tests, limitations and negative controls",
+    "independent review reference when claimed"
+  ],
+  "source_revalidation_required": true,
+  "source_note": "Draft profile for contract and lab planning. A schema and independent validator must be added before accepting this as a machine-enforced deployment profile."
+}
