@@ -54,6 +54,6 @@ The sample "permissive" constructor is for experimentation, not a recommended pr
 
 ## Tests authored
 
-Eleven unit tests cover cheaper-link selection, a hard cost cap, missing/mismatched price data, stale observations, local-only use without WAN, sensitive-intent trust, authorization, input-order-independent ranking, explicit no-route outcomes, unknown metered allowance, invalid currency and duplicate link identifiers.
+Thirteen unit tests cover cheaper-link selection, a hard cost cap, missing/mismatched price data, stale observations, local-only use without WAN, sensitive-intent trust, authorization, input-order-independent ranking, explicit no-route outcomes, unknown metered allowance, invalid currency and duplicate link identifiers.
 
 These tests are source code, not passing test evidence. Compilation, Cargo.lock generation, unit-test execution and Clippy must run in a Rust-enabled environment before integration. This crate is not yet an OS routing adapter, eSIM controller, carrier network selector, phone app, emergency-calling implementation or production service.
