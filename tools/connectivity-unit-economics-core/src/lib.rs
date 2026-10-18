@@ -86,6 +86,7 @@ pub struct EconomicsInput {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EconomicsError {
     InvalidCurrencyCode,
+    InvalidLineId,
     DuplicateLineId,
     CurrencyMismatch,
     InvalidCapitalAsset,
@@ -180,8 +181,10 @@ fn unique_id(id: &str, ids: &mut BTreeSet<String>) -> Result<(), EconomicsError>
         || !id.bytes().all(|byte| {
             byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-')
         })
-        || !ids.insert(id.to_owned())
     {
+        return Err(EconomicsError::InvalidLineId);
+    }
+    if !ids.insert(id.to_owned()) {
         return Err(EconomicsError::DuplicateLineId);
     }
     Ok(())
@@ -532,7 +535,19 @@ mod tests {
     fn invalid_or_duplicate_line_ids_are_rejected() {
         let mut model = input();
         model.monthly_costs[0].id = "../escape".to_owned();
-        assert_eq!(calculate(&model), Err(EconomicsError::DuplicateLineId));
+        assert_eq!(calculate(&model), Err(EconomicsError::InvalidLineId));
+    }
+
+    #[test]
+    fn aggregate_overflow_is_rejected() {
+        let mut model = input();
+        model.monthly_costs = vec![
+            CostLine { id: "huge-a".to_owned(), currency: "ZAR".to_owned(), monthly_amount_minor: u64::MAX, category: CostCategory::OtherOperating },
+            CostLine { id: "huge-b".to_owned(), currency: "ZAR".to_owned(), monthly_amount_minor: u64::MAX, category: CostCategory::OtherOperating },
+        ];
+        model.capital_assets.clear();
+        model.monthly_funding.clear();
+        assert_eq!(calculate(&model), Err(EconomicsError::ArithmeticOverflow));
     }
 
     #[test]
