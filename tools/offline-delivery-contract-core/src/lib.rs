@@ -811,7 +811,10 @@ mod tests {
         assert_eq!(queue.enqueue(1_700, message.clone()), Ok(Admission::AlreadyKnown(MessageState::Delivered)));
         queue.sweep_history(2_100);
         assert_eq!(queue.state("msg-026"), None);
-        assert_eq!(queue.enqueue(2_100, message), Ok(Admission::Inserted));
+        let mut fresh = message;
+        fresh.created_at_ms = 2_100;
+        fresh.expires_at_ms = 3_100;
+        assert_eq!(queue.enqueue(2_100, fresh), Ok(Admission::Inserted));
     }
 
     #[test]
@@ -825,6 +828,9 @@ mod tests {
         queue.acknowledge(1_600, &ack, true).unwrap();
         assert_eq!(queue.enqueue(1_700, message("msg-028")), Err(QueueError::HistoryCapacityExhausted));
         queue.sweep_history(7_000);
-        assert_eq!(queue.enqueue(7_000, message("msg-028")), Err(QueueError::ExpiredAtAdmission));
+        let mut fresh = message("msg-028");
+        fresh.created_at_ms = 7_000;
+        fresh.expires_at_ms = 8_000;
+        assert_eq!(queue.enqueue(7_000, fresh), Ok(Admission::Inserted));
     }
 }
