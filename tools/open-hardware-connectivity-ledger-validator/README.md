@@ -6,9 +6,7 @@ Offline Rust validator for the draft connectivity hardware openness ledger. It r
 
     cargo test --manifest-path tools/open-hardware-connectivity-ledger-validator/Cargo.toml --all-targets
     cargo clippy --manifest-path tools/open-hardware-connectivity-ledger-validator/Cargo.toml --all-targets -- -D warnings
-    cargo run --manifest-path tools/open-hardware-connectivity-ledger-validator/Cargo.toml -- profileschema-does-not-exist.json profile.json
-
-The expected CLI inputs from the repository root are:
+The CLI expects these inputs from the repository root:
 
     cargo run --manifest-path tools/open-hardware-connectivity-ledger-validator/Cargo.toml -- schemas/open-hardware-connectivity-candidate-ledger-v1.schema.json profiles/open-hardware-connectivity-candidate-ledger-v1.json
 
