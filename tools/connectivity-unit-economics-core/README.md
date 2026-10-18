@@ -32,3 +32,8 @@ This core does not scrape quotes, validate invoices, collect data from household
 Donated assets and unpaid labour are not monthly cash costs, but remain visible as replacement-cost economic inputs. “Zero user charge” is a funding scenario, not a statement that capacity is costless: when the user cap is zero, the reported funding gap shows what external monthly funding is still needed.
 
 The detailed methodology, South African baseline observations and proposed benchmarks are in `docs/CONNECTIVITY_UNIT_ECONOMICS_V1.md`. Quoted prices are dated context only; verify the current offer terms, coverage, taxes and eligibility before using a comparison in a real decision.
+
+
+## Dated quote context
+
+The repository also stores two non-equivalent observations in `profiles/connectivity-price-observations-south-africa-v1.json` and locks its claim boundary in `schemas/connectivity-price-observations-south-africa-v1.schema.json`. A unit test validates the profile against the schema and requires both entries to remain marked `not_comparable_until_scope_matched`. These are source observations, not actual invoices, universal prices or calculator defaults. The ICASA row describes a 2024 standardized basket reported in the March 2026 sector report; the Vodacom row describes the indexed 5 GB Anytime + 5 GB Night Owl offer. Re-check dates, terms and availability before using them.
