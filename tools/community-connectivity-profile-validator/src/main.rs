@@ -281,10 +281,12 @@ fn main() {
         "errors": errors,
     });
     let mut stdout = std::io::stdout().lock();
-    if let Err(error) = serde_json::to_writer_pretty(&mut stdout, &report)
-        .and_then(|_| stdout.write_all(b"\n").map_err(serde_json::Error::io))
-    {
+    if let Err(error) = serde_json::to_writer_pretty(&mut stdout, &report) {
         eprintln!("cannot write validation report: {error}");
+        process::exit(2);
+    }
+    if let Err(error) = stdout.write_all(b"\\n") {
+        eprintln!("cannot terminate validation report: {error}");
         process::exit(2);
     }
     if !valid {
