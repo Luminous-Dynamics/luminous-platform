@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "docs/LOCAL_FIRST_OUTAGE_RESILIENCE_V1.md"
+      - "docs/DTN_IMPLEMENTATION_CANDIDATE_REVIEW_V1.md"
       - "profiles/local-first-outage-resilience-benchmark-profile-v1.json"
       - "schemas/local-first-outage-resilience-benchmark-profile-v1.schema.json"
       - "schemas/local-first-measurement-receipt-v1.schema.json"
@@ -14,6 +15,7 @@ on:
     branches: [main, research/local-first-outage-resilience-v1]
     paths:
       - "docs/LOCAL_FIRST_OUTAGE_RESILIENCE_V1.md"
+      - "docs/DTN_IMPLEMENTATION_CANDIDATE_REVIEW_V1.md"
       - "profiles/local-first-outage-resilience-benchmark-profile-v1.json"
       - "schemas/local-first-outage-resilience-benchmark-profile-v1.schema.json"
       - "schemas/local-first-measurement-receipt-v1.schema.json"
