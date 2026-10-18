@@ -518,6 +518,39 @@ mod tests {
     }
 
     #[test]
+    fn end_to_end_report_binds_receipt_schema_profile_and_evidence_bytes() {
+        let (schema, receipt, profile, profile_bytes) = fixtures();
+        let root = temp_root();
+        let schema_bytes = include_bytes!(
+            "../../../../schemas/connectivity-measurement-receipt-v1.schema.json"
+        );
+        let receipt_bytes = serde_json::to_vec(&receipt).expect("synthetic receipt serializes");
+        let report = make_validation_report(
+            schema_bytes,
+            &receipt_bytes,
+            &schema,
+            &receipt,
+            &profile,
+            &profile_bytes,
+            &root,
+        );
+        assert_eq!(report.get("valid").and_then(Value::as_bool), Some(true));
+        assert_eq!(
+            report.get("schema_sha256").and_then(Value::as_str),
+            Some(digest_hex(schema_bytes).as_str())
+        );
+        assert_eq!(
+            report.get("receipt_sha256").and_then(Value::as_str),
+            Some(digest_hex(&receipt_bytes).as_str())
+        );
+        assert_eq!(
+            report.get("benchmark_profile_sha256").and_then(Value::as_str),
+            Some(digest_hex(&profile_bytes).as_str())
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn target_cannot_drift_from_bound_profile() {
         let (schema, mut receipt, profile, profile_bytes) = fixtures();
         receipt["target"] = json!(1);
