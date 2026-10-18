@@ -1,0 +1,580 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/community-wifi-roaming-interoperability-matrix-v1.schema.json",
+  "title": "Community Wi-Fi Roaming Interoperability Matrix v1",
+  "description": "Strict shape contract for evidence-bearing client/profile/AP/AAA/federation combinations. Validity never implies general compatibility.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "matrix_id",
+    "status",
+    "purpose",
+    "privacy_contract",
+    "claim_contract",
+    "rows",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.community-wifi-roaming-interoperability-matrix.v1"
+    },
+    "matrix_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$"
+    },
+    "status": {
+      "enum": [
+        "empty_template_no_observations",
+        "draft_evidence_matrix"
+      ]
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "privacy_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_credentials_present",
+        "private_keys_present",
+        "personal_identity_fields_present",
+        "packet_payloads_present",
+        "browsing_history_present",
+        "site_and_network_identifiers_pseudonymized"
+      ],
+      "properties": {
+        "raw_credentials_present": {
+          "const": false
+        },
+        "private_keys_present": {
+          "const": false
+        },
+        "personal_identity_fields_present": {
+          "const": false
+        },
+        "packet_payloads_present": {
+          "const": false
+        },
+        "browsing_history_present": {
+          "const": false
+        },
+        "site_and_network_identifiers_pseudonymized": {
+          "const": true
+        }
+      }
+    },
+    "claim_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "empty_matrix_means_compatibility_claim",
+        "one_passing_combination_generalizes_to_other_devices_or_sites",
+        "unsupported_combinations_remain_explicit",
+        "simulation_must_not_be_reported_as_field_evidence",
+        "source_and_receipt_hashes_required_for_tested_rows"
+      ],
+      "properties": {
+        "empty_matrix_means_compatibility_claim": {
+          "const": false
+        },
+        "one_passing_combination_generalizes_to_other_devices_or_sites": {
+          "const": false
+        },
+        "unsupported_combinations_remain_explicit": {
+          "const": true
+        },
+        "simulation_must_not_be_reported_as_field_evidence": {
+          "const": true
+        },
+        "source_and_receipt_hashes_required_for_tested_rows": {
+          "const": true
+        }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "maxItems": 500,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "row_id",
+          "claim_status",
+          "claim_scope",
+          "client",
+          "credential",
+          "access_network",
+          "test_run",
+          "limitations"
+        ],
+        "properties": {
+          "row_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$"
+          },
+          "claim_status": {
+            "enum": [
+              "not_tested",
+              "supported",
+              "unsupported",
+              "inconclusive"
+            ]
+          },
+          "client": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "manufacturer",
+              "model",
+              "os_build",
+              "wifi_chipset"
+            ],
+            "properties": {
+              "manufacturer": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "model": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "os_build": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "wifi_chipset": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "credential": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "identity_provider_label",
+              "profile_revision",
+              "eap_method",
+              "credential_state"
+            ],
+            "properties": {
+              "identity_provider_label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "profile_revision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "eap_method": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "credential_state": {
+                "enum": [
+                  "not_obtained",
+                  "test_profile_installed",
+                  "not_verified",
+                  "verified_for_named_test"
+                ]
+              }
+            }
+          },
+          "access_network": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ap_manufacturer",
+              "ap_model",
+              "firmware_revision",
+              "aaa_provider_token",
+              "visited_network_token",
+              "federation_state",
+              "region_code"
+            ],
+            "properties": {
+              "ap_manufacturer": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "ap_model": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "firmware_revision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "aaa_provider_token": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{8,96}$"
+              },
+              "visited_network_token": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{8,96}$"
+              },
+              "federation_state": {
+                "enum": [
+                  "not_applicable",
+                  "not_verified",
+                  "not_joined",
+                  "authorized_test_enrollment_verified"
+                ]
+              },
+              "region_code": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Z]{3}(-[A-Z0-9]{1,8})?$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "test_run": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "tested_at",
+              "evidence_class",
+              "attempted",
+              "succeeded",
+              "failed",
+              "inconclusive",
+              "receipt_path",
+              "receipt_sha256"
+            ],
+            "properties": {
+              "tested_at": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "evidence_class": {
+                "enum": [
+                  "none",
+                  "vm_simulated",
+                  "bench_measured",
+                  "field_observed"
+                ]
+              },
+              "attempted": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "succeeded": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "failed": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "inconclusive": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "receipt_path": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "receipt_sha256": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            }
+          },
+          "claim_scope": {
+            "enum": [
+              "local_passpoint",
+              "openroaming_federated",
+              "ordinary_wifi_fallback"
+            ]
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "claim_status": {
+                  "const": "not_tested"
+                }
+              },
+              "required": [
+                "claim_status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "test_run": {
+                  "properties": {
+                    "tested_at": {
+                      "type": "null"
+                    },
+                    "evidence_class": {
+                      "const": "none"
+                    },
+                    "attempted": {
+                      "const": 0
+                    },
+                    "succeeded": {
+                      "const": 0
+                    },
+                    "failed": {
+                      "const": 0
+                    },
+                    "inconclusive": {
+                      "const": 0
+                    },
+                    "receipt_path": {
+                      "type": "null"
+                    },
+                    "receipt_sha256": {
+                      "type": "null"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "claim_status": {
+                  "enum": [
+                    "supported",
+                    "unsupported",
+                    "inconclusive"
+                  ]
+                }
+              },
+              "required": [
+                "claim_status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "test_run": {
+                  "properties": {
+                    "tested_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "evidence_class": {
+                      "enum": [
+                        "vm_simulated",
+                        "bench_measured",
+                        "field_observed"
+                      ]
+                    },
+                    "attempted": {
+                      "minimum": 1
+                    },
+                    "receipt_path": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "receipt_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "allOf": [
+                {
+                  "properties": {
+                    "claim_scope": {
+                      "const": "openroaming_federated"
+                    }
+                  },
+                  "required": [
+                    "claim_scope"
+                  ]
+                },
+                {
+                  "properties": {
+                    "claim_status": {
+                      "enum": [
+                        "supported",
+                        "unsupported"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "claim_status"
+                  ]
+                }
+              ]
+            },
+            "then": {
+              "properties": {
+                "credential": {
+                  "properties": {
+                    "credential_state": {
+                      "const": "verified_for_named_test"
+                    }
+                  }
+                },
+                "access_network": {
+                  "properties": {
+                    "federation_state": {
+                      "const": "authorized_test_enrollment_verified"
+                    }
+                  }
+                },
+                "test_run": {
+                  "properties": {
+                    "inconclusive": {
+                      "const": 0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "allOf": [
+        {
+          "contains": {
+            "const": "No device or OS compatibility is established by this template alone."
+          }
+        },
+        {
+          "contains": {
+            "const": "No OpenRoaming federation membership or credential entitlement is conveyed."
+          }
+        },
+        {
+          "contains": {
+            "const": "No upstream sharing, resale, spectrum or deployment authorization is conveyed."
+          }
+        },
+        {
+          "contains": {
+            "const": "A passing row applies only to the exact recorded client, OS, profile, AP, AAA, federation and site combination."
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "rows": {
+            "minItems": 1
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "draft_evidence_matrix"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "rows": {
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "empty_template_no_observations"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      }
+    }
+  ]
+}

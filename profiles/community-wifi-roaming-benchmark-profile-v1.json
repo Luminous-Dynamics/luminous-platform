@@ -1,0 +1,178 @@
+{
+  "schema_version": "luminous.community-wifi-roaming-benchmark-profile.v1",
+  "profile_id": "community-wifi-roaming-openroaming-v1",
+  "status": "draft_research_only",
+  "reviewed_at": "2026-10-18",
+  "authority": {
+    "issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/65",
+    "design_document": "docs/COMMUNITY_WIFI_ROAMING_OPENROAMING_RFC_V1.md"
+  },
+  "deployment_gates": {
+    "federation_membership_status": "not_verified",
+    "identity_provider_credentials_status": "not_obtained",
+    "upstream_sharing_permission_status": "not_verified",
+    "regulatory_review_status": "not_verified",
+    "equipment_type_approval_status": "not_verified",
+    "deployment_blocked_until_gates_verified": true,
+    "local_only_access_must_not_require_wan": true,
+    "payload_inspection_for_routing": false,
+    "credential_validation_must_fail_closed": true
+  },
+  "comparison_contract": {
+    "device_os_profile_and_site_scope_must_be_named": true,
+    "unsupported_and_failed_attempts_remain_in_denominator": true,
+    "simulation_must_not_be_reported_as_field_evidence": true,
+    "raw_credentials_and_payloads_must_not_be_in_public_receipts": true,
+    "targets_without_field_baselines_remain_baseline_first": true,
+    "source_and_configuration_revisions_must_be_immutable": true
+  },
+  "benchmarks": [
+    {
+      "id": "WIFI_AUTH_INVALID_CERT_REJECT_001",
+      "domain": "authentication_security",
+      "metric": "successful_authentications_using_invalid_expired_or_untrusted_test_server_certificate",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": ["unit_contract_tested", "bench_measured"],
+      "negative_cases": ["expired_certificate", "untrusted_ca", "wrong_server_name", "stale_trust_store"]
+    },
+    {
+      "id": "WIFI_AUTH_REALM_REJECT_001",
+      "domain": "authentication_security",
+      "metric": "successful_or_secret_disclosing_attempts_to_wrong_realm_or_unauthorized_aaa",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": ["unit_contract_tested", "bench_measured"],
+      "negative_cases": ["wrong_realm", "unauthorized_aaa", "unsupported_eap_method"]
+    },
+    {
+      "id": "WIFI_SECRET_EXPOSURE_001",
+      "domain": "privacy",
+      "metric": "private_keys_passwords_payloads_browsing_history_or_subscriber_identifiers_in_public_receipts",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": ["static_checked", "unit_contract_tested"]
+    },
+    {
+      "id": "WIFI_TIME_TO_USABLE_IP_001",
+      "domain": "roaming_performance",
+      "metric": "arrival_trigger_to_authenticated_ip_and_successful_controlled_https_task_p95_ms",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": ["bench_measured", "field_observed"],
+      "dimensions": ["median_ms", "p95_ms", "p99_ms", "eligible_attempts", "failed_attempts", "device_model", "os_build", "credential_profile"]
+    },
+    {
+      "id": "WIFI_FIRST_ATTEMPT_AUTH_001",
+      "domain": "roaming_performance",
+      "metric": "eligible_full_8021x_to_usable_ip_sessions_succeeding_on_first_attempt_fraction",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": ["bench_measured", "field_observed"],
+      "dimensions": ["device_os_profile_ap_firmware_idp_visited_network", "failure_category"]
+    },
+    {
+      "id": "WIFI_HANDOFF_INTERRUPTION_001",
+      "domain": "roaming_performance",
+      "metric": "active_controlled_application_interruption_during_roam_p95_ms",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": ["bench_measured", "field_observed"],
+      "dimensions": ["ap_pair", "client_os", "active_flow_type", "dropped_flow_fraction"]
+    },
+    {
+      "id": "WIFI_FAILURE_RECOVERY_001",
+      "domain": "resilience",
+      "metric": "recovery_after_named_ap_aaa_idp_federation_wan_or_resolver_failure",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": ["bench_measured", "field_observed"],
+      "dimensions": ["fault_domain", "p50_ms", "p95_ms", "failed_recoveries", "new_vs_existing_sessions"]
+    },
+    {
+      "id": "WIFI_LOCAL_CONTINUITY_001",
+      "domain": "local_first",
+      "metric": "hours_local_services_work_with_wan_and_roaming_identity_unavailable",
+      "operator": ">=",
+      "target": 24,
+      "target_status": "proposed_target",
+      "evidence_classes": ["bench_measured", "field_observed"],
+      "notes": "LAN and declared power are available. Test remote DNS and cloud identity dependencies explicitly."
+    },
+    {
+      "id": "WIFI_COST_PER_USEFUL_TASK_001",
+      "domain": "economics",
+      "metric": "fully_burdened_cost_per_successful_task_vs_matched_authorized_baseline",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": ["field_observed", "independently_reviewed_qualified"],
+      "dimensions": ["upstream_transit", "hardware_amortization", "electricity", "identity_federation_fees", "site_rent", "maintenance", "paid_labor", "support", "taxes", "successful_tasks"]
+    },
+    {
+      "id": "WIFI_ENERGY_PER_TASK_001",
+      "domain": "energy",
+      "metric": "whole_site_wh_per_successful_useful_task",
+      "operator": "baseline_then_minimize",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": ["bench_measured", "field_observed"],
+      "dimensions": ["idle_w", "typical_w", "peak_w", "poe_conversion", "edge_cache", "backup_duration"]
+    },
+    {
+      "id": "WIFI_INTEROP_EVIDENCE_001",
+      "domain": "interoperability",
+      "metric": "tested_client_provider_ap_profile_combinations_with_pass_fail_or_unknown_and_evidence",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target",
+      "evidence_classes": ["static_checked", "bench_measured"],
+      "notes": "A value of 1 means every matrix row is classified with an evidence reference; it does not mean every device is supported."
+    },
+    {
+      "id": "WIFI_FEDERATION_ELIGIBILITY_001",
+      "domain": "external_dependency",
+      "metric": "named_operator_idp_credential_profile_and_site_have_verified_federation_eligibility",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "blocked_on_provider_agreement_and_entitlement",
+      "evidence_classes": ["independently_reviewed_qualified"]
+    },
+    {
+      "id": "WIFI_CLIENT_ISOLATION_001",
+      "domain": "network_security",
+      "metric": "unauthorized_guest_to_guest_or_guest_to_management_connections_succeeded",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": ["bench_measured"],
+      "negative_cases": ["cross_guest_ipv4", "cross_guest_ipv6", "ap_management_access", "lateral_discovery"]
+    }
+  ],
+  "explicit_non_claims": [
+    "No claim of OpenRoaming federation membership",
+    "No claim of live roaming credential or identity-provider access",
+    "No claim that an open-source portal conveys federation eligibility",
+    "No claim of free upstream transit or zero-cost internet",
+    "No claim of global coverage or universal handset compatibility",
+    "No claim of seamless roaming until measured for the named flow and device",
+    "No claim of authorized upstream sharing or resale",
+    "No claim of measured field performance from a schema, simulation or CI result"
+  ],
+  "next_required_artifacts": [
+    "Named client device, OS build, AP firmware and credential-profile capability matrix",
+    "Controlled two-AP local AAA lab with invalid-certificate and wrong-realm negative controls",
+    "Privacy-minimizing telemetry and public receipt specification",
+    "Provider/federation eligibility and upstream permission evidence for any roaming claim",
+    "Baseline-first timing, failure and economic measurements with raw denominators",
+    "Deployment-specific ICASA and equipment type-approval review",
+    "Independent evidence review and repeatable rollback procedure"
+  ]
+}

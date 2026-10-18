@@ -1,0 +1,58 @@
+name: community-wifi-roaming-contracts
+
+on:
+  pull_request:
+    paths:
+      - "tools/community-wifi-roaming-profile-validator/**"
+      - "profiles/community-wifi-roaming-*.json"
+      - "schemas/community-wifi-roaming-*.json"
+      - "docs/COMMUNITY_WIFI_ROAMING_OPENROAMING_RFC_V1.md"
+      - ".github/workflows/community-wifi-roaming-contracts.yml"
+  push:
+    branches: [main, research/community-wifi-openroaming-v1]
+    paths:
+      - "tools/community-wifi-roaming-profile-validator/**"
+      - "profiles/community-wifi-roaming-*.json"
+      - "schemas/community-wifi-roaming-*.json"
+      - "docs/COMMUNITY_WIFI_ROAMING_OPENROAMING_RFC_V1.md"
+      - ".github/workflows/community-wifi-roaming-contracts.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: community-wifi-roaming-contracts-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  roaming-contracts:
+    name: Wi-Fi roaming schema and gate tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Rust toolchain and Clippy
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned to immutable revision
+        with:
+          toolchain: "1.99.0"
+          components: clippy
+
+      - name: Test Wi-Fi roaming validators
+        run: cargo test --manifest-path tools/community-wifi-roaming-profile-validator/Cargo.toml --all-targets
+
+      - name: Lint Wi-Fi roaming validators
+        run: cargo clippy --manifest-path tools/community-wifi-roaming-profile-validator/Cargo.toml --all-targets -- -D warnings
+
+      - name: Validate checked-in profile and empty matrix
+        run: >-
+          cargo run
+          --manifest-path tools/community-wifi-roaming-profile-validator/Cargo.toml
+          --
+          schemas/community-wifi-roaming-benchmark-profile-v1.schema.json
+          profiles/community-wifi-roaming-benchmark-profile-v1.json
+          schemas/community-wifi-roaming-interoperability-matrix-v1.schema.json
+          profiles/community-wifi-roaming-interoperability-matrix-template-v1.json

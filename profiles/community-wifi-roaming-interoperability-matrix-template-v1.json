@@ -1,0 +1,28 @@
+{
+  "schema_version": "luminous.community-wifi-roaming-interoperability-matrix.v1",
+  "matrix_id": "community-wifi-roaming-interoperability-matrix-template-v1",
+  "status": "empty_template_no_observations",
+  "purpose": "Record exact client, credential, access-network and evidence combinations without generalizing unsupported devices or providers.",
+  "privacy_contract": {
+    "raw_credentials_present": false,
+    "private_keys_present": false,
+    "personal_identity_fields_present": false,
+    "packet_payloads_present": false,
+    "browsing_history_present": false,
+    "site_and_network_identifiers_pseudonymized": true
+  },
+  "claim_contract": {
+    "empty_matrix_means_compatibility_claim": false,
+    "one_passing_combination_generalizes_to_other_devices_or_sites": false,
+    "unsupported_combinations_remain_explicit": true,
+    "simulation_must_not_be_reported_as_field_evidence": true,
+    "source_and_receipt_hashes_required_for_tested_rows": true
+  },
+  "rows": [],
+  "explicit_non_claims": [
+    "No device or OS compatibility is established by this template alone.",
+    "No OpenRoaming federation membership or credential entitlement is conveyed.",
+    "No upstream sharing, resale, spectrum or deployment authorization is conveyed.",
+    "A passing row applies only to the exact recorded client, OS, profile, AP, AAA, federation and site combination."
+  ]
+}
