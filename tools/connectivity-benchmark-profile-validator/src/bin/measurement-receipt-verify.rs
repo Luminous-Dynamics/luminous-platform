@@ -403,7 +403,7 @@ fn main() {
     };
 
     let report = make_validation_report(
-        &schema, &receipt, &schema, &receipt, &profile, &profile_bytes, evidence_root
+        &schema_bytes, &receipt_bytes, &schema, &receipt, &profile, &profile_bytes, evidence_root
     );
     let report_valid = report.get("valid").and_then(Value::as_bool) == Some(true);
     let mut stdout = std::io::stdout().lock();
