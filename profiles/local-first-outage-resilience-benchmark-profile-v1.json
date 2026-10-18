@@ -1,0 +1,274 @@
+{
+  "schema_version": "luminous.local-first-outage-resilience-benchmark-profile.v1",
+  "profile_id": "local-first-outage-resilience-v1",
+  "status": "draft_targets_not_results",
+  "reviewed_at": "2026-10-18",
+  "authority": {
+    "issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/67",
+    "design_document": "docs/LOCAL_FIRST_OUTAGE_RESILIENCE_V1.md",
+    "measurement_receipt_contract": "schemas/connectivity-measurement-receipt-v1.schema.json"
+  },
+  "deployment_gates": {
+    "bpv7_implementation_status": "not_selected",
+    "bpsec_security_context_status": "not_selected",
+    "end_to_end_crypto_adapter_status": "not_implemented",
+    "durable_queue_adapter_status": "not_implemented",
+    "upstream_relay_permission_status": "not_verified",
+    "regulatory_review_status": "not_verified",
+    "local_continuity_measured": false,
+    "deployment_blocked_until_gates_verified": true,
+    "local_service_must_not_require_wan": true,
+    "payload_inspection_for_routing": false,
+    "sensitive_admission_must_require_trusted_protection_verification": true
+  },
+  "comparison_contract": {
+    "source_code_and_config_revisions_must_be_immutable": true,
+    "raw_trial_denominators_must_be_published": true,
+    "failed_and_expired_messages_must_remain_in_denominator": true,
+    "simulation_must_not_be_reported_as_field_evidence": true,
+    "no_exactly_once_transport_claim": true,
+    "cryptography_must_not_be_implemented_by_metadata_model": true,
+    "costs_must_include_hardware_energy_maintenance_and_labor": true
+  },
+  "benchmarks": [
+    {
+      "id": "LOCAL_CONTINUITY_001",
+      "domain": "local_first",
+      "metric": "hours_essential_local_tasks_succeed_with_all_wans_disconnected",
+      "operator": ">=",
+      "target": 24,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "negative_cases": [
+        "external_dns_unavailable",
+        "cloud_identity_unavailable",
+        "all_wans_disconnected",
+        "telemetry_backend_unavailable"
+      ]
+    },
+    {
+      "id": "QUEUE_BOUNDS_001",
+      "domain": "resource_safety",
+      "metric": "messages_admitted_over_any_configured_size_count_byte_or_peer_quota",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested",
+        "bench_measured"
+      ],
+      "negative_cases": [
+        "oversized_message",
+        "queue_item_limit",
+        "queue_byte_limit",
+        "sender_item_quota",
+        "sender_byte_quota",
+        "integer_boundary"
+      ]
+    },
+    {
+      "id": "EXPIRY_FORWARDING_001",
+      "domain": "delivery_safety",
+      "metric": "expired_messages_newly_selected_for_forwarding_at_decision_time",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested",
+        "bench_measured"
+      ],
+      "negative_cases": [
+        "already_expired",
+        "expires_during_outage",
+        "clock_skew",
+        "clock_rollback"
+      ]
+    },
+    {
+      "id": "SENSITIVE_PROTECTION_GATE_001",
+      "domain": "security_boundary",
+      "metric": "sensitive_messages_admitted_without_trusted_adapter_verification_of_required_protection",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested",
+        "bench_measured"
+      ],
+      "notes": "The metadata-only core cannot verify cryptography. It only models trusted-adapter decisions; a production crypto integration is a separate gate."
+    },
+    {
+      "id": "DUPLICATE_APPLICATION_EFFECT_001",
+      "domain": "idempotency",
+      "metric": "duplicate_application_side_effects_for_replayed_message_ids_at_reference_consumer",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested",
+        "bench_measured"
+      ],
+      "negative_cases": [
+        "duplicate_submission",
+        "duplicate_relay",
+        "ack_lost_after_side_effect",
+        "process_restart"
+      ]
+    },
+    {
+      "id": "STORE_FORWARD_DELIVERY_001",
+      "domain": "intermittent_delivery",
+      "metric": "unexpired_test_messages_delivered_after_route_recovery_fraction",
+      "operator": "within_threshold_success_ratio",
+      "target": {
+        "success_fraction": 0.99,
+        "minimum_messages_per_scenario": 100
+      },
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "notes": "Publish raw denominator and p50/p95/p99 delivery delay by topology and partition duration."
+    },
+    {
+      "id": "CRASH_RECOVERY_001",
+      "domain": "durability",
+      "metric": "acknowledged_durable_queue_entries_missing_after_controlled_process_restart",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "bench_measured"
+      ],
+      "notes": "Only meaningful after a named persistent queue adapter exists; in-memory reference model is not durability evidence."
+    },
+    {
+      "id": "QUOTA_FAIRNESS_001",
+      "domain": "fairness",
+      "metric": "messages_or_bytes_accepted_above_sender_recipient_or_site_quota",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested",
+        "bench_measured"
+      ]
+    },
+    {
+      "id": "FAIRNESS_STARVATION_001",
+      "domain": "fairness",
+      "metric": "ordinary_priority_messages_starved_beyond_declared_maximum_delay_under_declared_load",
+      "operator": "baseline_then_set_target",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "notes": "Set max delay only after workload and reserved-essential-traffic model are declared."
+    },
+    {
+      "id": "ENERGY_PER_USEFUL_TASK_001",
+      "domain": "energy",
+      "metric": "whole_site_energy_wh_per_successful_useful_task",
+      "operator": "baseline_then_minimize",
+      "target": null,
+      "target_status": "baseline_first",
+      "evidence_classes": [
+        "bench_measured",
+        "field_observed"
+      ],
+      "dimensions": [
+        "idle_watts",
+        "peak_watts",
+        "power_conversion_loss",
+        "backup_duration_hours"
+      ]
+    },
+    {
+      "id": "PUBLIC_TELEMETRY_PRIVACY_001",
+      "domain": "privacy",
+      "metric": "payload_credentials_private_keys_personal_identifiers_or_browsing_history_in_public_receipts",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "static_checked",
+        "unit_contract_tested"
+      ]
+    },
+    {
+      "id": "UNAUTHORIZED_RELAY_001",
+      "domain": "authorization",
+      "metric": "messages_forwarded_to_unauthorized_or_incompatible_next_hop",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested",
+        "bench_measured"
+      ],
+      "negative_cases": [
+        "route_not_authorized",
+        "destination_not_allowed",
+        "security_profile_incompatible",
+        "revocation_stale"
+      ]
+    },
+    {
+      "id": "CACHE_INTEGRITY_001",
+      "domain": "local_content",
+      "metric": "corrupted_or_untrusted_cache_objects_presented_as_verified_current_content",
+      "operator": "==",
+      "target": 0,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "unit_contract_tested",
+        "bench_measured"
+      ],
+      "negative_cases": [
+        "digest_mismatch",
+        "invalid_source_signature",
+        "stale_version",
+        "failed_invalidation"
+      ]
+    },
+    {
+      "id": "EVIDENCE_TRACEABILITY_001",
+      "domain": "measurement",
+      "metric": "benchmark_runs_with_exact_code_config_profile_and_trace_digests_and_trial_denominators",
+      "operator": "==",
+      "target": 1,
+      "target_status": "proposed_target",
+      "evidence_classes": [
+        "static_checked",
+        "unit_contract_tested"
+      ],
+      "notes": "All targets are proposals until a named verifier and a measurement receipt establish evidence class."
+    }
+  ],
+  "explicit_non_claims": [
+    "No claim of guaranteed delivery or exactly-once network transport",
+    "No claim that metadata validates payload encryption or authenticity",
+    "No claim of BPv7/BPSec interoperability before a named implementation is tested",
+    "No claim that a mesh provides global Internet without authorized upstream backhaul",
+    "No claim of safe public relay, lawful resale or spectrum authorization",
+    "No claim of emergency-grade telephony or emergency service",
+    "No claim of field performance from schemas, unit tests, simulation or queued CI",
+    "No claim of verified cache contents without source integrity evidence"
+  ],
+  "next_required_artifacts": [
+    "Strict profile JSON Schema and offline Rust validator",
+    "Metadata-only Rust queue/expiry/quota reference model with negative tests",
+    "Saved synthetic receipts for positive and mutated negative tests",
+    "Local-only two-node VM/namespace test topology and DNS/cloud dependency negative controls",
+    "BPv7/BPSec candidate inventory with license, maintenance, interoperability and threat-model review",
+    "Named persistence adapter with crash-consistency tests before any durability claim",
+    "Consent, abuse handling, privacy retention, owner opt-in and site authorization plan",
+    "Independent review of test receipts and a staged authorized field pilot"
+  ]
+}
