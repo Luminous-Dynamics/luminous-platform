@@ -6,7 +6,7 @@
   "authority": {
     "issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/67",
     "design_document": "docs/LOCAL_FIRST_OUTAGE_RESILIENCE_V1.md",
-    "measurement_receipt_contract": "schemas/connectivity-measurement-receipt-v1.schema.json"
+    "measurement_receipt_contract": "schemas/local-first-measurement-receipt-v1.schema.json"
   },
   "deployment_gates": {
     "bpv7_implementation_status": "not_selected",
