@@ -16,3 +16,7 @@ unsafe_code = "forbid"
 
 [lints.clippy]
 all = "warn"
+
+[[bin]]
+name = "local-first-measurement-receipt-verify"
+path = "src/bin/measurement-receipt-verify.rs"
