@@ -148,7 +148,7 @@ Test link-present-but-no-internet and DNS failure separately. A cable status or 
 
 A Starlink kit accepting Ethernet establishes a technical integration path; it does not establish that the particular plan permits resale, community hotspot provision, or distribution to third parties. Starlink terms vary by jurisdiction and plan. At least some published consumer terms prohibit resale except when authorized and describe community Wi-Fi/hotspot resale for Priority plans. Before offering shared paid service, confirm the actual local contract and written authorization rather than extrapolating from another country's terms.
 
-South African deployment must separately verify current ICASA authorizations and applicable rules. ICASA's published pages distinguish service licensing from radio-spectrum licensing, and its 2026 spectrum-plan/consultation activity is not itself an authorization for a particular service. An ITWeb report published 8 October 2026 reported that Starlink had not yet formally applied in South Africa at that time; treat this as a dated secondary report, not a permanent statement of status. Re-check ICASA and the provider at procurement/deployment time. Until service authorization and plan permissions are evidenced, use an authorized local ISP for field trials and use an ordinary Ethernet/DHCP uplink emulator for compatibility-development tests.
+South African deployment must separately verify current ICASA authorizations and applicable rules. ICASA distinguishes service licensing from radio-spectrum licensing and published draft satellite spectrum amendments on 15 May 2026, with submissions due 29 June 2026; those drafts are not an authorization for a specific operator or terminal. An ITWeb report dated 15 June 2026 quoted the Department of Communications and Digital Technologies saying ICASA had not received Starlink applications for spectrum, I-ECNS or I-ECS licences at the time of that parliamentary reply. This is the latest specific application-status report located in this review, not proof of today's status. Re-check ICASA and the provider before procurement/deployment. Until service authorization and plan permissions are evidenced, use an authorized local ISP for field trials and an ordinary Ethernet/DHCP uplink emulator for compatibility-development tests.
 
 ### 5.4 Required interoperability tests
 
@@ -260,6 +260,7 @@ Sources reviewed 2026-10-18. Product specifications, licenses, plan terms, avail
 - ICASA, *Services Licensing*: https://www.icasa.org.za/pages/services-licencing
 - ICASA, *Spectrum Licensing*: https://www.icasa.org.za/pages/spectrum-licensing
 - ICASA, *updated National Radio Frequency Plan 2026*, published 24 July 2026: https://www.icasa.org.za/news/2026/icasa-publishes-an-updated-national-radio-frequency-plan-2026
+- ICASA, *Draft Amendments to the Radio Frequency Spectrum Regulations and Radio Frequency Spectrum Fees Regulations*, published 15 May 2026: https://www.icasa.org.za/news/2026/icasa-publishes-draft-amendments-to-the-radio-frequency-spectrum-regulations-and-radio-frequency-spectrum-fees-regulations
 - OpenWrt, *OpenWrt One*: https://openwrt.org/toh/openwrt/one
 - OpenWrt, *Supported devices*: https://openwrt.org/supported_devices
 - OpenWrt, *Smart Queue Management*: https://openwrt.org/docs/guide-user/network/traffic-shaping/sqm
