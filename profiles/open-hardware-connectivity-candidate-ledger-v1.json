@@ -1,0 +1,192 @@
+{
+  "schema_version": "luminous.open-hardware-connectivity-candidate-ledger.v1",
+  "profile_id": "open-hardware-connectivity-candidate-ledger-2026-10-18",
+  "status": "draft_research_only",
+  "reviewed_at": "2026-10-18",
+  "authority": {
+    "issue": "https://github.com/Luminous-Dynamics/luminous-platform/issues/71",
+    "design_document": "docs/OPEN_HARDWARE_CONNECTIVITY_QUALIFICATION_V1.md"
+  },
+  "deployment_gates": {
+    "public_site_deployment_authorized": false,
+    "south_africa_type_approval_status": "not_verified",
+    "upstream_sharing_permission_status": "not_verified",
+    "spectrum_permission_status": "not_verified",
+    "installation_safety_review_status": "not_verified",
+    "live_radio_measurement_available": false
+  },
+  "claim_contract": {
+    "overall_open_hardware_claim": false,
+    "firmware_availability_alone_proves_hardware_open": false,
+    "design_file_link_alone_proves_design_license": false,
+    "openwrt_support_alone_proves_open_radio_stack": false,
+    "ci_pass_alone_proves_field_qualification": false,
+    "starlink_ip_compatibility_proves_terminal_open": false,
+    "unknown_critical_dimension_blocks_full_open_claim": true
+  },
+  "candidate_profiles": [
+    {
+      "candidate_id": "GLINET_GL_MT6000_FLINT2_GATEWAY_CANDIDATE",
+      "manufacturer": "GL.iNet",
+      "model": "GL-MT6000 (Flint 2)",
+      "role": "gateway_candidate",
+      "exact_purchased_hardware_revision": "not_verified",
+      "qualification_status": "design_candidate_only",
+      "overall_openness_status": "mixed_firmware_driver_and_unknown_hardware_file_status",
+      "current_upstream_firmware_reference": "OpenWrt Table of Hardware indexed current release field: 25.12.5; revalidate before installing",
+      "hardware_summary": "OpenWrt device page describes MediaTek Filogic 830, 1 GB RAM, 8 GB eMMC, two 2.5 GbE ports, four 1 GbE LAN ports and dual-band 4x4 Wi-Fi 6.",
+      "firmware_and_driver_summary": "The vendor describes a proprietary MediaTek-SDK firmware path for performance/stability and a separate synchronized native OpenWrt/open-source-driver stream. Select and pin one path; do not merge claims across them.",
+      "source_references": [
+        "https://openwrt.org/toh/gl.inet/gl-mt6000",
+        "https://toh.openwrt.org/?model=mt6000&view=normal",
+        "https://dl.gl-inet.com/router/mt6000/openwrt25",
+        "https://docs.gl-inet.com/router/en/4/user_guide/gl-mt6000/"
+      ],
+      "critical_artifacts": [
+        {
+          "artifact_id": "board_schematics_and_pcb",
+          "status": "unknown",
+          "evidence_url": null,
+          "review_note": "No reviewed, licenced, immutable design-file set is linked in this ledger."
+        },
+        {
+          "artifact_id": "hardware_bom_and_component_replacement",
+          "status": "unknown",
+          "evidence_url": "https://openwrt.org/toh/gl.inet/gl-mt6000",
+          "review_note": "OpenWrt hardware entry is not a complete open BOM or replacement-source attestation."
+        },
+        {
+          "artifact_id": "upstream_openwrt_support",
+          "status": "source_claim_seen",
+          "evidence_url": "https://openwrt.org/toh/gl.inet/gl-mt6000",
+          "review_note": "Exact device revision and chosen upstream image still require local verification."
+        },
+        {
+          "artifact_id": "radio_driver",
+          "status": "mixed_or_stream_dependent",
+          "evidence_url": "https://dl.gl-inet.com/router/mt6000/openwrt25",
+          "review_note": "Native open-source-driver stream and vendor SDK stream are distinct options with different behaviour."
+        },
+        {
+          "artifact_id": "radio_firmware_blobs_and_calibration",
+          "status": "unknown_or_blob_dependent",
+          "evidence_url": "https://dl.gl-inet.com/router/mt6000/openwrt25",
+          "review_note": "Enumerate exact runtime firmware, calibration and licence for the selected build."
+        },
+        {
+          "artifact_id": "bootloader_and_recovery",
+          "status": "recovery_path_documented_not_tested",
+          "evidence_url": "https://openwrt.org/toh/gl.inet/gl-mt6000",
+          "review_note": "Recovery methods are documented; repeatability on the exact physical revision is untested."
+        },
+        {
+          "artifact_id": "south_africa_equipment_approval",
+          "status": "not_verified",
+          "evidence_url": null,
+          "review_note": "Verify exact model/revision and radio configuration before public deployment."
+        },
+        {
+          "artifact_id": "power_thermal_and_environment",
+          "status": "not_measured",
+          "evidence_url": null,
+          "review_note": "Idle/peak watts, temperature, enclosure and backup runtime not measured."
+        }
+      ],
+      "explicit_non_claims": [
+        "Not claimed to be fully open hardware",
+        "No exact device revision has been physically inspected",
+        "No firmware build or recovery has been measured in this project",
+        "No South African approval or provider-sharing permission is conveyed"
+      ]
+    },
+    {
+      "candidate_id": "BANANAPI_BPI_R4_HARDWARE_FILE_CANDIDATE",
+      "manufacturer": "Banana Pi / SinoVoIP",
+      "model": "BPI-R4",
+      "role": "gateway_development_board_candidate",
+      "exact_purchased_hardware_revision": "not_verified; vendor documents a V1.3 hardware-file set",
+      "qualification_status": "design_candidate_only",
+      "overall_openness_status": "hardware_files_linked_license_unverified_radio_stack_unknown",
+      "current_upstream_firmware_reference": "Vendor links include a 21.02-era OpenWrt BSP branch and separate kernel repositories; current upstream target support not verified in this ledger.",
+      "hardware_summary": "Vendor documentation links BPI-R4 hardware resources and kernel/BSP repositories.",
+      "firmware_and_driver_summary": "Available source repositories do not prove every radio firmware/calibration component is open or that the intended board/card combination is supported by current upstream OpenWrt.",
+      "source_references": [
+        "https://docs.banana-pi.org/en/BPI-R4/BananaPi_BPI-R4",
+        "https://github.com/BPI-SINOVOIP/BPI-R4-bsp",
+        "https://github.com/BPI-SINOVOIP/BPI-R4-MT76-OPENWRT-V21.02"
+      ],
+      "critical_artifacts": [
+        {
+          "artifact_id": "board_schematics_and_pcb",
+          "status": "file_location_linked_license_unverified",
+          "evidence_url": "https://docs.banana-pi.org/en/BPI-R4/BananaPi_BPI-R4",
+          "review_note": "Vendor docs identify a V1.3 hardware-file set; verify exact files, terms, completeness and reproducibility."
+        },
+        {
+          "artifact_id": "hardware_bom_and_component_replacement",
+          "status": "partially_documented_review_required",
+          "evidence_url": "https://docs.banana-pi.org/en/BPI-R4/BananaPi_BPI-R4",
+          "review_note": "A source/code link is not a complete manufacturing BOM and second-source plan."
+        },
+        {
+          "artifact_id": "kernel_and_vendor_bsp",
+          "status": "source_repositories_linked",
+          "evidence_url": "https://github.com/BPI-SINOVOIP/BPI-R4-bsp",
+          "review_note": "Pin exact commits, licences, build instructions and maintenance/security posture."
+        },
+        {
+          "artifact_id": "upstream_openwrt_support",
+          "status": "not_verified",
+          "evidence_url": "https://openwrt.org/toh/start",
+          "review_note": "Vendor BSP support must not be conflated with current upstream support; verify exact board and Wi-Fi card."
+        },
+        {
+          "artifact_id": "radio_driver",
+          "status": "not_verified",
+          "evidence_url": "https://github.com/BPI-SINOVOIP/BPI-R4-MT76-OPENWRT-V21.02",
+          "review_note": "Verify card/chipset, upstream driver, firmware needs and supported operations."
+        },
+        {
+          "artifact_id": "radio_firmware_blobs_and_calibration",
+          "status": "not_verified",
+          "evidence_url": null,
+          "review_note": "Inventory blobs, calibration, regulatory tables and redistribution constraints for the exact card."
+        },
+        {
+          "artifact_id": "bootloader_and_recovery",
+          "status": "not_verified",
+          "evidence_url": "https://docs.banana-pi.org/en/BPI-R4/BananaPi_BPI-R4",
+          "review_note": "Document and test recovery for the exact board revision before deployment."
+        },
+        {
+          "artifact_id": "south_africa_equipment_approval",
+          "status": "not_verified",
+          "evidence_url": null,
+          "review_note": "Verify exact board plus RF card/antenna combination and applicable approvals."
+        },
+        {
+          "artifact_id": "power_thermal_and_environment",
+          "status": "not_measured",
+          "evidence_url": null,
+          "review_note": "Measure board, radio-card, power supply and enclosure under the target load."
+        }
+      ],
+      "explicit_non_claims": [
+        "No claim that every hardware file has a licence permitting modification and redistribution",
+        "No claim of current upstream OpenWrt support for every BPI-R4/card combination",
+        "No claim that every radio driver or firmware blob is open",
+        "No South African type approval or deployment permission is conveyed"
+      ]
+    }
+  ],
+  "next_required_artifacts": [
+    "Immutable exact model/revision inventory for every selected pilot component",
+    "Reviewed licence/file inventory for board designs, firmware, drivers, calibration and manufacturing files",
+    "Pinned firmware image and source/configuration digests",
+    "Clean install, failed-update rollback and recovery receipts on each exact physical revision",
+    "Measured idle/typical/peak power, thermal behaviour, WAN failover and local-only continuity",
+    "Exact AP/client compatibility matrix and regional radio compliance evidence",
+    "Provider sharing/resale and applicable ICASA/equipment-approval review",
+    "Independent review before any qualified or fully-open claim"
+  ]
+}
