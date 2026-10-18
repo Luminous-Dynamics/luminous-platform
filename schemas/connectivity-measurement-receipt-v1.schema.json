@@ -1,0 +1,359 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/connectivity-measurement-receipt-v1.schema.json",
+  "title": "Luminous Connectivity Measurement Receipt v1",
+  "description": "A version-pinned record of raw connectivity benchmark trials. Structural validation does not itself establish measurement truth, qualification, or authorization.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "receipt_version",
+    "receipt_id",
+    "status",
+    "benchmark_id",
+    "benchmark_profile_sha256",
+    "target_operator",
+    "target",
+    "target_status",
+    "evidence_class",
+    "execution_environment",
+    "source",
+    "run_started_at",
+    "run_finished_at",
+    "environment",
+    "metric",
+    "trials",
+    "summary",
+    "artifacts",
+    "privacy",
+    "limitations"
+  ],
+  "properties": {
+    "receipt_version": {
+      "const": "luminous.connectivity-measurement-receipt.v1"
+    },
+    "receipt_id": {
+      "type": "string",
+      "pattern": "^connectivity-[a-z0-9][a-z0-9._-]{2,100}$"
+    },
+    "status": {
+      "const": "draft_unreviewed"
+    },
+    "benchmark_id": {
+      "enum": [
+        "POLICY_HARD_CONSTRAINTS_001",
+        "POLICY_EXPLANATION_001",
+        "POLICY_REPLAY_001",
+        "POLICY_DATA_MINIMIZATION_001",
+        "COST_PER_USEFUL_TASK_001",
+        "GATEWAY_FAILOVER_001",
+        "LOCAL_CONTINUITY_001",
+        "SERVICE_AVAILABILITY_001",
+        "WIFI_ROAMING_BASELINE_001",
+        "VOICE_VIDEO_RESILIENCE_001",
+        "STORE_FORWARD_001",
+        "ENERGY_PER_USEFUL_TASK_001",
+        "CRITICAL_ARTIFACT_TRACEABILITY_001",
+        "PRIVATE_CELLULAR_QUALIFICATION_001",
+        "ESIM_PORTABILITY_001",
+        "SATELLITE_PHONE_SERVICE_001"
+      ]
+    },
+    "benchmark_profile_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "target_operator": {
+      "enum": [
+        "==",
+        ">=",
+        "within_threshold_success_ratio",
+        "baseline_then_set_target",
+        "baseline_then_minimize"
+      ]
+    },
+    "target": {
+      "oneOf": [
+        { "type": "number" },
+        { "type": "object", "minProperties": 1 },
+        { "type": "null" }
+      ]
+    },
+    "target_status": {
+      "enum": [
+        "proposed_target",
+        "baseline_first",
+        "blocked_on_authorization_and_profile",
+        "blocked_on_provider_agreement_and_entitlement",
+        "blocked_on_provider_device_and_country_support"
+      ]
+    },
+    "evidence_class": {
+      "enum": [
+        "source_static",
+        "vm_simulated",
+        "bench_measured",
+        "field_observed"
+      ]
+    },
+    "execution_environment": {
+      "enum": [
+        "source_static",
+        "vm_simulated",
+        "bench_measured",
+        "field_observed"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit_sha",
+        "config_sha256",
+        "software_build",
+        "firmware_image_sha256"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "commit_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "config_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "software_build": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "firmware_image_sha256": {
+          "oneOf": [
+            { "$ref": "#/$defs/sha256" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "run_started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "run_finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "topology_id",
+        "gateway_model",
+        "gateway_revision",
+        "device_count",
+        "region_code",
+        "site_token"
+      ],
+      "properties": {
+        "topology_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "gateway_model": {
+          "oneOf": [
+            { "type": "string", "minLength": 1, "maxLength": 128 },
+            { "type": "null" }
+          ]
+        },
+        "gateway_revision": {
+          "oneOf": [
+            { "type": "string", "minLength": 1, "maxLength": 128 },
+            { "type": "null" }
+          ]
+        },
+        "device_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "region_code": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[A-Z]{3}(-[A-Z0-9]{1,8})?$" },
+            { "type": "null" }
+          ]
+        },
+        "site_token": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[A-Za-z0-9_-]{8,96}$" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "unit",
+        "measurement_method",
+        "aggregation_method"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "measurement_method": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "aggregation_method": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "trials": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "trial_id",
+          "outcome",
+          "value",
+          "elapsed_ms",
+          "failure_code"
+        ],
+        "properties": {
+          "trial_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+          },
+          "outcome": {
+            "enum": ["succeeded", "failed", "inconclusive"]
+          },
+          "value": {
+            "oneOf": [
+              { "type": "number" },
+              { "type": "null" }
+            ]
+          },
+          "elapsed_ms": {
+            "oneOf": [
+              { "type": "number", "minimum": 0 },
+              { "type": "null" }
+            ]
+          },
+          "failure_code": {
+            "oneOf": [
+              { "type": "string", "minLength": 1, "maxLength": 256 },
+              { "type": "null" }
+            ]
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attempted",
+        "succeeded",
+        "failed",
+        "inconclusive"
+      ],
+      "properties": {
+        "attempted": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "succeeded": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "failed": { "type": "integer", "minimum": 0, "maximum": 100000 },
+        "inconclusive": { "type": "integer", "minimum": 0, "maximum": 100000 }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "relative_path",
+          "sha256",
+          "byte_length",
+          "role"
+        ],
+        "properties": {
+          "relative_path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "sha256": {
+            "$ref": "#/$defs/sha256"
+          },
+          "byte_length": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 67108864
+          },
+          "role": {
+            "enum": [
+              "raw_event_log",
+              "task_trace",
+              "config_snapshot",
+              "meter_data",
+              "system_manifest",
+              "other"
+            ]
+          }
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_payloads_collected",
+        "personal_data_collected",
+        "identifiers_pseudonymized"
+      ],
+      "properties": {
+        "raw_payloads_collected": { "const": false },
+        "personal_data_collected": { "const": false },
+        "identifiers_pseudonymized": { "const": true }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "maxItems": 64,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}
