@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/connectivity-price-observations-south-africa-v1.schema.json",
+  "title": "South African Connectivity Price Observations v1",
+  "description": "Strict contract for dated, non-equivalent price observations. Validation does not establish that a quote is available at a specific site or that products are comparable.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "captured_at",
+    "currency",
+    "unit",
+    "observations",
+    "comparison_contract",
+    "explicit_non_claims"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.connectivity-price-observations.v1"
+    },
+    "profile_id": {
+      "const": "south-africa-connectivity-price-observations-2026-10-18"
+    },
+    "status": {
+      "const": "source_observations_not_matched_quotes"
+    },
+    "captured_at": {
+      "const": "2026-10-18T00:00:00+02:00"
+    },
+    "currency": {
+      "const": "ZAR"
+    },
+    "unit": {
+      "const": "minor_units_per_observation_period"
+    },
+    "observations": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observation_id",
+          "provider_or_publisher",
+          "product_category",
+          "observation_type",
+          "price_minor_units",
+          "currency",
+          "period_days",
+          "reported_reference_period",
+          "source_published_at",
+          "source_url",
+          "source_data_note",
+          "terms",
+          "comparison_eligibility",
+          "comparison_exclusions"
+        ],
+        "properties": {
+          "observation_id": {
+            "type": "string"
+          },
+          "provider_or_publisher": {
+            "type": "string",
+            "minLength": 1
+          },
+          "product_category": {
+            "enum": [
+              "national_standardized_mobile_broadband_basket",
+              "retail_prepaid_lte_data_bundle"
+            ]
+          },
+          "observation_type": {
+            "enum": [
+              "published_statistical_basket",
+              "published_retail_offer"
+            ]
+          },
+          "price_minor_units": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "currency": {
+            "const": "ZAR"
+          },
+          "period_days": {
+            "const": 30
+          },
+          "reported_reference_period": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_published_at": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "source_data_note": {
+            "type": "string",
+            "minLength": 1
+          },
+          "terms": {
+            "type": "array",
+            "minItems": 4,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "comparison_eligibility": {
+            "const": "not_comparable_until_scope_matched"
+          },
+          "comparison_exclusions": {
+            "type": "array",
+            "minItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "observation_id": {
+                "const": "ICASA_STANDARD_2GB_MOBILE_2024"
+              },
+              "price_minor_units": {
+                "const": 15200
+              },
+              "product_category": {
+                "const": "national_standardized_mobile_broadband_basket"
+              },
+              "observation_type": {
+                "const": "published_statistical_basket"
+              },
+              "reported_reference_period": {
+                "const": "2024"
+              },
+              "source_published_at": {
+                "const": "2026-03-31"
+              },
+              "source_url": {
+                "const": "https://www.icasa.org.za/legislation-and-regulations/the-state-of-the-ict-sector-report-in-south-africa-2026-report"
+              }
+            },
+            "required": [
+              "observation_id",
+              "price_minor_units",
+              "product_category",
+              "observation_type",
+              "reported_reference_period",
+              "source_published_at",
+              "source_url"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "observation_id": {
+                "const": "VODACOM_PREPAID_LTE_5GB_ANYTIME_PLUS_5GB_NIGHTOWL"
+              },
+              "price_minor_units": {
+                "const": 9900
+              },
+              "product_category": {
+                "const": "retail_prepaid_lte_data_bundle"
+              },
+              "observation_type": {
+                "const": "published_retail_offer"
+              },
+              "source_published_at": {
+                "type": "null"
+              },
+              "source_url": {
+                "const": "https://www.vodacom.co.za/vodacom/shopping/plans/prepaid-plans"
+              }
+            },
+            "required": [
+              "observation_id",
+              "price_minor_units",
+              "product_category",
+              "observation_type",
+              "source_published_at",
+              "source_url"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "comparison_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prices_are_observations_not_universal_tariffs",
+        "unmatched_products_must_not_be_ranked_as_direct_savings",
+        "every_observation_requires_a_source_url",
+        "source_reference_period_must_be_separate_from_capture_date",
+        "quality_security_and_geographic_scope_must_be_matched_before_savings_claim",
+        "full_network_costs_must_include_hardware_energy_maintenance_support_and_labor"
+      ],
+      "properties": {
+        "prices_are_observations_not_universal_tariffs": {
+          "const": true
+        },
+        "unmatched_products_must_not_be_ranked_as_direct_savings": {
+          "const": true
+        },
+        "every_observation_requires_a_source_url": {
+          "const": true
+        },
+        "source_reference_period_must_be_separate_from_capture_date": {
+          "const": true
+        },
+        "quality_security_and_geographic_scope_must_be_matched_before_savings_claim": {
+          "const": true
+        },
+        "full_network_costs_must_include_hardware_energy_maintenance_support_and_labor": {
+          "const": true
+        }
+      }
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "allOf": [
+        {
+          "contains": {
+            "const": "No claim these observations are equivalent products"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim any community network is cheaper than either observed offer"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of measured coverage, throughput, reliability or task quality"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim a price observation is guaranteed to remain available"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim that ICASA's standardized national basket is a named retail tariff"
+          }
+        }
+      ]
+    }
+  }
+}
