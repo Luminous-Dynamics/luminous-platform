@@ -47,7 +47,7 @@
           "const": "docs/LOCAL_FIRST_OUTAGE_RESILIENCE_V1.md"
         },
         "measurement_receipt_contract": {
-          "const": "schemas/connectivity-measurement-receipt-v1.schema.json"
+          "const": "schemas/local-first-measurement-receipt-v1.schema.json"
         }
       }
     },
