@@ -205,11 +205,9 @@ fn exclusion_reasons(
         reasons.push(ExclusionReason::ObservationStale);
     }
 
-    if policy.intent == TrafficIntent::LocalOnly {
-        if !candidate.local_service_available {
-            reasons.push(ExclusionReason::LocalServiceUnavailable);
-        }
-    } else if !candidate.internet_available {
+    if policy.intent == TrafficIntent::LocalOnly && !candidate.local_service_available {
+        reasons.push(ExclusionReason::LocalServiceUnavailable);
+    } else if policy.intent != TrafficIntent::LocalOnly && !candidate.internet_available {
         reasons.push(ExclusionReason::InternetUnavailable);
     }
 
@@ -270,15 +268,13 @@ fn exclusion_reasons(
         }
     }
 
-    if candidate.metered {
-        if let Some(required) = policy.required_transfer_bytes {
-            match candidate.remaining_data_bytes {
-                None => reasons.push(ExclusionReason::RemainingAllowanceUnknown),
-                Some(remaining) if remaining < required => {
-                    reasons.push(ExclusionReason::RemainingAllowanceInsufficient);
-                }
-                _ => {}
+    if candidate.metered && let Some(required) = policy.required_transfer_bytes {
+        match candidate.remaining_data_bytes {
+            None => reasons.push(ExclusionReason::RemainingAllowanceUnknown),
+            Some(remaining) if remaining < required => {
+                reasons.push(ExclusionReason::RemainingAllowanceInsufficient);
             }
+            _ => {}
         }
     }
 
@@ -667,4 +663,43 @@ mod tests {
         ];
         assert_eq!(choose_link(&duplicate_policy, &links), Err(DecisionError::DuplicateLinkId));
     }
+    #[test]
+    fn reliability_and_throughput_contracts_are_hard_constraints() {
+        let mut policy = policy(TrafficIntent::RealtimeInteractive);
+        policy.minimum_reliability_bps = Some(9_900);
+        policy.minimum_downstream_mbps = Some(25);
+        let mut weak = candidate("weak", LinkKind::Wifi);
+        weak.reliability_bps = Some(9_899);
+        weak.downstream_mbps = Some(100);
+        let mut slow = candidate("slow", LinkKind::Cellular);
+        slow.reliability_bps = Some(9_999);
+        slow.downstream_mbps = Some(24);
+        let result = choose_link(&policy, &[weak, slow]).expect("valid policy");
+        assert_eq!(result.selected_link_id, None);
+        assert!(result.assessments.iter().any(|item| {
+            item.exclusion_reasons.contains(&ExclusionReason::ReliabilityBelowMinimum)
+        }));
+        assert!(result.assessments.iter().any(|item| {
+            item.exclusion_reasons.contains(&ExclusionReason::ThroughputBelowMinimum)
+        }));
+    }
+
+    #[test]
+    fn reliability_values_outside_basis_point_range_are_rejected() {
+        let policy = policy(TrafficIntent::Messaging);
+        let mut invalid = candidate("bad-measurement", LinkKind::Wifi);
+        invalid.reliability_bps = Some(10_001);
+        let result = choose_link(&policy, &[invalid]).expect("valid policy");
+        assert_eq!(result.selected_link_id, None);
+        assert!(result.assessments[0].exclusion_reasons.contains(
+            &ExclusionReason::ReliabilityObservationOutOfRange
+        ));
+        let mut invalid_policy = policy(TrafficIntent::Messaging);
+        invalid_policy.minimum_reliability_bps = Some(10_001);
+        assert_eq!(
+            choose_link(&invalid_policy, &[]),
+            Err(DecisionError::ReliabilityThresholdOutOfRange)
+        );
+    }
+
 }
