@@ -72,6 +72,10 @@ pub struct QueuePolicy {
     pub min_ttl_ms: u64,
     pub max_ttl_ms: u64,
     pub max_future_clock_skew_ms: u64,
+    /// A message gains one effective priority rank per elapsed interval,
+    /// capped at Essential, so sustained high-priority arrivals cannot
+    /// indefinitely starve older ordinary/bulk work.
+    pub priority_aging_interval_ms: u64,
     pub dedupe_retention_ms: u64,
     pub max_history_records: usize,
     pub authorized_recipients: BTreeSet<String>,
@@ -86,6 +90,7 @@ impl QueuePolicy {
             || self.max_bytes_per_sender == 0
             || self.min_ttl_ms == 0
             || self.max_ttl_ms < self.min_ttl_ms
+            || self.priority_aging_interval_ms == 0
             || self.dedupe_retention_ms == 0
             || self.max_history_records < self.max_queue_items
             || self.authorized_recipients.is_empty()
@@ -356,9 +361,14 @@ impl QueueLedger {
             .map(|record| &record.metadata)
             .collect();
 
+        let aging_interval = self.policy.priority_aging_interval_ms;
         pending.sort_by_key(|message| {
+            let waited_ms = now_ms.saturating_sub(message.created_at_ms);
+            let aging_steps = (waited_ms / aging_interval).min(2) as u8;
+            let effective_rank = message.priority.rank().saturating_add(aging_steps).min(2);
             (
-                Reverse(message.priority.rank()),
+                Reverse(effective_rank),
+                Reverse(waited_ms),
                 message.expires_at_ms,
                 message.created_at_ms,
                 message.message_id.clone(),
@@ -514,6 +524,7 @@ mod tests {
             min_ttl_ms: 100,
             max_ttl_ms: 10_000,
             max_future_clock_skew_ms: 50,
+            priority_aging_interval_ms: 100,
             dedupe_retention_ms: 5_000,
             max_history_records: 30,
             authorized_recipients: ["recipient-a", "recipient-b"]
@@ -554,6 +565,33 @@ mod tests {
             payload_sha256: message.payload_sha256.clone(),
             received_at_ms: 1_500,
         }
+    }
+
+    #[test]
+    fn policy_rejects_zero_priority_aging_interval() {
+        let mut invalid = policy();
+        invalid.priority_aging_interval_ms = 0;
+        assert_eq!(invalid.validate(), Err(QueueError::InvalidPolicy));
+    }
+
+    #[test]
+    fn aged_ordinary_message_cannot_be_starved_by_fresh_essential_arrivals() {
+        let mut queue = QueueLedger::new(policy()).unwrap();
+        let mut older_ordinary = message("msg-aged-ordinary");
+        older_ordinary.priority = Priority::Ordinary;
+        older_ordinary.created_at_ms = 1_000;
+        older_ordinary.expires_at_ms = 5_000;
+        queue.enqueue(1_100, older_ordinary).unwrap();
+
+        let mut fresh_essential = message("msg-fresh-essential");
+        fresh_essential.priority = Priority::Essential;
+        fresh_essential.created_at_ms = 1_290;
+        fresh_essential.expires_at_ms = 5_000;
+        queue.enqueue(1_300, fresh_essential).unwrap();
+
+        let result = queue.select_batch(1_300, available_route(), 1, 1_000);
+        assert_eq!(result.selected.len(), 1);
+        assert_eq!(result.selected[0].message_id, "msg-aged-ordinary");
     }
 
     #[test]
