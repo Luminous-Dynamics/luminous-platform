@@ -99,6 +99,7 @@
         "required": [
           "row_id",
           "claim_status",
+          "claim_scope",
           "client",
           "credential",
           "access_network",
@@ -337,6 +338,13 @@
               "minLength": 1,
               "maxLength": 1024
             }
+          },
+          "claim_scope": {
+            "enum": [
+              "local_passpoint",
+              "openroaming_federated",
+              "ordinary_wifi_fallback"
+            ]
           }
         },
         "allOf": [
@@ -432,16 +440,30 @@
           },
           {
             "if": {
-              "properties": {
-                "claim_status": {
-                  "enum": [
-                    "supported",
-                    "unsupported"
+              "allOf": [
+                {
+                  "properties": {
+                    "claim_scope": {
+                      "const": "openroaming_federated"
+                    }
+                  },
+                  "required": [
+                    "claim_scope"
+                  ]
+                },
+                {
+                  "properties": {
+                    "claim_status": {
+                      "enum": [
+                        "supported",
+                        "unsupported"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "claim_status"
                   ]
                 }
-              },
-              "required": [
-                "claim_status"
               ]
             },
             "then": {
