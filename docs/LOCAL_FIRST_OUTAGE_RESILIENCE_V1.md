@@ -156,3 +156,10 @@ Official regulatory starting point: https://www.icasa.org.za/pages/our-mandate
 ## 11. Explicit non-goals
 
 This work does not claim free global Internet, guaranteed delivery, exactly-once transport, emergency-grade telephony, secure encryption from metadata alone, safe public relaying, universal mesh reach, OpenRoaming or Starlink permission, or physical performance from synthetic/VM results. A disconnected system can provide local service and carry pending data; it cannot retrieve arbitrary fresh remote information while no path to the source exists.
+
+
+## 12. DTN implementation shortlist
+
+The repository now includes a versioned candidate assessment at `docs/DTN_IMPLEMENTATION_CANDIDATE_REVIEW_V1.md`. Public project documentation currently makes Hardy the first candidate to evaluate because it advertises BPv7, BPSec, TCPCLv4/TLS, pluggable storage and bidirectional interop checks; dtn7-rs remains a comparison candidate because it documents multiple convergence layers and routing strategies. These are claims from candidate documentation, not Luminous test results or an adoption decision.
+
+The first experiment should reproduce a narrow, pinned interop matrix and security-negative set on a generic ARM64 SBC and x86_64 host. Only then should the project decide whether a complete DTN agent or a smaller library plus adapter is appropriate. Low-cost gateway footprint, secure key lifecycle, crash-consistent durable storage, exact security context and field permissions remain explicit gates.
