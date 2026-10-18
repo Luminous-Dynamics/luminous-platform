@@ -17,7 +17,6 @@ const MAX_INPUT_BYTES: usize = 2 * 1024 * 1024;
 const PROFILE_VERSION: &str = "luminous.community-wifi-roaming-benchmark-profile.v1";
 const PROFILE_ID: &str = "community-wifi-roaming-openroaming-v1";
 const MATRIX_VERSION: &str = "luminous.community-wifi-roaming-interoperability-matrix.v1";
-const MATRIX_TEMPLATE_ID: &str = "community-wifi-roaming-interoperability-matrix-template-v1";
 
 const REQUIRED_PROFILE_NON_CLAIMS: &[&str] = &[
     "No claim of OpenRoaming federation membership",
