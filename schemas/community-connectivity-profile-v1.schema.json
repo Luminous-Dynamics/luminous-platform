@@ -1,0 +1,850 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/community-connectivity-profile-v1.schema.json",
+  "title": "Luminous Community Connectivity Profile v1",
+  "description": "Strict contract for a draft community-connectivity pilot profile. Validation does not establish physical results, authorization, vendor permissions, or deployment readiness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_at",
+    "authority",
+    "claims_not_conveyed",
+    "topology",
+    "wan_adapters",
+    "trust_zones",
+    "service_contracts",
+    "benchmarks",
+    "hard_gates",
+    "evidence_package_requirements",
+    "source_revalidation_required",
+    "source_note"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.community-connectivity-profile.v1"
+    },
+    "profile_id": {
+      "const": "community-connectivity-basic-access-v1"
+    },
+    "status": {
+      "const": "draft_research_only"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issue",
+        "design_document",
+        "evidence_contract",
+        "verifier"
+      ],
+      "properties": {
+        "issue": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "design_document": {
+          "const": "docs/OPEN_COMMUNITY_CONNECTIVITY_REFERENCE_DESIGN_V1.md"
+        },
+        "evidence_contract": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        },
+        "verifier": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://"
+        }
+      }
+    },
+    "claims_not_conveyed": {
+      "const": [
+        "hardware qualification",
+        "regulatory authorization",
+        "Starlink service availability",
+        "provider permission to share or resell",
+        "production readiness",
+        "performance guarantee"
+      ],
+      "uniqueItems": true
+    },
+    "topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_roles",
+        "optional_roles",
+        "preferred_backhaul_order",
+        "routing_policy",
+        "mesh_policy",
+        "local_services_must_not_require_wan",
+        "cognitive_components_must_not_be_required_for_packet_forwarding"
+      ],
+      "properties": {
+        "required_roles": {
+          "const": [
+            "wan_gateway",
+            "community_access_point",
+            "local_services_node"
+          ]
+        },
+        "optional_roles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "point_to_point_backhaul",
+              "mesh_relay",
+              "backup_power",
+              "secondary_wan"
+            ]
+          }
+        },
+        "preferred_backhaul_order": {
+          "const": [
+            "fiber_or_existing_wired",
+            "point_to_point_wireless",
+            "authorized_fixed_wireless",
+            "authorized_cellular",
+            "authorized_satellite"
+          ]
+        },
+        "routing_policy": {
+          "const": "standards_based_ip"
+        },
+        "mesh_policy": {
+          "const": "use_only_when_measured_cost_or_resilience_justifies_each_hop"
+        },
+        "local_services_must_not_require_wan": {
+          "const": true
+        },
+        "cognitive_components_must_not_be_required_for_packet_forwarding": {
+          "const": true
+        }
+      }
+    },
+    "wan_adapters": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "transport",
+              "address_acquisition",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "generic-ethernet-wan-v1"
+              },
+              "transport": {
+                "const": "ethernet_ip"
+              },
+              "address_acquisition": {
+                "const": [
+                  "dhcp",
+                  "static_if_required_by_provider"
+                ]
+              },
+              "status": {
+                "const": "initial_lab_baseline"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "transport",
+              "address_acquisition",
+              "kit_specific_adapter_or_cable",
+              "bypass_mode",
+              "vendor_private_api_required",
+              "terminal_modification_allowed",
+              "power_injection_without_model_specific_approval",
+              "local_service_authorization_status",
+              "service_plan_sharing_permission_status",
+              "deployment_blocked_until_authorization_verified"
+            ],
+            "properties": {
+              "id": {
+                "const": "starlink-ethernet-wan-v1"
+              },
+              "transport": {
+                "const": "supported_kit_ethernet_ip"
+              },
+              "address_acquisition": {
+                "const": [
+                  "dhcp_where_supported"
+                ]
+              },
+              "kit_specific_adapter_or_cable": {
+                "const": true
+              },
+              "bypass_mode": {
+                "const": "conditional_on_exact_kit_and_topology"
+              },
+              "vendor_private_api_required": {
+                "const": false
+              },
+              "terminal_modification_allowed": {
+                "const": false
+              },
+              "power_injection_without_model_specific_approval": {
+                "const": false
+              },
+              "local_service_authorization_status": {
+                "const": "not_verified"
+              },
+              "service_plan_sharing_permission_status": {
+                "const": "not_verified"
+              },
+              "deployment_blocked_until_authorization_verified": {
+                "const": true
+              }
+            }
+          }
+        ]
+      },
+      "uniqueItems": true
+    },
+    "trust_zones": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "default_forwarding"
+            ],
+            "properties": {
+              "id": {
+                "const": "client"
+              },
+              "default_forwarding": {
+                "const": "deny_between_clients_unless_explicitly_allowed"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "default_forwarding"
+            ],
+            "properties": {
+              "id": {
+                "const": "local_services"
+              },
+              "default_forwarding": {
+                "const": "allow_only_declared_services"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "default_forwarding"
+            ],
+            "properties": {
+              "id": {
+                "const": "wan"
+              },
+              "default_forwarding": {
+                "const": "stateful_firewall_only"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "default_forwarding"
+            ],
+            "properties": {
+              "id": {
+                "const": "management"
+              },
+              "default_forwarding": {
+                "const": "deny_from_client_and_guest_zones"
+              }
+            }
+          }
+        ]
+      },
+      "uniqueItems": true
+    },
+    "service_contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "local_essential",
+        "internet_basic"
+      ],
+      "properties": {
+        "local_essential": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "charge_per_request",
+            "examples",
+            "available_without_wan",
+            "scope_note"
+          ],
+          "properties": {
+            "charge_per_request": {
+              "const": 0
+            },
+            "examples": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "available_without_wan": {
+              "const": true
+            },
+            "scope_note": {
+              "type": "string",
+              "minLength": 20
+            }
+          }
+        },
+        "internet_basic": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "user_charge_target",
+            "requires_sustainable_external_funding_or_cross_subsidy",
+            "capacity_and_fair_use_must_be_published",
+            "deployment_status"
+          ],
+          "properties": {
+            "user_charge_target": {
+              "const": 0
+            },
+            "requires_sustainable_external_funding_or_cross_subsidy": {
+              "const": true
+            },
+            "capacity_and_fair_use_must_be_published": {
+              "const": true
+            },
+            "deployment_status": {
+              "const": "not_operational"
+            }
+          }
+        }
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "metric",
+              "target",
+              "comparator",
+              "threshold",
+              "sampling_window",
+              "evidence_required",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "BASIC_COVERAGE_001"
+              },
+              "metric": {
+                "const": "predeclared_survey_points_meeting_basic_access"
+              },
+              "target": {
+                "const": 0.95
+              },
+              "comparator": {
+                "const": ">="
+              },
+              "threshold": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "download_mbps",
+                  "upload_mbps"
+                ],
+                "properties": {
+                  "download_mbps": {
+                    "const": 10
+                  },
+                  "upload_mbps": {
+                    "const": 2
+                  }
+                }
+              },
+              "sampling_window": {
+                "const": "declared_busy_hour"
+              },
+              "evidence_required": {
+                "const": [
+                  "field_observed"
+                ]
+              },
+              "status": {
+                "const": "proposed_target"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "metric",
+              "target",
+              "comparator",
+              "minimum_samples_per_point",
+              "evidence_required",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "LOCAL_RTT_001"
+              },
+              "metric": {
+                "const": "client_to_local_gateway_rtt_p95_ms"
+              },
+              "target": {
+                "const": 20
+              },
+              "comparator": {
+                "const": "<="
+              },
+              "minimum_samples_per_point": {
+                "const": 1000
+              },
+              "evidence_required": {
+                "const": [
+                  "bench_measured",
+                  "field_observed"
+                ]
+              },
+              "status": {
+                "const": "proposed_target"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "metric",
+              "target",
+              "comparator",
+              "minimum_trials",
+              "required_trial_success_ratio",
+              "existing_sessions_may_reset",
+              "evidence_required",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "WAN_FAILOVER_001"
+              },
+              "metric": {
+                "const": "new_outbound_sessions_recovered_within_seconds_after_primary_wan_failure"
+              },
+              "target": {
+                "const": 30
+              },
+              "comparator": {
+                "const": "<="
+              },
+              "minimum_trials": {
+                "const": 100
+              },
+              "required_trial_success_ratio": {
+                "const": 0.99
+              },
+              "existing_sessions_may_reset": {
+                "const": true
+              },
+              "evidence_required": {
+                "const": [
+                  "bench_measured",
+                  "field_observed"
+                ]
+              },
+              "status": {
+                "const": "proposed_target"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "metric",
+              "target",
+              "comparator",
+              "site_power_must_remain_available",
+              "evidence_required",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "LOCAL_CONTINUITY_001"
+              },
+              "metric": {
+                "const": "hours_local_essential_services_available_with_all_wans_disconnected"
+              },
+              "target": {
+                "const": 24
+              },
+              "comparator": {
+                "const": ">="
+              },
+              "site_power_must_remain_available": {
+                "const": true
+              },
+              "evidence_required": {
+                "const": [
+                  "bench_measured",
+                  "field_observed"
+                ]
+              },
+              "status": {
+                "const": "proposed_target"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "metric",
+              "target",
+              "comparator",
+              "report_separately_for",
+              "evidence_required",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "SERVICE_AVAILABILITY_001"
+              },
+              "metric": {
+                "const": "monthly_availability_ratio"
+              },
+              "target": {
+                "const": 0.995
+              },
+              "comparator": {
+                "const": ">="
+              },
+              "report_separately_for": {
+                "const": [
+                  "local_services",
+                  "lan",
+                  "each_wan",
+                  "global_internet"
+                ]
+              },
+              "evidence_required": {
+                "const": [
+                  "field_observed"
+                ]
+              },
+              "status": {
+                "const": "proposed_target"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "metric",
+              "target",
+              "comparator",
+              "mandatory_separate_metric",
+              "rights_cleared_test_content_required",
+              "evidence_required",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "CACHE_EFFICIENCY_001"
+              },
+              "metric": {
+                "const": "cache_eligible_byte_hit_ratio_after_warmup"
+              },
+              "target": {
+                "const": 0.5
+              },
+              "comparator": {
+                "const": ">="
+              },
+              "mandatory_separate_metric": {
+                "const": "whole_traffic_upstream_bytes_avoided"
+              },
+              "rights_cleared_test_content_required": {
+                "const": true
+              },
+              "evidence_required": {
+                "const": [
+                  "bench_measured",
+                  "field_observed"
+                ]
+              },
+              "status": {
+                "const": "proposed_target"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "metric",
+              "target",
+              "comparator",
+              "record_wh_per_day",
+              "record_idle_typical_peak_watts",
+              "evidence_required",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "ENERGY_AUTONOMY_001"
+              },
+              "metric": {
+                "const": "hours_required_local_services_operate_on_selected_backup_power_profile"
+              },
+              "target": {
+                "const": 8
+              },
+              "comparator": {
+                "const": ">="
+              },
+              "record_wh_per_day": {
+                "const": true
+              },
+              "record_idle_typical_peak_watts": {
+                "const": true
+              },
+              "evidence_required": {
+                "const": [
+                  "bench_measured"
+                ]
+              },
+              "status": {
+                "const": "proposed_target"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "metric",
+              "target",
+              "comparator",
+              "critical_unknowns_must_block_qualification",
+              "evidence_required",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "OPEN_ARTIFACTS_001"
+              },
+              "metric": {
+                "const": "critical_artifacts_with_source_revision_and_license_status_recorded"
+              },
+              "target": {
+                "const": 1
+              },
+              "comparator": {
+                "const": "=="
+              },
+              "critical_unknowns_must_block_qualification": {
+                "const": true
+              },
+              "evidence_required": {
+                "const": [
+                  "static_checked",
+                  "independently_reviewed_qualified"
+                ]
+              },
+              "status": {
+                "const": "proposed_target"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "metric",
+              "target",
+              "comparator",
+              "required_boundaries",
+              "invalid_update_signatures_must_be_rejected",
+              "evidence_required",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "SECURITY_ISOLATION_001"
+              },
+              "metric": {
+                "const": "unauthorized_flows_accepted_in_negative_test_corpus"
+              },
+              "target": {
+                "const": 0
+              },
+              "comparator": {
+                "const": "=="
+              },
+              "required_boundaries": {
+                "const": [
+                  "client_to_client",
+                  "guest_to_management",
+                  "wan_to_management"
+                ]
+              },
+              "invalid_update_signatures_must_be_rejected": {
+                "const": true
+              },
+              "evidence_required": {
+                "const": [
+                  "unit_contract_tested",
+                  "bench_measured"
+                ]
+              },
+              "status": {
+                "const": "proposed_target"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "metric",
+              "target",
+              "comparator",
+              "denominator_requires_mean_active_households",
+              "cost_items_required",
+              "report_donated_resources_separately",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "const": "ECONOMIC_ADVANTAGE_001"
+              },
+              "metric": {
+                "const": "fully_burdened_cost_per_active_household_reduction_vs_best_feasible_legal_baseline"
+              },
+              "target": {
+                "const": 0.3
+              },
+              "comparator": {
+                "const": ">="
+              },
+              "denominator_requires_mean_active_households": {
+                "const": true
+              },
+              "cost_items_required": {
+                "const": [
+                  "amortized_capex",
+                  "upstream_service_and_transit",
+                  "electricity_and_power_storage",
+                  "site_access_and_mounting",
+                  "installation_and_paid_maintenance",
+                  "support_and_replacement_spares",
+                  "compliance_and_insurance",
+                  "expected_failure_and_recovery_cost"
+                ]
+              },
+              "report_donated_resources_separately": {
+                "const": true
+              },
+              "status": {
+                "const": "proposed_target"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "hard_gates": {
+      "const": [
+        "Do not claim global Internet without authorized working upstream.",
+        "Do not share or resell any WAN service without applicable provider permission.",
+        "Do not deploy radio equipment without the required local authorization and type approval.",
+        "Do not expose management interfaces to client or guest networks.",
+        "Do not promote hardware maturity from a synthetic fixture, VM simulation or document review alone.",
+        "Do not treat Starlink Ethernet interoperability as evidence of South African service authorization.",
+        "Do not treat a draft target as a measured result."
+      ]
+    },
+    "evidence_package_requirements": {
+      "const": [
+        "exact hardware model and revision",
+        "immutable software and firmware revisions",
+        "per-artifact license and source-availability inventory",
+        "BOM status, substitutes, vendor and supply evidence",
+        "site profile and network topology revision",
+        "test suite and runner revisions",
+        "parameters and raw-artifact SHA-256 digests",
+        "calibration evidence for instrumented measurements",
+        "failures, skipped tests, limitations and negative controls",
+        "independent review reference when claimed"
+      ]
+    },
+    "source_revalidation_required": {
+      "const": true
+    },
+    "source_note": {
+      "type": "string",
+      "minLength": 50
+    }
+  }
+}
