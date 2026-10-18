@@ -184,3 +184,6 @@ This RFC may move beyond draft only when the profile's critical gates are indepe
 Use `profiles/community-wifi-roaming-interoperability-matrix-template-v1.json` with its shape contract at `schemas/community-wifi-roaming-interoperability-matrix-v1.schema.json` when building the device/provider matrix. It deliberately starts with zero rows—no handset, OS, credential, AP, RADIUS, identity-provider or federation combination is asserted to work.
 
 Every future row must name its exact claim scope: local Passpoint, OpenRoaming federation, or ordinary Wi-Fi fallback. Rows marked supported or unsupported need a timestamped test receipt and digest. A supported OpenRoaming federation row additionally requires a verified test credential/profile and authorized enrollment evidence. Simulator-only evidence remains simulator-only, and one passing combination never generalizes to another device or site.
+
+ 
+When recording actual results, copy the template to a new, uniquely identified matrix artifact rather than overwriting the empty template. Set status to `draft_evidence_matrix` only when rows exist; the schema enforces the relationship between an empty row list and the template status. Do not put credentials, identifiers or unredacted customer records into that copy.
