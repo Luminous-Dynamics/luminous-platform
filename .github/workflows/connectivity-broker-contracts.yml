@@ -1,0 +1,67 @@
+name: connectivity-broker-contracts
+
+on:
+  pull_request:
+    paths:
+      - "tools/connectivity-policy-core/**"
+      - "tools/connectivity-benchmark-profile-validator/**"
+      - "profiles/connectivity-broker-benchmark-profile-v1.json"
+      - "schemas/connectivity-broker-benchmark-profile-v1.schema.json"
+      - "schemas/connectivity-measurement-receipt-v1.schema.json"
+      - "docs/CONNECTIVITY_OUTCOME_BENCHMARKS_V1.md"
+      - ".github/workflows/connectivity-broker-contracts.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tools/connectivity-policy-core/**"
+      - "tools/connectivity-benchmark-profile-validator/**"
+      - "profiles/connectivity-broker-benchmark-profile-v1.json"
+      - "schemas/connectivity-broker-benchmark-profile-v1.schema.json"
+      - "schemas/connectivity-measurement-receipt-v1.schema.json"
+      - "docs/CONNECTIVITY_OUTCOME_BENCHMARKS_V1.md"
+      - ".github/workflows/connectivity-broker-contracts.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: connectivity-broker-contracts-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust-contracts:
+    name: Rust contracts and negative tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Rust toolchain and Clippy
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # toolchain action pinned to immutable revision
+        with:
+          toolchain: "1.99.0"
+          components: clippy
+
+      - name: Test connectivity policy core
+        run: cargo test --manifest-path tools/connectivity-policy-core/Cargo.toml --all-targets
+
+      - name: Lint connectivity policy core
+        run: cargo clippy --manifest-path tools/connectivity-policy-core/Cargo.toml --all-targets -- -D warnings
+
+      - name: Test profile and receipt validators
+        run: cargo test --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml --all-targets
+
+      - name: Lint profile and receipt validators
+        run: cargo clippy --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml --all-targets -- -D warnings
+
+      - name: Validate checked-in benchmark profile
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml
+          --bin connectivity-benchmark-profile-validator
+          --
+          schemas/connectivity-broker-benchmark-profile-v1.schema.json
+          profiles/connectivity-broker-benchmark-profile-v1.json
