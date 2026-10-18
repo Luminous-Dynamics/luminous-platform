@@ -134,3 +134,15 @@ For each funding source record amount, currency, duration, restrictions, renewal
 ## 9. Regulatory and provider boundary
 
 This economic model does not grant permission to share or resell upstream connectivity. Any public-facing network requires deployment-specific review of provider terms, applicable ECNS/ECS licensing or exemptions, type approval, spectrum permissions where relevant, installation safety and data privacy. Treat legal/provider authorization as a separate gate from the arithmetic.
+
+
+## 10. Dated baseline registry
+
+Two research observations are recorded in `profiles/connectivity-price-observations-south-africa-v1.json`, with shape/claim constraints in `schemas/connectivity-price-observations-south-africa-v1.schema.json`:
+
+- ICASA's 2026 report presents a R152/month standardized 2 GB mobile-broadband basket for the **2024 reference period**.
+- Vodacom's indexed prepaid LTE page lists R99 for 5 GB Anytime plus 5 GB Night Owl, valid for 30 days (with VAT included on that page).
+
+The registry explicitly marks both observations `not_comparable_until_scope_matched`. They are not integrated as hard-coded defaults in the Rust calculator. The unit test runs Draft 2020-12 validation against the checked-in observation profile and verifies the non-comparability flag stays set. The data must be refreshed and cited again before a purchase or pilot decision; do not silently overwrite a historical quote.
+
+The earlier Openserve R425/40 Mbps example is deliberately not present in this registry because the current retrieval did not independently reconfirm the exact official offer page in this run. It should be added as a new dated observation only after the exact source terms are reverified.
