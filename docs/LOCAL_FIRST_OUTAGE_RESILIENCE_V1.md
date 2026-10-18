@@ -77,7 +77,7 @@ Do not publish plaintext, keys, credentials, inner EAP identities, subscriber id
 
 A disconnected relay can be attacked without breaking cryptography. Enforce budgets before storing or forwarding: maximum message bytes; total queue bytes/items; per-sender and per-recipient quotas; maximum TTL and allowed future-creation skew; bounded metadata parsing; admission and relay rates; reserved capacity for explicitly authorized essential traffic; fairness caps on priority traffic; deterministic expiry cleanup; bounded dead-letter retention; and safe behaviour when disk or memory limits are reached.
 
-Priority does not equal fairness. A priority queue can starve ordinary messages. Measure per-class delivery delay and starvation under sustained high-priority load.
+Priority does not equal fairness. The metadata reference model now applies bounded priority aging: waiting messages gain one effective priority rank per configured interval, up to Essential, and wait duration breaks ties. This is intended to prevent a stream of fresh high-priority messages from indefinitely pinning older work in the reference scheduler. It is not a starvation-free guarantee for a live adapter: per-class delays, expiry, quotas and sustained high-priority floods still require stress measurement.
 
 ## 6. Proposed benchmark targets
 
