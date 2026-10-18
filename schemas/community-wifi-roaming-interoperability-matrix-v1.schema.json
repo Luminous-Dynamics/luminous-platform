@@ -20,10 +20,14 @@
       "const": "luminous.community-wifi-roaming-interoperability-matrix.v1"
     },
     "matrix_id": {
-      "const": "community-wifi-roaming-interoperability-matrix-template-v1"
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$"
     },
     "status": {
-      "const": "empty_template_no_observations"
+      "enum": [
+        "empty_template_no_observations",
+        "draft_evidence_matrix"
+      ]
     },
     "purpose": {
       "type": "string",
@@ -506,7 +510,7 @@
       "allOf": [
         {
           "contains": {
-            "const": "No device or OS compatibility has been established by this empty template."
+            "const": "No device or OS compatibility is established by this template alone."
           }
         },
         {
@@ -526,5 +530,51 @@
         }
       ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "rows": {
+            "minItems": 1
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "draft_evidence_matrix"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "rows": {
+            "maxItems": 0
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "const": "empty_template_no_observations"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      }
+    }
+  ]
 }
