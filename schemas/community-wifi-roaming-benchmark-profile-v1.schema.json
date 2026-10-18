@@ -1,0 +1,636 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/community-wifi-roaming-benchmark-profile-v1.schema.json",
+  "title": "Community Wi-Fi Roaming Benchmark Profile v1",
+  "description": "Strict draft contract for community Wi-Fi roaming targets and deployment gates; passing validation conveys neither federation membership nor measured performance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_at",
+    "authority",
+    "deployment_gates",
+    "comparison_contract",
+    "benchmarks",
+    "explicit_non_claims",
+    "next_required_artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.community-wifi-roaming-benchmark-profile.v1"
+    },
+    "profile_id": {
+      "const": "community-wifi-roaming-openroaming-v1"
+    },
+    "status": {
+      "const": "draft_research_only"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issue",
+        "design_document"
+      ],
+      "properties": {
+        "issue": {
+          "const": "https://github.com/Luminous-Dynamics/luminous-platform/issues/65"
+        },
+        "design_document": {
+          "const": "docs/COMMUNITY_WIFI_ROAMING_OPENROAMING_RFC_V1.md"
+        }
+      }
+    },
+    "deployment_gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "federation_membership_status",
+        "identity_provider_credentials_status",
+        "upstream_sharing_permission_status",
+        "regulatory_review_status",
+        "equipment_type_approval_status",
+        "deployment_blocked_until_gates_verified",
+        "local_only_access_must_not_require_wan",
+        "payload_inspection_for_routing",
+        "credential_validation_must_fail_closed"
+      ],
+      "properties": {
+        "federation_membership_status": {
+          "const": "not_verified"
+        },
+        "identity_provider_credentials_status": {
+          "const": "not_obtained"
+        },
+        "upstream_sharing_permission_status": {
+          "const": "not_verified"
+        },
+        "regulatory_review_status": {
+          "const": "not_verified"
+        },
+        "equipment_type_approval_status": {
+          "const": "not_verified"
+        },
+        "deployment_blocked_until_gates_verified": {
+          "const": true
+        },
+        "local_only_access_must_not_require_wan": {
+          "const": true
+        },
+        "payload_inspection_for_routing": {
+          "const": false
+        },
+        "credential_validation_must_fail_closed": {
+          "const": true
+        }
+      }
+    },
+    "comparison_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "device_os_profile_and_site_scope_must_be_named",
+        "unsupported_and_failed_attempts_remain_in_denominator",
+        "simulation_must_not_be_reported_as_field_evidence",
+        "raw_credentials_and_payloads_must_not_be_in_public_receipts",
+        "targets_without_field_baselines_remain_baseline_first",
+        "source_and_configuration_revisions_must_be_immutable"
+      ],
+      "properties": {
+        "device_os_profile_and_site_scope_must_be_named": {
+          "const": true
+        },
+        "unsupported_and_failed_attempts_remain_in_denominator": {
+          "const": true
+        },
+        "simulation_must_not_be_reported_as_field_evidence": {
+          "const": true
+        },
+        "raw_credentials_and_payloads_must_not_be_in_public_receipts": {
+          "const": true
+        },
+        "targets_without_field_baselines_remain_baseline_first": {
+          "const": true
+        },
+        "source_and_configuration_revisions_must_be_immutable": {
+          "const": true
+        }
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 13,
+      "maxItems": 13,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "domain",
+          "metric",
+          "operator",
+          "target",
+          "target_status",
+          "evidence_classes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^WIFI_[A-Z0-9_]{3,90}$"
+          },
+          "domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              ">=",
+              "<=",
+              "baseline_then_set_target",
+              "baseline_then_minimize"
+            ]
+          },
+          "target": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "object",
+                "minProperties": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first",
+              "blocked_on_provider_agreement_and_entitlement"
+            ]
+          },
+          "evidence_classes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "static_checked",
+                "unit_contract_tested",
+                "bench_measured",
+                "field_observed",
+                "independently_reviewed_qualified"
+              ]
+            }
+          },
+          "negative_cases": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "dimensions": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_AUTH_INVALID_CERT_REJECT_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_AUTH_REALM_REJECT_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_SECRET_EXPOSURE_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_TIME_TO_USABLE_IP_001"
+              },
+              "operator": {
+                "const": "baseline_then_set_target"
+              },
+              "target": {
+                "const": null
+              },
+              "target_status": {
+                "const": "baseline_first"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_FIRST_ATTEMPT_AUTH_001"
+              },
+              "operator": {
+                "const": "baseline_then_set_target"
+              },
+              "target": {
+                "const": null
+              },
+              "target_status": {
+                "const": "baseline_first"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_HANDOFF_INTERRUPTION_001"
+              },
+              "operator": {
+                "const": "baseline_then_set_target"
+              },
+              "target": {
+                "const": null
+              },
+              "target_status": {
+                "const": "baseline_first"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_FAILURE_RECOVERY_001"
+              },
+              "operator": {
+                "const": "baseline_then_set_target"
+              },
+              "target": {
+                "const": null
+              },
+              "target_status": {
+                "const": "baseline_first"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_LOCAL_CONTINUITY_001"
+              },
+              "operator": {
+                "const": ">="
+              },
+              "target": {
+                "const": 24
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_COST_PER_USEFUL_TASK_001"
+              },
+              "operator": {
+                "const": "baseline_then_set_target"
+              },
+              "target": {
+                "const": null
+              },
+              "target_status": {
+                "const": "baseline_first"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_ENERGY_PER_TASK_001"
+              },
+              "operator": {
+                "const": "baseline_then_minimize"
+              },
+              "target": {
+                "const": null
+              },
+              "target_status": {
+                "const": "baseline_first"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_INTEROP_EVIDENCE_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 1
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_FEDERATION_ELIGIBILITY_001"
+              },
+              "operator": {
+                "const": "baseline_then_set_target"
+              },
+              "target": {
+                "const": null
+              },
+              "target_status": {
+                "const": "blocked_on_provider_agreement_and_entitlement"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "WIFI_CLIENT_ISOLATION_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "allOf": [
+        {
+          "contains": {
+            "const": "No claim of OpenRoaming federation membership"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of live roaming credential or identity-provider access"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim that an open-source portal conveys federation eligibility"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of free upstream transit or zero-cost internet"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of global coverage or universal handset compatibility"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of seamless roaming until measured for the named flow and device"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of authorized upstream sharing or resale"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of measured field performance from a schema, simulation or CI result"
+          }
+        }
+      ]
+    },
+    "next_required_artifacts": {
+      "type": "array",
+      "minItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
