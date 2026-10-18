@@ -686,10 +686,10 @@ mod tests {
 
     #[test]
     fn reliability_values_outside_basis_point_range_are_rejected() {
-        let policy = policy(TrafficIntent::Messaging);
+        let selection_policy = policy(TrafficIntent::Messaging);
         let mut invalid = candidate("bad-measurement", LinkKind::Wifi);
         invalid.reliability_bps = Some(10_001);
-        let result = choose_link(&policy, &[invalid]).expect("valid policy");
+        let result = choose_link(&selection_policy, &[invalid]).expect("valid policy");
         assert_eq!(result.selected_link_id, None);
         assert!(result.assessments[0].exclusion_reasons.contains(
             &ExclusionReason::ReliabilityObservationOutOfRange
