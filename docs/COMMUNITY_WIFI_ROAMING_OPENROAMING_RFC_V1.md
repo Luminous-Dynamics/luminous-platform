@@ -177,3 +177,10 @@ This design document is not legal advice or permission to operate.
 ## 10. Exit criteria
 
 This RFC may move beyond draft only when the profile's critical gates are independently evidenced for a named deployment; the lab negative controls are reproducible; real compatible credentials/partners are confirmed for federation claims; a pilot measures the baseline metrics; permission and equipment checks have been completed; and an independent reviewer can reproduce the receipts. An open-source portal installation, green software test or queued CI run does not satisfy these conditions.
+
+
+## 11. Interoperability matrix template
+
+Use `profiles/community-wifi-roaming-interoperability-matrix-template-v1.json` with its shape contract at `schemas/community-wifi-roaming-interoperability-matrix-v1.schema.json` when building the device/provider matrix. It deliberately starts with zero rows—no handset, OS, credential, AP, RADIUS, identity-provider or federation combination is asserted to work.
+
+Every future row must name its exact claim scope: local Passpoint, OpenRoaming federation, or ordinary Wi-Fi fallback. Rows marked supported or unsupported need a timestamped test receipt and digest. A supported OpenRoaming federation row additionally requires a verified test credential/profile and authorized enrollment evidence. Simulator-only evidence remains simulator-only, and one passing combination never generalizes to another device or site.
