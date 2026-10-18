@@ -320,7 +320,8 @@ fn verify_artifacts(root: &Path, receipt: &Value) -> Vec<String> {
         if expected_length != Some(bytes.len() as u64) {
             errors.push(format!("artifacts/{index}/{relative:?}: byte_length mismatch"));
         }
-        if expected_sha != Some(digest_hex(&bytes).as_str()) {
+        let actual_sha = digest_hex(&bytes);
+        if expected_sha != Some(actual_sha.as_str()) {
             errors.push(format!("artifacts/{index}/{relative:?}: SHA-256 mismatch"));
         }
     }
