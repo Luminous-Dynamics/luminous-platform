@@ -818,6 +818,67 @@ mod tests {
     }
 
     #[test]
+    fn synthetic_partition_recovery_drains_one_thousand_unexpired_messages() {
+        let mut p = policy();
+        p.max_message_bytes = 1_024;
+        p.max_queue_items = 1_000;
+        p.max_queue_bytes = 200_000;
+        p.max_items_per_sender = 50;
+        p.max_bytes_per_sender = 20_000;
+        p.max_ttl_ms = 10_000;
+        p.max_history_records = 1_200;
+        let mut queue = QueueLedger::new(p).unwrap();
+
+        for index in 0..1_000_u64 {
+            let mut queued = message(&format!("replay-{index:04}"));
+            queued.sender_id = format!("sender-{:03}", index % 100);
+            queued.recipient_id = if index % 2 == 0 {
+                "recipient-a".to_owned()
+            } else {
+                "recipient-b".to_owned()
+            };
+            queued.created_at_ms = 1_000;
+            queued.expires_at_ms = 10_000;
+            queued.payload_len_bytes = 100;
+            queued.priority = match index % 3 {
+                0 => Priority::Essential,
+                1 => Priority::Ordinary,
+                _ => Priority::Bulk,
+            };
+            queue.enqueue(1_100, queued).expect("bounded synthetic message is admitted");
+        }
+
+        assert_eq!(queue.pending_count(), 1_000);
+        assert_eq!(queue.pending_bytes(), 100_000);
+
+        let mut delivered = 0_usize;
+        while queue.pending_count() > 0 {
+            let scheduled = queue.select_batch(2_000, available_route(), 50, 5_000);
+            assert_eq!(scheduled.block_reason, None);
+            assert!(!scheduled.selected.is_empty(), "pending queue must make progress");
+            for selected in scheduled.selected {
+                let ack = DeliveryAck {
+                    message_id: selected.message_id.clone(),
+                    recipient_id: selected.recipient_id.clone(),
+                    payload_sha256: selected.payload_sha256.clone(),
+                    received_at_ms: 2_000,
+                };
+                assert_eq!(
+                    queue.acknowledge(2_000, &ack, true),
+                    Ok(AckResult::MarkedDelivered)
+                );
+                delivered += 1;
+            }
+        }
+
+        assert_eq!(delivered, 1_000);
+        assert_eq!(queue.pending_count(), 0);
+        assert_eq!(queue.pending_bytes(), 0);
+        assert_eq!(queue.state("replay-0000"), Some(MessageState::Delivered));
+        assert_eq!(queue.state("replay-0999"), Some(MessageState::Delivered));
+    }
+
+    #[test]
     fn history_capacity_is_bounded() {
         let mut p = policy();
         p.max_queue_items = 1;
