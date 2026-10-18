@@ -120,3 +120,24 @@ First establish baseline values; then run the policy-core negatives and 100 fail
 ## 7. Explicit non-goals
 
 This work does not claim free global internet, universal coverage, Google Fi parity, true multi-link bonding, live phone SIM/eSIM control, carrier agreements, Starlink authorization, spectrum permission, emergency telephony or any measured performance until the exact device/provider/site is tested.
+
+
+## 8. Versioned measurement receipts
+
+Every benchmark run should emit a draft measurement receipt conforming to `schemas/connectivity-measurement-receipt-v1.schema.json`. The receipt binds its benchmark ID, operator, target and status to the SHA-256 digest of the exact `connectivity-broker-benchmark-profile-v1.json` bytes. It also records the full source commit, configuration digest, evidence class, run window, pseudonymous site token where relevant, hardware/firmware identity, raw trial outcomes, denominators, artifact paths/byte lengths/SHA-256 digests, privacy assertions and limitations.
+
+The offline `connectivity-measurement-receipt-verify` binary in `tools/connectivity-benchmark-profile-validator/` validates the schema, checks that the receipt's target still matches the bound profile, reconciles attempted/succeeded/failed/inconclusive counts with the raw trials, rejects duplicate trial IDs and unsafe artifact paths, and recomputes each local artifact's byte length and digest. The verifier rejects remote schema references and does not connect to the network.
+
+CLI example:
+
+```sh
+cargo run --manifest-path tools/connectivity-benchmark-profile-validator/Cargo.toml --bin connectivity-measurement-receipt-verify -- \
+  schemas/connectivity-measurement-receipt-v1.schema.json \
+  path/to/receipt.json \
+  profiles/connectivity-broker-benchmark-profile-v1.json \
+  path/to/evidence-root
+```
+
+A valid receipt is still unreviewed evidence; the verifier does not prove that a trial happened, that the site is representative, that field observations are truthful, or that the deployment is authorized. Preserve failed trials and old receipt bytes. Corrections create a new receipt with new digests rather than rewriting history. An independent review should be represented by a separate attributable attestation, not an in-place status promotion.
+
+The receipt schema, validator and negative tests are authored, but they remain **uncompiled and unexecuted** until a Rust-enabled run is recorded against the exact commit SHA. A JSON parse or a schema pass is not field evidence.
