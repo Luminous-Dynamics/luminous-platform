@@ -67,19 +67,15 @@
       }
     },
     "claims_not_conveyed": {
-      "type": "array",
-      "minItems": 5,
-      "uniqueItems": true,
-      "items": {
-        "enum": [
-          "hardware qualification",
-          "regulatory authorization",
-          "Starlink service availability",
-          "provider permission to share or resell",
-          "production readiness",
-          "performance guarantee"
-        ]
-      }
+      "const": [
+        "hardware qualification",
+        "regulatory authorization",
+        "Starlink service availability",
+        "provider permission to share or resell",
+        "production readiness",
+        "performance guarantee"
+      ],
+      "uniqueItems": true
     },
     "topology": {
       "type": "object",
@@ -224,7 +220,8 @@
             }
           }
         ]
-      }
+      },
+      "uniqueItems": true
     },
     "trust_zones": {
       "type": "array",
@@ -297,7 +294,8 @@
             }
           }
         ]
-      }
+      },
+      "uniqueItems": true
     },
     "service_contracts": {
       "type": "object",
@@ -817,22 +815,29 @@
       }
     },
     "hard_gates": {
-      "type": "array",
-      "minItems": 7,
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
+      "const": [
+        "Do not claim global Internet without authorized working upstream.",
+        "Do not share or resell any WAN service without applicable provider permission.",
+        "Do not deploy radio equipment without the required local authorization and type approval.",
+        "Do not expose management interfaces to client or guest networks.",
+        "Do not promote hardware maturity from a synthetic fixture, VM simulation or document review alone.",
+        "Do not treat Starlink Ethernet interoperability as evidence of South African service authorization.",
+        "Do not treat a draft target as a measured result."
+      ]
     },
     "evidence_package_requirements": {
-      "type": "array",
-      "minItems": 8,
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "minLength": 1
-      }
+      "const": [
+        "exact hardware model and revision",
+        "immutable software and firmware revisions",
+        "per-artifact license and source-availability inventory",
+        "BOM status, substitutes, vendor and supply evidence",
+        "site profile and network topology revision",
+        "test suite and runner revisions",
+        "parameters and raw-artifact SHA-256 digests",
+        "calibration evidence for instrumented measurements",
+        "failures, skipped tests, limitations and negative controls",
+        "independent review reference when claimed"
+      ]
     },
     "source_revalidation_required": {
       "const": true
