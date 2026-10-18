@@ -47,3 +47,8 @@ Do not include passwords, private keys, EAP inner identities, RADIUS secrets, ra
 - WBA OpenRoaming portal source (tooling only, not membership): https://github.com/wireless-broadband-alliance/wba-openroaming-portal
 - ICASA services licensing: https://www.icasa.org.za/pages/services-licencing
 - ICASA licensing/type approval: https://www.icasa.org.za/pages/licensing
+
+
+## Validator test status
+
+The current source contains 15 authored Rust tests, including target weakening, federation self-promotion, fail-open credential validation, remote schema references, trial denominator mismatch, duplicate row IDs, and unsupported promotion without a receipt. A prior exact-head run executed all 15 tests successfully but failed Clippy because of one unused constant. That constant has been removed; do not claim Clippy is clean for the newer head until its rerun reports success.
