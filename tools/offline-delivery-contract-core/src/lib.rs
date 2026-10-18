@@ -769,7 +769,11 @@ mod tests {
 
     #[test]
     fn scheduling_is_deterministic_by_priority_expiry_and_id() {
-        let mut queue = QueueLedger::new(policy()).unwrap();
+        let mut test_policy = policy();
+        // Keep these messages below the first aging interval so this test
+        // isolates the base priority/expiry/ID ordering contract.
+        test_policy.priority_aging_interval_ms = 1_000;
+        let mut queue = QueueLedger::new(test_policy).unwrap();
         let mut ordinary_z = message("msg-z");
         ordinary_z.expires_at_ms = 1_800;
         let mut essential = message("msg-essential");
