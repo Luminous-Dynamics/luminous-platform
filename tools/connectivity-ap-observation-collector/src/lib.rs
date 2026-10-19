@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+use connectivity_ap_testbed_contracts::validate_manifest;
 use connectivity_task_outcome_core::sha256_hex;
 use serde_json::{Value, json};
 
@@ -274,6 +275,34 @@ fn validate_snapshot(snapshot: &Value) -> Result<(), Vec<String>> {
     }
 }
 
+/// Admit only a validated measured-stage manifest for a dedicated, authorized
+/// test network. A planned fixture is never sufficient to trigger host probing.
+pub fn validate_observation_manifest(
+    schema_source: &str,
+    manifest_bytes: &[u8],
+) -> Result<Value, Vec<String>> {
+    if schema_source.len() > MAX_SCHEMA_BYTES || manifest_bytes.len() > MAX_SCHEMA_BYTES {
+        return Err(vec!["manifest schema or manifest exceeds the configured size bound".to_owned()]);
+    }
+    let manifest_source = std::str::from_utf8(manifest_bytes)
+        .map_err(|error| vec![format!("manifest is not UTF-8: {error}")])?;
+    let manifest = validate_manifest(schema_source, manifest_source)?;
+    if manifest.get("evidence_stage").and_then(Value::as_str) == Some("planned") {
+        return Err(vec![
+            "refusing observation with a planned manifest; record actual hardware and instrumentation first".to_owned(),
+        ]);
+    }
+    if manifest.pointer("/run_controls/dedicated_test_network").and_then(Value::as_bool) != Some(true)
+        || manifest.pointer("/run_controls/public_users_present").and_then(Value::as_bool) != Some(false)
+        || manifest.pointer("/run_controls/network_authorization").and_then(Value::as_str) != Some("owner_authorized_lab")
+    {
+        return Err(vec![
+            "observation requires an owner-authorized isolated test network with no public users".to_owned(),
+        ]);
+    }
+    Ok(manifest)
+}
+
 /// Outputs of four allow-listed read-only observation commands.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct CapturedOutputs<'a> {
@@ -433,6 +462,15 @@ mod tests {
         assert_eq!(value["station_metrics"]["station_count"], Value::Null);
         assert_eq!(value["qdisc_metrics"]["sent_bytes_total"], Value::Null);
         assert_eq!(value["privacy"]["raw_command_output_exported"], false);
+    }
+
+    #[test]
+    fn planned_testbed_manifest_is_not_admitted_for_host_observation() {
+        let schema = include_str!("../../../schemas/connectivity-ap-testbed-manifest-v1.schema.json");
+        let manifest = include_str!("../../../examples/connectivity-ap-testbed-manifest-planned-v1.json");
+        let error = validate_observation_manifest(schema, manifest.as_bytes())
+            .expect_err("planned equipment is not a measured testbed");
+        assert!(error.iter().any(|message| message.contains("planned manifest")));
     }
 
     #[test]
