@@ -20,6 +20,7 @@ const REQUIRED_PRIORITIES: [&str; 3] = ["essential", "interactive", "bulk"];
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct TaskResult {
     succeeded: bool,
+    elapsed_ms: u64,
     bytes_tx: u64,
     bytes_rx: u64,
     energy_millijoules: u64,
@@ -156,8 +157,14 @@ fn task_result(
         && completion_latency_ms <= deadline
         && completion_latency_ms <= ttl;
     let (bytes_tx, bytes_rx) = split_transfer(service_bytes, used);
+    let elapsed_ms = if succeeded {
+        completion_latency_ms
+    } else {
+        deadline.min(ttl)
+    };
     Ok(TaskResult {
         succeeded,
+        elapsed_ms,
         bytes_tx,
         bytes_rx,
         energy_millijoules: energy_cost(base_energy, used, energy_per_kib)?,
@@ -366,9 +373,6 @@ fn fair_share_grants(
 
 fn make_trial(task: &Value, arm: &str, result: TaskResult) -> Value {
     let task_id = str_field(task, "task_id").unwrap_or("invalid-task");
-    let elapsed = u64_field(task, "deadline_ms")
-        .unwrap_or(1)
-        .min(u64_field(task, "expires_after_ms").unwrap_or(1));
     json!({
         "trial_id": format!("{task_id}-{arm}"),
         "pair_id": task.get("pair_id"),
@@ -377,7 +381,7 @@ fn make_trial(task: &Value, arm: &str, result: TaskResult) -> Value {
         "priority": task.get("priority"),
         "mode": task.get("mode"),
         "outcome": if result.succeeded { "succeeded" } else { "failed" },
-        "elapsed_ms": if result.succeeded { 80 } else { elapsed },
+        "elapsed_ms": result.elapsed_ms,
         "bytes_tx": result.bytes_tx,
         "bytes_rx": result.bytes_rx,
         "energy_millijoules": result.energy_millijoules,
