@@ -564,11 +564,7 @@ fn arm_summary(tasks: &[Task], progress: &[Progress], indices: &[usize]) -> Resu
     }))
 }
 
-fn priority_summaries(
-    tasks: &[Task],
-    progress: &[Progress],
-    indices: &[usize],
-) -> Vec<Value> {
+fn priority_summaries(tasks: &[Task], progress: &[Progress], indices: &[usize]) -> Vec<Value> {
     REQUIRED_PRIORITIES
         .iter()
         .map(|priority| {
@@ -1054,16 +1050,23 @@ mod tests {
     fn per_priority_summaries_expose_essential_deadline_misses() {
         let f = fixtures();
         let (_, report) = simulate(&f, &f.scenario).unwrap();
-        for mode in report["multiwindow_recovery"]["per_mode"].as_array().unwrap() {
+        for mode in report["multiwindow_recovery"]["per_mode"]
+            .as_array()
+            .unwrap()
+        {
             let baseline = mode["baseline_by_priority"].as_array().unwrap();
             let candidate = mode["candidate_by_priority"].as_array().unwrap();
             for (rows, expected) in [(baseline, [0, 0, 1]), (candidate, [1, 1, 1])] {
                 for (index, priority) in REQUIRED_PRIORITIES.iter().enumerate() {
-                    let row = rows.iter().find(|row| row["priority"] == *priority).unwrap();
+                    let row = rows
+                        .iter()
+                        .find(|row| row["priority"] == *priority)
+                        .unwrap();
                     assert_eq!(row["completed_tasks"], expected[index]);
                 }
             }
-            let essential = baseline.iter()
+            let essential = baseline
+                .iter()
                 .find(|row| row["priority"] == "essential")
                 .unwrap();
             assert_eq!(essential["deadline_misses"], 1);
