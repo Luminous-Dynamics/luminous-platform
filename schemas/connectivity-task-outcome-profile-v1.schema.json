@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/connectivity-task-outcome-profile-v1.schema.json",
+  "title": "Connectivity Task Outcome Benchmark Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "profile_id", "minimum_pairs", "required_priorities", "required_modes", "require_each_priority", "require_each_mode", "privacy_contract"],
+  "properties": {
+    "schema_version": { "const": "luminous.connectivity-task-outcome-profile.v1" },
+    "profile_id": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]{2,127}$" },
+    "minimum_pairs": { "type": "integer", "minimum": 1, "maximum": 100000 },
+    "required_priorities": { "type": "array", "uniqueItems": true, "minItems": 1, "items": { "enum": ["essential", "interactive", "bulk"] } },
+    "required_modes": { "type": "array", "uniqueItems": true, "minItems": 1, "items": { "enum": ["online", "wan_partition", "route_recovery"] } },
+    "require_each_priority": { "type": "boolean" },
+    "require_each_mode": { "type": "boolean" },
+    "privacy_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direct_identifiers_permitted", "raw_mac_addresses_permitted", "credentials_permitted"],
+      "properties": {
+        "direct_identifiers_permitted": { "const": false },
+        "raw_mac_addresses_permitted": { "const": false },
+        "credentials_permitted": { "const": false }
+      }
+    }
+  }
+}
