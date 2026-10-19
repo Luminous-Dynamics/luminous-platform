@@ -85,7 +85,11 @@ fn semantic_checks(corpus: &Value, errors: &mut Vec<String>) {
         if !ids.insert(case_id.to_owned()) {
             errors.push(format!("/cases/{index}/case_id duplicates {case_id}"));
         }
-        if case.get("independent_probe_required").and_then(Value::as_bool) != Some(true) {
+        if case
+            .get("independent_probe_required")
+            .and_then(Value::as_bool)
+            != Some(true)
+        {
             errors.push(format!(
                 "/cases/{index}/independent_probe_required must be true"
             ));
@@ -219,8 +223,7 @@ mod tests {
     #[test]
     fn unknown_fields_fail_closed() {
         let mut corpus: Value = serde_json::from_str(CORPUS).expect("fixture JSON");
-        corpus["cases"][0]["subscriber_mac"] =
-            Value::String("must-not-be-exported".to_owned());
+        corpus["cases"][0]["subscriber_mac"] = Value::String("must-not-be-exported".to_owned());
         let errors = validate_corpus(SCHEMA, &corpus.to_string()).expect_err("unknown field");
         assert!(errors.iter().any(|error| error.contains("subscriber_mac")));
     }
