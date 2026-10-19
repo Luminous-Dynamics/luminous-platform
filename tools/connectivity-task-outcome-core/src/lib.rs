@@ -672,14 +672,9 @@ mod tests {
         let (run_schema, profile_schema, profile_bytes, run) = fixtures();
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
         let run = ready_run(run, &profile_bytes);
-        let report = validate_and_report(
-            &run_schema,
-            &profile_schema,
-            &profile_bytes,
-            &profile,
-            &run,
-        )
-        .unwrap();
+        let report =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run)
+                .unwrap();
         assert_eq!(
             report["candidate"]["energy_per_successful_task_millijoules"],
             1267
