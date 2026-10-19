@@ -519,18 +519,18 @@ fn jain_fairness_ppm(tasks: &[Task], progress: &[Progress], indices: &[usize]) -
     )
 }
 
-fn arm_summary(tasks: &[Task], progress: &[Progress], indices: &[usize]) -> Value {
+fn arm_summary(tasks: &[Task], progress: &[Progress], indices: &[usize]) -> Result<Value, String> {
     let mut completed = 0_u64;
     let mut delivered = 0_u64;
     let mut energy = 0_u64;
     let mut charge = 0_u64;
     for index in indices {
         completed += u64::from(progress[*index].completion_window.is_some());
-        delivered = delivered.saturating_add(progress[*index].delivered_bytes);
-        energy = energy.saturating_add(progress[*index].energy_millijoules);
-        charge = charge.saturating_add(progress[*index].charge_minor);
+        checked_add(&mut delivered, progress[*index].delivered_bytes, "aggregate delivered bytes")?;
+        checked_add(&mut energy, progress[*index].energy_millijoules, "aggregate task energy")?;
+        checked_add(&mut charge, progress[*index].charge_minor, "aggregate task charge")?;
     }
-    json!({
+    Ok(json!({
         "task_count": indices.len(),
         "completed_tasks": completed,
         "failed_tasks": indices.len() as u64 - completed,
@@ -538,7 +538,7 @@ fn arm_summary(tasks: &[Task], progress: &[Progress], indices: &[usize]) -> Valu
         "total_bytes_delivered": delivered,
         "total_task_energy_millijoules": energy,
         "total_task_charge_minor": charge
-    })
+    }))
 }
 
 fn window_values(stats: &[WindowStats], capacity: u64) -> Vec<Value> {
@@ -729,8 +729,7 @@ pub fn validate_and_simulate(
     let mut candidate_progress = vec![Progress::default(); tasks.len()];
     let mut mode_reports = Vec::new();
     let mut trials = Vec::with_capacity(tasks.len() * 2);
-    let mut all_baseline_windows = BTreeMap::new();
-    let mut all_candidate_windows = BTreeMap::new();
+
 
     for mode in REQUIRED_MODES {
         let indices: Vec<usize> = tasks.iter().enumerate()
@@ -745,15 +744,16 @@ pub fn validate_and_simulate(
             reserve, base_energy, energy_per_kib, charge_per_kib, true,
         ).map_err(|error| vec![error])?;
 
-        all_baseline_windows.insert(mode.to_owned(), window_values(&baseline_windows, capacity));
-        all_candidate_windows.insert(mode.to_owned(), window_values(&candidate_windows, capacity));
-
+        let baseline_summary = arm_summary(&tasks, &baseline_progress, &indices)
+            .map_err(|error| vec![error])?;
+        let candidate_summary = arm_summary(&tasks, &candidate_progress, &indices)
+            .map_err(|error| vec![error])?;
         mode_reports.push(json!({
             "mode": mode,
             "window_capacity_bytes": capacity,
             "essential_reserve_bytes": reserve,
-            "baseline": arm_summary(&tasks, &baseline_progress, &indices),
-            "candidate_fair_share": arm_summary(&tasks, &candidate_progress, &indices),
+            "baseline": baseline_summary,
+            "candidate_fair_share": candidate_summary,
             "baseline_window_trace": window_values(&baseline_windows, capacity),
             "candidate_window_trace": window_values(&candidate_windows, capacity)
         }));
@@ -836,7 +836,6 @@ pub fn validate_and_simulate(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::Value;
 
     struct Fixtures {
         schema: Value,
