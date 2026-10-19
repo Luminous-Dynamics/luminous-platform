@@ -130,8 +130,8 @@ fn wilson_95_ppm(successes: u64, attempted: u64) -> (Option<u64>, Option<u64>) {
 /// reported separately and are never deleted from the denominator.
 fn paired_outcome_report(counts: &[u64; 4]) -> Value {
     let pair_count = counts.iter().sum::<u64>();
-    let difference = i64::try_from(counts[1]).unwrap_or(i64::MAX)
-        - i64::try_from(counts[2]).unwrap_or(i64::MAX);
+    let difference =
+        i64::try_from(counts[1]).unwrap_or(i64::MAX) - i64::try_from(counts[2]).unwrap_or(i64::MAX);
     let delta_ppm = if pair_count > 0 {
         Some((i128::from(difference) * 1_000_000 / i128::from(pair_count)) as i64)
     } else {
@@ -146,14 +146,11 @@ fn paired_outcome_report(counts: &[u64; 4]) -> Value {
         let n = pair_count as f64;
         let mean = difference as f64 / n;
         let sample_variance =
-            ((discordant_pairs as f64 - (difference as f64).powi(2) / n) / (n - 1.0))
-                .max(0.0);
+            ((discordant_pairs as f64 - (difference as f64).powi(2) / n) / (n - 1.0)).max(0.0);
         let standard_error = (sample_variance / n).sqrt();
         let z = 1.959_963_984_540_054_f64;
-        let lower = ((mean - z * standard_error).clamp(-1.0, 1.0) * 1_000_000.0).floor()
-            as i64;
-        let upper = ((mean + z * standard_error).clamp(-1.0, 1.0) * 1_000_000.0).ceil()
-            as i64;
+        let lower = ((mean - z * standard_error).clamp(-1.0, 1.0) * 1_000_000.0).floor() as i64;
+        let upper = ((mean + z * standard_error).clamp(-1.0, 1.0) * 1_000_000.0).ceil() as i64;
         Some((lower, upper))
     } else {
         None
@@ -802,9 +799,22 @@ mod tests {
     #[test]
     fn paired_difference_interval_requires_ten_discordant_pairs() {
         let report = paired_outcome_report(&[10, 5, 5, 10]);
-        assert_eq!(report["candidate_minus_baseline_paired_success_delta_ppm"], 0);
-        assert!(report["paired_success_delta_approx95_ci_lower_ppm"].as_i64().unwrap() < 0);
-        assert!(report["paired_success_delta_approx95_ci_upper_ppm"].as_i64().unwrap() > 0);
+        assert_eq!(
+            report["candidate_minus_baseline_paired_success_delta_ppm"],
+            0
+        );
+        assert!(
+            report["paired_success_delta_approx95_ci_lower_ppm"]
+                .as_i64()
+                .unwrap()
+                < 0
+        );
+        assert!(
+            report["paired_success_delta_approx95_ci_upper_ppm"]
+                .as_i64()
+                .unwrap()
+                > 0
+        );
     }
 
     #[test]
