@@ -3,15 +3,17 @@ use serde_json::{Value, json};
 use std::error::Error;
 use std::io;
 
-const LOAD_BUDGETS_BYTES: [u64; 7] = [
-    49_152, 24_576, 16_384, 12_288, 9_830, 8_192, 6_144,
-];
+const LOAD_BUDGETS_BYTES: [u64; 7] = [49_152, 24_576, 16_384, 12_288, 9_830, 8_192, 6_144];
 
 fn number(value: &Value, pointer: &str) -> Result<u64, io::Error> {
     value
         .pointer(pointer)
         .and_then(Value::as_u64)
-        .ok_or_else(|| io::Error::other(format!("benchmark report is missing numeric field {pointer}")))
+        .ok_or_else(|| {
+            io::Error::other(format!(
+                "benchmark report is missing numeric field {pointer}"
+            ))
+        })
 }
 
 fn nullable_number(value: &Value, pointer: &str) -> String {
@@ -31,10 +33,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let profile_schema: Value = serde_json::from_str(include_str!(
         "../../../../schemas/connectivity-task-outcome-profile-v1.schema.json"
     ))?;
-    let profile_bytes = include_bytes!(
-        "../../../../profiles/connectivity-task-outcome-benchmark-profile-v1.json"
-    )
-    .to_vec();
+    let profile_bytes =
+        include_bytes!("../../../../profiles/connectivity-task-outcome-benchmark-profile-v1.json")
+            .to_vec();
     let profile: Value = serde_json::from_slice(&profile_bytes)?;
     let fixture: Value = serde_json::from_str(include_str!(
         "../../../../examples/connectivity-recovery-fairshare-scenario-synthetic-v1.json"
@@ -77,14 +78,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                     total.checked_add(task["service_bytes"].as_u64()?)
                 })
                 .ok_or_else(|| io::Error::other("mode demand is missing or overflows"))?;
-            let load_ppm =
-                (u128::from(demand) * 1_000_000 / u128::from(budget)) as u64;
+            let load_ppm = (u128::from(demand) * 1_000_000 / u128::from(budget)) as u64;
             println!(
                 "{budget},{demand},{load_ppm},{mode},{},{},{},{},{},{},{},{}",
                 number(window, "/baseline/successful_tasks")?,
                 number(window, "/candidate_fair_share/successful_tasks")?,
                 nullable_number(window, "/baseline/jain_peer_task_success_fairness_ppm"),
-                nullable_number(window, "/candidate_fair_share/jain_peer_task_success_fairness_ppm"),
+                nullable_number(
+                    window,
+                    "/candidate_fair_share/jain_peer_task_success_fairness_ppm"
+                ),
                 number(window, "/baseline/actual_transferred_bytes")?,
                 number(window, "/candidate_fair_share/actual_transferred_bytes")?,
                 number(window, "/candidate_fair_share/allocator_granted_bytes")?,
