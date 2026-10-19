@@ -14,7 +14,8 @@
       "required": ["profile_sha256"],
       "properties": {
         "profile_sha256": { "$ref": "#/$defs/sha256" },
-        "run_artifact_sha256": { "$ref": "#/$defs/sha256" }
+        "run_artifact_sha256": { "$ref": "#/$defs/sha256" },
+        "scenario_sha256": { "$ref": "#/$defs/sha256" }
       }
     },
     "evidence_class": { "enum": ["synthetic_simulation", "bench_measured", "field_observed"] },
