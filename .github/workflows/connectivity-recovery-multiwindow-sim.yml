@@ -10,7 +10,7 @@ on:
       - "schemas/connectivity-task-outcome-*.schema.json"
       - "profiles/connectivity-task-outcome-benchmark-profile-v1.json"
       - "examples/connectivity-recovery-multiwindow-scenario-synthetic-v1.json"
-      - "docs/CONNECTIVITY_RECOVERY_MULT IWINDOW_SIM_V1.md"
+      - "docs/CONNECTIVITY_RECOVERY_MULTIWINDOW_SIM_V1.md"
       - ".github/workflows/connectivity-recovery-multiwindow-sim.yml"
   push:
     branches: [main, feat/connectivity-multiwindow-recovery-sim-v1]
@@ -22,7 +22,7 @@ on:
       - "schemas/connectivity-task-outcome-*.schema.json"
       - "profiles/connectivity-task-outcome-benchmark-profile-v1.json"
       - "examples/connectivity-recovery-multiwindow-scenario-synthetic-v1.json"
-      - "docs/CONNECTIVITY_RECOVERY_MULT IWINDOW_SIM_V1.md"
+      - "docs/CONNECTIVITY_RECOVERY_MULTIWINDOW_SIM_V1.md"
       - ".github/workflows/connectivity-recovery-multiwindow-sim.yml"
 
 permissions:
