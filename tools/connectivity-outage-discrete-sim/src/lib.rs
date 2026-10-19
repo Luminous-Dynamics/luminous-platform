@@ -124,6 +124,23 @@ fn charge_cost(payload_bytes: u64, per_kib: u64) -> Result<u64, String> {
         .ok_or_else(|| "synthetic charge arithmetic overflows u64".to_owned())
 }
 
+#[derive(Clone, Copy)]
+struct LinkPath {
+    latency_ms: u64,
+    bytes_per_second: u64,
+    energy_millijoules_per_kib: u64,
+    charge_minor_per_kib: u64,
+}
+
+fn link_path(link: &Value, kind: &str) -> Result<LinkPath, String> {
+    Ok(LinkPath {
+        latency_ms: u64_field(link, &format!("{kind}_latency_ms"))?,
+        bytes_per_second: u64_field(link, &format!("{kind}_bytes_per_second"))?,
+        energy_millijoules_per_kib: u64_field(link, &format!("{kind}_energy_millijoules_per_kib"))?,
+        charge_minor_per_kib: u64_field(link, &format!("{kind}_charge_minor_per_kib"))?,
+    })
+}
+
 fn blocked_attempt(deadline_ms: u64, ttl_ms: u64, detection_ms: u64, base_energy: u64) -> TrialOutcome {
     TrialOutcome {
         outcome: "failed",
@@ -141,13 +158,10 @@ fn blocked_attempt(deadline_ms: u64, ttl_ms: u64, detection_ms: u64, base_energy
 fn transfer_attempt(
     payload_bytes: u64,
     wait_ms: u64,
-    latency_ms: u64,
-    rate: u64,
+    path: LinkPath,
     deadline_ms: u64,
     ttl_ms: u64,
     base_energy: u64,
-    energy_per_kib: u64,
-    charge_per_kib: u64,
 ) -> Result<TrialOutcome, String> {
     let allowed = deadline_ms.min(ttl_ms);
     if wait_ms >= allowed {
@@ -160,10 +174,10 @@ fn transfer_attempt(
             charge_minor: 0,
         });
     }
-    let path_ms = path_duration_ms(payload_bytes, latency_ms, rate)?;
+    let path_ms = path_duration_ms(payload_bytes, path.latency_ms, path.bytes_per_second)?;
     let completion_ms = wait_ms.checked_add(path_ms).ok_or_else(|| "wait plus path duration overflows u64".to_owned())?;
-    let energy = energy_cost(base_energy, payload_bytes, energy_per_kib)?;
-    let charge = charge_cost(payload_bytes, charge_per_kib)?;
+    let energy = energy_cost(base_energy, payload_bytes, path.energy_millijoules_per_kib)?;
+    let charge = charge_cost(payload_bytes, path.charge_minor_per_kib)?;
     if completion_ms <= allowed {
         Ok(TrialOutcome {
             outcome: "succeeded",
@@ -211,14 +225,12 @@ fn simulate_baseline(task: &Value, scenario: &Value) -> Result<TrialOutcome, Str
         return blocked_for_outage(task, scenario, base);
     }
     transfer_attempt(
-        u64_field(task, "payload_bytes")?, 0,
-        u64_field(link, "wan_latency_ms")?,
-        u64_field(link, "wan_bytes_per_second")?,
+        u64_field(task, "payload_bytes")?,
+        0,
+        link_path(link, "wan")?,
         u64_field(task, "deadline_ms")?,
         u64_field(task, "expires_after_ms")?,
         base,
-        u64_field(link, "wan_energy_millijoules_per_kib")?,
-        u64_field(link, "wan_charge_minor_per_kib")?,
     )
 }
 
@@ -236,19 +248,23 @@ fn simulate_candidate(task: &Value, scenario: &Value, pending: &mut Vec<(u64, u6
 
     if bool_field(task, "local_execution_allowed")? && bool_field(queue, "local_link_available")? {
         return transfer_attempt(
-            payload, 0, u64_field(link, "local_latency_ms")?,
-            u64_field(link, "local_bytes_per_second")?, deadline, ttl, base,
-            u64_field(link, "local_energy_millijoules_per_kib")?,
-            u64_field(link, "local_charge_minor_per_kib")?,
+            payload,
+            0,
+            link_path(link, "local")?,
+            deadline,
+            ttl,
+            base,
         );
     }
 
     if arrival < start || arrival >= end {
         return transfer_attempt(
-            payload, 0, u64_field(link, "wan_latency_ms")?,
-            u64_field(link, "wan_bytes_per_second")?, deadline, ttl, base,
-            u64_field(link, "wan_energy_millijoules_per_kib")?,
-            u64_field(link, "wan_charge_minor_per_kib")?,
+            payload,
+            0,
+            link_path(link, "wan")?,
+            deadline,
+            ttl,
+            base,
         );
     }
 
@@ -288,10 +304,12 @@ fn simulate_candidate(task: &Value, scenario: &Value, pending: &mut Vec<(u64, u6
     }
 
     transfer_attempt(
-        payload, wait_ms, u64_field(link, "wan_latency_ms")?,
-        u64_field(link, "wan_bytes_per_second")?, deadline, ttl, base,
-        u64_field(link, "wan_energy_millijoules_per_kib")?,
-        u64_field(link, "wan_charge_minor_per_kib")?,
+        payload,
+        wait_ms,
+        link_path(link, "wan")?,
+        deadline,
+        ttl,
+        base,
     )
 }
 
