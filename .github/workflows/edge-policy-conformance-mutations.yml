@@ -44,3 +44,16 @@ jobs:
         run: cargo clippy --manifest-path tools/edge-policy-conformance-mutations/Cargo.toml --all-targets -- -D warnings
       - name: Run the frozen 10,000-trial seeded mutation corpus
         run: cargo run --manifest-path tools/edge-policy-conformance-mutations/Cargo.toml --bin edge-policy-conformance-mutations -- --count 10000 --seed 20261019
+      - name: Run 20 additional fixed seeds
+        env:
+          SEED_START: "20261020"
+          SEED_COUNT: "20"
+        run: |
+          for offset in $(seq 0 $((SEED_COUNT - 1))); do
+            seed=$((SEED_START + offset))
+            report="$RUNNER_TEMP/edge-policy-mutation-$seed.json"
+            cargo run --quiet --manifest-path tools/edge-policy-conformance-mutations/Cargo.toml --bin edge-policy-conformance-mutations -- --count 1000 --seed "$seed" > "$report"
+            grep -q '"mutations_rejected": 1000' "$report"
+            grep -q '"mutations_accepted": 0' "$report"
+            printf 'PASS seed=%s rejected=1000 accepted=0\n' "$seed"
+          done

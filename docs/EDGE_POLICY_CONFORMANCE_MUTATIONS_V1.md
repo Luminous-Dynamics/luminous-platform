@@ -38,7 +38,7 @@ These mutations cover distinct schema-level and semantic guards. They are not a 
 | Base false rejection | 0; the unmodified positive corpus must validate before any mutation runs |
 | Auditability | Every report binds exact schema and corpus byte digests, count, seed, operator totals and overall mutation digest |
 
-These are engineering acceptance goals for the contract validator, not claims of production security or industry certification. Run at least 20 fixed seeds before relying on the result for release gating; preserve failed seeds and first accepted-mutant digests for debugging.
+These are engineering acceptance goals for the contract validator, not claims of production security or industry certification. The CI profile executes 10,000 trials at seed 20261019 plus 20 additional fixed seeds (20261020–20261039) at 1,000 trials each, for 30,000 mutation trials per run. Preserve failed seeds and first accepted-mutant digests for debugging.
 
 ## State-of-the-art comparison plan
 
