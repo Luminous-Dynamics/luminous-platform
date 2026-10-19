@@ -417,11 +417,7 @@ fn apply_window(
             variable_energy,
             "task energy",
         )?;
-        let charge = checked_scaled(
-            ceil_kib(amount),
-            config.charge_minor_per_kib,
-            "task charge",
-        )?;
+        let charge = checked_scaled(ceil_kib(amount), config.charge_minor_per_kib, "task charge")?;
         checked_add(&mut state.charge_minor, charge, "task charge total")?;
         checked_add(&mut state.delivered_bytes, amount, "task delivered bytes")?;
         checked_add(&mut transferred_bytes, amount, "window transfer")?;
@@ -479,14 +475,8 @@ fn simulate_mode(
         } else {
             fcfs_grants(tasks, progress, &active, config.capacity_bytes)
         };
-        let (transferred_bytes, completed_now, failed_now) = apply_window(
-            tasks,
-            progress,
-            &active,
-            &grants,
-            window,
-            config,
-        )?;
+        let (transferred_bytes, completed_now, failed_now) =
+            apply_window(tasks, progress, &active, &grants, window, config)?;
         if transferred_bytes > config.capacity_bytes {
             return Err(format!(
                 "mode {mode} window {window}: transferred bytes exceed the declared budget"
