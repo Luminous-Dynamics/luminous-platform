@@ -61,6 +61,23 @@ pub enum AllocationError {
     ArithmeticOverflow,
 }
 
+impl std::fmt::Display for AllocationError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let message = match self {
+            Self::ZeroCapacity => "capacity must be greater than zero",
+            Self::EssentialReserveExceedsCapacity => "essential reserve exceeds capacity",
+            Self::TooManyPeers => "peer count exceeds the configured safety bound",
+            Self::InvalidPeerId => "peer identifier is malformed",
+            Self::DuplicatePeerId => "peer identifier is duplicated",
+            Self::InvalidWeight => "weight is outside the allowed range",
+            Self::ArithmeticOverflow => "allocation arithmetic overflowed",
+        };
+        formatter.write_str(message)
+    }
+}
+
+impl std::error::Error for AllocationError {}
+
 pub fn allocate(
     policy: &AllocationPolicy,
     demands: &[PeerDemand],
