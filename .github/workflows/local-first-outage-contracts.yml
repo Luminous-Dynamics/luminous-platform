@@ -63,6 +63,7 @@ jobs:
         run: >-
           cargo run
           --manifest-path tools/local-first-resilience-profile-validator/Cargo.toml
+          --bin local-first-resilience-profile-validator
           --
           schemas/local-first-outage-resilience-benchmark-profile-v1.schema.json
           profiles/local-first-outage-resilience-benchmark-profile-v1.json
