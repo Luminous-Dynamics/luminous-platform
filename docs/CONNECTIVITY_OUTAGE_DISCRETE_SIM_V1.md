@@ -2,6 +2,8 @@
 
 Status: synthetic discrete-event model. This is not an RF simulator, field benchmark or router implementation.
 
+The conformance workflow is also present on the parent task-outcome branch so this stacked PR can be checked against the canonical validator that it depends on.
+
 ## What it compares
 
 The simulator replays a versioned list of task arrivals through two abstract strategies:
