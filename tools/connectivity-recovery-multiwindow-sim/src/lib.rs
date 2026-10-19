@@ -588,11 +588,8 @@ fn priority_summaries(tasks: &[Task], progress: &[Progress], indices: &[usize]) 
                     }
                 }
             }
-            let completion_rate_ppm = if task_count == 0 {
-                None
-            } else {
-                Some(completed * 1_000_000 / task_count)
-            };
+            let completion_rate_ppm =
+                completed.checked_mul(1_000_000).and_then(|scaled| scaled.checked_div(task_count));
             json!({
                 "priority": priority,
                 "task_count": task_count,
