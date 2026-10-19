@@ -771,8 +771,12 @@ mod tests {
     fn scheduling_is_deterministic_by_priority_expiry_and_id() {
         let mut test_policy = policy();
         // Keep these messages below the first aging interval so this test
-        // isolates the base priority/expiry/ID ordering contract.
+        // isolates the base priority/expiry/ID ordering contract. Relax
+        // per-sender quotas because this fixture intentionally queues four
+        // messages from one sender and is not testing admission fairness.
         test_policy.priority_aging_interval_ms = 1_000;
+        test_policy.max_items_per_sender = 10;
+        test_policy.max_bytes_per_sender = test_policy.max_queue_bytes;
         let mut queue = QueueLedger::new(test_policy).unwrap();
         let mut ordinary_z = message("msg-z");
         ordinary_z.expires_at_ms = 1_800;
