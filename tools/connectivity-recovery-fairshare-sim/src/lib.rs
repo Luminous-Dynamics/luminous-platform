@@ -84,7 +84,10 @@ fn schema_errors(schema: &Value, value: &Value) -> Vec<String> {
     if !meta.evaluate(schema).flag().valid {
         return vec!["recovery scenario schema failed meta-validation".to_owned()];
     }
-    let validator = match draft202012::options().should_validate_formats(true).build(schema) {
+    let validator = match draft202012::options()
+        .should_validate_formats(true)
+        .build(schema)
+    {
         Ok(validator) => validator,
         Err(error) => return vec![format!("cannot build scenario validator: {error}")],
     };
@@ -137,7 +140,9 @@ fn used_bytes_for_task(service_bytes: u64, grant_bytes: u64) -> u64 {
 fn split_transfer(service_bytes: u64, used_bytes: u64) -> (u64, u64) {
     let request_bytes = service_bytes / 2;
     let bytes_tx = used_bytes.min(request_bytes);
-    let bytes_rx = used_bytes.saturating_sub(bytes_tx).min(service_bytes - request_bytes);
+    let bytes_rx = used_bytes
+        .saturating_sub(bytes_tx)
+        .min(service_bytes - request_bytes);
     (bytes_tx, bytes_rx)
 }
 
@@ -226,20 +231,28 @@ fn validate_semantics(scenario: &Value) -> Result<(), Vec<String>> {
         if let Some(previous) = mode_priorities.insert(mode.to_owned(), priority.to_owned())
             && previous != priority
         {
-            errors.push(format!("mode {mode} mixes priorities; v1 requires one class per window"));
+            errors.push(format!(
+                "mode {mode} mixes priorities; v1 requires one class per window"
+            ));
         }
         if let Some(previous) = mode_scenarios.insert(mode.to_owned(), scenario_id.to_owned())
             && previous != scenario_id
         {
-            errors.push(format!("mode {mode} mixes scenario IDs in one shared recovery window"));
+            errors.push(format!(
+                "mode {mode} mixes scenario IDs in one shared recovery window"
+            ));
         }
         if !peer_mode_pairs.insert((mode.to_owned(), peer.to_owned())) {
-            errors.push(format!("mode {mode} contains more than one task for peer {peer}"));
+            errors.push(format!(
+                "mode {mode} contains more than one task for peer {peer}"
+            ));
         }
         if let Some(previous) = peer_weights.insert(peer.to_owned(), weight)
             && previous != weight
         {
-            errors.push(format!("peer {peer} has inconsistent weights across mode cells"));
+            errors.push(format!(
+                "peer {peer} has inconsistent weights across mode cells"
+            ));
         }
         if u64_field(task, "service_bytes").unwrap_or(0) == 0 {
             errors.push(format!("tasks/{index}/service_bytes must be positive"));
@@ -344,10 +357,7 @@ fn fair_share_grants(
         .map(|grant| {
             (
                 grant.peer_id.clone(),
-                (
-                    grant.essential_granted_bytes,
-                    grant.ordinary_granted_bytes,
-                ),
+                (grant.essential_granted_bytes, grant.ordinary_granted_bytes),
             )
         })
         .collect();
@@ -361,7 +371,11 @@ fn fair_share_grants(
             .ok_or_else(|| format!("allocator omitted peer {peer}"))?;
         per_task.insert(
             str_field(task, "task_id")?.to_owned(),
-            if priority == "essential" { essential } else { ordinary },
+            if priority == "essential" {
+                essential
+            } else {
+                ordinary
+            },
         );
     }
     Ok((
@@ -420,7 +434,9 @@ pub fn validate_and_simulate(
     if profile_bytes.len() > MAX_INPUT_BYTES
         || serde_json::to_vec(scenario).map_or(true, |bytes| bytes.len() > MAX_INPUT_BYTES)
     {
-        return Err(vec!["scenario or profile exceeds the bounded input size".to_owned()]);
+        return Err(vec![
+            "scenario or profile exceeds the bounded input size".to_owned(),
+        ]);
     }
     let mut errors = schema_errors(scenario_schema, scenario);
     errors.extend(schema_errors(profile_schema, profile));
@@ -443,14 +459,21 @@ pub fn validate_and_simulate(
     let budget = u64_field(scenario, "window_budget_bytes").map_err(|error| vec![error])?;
     let reserve = u64_field(scenario, "essential_reserve_bytes").map_err(|error| vec![error])?;
     let latency = u64_field(scenario, "completion_latency_ms").map_err(|error| vec![error])?;
-    let base_energy = u64_field(scenario, "base_attempt_energy_millijoules").map_err(|error| vec![error])?;
-    let energy_per_kib = u64_field(scenario, "energy_millijoules_per_kib").map_err(|error| vec![error])?;
-    let charge_per_kib = u64_field(scenario, "charge_minor_per_kib").map_err(|error| vec![error])?;
+    let base_energy =
+        u64_field(scenario, "base_attempt_energy_millijoules").map_err(|error| vec![error])?;
+    let energy_per_kib =
+        u64_field(scenario, "energy_millijoules_per_kib").map_err(|error| vec![error])?;
+    let charge_per_kib =
+        u64_field(scenario, "charge_minor_per_kib").map_err(|error| vec![error])?;
 
     let mut task_groups: BTreeMap<String, Vec<Value>> = BTreeMap::new();
     for task in &ordered {
         task_groups
-            .entry(str_field(task, "mode").map_err(|error| vec![error])?.to_owned())
+            .entry(
+                str_field(task, "mode")
+                    .map_err(|error| vec![error])?
+                    .to_owned(),
+            )
             .or_default()
             .push(task.clone());
     }
@@ -497,8 +520,11 @@ pub fn validate_and_simulate(
 
             baseline_successes += if baseline_result.succeeded { 1 } else { 0 };
             candidate_successes += if candidate_result.succeeded { 1 } else { 0 };
-            let peer = str_field(task, "peer_id").map_err(|error| vec![error])?.to_owned();
-            baseline_peer_successes.insert(peer.clone(), if baseline_result.succeeded { 1 } else { 0 });
+            let peer = str_field(task, "peer_id")
+                .map_err(|error| vec![error])?
+                .to_owned();
+            baseline_peer_successes
+                .insert(peer.clone(), if baseline_result.succeeded { 1 } else { 0 });
             candidate_peer_successes.insert(peer, if candidate_result.succeeded { 1 } else { 0 });
             baseline_actual_bytes = baseline_actual_bytes
                 .checked_add(baseline_result.bytes_tx)
@@ -514,10 +540,13 @@ pub fn validate_and_simulate(
         }
 
         if baseline_actual_bytes > budget || candidate_actual_bytes > budget {
-            return Err(vec![format!("mode {mode}: actual transferred bytes exceed the recovery-window budget")]);
+            return Err(vec![format!(
+                "mode {mode}: actual transferred bytes exceed the recovery-window budget"
+            )]);
         }
         let baseline_success_values: Vec<u64> = baseline_peer_successes.values().copied().collect();
-        let candidate_success_values: Vec<u64> = candidate_peer_successes.values().copied().collect();
+        let candidate_success_values: Vec<u64> =
+            candidate_peer_successes.values().copied().collect();
         fairness_summaries.push(json!({
             "mode": mode,
             "priority": group.first().and_then(|task| task.get("priority")),
@@ -545,7 +574,11 @@ pub fn validate_and_simulate(
         str_field(left, "pair_id")
             .unwrap_or("")
             .cmp(str_field(right, "pair_id").unwrap_or(""))
-            .then_with(|| str_field(left, "arm").unwrap_or("").cmp(str_field(right, "arm").unwrap_or("")))
+            .then_with(|| {
+                str_field(left, "arm")
+                    .unwrap_or("")
+                    .cmp(str_field(right, "arm").unwrap_or(""))
+            })
     });
 
     let mut canonical_scenario = scenario.clone();
@@ -566,7 +599,10 @@ pub fn validate_and_simulate(
         "trials": trials
     });
     let mut report = validate_and_report(run_schema, profile_schema, profile_bytes, profile, &run)?;
-    report["simulation_id"] = scenario.get("simulation_id").cloned().unwrap_or(Value::Null);
+    report["simulation_id"] = scenario
+        .get("simulation_id")
+        .cloned()
+        .unwrap_or(Value::Null);
     report["scenario_sha256"] = json!(scenario_sha);
     report["fair_share_recovery_windows"] = json!(fairness_summaries);
     Ok((run, report))
@@ -656,12 +692,19 @@ mod tests {
                     <= 9000
             );
             assert_eq!(
-                window["candidate_fair_share"]["allocator_granted_bytes"].as_u64().unwrap()
-                    + window["candidate_fair_share"]["allocator_unallocated_bytes"].as_u64().unwrap(),
+                window["candidate_fair_share"]["allocator_granted_bytes"]
+                    .as_u64()
+                    .unwrap()
+                    + window["candidate_fair_share"]["allocator_unallocated_bytes"]
+                        .as_u64()
+                        .unwrap(),
                 9000
             );
             assert!(
-                window["baseline"]["actual_transferred_bytes"].as_u64().unwrap() <= 9000
+                window["baseline"]["actual_transferred_bytes"]
+                    .as_u64()
+                    .unwrap()
+                    <= 9000
             );
         }
     }
@@ -709,7 +752,8 @@ mod tests {
     fn remote_schema_references_are_rejected() {
         let f = fixtures();
         let mut schema = f.schema.clone();
-        schema["properties"]["simulation_id"]["$ref"] = json!("https://example.invalid/schema.json");
+        schema["properties"]["simulation_id"]["$ref"] =
+            json!("https://example.invalid/schema.json");
         assert!(!schema_errors(&schema, &f.scenario).is_empty());
     }
 }
