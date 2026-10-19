@@ -20,7 +20,10 @@ fn run() -> Result<(), String> {
     if arguments.len() != 3 {
         return Err(format!(
             "usage: {} <corpus-schema.json> <corpus.json>",
-            arguments.first().map(String::as_str).unwrap_or("edge-policy-conformance-verify")
+            arguments
+                .first()
+                .map(String::as_str)
+                .unwrap_or("edge-policy-conformance-verify")
         ));
     }
 
@@ -28,10 +31,18 @@ fn run() -> Result<(), String> {
     let corpus_source = read_utf8(&arguments[2])?;
     match validate_corpus(&schema, &corpus_source) {
         Ok(corpus) => {
-            let id = corpus.get("corpus_id").and_then(serde_json::Value::as_str).unwrap_or("unknown");
-            let count = corpus.get("cases").and_then(serde_json::Value::as_array).map_or(0, Vec::len);
+            let id = corpus
+                .get("corpus_id")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown");
+            let count = corpus
+                .get("cases")
+                .and_then(serde_json::Value::as_array)
+                .map_or(0, Vec::len);
             println!("VALID synthetic benchmark corpus: id={id} cases={count}");
-            println!("This validates benchmark intent only; it does not prove policy enforcement or a measured result.");
+            println!(
+                "This validates benchmark intent only; it does not prove policy enforcement or a measured result."
+            );
             Ok(())
         }
         Err(errors) => Err(errors.join("\n")),

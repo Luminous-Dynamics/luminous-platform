@@ -194,7 +194,11 @@ mod tests {
         corpus["cases"][2]["intended_decision"] = Value::String("allow".to_owned());
         corpus["cases"][2]["expected_probe_outcome"] = Value::String("permitted".to_owned());
         let errors = validate_corpus(SCHEMA, &corpus.to_string()).expect_err("stale allow");
-        assert!(errors.iter().any(|error| error.contains("non-valid authority")));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("non-valid authority"))
+        );
     }
 
     #[test]
@@ -250,6 +254,10 @@ mod tests {
             }
         }
         let errors = validate_corpus(SCHEMA, &corpus.to_string()).expect_err("invalid positives");
-        assert!(errors.iter().any(|error| error.contains("non-valid authority")));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("non-valid authority"))
+        );
     }
 }
