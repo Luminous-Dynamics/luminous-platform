@@ -797,7 +797,6 @@ pub fn validate_and_simulate(
     let mut mode_reports = Vec::new();
     let mut trials = Vec::with_capacity(tasks.len() * 2);
 
-
     for mode in REQUIRED_MODES {
         let indices: Vec<usize> = tasks
             .iter()
