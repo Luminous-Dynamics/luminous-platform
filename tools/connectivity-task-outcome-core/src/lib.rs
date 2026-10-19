@@ -443,15 +443,15 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
                 errors.push(format!("pair {pair_id} mismatches {key} between arms"));
             }
         }
-        if metadata_matches {
-            if let (Some(priority), Some(mode)) = (
+        if metadata_matches
+            && let (Some(priority), Some(mode)) = (
                 required_string(baseline[0], "/priority"),
                 required_string(baseline[0], "/mode"),
-            ) {
-                *pair_cells
-                    .entry((priority.to_owned(), mode.to_owned()))
-                    .or_default() += 1;
-            }
+            )
+        {
+            *pair_cells
+                .entry((priority.to_owned(), mode.to_owned()))
+                .or_default() += 1;
         }
     }
 
