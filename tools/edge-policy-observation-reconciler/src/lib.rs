@@ -109,7 +109,6 @@ fn evidence_problem(
     receipt: &Value,
     observation: &Value,
     case: &Value,
-    prior_monotonic: &mut Option<u64>,
 ) -> Option<String> {
     let evidence_class = value_string(receipt, "/evidence_class").unwrap_or("");
     let source = value_string(observation, "/evidence_source").unwrap_or("");
@@ -153,13 +152,7 @@ fn evidence_problem(
             "lab observation lacks its required time anchor or evidence digest".to_owned(),
         );
     }
-    let monotonic = observation["monotonic_elapsed_ms"].as_u64();
-    if let Some(current) = monotonic {
-        if prior_monotonic.is_some_and(|previous| current < previous) {
-            return Some("monotonic time moved backwards".to_owned());
-        }
-        *prior_monotonic = Some(current);
-    } else {
+    if observation["monotonic_elapsed_ms"].as_u64().is_none() {
         return Some("monotonic elapsed time is missing".to_owned());
     }
 
@@ -298,7 +291,23 @@ pub fn reconcile(
         }
     }
 
-    let mut prior_monotonic = None;
+    // Validate monotonic time in submitted trial order, not corpus order:
+    // workloads may be randomized and the corpus is only an expectation set.
+    let mut reversed_clock_cases = HashSet::new();
+    if receipt["evidence_class"] == "lab_observation_claim" {
+        let mut previous_elapsed = None;
+        for observation in observations {
+            let case_id = observation["case_id"].as_str().unwrap_or("");
+            if let Some(current_elapsed) = observation["monotonic_elapsed_ms"].as_u64() {
+                if previous_elapsed.is_some_and(|previous| current_elapsed < previous) {
+                    reversed_clock_cases.insert(case_id.to_owned());
+                } else {
+                    previous_elapsed = Some(current_elapsed);
+                }
+            }
+        }
+    }
+
     let mut summaries = Vec::with_capacity(cases.len());
     let mut mismatches = 0_u64;
     let mut incomplete = 0_u64;
@@ -326,7 +335,20 @@ pub fn reconcile(
             continue;
         };
 
-        if let Some(problem) = evidence_problem(&receipt, observation, case, &mut prior_monotonic) {
+        if reversed_clock_cases.contains(case_id) {
+            insufficient += 1;
+            summaries.push(json!({
+                "case_id": case_id,
+                "expected": expected,
+                "observed": observation["observed_outcome"],
+                "status": "insufficient_evidence",
+                "high_risk": high_risk,
+                "detail": "monotonic time moved backwards in submitted observation order"
+            }));
+            continue;
+        }
+
+        if let Some(problem) = evidence_problem(&receipt, observation, case) {
             insufficient += 1;
             summaries.push(json!({
                 "case_id": case_id,
@@ -377,19 +399,18 @@ pub fn reconcile(
         if let (Some(target), Some(duration)) = (
             case["target_response_ms"].as_u64(),
             observation["duration_ms"].as_u64(),
-        ) {
-            if duration > target {
-                target_violations += 1;
-                summaries.push(json!({
-                    "case_id": case_id,
-                    "expected": expected,
-                    "observed": observed,
-                    "status": "target_violation",
-                    "high_risk": high_risk,
-                    "detail": format!("duration {duration} ms exceeded target {target} ms")
-                }));
-                continue;
-            }
+        ) && duration > target
+        {
+            target_violations += 1;
+            summaries.push(json!({
+                "case_id": case_id,
+                "expected": expected,
+                "observed": observed,
+                "status": "target_violation",
+                "high_risk": high_risk,
+                "detail": format!("duration {duration} ms exceeded target {target} ms")
+            }));
+            continue;
         }
 
         summaries.push(json!({
@@ -614,6 +635,33 @@ mod tests {
         let report = reconcile_receipt(&receipt).expect("report");
         assert_eq!(report["disposition"], "target_violations");
         assert_eq!(report["counts"]["target_violations"], 1);
+    }
+
+    #[test]
+    fn monotonic_clock_reversal_in_receipt_order_is_insufficient_evidence() {
+        let mut receipt = synthetic_receipt();
+        receipt["evidence_class"] = Value::String("lab_observation_claim".to_owned());
+        receipt["time_basis"]["kind"] = Value::String("monotonic_with_wall_anchor".to_owned());
+        receipt["time_basis"]["wall_anchor_unix_ms"] = Value::from(1_800_000_000_000_u64);
+        receipt["time_basis"]["monotonic_origin_ms"] = Value::from(1_000_u64);
+        for (index, observation) in receipt["observations"]
+            .as_array_mut()
+            .expect("array")
+            .iter_mut()
+            .enumerate()
+        {
+            observation["evidence_source"] =
+                Value::String("independent_dataplane_probe".to_owned());
+            observation["observed_at_unix_ms"] =
+                Value::from(1_800_000_000_000_u64 + index as u64 * 1000);
+            observation["monotonic_elapsed_ms"] = Value::from(1_000_u64 + index as u64 * 1000);
+            observation["duration_ms"] = Value::from(10_u64);
+            observation["evidence_sha256"] = Value::String("e".repeat(64));
+        }
+        receipt["observations"].as_array_mut().expect("array").swap(3, 4);
+        let report = reconcile_receipt(&receipt).expect("report");
+        assert_eq!(report["disposition"], "insufficient_evidence");
+        assert_eq!(report["counts"]["insufficient_evidence"], 1);
     }
 
     #[test]
