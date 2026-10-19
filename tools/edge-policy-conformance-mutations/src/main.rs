@@ -99,7 +99,9 @@ where
         .filter_map(|(index, case)| predicate(case).then_some(index))
         .collect();
     if candidates.is_empty() {
-        return Err(format!("base fixture has no case for mutation: {description}"));
+        return Err(format!(
+            "base fixture has no case for mutation: {description}"
+        ));
     }
     Ok(candidates[rng.index(candidates.len())])
 }
@@ -123,7 +125,11 @@ fn mutate(
             let index = choose_case(
                 cases,
                 rng,
-                |case| case["authority_state"].as_str().is_some_and(|state| state != "valid"),
+                |case| {
+                    case["authority_state"]
+                        .as_str()
+                        .is_some_and(|state| state != "valid")
+                },
                 "stale authority",
             )?;
             mutant["cases"][index]["intended_decision"] = Value::String("allow".to_owned());
@@ -186,8 +192,7 @@ fn mutate(
         }
         7 => {
             let index = rng.index(cases.len());
-            mutant["cases"][index]["family"] =
-                Value::String(format!("invalid-family-{sequence}"));
+            mutant["cases"][index]["family"] = Value::String(format!("invalid-family-{sequence}"));
         }
         8 => {
             let index = rng.index(cases.len());
@@ -296,8 +301,8 @@ fn mutation_report(
     validator
         .validate(corpus_source)
         .map_err(|errors| format!("base corpus is not valid: {}", errors.join("; ")))?;
-    let base: Value =
-        serde_json::from_str(corpus_source).map_err(|error| format!("invalid base JSON: {error}"))?;
+    let base: Value = serde_json::from_str(corpus_source)
+        .map_err(|error| format!("invalid base JSON: {error}"))?;
 
     let mut rng = XorShift64::new(seed);
     let mut digest = Sha256::new();
@@ -433,7 +438,7 @@ fn main() -> ExitCode {
 
 #[cfg(test)]
 mod tests {
-    use super::{CORPUS_SOURCE, SCHEMA_SOURCE, MUTATION_NAMES, mutation_report};
+    use super::{CORPUS_SOURCE, MUTATION_NAMES, SCHEMA_SOURCE, mutation_report};
     use serde_json::Value;
 
     #[test]
@@ -444,10 +449,7 @@ mod tests {
         assert_eq!(report["mutations_executed"], 960);
         assert_eq!(report["mutations_rejected"], 960);
         assert_eq!(report["mutations_accepted"], 0);
-        assert_eq!(
-            report["disposition"],
-            "all_seeded_mutations_rejected"
-        );
+        assert_eq!(report["disposition"], "all_seeded_mutations_rejected");
         let operators = report["mutation_kinds_covered"]
             .as_object()
             .expect("operator counts");
@@ -459,14 +461,21 @@ mod tests {
     fn same_seed_produces_identical_mutation_digest() {
         let first = mutation_report(SCHEMA_SOURCE, CORPUS_SOURCE, 240, 99).expect("first report");
         let second = mutation_report(SCHEMA_SOURCE, CORPUS_SOURCE, 240, 99).expect("second report");
-        assert_eq!(first["mutation_digest_sha256"], second["mutation_digest_sha256"]);
+        assert_eq!(
+            first["mutation_digest_sha256"],
+            second["mutation_digest_sha256"]
+        );
     }
 
     #[test]
     fn changing_seed_changes_the_mutation_corpus_digest() {
         let first = mutation_report(SCHEMA_SOURCE, CORPUS_SOURCE, 240, 99).expect("first report");
-        let second = mutation_report(SCHEMA_SOURCE, CORPUS_SOURCE, 240, 100).expect("second report");
-        assert_ne!(first["mutation_digest_sha256"], second["mutation_digest_sha256"]);
+        let second =
+            mutation_report(SCHEMA_SOURCE, CORPUS_SOURCE, 240, 100).expect("second report");
+        assert_ne!(
+            first["mutation_digest_sha256"],
+            second["mutation_digest_sha256"]
+        );
     }
 
     #[test]
