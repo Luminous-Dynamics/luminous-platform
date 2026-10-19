@@ -145,7 +145,7 @@ fn policy_errors(profile: &Value) -> Vec<String> {
                 }
             }
             for expected in EXPECTED_CANDIDATES {
-                if seen.get(*expected).is_none() {
+                if !seen.contains(*expected) {
                     errors.push(format!("required candidate {expected} is missing"));
                 }
             }
