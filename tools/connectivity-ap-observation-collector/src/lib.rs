@@ -197,7 +197,7 @@ fn parse_qdiscs(source: &str) -> Value {
         }
         if line.starts_with("Sent ") {
             sent_rows = sent_rows.saturating_add(1);
-            let normalized = line.replace([',', '(', ')'], " ");
+            let normalized = line.replace(',', " ").replace('(', " ").replace(')', " ");
             let tokens: Vec<&str> = normalized.split_whitespace().collect();
             let bytes = tokens.get(1).and_then(|v| v.parse::<u64>().ok());
             let packets = tokens.get(3).and_then(|v| v.parse::<u64>().ok());
