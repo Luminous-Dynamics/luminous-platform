@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/connectivity-task-outcome-profile-v1.schema.json",
+  "title": "Connectivity Task Outcome Benchmark Profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "profile_id", "stage", "minimum_pairs",
+    "minimum_pairs_per_priority_mode", "required_priorities", "required_modes",
+    "require_each_priority", "require_each_mode",
+    "require_each_priority_mode_combination", "privacy_contract"
+  ],
+  "properties": {
+    "schema_version": { "const": "luminous.connectivity-task-outcome-profile.v1" },
+    "profile_id": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]{2,127}$" },
+    "stage": { "enum": ["contract_smoke", "lab_screening", "field_pilot", "reliability_qualification"] },
+    "minimum_pairs": { "type": "integer", "minimum": 1, "maximum": 100000 },
+    "minimum_pairs_per_priority_mode": { "type": "integer", "minimum": 1, "maximum": 100000 },
+    "required_priorities": { "type": "array", "uniqueItems": true, "minItems": 1, "items": { "enum": ["essential", "interactive", "bulk"] } },
+    "required_modes": { "type": "array", "uniqueItems": true, "minItems": 1, "items": { "enum": ["online", "wan_partition", "route_recovery"] } },
+    "require_each_priority": { "type": "boolean" },
+    "require_each_mode": { "type": "boolean" },
+    "require_each_priority_mode_combination": { "type": "boolean" },
+    "privacy_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direct_identifiers_permitted", "raw_mac_addresses_permitted", "credentials_permitted"],
+      "properties": {
+        "direct_identifiers_permitted": { "const": false },
+        "raw_mac_addresses_permitted": { "const": false },
+        "credentials_permitted": { "const": false }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "stage": { "const": "contract_smoke" } }, "required": ["stage"] },
+      "then": {
+        "properties": {
+          "minimum_pairs": { "const": 3 },
+          "minimum_pairs_per_priority_mode": { "const": 1 },
+          "required_priorities": { "minItems": 3 },
+          "required_modes": { "minItems": 3 },
+          "require_each_priority": { "const": true },
+          "require_each_mode": { "const": true },
+          "require_each_priority_mode_combination": { "const": false }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "stage": { "const": "lab_screening" } }, "required": ["stage"] },
+      "then": {
+        "properties": {
+          "minimum_pairs": { "minimum": 270 },
+          "minimum_pairs_per_priority_mode": { "minimum": 30 },
+          "required_priorities": { "minItems": 3 },
+          "required_modes": { "minItems": 3 },
+          "require_each_priority": { "const": true },
+          "require_each_mode": { "const": true },
+          "require_each_priority_mode_combination": { "const": true }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "stage": { "const": "field_pilot" } }, "required": ["stage"] },
+      "then": {
+        "properties": {
+          "minimum_pairs": { "minimum": 900 },
+          "minimum_pairs_per_priority_mode": { "minimum": 100 },
+          "required_priorities": { "minItems": 3 },
+          "required_modes": { "minItems": 3 },
+          "require_each_priority": { "const": true },
+          "require_each_mode": { "const": true },
+          "require_each_priority_mode_combination": { "const": true }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "stage": { "const": "reliability_qualification" } }, "required": ["stage"] },
+      "then": {
+        "properties": {
+          "minimum_pairs": { "minimum": 2700 },
+          "minimum_pairs_per_priority_mode": { "minimum": 300 },
+          "required_priorities": { "minItems": 3 },
+          "required_modes": { "minItems": 3 },
+          "require_each_priority": { "const": true },
+          "require_each_mode": { "const": true },
+          "require_each_priority_mode_combination": { "const": true }
+        }
+      }
+    }
+  ]
+}
