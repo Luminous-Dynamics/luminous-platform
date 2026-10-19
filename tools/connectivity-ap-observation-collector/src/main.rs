@@ -108,13 +108,23 @@ fn run() -> Result<(), String> {
         return Err("run ID must be a non-empty ASCII token of at most 128 bytes".to_owned());
     }
 
-    // Allow-listed read-only observations only:
-    // iw station/survey dumps, tc qdisc stats, and ip link JSON. No shell.
+    // Verify AP mode first, then run only the allow-listed read-only queries.
+    // No shell, configuration changes, active traffic tests or packet capture.
+    let info = capture("iw", &["dev", interface, "info"]);
+    let info_text = info
+        .stdout
+        .clone()
+        .ok_or_else(|| "iw interface info is unavailable; refusing AP collection".to_owned())?;
+    if parse_interface_info(&info_text)["interface_type"] != "AP" {
+        return Err("interface mode is not AP; refusing to label these counters as AP observations".to_owned());
+    }
+
     let station = capture("iw", &["dev", interface, "station", "dump"]);
     let survey = capture("iw", &["dev", interface, "survey", "dump"]);
     let qdisc = capture("tc", &["-s", "qdisc", "show", "dev", interface]);
     let link = capture("ip", &["-j", "link", "show", "dev", interface]);
     let statuses = json!({
+        "iw_info": info.status,
         "iw_station": station.status,
         "iw_survey": survey.status,
         "tc_qdisc": qdisc.status,
@@ -127,6 +137,7 @@ fn run() -> Result<(), String> {
         &manifest_bytes,
         timestamp_ms()?,
         CapturedOutputs {
+            info: Some(&info_text),
             station: station.stdout.as_deref(),
             survey: survey.stdout.as_deref(),
             qdisc: qdisc.stdout.as_deref(),
