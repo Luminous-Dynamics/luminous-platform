@@ -37,9 +37,15 @@ fn capture(program: &str, args: &[&str]) -> Capture {
         Ok(output) => {
             let exit_code = output.status.code();
             if output.status.success() {
-                Capture {
-                    status: json!({"status":"available","exit_code":exit_code}),
-                    stdout: String::from_utf8(output.stdout).ok(),
+                match String::from_utf8(output.stdout) {
+                    Ok(stdout) => Capture {
+                        status: json!({"status":"available","exit_code":exit_code}),
+                        stdout: Some(stdout),
+                    },
+                    Err(_) => Capture {
+                        status: json!({"status":"error","exit_code":exit_code}),
+                        stdout: None,
+                    },
                 }
             } else {
                 Capture {
