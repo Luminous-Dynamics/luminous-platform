@@ -135,43 +135,66 @@ fn semantic_checks(corpus: &Value, errors: &mut Vec<String>) {
     }
 }
 
+/// Reusable, precompiled validator for the frozen conformance-corpus schema.
+///
+/// Construct once and use across deterministic mutation trials to avoid rebuilding
+/// the JSON Schema engine for every mutated document.
+pub struct CorpusValidator {
+    validator: jsonschema::Validator,
+}
+
+impl CorpusValidator {
+    /// Parse and meta-validate a local Draft 2020-12 schema.
+    pub fn new(schema_source: &str) -> Result<Self, Vec<String>> {
+        let schema = parse_document(schema_source, "schema")?;
+        let mut errors = Vec::new();
+
+        reject_remote_references(&schema, "$", &mut errors);
+        if !errors.is_empty() {
+            return Err(errors);
+        }
+
+        let meta = jsonschema::meta::validator_for(&schema)
+            .map_err(|error| vec![format!("cannot build schema meta-validator: {error}")])?;
+        if !meta.evaluate(&schema).flag().valid {
+            return Err(vec!["schema failed JSON Schema meta-validation".to_owned()]);
+        }
+
+        let validator = draft202012::options()
+            .should_validate_formats(true)
+            .build(&schema)
+            .map_err(|error| vec![format!("cannot build Draft 2020-12 validator: {error}")])?;
+
+        Ok(Self { validator })
+    }
+
+    /// Validate one corpus with the precompiled schema and semantic invariants.
+    pub fn validate(&self, corpus_source: &str) -> Result<Value, Vec<String>> {
+        let corpus = parse_document(corpus_source, "corpus")?;
+        let mut errors = Vec::new();
+
+        errors.extend(
+            self.validator
+                .iter_errors(&corpus)
+                .map(|error| format!("corpus schema: {error}")),
+        );
+        if !errors.is_empty() {
+            return Err(errors);
+        }
+
+        semantic_checks(&corpus, &mut errors);
+        if errors.is_empty() {
+            Ok(corpus)
+        } else {
+            Err(errors)
+        }
+    }
+}
+
 /// Validate a synthetic conformance corpus against a local Draft 2020-12 schema
 /// and semantic invariants. This validates benchmark intent, not runtime behavior.
 pub fn validate_corpus(schema_source: &str, corpus_source: &str) -> Result<Value, Vec<String>> {
-    let schema = parse_document(schema_source, "schema")?;
-    let corpus = parse_document(corpus_source, "corpus")?;
-    let mut errors = Vec::new();
-
-    reject_remote_references(&schema, "$", &mut errors);
-    if !errors.is_empty() {
-        return Err(errors);
-    }
-
-    let meta = jsonschema::meta::validator_for(&schema)
-        .map_err(|error| vec![format!("cannot build schema meta-validator: {error}")])?;
-    if !meta.evaluate(&schema).flag().valid {
-        return Err(vec!["schema failed JSON Schema meta-validation".to_owned()]);
-    }
-
-    let validator = draft202012::options()
-        .should_validate_formats(true)
-        .build(&schema)
-        .map_err(|error| vec![format!("cannot build Draft 2020-12 validator: {error}")])?;
-    errors.extend(
-        validator
-            .iter_errors(&corpus)
-            .map(|error| format!("schema: {error}")),
-    );
-    if !errors.is_empty() {
-        return Err(errors);
-    }
-
-    semantic_checks(&corpus, &mut errors);
-    if errors.is_empty() {
-        Ok(corpus)
-    } else {
-        Err(errors)
-    }
+    CorpusValidator::new(schema_source)?.validate(corpus_source)
 }
 
 #[cfg(test)]
