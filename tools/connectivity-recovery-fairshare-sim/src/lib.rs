@@ -400,14 +400,6 @@ fn jain_fairness_ppm(success_counts: &[u64]) -> Option<u64> {
     Some((numerator / denominator) as u64)
 }
 
-fn checked_sum<I: IntoIterator<Item = u64>>(values: I) -> Result<u64, String> {
-    values.into_iter().try_fold(0_u64, |total, value| {
-        total
-            .checked_add(value)
-            .ok_or_else(|| "byte-accounting total overflows u64".to_owned())
-    })
-}
-
 /// Validates the scenario and emits a task-outcome run comparing a deterministic
 /// FCFS baseline with the weighted max-min fair-share candidate. Each mode is a
 /// separate recovery-window batch, each with its own declared byte budget.
@@ -497,11 +489,11 @@ pub fn validate_and_simulate(
             )
             .map_err(|error| vec![error])?;
 
-            baseline_successes += u64::from(baseline_result.succeeded);
-            candidate_successes += u64::from(candidate_result.succeeded);
+            baseline_successes += if baseline_result.succeeded { 1 } else { 0 };
+            candidate_successes += if candidate_result.succeeded { 1 } else { 0 };
             let peer = str_field(task, "peer_id").map_err(|error| vec![error])?.to_owned();
-            baseline_peer_successes.insert(peer.clone(), u64::from(baseline_result.succeeded));
-            candidate_peer_successes.insert(peer, u64::from(candidate_result.succeeded));
+            baseline_peer_successes.insert(peer.clone(), if baseline_result.succeeded { 1 } else { 0 });
+            candidate_peer_successes.insert(peer, if candidate_result.succeeded { 1 } else { 0 });
             baseline_actual_bytes = baseline_actual_bytes
                 .checked_add(baseline_result.bytes_tx)
                 .and_then(|sum| sum.checked_add(baseline_result.bytes_rx))
