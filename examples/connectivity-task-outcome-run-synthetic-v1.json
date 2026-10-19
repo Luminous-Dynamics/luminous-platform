@@ -1,0 +1,40 @@
+{
+  "schema_version": "luminous.connectivity-task-outcome-run.v1",
+  "run_id": "synthetic-run-001",
+  "source": { "profile_sha256": "PROFILE_SHA256_PLACEHOLDER" },
+  "evidence_class": "synthetic_simulation",
+  "currency": "ZAR",
+  "environment": {},
+  "trials": [
+    {
+      "trial_id": "trial-001-baseline", "pair_id": "pair-online-essential", "scenario_id": "scenario-online-essential",
+      "arm": "baseline", "priority": "essential", "mode": "online", "outcome": "succeeded",
+      "elapsed_ms": 110, "bytes_tx": 1200, "bytes_rx": 2100, "energy_millijoules": 1800, "charge_minor": 1
+    },
+    {
+      "trial_id": "trial-001-candidate", "pair_id": "pair-online-essential", "scenario_id": "scenario-online-essential",
+      "arm": "candidate", "priority": "essential", "mode": "online", "outcome": "succeeded",
+      "elapsed_ms": 90, "bytes_tx": 1150, "bytes_rx": 2200, "energy_millijoules": 1600, "charge_minor": 1
+    },
+    {
+      "trial_id": "trial-002-baseline", "pair_id": "pair-partition-interactive", "scenario_id": "scenario-partition-interactive",
+      "arm": "baseline", "priority": "interactive", "mode": "wan_partition", "outcome": "failed",
+      "elapsed_ms": 6000, "bytes_tx": 500, "bytes_rx": 0, "energy_millijoules": 2000, "charge_minor": 0
+    },
+    {
+      "trial_id": "trial-002-candidate", "pair_id": "pair-partition-interactive", "scenario_id": "scenario-partition-interactive",
+      "arm": "candidate", "priority": "interactive", "mode": "wan_partition", "outcome": "succeeded",
+      "elapsed_ms": 250, "bytes_tx": 600, "bytes_rx": 900, "energy_millijoules": 1300, "charge_minor": 0
+    },
+    {
+      "trial_id": "trial-003-baseline", "pair_id": "pair-recovery-bulk", "scenario_id": "scenario-recovery-bulk",
+      "arm": "baseline", "priority": "bulk", "mode": "route_recovery", "outcome": "inconclusive",
+      "elapsed_ms": null, "bytes_tx": 0, "bytes_rx": 0, "energy_millijoules": null, "charge_minor": null
+    },
+    {
+      "trial_id": "trial-003-candidate", "pair_id": "pair-recovery-bulk", "scenario_id": "scenario-recovery-bulk",
+      "arm": "candidate", "priority": "bulk", "mode": "route_recovery", "outcome": "succeeded",
+      "elapsed_ms": 450, "bytes_tx": 800, "bytes_rx": 15000, "energy_millijoules": 900, "charge_minor": 0
+    }
+  ]
+}
