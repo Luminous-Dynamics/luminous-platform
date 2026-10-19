@@ -695,7 +695,7 @@ mod tests {
 
     #[test]
     fn profile_stages_enforce_their_sample_size_and_matrix_requirements() {
-        let (run_schema, profile_schema, profile_bytes, _) = fixtures();
+        let (_, profile_schema, profile_bytes, _) = fixtures();
         let mut lab: Value = serde_json::from_slice(&profile_bytes).unwrap();
         lab["stage"] = json!("lab_screening");
         lab["minimum_pairs"] = json!(270);
@@ -716,7 +716,6 @@ mod tests {
         field["minimum_pairs"] = json!(2700);
         field["minimum_pairs_per_priority_mode"] = json!(300);
         assert!(schema_errors(&profile_schema, &field, "profile").is_empty());
-        let _ = run_schema;
     }
 
     #[test]
