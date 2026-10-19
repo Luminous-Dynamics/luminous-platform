@@ -694,6 +694,32 @@ mod tests {
     }
 
     #[test]
+    fn profile_stages_enforce_their_sample_size_and_matrix_requirements() {
+        let (run_schema, profile_schema, profile_bytes, _) = fixtures();
+        let mut lab: Value = serde_json::from_slice(&profile_bytes).unwrap();
+        lab["stage"] = json!("lab_screening");
+        lab["minimum_pairs"] = json!(270);
+        lab["minimum_pairs_per_priority_mode"] = json!(29);
+        lab["require_each_priority_mode_combination"] = json!(true);
+        assert!(!schema_errors(&profile_schema, &lab, "profile").is_empty());
+
+        lab["minimum_pairs_per_priority_mode"] = json!(30);
+        assert!(schema_errors(&profile_schema, &lab, "profile").is_empty());
+
+        let mut field = lab.clone();
+        field["stage"] = json!("field_pilot");
+        field["minimum_pairs"] = json!(900);
+        field["minimum_pairs_per_priority_mode"] = json!(100);
+        assert!(schema_errors(&profile_schema, &field, "profile").is_empty());
+
+        field["stage"] = json!("reliability_qualification");
+        field["minimum_pairs"] = json!(2700);
+        field["minimum_pairs_per_priority_mode"] = json!(300);
+        assert!(schema_errors(&profile_schema, &field, "profile").is_empty());
+        let _ = run_schema;
+    }
+
+    #[test]
     fn report_keeps_failed_and_inconclusive_trials_in_denominator() {
         let (run_schema, profile_schema, profile_bytes, run) = fixtures();
         let run = ready_run(run, &profile_bytes);
