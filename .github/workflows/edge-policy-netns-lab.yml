@@ -1,0 +1,64 @@
+name: edge-policy-netns-lab
+
+on:
+  pull_request:
+    paths:
+      - "tools/edge-policy-netns-lab/**"
+      - "tools/edge-policy-observation-reconciler/**"
+      - "schemas/edge-policy-observation-receipt-v1.schema.json"
+      - "schemas/edge-policy-netns-smoke-corpus-v1.schema.json"
+      - "examples/edge-policy-netns-smoke-corpus-v1.json"
+      - ".github/workflows/edge-policy-netns-lab.yml"
+  push:
+    branches: [main, feat/edge-policy-netns-lab-v1]
+    paths:
+      - "tools/edge-policy-netns-lab/**"
+      - "tools/edge-policy-observation-reconciler/**"
+      - "schemas/edge-policy-observation-receipt-v1.schema.json"
+      - "schemas/edge-policy-netns-smoke-corpus-v1.schema.json"
+      - "examples/edge-policy-netns-smoke-corpus-v1.json"
+      - ".github/workflows/edge-policy-netns-lab.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-policy-probe:
+    name: Verify allow and deny in disposable Linux namespaces
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.99.0
+          components: clippy, rustfmt
+      - name: Install fixed lab utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes iproute2 nftables netcat-openbsd
+      - name: Check formatting
+        run: cargo fmt --manifest-path tools/edge-policy-netns-lab/Cargo.toml -- --check
+      - name: Run offline corpus and safety-boundary tests
+        run: cargo test --manifest-path tools/edge-policy-netns-lab/Cargo.toml --all-targets
+      - name: Lint with warnings denied
+        run: cargo clippy --manifest-path tools/edge-policy-netns-lab/Cargo.toml --all-targets -- -D warnings
+      - name: Build the fixed lab runner
+        run: cargo build --manifest-path tools/edge-policy-netns-lab/Cargo.toml --bin edge-policy-netns-lab
+      - name: Execute only the explicit ephemeral namespace lab
+        env:
+          LUMINOUS_EDGE_NETNS_ACK: EPHEMERAL_NAMESPACES_ONLY
+        run: |
+          sudo env PATH="$PATH" HOME="$HOME" CARGO_HOME="$CARGO_HOME" \
+            LUMINOUS_EDGE_NETNS_ACK=EPHEMERAL_NAMESPACES_ONLY \
+            tools/edge-policy-netns-lab/target/debug/edge-policy-netns-lab \
+            --confirm-ephemeral-netns-only
+      - name: Assert temporary namespaces were removed
+        run: |
+          if sudo ip netns list | grep -E '^lp-edge-[cs]-'; then
+            echo "temporary Luminous Edge namespace leaked after the run"
+            exit 1
+          fi
