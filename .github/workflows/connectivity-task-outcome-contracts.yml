@@ -88,4 +88,4 @@ jobs:
       - name: Confirm simulated run cannot claim field qualification
         run: |
           grep -q '"evidence_class": "synthetic_simulation"' "$RUNNER_TEMP/connectivity-outage-run.json"
-          grep -q '"run_artifact_sha256"' "$RUNNER_TEMP/connectivity-outage-run.json"
+          grep -q '"scenario_sha256"' "$RUNNER_TEMP/connectivity-outage-run.json"
