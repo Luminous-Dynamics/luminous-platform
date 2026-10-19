@@ -399,16 +399,24 @@ pub fn validate_and_simulate(
         trials.push(make_trial(&task, "candidate", candidate));
     }
 
+    let canonical_scenario_bytes = serde_json::to_vec(scenario)
+        .map_err(|error| vec![format!("cannot canonicalize scenario: {error}")])?;
+    let scenario_digest = sha256_hex(&canonical_scenario_bytes);
     let run = json!({
         "schema_version": RUN_VERSION,
         "run_id": string_field(scenario, "run_id").map_err(|error| vec![error])?,
-        "source": { "profile_sha256": sha256_hex(profile_bytes) },
+        "source": {
+            "profile_sha256": sha256_hex(profile_bytes),
+            "run_artifact_sha256": scenario_digest
+        },
         "evidence_class": "synthetic_simulation",
         "currency": string_field(scenario, "currency").map_err(|error| vec![error])?,
         "environment": {},
         "trials": trials
     });
-    let report = validate_and_report(run_schema, profile_schema, profile_bytes, profile, &run)?;
+    let mut report = validate_and_report(run_schema, profile_schema, profile_bytes, profile, &run)?;
+    report["simulation_id"] = scenario.get("simulation_id").cloned().unwrap_or(Value::Null);
+    report["scenario_canonical_sha256"] = json!(scenario_digest);
     Ok((run, report))
 }
 
@@ -450,6 +458,8 @@ mod tests {
         assert_eq!(report["trial_count"], 18);
         assert_eq!(report["pair_count"], 9);
         assert_eq!(report["interpretation_boundary"]["field_performance_proven"], false);
+        assert_eq!(run["source"]["run_artifact_sha256"], report["scenario_canonical_sha256"]);
+        assert_eq!(report["simulation_id"], "outage-scenario-smoke-v1");
     }
 
     #[test]
