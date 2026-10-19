@@ -39,6 +39,10 @@
         "properties": {
           "minimum_pairs": { "const": 3 },
           "minimum_pairs_per_priority_mode": { "const": 1 },
+          "required_priorities": { "minItems": 3 },
+          "required_modes": { "minItems": 3 },
+          "require_each_priority": { "const": true },
+          "require_each_mode": { "const": true },
           "require_each_priority_mode_combination": { "const": false }
         }
       }
@@ -49,6 +53,10 @@
         "properties": {
           "minimum_pairs": { "minimum": 270 },
           "minimum_pairs_per_priority_mode": { "minimum": 30 },
+          "required_priorities": { "minItems": 3 },
+          "required_modes": { "minItems": 3 },
+          "require_each_priority": { "const": true },
+          "require_each_mode": { "const": true },
           "require_each_priority_mode_combination": { "const": true }
         }
       }
@@ -59,6 +67,10 @@
         "properties": {
           "minimum_pairs": { "minimum": 900 },
           "minimum_pairs_per_priority_mode": { "minimum": 100 },
+          "required_priorities": { "minItems": 3 },
+          "required_modes": { "minItems": 3 },
+          "require_each_priority": { "const": true },
+          "require_each_mode": { "const": true },
           "require_each_priority_mode_combination": { "const": true }
         }
       }
@@ -69,6 +81,10 @@
         "properties": {
           "minimum_pairs": { "minimum": 2700 },
           "minimum_pairs_per_priority_mode": { "minimum": 300 },
+          "required_priorities": { "minItems": 3 },
+          "required_modes": { "minItems": 3 },
+          "require_each_priority": { "const": true },
+          "require_each_mode": { "const": true },
           "require_each_priority_mode_combination": { "const": true }
         }
       }
