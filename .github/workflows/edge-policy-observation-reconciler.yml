@@ -1,0 +1,46 @@
+name: edge-policy-observation-reconciler
+
+on:
+  pull_request:
+    paths:
+      - "tools/edge-policy-observation-reconciler/**"
+      - "schemas/edge-policy-observation-receipt-v1.schema.json"
+      - "schemas/edge-policy-conformance-corpus-v1.schema.json"
+      - "examples/edge-policy-conformance-corpus-synthetic-v1.json"
+      - "docs/EDGE_POLICY_OBSERVATION_RECONCILER_V1.md"
+      - ".github/workflows/edge-policy-observation-reconciler.yml"
+  push:
+    branches: [main, feat/edge-policy-observation-reconciler-v1]
+    paths:
+      - "tools/edge-policy-observation-reconciler/**"
+      - "schemas/edge-policy-observation-receipt-v1.schema.json"
+      - "schemas/edge-policy-conformance-corpus-v1.schema.json"
+      - "examples/edge-policy-conformance-corpus-synthetic-v1.json"
+      - "docs/EDGE_POLICY_OBSERVATION_RECONCILER_V1.md"
+      - ".github/workflows/edge-policy-observation-reconciler.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  reconcile-contract:
+    name: Verify receipt reconciliation contract
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.99.0
+          components: clippy, rustfmt
+      - name: Check formatting
+        run: cargo fmt --manifest-path tools/edge-policy-observation-reconciler/Cargo.toml -- --check
+      - name: Run receipt and adversarial tests
+        run: cargo test --manifest-path tools/edge-policy-observation-reconciler/Cargo.toml --all-targets
+      - name: Lint with warnings denied
+        run: cargo clippy --manifest-path tools/edge-policy-observation-reconciler/Cargo.toml --all-targets -- -D warnings
+      - name: Verify synthetic end-to-end smoke
+        run: cargo run --manifest-path tools/edge-policy-observation-reconciler/Cargo.toml --bin edge-policy-observation-reconcile -- --smoke schemas/edge-policy-conformance-corpus-v1.schema.json examples/edge-policy-conformance-corpus-synthetic-v1.json schemas/edge-policy-observation-receipt-v1.schema.json
