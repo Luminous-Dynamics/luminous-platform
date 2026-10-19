@@ -564,6 +564,52 @@ fn arm_summary(tasks: &[Task], progress: &[Progress], indices: &[usize]) -> Resu
     }))
 }
 
+fn priority_summaries(
+    tasks: &[Task],
+    progress: &[Progress],
+    indices: &[usize],
+) -> Vec<Value> {
+    REQUIRED_PRIORITIES
+        .iter()
+        .map(|priority| {
+            let relevant: Vec<usize> = indices
+                .iter()
+                .copied()
+                .filter(|index| tasks[*index].priority == *priority)
+                .collect();
+            let task_count = relevant.len() as u64;
+            let mut completed = 0_u64;
+            let mut deadline_misses = 0_u64;
+            let mut expiry_misses = 0_u64;
+            for index in &relevant {
+                if progress[*index].completion_window.is_some() {
+                    completed += 1;
+                } else {
+                    match progress[*index].failure_reason.as_deref() {
+                        Some("deadline") => deadline_misses += 1,
+                        Some("expired") => expiry_misses += 1,
+                        _ => {}
+                    }
+                }
+            }
+            let completion_rate_ppm = if task_count == 0 {
+                None
+            } else {
+                Some(completed * 1_000_000 / task_count)
+            };
+            json!({
+                "priority": priority,
+                "task_count": task_count,
+                "completed_tasks": completed,
+                "failed_tasks": task_count - completed,
+                "completion_rate_ppm": completion_rate_ppm,
+                "deadline_misses": deadline_misses,
+                "expiry_misses": expiry_misses
+            })
+        })
+        .collect()
+}
+
 fn window_values(stats: &[WindowStats], capacity: u64) -> Vec<Value> {
     stats
         .iter()
@@ -822,6 +868,8 @@ pub fn validate_and_simulate(
             "essential_reserve_bytes": config.essential_reserve_bytes,
             "baseline": baseline_summary,
             "candidate_fair_share": candidate_summary,
+            "baseline_by_priority": priority_summaries(&tasks, &baseline_progress, &indices),
+            "candidate_by_priority": priority_summaries(&tasks, &candidate_progress, &indices),
             "baseline_window_trace": window_values(&baseline_windows, config.capacity_bytes),
             "candidate_window_trace": window_values(&candidate_windows, config.capacity_bytes)
         }));
@@ -999,6 +1047,27 @@ mod tests {
                 mode["candidate_fair_share"]["completed_task_jain_fairness_ppm"],
                 1000000
             );
+        }
+    }
+
+    #[test]
+    fn per_priority_summaries_expose_essential_deadline_misses() {
+        let f = fixtures();
+        let (_, report) = simulate(&f, &f.scenario).unwrap();
+        for mode in report["multiwindow_recovery"]["per_mode"].as_array().unwrap() {
+            let baseline = mode["baseline_by_priority"].as_array().unwrap();
+            let candidate = mode["candidate_by_priority"].as_array().unwrap();
+            for (rows, expected) in [(baseline, [0, 0, 1]), (candidate, [1, 1, 1])] {
+                for (index, priority) in REQUIRED_PRIORITIES.iter().enumerate() {
+                    let row = rows.iter().find(|row| row["priority"] == *priority).unwrap();
+                    assert_eq!(row["completed_tasks"], expected[index]);
+                }
+            }
+            let essential = baseline.iter()
+                .find(|row| row["priority"] == "essential")
+                .unwrap();
+            assert_eq!(essential["deadline_misses"], 1);
+            assert_eq!(essential["completion_rate_ppm"], 0);
         }
     }
 
