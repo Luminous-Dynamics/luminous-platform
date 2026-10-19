@@ -20,6 +20,10 @@ path = "src/lib.rs"
 name = "connectivity-recovery-fairshare-sim"
 path = "src/main.rs"
 
+[[bin]]
+name = "connectivity-recovery-sensitivity"
+path = "src/bin/sensitivity.rs"
+
 [lints.rust]
 unsafe_code = "forbid"
 
