@@ -4,7 +4,7 @@ use std::io;
 use std::process::{Command, ExitCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use connectivity_ap_observation_collector::build_snapshot;
+use connectivity_ap_observation_collector::{build_snapshot, CapturedOutputs};
 use connectivity_ap_testbed_contracts::validate_manifest;
 use serde_json::{Value, json};
 
@@ -129,10 +129,12 @@ fn run() -> Result<(), String> {
         interface,
         &manifest_bytes,
         timestamp_ms()?,
-        station.stdout.as_deref(),
-        survey.stdout.as_deref(),
-        qdisc.stdout.as_deref(),
-        link.stdout.as_deref(),
+        CapturedOutputs {
+            station: station.stdout.as_deref(),
+            survey: survey.stdout.as_deref(),
+            qdisc: qdisc.stdout.as_deref(),
+            link: link.stdout.as_deref(),
+        },
         statuses,
     )
     .map_err(|errors| errors.join("\n"))?;
