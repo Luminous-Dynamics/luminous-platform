@@ -170,7 +170,8 @@ fn paired_outcome_report(counts: &[u64; 4]) -> Value {
         "paired_success_delta_approx95_ci_upper_ppm": paired_delta_ci95_ppm.map(|bounds| bounds.1),
         "paired_success_delta_ci_method": "paired-difference normal approximation; shown only with >=10 discordant pairs",
         "non_success_definition": "failed_or_inconclusive",
-        "inferential_test_performed": false
+        "hypothesis_test_performed": false,
+        "p_value_reported": false
     })
 }
 
