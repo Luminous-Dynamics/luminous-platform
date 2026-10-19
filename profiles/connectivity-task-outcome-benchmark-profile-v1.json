@@ -1,11 +1,14 @@
 {
   "schema_version": "luminous.connectivity-task-outcome-profile.v1",
   "profile_id": "CONNECTIVITY_TASK_OUTCOME_PROFILE_V1",
+  "stage": "contract_smoke",
   "minimum_pairs": 3,
+  "minimum_pairs_per_priority_mode": 1,
   "required_priorities": ["essential", "interactive", "bulk"],
   "required_modes": ["online", "wan_partition", "route_recovery"],
   "require_each_priority": true,
   "require_each_mode": true,
+  "require_each_priority_mode_combination": false,
   "privacy_contract": {
     "direct_identifiers_permitted": false,
     "raw_mac_addresses_permitted": false,
