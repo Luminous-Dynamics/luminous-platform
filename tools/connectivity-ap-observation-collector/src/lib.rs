@@ -274,6 +274,15 @@ fn validate_snapshot(snapshot: &Value) -> Result<(), Vec<String>> {
     }
 }
 
+/// Outputs of four allow-listed read-only observation commands.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct CapturedOutputs<'a> {
+    pub station: Option<&'a str>,
+    pub survey: Option<&'a str>,
+    pub qdisc: Option<&'a str>,
+    pub link: Option<&'a str>,
+}
+
 /// Build a privacy-safe single-snapshot record from captured command output.
 /// Missing/unavailable counters remain null rather than silently becoming zero.
 pub fn build_snapshot(
@@ -281,10 +290,7 @@ pub fn build_snapshot(
     interface: &str,
     manifest_bytes: &[u8],
     captured_at_unix_ms: u64,
-    station_output: Option<&str>,
-    survey_output: Option<&str>,
-    qdisc_output: Option<&str>,
-    link_output: Option<&str>,
+    outputs: CapturedOutputs<'_>,
     command_status: Value,
 ) -> Result<Value, Vec<String>> {
     validate_interface_token(interface).map_err(|error| vec![error])?;
@@ -317,10 +323,10 @@ pub fn build_snapshot(
         },
         "interface_token": interface,
         "command_status": command_status,
-        "station_metrics": station_output.map(parse_stations).unwrap_or(empty_station),
-        "survey_channels": survey_output.map(parse_survey).unwrap_or_default(),
-        "qdisc_metrics": qdisc_output.map(parse_qdiscs).unwrap_or(empty_qdisc),
-        "link_metrics": link_output.map(parse_link).unwrap_or(json!({
+        "station_metrics": outputs.station.map(parse_stations).unwrap_or(empty_station),
+        "survey_channels": outputs.survey.map(parse_survey).unwrap_or_default(),
+        "qdisc_metrics": outputs.qdisc.map(parse_qdiscs).unwrap_or(empty_qdisc),
+        "link_metrics": outputs.link.map(parse_link).unwrap_or(json!({
             "mtu": null, "operstate": null, "administratively_up": null
         })),
         "privacy": {
@@ -351,8 +357,9 @@ mod tests {
     fn parses_station_counters_without_exporting_station_addresses() {
         let stations = "Station aa:bb:cc:dd:ee:01 (on wlan0)\n\trx bytes: 100\n\ttx bytes: 200\n\ttx retries: 3\n\ttx failed: 1\n\tsignal: -41 dBm\nStation aa:bb:cc:dd:ee:02 (on wlan0)\n\trx bytes: 400\n\ttx bytes: 500\n\ttx retries: 4\n\ttx failed: 2\n\tsignal: -61 dBm\n";
         let snapshot = build_snapshot(
-            "run-001", "wlan0", b"manifest bytes", 123, Some(stations),
-            None, None, None, statuses(),
+            "run-001", "wlan0", b"manifest bytes", 123,
+            CapturedOutputs { station: Some(stations), ..Default::default() },
+            statuses(),
         ).unwrap();
         let value = snapshot["station_metrics"].clone();
         assert_eq!(value["station_count"], 2);
@@ -415,7 +422,7 @@ mod tests {
     #[test]
     fn command_failures_and_unavailable_metrics_still_form_valid_snapshot() {
         let value = build_snapshot(
-            "run-partial", "wlan0", b"manifest", 0, None, None, None, None,
+            "run-partial", "wlan0", b"manifest", 0, CapturedOutputs::default(),
             json!({
                 "iw_station": {"status":"unavailable","exit_code":null},
                 "iw_survey": {"status":"error","exit_code":1},
@@ -431,10 +438,10 @@ mod tests {
     #[test]
     fn invalid_interface_and_run_ids_fail_closed() {
         assert!(build_snapshot(
-            "run-001", "wlan0;ip", b"manifest", 0, None, None, None, None, statuses(),
+            "run-001", "wlan0;ip", b"manifest", 0, CapturedOutputs::default(), statuses(),
         ).is_err());
         assert!(build_snapshot(
-            "run has spaces", "wlan0", b"manifest", 0, None, None, None, None, statuses(),
+            "run has spaces", "wlan0", b"manifest", 0, CapturedOutputs::default(), statuses(),
         ).is_err());
     }
 
@@ -442,8 +449,9 @@ mod tests {
     fn station_identifier_injection_is_not_copied_to_output() {
         let stations = "Station peer-a-secret (on wlan0)\n\trx bytes: 1\n\ttx bytes: 2\n\ttx retries: 0\n\ttx failed: 0\n";
         let snapshot = build_snapshot(
-            "run-privacy", "wlan0", b"manifest", 0, Some(stations),
-            None, None, None, statuses(),
+            "run-privacy", "wlan0", b"manifest", 0,
+            CapturedOutputs { station: Some(stations), ..Default::default() },
+            statuses(),
         ).unwrap();
         assert!(!serde_json::to_string(&snapshot).unwrap().contains("peer-a-secret"));
     }
