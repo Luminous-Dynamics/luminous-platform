@@ -1,9 +1,11 @@
-use community_bandwidth_fairshare_core::{allocate, AllocationPolicy, PeerDemand};
+use community_bandwidth_fairshare_core::{AllocationPolicy, PeerDemand, allocate};
 use std::error::Error;
 use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    println!("peer_count,iterations,total_capacity_bytes,allocated_bytes,unallocated_bytes,total_elapsed_ns,ns_per_allocation");
+    println!(
+        "peer_count,iterations,total_capacity_bytes,allocated_bytes,unallocated_bytes,total_elapsed_ns,ns_per_allocation"
+    );
     for (count, iterations) in [(10_usize, 100_u32), (100, 100), (1_000, 20), (4_096, 5)] {
         let capacity = (count as u64) * 10_000;
         let policy = AllocationPolicy {
@@ -28,8 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             last = allocate(&policy, &demands)?;
         }
         let elapsed = started.elapsed().as_nanos();
-        let allocated = last.total_essential_granted_bytes
-            + last.total_ordinary_granted_bytes;
+        let allocated = last.total_essential_granted_bytes + last.total_ordinary_granted_bytes;
         let per_allocation = elapsed / u128::from(iterations);
         println!(
             "{count},{iterations},{capacity},{allocated},{},{elapsed},{per_allocation}",
