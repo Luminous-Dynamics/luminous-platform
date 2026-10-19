@@ -809,10 +809,28 @@ mod tests {
         assert_eq!(report["baseline"]["inconclusive"], 1);
         assert_eq!(report["baseline"]["success_rate_denominator"], 3);
         assert_eq!(report["baseline"]["success_rate_ppm"], 333333);
-        assert!(report["baseline"]["success_rate_wilson95_lower_ppm"].as_u64().unwrap() < 333333);
-        assert!(report["baseline"]["success_rate_wilson95_upper_ppm"].as_u64().unwrap() > 333333);
-        assert!(report["candidate"]["success_rate_wilson95_lower_ppm"].as_u64().unwrap() > 0);
-        assert_eq!(report["candidate"]["success_rate_wilson95_upper_ppm"], 1_000_000);
+        assert!(
+            report["baseline"]["success_rate_wilson95_lower_ppm"]
+                .as_u64()
+                .unwrap()
+                < 333333
+        );
+        assert!(
+            report["baseline"]["success_rate_wilson95_upper_ppm"]
+                .as_u64()
+                .unwrap()
+                > 333333
+        );
+        assert!(
+            report["candidate"]["success_rate_wilson95_lower_ppm"]
+                .as_u64()
+                .unwrap()
+                > 0
+        );
+        assert_eq!(
+            report["candidate"]["success_rate_wilson95_upper_ppm"],
+            1_000_000
+        );
         assert_eq!(report["candidate"]["succeeded"], 3);
         assert_eq!(report["paired_comparison"]["matched_pair_count"], 3);
         assert_eq!(report["paired_comparison"]["both_succeeded"], 1);
