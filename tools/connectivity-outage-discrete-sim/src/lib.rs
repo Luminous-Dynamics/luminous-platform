@@ -531,7 +531,7 @@ pub fn validate_and_simulate(
         "run_id": string_field(scenario, "run_id").map_err(|error| vec![error])?,
         "source": {
             "profile_sha256": sha256_hex(profile_bytes),
-            "run_artifact_sha256": scenario_digest
+            "scenario_sha256": scenario_digest
         },
         "evidence_class": "synthetic_simulation",
         "currency": string_field(scenario, "currency").map_err(|error| vec![error])?,
@@ -610,7 +610,7 @@ mod tests {
             false
         );
         assert_eq!(
-            run["source"]["run_artifact_sha256"],
+            run["source"]["scenario_sha256"],
             report["scenario_canonical_sha256"]
         );
         assert_eq!(report["simulation_id"], "outage-scenario-smoke-v1");
