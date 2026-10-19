@@ -11,7 +11,7 @@ The simulator replays a versioned list of task arrivals through two abstract str
 - Baseline: WAN-only. A task arriving during the configured WAN outage fails the route attempt.
 - Candidate: local-first when a task is explicitly marked as locally executable and the local link is available; otherwise use WAN when available; during a WAN outage, optionally admit remote-bound work to a bounded queue for forwarding at recovery.
 
-The simulator generates the same strict paired-task run record used by the task-outcome validator in the parent PR. The generated record binds to the exact benchmark-profile bytes and is validated before the CLI writes it. Its optional run-artifact digest binds to a canonical JSON serialization of the scenario object (not the original whitespace/formatting of the input file); the report includes the simulation ID and this same canonical scenario digest.
+The simulator generates the same strict paired-task run record used by the task-outcome validator in the parent PR. The generated record binds to the exact benchmark-profile bytes and is validated before the CLI writes it. Its optional run-artifact digest binds to a canonical JSON serialization of the scenario object after sorting the task trace by arrival, priority and task ID (not the original whitespace/formatting or array order of the input file); the report includes the simulation ID and this same canonical scenario digest.
 
 ## Determinism and invariants
 
