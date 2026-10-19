@@ -440,10 +440,10 @@ pub fn validate_and_simulate(
     }
     let mut errors = schema_errors(scenario_schema, scenario);
     errors.extend(schema_errors(profile_schema, profile));
-    if errors.is_empty() {
-        if let Err(semantic) = validate_semantics(scenario) {
-            errors.extend(semantic);
-        }
+    if errors.is_empty()
+        && let Err(semantic) = validate_semantics(scenario)
+    {
+        errors.extend(semantic);
     }
     if !errors.is_empty() {
         errors.sort();
