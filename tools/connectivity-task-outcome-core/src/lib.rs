@@ -237,6 +237,20 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
     let evidence = required_string(run, "/evidence_class").unwrap_or("");
     validate_environment(run, evidence, &mut errors);
 
+    let profile_stage = required_string(profile, "/stage").unwrap_or("");
+    let stage_matches_evidence = matches!(
+        (profile_stage, evidence),
+        ("contract_smoke", "synthetic_simulation")
+            | ("lab_screening", "bench_measured")
+            | ("field_pilot", "field_observed")
+            | ("reliability_qualification", "field_observed")
+    );
+    if !stage_matches_evidence {
+        errors.push(format!(
+            "profile stage {profile_stage} cannot qualify evidence class {evidence}"
+        ));
+    }
+
     let profile_id = required_string(profile, "/profile_id").unwrap_or("invalid-profile");
     let profile_sha = required_string(run, "/source/profile_sha256").unwrap_or("");
     if !is_sha256(profile_sha) {
@@ -263,6 +277,14 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
         .get("minimum_pairs")
         .and_then(Value::as_u64)
         .unwrap_or(u64::MAX) as usize;
+    let minimum_pairs_per_priority_mode = profile
+        .get("minimum_pairs_per_priority_mode")
+        .and_then(Value::as_u64)
+        .unwrap_or(u64::MAX) as usize;
+    let require_each_priority_mode_combination = profile
+        .get("require_each_priority_mode_combination")
+        .and_then(Value::as_bool)
+        == Some(true);
 
     let trials = match run.get("trials").and_then(Value::as_array) {
         Some(trials) => trials,
@@ -270,6 +292,7 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
     };
     let mut ids = BTreeSet::new();
     let mut pairs: BTreeMap<String, Vec<&Value>> = BTreeMap::new();
+    let mut pair_cells: BTreeMap<(String, String), usize> = BTreeMap::new();
     let mut priorities = BTreeSet::new();
     let mut modes = BTreeSet::new();
     let mut stats: BTreeMap<String, ArmStats> = BTreeMap::new();
@@ -412,9 +435,23 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             ));
             continue;
         }
+        let metadata_matches =
+            ["/scenario_id", "/priority", "/mode"]
+                .iter()
+                .all(|key| baseline[0].pointer(key) == candidate[0].pointer(key));
         for key in ["/scenario_id", "/priority", "/mode"] {
             if baseline[0].pointer(key) != candidate[0].pointer(key) {
                 errors.push(format!("pair {pair_id} mismatches {key} between arms"));
+            }
+        }
+        if metadata_matches {
+            if let (Some(priority), Some(mode)) = (
+                required_string(baseline[0], "/priority"),
+                required_string(baseline[0], "/mode"),
+            ) {
+                *pair_cells
+                    .entry((priority.to_owned(), mode.to_owned()))
+                    .or_default() += 1;
             }
         }
     }
@@ -425,6 +462,22 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             pairs.len()
         ));
     }
+    if require_each_priority_mode_combination {
+        for priority in &required_priorities {
+            for mode in &required_modes {
+                let count = pair_cells
+                    .get(&(priority.clone(), mode.clone()))
+                    .copied()
+                    .unwrap_or(0);
+                if count < minimum_pairs_per_priority_mode {
+                    errors.push(format!(
+                        "priority/mode cell {priority}/{mode} has {count} matched pairs; profile requires at least {minimum_pairs_per_priority_mode}"
+                    ));
+                }
+            }
+        }
+    }
+
     if profile
         .get("require_each_priority")
         .and_then(Value::as_bool)
@@ -547,6 +600,7 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
     Ok(json!({
         "report_version": "luminous.connectivity-task-outcome-report.v1",
         "profile_id": profile_id,
+        "profile_stage": profile_stage,
         "profile_sha256": profile_sha,
         "run_id": required_string(run, "/run_id"),
         "evidence_class": evidence,
@@ -755,6 +809,25 @@ mod tests {
         run["evidence_class"] = json!("bench_measured");
         let result =
             validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn smoke_profile_cannot_be_promoted_to_field_evidence_even_with_metadata() {
+        let (run_schema, profile_schema, profile_bytes, run) = fixtures();
+        let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
+        let mut run = ready_run(run, &profile_bytes);
+        run["evidence_class"] = json!("field_observed");
+        run["environment"] = json!({
+            "gateway_model": "test-gateway",
+            "hardware_revision": "rev-a",
+            "firmware_image_sha256": "a".repeat(64),
+            "measurement_method": "calibrated inline power meter",
+            "power_meter_token": "meter-01",
+            "site_token": "site-pseudonym-01",
+            "consent_record_sha256": "b".repeat(64)
+        });
+        let result = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
         assert!(result.is_err());
     }
 
