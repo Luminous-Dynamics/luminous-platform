@@ -1,0 +1,72 @@
+{
+  "schema_version": "luminous.connectivity-outage-scenario.v1",
+  "simulation_id": "outage-scenario-smoke-v1",
+  "run_id": "outage-sim-run-001",
+  "currency": "ZAR",
+  "outage_start_ms": 3000,
+  "outage_end_ms": 10000,
+  "queue_policy": {
+    "max_items": 8,
+    "max_bytes": 16384,
+    "failure_detection_ms": 100,
+    "local_link_available": true
+  },
+  "link_model": {
+    "wan_latency_ms": 100,
+    "wan_bytes_per_second": 500000,
+    "local_latency_ms": 5,
+    "local_bytes_per_second": 5000000,
+    "base_attempt_energy_millijoules": 500,
+    "wan_energy_millijoules_per_kib": 250,
+    "local_energy_millijoules_per_kib": 80,
+    "wan_charge_minor_per_kib": 2,
+    "local_charge_minor_per_kib": 0
+  },
+  "tasks": [
+    {
+      "task_id": "task-online-essential", "pair_id": "pair-online-essential", "scenario_id": "scenario-online-essential",
+      "priority": "essential", "mode": "online", "arrival_ms": 1000, "payload_bytes": 512,
+      "local_execution_allowed": true, "allow_store_forward": false, "expires_after_ms": 20000, "deadline_ms": 1000
+    },
+    {
+      "task_id": "task-online-interactive", "pair_id": "pair-online-interactive", "scenario_id": "scenario-online-interactive",
+      "priority": "interactive", "mode": "online", "arrival_ms": 1100, "payload_bytes": 2048,
+      "local_execution_allowed": false, "allow_store_forward": false, "expires_after_ms": 20000, "deadline_ms": 1000
+    },
+    {
+      "task_id": "task-online-bulk", "pair_id": "pair-online-bulk", "scenario_id": "scenario-online-bulk",
+      "priority": "bulk", "mode": "online", "arrival_ms": 1200, "payload_bytes": 4096,
+      "local_execution_allowed": false, "allow_store_forward": false, "expires_after_ms": 20000, "deadline_ms": 1000
+    },
+    {
+      "task_id": "task-partition-essential", "pair_id": "pair-partition-essential", "scenario_id": "scenario-partition-essential",
+      "priority": "essential", "mode": "wan_partition", "arrival_ms": 4000, "payload_bytes": 256,
+      "local_execution_allowed": true, "allow_store_forward": false, "expires_after_ms": 20000, "deadline_ms": 1000
+    },
+    {
+      "task_id": "task-partition-interactive", "pair_id": "pair-partition-interactive", "scenario_id": "scenario-partition-interactive",
+      "priority": "interactive", "mode": "wan_partition", "arrival_ms": 5000, "payload_bytes": 512,
+      "local_execution_allowed": false, "allow_store_forward": true, "expires_after_ms": 16000, "deadline_ms": 15000
+    },
+    {
+      "task_id": "task-partition-bulk", "pair_id": "pair-partition-bulk", "scenario_id": "scenario-partition-bulk",
+      "priority": "bulk", "mode": "wan_partition", "arrival_ms": 6000, "payload_bytes": 2048,
+      "local_execution_allowed": false, "allow_store_forward": true, "expires_after_ms": 3000, "deadline_ms": 16000
+    },
+    {
+      "task_id": "task-recovery-essential", "pair_id": "pair-recovery-essential", "scenario_id": "scenario-recovery-essential",
+      "priority": "essential", "mode": "route_recovery", "arrival_ms": 8000, "payload_bytes": 256,
+      "local_execution_allowed": true, "allow_store_forward": false, "expires_after_ms": 20000, "deadline_ms": 1000
+    },
+    {
+      "task_id": "task-recovery-interactive", "pair_id": "pair-recovery-interactive", "scenario_id": "scenario-recovery-interactive",
+      "priority": "interactive", "mode": "route_recovery", "arrival_ms": 8500, "payload_bytes": 512,
+      "local_execution_allowed": false, "allow_store_forward": true, "expires_after_ms": 3000, "deadline_ms": 2000
+    },
+    {
+      "task_id": "task-recovery-bulk", "pair_id": "pair-recovery-bulk", "scenario_id": "scenario-recovery-bulk",
+      "priority": "bulk", "mode": "route_recovery", "arrival_ms": 9000, "payload_bytes": 4096,
+      "local_execution_allowed": false, "allow_store_forward": true, "expires_after_ms": 20000, "deadline_ms": 500
+    }
+  ]
+}
