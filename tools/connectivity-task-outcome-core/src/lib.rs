@@ -862,9 +862,9 @@ mod tests {
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
         let mut run = ready_run(run, &profile_bytes);
         run["trials"][1]["outcome"] = json!("failed");
-        run["trials"][1]["elapsed_ms"] = json!(250);
-        run["trials"][4]["outcome"] = json!("succeeded");
-        run["trials"][4]["elapsed_ms"] = json!(500);
+        run["trials"][1]["elapsed_ms"] = json!(110);
+        run["trials"][3]["outcome"] = json!("failed");
+        run["trials"][3]["elapsed_ms"] = json!(250);
         run["trials"][5]["outcome"] = json!("failed");
         run["trials"][5]["elapsed_ms"] = json!(450);
         let report =
