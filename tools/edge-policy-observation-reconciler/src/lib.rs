@@ -72,8 +72,11 @@ fn validate_document(
         return Err(errors);
     }
 
-    let meta = jsonschema::meta::validator_for(&schema)
-        .map_err(|error| vec![format!("{label}: cannot build schema meta-validator: {error}")])?;
+    let meta = jsonschema::meta::validator_for(&schema).map_err(|error| {
+        vec![format!(
+            "{label}: cannot build schema meta-validator: {error}"
+        )]
+    })?;
     if !meta.evaluate(&schema).flag().valid {
         return Err(vec![format!("{label}: schema failed meta-validation")]);
     }
@@ -81,7 +84,11 @@ fn validate_document(
     let validator = draft202012::options()
         .should_validate_formats(true)
         .build(&schema)
-        .map_err(|error| vec![format!("{label}: cannot build Draft 2020-12 validator: {error}")])?;
+        .map_err(|error| {
+            vec![format!(
+                "{label}: cannot build Draft 2020-12 validator: {error}"
+            )]
+        })?;
     errors.extend(
         validator
             .iter_errors(&document)
@@ -116,7 +123,9 @@ fn evidence_problem(
             || !observation["duration_ms"].is_null()
             || !observation["evidence_sha256"].is_null()
         {
-            return Some("synthetic fixture has lab-only fields or a non-synthetic source".to_owned());
+            return Some(
+                "synthetic fixture has lab-only fields or a non-synthetic source".to_owned(),
+            );
         }
         return None;
     }
@@ -130,13 +139,19 @@ fn evidence_problem(
         ));
     }
     if value_string(receipt, "/time_basis/kind") != Some("monotonic_with_wall_anchor")
-        || receipt.pointer("/time_basis/wall_anchor_unix_ms").is_none_or(Value::is_null)
-        || receipt.pointer("/time_basis/monotonic_origin_ms").is_none_or(Value::is_null)
+        || receipt
+            .pointer("/time_basis/wall_anchor_unix_ms")
+            .is_none_or(Value::is_null)
+        || receipt
+            .pointer("/time_basis/monotonic_origin_ms")
+            .is_none_or(Value::is_null)
         || observation["observed_at_unix_ms"].is_null()
         || observation["monotonic_elapsed_ms"].is_null()
         || observation["evidence_sha256"].is_null()
     {
-        return Some("lab observation lacks its required time anchor or evidence digest".to_owned());
+        return Some(
+            "lab observation lacks its required time anchor or evidence digest".to_owned(),
+        );
     }
     let monotonic = observation["monotonic_elapsed_ms"].as_u64();
     if let Some(current) = monotonic {
@@ -249,9 +264,9 @@ pub fn reconcile(
 
     let mut corpus_cases: HashMap<&str, &Value> = HashMap::with_capacity(cases.len());
     for (index, case) in cases.iter().enumerate() {
-        let id = case["case_id"].as_str().ok_or_else(|| {
-            vec![format!("corpus.cases[{index}].case_id must be a string")]
-        })?;
+        let id = case["case_id"]
+            .as_str()
+            .ok_or_else(|| vec![format!("corpus.cases[{index}].case_id must be a string")])?;
         if corpus_cases.insert(id, case).is_some() {
             return Err(vec![format!("corpus contains duplicate case ID {id}")]);
         }
@@ -269,10 +284,14 @@ pub fn reconcile(
             return Err(vec![format!("duplicate observation ID {observation_id}")]);
         }
         let case_id = observation["case_id"].as_str().ok_or_else(|| {
-            vec![format!("receipt.observations[{index}].case_id must be a string")]
+            vec![format!(
+                "receipt.observations[{index}].case_id must be a string"
+            )]
         })?;
         if !corpus_cases.contains_key(case_id) {
-            return Err(vec![format!("observation references unknown case ID {case_id}")]);
+            return Err(vec![format!(
+                "observation references unknown case ID {case_id}"
+            )]);
         }
         if observed_cases.insert(case_id, observation).is_some() {
             return Err(vec![format!("duplicate observation for case ID {case_id}")]);
@@ -449,7 +468,10 @@ mod tests {
     #[test]
     fn synthetic_smoke_is_consistent_but_never_qualifies_hardware() {
         let report = reconcile_receipt(&synthetic_receipt()).expect("report");
-        assert_eq!(report["disposition"], "synthetic_fixture_consistent_not_qualification");
+        assert_eq!(
+            report["disposition"],
+            "synthetic_fixture_consistent_not_qualification"
+        );
         assert_eq!(report["counts"]["cases_total"], 13);
         assert_eq!(report["counts"]["matches"], 13);
         assert_eq!(report["counts"]["critical_false_permits"], 0);
@@ -497,9 +519,16 @@ mod tests {
         let mut receipt = synthetic_receipt();
         let mut observation = receipt["observations"][0].clone();
         observation["observation_id"] = Value::String("OBS-SYN-DUPLICATE-CASE".to_owned());
-        receipt["observations"].as_array_mut().expect("array").push(observation);
+        receipt["observations"]
+            .as_array_mut()
+            .expect("array")
+            .push(observation);
         let error = reconcile_receipt(&receipt).expect_err("duplicate case");
-        assert!(error.iter().any(|item| item.contains("duplicate observation for case ID")));
+        assert!(
+            error
+                .iter()
+                .any(|item| item.contains("duplicate observation for case ID"))
+        );
     }
 
     #[test]
@@ -542,9 +571,17 @@ mod tests {
         receipt["time_basis"]["kind"] = Value::String("monotonic_with_wall_anchor".to_owned());
         receipt["time_basis"]["wall_anchor_unix_ms"] = Value::from(1_800_000_000_000_u64);
         receipt["time_basis"]["monotonic_origin_ms"] = Value::from(1_000_u64);
-        let first = receipt["observations"][0].as_object_mut().expect("observation");
-        first.insert("evidence_source".to_owned(), Value::String("independent_dataplane_probe".to_owned()));
-        first.insert("observed_at_unix_ms".to_owned(), Value::from(1_800_000_000_000_u64));
+        let first = receipt["observations"][0]
+            .as_object_mut()
+            .expect("observation");
+        first.insert(
+            "evidence_source".to_owned(),
+            Value::String("independent_dataplane_probe".to_owned()),
+        );
+        first.insert(
+            "observed_at_unix_ms".to_owned(),
+            Value::from(1_800_000_000_000_u64),
+        );
         first.insert("monotonic_elapsed_ms".to_owned(), Value::from(1_000_u64));
         first.insert("duration_ms".to_owned(), Value::from(10_u64));
         first.insert("evidence_sha256".to_owned(), Value::String("d".repeat(64)));
