@@ -9,12 +9,18 @@ use std::process;
 const MAX_INPUT_BYTES: usize = 32 * 1024 * 1024;
 
 fn read_bounded(path: &Path) -> Result<Vec<u8>, String> {
-    let file = File::open(path).map_err(|error| format!("cannot open {}: {error}", path.display()))?;
+    let file =
+        File::open(path).map_err(|error| format!("cannot open {}: {error}", path.display()))?;
     let mut limited = file.take((MAX_INPUT_BYTES + 1) as u64);
     let mut bytes = Vec::new();
-    limited.read_to_end(&mut bytes).map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+    limited
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
     if bytes.len() > MAX_INPUT_BYTES {
-        return Err(format!("{} exceeds the {MAX_INPUT_BYTES} byte input limit", path.display()));
+        return Err(format!(
+            "{} exceeds the {MAX_INPUT_BYTES} byte input limit",
+            path.display()
+        ));
     }
     Ok(bytes)
 }
@@ -53,10 +59,11 @@ fn main() {
         eprintln!("{error}");
         process::exit(2);
     });
-    let profile_schema = parse_json(&profile_schema_bytes, "profile schema").unwrap_or_else(|error| {
-        eprintln!("{error}");
-        process::exit(2);
-    });
+    let profile_schema =
+        parse_json(&profile_schema_bytes, "profile schema").unwrap_or_else(|error| {
+            eprintln!("{error}");
+            process::exit(2);
+        });
     let profile = parse_json(&profile_bytes, "profile").unwrap_or_else(|error| {
         eprintln!("{error}");
         process::exit(2);
@@ -66,16 +73,17 @@ fn main() {
         process::exit(2);
     });
 
-    let result = match validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run) {
-        Ok(report) => report,
-        Err(errors) => {
-            eprintln!("task-outcome validation failed:");
-            for error in errors {
-                eprintln!("- {error}");
+    let result =
+        match validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run) {
+            Ok(report) => report,
+            Err(errors) => {
+                eprintln!("task-outcome validation failed:");
+                for error in errors {
+                    eprintln!("- {error}");
+                }
+                process::exit(1);
             }
-            process::exit(1);
-        }
-    };
+        };
     let stdout = std::io::stdout();
     let mut output = stdout.lock();
     if let Err(error) = serde_json::to_writer_pretty(&mut output, &result) {
