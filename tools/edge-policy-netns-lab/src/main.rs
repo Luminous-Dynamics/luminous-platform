@@ -17,9 +17,9 @@ use sha2::{Digest, Sha256};
 const ACK_ENV: &str = "LUMINOUS_EDGE_NETNS_ACK";
 const ACK_VALUE: &str = "EPHEMERAL_NAMESPACES_ONLY";
 const CORPUS_SCHEMA: &str =
-    include_str!("../../../schemas/edge-policy-netns-smoke-corpus-v1.schema.json");
+    include_str!("../../../schemas/edge-policy-netns-dual-stack-corpus-v1.schema.json");
 const CORPUS_SOURCE: &str =
-    include_str!("../../../examples/edge-policy-netns-smoke-corpus-v1.json");
+    include_str!("../../../examples/edge-policy-netns-dual-stack-corpus-v1.json");
 const RECEIPT_SCHEMA: &str =
     include_str!("../../../schemas/edge-policy-observation-receipt-v1.schema.json");
 
@@ -27,6 +27,7 @@ const NFT_POLICY_SCRIPT: &str = r#"table inet luminous_edge_lab {
     chain input {
         type filter hook input priority 0; policy drop;
         iifname "lo" accept
+        icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert } accept
         tcp dport 8080 accept
     }
 }
@@ -111,12 +112,17 @@ fn apply_nft_script(namespace: &str, script: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn spawn_listener(namespace: &str, port: &str) -> Result<Child, String> {
+fn spawn_listener(namespace: &str, ipv6: bool, address: &str, port: &str) -> Result<Child, String> {
+    let mut arguments = vec!["netns", "exec", namespace, "nc"];
+    if ipv6 {
+        arguments.push("-6");
+    }
+    arguments.extend(["-l", address, port]);
     Command::new("ip")
-        .args(["netns", "exec", namespace, "nc", "-l", port])
+        .args(arguments)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| format!("could not start fixed TCP test listener: {error}"))
 }
@@ -208,6 +214,32 @@ fn prepare_namespaces(
         &[
             "-n",
             &guard.client_ns,
+            "-6",
+            "address",
+            "add",
+            "2001:db8:1::1/64",
+            "dev",
+            client_if,
+        ],
+    )?;
+    checked(
+        "ip",
+        &[
+            "-n",
+            &guard.server_ns,
+            "-6",
+            "address",
+            "add",
+            "2001:db8:1::2/64",
+            "dev",
+            server_if,
+        ],
+    )?;
+    checked(
+        "ip",
+        &[
+            "-n",
+            &guard.client_ns,
             "link",
             "set",
             "dev",
@@ -229,33 +261,74 @@ fn prepare_namespaces(
     )?;
 
     for namespace in [&guard.client_ns, &guard.server_ns] {
-        let output = checked("ip", &["-n", namespace, "route", "show"])?;
-        let routes = String::from_utf8_lossy(&output.stdout);
-        if routes
-            .lines()
-            .any(|line| line.split_whitespace().next() == Some("default"))
-        {
-            return Err(
-                "lab namespace unexpectedly has a default route; refusing to probe".to_owned(),
-            );
+        for family in ["route", "-6"] {
+            let output = if family == "-6" {
+                checked("ip", &["-n", namespace, "-6", "route", "show"])?
+            } else {
+                checked("ip", &["-n", namespace, "route", "show"])?
+            };
+            let routes = String::from_utf8_lossy(&output.stdout);
+            if routes
+                .lines()
+                .any(|line| line.split_whitespace().next() == Some("default"))
+            {
+                return Err(format!(
+                    "lab namespace unexpectedly has a {family} default route; refusing to probe"
+                ));
+            }
         }
     }
     Ok(())
 }
 
+fn wait_for_ipv6_ready(namespace: &str, interface: &str, address: &str) -> Result<(), String> {
+    let started = Instant::now();
+    let timeout = Duration::from_secs(5);
+    loop {
+        let output = checked(
+            "ip",
+            &["-n", namespace, "-6", "address", "show", "dev", interface],
+        )?;
+        let snapshot = String::from_utf8_lossy(&output.stdout);
+        let ready = snapshot.lines().any(|line| {
+            let line = line.trim();
+            line.starts_with("inet6 ")
+                && line.contains(address)
+                && !line.contains("tentative")
+                && !line.contains("dadfailed")
+        });
+        if ready {
+            return Ok(());
+        }
+        if started.elapsed() >= timeout {
+            return Err(format!(
+                "IPv6 address {address} in {namespace} did not become usable within {} ms",
+                timeout.as_millis()
+            ));
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+}
+
 fn start_and_check_listener(
     guard: &mut LabGuard,
     namespace: &str,
+    ipv6: bool,
+    address: &str,
     port: &str,
 ) -> Result<(), String> {
-    let mut listener = spawn_listener(namespace, port)?;
+    let mut listener = spawn_listener(namespace, ipv6, address, port)?;
     thread::sleep(Duration::from_millis(150));
     if let Some(status) = listener
         .try_wait()
         .map_err(|error| format!("cannot inspect TCP listener state: {error}"))?
     {
+        let output = listener
+            .wait_with_output()
+            .map_err(|error| format!("cannot collect TCP listener diagnostic: {error}"))?;
         return Err(format!(
-            "TCP listener on fixed port {port} exited early with {status}"
+            "TCP listener on fixed port {port} at {address} exited early with {status}: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
         ));
     }
     guard.listeners.push(listener);
@@ -286,20 +359,23 @@ fn probe_case(
             "{case_id}: port is not in the fixed allow-listed port set"
         ));
     }
+    let address_family = case["address_family"]
+        .as_str()
+        .ok_or_else(|| format!("{case_id}: address_family is not a string"))?;
+    let (ipv6, destination) = match address_family {
+        "ipv4" => (false, "198.18.0.2"),
+        "ipv6" => (true, "2001:db8:1::2"),
+        _ => return Err(format!("{case_id}: address family is not allow-listed")),
+    };
     let port_string = port.to_string();
     let probe_start = Instant::now();
+    let mut arguments = vec!["netns", "exec", client_ns, "nc"];
+    if ipv6 {
+        arguments.push("-6");
+    }
+    arguments.extend(["-z", "-w", "1", destination, port_string.as_str()]);
     let output = Command::new("ip")
-        .args([
-            "netns",
-            "exec",
-            client_ns,
-            "nc",
-            "-z",
-            "-w",
-            "1",
-            "198.18.0.2",
-            port_string.as_str(),
-        ])
+        .args(arguments)
         .output()
         .map_err(|error| format!("{case_id}: failed to start TCP probe: {error}"))?;
     let duration_ms = u64::try_from(probe_start.elapsed().as_millis())
@@ -320,6 +396,7 @@ fn probe_case(
     let record = json!({
         "case_id": case_id,
         "protocol": protocol,
+        "address_family": address_family,
         "destination_port": port,
         "observed_outcome": observed_outcome,
         "exit_code": exit_code,
@@ -376,11 +453,39 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
         listeners: Vec::new(),
     };
     prepare_namespaces(&mut guard, &client_if, &server_if)?;
+    wait_for_ipv6_ready(&guard.client_ns, &client_if, "2001:db8:1::1")?;
+    wait_for_ipv6_ready(&guard.server_ns, &server_if, "2001:db8:1::2")?;
     apply_nft_script(&guard.server_ns, NFT_POLICY_SCRIPT)?;
 
     let server_ns_for_listeners = guard.server_ns.clone();
-    start_and_check_listener(&mut guard, &server_ns_for_listeners, "8080")?;
-    start_and_check_listener(&mut guard, &server_ns_for_listeners, "8081")?;
+    start_and_check_listener(
+        &mut guard,
+        &server_ns_for_listeners,
+        false,
+        "198.18.0.2",
+        "8080",
+    )?;
+    start_and_check_listener(
+        &mut guard,
+        &server_ns_for_listeners,
+        false,
+        "198.18.0.2",
+        "8081",
+    )?;
+    start_and_check_listener(
+        &mut guard,
+        &server_ns_for_listeners,
+        true,
+        "2001:db8:1::2",
+        "8080",
+    )?;
+    start_and_check_listener(
+        &mut guard,
+        &server_ns_for_listeners,
+        true,
+        "2001:db8:1::2",
+        "8081",
+    )?;
 
     let ruleset = namespace_output(&guard.server_ns, &["nft", "list", "ruleset"])?;
     let effective_ruleset = String::from_utf8_lossy(&ruleset.stdout);
@@ -388,6 +493,14 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
         || !effective_ruleset.contains("policy drop")
         || !effective_ruleset.contains("tcp dport 8080 accept")
         || effective_ruleset.contains("tcp dport 8081 accept")
+        || !effective_ruleset.contains("iifname \"lo\" accept")
+        || !effective_ruleset.contains("nd-neighbor-solicit")
+        || !effective_ruleset.contains("nd-neighbor-advert")
+        || effective_ruleset
+            .lines()
+            .filter(|line| line.contains("tcp dport") && line.contains("accept"))
+            .count()
+            != 1
     {
         return Err(
             "effective namespace ruleset does not match the fixed allow/deny contract".to_owned(),
@@ -399,7 +512,7 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
     let server_addresses = checked("ip", &["-n", &guard.server_ns, "-j", "address", "show"])?;
     let effective_policy_sha256 = sha256_hex(&ruleset.stdout);
     let config_material = json!({
-        "profile_id": "luminous-edge-netns-smoke-v1",
+        "profile_id": "luminous-edge-netns-dual-stack-v1",
         "client_routes": String::from_utf8_lossy(&client_routes.stdout),
         "server_routes": String::from_utf8_lossy(&server_routes.stdout),
         "client_addresses": String::from_utf8_lossy(&client_addresses.stdout),
@@ -458,7 +571,7 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
     // Namespace cleanup runs via LabGuard on return, including all error paths.
     Ok((
         json!({
-            "lab_scope": "ephemeral_linux_network_namespaces_only",
+            "lab_scope": "ephemeral_linux_network_namespaces_ipv4_ipv6_only",
             "host_firewall_mutated": false,
             "external_route_configured": false,
             "payloads_sent": false,
@@ -510,16 +623,27 @@ mod tests {
         assert!(NFT_POLICY_SCRIPT.contains("tcp dport 8080 accept"));
         assert!(!NFT_POLICY_SCRIPT.contains("tcp dport 8081 accept"));
         assert!(NFT_POLICY_SCRIPT.contains("policy drop"));
+        assert!(NFT_POLICY_SCRIPT.contains("nd-neighbor-solicit"));
+        assert!(NFT_POLICY_SCRIPT.contains("nd-neighbor-advert"));
     }
 
     #[test]
-    fn smoke_corpus_has_one_positive_and_one_negative_control() {
+    fn dual_stack_corpus_has_ipv4_and_ipv6_positive_and_negative_controls() {
         let corpus: Value = serde_json::from_str(CORPUS_SOURCE).expect("corpus JSON");
-        assert_eq!(corpus["cases"].as_array().expect("cases").len(), 2);
-        assert_eq!(corpus["cases"][0]["expected_probe_outcome"], "permitted");
-        assert_eq!(corpus["cases"][0]["destination_port"], 8080);
-        assert_eq!(corpus["cases"][1]["expected_probe_outcome"], "blocked");
-        assert_eq!(corpus["cases"][1]["destination_port"], 8081);
+        let cases = corpus["cases"].as_array().expect("cases");
+        assert_eq!(cases.len(), 4);
+        assert_eq!(cases[0]["address_family"], "ipv4");
+        assert_eq!(cases[0]["expected_probe_outcome"], "permitted");
+        assert_eq!(cases[0]["destination_port"], 8080);
+        assert_eq!(cases[1]["address_family"], "ipv4");
+        assert_eq!(cases[1]["expected_probe_outcome"], "blocked");
+        assert_eq!(cases[1]["destination_port"], 8081);
+        assert_eq!(cases[2]["address_family"], "ipv6");
+        assert_eq!(cases[2]["expected_probe_outcome"], "permitted");
+        assert_eq!(cases[2]["destination_port"], 8080);
+        assert_eq!(cases[3]["address_family"], "ipv6");
+        assert_eq!(cases[3]["expected_probe_outcome"], "blocked");
+        assert_eq!(cases[3]["destination_port"], 8081);
     }
 
     #[test]
@@ -529,7 +653,7 @@ mod tests {
             serde_json::from_str(RECEIPT_SCHEMA).expect("receipt schema JSON");
         assert_eq!(
             corpus_schema["properties"]["corpus_id"]["const"],
-            "luminous-edge-netns-smoke-v1"
+            "luminous-edge-netns-dual-stack-v1"
         );
         assert!(
             receipt_schema["properties"]["evidence_class"]["enum"]
