@@ -256,7 +256,9 @@ fn parse_link(source: &str) -> Value {
 
 fn validate_snapshot(snapshot: &Value) -> Result<(), Vec<String>> {
     if SNAPSHOT_SCHEMA.len() > MAX_SCHEMA_BYTES {
-        return Err(vec!["embedded output schema exceeds the safety bound".to_owned()]);
+        return Err(vec![
+            "embedded output schema exceeds the safety bound".to_owned(),
+        ]);
     }
     let schema: Value = serde_json::from_str(SNAPSHOT_SCHEMA)
         .map_err(|error| vec![format!("embedded output schema is invalid JSON: {error}")])?;
@@ -282,7 +284,9 @@ pub fn validate_observation_manifest(
     manifest_bytes: &[u8],
 ) -> Result<Value, Vec<String>> {
     if schema_source.len() > MAX_SCHEMA_BYTES || manifest_bytes.len() > MAX_SCHEMA_BYTES {
-        return Err(vec!["manifest schema or manifest exceeds the configured size bound".to_owned()]);
+        return Err(vec![
+            "manifest schema or manifest exceeds the configured size bound".to_owned(),
+        ]);
     }
     let manifest_source = std::str::from_utf8(manifest_bytes)
         .map_err(|error| vec![format!("manifest is not UTF-8: {error}")])?;
@@ -292,12 +296,22 @@ pub fn validate_observation_manifest(
             "refusing observation with a planned manifest; record actual hardware and instrumentation first".to_owned(),
         ]);
     }
-    if manifest.pointer("/run_controls/dedicated_test_network").and_then(Value::as_bool) != Some(true)
-        || manifest.pointer("/run_controls/public_users_present").and_then(Value::as_bool) != Some(false)
-        || manifest.pointer("/run_controls/network_authorization").and_then(Value::as_str) != Some("owner_authorized_lab")
+    if manifest
+        .pointer("/run_controls/dedicated_test_network")
+        .and_then(Value::as_bool)
+        != Some(true)
+        || manifest
+            .pointer("/run_controls/public_users_present")
+            .and_then(Value::as_bool)
+            != Some(false)
+        || manifest
+            .pointer("/run_controls/network_authorization")
+            .and_then(Value::as_str)
+            != Some("owner_authorized_lab")
     {
         return Err(vec![
-            "observation requires an owner-authorized isolated test network with no public users".to_owned(),
+            "observation requires an owner-authorized isolated test network with no public users"
+                .to_owned(),
         ]);
     }
     for pointer in [
@@ -317,8 +331,14 @@ pub fn validate_observation_manifest(
             return Err(vec![format!("{pointer} is required for AP observation")]);
         }
     }
-    if manifest.pointer("/access_point/radio_band").and_then(Value::as_str) == Some("unknown") {
-        return Err(vec!["radio_band must be recorded for AP observation".to_owned()]);
+    if manifest
+        .pointer("/access_point/radio_band")
+        .and_then(Value::as_str)
+        == Some("unknown")
+    {
+        return Err(vec![
+            "radio_band must be recorded for AP observation".to_owned(),
+        ]);
     }
     Ok(manifest)
 }
@@ -344,10 +364,14 @@ pub fn build_snapshot(
 ) -> Result<Value, Vec<String>> {
     validate_interface_token(interface).map_err(|error| vec![error])?;
     if !valid_token(run_id) {
-        return Err(vec!["run_id must be a non-empty ASCII token of at most 128 bytes".to_owned()]);
+        return Err(vec![
+            "run_id must be a non-empty ASCII token of at most 128 bytes".to_owned(),
+        ]);
     }
     if manifest_bytes.len() > MAX_SCHEMA_BYTES {
-        return Err(vec!["manifest exceeds the configured size bound".to_owned()]);
+        return Err(vec![
+            "manifest exceeds the configured size bound".to_owned(),
+        ]);
     }
     let manifest_sha = sha256_hex(manifest_bytes);
     let empty_station = json!({
@@ -406,10 +430,17 @@ mod tests {
     fn parses_station_counters_without_exporting_station_addresses() {
         let stations = "Station aa:bb:cc:dd:ee:01 (on wlan0)\n\trx bytes: 100\n\ttx bytes: 200\n\ttx retries: 3\n\ttx failed: 1\n\tsignal: -41 dBm\nStation aa:bb:cc:dd:ee:02 (on wlan0)\n\trx bytes: 400\n\ttx bytes: 500\n\ttx retries: 4\n\ttx failed: 2\n\tsignal: -61 dBm\n";
         let snapshot = build_snapshot(
-            "run-001", "wlan0", b"manifest bytes", 123,
-            CapturedOutputs { station: Some(stations), ..Default::default() },
+            "run-001",
+            "wlan0",
+            b"manifest bytes",
+            123,
+            CapturedOutputs {
+                station: Some(stations),
+                ..Default::default()
+            },
             statuses(),
-        ).unwrap();
+        )
+        .unwrap();
         let value = snapshot["station_metrics"].clone();
         assert_eq!(value["station_count"], 2);
         assert_eq!(value["rx_bytes_total"], 500);
@@ -471,14 +502,19 @@ mod tests {
     #[test]
     fn command_failures_and_unavailable_metrics_still_form_valid_snapshot() {
         let value = build_snapshot(
-            "run-partial", "wlan0", b"manifest", 0, CapturedOutputs::default(),
+            "run-partial",
+            "wlan0",
+            b"manifest",
+            0,
+            CapturedOutputs::default(),
             json!({
                 "iw_station": {"status":"unavailable","exit_code":null},
                 "iw_survey": {"status":"error","exit_code":1},
                 "tc_qdisc": {"status":"unavailable","exit_code":null},
                 "ip_link": {"status":"available","exit_code":0}
             }),
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(value["station_metrics"]["station_count"], Value::Null);
         assert_eq!(value["qdisc_metrics"]["sent_bytes_total"], Value::Null);
         assert_eq!(value["privacy"]["raw_command_output_exported"], false);
@@ -486,31 +522,64 @@ mod tests {
 
     #[test]
     fn planned_testbed_manifest_is_not_admitted_for_host_observation() {
-        let schema = include_str!("../../../schemas/connectivity-ap-testbed-manifest-v1.schema.json");
-        let manifest = include_str!("../../../examples/connectivity-ap-testbed-manifest-planned-v1.json");
+        let schema =
+            include_str!("../../../schemas/connectivity-ap-testbed-manifest-v1.schema.json");
+        let manifest =
+            include_str!("../../../examples/connectivity-ap-testbed-manifest-planned-v1.json");
         let error = validate_observation_manifest(schema, manifest.as_bytes())
             .expect_err("planned equipment is not a measured testbed");
-        assert!(error.iter().any(|message| message.contains("planned manifest")));
+        assert!(
+            error
+                .iter()
+                .any(|message| message.contains("planned manifest"))
+        );
     }
 
     #[test]
     fn invalid_interface_and_run_ids_fail_closed() {
-        assert!(build_snapshot(
-            "run-001", "wlan0;ip", b"manifest", 0, CapturedOutputs::default(), statuses(),
-        ).is_err());
-        assert!(build_snapshot(
-            "run has spaces", "wlan0", b"manifest", 0, CapturedOutputs::default(), statuses(),
-        ).is_err());
+        assert!(
+            build_snapshot(
+                "run-001",
+                "wlan0;ip",
+                b"manifest",
+                0,
+                CapturedOutputs::default(),
+                statuses(),
+            )
+            .is_err()
+        );
+        assert!(
+            build_snapshot(
+                "run has spaces",
+                "wlan0",
+                b"manifest",
+                0,
+                CapturedOutputs::default(),
+                statuses(),
+            )
+            .is_err()
+        );
     }
 
     #[test]
     fn station_identifier_injection_is_not_copied_to_output() {
         let stations = "Station peer-a-secret (on wlan0)\n\trx bytes: 1\n\ttx bytes: 2\n\ttx retries: 0\n\ttx failed: 0\n";
         let snapshot = build_snapshot(
-            "run-privacy", "wlan0", b"manifest", 0,
-            CapturedOutputs { station: Some(stations), ..Default::default() },
+            "run-privacy",
+            "wlan0",
+            b"manifest",
+            0,
+            CapturedOutputs {
+                station: Some(stations),
+                ..Default::default()
+            },
             statuses(),
-        ).unwrap();
-        assert!(!serde_json::to_string(&snapshot).unwrap().contains("peer-a-secret"));
+        )
+        .unwrap();
+        assert!(
+            !serde_json::to_string(&snapshot)
+                .unwrap()
+                .contains("peer-a-secret")
+        );
     }
 }
