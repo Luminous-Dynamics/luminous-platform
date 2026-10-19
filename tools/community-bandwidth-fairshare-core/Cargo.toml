@@ -1,0 +1,15 @@
+[package]
+name = "community-bandwidth-fairshare-core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+description = "Pure Rust reference allocator for bounded, fair community bandwidth budgets"
+
+[lib]
+name = "community_bandwidth_fairshare_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "fairshare-benchmark"
+path = "src/bin/benchmark.rs"
