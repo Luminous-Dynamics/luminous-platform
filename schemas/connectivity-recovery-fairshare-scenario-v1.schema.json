@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/connectivity-recovery-fairshare-scenario-v1.schema.json",
+  "title": "Connectivity Recovery Fair-Share Scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "simulation_id", "run_id", "currency",
+    "window_budget_bytes", "essential_reserve_bytes",
+    "completion_latency_ms", "base_attempt_energy_millijoules",
+    "energy_millijoules_per_kib", "charge_minor_per_kib", "tasks"
+  ],
+  "properties": {
+    "schema_version": { "const": "luminous.connectivity-recovery-fairshare-scenario.v1" },
+    "simulation_id": { "$ref": "#/$defs/token" },
+    "run_id": { "$ref": "#/$defs/token" },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "window_budget_bytes": { "type": "integer", "minimum": 1, "maximum": 18446744073709551615 },
+    "essential_reserve_bytes": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+    "completion_latency_ms": { "type": "integer", "minimum": 1, "maximum": 31536000000 },
+    "base_attempt_energy_millijoules": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+    "energy_millijoules_per_kib": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+    "charge_minor_per_kib": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+    "tasks": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id", "pair_id", "scenario_id", "peer_id", "weight",
+          "priority", "mode", "arrival_ms", "service_bytes",
+          "deadline_ms", "expires_after_ms"
+        ],
+        "properties": {
+          "task_id": { "$ref": "#/$defs/token" },
+          "pair_id": { "$ref": "#/$defs/token" },
+          "scenario_id": { "$ref": "#/$defs/token" },
+          "peer_id": { "$ref": "#/$defs/peerToken" },
+          "weight": { "type": "integer", "minimum": 1, "maximum": 1000 },
+          "priority": { "enum": ["essential", "interactive", "bulk"] },
+          "mode": { "enum": ["online", "wan_partition", "route_recovery"] },
+          "arrival_ms": { "type": "integer", "minimum": 0, "maximum": 31536000000 },
+          "service_bytes": { "type": "integer", "minimum": 1, "maximum": 18446744073709551615 },
+          "deadline_ms": { "type": "integer", "minimum": 1, "maximum": 31536000000 },
+          "expires_after_ms": { "type": "integer", "minimum": 1, "maximum": 31536000000 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "token": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._-]+$" },
+    "peerToken": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "^[A-Za-z0-9._-]+$" }
+  }
+}
