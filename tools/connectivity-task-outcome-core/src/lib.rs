@@ -286,8 +286,12 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             continue;
         };
         let outcome = required_string(trial, "/outcome").unwrap_or("");
-        let priority = required_string(trial, "/priority").unwrap_or("unknown").to_owned();
-        let mode = required_string(trial, "/mode").unwrap_or("unknown").to_owned();
+        let priority = required_string(trial, "/priority")
+            .unwrap_or("unknown")
+            .to_owned();
+        let mode = required_string(trial, "/mode")
+            .unwrap_or("unknown")
+            .to_owned();
         let counts = stratified_counts
             .entry((priority.clone(), mode.clone()))
             .or_default()
@@ -309,7 +313,7 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
                             .entry((priority.clone(), mode.clone(), arm.to_owned()))
                             .or_default()
                             .push(elapsed);
-                    },
+                    }
                     None => errors.push(format!(
                         "trials/{index}: succeeded task requires elapsed_ms"
                     )),
@@ -435,13 +439,21 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             && arm_stats.successful_energy_mj.iter().all(Option::is_some)
             && checked_u64_sum(arm_stats.successful_energy_mj.iter().flatten().copied()).is_none()
         {
-            errors.push(format!("arm {arm} total successful-task energy overflow u64"));
+            errors.push(format!(
+                "arm {arm} total successful-task energy overflow u64"
+            ));
         }
         if !arm_stats.successful_charge_minor.is_empty()
-            && arm_stats.successful_charge_minor.iter().all(Option::is_some)
-            && checked_u64_sum(arm_stats.successful_charge_minor.iter().flatten().copied()).is_none()
+            && arm_stats
+                .successful_charge_minor
+                .iter()
+                .all(Option::is_some)
+            && checked_u64_sum(arm_stats.successful_charge_minor.iter().flatten().copied())
+                .is_none()
         {
-            errors.push(format!("arm {arm} total successful-task charge overflow u64"));
+            errors.push(format!(
+                "arm {arm} total successful-task charge overflow u64"
+            ));
         }
         if arm_stats.attempted() == 0 {
             errors.push(format!("arm {arm} has no trials"));
@@ -632,7 +644,10 @@ mod tests {
         assert_eq!(report["baseline"]["success_rate_ppm"], 333333);
         assert_eq!(report["candidate"]["succeeded"], 3);
         let strata = report["by_priority_and_mode"].as_array().unwrap();
-        let interactive = strata.iter().find(|item| item["priority"] == "interactive").unwrap();
+        let interactive = strata
+            .iter()
+            .find(|item| item["priority"] == "interactive")
+            .unwrap();
         assert_eq!(interactive["baseline"]["success_rate_ppm"], 0);
         assert_eq!(interactive["candidate"]["success_rate_ppm"], 1_000_000);
         assert_eq!(interactive["candidate"]["latency_p50_ms"], 250);
@@ -646,7 +661,9 @@ mod tests {
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
         let mut run = ready_run(run, &profile_bytes);
         run["trials"][1]["energy_millijoules"] = Value::Null;
-        let report = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run).unwrap();
+        let report =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run)
+                .unwrap();
         assert_eq!(
             report["candidate"]["energy_per_successful_task_millijoules"],
             Value::Null
@@ -660,7 +677,10 @@ mod tests {
         let mut run = ready_run(run, &profile_bytes);
         run["trials"][0]["bytes_tx"] = json!(u64::MAX);
         run["trials"][0]["bytes_rx"] = json!(1);
-        assert!(validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run).is_err());
+        assert!(
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run)
+                .is_err()
+        );
     }
 
     #[test]
