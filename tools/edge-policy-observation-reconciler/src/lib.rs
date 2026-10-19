@@ -125,7 +125,10 @@ fn evidence_problem(receipt: &Value, observation: &Value, case: &Value) -> Optio
         return None;
     }
 
-    if evidence_class != "lab_observation_claim" {
+    if !matches!(
+        evidence_class,
+        "lab_observation_claim" | "namespace_lab_observation"
+    ) {
         return Some("unsupported evidence class".to_owned());
     }
     if source != "independent_dataplane_probe" {
@@ -143,6 +146,7 @@ fn evidence_problem(receipt: &Value, observation: &Value, case: &Value) -> Optio
         || observation["observed_at_unix_ms"].is_null()
         || observation["monotonic_elapsed_ms"].is_null()
         || observation["evidence_sha256"].is_null()
+        || observation["effective_policy_sha256"].is_null()
     {
         return Some(
             "lab observation lacks its required time anchor or evidence digest".to_owned(),
@@ -196,6 +200,7 @@ pub fn build_synthetic_receipt(corpus_source: &str) -> Result<Value, Vec<String>
             "case_id": case_id,
             "observed_outcome": expected,
             "evidence_source": "synthetic_fixture",
+            "effective_policy_sha256": "b".repeat(64),
             "observed_at_unix_ms": null,
             "monotonic_elapsed_ms": null,
             "duration_ms": null,
@@ -290,7 +295,10 @@ pub fn reconcile(
     // Validate monotonic time in submitted trial order, not corpus order:
     // workloads may be randomized and the corpus is only an expectation set.
     let mut reversed_clock_cases = HashSet::new();
-    if receipt["evidence_class"] == "lab_observation_claim" {
+    if matches!(
+        receipt["evidence_class"].as_str(),
+        Some("lab_observation_claim" | "namespace_lab_observation")
+    ) {
         let mut previous_elapsed = None;
         for observation in observations {
             let case_id = observation["case_id"].as_str().unwrap_or("");
@@ -438,10 +446,12 @@ pub fn reconcile(
         "schema_version": "1.0.0",
         "run_id": receipt["run_id"],
         "evidence_class": evidence_class,
-        "claim_ceiling": if evidence_class == "synthetic_fixture" {
-            "synthetic_only_not_a_measurement"
-        } else {
-            "submitted_lab_observation_claim_not_authenticated"
+        "claim_ceiling": match evidence_class {
+            "synthetic_fixture" => "synthetic_only_not_a_measurement",
+            "namespace_lab_observation" => {
+                "isolated_linux_namespace_observation_not_physical_or_authenticated"
+            }
+            _ => "submitted_lab_observation_claim_not_authenticated",
         },
         "corpus_sha256": receipt["corpus_sha256"],
         "approved_policy_sha256": receipt["approved_policy_sha256"],
@@ -636,7 +646,7 @@ mod tests {
     #[test]
     fn monotonic_clock_reversal_in_receipt_order_is_insufficient_evidence() {
         let mut receipt = synthetic_receipt();
-        receipt["evidence_class"] = Value::String("lab_observation_claim".to_owned());
+        receipt["evidence_class"] = Value::String("namespace_lab_observation".to_owned());
         receipt["time_basis"]["kind"] = Value::String("monotonic_with_wall_anchor".to_owned());
         receipt["time_basis"]["wall_anchor_unix_ms"] = Value::from(1_800_000_000_000_u64);
         receipt["time_basis"]["monotonic_origin_ms"] = Value::from(1_000_u64);
