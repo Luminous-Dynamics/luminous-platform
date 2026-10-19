@@ -1,0 +1,288 @@
+{
+  "schema_version": "1.0.0",
+  "corpus_id": "luminous-edge-policy-conformance-v1",
+  "evidence_class": "synthetic_contract",
+  "claim_ceiling": "synthetic_only_not_a_measurement",
+  "non_negotiable_invariants": [
+    "zero_unauthorized_effects",
+    "unknown_or_stale_authority_denies_high_risk",
+    "independent_data_plane_probe_required",
+    "no_identity_or_payload_export"
+  ],
+  "cases": [
+    {
+      "case_id": "EPC-001",
+      "title": "Valid authority permits an explicitly allowed local essential service",
+      "family": "control_plane",
+      "severity": "high",
+      "description": "Positive control: an explicitly allowed local essential service remains reachable under valid authority.",
+      "authority_state": "valid",
+      "intended_decision": "allow",
+      "expected_probe_outcome": "permitted",
+      "path_variant": "local_essential_service",
+      "fault_injection": "none",
+      "high_risk": false,
+      "independent_probe_required": true,
+      "target_response_ms": null,
+      "evidence_required": [
+        "effective_policy_digest",
+        "authority_snapshot",
+        "independent_probe"
+      ]
+    },
+    {
+      "case_id": "EPC-002",
+      "title": "Explicit deny isolates an untrusted segment from network management",
+      "family": "segmentation",
+      "severity": "critical",
+      "description": "A new session from an untrusted segment to a protected management endpoint must be denied.",
+      "authority_state": "valid",
+      "intended_decision": "deny",
+      "expected_probe_outcome": "blocked",
+      "path_variant": "management_plane",
+      "fault_injection": "none",
+      "high_risk": true,
+      "independent_probe_required": true,
+      "target_response_ms": null,
+      "evidence_required": [
+        "effective_policy_digest",
+        "normalized_policy_snapshot",
+        "independent_probe",
+        "decision_log"
+      ]
+    },
+    {
+      "case_id": "EPC-003",
+      "title": "Revoked authority cannot create a new privileged session",
+      "family": "revocation",
+      "severity": "critical",
+      "description": "A grant revoked before the attempted connection must not authorize a new privileged session.",
+      "authority_state": "revoked",
+      "intended_decision": "deny",
+      "expected_probe_outcome": "blocked",
+      "path_variant": "ipv4_new_session",
+      "fault_injection": "authority_revoked",
+      "high_risk": true,
+      "independent_probe_required": true,
+      "target_response_ms": 5000,
+      "evidence_required": [
+        "effective_policy_digest",
+        "authority_snapshot",
+        "independent_probe",
+        "decision_log",
+        "time_source"
+      ]
+    },
+    {
+      "case_id": "EPC-004",
+      "title": "Expired cached authority fails closed for a high-risk request",
+      "family": "authority_freshness",
+      "severity": "critical",
+      "description": "A cached allow decision whose authority lease expired cannot grant a new high-risk session.",
+      "authority_state": "expired",
+      "intended_decision": "deny",
+      "expected_probe_outcome": "blocked",
+      "path_variant": "ipv4_new_session",
+      "fault_injection": "authority_expired",
+      "high_risk": true,
+      "independent_probe_required": true,
+      "target_response_ms": null,
+      "evidence_required": [
+        "effective_policy_digest",
+        "authority_snapshot",
+        "independent_probe",
+        "time_source"
+      ]
+    },
+    {
+      "case_id": "EPC-005",
+      "title": "Unknown authority during controller partition blocks new high-risk grants",
+      "family": "control_plane",
+      "severity": "critical",
+      "description": "Loss of the controller must not convert unknown authority into a new privileged allow.",
+      "authority_state": "unknown",
+      "intended_decision": "deny",
+      "expected_probe_outcome": "blocked",
+      "path_variant": "management_plane",
+      "fault_injection": "controller_partition",
+      "high_risk": true,
+      "independent_probe_required": true,
+      "target_response_ms": null,
+      "evidence_required": [
+        "effective_policy_digest",
+        "authority_snapshot",
+        "independent_probe",
+        "decision_log"
+      ]
+    },
+    {
+      "case_id": "EPC-006",
+      "title": "DNS and IPv6 alternatives do not bypass a denied egress destination",
+      "family": "alternate_path",
+      "severity": "critical",
+      "description": "A denied destination remains blocked when address resolution or protocol family changes the candidate path.",
+      "authority_state": "valid",
+      "intended_decision": "deny",
+      "expected_probe_outcome": "blocked",
+      "path_variant": "dns_resolved_egress",
+      "fault_injection": "dns_ipv6_alternate_path",
+      "high_risk": true,
+      "independent_probe_required": true,
+      "target_response_ms": null,
+      "evidence_required": [
+        "effective_policy_digest",
+        "normalized_policy_snapshot",
+        "independent_probe",
+        "decision_log"
+      ]
+    },
+    {
+      "case_id": "EPC-007",
+      "title": "Revocation terminates or blocks an established session within its target",
+      "family": "revocation",
+      "severity": "critical",
+      "description": "A revoked high-risk session must cease passing protected traffic within the declared revocation window.",
+      "authority_state": "revoked",
+      "intended_decision": "deny",
+      "expected_probe_outcome": "blocked",
+      "path_variant": "existing_session",
+      "fault_injection": "authority_revoked",
+      "high_risk": true,
+      "independent_probe_required": true,
+      "target_response_ms": 5000,
+      "evidence_required": [
+        "effective_policy_digest",
+        "authority_snapshot",
+        "independent_probe",
+        "decision_log",
+        "time_source"
+      ]
+    },
+    {
+      "case_id": "EPC-008",
+      "title": "Failover does not activate a stale permissive policy",
+      "family": "failover",
+      "severity": "critical",
+      "description": "A failover node with a stale or mismatched policy revision must not widen effective access.",
+      "authority_state": "unknown",
+      "intended_decision": "deny",
+      "expected_probe_outcome": "blocked",
+      "path_variant": "failover_node",
+      "fault_injection": "stale_failover_policy",
+      "high_risk": true,
+      "independent_probe_required": true,
+      "target_response_ms": null,
+      "evidence_required": [
+        "effective_policy_digest",
+        "normalized_policy_snapshot",
+        "independent_probe",
+        "change_receipt"
+      ]
+    },
+    {
+      "case_id": "EPC-009",
+      "title": "Partial rollout cannot be declared successful while nodes disagree",
+      "family": "rollout",
+      "severity": "critical",
+      "description": "A mixed-revision rollout is detected and promotion is withheld until enforcement is consistent.",
+      "authority_state": "unknown",
+      "intended_decision": "deny",
+      "expected_probe_outcome": "blocked",
+      "path_variant": "staged_rollout",
+      "fault_injection": "partial_rollout",
+      "high_risk": true,
+      "independent_probe_required": true,
+      "target_response_ms": null,
+      "evidence_required": [
+        "effective_policy_digest",
+        "normalized_policy_snapshot",
+        "independent_probe",
+        "change_receipt"
+      ]
+    },
+    {
+      "case_id": "EPC-010",
+      "title": "Locally authorized essential service stays available during control-plane loss",
+      "family": "control_plane",
+      "severity": "high",
+      "description": "A previously allowed local essential path continues only while its local policy and authority remain valid.",
+      "authority_state": "valid",
+      "intended_decision": "allow",
+      "expected_probe_outcome": "permitted",
+      "path_variant": "local_essential_service",
+      "fault_injection": "controller_partition",
+      "high_risk": false,
+      "independent_probe_required": true,
+      "target_response_ms": null,
+      "evidence_required": [
+        "effective_policy_digest",
+        "authority_snapshot",
+        "independent_probe"
+      ]
+    },
+    {
+      "case_id": "EPC-011",
+      "title": "Cross-tenant path cannot reach another tenant protected service",
+      "family": "tenant_isolation",
+      "severity": "critical",
+      "description": "A new session crossing a tenant boundary without an explicit grant must be denied.",
+      "authority_state": "valid",
+      "intended_decision": "deny",
+      "expected_probe_outcome": "blocked",
+      "path_variant": "cross_tenant",
+      "fault_injection": "cross_tenant_route",
+      "high_risk": true,
+      "independent_probe_required": true,
+      "target_response_ms": null,
+      "evidence_required": [
+        "effective_policy_digest",
+        "normalized_policy_snapshot",
+        "independent_probe",
+        "decision_log"
+      ]
+    },
+    {
+      "case_id": "EPC-012",
+      "title": "Seeded effective-policy drift blocks qualification promotion",
+      "family": "drift_detection",
+      "severity": "critical",
+      "description": "When effective policy differs from the approved digest, the candidate cannot be promoted as conformant.",
+      "authority_state": "valid",
+      "intended_decision": "deny",
+      "expected_probe_outcome": "blocked",
+      "path_variant": "ipv6_new_session",
+      "fault_injection": "seeded_policy_drift",
+      "high_risk": true,
+      "independent_probe_required": true,
+      "target_response_ms": 30000,
+      "evidence_required": [
+        "effective_policy_digest",
+        "normalized_policy_snapshot",
+        "independent_probe",
+        "change_receipt",
+        "time_source"
+      ]
+    },
+    {
+      "case_id": "EPC-013",
+      "title": "Rollback restores the previously approved permitted path and policy identity",
+      "family": "rollback",
+      "severity": "high",
+      "description": "After a failed staged change, rollback restores the prior approved digest and its declared allowed path.",
+      "authority_state": "valid",
+      "intended_decision": "allow",
+      "expected_probe_outcome": "permitted",
+      "path_variant": "local_essential_service",
+      "fault_injection": "rollback_required",
+      "high_risk": false,
+      "independent_probe_required": true,
+      "target_response_ms": null,
+      "evidence_required": [
+        "effective_policy_digest",
+        "normalized_policy_snapshot",
+        "independent_probe",
+        "change_receipt"
+      ]
+    }
+  ]
+}

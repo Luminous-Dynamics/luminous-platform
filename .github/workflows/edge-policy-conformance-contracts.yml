@@ -1,0 +1,44 @@
+name: edge-policy-conformance-contracts
+
+on:
+  pull_request:
+    paths:
+      - "tools/edge-policy-conformance-contracts/**"
+      - "schemas/edge-policy-conformance-corpus-v1.schema.json"
+      - "examples/edge-policy-conformance-corpus-synthetic-v1.json"
+      - "docs/EDGE_POLICY_CONFORMANCE_BENCHMARK_V1.md"
+      - ".github/workflows/edge-policy-conformance-contracts.yml"
+  push:
+    branches: [main, research/edge-policy-conformance-v1]
+    paths:
+      - "tools/edge-policy-conformance-contracts/**"
+      - "schemas/edge-policy-conformance-corpus-v1.schema.json"
+      - "examples/edge-policy-conformance-corpus-synthetic-v1.json"
+      - "docs/EDGE_POLICY_CONFORMANCE_BENCHMARK_V1.md"
+      - ".github/workflows/edge-policy-conformance-contracts.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify-corpus:
+    name: Validate edge policy conformance corpus
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.99.0
+          components: clippy, rustfmt
+      - name: Check formatting
+        run: cargo fmt --manifest-path tools/edge-policy-conformance-contracts/Cargo.toml -- --check
+      - name: Run semantic and adversarial tests
+        run: cargo test --manifest-path tools/edge-policy-conformance-contracts/Cargo.toml --all-targets
+      - name: Lint with warnings denied
+        run: cargo clippy --manifest-path tools/edge-policy-conformance-contracts/Cargo.toml --all-targets -- -D warnings
+      - name: Verify frozen synthetic corpus
+        run: cargo run --manifest-path tools/edge-policy-conformance-contracts/Cargo.toml --bin edge-policy-conformance-verify -- schemas/edge-policy-conformance-corpus-v1.schema.json examples/edge-policy-conformance-corpus-synthetic-v1.json
