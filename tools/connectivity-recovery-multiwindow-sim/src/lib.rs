@@ -45,6 +45,17 @@ struct Progress {
     failure_reason: Option<String>,
 }
 
+#[derive(Clone, Copy, Debug)]
+struct SimulationConfig {
+    max_windows: u64,
+    capacity_bytes: u64,
+    essential_reserve_bytes: u64,
+    window_duration_ms: u64,
+    base_attempt_energy_millijoules: u64,
+    energy_millijoules_per_kib: u64,
+    charge_minor_per_kib: u64,
+}
+
 #[derive(Clone, Debug)]
 struct WindowStats {
     window: u64,
@@ -378,9 +389,7 @@ fn apply_window(
     active: &[usize],
     grants: &BTreeMap<usize, u64>,
     window: u64,
-    base_attempt_energy_millijoules: u64,
-    energy_millijoules_per_kib: u64,
-    charge_minor_per_kib: u64,
+    config: &SimulationConfig,
 ) -> Result<(u64, usize, usize), String> {
     let mut transferred_bytes = 0_u64;
     let mut completed_now = 0_usize;
@@ -395,12 +404,12 @@ fn apply_window(
         // even when it receives no bytes. This is not measured radio energy.
         checked_add(
             &mut state.energy_millijoules,
-            base_attempt_energy_millijoules,
+            config.base_attempt_energy_millijoules,
             "base task-window energy",
         )?;
         let variable_energy = checked_scaled(
             ceil_kib(amount),
-            energy_millijoules_per_kib,
+            config.energy_millijoules_per_kib,
             "variable energy",
         )?;
         checked_add(
@@ -408,7 +417,11 @@ fn apply_window(
             variable_energy,
             "task energy",
         )?;
-        let charge = checked_scaled(ceil_kib(amount), charge_minor_per_kib, "task charge")?;
+        let charge = checked_scaled(
+            ceil_kib(amount),
+            config.charge_minor_per_kib,
+            "task charge",
+        )?;
         checked_add(&mut state.charge_minor, charge, "task charge total")?;
         checked_add(&mut state.delivered_bytes, amount, "task delivered bytes")?;
         checked_add(&mut transferred_bytes, amount, "window transfer")?;
@@ -435,16 +448,11 @@ fn simulate_mode(
     mode_indices: &[usize],
     mode: &str,
     progress: &mut [Progress],
-    max_windows: u64,
-    capacity: u64,
-    essential_reserve: u64,
-    base_energy: u64,
-    energy_per_kib: u64,
-    charge_per_kib: u64,
+    config: &SimulationConfig,
     fair_share: bool,
 ) -> Result<Vec<WindowStats>, String> {
     let mut window_stats = Vec::new();
-    for window in 0..max_windows {
+    for window in 0..config.max_windows {
         let active: Vec<usize> = mode_indices
             .iter()
             .copied()
@@ -461,9 +469,15 @@ fn simulate_mode(
             continue;
         }
         let grants = if fair_share {
-            fair_share_grants(tasks, progress, &active, capacity, essential_reserve)?
+            fair_share_grants(
+                tasks,
+                progress,
+                &active,
+                config.capacity_bytes,
+                config.essential_reserve_bytes,
+            )?
         } else {
-            fcfs_grants(tasks, progress, &active, capacity)
+            fcfs_grants(tasks, progress, &active, config.capacity_bytes)
         };
         let (transferred_bytes, completed_now, failed_now) = apply_window(
             tasks,
@@ -471,11 +485,9 @@ fn simulate_mode(
             &active,
             &grants,
             window,
-            base_energy,
-            energy_per_kib,
-            charge_per_kib,
+            config,
         )?;
-        if transferred_bytes > capacity {
+        if transferred_bytes > config.capacity_bytes {
             return Err(format!(
                 "mode {mode} window {window}: transferred bytes exceed the declared budget"
             ));
@@ -770,6 +782,15 @@ pub fn validate_and_simulate(
         u64_field(scenario, "base_attempt_energy_millijoules").map_err(|e| vec![e])?;
     let energy_per_kib = u64_field(scenario, "energy_millijoules_per_kib").map_err(|e| vec![e])?;
     let charge_per_kib = u64_field(scenario, "charge_minor_per_kib").map_err(|e| vec![e])?;
+    let config = SimulationConfig {
+        max_windows,
+        capacity_bytes: capacity,
+        essential_reserve_bytes: reserve,
+        window_duration_ms,
+        base_attempt_energy_millijoules: base_energy,
+        energy_millijoules_per_kib: energy_per_kib,
+        charge_minor_per_kib: charge_per_kib,
+    };
 
     let mut baseline_progress = vec![Progress::default(); tasks.len()];
     let mut candidate_progress = vec![Progress::default(); tasks.len()];
@@ -788,12 +809,7 @@ pub fn validate_and_simulate(
             &indices,
             mode,
             &mut baseline_progress,
-            max_windows,
-            capacity,
-            reserve,
-            base_energy,
-            energy_per_kib,
-            charge_per_kib,
+            &config,
             false,
         )
         .map_err(|error| vec![error])?;
@@ -802,12 +818,7 @@ pub fn validate_and_simulate(
             &indices,
             mode,
             &mut candidate_progress,
-            max_windows,
-            capacity,
-            reserve,
-            base_energy,
-            energy_per_kib,
-            charge_per_kib,
+            &config,
             true,
         )
         .map_err(|error| vec![error])?;
@@ -818,12 +829,12 @@ pub fn validate_and_simulate(
             arm_summary(&tasks, &candidate_progress, &indices).map_err(|error| vec![error])?;
         mode_reports.push(json!({
             "mode": mode,
-            "window_capacity_bytes": capacity,
-            "essential_reserve_bytes": reserve,
+            "window_capacity_bytes": config.capacity_bytes,
+            "essential_reserve_bytes": config.essential_reserve_bytes,
             "baseline": baseline_summary,
             "candidate_fair_share": candidate_summary,
-            "baseline_window_trace": window_values(&baseline_windows, capacity),
-            "candidate_window_trace": window_values(&candidate_windows, capacity)
+            "baseline_window_trace": window_values(&baseline_windows, config.capacity_bytes),
+            "candidate_window_trace": window_values(&candidate_windows, config.capacity_bytes)
         }));
 
         for index in indices {
@@ -838,7 +849,7 @@ pub fn validate_and_simulate(
                 let latency_windows = terminal_window
                     .saturating_sub(task.arrival_window)
                     .saturating_add(1);
-                let elapsed_ms = latency_windows.saturating_mul(window_duration_ms);
+                let elapsed_ms = latency_windows.saturating_mul(config.window_duration_ms);
                 let request_bytes = task.service_bytes / 2;
                 let bytes_tx = progress.delivered_bytes.min(request_bytes);
                 let bytes_rx = progress
