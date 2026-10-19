@@ -170,7 +170,12 @@ fn priority_rank(priority: &str) -> u8 {
 }
 
 fn ceil_kib(bytes: u64) -> u64 {
-    bytes / 1024 + u64::from(!bytes.is_multiple_of(1024))
+    let kib = bytes / 1024;
+    if bytes.is_multiple_of(1024) {
+        kib
+    } else {
+        kib + 1
+    }
 }
 
 fn checked_add(target: &mut u64, value: u64, label: &str) -> Result<(), String> {
