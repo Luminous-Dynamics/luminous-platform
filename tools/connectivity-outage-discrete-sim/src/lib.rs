@@ -90,7 +90,12 @@ fn ceil_div(numerator: u128, denominator: u128) -> Result<u64, String> {
     if denominator == 0 {
         return Err("simulated link rate cannot be zero".to_owned());
     }
-    let result = numerator / denominator + u128::from(numerator % denominator != 0);
+    let quotient = numerator / denominator;
+    let result = if numerator.is_multiple_of(denominator) {
+        quotient
+    } else {
+        quotient + 1
+    };
     u64::try_from(result).map_err(|_| "simulated value overflows u64".to_owned())
 }
 
@@ -100,7 +105,12 @@ fn path_duration_ms(payload_bytes: u64, latency_ms: u64, bytes_per_second: u64) 
 }
 
 fn payload_kib_ceil(payload_bytes: u64) -> u64 {
-    payload_bytes / 1024 + u64::from(payload_bytes % 1024 != 0)
+    let kib = payload_bytes / 1024;
+    if payload_bytes.is_multiple_of(1024) {
+        kib
+    } else {
+        kib + 1
+    }
 }
 
 fn energy_cost(base: u64, payload_bytes: u64, per_kib: u64) -> Result<u64, String> {
