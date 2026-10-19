@@ -296,6 +296,8 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             "failed" => counts[1] += 1,
             "inconclusive" => counts[2] += 1,
             _ => {}
+        }
+        match outcome {
             "succeeded" => {
                 arm_stats.succeeded += 1;
                 match trial.get("elapsed_ms").and_then(Value::as_u64) {
@@ -614,6 +616,33 @@ mod tests {
         assert_eq!(report["baseline"]["success_rate_denominator"], 3);
         assert_eq!(report["baseline"]["success_rate_ppm"], 333333);
         assert_eq!(report["candidate"]["succeeded"], 3);
+        let strata = report["by_priority_and_mode"].as_array().unwrap();
+        let interactive = strata.iter().find(|item| item["priority"] == "interactive").unwrap();
+        assert_eq!(interactive["baseline"]["success_rate_ppm"], 0);
+        assert_eq!(interactive["candidate"]["success_rate_ppm"], 1_000_000);
+    }
+
+    #[test]
+    fn missing_energy_on_any_success_makes_energy_per_success_null() {
+        let (run_schema, profile_schema, profile_bytes, run) = fixtures();
+        let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
+        let mut run = ready_run(run, &profile_bytes);
+        run["trials"][1]["energy_millijoules"] = Value::Null;
+        let report = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run).unwrap();
+        assert_eq!(
+            report["candidate"]["energy_per_successful_task_millijoules"],
+            Value::Null
+        );
+    }
+
+    #[test]
+    fn per_trial_byte_sum_overflow_is_rejected() {
+        let (run_schema, profile_schema, profile_bytes, run) = fixtures();
+        let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
+        let mut run = ready_run(run, &profile_bytes);
+        run["trials"][0]["bytes_tx"] = json!(u64::MAX);
+        run["trials"][0]["bytes_rx"] = json!(1);
+        assert!(validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run).is_err());
     }
 
     #[test]
