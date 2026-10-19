@@ -449,6 +449,13 @@ fn simulate_mode(
             .filter(|index| is_active(&tasks[*index], &progress[*index], window))
             .collect();
         if active.is_empty() {
+            window_stats.push(WindowStats {
+                window,
+                active_tasks: 0,
+                transferred_bytes: 0,
+                completed_now: 0,
+                failed_now: 0,
+            });
             continue;
         }
         let grants = if fair_share {
@@ -530,7 +537,9 @@ fn arm_summary(tasks: &[Task], progress: &[Progress], indices: &[usize]) -> Resu
     let mut energy = 0_u64;
     let mut charge = 0_u64;
     for index in indices {
-        completed += u64::from(progress[*index].completion_window.is_some());
+        if progress[*index].completion_window.is_some() {
+            completed += 1;
+        }
         checked_add(&mut delivered, progress[*index].delivered_bytes, "aggregate delivered bytes")?;
         checked_add(&mut energy, progress[*index].energy_millijoules, "aggregate task energy")?;
         checked_add(&mut charge, progress[*index].charge_minor, "aggregate task charge")?;
@@ -886,8 +895,8 @@ mod tests {
         let (run, report) = simulate(&f, &f.scenario).unwrap();
         assert_eq!(run["evidence_class"], "synthetic_simulation");
         assert_eq!(run["trials"].as_array().unwrap().len(), 18);
-        assert_eq!(report["multiwindow_recovery"]["partial_progress_persists"], true);
-        assert_eq!(report["multiwindow_recovery"]["peer_identifiers_exported"], false);
+        assert!(report["multiwindow_recovery"]["partial_progress_persists"].as_bool().unwrap());
+        assert!(!report["multiwindow_recovery"]["peer_identifiers_exported"].as_bool().unwrap());
     }
 
     #[test]
@@ -934,7 +943,8 @@ mod tests {
     fn duplicate_ids_and_missing_cells_fail_closed() {
         let f = fixtures();
         let mut scenario = f.scenario.clone();
-        scenario["tasks"][1]["pair_id"] = scenario["tasks"][0]["pair_id"].clone();
+        let first_pair_id = scenario["tasks"][0]["pair_id"].clone();
+        scenario["tasks"][1]["pair_id"] = first_pair_id;
         assert!(simulate(&f, &scenario).is_err());
         let mut scenario = f.scenario.clone();
         scenario["tasks"].as_array_mut().unwrap().retain(|task| task["mode"] != "route_recovery" || task["priority"] != "bulk");
