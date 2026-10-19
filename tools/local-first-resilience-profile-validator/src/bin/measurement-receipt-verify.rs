@@ -137,10 +137,10 @@ fn validate_contract(schema: &Value, receipt: &Value, profile: &Value, profile_b
         let mut ids = BTreeSet::new();
         let mut counts = [0_u64; 3];
         for (index, trial) in trials.iter().enumerate() {
-            if let Some(id) = trial.get("trial_id").and_then(Value::as_str) {
-                if !ids.insert(id.to_owned()) {
-                    errors.push(format!("trials/{index}/trial_id duplicates {id}"));
-                }
+            if let Some(id) = trial.get("trial_id").and_then(Value::as_str)
+                && !ids.insert(id.to_owned())
+            {
+                errors.push(format!("trials/{index}/trial_id duplicates {id}"));
             }
             match trial.get("outcome").and_then(Value::as_str) {
                 Some("succeeded") => counts[0] += 1,
@@ -175,13 +175,13 @@ fn validate_contract(schema: &Value, receipt: &Value, profile: &Value, profile_b
 
     let config_digest = receipt.pointer("/source/config_sha256").and_then(Value::as_str);
     let artifacts = receipt.get("artifacts").and_then(Value::as_array);
-    if let (Some(config_digest), Some(artifacts)) = (config_digest, artifacts) {
-        if !artifacts.iter().any(|artifact| {
+    if let (Some(config_digest), Some(artifacts)) = (config_digest, artifacts)
+        && !artifacts.iter().any(|artifact| {
             artifact.get("role").and_then(Value::as_str) == Some("config_snapshot")
                 && artifact.get("sha256").and_then(Value::as_str) == Some(config_digest)
-        }) {
-            errors.push("source.config_sha256 must match a config_snapshot artifact digest".to_owned());
-        }
+        })
+    {
+        errors.push("source.config_sha256 must match a config_snapshot artifact digest".to_owned());
     }
 
     if evidence == Some("bench_measured") || evidence == Some("field_observed") {
