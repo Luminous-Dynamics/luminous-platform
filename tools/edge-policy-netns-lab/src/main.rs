@@ -121,7 +121,7 @@ fn spawn_listener(namespace: &str, ipv6: bool, address: &str, port: &str) -> Res
         .args(arguments)
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| format!("could not start fixed TCP test listener: {error}"))
 }
@@ -280,6 +280,39 @@ fn prepare_namespaces(
     Ok(())
 }
 
+fn wait_for_ipv6_ready(
+    namespace: &str,
+    interface: &str,
+    address: &str,
+) -> Result<(), String> {
+    let started = Instant::now();
+    let timeout = Duration::from_secs(5);
+    loop {
+        let output = checked(
+            "ip",
+            &["-n", namespace, "-6", "address", "show", "dev", interface],
+        )?;
+        let snapshot = String::from_utf8_lossy(&output.stdout);
+        let ready = snapshot.lines().any(|line| {
+            let line = line.trim();
+            line.starts_with("inet6 ")
+                && line.contains(address)
+                && !line.contains("tentative")
+                && !line.contains("dadfailed")
+        });
+        if ready {
+            return Ok(());
+        }
+        if started.elapsed() >= timeout {
+            return Err(format!(
+                "IPv6 address {address} in {namespace} did not become usable within {} ms",
+                timeout.as_millis()
+            ));
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+}
+
 fn start_and_check_listener(
     guard: &mut LabGuard,
     namespace: &str,
@@ -293,8 +326,12 @@ fn start_and_check_listener(
         .try_wait()
         .map_err(|error| format!("cannot inspect TCP listener state: {error}"))?
     {
+        let output = listener
+            .wait_with_output()
+            .map_err(|error| format!("cannot collect TCP listener diagnostic: {error}"))?;
         return Err(format!(
-            "TCP listener on fixed port {port} at {address} exited early with {status}"
+            "TCP listener on fixed port {port} at {address} exited early with {status}: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
         ));
     }
     guard.listeners.push(listener);
@@ -419,6 +456,8 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
         listeners: Vec::new(),
     };
     prepare_namespaces(&mut guard, &client_if, &server_if)?;
+    wait_for_ipv6_ready(&guard.client_ns, &client_if, "2001:db8:1::1")?;
+    wait_for_ipv6_ready(&guard.server_ns, &server_if, "2001:db8:1::2")?;
     apply_nft_script(&guard.server_ns, NFT_POLICY_SCRIPT)?;
 
     let server_ns_for_listeners = guard.server_ns.clone();
