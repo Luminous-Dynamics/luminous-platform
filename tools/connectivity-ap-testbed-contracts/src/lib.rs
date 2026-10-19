@@ -84,9 +84,8 @@ fn stage_policy(manifest: &Value, errors: &mut Vec<String>) {
     if manifest.pointer("/run_controls/test_profile_sha256")
         != manifest.pointer("/software/profile_sha256")
     {
-        errors.push(
-            "run_controls.test_profile_sha256 must match software.profile_sha256".to_owned(),
-        );
+        errors
+            .push("run_controls.test_profile_sha256 must match software.profile_sha256".to_owned());
     }
 
     for pointer in [
@@ -275,7 +274,10 @@ mod tests {
     fn measured_stage_cannot_promote_planned_unknowns() {
         let mut manifest: Value = serde_json::from_str(PLANNED).expect("fixture JSON");
         manifest["evidence_stage"] = Value::String("lab_screening".to_owned());
-        manifest["clients"].as_array_mut().expect("client array").truncate(2);
+        manifest["clients"]
+            .as_array_mut()
+            .expect("client array")
+            .truncate(2);
         let error = validate_manifest(SCHEMA, &manifest.to_string())
             .expect_err("measured evidence must have recorded instrumentation and hashes");
         assert!(
@@ -296,8 +298,7 @@ mod tests {
     fn runtime_profile_digest_must_match_test_profile_digest() {
         let mut manifest: Value = serde_json::from_str(PLANNED).expect("fixture JSON");
         manifest["evidence_stage"] = Value::String("bench_smoke".to_owned());
-        manifest["run_controls"]["test_profile_sha256"] =
-            Value::String("a".repeat(64));
+        manifest["run_controls"]["test_profile_sha256"] = Value::String("a".repeat(64));
         manifest["software"]["profile_sha256"] = Value::String("b".repeat(64));
         let error = validate_manifest(SCHEMA, &manifest.to_string())
             .expect_err("conflicting profile digests must fail");
