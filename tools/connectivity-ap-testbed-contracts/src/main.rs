@@ -20,7 +20,10 @@ fn run() -> Result<(), String> {
     if arguments.len() != 3 {
         return Err(format!(
             "usage: {} <manifest-schema.json> <testbed-manifest.json>",
-            arguments.first().map(String::as_str).unwrap_or("connectivity-ap-testbed-verify")
+            arguments
+                .first()
+                .map(String::as_str)
+                .unwrap_or("connectivity-ap-testbed-verify")
         ));
     }
 
@@ -37,7 +40,9 @@ fn run() -> Result<(), String> {
                 .and_then(serde_json::Value::as_str)
                 .unwrap_or("unknown");
             println!("VALID configuration manifest: id={id} stage={stage}");
-            println!("This result validates configuration metadata only; it does not certify hardware or prove a measurement occurred.");
+            println!(
+                "This result validates configuration metadata only; it does not certify hardware or prove a measurement occurred."
+            );
             Ok(())
         }
         Err(errors) => Err(errors.join("\n")),
