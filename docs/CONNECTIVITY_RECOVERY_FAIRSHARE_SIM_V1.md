@@ -1,0 +1,47 @@
+# Fair-share-aware recovery simulation v1
+
+Status: synthetic discrete-window model. It is not an RF simulator, AP shaper, or field benchmark.
+
+## Research question
+
+After a WAN outage, a bounded queue may contain messages from several households. First-come-first-served can spend the recovery window on a large early transfer, leaving later peers with no useful completion. This prototype compares that baseline with the existing deterministic weighted max-min allocation core.
+
+## Scenario semantics
+
+Each task records an opaque peer token, relative weight, priority, arrival order, service-byte requirement (total request plus response bytes), deadline and expiry. Each mode is evaluated as a separate recovery-window batch with the same declared capacity and essential reserve.
+
+- Baseline: deterministic first-come-first-served. A task takes up the remaining window budget; if it cannot complete, the remaining grant is accounted as partial traffic and later tasks receive only the leftover bytes.
+- Candidate: aggregate each peer's demand into essential or ordinary bytes, run weighted max-min allocation with per-peer demand caps, and apply each peer's grant to its one eligible task in the mode window.
+- Task succeeds only when its full service-byte requirement is granted and the declared completion latency meets the deadline and TTL.
+- Public outcome receipts contain task outcomes and byte/energy/charge counters but no peer IDs. Aggregate fairness reports include only counts and a Jain index, not identity-level success lists.
+
+Version 1 allows one task per peer per mode window and requires one priority class per mode window. The smoke fixture varies the class by mode so essential, interactive and bulk strata all exist.
+
+## Synthetic fixture and expected outcome
+
+The checked-in trace has three peers per window and a 9,000-byte service budget:
+- peer A needs 8,192 bytes and arrives first;
+- peers B and C each need 2,048 bytes and arrive later;
+- all weights are equal and the essential reserve is 1,000 bytes.
+
+In the FCFS baseline, A consumes 8,192 bytes and succeeds, leaving 808 bytes for B and none for C: 1 completed task per three-peer window. Weighted max-min allocation grants 4,904 bytes to A and 2,048 to each of B/C. A's task remains incomplete, while B and C both complete: 2 successes per window. The synthetic peer-task Jain index therefore rises from 333,333 to 666,666 parts per million. These are fixture-derived contract expectations, not field results.
+
+Across the nine paired records, the smoke report should show 3 baseline-only successes and 6 candidate-only successes. The comparator deliberately makes no p-value claim; a three-peer smoke fixture cannot establish statistical significance.
+
+## Invariants
+
+- Total assigned byte grants never exceed the declared recovery-window budget.
+- No peer receives more bytes than its demand.
+- Actual request/response traffic recorded for each mode does not exceed the budget.
+- Input array order does not affect the scenario digest, raw receipt, outcome report or aggregate fairness metrics.
+- Duplicate tasks, duplicate peer in a mode window, inconsistent peer weights, invalid reserve, unsupported class/mode and remote schema references fail closed.
+- The raw run binds to both the exact profile SHA-256 and a canonical scenario SHA-256 and remains labelled synthetic_simulation.
+- Opaque peer tokens are not emitted in task receipts or public fairness aggregates.
+
+## Limits and next qualification steps
+
+This is not wireless airtime fairness. The model does not simulate RF contention, link retries, packet sizes, TCP/QUIC congestion control, multi-window queuing, identity authentication, Sybil resistance, actual energy measurement, tariffs or radio permissions. Byte-budget fairness and task-outcome fairness are related but different quantities.
+
+Next steps: trace replay; sensitivity runs for 25%, 50%, 75%, 100%, 125%, 150% and 200% offered load; compare FCFS, equal-share and weighted max-min; then test on an isolated multi-client AP with exact firmware revision, measured airtime/retries, p50/p95/p99 latency, actual power and raw task denominators.
+
+The benchmark output alone must never be described as proof that households received fair radio service or that actual applications succeeded.
