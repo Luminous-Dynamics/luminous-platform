@@ -215,9 +215,11 @@ fn deadline_order(tasks: &[Task], left: usize, right: usize) -> std::cmp::Orderi
     tasks[left]
         .deadline_window
         .min(tasks[left].expires_after_window)
-        .cmp(&tasks[right]
-            .deadline_window
-            .min(tasks[right].expires_after_window))
+        .cmp(
+            &tasks[right]
+                .deadline_window
+                .min(tasks[right].expires_after_window),
+        )
         .then_with(|| tasks[left].arrival_window.cmp(&tasks[right].arrival_window))
         .then_with(|| tasks[left].arrival_order.cmp(&tasks[right].arrival_order))
         .then_with(|| tasks[left].task_id.cmp(&tasks[right].task_id))
@@ -459,13 +461,7 @@ fn simulate_mode(
             continue;
         }
         let grants = if fair_share {
-            fair_share_grants(
-                tasks,
-                progress,
-                &active,
-                capacity,
-                essential_reserve,
-            )?
+            fair_share_grants(tasks, progress, &active, capacity, essential_reserve)?
         } else {
             fcfs_grants(tasks, progress, &active, capacity)
         };
@@ -494,8 +490,7 @@ fn simulate_mode(
     }
 
     if mode_indices.iter().any(|index| {
-        progress[*index].completion_window.is_none()
-            && progress[*index].failure_reason.is_none()
+        progress[*index].completion_window.is_none() && progress[*index].failure_reason.is_none()
     }) {
         return Err(format!(
             "mode {mode}: at least one task was still non-terminal at the simulation horizon"
@@ -517,7 +512,10 @@ fn jain_fairness_ppm(tasks: &[Task], progress: &[Progress], indices: &[usize]) -
     if completions_by_peer.is_empty() {
         return None;
     }
-    let sum: u128 = completions_by_peer.values().map(|value| u128::from(*value)).sum();
+    let sum: u128 = completions_by_peer
+        .values()
+        .map(|value| u128::from(*value))
+        .sum();
     let sum_squares: u128 = completions_by_peer
         .values()
         .map(|value| u128::from(*value) * u128::from(*value))
@@ -525,10 +523,7 @@ fn jain_fairness_ppm(tasks: &[Task], progress: &[Progress], indices: &[usize]) -
     if sum_squares == 0 {
         return None;
     }
-    Some(
-        (sum * sum * 1_000_000
-            / ((completions_by_peer.len() as u128) * sum_squares)) as u64,
-    )
+    Some((sum * sum * 1_000_000 / ((completions_by_peer.len() as u128) * sum_squares)) as u64)
 }
 
 fn arm_summary(tasks: &[Task], progress: &[Progress], indices: &[usize]) -> Result<Value, String> {
@@ -540,9 +535,21 @@ fn arm_summary(tasks: &[Task], progress: &[Progress], indices: &[usize]) -> Resu
         if progress[*index].completion_window.is_some() {
             completed += 1;
         }
-        checked_add(&mut delivered, progress[*index].delivered_bytes, "aggregate delivered bytes")?;
-        checked_add(&mut energy, progress[*index].energy_millijoules, "aggregate task energy")?;
-        checked_add(&mut charge, progress[*index].charge_minor, "aggregate task charge")?;
+        checked_add(
+            &mut delivered,
+            progress[*index].delivered_bytes,
+            "aggregate delivered bytes",
+        )?;
+        checked_add(
+            &mut energy,
+            progress[*index].energy_millijoules,
+            "aggregate task energy",
+        )?;
+        checked_add(
+            &mut charge,
+            progress[*index].charge_minor,
+            "aggregate task charge",
+        )?;
     }
     Ok(json!({
         "task_count": indices.len(),
@@ -556,38 +563,52 @@ fn arm_summary(tasks: &[Task], progress: &[Progress], indices: &[usize]) -> Resu
 }
 
 fn window_values(stats: &[WindowStats], capacity: u64) -> Vec<Value> {
-    stats.iter().map(|item| json!({
-        "window": item.window,
-        "active_tasks": item.active_tasks,
-        "transferred_bytes": item.transferred_bytes,
-        "unused_capacity_bytes": capacity - item.transferred_bytes,
-        "completed_tasks_in_window": item.completed_now,
-        "failed_tasks_in_window": item.failed_now
-    })).collect()
+    stats
+        .iter()
+        .map(|item| {
+            json!({
+                "window": item.window,
+                "active_tasks": item.active_tasks,
+                "transferred_bytes": item.transferred_bytes,
+                "unused_capacity_bytes": capacity - item.transferred_bytes,
+                "completed_tasks_in_window": item.completed_now,
+                "failed_tasks_in_window": item.failed_now
+            })
+        })
+        .collect()
 }
 
 fn task_results(tasks: &[Task], progress: &[Progress], indices: &[usize], arm: &str) -> Vec<Value> {
-    let mut out: Vec<Value> = indices.iter().map(|index| {
-        let task = &tasks[*index];
-        let state = &progress[*index];
-        json!({
-            "task_id": task.task_id,
-            "mode": task.mode,
-            "priority": task.priority,
-            "arm": arm,
-            "service_bytes": task.service_bytes,
-            "delivered_bytes": state.delivered_bytes,
-            "outcome": if state.completion_window.is_some() { "succeeded" } else { "failed" },
-            "completion_window": state.completion_window,
-            "terminal_window": state.terminal_window,
-            "failure_reason": state.failure_reason,
-            "energy_millijoules": state.energy_millijoules,
-            "charge_minor": state.charge_minor
+    let mut out: Vec<Value> = indices
+        .iter()
+        .map(|index| {
+            let task = &tasks[*index];
+            let state = &progress[*index];
+            json!({
+                "task_id": task.task_id,
+                "mode": task.mode,
+                "priority": task.priority,
+                "arm": arm,
+                "service_bytes": task.service_bytes,
+                "delivered_bytes": state.delivered_bytes,
+                "outcome": if state.completion_window.is_some() { "succeeded" } else { "failed" },
+                "completion_window": state.completion_window,
+                "terminal_window": state.terminal_window,
+                "failure_reason": state.failure_reason,
+                "energy_millijoules": state.energy_millijoules,
+                "charge_minor": state.charge_minor
+            })
         })
-    }).collect();
+        .collect();
     out.sort_by(|left, right| {
-        left.get("task_id").and_then(Value::as_str).cmp(&right.get("task_id").and_then(Value::as_str))
-            .then_with(|| left.get("arm").and_then(Value::as_str).cmp(&right.get("arm").and_then(Value::as_str)))
+        left.get("task_id")
+            .and_then(Value::as_str)
+            .cmp(&right.get("task_id").and_then(Value::as_str))
+            .then_with(|| {
+                left.get("arm")
+                    .and_then(Value::as_str)
+                    .cmp(&right.get("arm").and_then(Value::as_str))
+            })
     });
     out
 }
@@ -641,7 +662,10 @@ fn validate_semantics(scenario: &Value, tasks: &[Task]) -> Result<(), Vec<String
             errors.push(format!("task {} arrives after its deadline", task.task_id));
         }
         if task.arrival_window > task.expires_after_window {
-            errors.push(format!("task {} arrives after its expiry window", task.task_id));
+            errors.push(format!(
+                "task {} arrives after its expiry window",
+                task.task_id
+            ));
         }
         for (label, window) in [
             ("arrival_window", task.arrival_window),
@@ -656,7 +680,10 @@ fn validate_semantics(scenario: &Value, tasks: &[Task]) -> Result<(), Vec<String
             }
         }
         if task.service_bytes == 0 {
-            errors.push(format!("task {} service_bytes must be positive", task.task_id));
+            errors.push(format!(
+                "task {} service_bytes must be positive",
+                task.task_id
+            ));
         }
     }
     for mode in REQUIRED_MODES {
@@ -665,7 +692,9 @@ fn validate_semantics(scenario: &Value, tasks: &[Task]) -> Result<(), Vec<String
         }
         for priority in REQUIRED_PRIORITIES {
             if !cells.contains(&(mode.to_owned(), priority.to_owned())) {
-                errors.push(format!("required mode/priority cell {mode}/{priority} is absent"));
+                errors.push(format!(
+                    "required mode/priority cell {mode}/{priority} is absent"
+                ));
             }
         }
     }
@@ -696,7 +725,9 @@ pub fn validate_and_simulate(
     if profile_bytes.len() > MAX_INPUT_BYTES
         || serde_json::to_vec(scenario).map_or(true, |bytes| bytes.len() > MAX_INPUT_BYTES)
     {
-        return Err(vec!["scenario or profile exceeds the bounded input size".to_owned()]);
+        return Err(vec![
+            "scenario or profile exceeds the bounded input size".to_owned(),
+        ]);
     }
     let mut errors = schema_errors(scenario_schema, scenario);
     let scenario_tasks = match scenario.get("tasks").and_then(Value::as_array) {
@@ -735,7 +766,8 @@ pub fn validate_and_simulate(
     let reserve = u64_field(scenario, "essential_reserve_bytes").map_err(|e| vec![e])?;
     let max_windows = u64_field(scenario, "max_windows").map_err(|e| vec![e])?;
     let window_duration_ms = u64_field(scenario, "window_duration_ms").map_err(|e| vec![e])?;
-    let base_energy = u64_field(scenario, "base_attempt_energy_millijoules").map_err(|e| vec![e])?;
+    let base_energy =
+        u64_field(scenario, "base_attempt_energy_millijoules").map_err(|e| vec![e])?;
     let energy_per_kib = u64_field(scenario, "energy_millijoules_per_kib").map_err(|e| vec![e])?;
     let charge_per_kib = u64_field(scenario, "charge_minor_per_kib").map_err(|e| vec![e])?;
 
@@ -746,22 +778,44 @@ pub fn validate_and_simulate(
 
 
     for mode in REQUIRED_MODES {
-        let indices: Vec<usize> = tasks.iter().enumerate()
+        let indices: Vec<usize> = tasks
+            .iter()
+            .enumerate()
             .filter_map(|(index, task)| (task.mode == mode).then_some(index))
             .collect();
         let baseline_windows = simulate_mode(
-            &tasks, &indices, mode, &mut baseline_progress, max_windows, capacity,
-            reserve, base_energy, energy_per_kib, charge_per_kib, false,
-        ).map_err(|error| vec![error])?;
+            &tasks,
+            &indices,
+            mode,
+            &mut baseline_progress,
+            max_windows,
+            capacity,
+            reserve,
+            base_energy,
+            energy_per_kib,
+            charge_per_kib,
+            false,
+        )
+        .map_err(|error| vec![error])?;
         let candidate_windows = simulate_mode(
-            &tasks, &indices, mode, &mut candidate_progress, max_windows, capacity,
-            reserve, base_energy, energy_per_kib, charge_per_kib, true,
-        ).map_err(|error| vec![error])?;
+            &tasks,
+            &indices,
+            mode,
+            &mut candidate_progress,
+            max_windows,
+            capacity,
+            reserve,
+            base_energy,
+            energy_per_kib,
+            charge_per_kib,
+            true,
+        )
+        .map_err(|error| vec![error])?;
 
-        let baseline_summary = arm_summary(&tasks, &baseline_progress, &indices)
-            .map_err(|error| vec![error])?;
-        let candidate_summary = arm_summary(&tasks, &candidate_progress, &indices)
-            .map_err(|error| vec![error])?;
+        let baseline_summary =
+            arm_summary(&tasks, &baseline_progress, &indices).map_err(|error| vec![error])?;
+        let candidate_summary =
+            arm_summary(&tasks, &candidate_progress, &indices).map_err(|error| vec![error])?;
         mode_reports.push(json!({
             "mode": mode,
             "window_capacity_bytes": capacity,
@@ -778,12 +832,19 @@ pub fn validate_and_simulate(
                 ("candidate", &candidate_progress[index]),
             ] {
                 let task = &tasks[index];
-                let terminal_window = progress.terminal_window.unwrap_or(task.deadline_window.min(task.expires_after_window));
-                let latency_windows = terminal_window.saturating_sub(task.arrival_window).saturating_add(1);
+                let terminal_window = progress
+                    .terminal_window
+                    .unwrap_or(task.deadline_window.min(task.expires_after_window));
+                let latency_windows = terminal_window
+                    .saturating_sub(task.arrival_window)
+                    .saturating_add(1);
                 let elapsed_ms = latency_windows.saturating_mul(window_duration_ms);
                 let request_bytes = task.service_bytes / 2;
                 let bytes_tx = progress.delivered_bytes.min(request_bytes);
-                let bytes_rx = progress.delivered_bytes.saturating_sub(bytes_tx).min(task.service_bytes - request_bytes);
+                let bytes_rx = progress
+                    .delivered_bytes
+                    .saturating_sub(bytes_tx)
+                    .min(task.service_bytes - request_bytes);
                 trials.push(json!({
                     "trial_id": format!("{}-{}", task.task_id, arm),
                     "pair_id": task.pair_id,
@@ -803,9 +864,14 @@ pub fn validate_and_simulate(
     }
 
     trials.sort_by(|left, right| {
-        left.get("pair_id").and_then(Value::as_str)
+        left.get("pair_id")
+            .and_then(Value::as_str)
             .cmp(&right.get("pair_id").and_then(Value::as_str))
-            .then_with(|| left.get("arm").and_then(Value::as_str).cmp(&right.get("arm").and_then(Value::as_str)))
+            .then_with(|| {
+                left.get("arm")
+                    .and_then(Value::as_str)
+                    .cmp(&right.get("arm").and_then(Value::as_str))
+            })
     });
 
     let canonical_tasks: Vec<Value> = tasks.iter().map(task_to_value).collect();
@@ -829,7 +895,10 @@ pub fn validate_and_simulate(
     });
 
     let mut report = validate_and_report(run_schema, profile_schema, profile_bytes, profile, &run)?;
-    report["simulation_id"] = scenario.get("simulation_id").cloned().unwrap_or(Value::Null);
+    report["simulation_id"] = scenario
+        .get("simulation_id")
+        .cloned()
+        .unwrap_or(Value::Null);
     report["scenario_sha256"] = json!(scenario_sha);
     report["multiwindow_recovery"] = json!({
         "model": "stateful_partial_progress_per_window",
@@ -867,16 +936,20 @@ mod tests {
         Fixtures {
             schema: serde_json::from_str(include_str!(
                 "../../../schemas/connectivity-recovery-multiwindow-scenario-v1.schema.json"
-            )).unwrap(),
+            ))
+            .unwrap(),
             scenario: serde_json::from_str(include_str!(
                 "../../../examples/connectivity-recovery-multiwindow-scenario-synthetic-v1.json"
-            )).unwrap(),
+            ))
+            .unwrap(),
             run_schema: serde_json::from_str(include_str!(
                 "../../../schemas/connectivity-task-outcome-run-v1.schema.json"
-            )).unwrap(),
+            ))
+            .unwrap(),
             profile_schema: serde_json::from_str(include_str!(
                 "../../../schemas/connectivity-task-outcome-profile-v1.schema.json"
-            )).unwrap(),
+            ))
+            .unwrap(),
             profile: serde_json::from_slice(&profile_bytes).unwrap(),
             profile_bytes,
         }
@@ -884,8 +957,12 @@ mod tests {
 
     fn simulate(f: &Fixtures, scenario: &Value) -> Result<(Value, Value), Vec<String>> {
         validate_and_simulate(
-            &f.schema, scenario, &f.run_schema, &f.profile_schema,
-            &f.profile_bytes, &f.profile,
+            &f.schema,
+            scenario,
+            &f.run_schema,
+            &f.profile_schema,
+            &f.profile_bytes,
+            &f.profile,
         )
     }
 
@@ -895,19 +972,33 @@ mod tests {
         let (run, report) = simulate(&f, &f.scenario).unwrap();
         assert_eq!(run["evidence_class"], "synthetic_simulation");
         assert_eq!(run["trials"].as_array().unwrap().len(), 18);
-        assert!(report["multiwindow_recovery"]["partial_progress_persists"].as_bool().unwrap());
-        assert!(!report["multiwindow_recovery"]["peer_identifiers_exported"].as_bool().unwrap());
+        assert!(
+            report["multiwindow_recovery"]["partial_progress_persists"]
+                .as_bool()
+                .unwrap()
+        );
+        assert!(
+            !report["multiwindow_recovery"]["peer_identifiers_exported"]
+                .as_bool()
+                .unwrap()
+        );
     }
 
     #[test]
     fn fair_share_preserves_urgent_essential_completion_across_windows() {
         let f = fixtures();
         let (_, report) = simulate(&f, &f.scenario).unwrap();
-        for mode in report["multiwindow_recovery"]["per_mode"].as_array().unwrap() {
+        for mode in report["multiwindow_recovery"]["per_mode"]
+            .as_array()
+            .unwrap()
+        {
             assert_eq!(mode["baseline"]["completed_tasks"], 1);
             assert_eq!(mode["candidate_fair_share"]["completed_tasks"], 3);
             assert_eq!(mode["baseline"]["completed_task_jain_fairness_ppm"], 333333);
-            assert_eq!(mode["candidate_fair_share"]["completed_task_jain_fairness_ppm"], 1000000);
+            assert_eq!(
+                mode["candidate_fair_share"]["completed_task_jain_fairness_ppm"],
+                1000000
+            );
         }
     }
 
@@ -918,9 +1009,15 @@ mod tests {
         let online = &report["multiwindow_recovery"]["per_mode"][0];
         let baseline = online["baseline_window_trace"].as_array().unwrap();
         assert!(baseline[0]["transferred_bytes"].as_u64().unwrap() > 0);
-        let candidate_results = report["multiwindow_recovery"]["task_results"].as_array().unwrap();
-        let big = candidate_results[1].as_array().unwrap().iter()
-            .find(|task| task["task_id"] == "online-bulk-large-a").unwrap();
+        let candidate_results = report["multiwindow_recovery"]["task_results"]
+            .as_array()
+            .unwrap();
+        let big = candidate_results[1]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|task| task["task_id"] == "online-bulk-large-a")
+            .unwrap();
         assert_eq!(big["outcome"], "succeeded");
         assert_eq!(big["completion_window"], 2);
         assert_eq!(big["delivered_bytes"], 20000);
@@ -947,7 +1044,10 @@ mod tests {
         scenario["tasks"][1]["pair_id"] = first_pair_id;
         assert!(simulate(&f, &scenario).is_err());
         let mut scenario = f.scenario.clone();
-        scenario["tasks"].as_array_mut().unwrap().retain(|task| task["mode"] != "route_recovery" || task["priority"] != "bulk");
+        scenario["tasks"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|task| task["mode"] != "route_recovery" || task["priority"] != "bulk");
         assert!(simulate(&f, &scenario).is_err());
     }
 
@@ -963,7 +1063,8 @@ mod tests {
     fn remote_schema_references_are_rejected() {
         let f = fixtures();
         let mut schema = f.schema.clone();
-        schema["properties"]["simulation_id"]["$ref"] = json!("https://example.invalid/schema.json");
+        schema["properties"]["simulation_id"]["$ref"] =
+            json!("https://example.invalid/schema.json");
         assert!(!schema_errors(&schema, &f.scenario).is_empty());
     }
 }
