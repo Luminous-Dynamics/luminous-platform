@@ -1060,6 +1060,19 @@ mod tests {
     }
 
     #[test]
+    fn peer_tokens_never_leave_exported_receipt_or_report() {
+        let f = fixtures();
+        let (run, report) = simulate(&f, &f.scenario).unwrap();
+        let receipt = serde_json::to_string(&run).unwrap();
+        let aggregate = serde_json::to_string(&report).unwrap();
+        for token in ["peer-a", "peer-b", "peer-c"] {
+            assert!(!receipt.contains(token));
+            assert!(!aggregate.contains(token));
+        }
+        assert!(!receipt.contains("\\"peer_id\\""));
+    }
+
+    #[test]
     fn remote_schema_references_are_rejected() {
         let f = fixtures();
         let mut schema = f.schema.clone();
