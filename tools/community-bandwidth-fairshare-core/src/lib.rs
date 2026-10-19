@@ -523,11 +523,8 @@ mod tests {
                 .collect();
             let policy = policy(capacity, capacity / 4);
             let forward = allocate(&policy, &demands).expect("forward allocation");
-            let reversed = allocate(
-                &policy,
-                &demands.iter().cloned().rev().collect::<Vec<_>>(),
-            )
-            .expect("reverse allocation");
+            let reversed = allocate(&policy, &demands.iter().cloned().rev().collect::<Vec<_>>())
+                .expect("reverse allocation");
             assert_eq!(
                 forward, reversed,
                 "allocation changed with input order for capacity={capacity}"
