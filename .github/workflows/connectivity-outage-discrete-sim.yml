@@ -12,7 +12,7 @@ on:
       - "docs/CONNECTIVITY_OUTAGE_DISCRETE_SIM_V1.md"
       - ".github/workflows/connectivity-outage-discrete-sim.yml"
   push:
-    branches: [main]
+    branches: [main, feat/connectivity-outage-discrete-sim-v1]
     paths:
       - "tools/connectivity-outage-discrete-sim/**"
       - "tools/connectivity-task-outcome-core/**"
