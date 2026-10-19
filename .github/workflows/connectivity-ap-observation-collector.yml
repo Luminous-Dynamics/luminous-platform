@@ -1,0 +1,58 @@
+name: connectivity-ap-observation-collector
+
+on:
+  pull_request:
+    paths:
+      - "tools/connectivity-ap-observation-collector/**"
+      - "tools/connectivity-ap-testbed-contracts/**"
+      - "tools/connectivity-task-outcome-core/**"
+      - "schemas/connectivity-ap-testbed-manifest-v1.schema.json"
+      - "schemas/connectivity-ap-observation-snapshot-v1.schema.json"
+      - "examples/connectivity-ap-testbed-manifest-planned-v1.json"
+      - "docs/CONNECTIVITY_AP_OBSERVATION_COLLECTOR_V1.md"
+      - ".github/workflows/connectivity-ap-observation-collector.yml"
+  push:
+    branches: [main, feat/connectivity-ap-observation-collector-v1]
+    paths:
+      - "tools/connectivity-ap-observation-collector/**"
+      - "tools/connectivity-ap-testbed-contracts/**"
+      - "tools/connectivity-task-outcome-core/**"
+      - "schemas/connectivity-ap-testbed-manifest-v1.schema.json"
+      - "schemas/connectivity-ap-observation-snapshot-v1.schema.json"
+      - "examples/connectivity-ap-testbed-manifest-planned-v1.json"
+      - "docs/CONNECTIVITY_AP_OBSERVATION_COLLECTOR_V1.md"
+      - ".github/workflows/connectivity-ap-observation-collector.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  observe-contract:
+    name: Validate read-only AP observation aggregation
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.99.0
+          components: clippy,rustfmt
+      - name: Check formatting
+        run: cargo fmt --manifest-path tools/connectivity-ap-observation-collector/Cargo.toml -- --check
+      - name: Test parsers, privacy filtering and admission gates
+        run: cargo test --manifest-path tools/connectivity-ap-observation-collector/Cargo.toml --all-targets
+      - name: Lint with warnings denied
+        run: cargo clippy --manifest-path tools/connectivity-ap-observation-collector/Cargo.toml --all-targets -- -D warnings
+      - name: Prove planned fixture is refused before host probing
+        run: |
+          if cargo run --manifest-path tools/connectivity-ap-observation-collector/Cargo.toml --bin connectivity-ap-observe -- \
+            schemas/connectivity-ap-testbed-manifest-v1.schema.json \
+            examples/connectivity-ap-testbed-manifest-planned-v1.json \
+            wlan0 ci-planned-refusal "$RUNNER_TEMP/should-not-exist.json"; then
+            echo "planned manifest unexpectedly admitted"
+            exit 1
+          fi
+          test ! -e "$RUNNER_TEMP/should-not-exist.json"
