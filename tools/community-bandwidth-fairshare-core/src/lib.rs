@@ -460,6 +460,82 @@ mod tests {
     }
 
     #[test]
+    fn small_domain_sweep_conserves_capacity_and_respects_every_demand_cap() {
+        for capacity in 1_u64..=96 {
+            for peer_count in 1_usize..=8 {
+                let demands: Vec<PeerDemand> = (0..peer_count)
+                    .map(|index| {
+                        let seed = capacity + index as u64 * 17;
+                        peer(
+                            &format!("p{index:03}"),
+                            1 + ((index * 19 + capacity as usize) % 13) as u16,
+                            (seed * (index as u64 % 4 + 1)) % (capacity + 1),
+                            (seed * (index as u64 % 5 + 1)) % (capacity * 2 + 1),
+                        )
+                    })
+                    .collect();
+                let reserve = capacity / 3;
+                let result = allocate(&policy(capacity, reserve), &demands)
+                    .expect("small-domain valid allocation");
+
+                let essential = u128::from(result.total_essential_granted_bytes);
+                let ordinary = u128::from(result.total_ordinary_granted_bytes);
+                let unallocated = u128::from(result.unallocated_bytes);
+                assert_eq!(
+                    essential + ordinary + unallocated,
+                    u128::from(capacity),
+                    "budget conservation failed for capacity={capacity}, peers={peer_count}"
+                );
+
+                for grant in &result.grants {
+                    let request = demands
+                        .iter()
+                        .find(|item| item.peer_id == grant.peer_id)
+                        .expect("allocator returns only declared peers");
+                    assert!(
+                        grant.essential_granted_bytes <= request.essential_demand_bytes,
+                        "essential over-grant for capacity={capacity}, peer={}",
+                        grant.peer_id
+                    );
+                    assert!(
+                        grant.ordinary_granted_bytes <= request.ordinary_demand_bytes,
+                        "ordinary over-grant for capacity={capacity}, peer={}",
+                        grant.peer_id
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn small_domain_sweep_is_order_invariant() {
+        for capacity in 1_u64..=48 {
+            let demands: Vec<PeerDemand> = (0..7_usize)
+                .map(|index| {
+                    let seed = capacity + index as u64 * 23;
+                    peer(
+                        &format!("peer-{index:03}"),
+                        1 + ((index * 7 + capacity as usize) % 9) as u16,
+                        (seed * 3) % (capacity * 2 + 1),
+                        (seed * 5) % (capacity * 3 + 1),
+                    )
+                })
+                .collect();
+            let policy = policy(capacity, capacity / 4);
+            let forward = allocate(&policy, &demands).expect("forward allocation");
+            let reversed = allocate(
+                &policy,
+                &demands.iter().cloned().rev().collect::<Vec<_>>(),
+            )
+            .expect("reverse allocation");
+            assert_eq!(
+                forward, reversed,
+                "allocation changed with input order for capacity={capacity}"
+            );
+        }
+    }
+
+    #[test]
     fn maximum_u64_budget_does_not_overflow() {
         let result = allocate(&policy(u64::MAX, 0), &[peer("peer-a", 1, 0, u64::MAX)]).unwrap();
         assert_eq!(result.total_ordinary_granted_bytes, u64::MAX);
