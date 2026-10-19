@@ -1,0 +1,63 @@
+name: connectivity-recovery-multiwindow-sim
+
+on:
+  pull_request:
+    paths:
+      - "tools/connectivity-recovery-multiwindow-sim/**"
+      - "tools/community-bandwidth-fairshare-core/**"
+      - "tools/connectivity-task-outcome-core/**"
+      - "schemas/connectivity-recovery-multiwindow-scenario-v1.schema.json"
+      - "schemas/connectivity-task-outcome-*.schema.json"
+      - "profiles/connectivity-task-outcome-benchmark-profile-v1.json"
+      - "examples/connectivity-recovery-multiwindow-scenario-synthetic-v1.json"
+      - "docs/CONNECTIVITY_RECOVERY_MULT IWINDOW_SIM_V1.md"
+      - ".github/workflows/connectivity-recovery-multiwindow-sim.yml"
+  push:
+    branches: [main, feat/connectivity-multiwindow-recovery-sim-v1]
+    paths:
+      - "tools/connectivity-recovery-multiwindow-sim/**"
+      - "tools/community-bandwidth-fairshare-core/**"
+      - "tools/connectivity-task-outcome-core/**"
+      - "schemas/connectivity-recovery-multiwindow-scenario-v1.schema.json"
+      - "schemas/connectivity-task-outcome-*.schema.json"
+      - "profiles/connectivity-task-outcome-benchmark-profile-v1.json"
+      - "examples/connectivity-recovery-multiwindow-scenario-synthetic-v1.json"
+      - "docs/CONNECTIVITY_RECOVERY_MULT IWINDOW_SIM_V1.md"
+      - ".github/workflows/connectivity-recovery-multiwindow-sim.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  multiwindow-recovery:
+    name: Validate stateful partial-progress recovery model
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.99.0
+          components: clippy,rustfmt
+      - name: Check formatting
+        run: cargo fmt --manifest-path tools/connectivity-recovery-multiwindow-sim/Cargo.toml -- --check
+      - name: Test multi-window recovery model
+        run: cargo test --manifest-path tools/connectivity-recovery-multiwindow-sim/Cargo.toml --all-targets
+      - name: Lint with warnings denied
+        run: cargo clippy --manifest-path tools/connectivity-recovery-multiwindow-sim/Cargo.toml --all-targets -- -D warnings
+      - name: Generate and validate receipt
+        run: |
+          cargo run --manifest-path tools/connectivity-recovery-multiwindow-sim/Cargo.toml --bin connectivity-recovery-multiwindow-sim -- \
+            schemas/connectivity-recovery-multiwindow-scenario-v1.schema.json \
+            examples/connectivity-recovery-multiwindow-scenario-synthetic-v1.json \
+            schemas/connectivity-task-outcome-run-v1.schema.json \
+            schemas/connectivity-task-outcome-profile-v1.schema.json \
+            profiles/connectivity-task-outcome-benchmark-profile-v1.json \
+            "$RUNNER_TEMP/multiwindow-recovery-run.json" \
+            "$RUNNER_TEMP/multiwindow-recovery-report.json"
+          grep -q '"evidence_class": "synthetic_simulation"' "$RUNNER_TEMP/multiwindow-recovery-run.json"
+          ! grep -q '"peer_id"' "$RUNNER_TEMP/multiwindow-recovery-run.json"
+          grep -q '"completed_tasks": 3' "$RUNNER_TEMP/multiwindow-recovery-report.json"
