@@ -8,7 +8,17 @@ on:
       - "profiles/connectivity-task-outcome-benchmark-profile-v1.json"
       - "examples/connectivity-task-outcome-run-synthetic-v1.json"
       - "docs/CONNECTIVITY_TASK_OUTCOME_BENCHMARK_V1.md"
+      - "tools/connectivity-outage-discrete-sim/**"
+      - "schemas/connectivity-outage-scenario-v1.schema.json"
+      - "examples/connectivity-outage-scenario-synthetic-v1.json"
+      - "docs/CONNECTIVITY_OUTAGE_DISCRETE_SIM_V1.md"
+      - ".github/workflows/connectivity-outage-discrete-sim.yml"
       - ".github/workflows/connectivity-task-outcome-contracts.yml"
+      - "tools/connectivity-outage-discrete-sim/**"
+      - "schemas/connectivity-outage-scenario-v1.schema.json"
+      - "examples/connectivity-outage-scenario-synthetic-v1.json"
+      - "docs/CONNECTIVITY_OUTAGE_DISCRETE_SIM_V1.md"
+      - ".github/workflows/connectivity-outage-discrete-sim.yml"
   push:
     branches: [main]
     paths:
@@ -56,3 +66,26 @@ jobs:
             schemas/connectivity-task-outcome-profile-v1.schema.json \
             "$profile" \
             "$RUNNER_TEMP/task-outcome-run.json"
+
+      - name: Check outage simulator formatting
+        run: cargo fmt --manifest-path tools/connectivity-outage-discrete-sim/Cargo.toml -- --check
+      - name: Test deterministic outage simulator
+        run: cargo test --manifest-path tools/connectivity-outage-discrete-sim/Cargo.toml --all-targets
+      - name: Lint outage simulator with warnings denied
+        run: cargo clippy --manifest-path tools/connectivity-outage-discrete-sim/Cargo.toml --all-targets -- -D warnings
+      - name: Generate paired outage-simulation run
+        run: >-
+          cargo run
+          --manifest-path tools/connectivity-outage-discrete-sim/Cargo.toml
+          --bin connectivity-outage-discrete-sim
+          --
+          schemas/connectivity-outage-scenario-v1.schema.json
+          examples/connectivity-outage-scenario-synthetic-v1.json
+          schemas/connectivity-task-outcome-run-v1.schema.json
+          schemas/connectivity-task-outcome-profile-v1.schema.json
+          profiles/connectivity-task-outcome-benchmark-profile-v1.json
+          "$RUNNER_TEMP/connectivity-outage-run.json"
+      - name: Confirm simulated run cannot claim field qualification
+        run: |
+          grep -q '"evidence_class": "synthetic_simulation"' "$RUNNER_TEMP/connectivity-outage-run.json"
+          grep -q '"run_artifact_sha256"' "$RUNNER_TEMP/connectivity-outage-run.json"
