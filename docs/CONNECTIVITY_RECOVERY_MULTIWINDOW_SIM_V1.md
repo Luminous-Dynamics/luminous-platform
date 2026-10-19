@@ -43,6 +43,8 @@ Expected synthetic outcome for each mode:
 | Interactive task by its window-1 deadline | Missed | Completed |
 | Large bulk task | Completed by window 2 | Completed by window 2 |
 
+The report now includes explicit `baseline_by_priority` and `candidate_by_priority` summaries: eligible task count, completed/failed count, completion rate in parts-per-million, deadline misses and expiry misses. This prevents a single all-task fairness scalar from hiding an essential or interactive deadline failure. The expected class rates in this fixture are 0% essential/interactive and 100% bulk for FIFO, versus 100% for all three classes under fair share.
+
 That result is a consequence of this specific demand order and deadline configuration. It is not evidence of general improvement on a live network, and it is not a claim about radio airtime fairness.
 
 ## Contracts and reproducibility
