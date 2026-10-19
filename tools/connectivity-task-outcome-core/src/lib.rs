@@ -605,7 +605,6 @@ mod tests {
         let profile_bytes =
             include_bytes!("../../../profiles/connectivity-task-outcome-benchmark-profile-v1.json")
                 .to_vec();
-        let profile: Value = serde_json::from_slice(&profile_bytes).expect("profile parses");
         let run: Value = serde_json::from_str(include_str!(
             "../../../examples/connectivity-task-outcome-run-synthetic-v1.json"
         ))
