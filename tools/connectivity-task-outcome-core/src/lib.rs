@@ -258,9 +258,11 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
     let mut pairs: BTreeMap<String, Vec<&Value>> = BTreeMap::new();
     let mut priorities = BTreeSet::new();
     let mut modes = BTreeSet::new();
-    let mut stats: BTreeMap<&str, ArmStats> = BTreeMap::new();
-    stats.insert("baseline", ArmStats::default());
-    stats.insert("candidate", ArmStats::default());
+    let mut stats: BTreeMap<String, ArmStats> = BTreeMap::new();
+    stats.insert("baseline".to_owned(), ArmStats::default());
+    stats.insert("candidate".to_owned(), ArmStats::default());
+    let mut stratified_counts: BTreeMap<(String, String), BTreeMap<String, [u64; 3]>> =
+        BTreeMap::new();
 
     for (index, trial) in trials.iter().enumerate() {
         let trial_id = required_string(trial, "/trial_id").unwrap_or("");
@@ -282,7 +284,18 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             continue;
         };
         let outcome = required_string(trial, "/outcome").unwrap_or("");
+        let priority = required_string(trial, "/priority").unwrap_or("unknown").to_owned();
+        let mode = required_string(trial, "/mode").unwrap_or("unknown").to_owned();
+        let counts = stratified_counts
+            .entry((priority, mode))
+            .or_default()
+            .entry(arm.to_owned())
+            .or_insert([0_u64; 3]);
         match outcome {
+            "succeeded" => counts[0] += 1,
+            "failed" => counts[1] += 1,
+            "inconclusive" => counts[2] += 1,
+            _ => {}
             "succeeded" => {
                 arm_stats.succeeded += 1;
                 match trial.get("elapsed_ms").and_then(Value::as_u64) {
@@ -405,6 +418,21 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
     }
 
     for (arm, arm_stats) in &stats {
+        if checked_u64_sum(arm_stats.bytes_all_trials.iter().copied()).is_none() {
+            errors.push(format!("arm {arm} total transferred bytes overflow u64"));
+        }
+        if !arm_stats.successful_energy_mj.is_empty()
+            && arm_stats.successful_energy_mj.iter().all(Option::is_some)
+            && checked_u64_sum(arm_stats.successful_energy_mj.iter().flatten().copied()).is_none()
+        {
+            errors.push(format!("arm {arm} total successful-task energy overflow u64"));
+        }
+        if !arm_stats.successful_charge_minor.is_empty()
+            && arm_stats.successful_charge_minor.iter().all(Option::is_some)
+            && checked_u64_sum(arm_stats.successful_charge_minor.iter().flatten().copied()).is_none()
+        {
+            errors.push(format!("arm {arm} total successful-task charge overflow u64"));
+        }
         if arm_stats.attempted() == 0 {
             errors.push(format!("arm {arm} has no trials"));
         }
@@ -429,7 +457,36 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
     let currency = required_string(run, "/currency").unwrap_or("XXX");
     let reports: BTreeMap<String, Value> = stats
         .iter()
-        .map(|(arm, arm_stats)| ((*arm).to_owned(), arm_stats.report(currency)))
+        .map(|(arm, arm_stats)| (arm.clone(), arm_stats.report(currency)))
+        .collect();
+    let by_priority_and_mode: Vec<Value> = stratified_counts
+        .iter()
+        .map(|((priority, mode), arms)| {
+            let arm_report = |arm: &str| {
+                let counts = arms.get(arm).copied().unwrap_or([0, 0, 0]);
+                let attempted = counts[0] + counts[1] + counts[2];
+                let success_rate_ppm = if attempted > 0 {
+                    Some(((u128::from(counts[0]) * 1_000_000) / u128::from(attempted)) as u64)
+                } else {
+                    None
+                };
+                json!({
+                    "attempted": attempted,
+                    "succeeded": counts[0],
+                    "failed": counts[1],
+                    "inconclusive": counts[2],
+                    "success_rate_numerator": counts[0],
+                    "success_rate_denominator": attempted,
+                    "success_rate_ppm": success_rate_ppm
+                })
+            };
+            json!({
+                "priority": priority,
+                "mode": mode,
+                "baseline": arm_report("baseline"),
+                "candidate": arm_report("candidate")
+            })
+        })
         .collect();
     let baseline_success = stats.get("baseline").map(|arm| arm.succeeded).unwrap_or(0);
     let candidate_success = stats.get("candidate").map(|arm| arm.succeeded).unwrap_or(0);
@@ -457,6 +514,7 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
         "modes_observed": modes,
         "baseline": reports.get("baseline"),
         "candidate": reports.get("candidate"),
+        "by_priority_and_mode": by_priority_and_mode,
         "candidate_minus_baseline_success_rate_ppm": successful_delta_ppm,
         "interpretation_boundary": {
             "task_outcomes_are_reporter_assertions": true,
