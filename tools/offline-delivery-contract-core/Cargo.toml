@@ -1,0 +1,16 @@
+[package]
+name = "offline-delivery-contract-core"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "AGPL-3.0-or-later"
+description = "Metadata-only Rust reference model for bounded offline delivery"
+
+[lib]
+path = "src/lib.rs"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"

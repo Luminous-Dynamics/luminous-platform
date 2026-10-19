@@ -1,0 +1,69 @@
+name: local-first-outage-contracts
+
+on:
+  pull_request:
+    paths:
+      - "docs/LOCAL_FIRST_OUTAGE_RESILIENCE_V1.md"
+      - "docs/DTN_IMPLEMENTATION_CANDIDATE_REVIEW_V1.md"
+      - "profiles/local-first-outage-resilience-benchmark-profile-v1.json"
+      - "schemas/local-first-outage-resilience-benchmark-profile-v1.schema.json"
+      - "schemas/local-first-measurement-receipt-v1.schema.json"
+      - "tools/offline-delivery-contract-core/**"
+      - "tools/local-first-resilience-profile-validator/**"
+      - ".github/workflows/local-first-outage-contracts.yml"
+  push:
+    branches: [main, research/local-first-outage-resilience-v1]
+    paths:
+      - "docs/LOCAL_FIRST_OUTAGE_RESILIENCE_V1.md"
+      - "docs/DTN_IMPLEMENTATION_CANDIDATE_REVIEW_V1.md"
+      - "profiles/local-first-outage-resilience-benchmark-profile-v1.json"
+      - "schemas/local-first-outage-resilience-benchmark-profile-v1.schema.json"
+      - "schemas/local-first-measurement-receipt-v1.schema.json"
+      - "tools/offline-delivery-contract-core/**"
+      - "tools/local-first-resilience-profile-validator/**"
+      - ".github/workflows/local-first-outage-contracts.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: local-first-outage-contracts-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-contracts:
+    name: Bounded offline delivery model and profile contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Rust toolchain and Clippy
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # pinned to immutable revision
+        with:
+          toolchain: "1.99.0"
+          components: clippy
+
+      - name: Test metadata-only offline delivery model
+        run: cargo test --manifest-path tools/offline-delivery-contract-core/Cargo.toml --all-targets
+
+      - name: Lint metadata-only offline delivery model
+        run: cargo clippy --manifest-path tools/offline-delivery-contract-core/Cargo.toml --all-targets -- -D warnings
+
+      - name: Test resilience profile validator
+        run: cargo test --manifest-path tools/local-first-resilience-profile-validator/Cargo.toml --all-targets
+
+      - name: Lint resilience profile validator
+        run: cargo clippy --manifest-path tools/local-first-resilience-profile-validator/Cargo.toml --all-targets -- -D warnings
+
+      - name: Validate checked-in resilience benchmark profile
+        run: >-
+          cargo run
+          --manifest-path tools/local-first-resilience-profile-validator/Cargo.toml
+          --bin local-first-resilience-profile-validator
+          --
+          schemas/local-first-outage-resilience-benchmark-profile-v1.schema.json
+          profiles/local-first-outage-resilience-benchmark-profile-v1.json

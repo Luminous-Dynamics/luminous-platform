@@ -1,0 +1,722 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/local-first-outage-resilience-benchmark-profile-v1.schema.json",
+  "title": "Local-First Outage Resilience Benchmark Profile v1",
+  "description": "Strict draft contract for bounded store-and-forward and local continuity benchmark targets. Passing validation does not prove message security, delivery, or deployment authorization.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_at",
+    "authority",
+    "deployment_gates",
+    "comparison_contract",
+    "benchmarks",
+    "explicit_non_claims",
+    "next_required_artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.local-first-outage-resilience-benchmark-profile.v1"
+    },
+    "profile_id": {
+      "const": "local-first-outage-resilience-v1"
+    },
+    "status": {
+      "const": "draft_targets_not_results"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issue",
+        "design_document",
+        "measurement_receipt_contract"
+      ],
+      "properties": {
+        "issue": {
+          "const": "https://github.com/Luminous-Dynamics/luminous-platform/issues/67"
+        },
+        "design_document": {
+          "const": "docs/LOCAL_FIRST_OUTAGE_RESILIENCE_V1.md"
+        },
+        "measurement_receipt_contract": {
+          "const": "schemas/local-first-measurement-receipt-v1.schema.json"
+        }
+      }
+    },
+    "deployment_gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bpv7_implementation_status",
+        "bpsec_security_context_status",
+        "end_to_end_crypto_adapter_status",
+        "durable_queue_adapter_status",
+        "upstream_relay_permission_status",
+        "regulatory_review_status",
+        "local_continuity_measured",
+        "deployment_blocked_until_gates_verified",
+        "local_service_must_not_require_wan",
+        "payload_inspection_for_routing",
+        "sensitive_admission_must_require_trusted_protection_verification"
+      ],
+      "properties": {
+        "bpv7_implementation_status": {
+          "const": "not_selected"
+        },
+        "bpsec_security_context_status": {
+          "const": "not_selected"
+        },
+        "end_to_end_crypto_adapter_status": {
+          "const": "not_implemented"
+        },
+        "durable_queue_adapter_status": {
+          "const": "not_implemented"
+        },
+        "upstream_relay_permission_status": {
+          "const": "not_verified"
+        },
+        "regulatory_review_status": {
+          "const": "not_verified"
+        },
+        "local_continuity_measured": {
+          "const": false
+        },
+        "deployment_blocked_until_gates_verified": {
+          "const": true
+        },
+        "local_service_must_not_require_wan": {
+          "const": true
+        },
+        "payload_inspection_for_routing": {
+          "const": false
+        },
+        "sensitive_admission_must_require_trusted_protection_verification": {
+          "const": true
+        }
+      }
+    },
+    "comparison_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_code_and_config_revisions_must_be_immutable",
+        "raw_trial_denominators_must_be_published",
+        "failed_and_expired_messages_must_remain_in_denominator",
+        "simulation_must_not_be_reported_as_field_evidence",
+        "no_exactly_once_transport_claim",
+        "cryptography_must_not_be_implemented_by_metadata_model",
+        "costs_must_include_hardware_energy_maintenance_and_labor"
+      ],
+      "properties": {
+        "source_code_and_config_revisions_must_be_immutable": {
+          "const": true
+        },
+        "raw_trial_denominators_must_be_published": {
+          "const": true
+        },
+        "failed_and_expired_messages_must_remain_in_denominator": {
+          "const": true
+        },
+        "simulation_must_not_be_reported_as_field_evidence": {
+          "const": true
+        },
+        "no_exactly_once_transport_claim": {
+          "const": true
+        },
+        "cryptography_must_not_be_implemented_by_metadata_model": {
+          "const": true
+        },
+        "costs_must_include_hardware_energy_maintenance_and_labor": {
+          "const": true
+        }
+      }
+    },
+    "benchmarks": {
+      "type": "array",
+      "minItems": 14,
+      "maxItems": 14,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "domain",
+          "metric",
+          "operator",
+          "target",
+          "target_status",
+          "evidence_classes"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{2,90}$"
+          },
+          "domain": {
+            "type": "string",
+            "minLength": 1
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operator": {
+            "enum": [
+              "==",
+              ">=",
+              "within_threshold_success_ratio",
+              "baseline_then_set_target",
+              "baseline_then_minimize"
+            ]
+          },
+          "target": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "object",
+                "minProperties": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_status": {
+            "enum": [
+              "proposed_target",
+              "baseline_first"
+            ]
+          },
+          "evidence_classes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "static_checked",
+                "unit_contract_tested",
+                "bench_measured",
+                "field_observed",
+                "independently_reviewed_qualified"
+              ]
+            }
+          },
+          "negative_cases": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "dimensions": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "LOCAL_CONTINUITY_001"
+              },
+              "operator": {
+                "const": ">="
+              },
+              "target": {
+                "const": 24
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "QUEUE_BOUNDS_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "EXPIRY_FORWARDING_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SENSITIVE_PROTECTION_GATE_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DUPLICATE_APPLICATION_EFFECT_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "STORE_FORWARD_DELIVERY_001"
+              },
+              "operator": {
+                "const": "within_threshold_success_ratio"
+              },
+              "target": {
+                "const": {
+                  "success_fraction": 0.99,
+                  "minimum_messages_per_scenario": 100
+                }
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "CRASH_RECOVERY_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "QUOTA_FAIRNESS_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "FAIRNESS_STARVATION_001"
+              },
+              "operator": {
+                "const": "baseline_then_set_target"
+              },
+              "target": {
+                "const": null
+              },
+              "target_status": {
+                "const": "baseline_first"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "ENERGY_PER_USEFUL_TASK_001"
+              },
+              "operator": {
+                "const": "baseline_then_minimize"
+              },
+              "target": {
+                "const": null
+              },
+              "target_status": {
+                "const": "baseline_first"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "PUBLIC_TELEMETRY_PRIVACY_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "UNAUTHORIZED_RELAY_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "CACHE_INTEGRITY_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 0
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "EVIDENCE_TRACEABILITY_001"
+              },
+              "operator": {
+                "const": "=="
+              },
+              "target": {
+                "const": 1
+              },
+              "target_status": {
+                "const": "proposed_target"
+              }
+            },
+            "required": [
+              "id",
+              "operator",
+              "target",
+              "target_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "explicit_non_claims": {
+      "type": "array",
+      "minItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "allOf": [
+        {
+          "contains": {
+            "const": "No claim of guaranteed delivery or exactly-once network transport"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim that metadata validates payload encryption or authenticity"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of BPv7/BPSec interoperability before a named implementation is tested"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim that a mesh provides global Internet without authorized upstream backhaul"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of safe public relay, lawful resale or spectrum authorization"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of emergency-grade telephony or emergency service"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of field performance from schemas, unit tests, simulation or queued CI"
+          }
+        },
+        {
+          "contains": {
+            "const": "No claim of verified cache contents without source integrity evidence"
+          }
+        }
+      ]
+    },
+    "next_required_artifacts": {
+      "type": "array",
+      "minItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "allOf": [
+        {
+          "contains": {
+            "const": "Strict profile JSON Schema and offline Rust validator"
+          }
+        },
+        {
+          "contains": {
+            "const": "Metadata-only Rust queue/expiry/quota reference model with negative tests"
+          }
+        },
+        {
+          "contains": {
+            "const": "Saved synthetic receipts for positive and mutated negative tests"
+          }
+        },
+        {
+          "contains": {
+            "const": "Local-only two-node VM/namespace test topology and DNS/cloud dependency negative controls"
+          }
+        },
+        {
+          "contains": {
+            "const": "BPv7/BPSec candidate inventory with license, maintenance, interoperability and threat-model review"
+          }
+        },
+        {
+          "contains": {
+            "const": "Named persistence adapter with crash-consistency tests before any durability claim"
+          }
+        },
+        {
+          "contains": {
+            "const": "Consent, abuse handling, privacy retention, owner opt-in and site authorization plan"
+          }
+        },
+        {
+          "contains": {
+            "const": "Independent review of test receipts and a staged authorized field pilot"
+          }
+        }
+      ]
+    }
+  }
+}
