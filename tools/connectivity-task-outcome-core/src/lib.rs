@@ -163,6 +163,7 @@ impl ArmStats {
             "successful_latency_sample_count": latencies.len(),
             "latency_p50_ms": percentile_nearest_rank(&latencies, 1, 2),
             "latency_p95_ms": percentile_nearest_rank(&latencies, 95, 100),
+            "latency_p99_ms": percentile_nearest_rank(&latencies, 99, 100),
             "bytes_all_trials": bytes_all,
             "bytes_per_successful_task": if self.succeeded > 0 && self.successful_bytes.len() as u64 == self.succeeded {
                 successful_bytes.map(|sum| sum / self.succeeded)
@@ -263,6 +264,7 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
     stats.insert("candidate".to_owned(), ArmStats::default());
     let mut stratified_counts: BTreeMap<(String, String), BTreeMap<String, [u64; 3]>> =
         BTreeMap::new();
+    let mut stratified_latencies: BTreeMap<(String, String, String), Vec<u64>> = BTreeMap::new();
 
     for (index, trial) in trials.iter().enumerate() {
         let trial_id = required_string(trial, "/trial_id").unwrap_or("");
@@ -287,7 +289,7 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
         let priority = required_string(trial, "/priority").unwrap_or("unknown").to_owned();
         let mode = required_string(trial, "/mode").unwrap_or("unknown").to_owned();
         let counts = stratified_counts
-            .entry((priority, mode))
+            .entry((priority.clone(), mode.clone()))
             .or_default()
             .entry(arm.to_owned())
             .or_insert([0_u64; 3]);
@@ -301,7 +303,13 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             "succeeded" => {
                 arm_stats.succeeded += 1;
                 match trial.get("elapsed_ms").and_then(Value::as_u64) {
-                    Some(elapsed) => arm_stats.successful_elapsed_ms.push(elapsed),
+                    Some(elapsed) => {
+                        arm_stats.successful_elapsed_ms.push(elapsed);
+                        stratified_latencies
+                            .entry((priority.clone(), mode.clone(), arm.to_owned()))
+                            .or_default()
+                            .push(elapsed);
+                    },
                     None => errors.push(format!(
                         "trials/{index}: succeeded task requires elapsed_ms"
                     )),
@@ -472,6 +480,9 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
                 } else {
                     None
                 };
+                let key = (priority.clone(), mode.clone(), arm.to_owned());
+                let mut latencies = stratified_latencies.get(&key).cloned().unwrap_or_default();
+                latencies.sort_unstable();
                 json!({
                     "attempted": attempted,
                     "succeeded": counts[0],
@@ -479,7 +490,11 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
                     "inconclusive": counts[2],
                     "success_rate_numerator": counts[0],
                     "success_rate_denominator": attempted,
-                    "success_rate_ppm": success_rate_ppm
+                    "success_rate_ppm": success_rate_ppm,
+                    "successful_latency_sample_count": latencies.len(),
+                    "latency_p50_ms": percentile_nearest_rank(&latencies, 1, 2),
+                    "latency_p95_ms": percentile_nearest_rank(&latencies, 95, 100),
+                    "latency_p99_ms": percentile_nearest_rank(&latencies, 99, 100)
                 })
             };
             json!({
@@ -620,6 +635,9 @@ mod tests {
         let interactive = strata.iter().find(|item| item["priority"] == "interactive").unwrap();
         assert_eq!(interactive["baseline"]["success_rate_ppm"], 0);
         assert_eq!(interactive["candidate"]["success_rate_ppm"], 1_000_000);
+        assert_eq!(interactive["candidate"]["latency_p50_ms"], 250);
+        assert_eq!(interactive["candidate"]["latency_p99_ms"], 250);
+        assert_eq!(interactive["baseline"]["latency_p50_ms"], Value::Null);
     }
 
     #[test]
