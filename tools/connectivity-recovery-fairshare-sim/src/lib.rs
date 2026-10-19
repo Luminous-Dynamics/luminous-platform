@@ -366,7 +366,9 @@ fn fair_share_grants(
 
 fn make_trial(task: &Value, arm: &str, result: TaskResult) -> Value {
     let task_id = str_field(task, "task_id").unwrap_or("invalid-task");
-    let elapsed = u64_field(task, "deadline_ms").unwrap_or(1);
+    let elapsed = u64_field(task, "deadline_ms")
+        .unwrap_or(1)
+        .min(u64_field(task, "expires_after_ms").unwrap_or(1));
     json!({
         "trial_id": format!("{task_id}-{arm}"),
         "pair_id": task.get("pair_id"),
@@ -643,7 +645,20 @@ mod tests {
                 window["candidate_fair_share"]["jain_peer_task_success_fairness_ppm"],
                 666666
             );
-            assert!(window["candidate_fair_share"]["actual_transferred_bytes"].as_u64().unwrap() <= 9000);
+            assert!(
+                window["candidate_fair_share"]["actual_transferred_bytes"]
+                    .as_u64()
+                    .unwrap()
+                    <= 9000
+            );
+            assert_eq!(
+                window["candidate_fair_share"]["allocator_granted_bytes"].as_u64().unwrap()
+                    + window["candidate_fair_share"]["allocator_unallocated_bytes"].as_u64().unwrap(),
+                9000
+            );
+            assert!(
+                window["baseline"]["actual_transferred_bytes"].as_u64().unwrap() <= 9000
+            );
         }
     }
 
