@@ -205,18 +205,39 @@ fn prepare_namespaces(
     )?;
     checked(
         "ip",
-        &["-n", &guard.client_ns, "link", "set", "dev", client_if, "up"],
+        &[
+            "-n",
+            &guard.client_ns,
+            "link",
+            "set",
+            "dev",
+            client_if,
+            "up",
+        ],
     )?;
     checked(
         "ip",
-        &["-n", &guard.server_ns, "link", "set", "dev", server_if, "up"],
+        &[
+            "-n",
+            &guard.server_ns,
+            "link",
+            "set",
+            "dev",
+            server_if,
+            "up",
+        ],
     )?;
 
     for namespace in [&guard.client_ns, &guard.server_ns] {
         let output = checked("ip", &["-n", namespace, "route", "show"])?;
         let routes = String::from_utf8_lossy(&output.stdout);
-        if routes.lines().any(|line| line.split_whitespace().next() == Some("default")) {
-            return Err("lab namespace unexpectedly has a default route; refusing to probe".to_owned());
+        if routes
+            .lines()
+            .any(|line| line.split_whitespace().next() == Some("default"))
+        {
+            return Err(
+                "lab namespace unexpectedly has a default route; refusing to probe".to_owned(),
+            );
         }
     }
     Ok(())
@@ -233,7 +254,9 @@ fn start_and_check_listener(
         .try_wait()
         .map_err(|error| format!("cannot inspect TCP listener state: {error}"))?
     {
-        return Err(format!("TCP listener on fixed port {port} exited early with {status}"));
+        return Err(format!(
+            "TCP listener on fixed port {port} exited early with {status}"
+        ));
     }
     guard.listeners.push(listener);
     Ok(())
@@ -259,7 +282,9 @@ fn probe_case(
         .as_u64()
         .ok_or_else(|| format!("{case_id}: destination_port is not an unsigned integer"))?;
     if !matches!(port, 8080 | 8081) {
-        return Err(format!("{case_id}: port is not in the fixed allow-listed port set"));
+        return Err(format!(
+            "{case_id}: port is not in the fixed allow-listed port set"
+        ));
     }
     let port_string = port.to_string();
     let probe_start = Instant::now();
@@ -317,10 +342,13 @@ fn probe_case(
         "duration_ms": duration_ms,
         "evidence_sha256": evidence_sha256
     });
-    Ok((observation, json!({
-        "record": record,
-        "evidence_sha256": evidence_sha256
-    })))
+    Ok((
+        observation,
+        json!({
+            "record": record,
+            "evidence_sha256": evidence_sha256
+        }),
+    ))
 }
 
 fn run_lab() -> Result<(Value, ExitCode), String> {
@@ -355,6 +383,16 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
     start_and_check_listener(&mut guard, &server_ns_for_listeners, "8081")?;
 
     let ruleset = namespace_output(&guard.server_ns, &["nft", "list", "ruleset"])?;
+    let effective_ruleset = String::from_utf8_lossy(&ruleset.stdout);
+    if !effective_ruleset.contains("table inet luminous_edge_lab")
+        || !effective_ruleset.contains("policy drop")
+        || !effective_ruleset.contains("tcp dport 8080 accept")
+        || effective_ruleset.contains("tcp dport 8081 accept")
+    {
+        return Err(
+            "effective namespace ruleset does not match the fixed allow/deny contract".to_owned(),
+        );
+    }
     let client_routes = checked("ip", &["-n", &guard.client_ns, "route", "show"])?;
     let server_routes = checked("ip", &["-n", &guard.server_ns, "route", "show"])?;
     let client_addresses = checked("ip", &["-n", &guard.client_ns, "-j", "address", "show"])?;
@@ -392,8 +430,7 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
         probe_records.push(probe_record);
     }
 
-    let mut receipt = build_synthetic_receipt(CORPUS_SOURCE)
-        .map_err(|errors| errors.join("\n"))?;
+    let mut receipt = build_synthetic_receipt(CORPUS_SOURCE).map_err(|errors| errors.join("\n"))?;
     receipt["run_id"] = Value::String(format!("namespace-{pid}"));
     receipt["evidence_class"] = Value::String("namespace_lab_observation".to_owned());
     receipt["approved_policy_sha256"] = Value::String(approved_policy_sha256);
@@ -419,15 +456,18 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
     };
 
     // Namespace cleanup runs via LabGuard on return, including all error paths.
-    Ok((json!({
-        "lab_scope": "ephemeral_linux_network_namespaces_only",
-        "host_firewall_mutated": false,
-        "external_route_configured": false,
-        "payloads_sent": false,
-        "receipt": receipt,
-        "probe_records": probe_records,
-        "report": report
-    }), exit_code))
+    Ok((
+        json!({
+            "lab_scope": "ephemeral_linux_network_namespaces_only",
+            "host_firewall_mutated": false,
+            "external_route_configured": false,
+            "payloads_sent": false,
+            "receipt": receipt,
+            "probe_records": probe_records,
+            "report": report
+        }),
+        exit_code,
+    ))
 }
 
 fn main() -> ExitCode {
@@ -435,7 +475,10 @@ fn main() -> ExitCode {
     if arguments.len() != 2 || arguments[1] != "--confirm-ephemeral-netns-only" {
         eprintln!(
             "refusing to run without explicit opt-in; usage: {} --confirm-ephemeral-netns-only",
-            arguments.first().map(String::as_str).unwrap_or("edge-policy-netns-lab")
+            arguments
+                .first()
+                .map(String::as_str)
+                .unwrap_or("edge-policy-netns-lab")
         );
         return ExitCode::FAILURE;
     }
@@ -459,7 +502,7 @@ fn main() -> ExitCode {
 
 #[cfg(test)]
 mod tests {
-    use super::{NFT_POLICY_SCRIPT, CORPUS_SOURCE, CORPUS_SCHEMA, RECEIPT_SCHEMA};
+    use super::{CORPUS_SCHEMA, CORPUS_SOURCE, NFT_POLICY_SCRIPT, RECEIPT_SCHEMA};
     use serde_json::Value;
 
     #[test]
@@ -481,8 +524,7 @@ mod tests {
 
     #[test]
     fn embedded_schemas_are_valid_json_and_receipt_is_bound_to_namespace_evidence() {
-        let corpus_schema: Value =
-            serde_json::from_str(CORPUS_SCHEMA).expect("corpus schema JSON");
+        let corpus_schema: Value = serde_json::from_str(CORPUS_SCHEMA).expect("corpus schema JSON");
         let receipt_schema: Value =
             serde_json::from_str(RECEIPT_SCHEMA).expect("receipt schema JSON");
         assert_eq!(
