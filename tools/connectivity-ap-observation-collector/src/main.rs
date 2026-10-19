@@ -4,8 +4,9 @@ use std::io;
 use std::process::{Command, ExitCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use connectivity_ap_observation_collector::{build_snapshot, CapturedOutputs};
-use connectivity_ap_testbed_contracts::validate_manifest;
+use connectivity_ap_observation_collector::{
+    build_snapshot, validate_observation_manifest, CapturedOutputs,
+};
 use serde_json::{Value, json};
 
 const MAX_INPUT_BYTES: u64 = 1_048_576;
@@ -78,17 +79,8 @@ fn run() -> Result<(), String> {
     let manifest_text = std::str::from_utf8(&manifest_bytes)
         .map_err(|error| format!("{}: manifest is not UTF-8: {error}", args[2]))?;
 
-    let manifest: Value = validate_manifest(schema_text, manifest_text)
+    let _: Value = validate_observation_manifest(schema_text, &manifest_bytes)
         .map_err(|errors| format!("manifest rejected:\n{}", errors.join("\n")))?;
-    if manifest["evidence_stage"] == "planned" {
-        return Err("refusing to observe with a planned manifest; supply a validated bench/lab/field testbed manifest".to_owned());
-    }
-    if manifest.pointer("/run_controls/dedicated_test_network").and_then(Value::as_bool) != Some(true)
-        || manifest.pointer("/run_controls/public_users_present").and_then(Value::as_bool) != Some(false)
-        || manifest.pointer("/run_controls/network_authorization").and_then(Value::as_str) != Some("owner_authorized_lab")
-    {
-        return Err("refusing collection without an owner-authorized isolated test network and no public users".to_owned());
-    }
 
     let interface = args[3].as_str();
     // Validate the interface before passing it to fixed-argument, read-only
