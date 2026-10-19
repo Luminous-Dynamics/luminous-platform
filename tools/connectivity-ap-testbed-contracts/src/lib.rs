@@ -38,7 +38,9 @@ fn reject_remote_references(value: &Value, path: &str, errors: &mut Vec<String>)
 
 fn parse_document(source: &str, label: &str) -> Result<Value, Vec<String>> {
     if source.len() > MAX_JSON_BYTES {
-        return Err(vec![format!("{label}: input exceeds {MAX_JSON_BYTES} bytes")]);
+        return Err(vec![format!(
+            "{label}: input exceeds {MAX_JSON_BYTES} bytes"
+        )]);
     }
     serde_json::from_str(source).map_err(|error| vec![format!("{label}: invalid JSON: {error}")])
 }
@@ -134,10 +136,19 @@ fn stage_policy(manifest: &Value, errors: &mut Vec<String>) {
     }
 
     let power = manifest.pointer("/instrumentation/power_meter");
-    if power.and_then(|item| item.get("available")).and_then(Value::as_bool) != Some(true) {
+    if power
+        .and_then(|item| item.get("available"))
+        .and_then(Value::as_bool)
+        != Some(true)
+    {
         errors.push("measured evidence requires an available power meter".to_owned());
     }
-    for key in ["meter_model", "calibration_date", "sampling_hz", "resolution_mw"] {
+    for key in [
+        "meter_model",
+        "calibration_date",
+        "sampling_hz",
+        "resolution_mw",
+    ] {
         if power
             .and_then(|item| item.get(key))
             .is_none_or(Value::is_null)
@@ -156,10 +167,14 @@ fn stage_policy(manifest: &Value, errors: &mut Vec<String>) {
         errors.push("measured runs require explicit owner_authorized_lab permission".to_owned());
     }
     if !matches!(
-        manifest.pointer("/run_controls/pair_order").and_then(Value::as_str),
+        manifest
+            .pointer("/run_controls/pair_order")
+            .and_then(Value::as_str),
         Some("randomized" | "blocked_randomized")
     ) {
-        errors.push("measured comparisons require randomized or blocked_randomized pair order".to_owned());
+        errors.push(
+            "measured comparisons require randomized or blocked_randomized pair order".to_owned(),
+        );
     }
 
     if matches!(stage, "field_pilot" | "reliability_qualification") {
@@ -168,12 +183,17 @@ fn stage_policy(manifest: &Value, errors: &mut Vec<String>) {
             .and_then(Value::as_str)
             == Some("uncontrolled_declared")
         {
-            errors.push("field evidence requires a documented interference-control protocol".to_owned());
+            errors.push(
+                "field evidence requires a documented interference-control protocol".to_owned(),
+            );
         }
         if !non_null_at(manifest, "/run_controls/field_site_token")
             || !non_null_at(manifest, "/run_controls/consent_record_sha256")
         {
-            errors.push("field evidence requires a pseudonymous site token and consent-record digest".to_owned());
+            errors.push(
+                "field evidence requires a pseudonymous site token and consent-record digest"
+                    .to_owned(),
+            );
         }
     }
 }
@@ -193,9 +213,7 @@ pub fn validate_manifest(schema_source: &str, manifest_source: &str) -> Result<V
     let meta = jsonschema::meta::validator_for(&schema)
         .map_err(|error| vec![format!("cannot build schema meta-validator: {error}")])?;
     if !meta.evaluate(&schema).flag().valid {
-        return Err(vec![
-            "schema failed JSON Schema meta-validation".to_owned(),
-        ]);
+        return Err(vec!["schema failed JSON Schema meta-validation".to_owned()]);
     }
 
     let validator = draft202012::options()
@@ -221,7 +239,7 @@ pub fn validate_manifest(schema_source: &str, manifest_source: &str) -> Result<V
 
 #[cfg(test)]
 mod tests {
-    use super::{validate_manifest, MAX_JSON_BYTES};
+    use super::{MAX_JSON_BYTES, validate_manifest};
     use serde_json::Value;
 
     const SCHEMA: &str =
@@ -231,7 +249,8 @@ mod tests {
 
     #[test]
     fn planned_configuration_is_valid_without_claiming_measurements() {
-        let manifest = validate_manifest(SCHEMA, PLANNED).expect("planned manifest should validate");
+        let manifest =
+            validate_manifest(SCHEMA, PLANNED).expect("planned manifest should validate");
         assert_eq!(manifest["evidence_stage"], "planned");
         assert_eq!(manifest["privacy_contract"]["payloads_exported"], false);
     }
@@ -250,8 +269,16 @@ mod tests {
         manifest["evidence_stage"] = Value::String("lab_screening".to_owned());
         let error = validate_manifest(SCHEMA, &manifest.to_string())
             .expect_err("measured evidence must have recorded instrumentation and hashes");
-        assert!(error.iter().any(|message| message.contains("firmware_sha256")));
-        assert!(error.iter().any(|message| message.contains("three declared Wi-Fi clients")));
+        assert!(
+            error
+                .iter()
+                .any(|message| message.contains("firmware_sha256"))
+        );
+        assert!(
+            error
+                .iter()
+                .any(|message| message.contains("three declared Wi-Fi clients"))
+        );
         assert!(error.iter().any(|message| message.contains("power meter")));
         assert!(error.iter().any(|message| message.contains("randomized")));
     }
@@ -262,7 +289,11 @@ mod tests {
         manifest["evidence_stage"] = Value::String("bench_smoke".to_owned());
         manifest["instrumentation"]["airtime_stats"] = Value::String("not_attempted".to_owned());
         let error = validate_manifest(SCHEMA, &manifest.to_string()).expect_err("stage gate");
-        assert!(error.iter().any(|message| message.contains("airtime_stats")));
+        assert!(
+            error
+                .iter()
+                .any(|message| message.contains("airtime_stats"))
+        );
     }
 
     #[test]
@@ -272,7 +303,11 @@ mod tests {
             serde_json::json!({ "$ref": "https://example.invalid/remote-schema.json" });
         let error =
             validate_manifest(&schema.to_string(), PLANNED).expect_err("remote ref must fail");
-        assert!(error.iter().any(|message| message.contains("only local JSON Schema references")));
+        assert!(
+            error
+                .iter()
+                .any(|message| message.contains("only local JSON Schema references"))
+        );
     }
 
     #[test]
@@ -285,7 +320,12 @@ mod tests {
     fn field_stage_requires_site_and_consent_evidence() {
         let mut manifest: Value = serde_json::from_str(PLANNED).expect("fixture JSON");
         manifest["evidence_stage"] = Value::String("field_pilot".to_owned());
-        let error = validate_manifest(SCHEMA, &manifest.to_string()).expect_err("field evidence gate");
-        assert!(error.iter().any(|message| message.contains("site token and consent-record digest")));
+        let error =
+            validate_manifest(SCHEMA, &manifest.to_string()).expect_err("field evidence gate");
+        assert!(
+            error
+                .iter()
+                .any(|message| message.contains("site token and consent-record digest"))
+        );
     }
 }
