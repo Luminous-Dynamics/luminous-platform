@@ -35,7 +35,10 @@ fn run() -> Result<(), String> {
     if arguments.len() != 8 {
         return Err(format!(
             "usage: {} <scenario-schema.json> <scenario.json> <run-schema.json> <profile-schema.json> <profile.json> <output-run.json> <output-report.json>",
-            arguments.first().map(String::as_str).unwrap_or("connectivity-recovery-multiwindow-sim")
+            arguments
+                .first()
+                .map(String::as_str)
+                .unwrap_or("connectivity-recovery-multiwindow-sim")
         ));
     }
 
