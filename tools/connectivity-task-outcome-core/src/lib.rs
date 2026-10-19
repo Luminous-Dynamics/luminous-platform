@@ -435,10 +435,9 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             ));
             continue;
         }
-        let metadata_matches =
-            ["/scenario_id", "/priority", "/mode"]
-                .iter()
-                .all(|key| baseline[0].pointer(key) == candidate[0].pointer(key));
+        let metadata_matches = ["/scenario_id", "/priority", "/mode"]
+            .iter()
+            .all(|key| baseline[0].pointer(key) == candidate[0].pointer(key));
         for key in ["/scenario_id", "/priority", "/mode"] {
             if baseline[0].pointer(key) != candidate[0].pointer(key) {
                 errors.push(format!("pair {pair_id} mismatches {key} between arms"));
@@ -827,7 +826,8 @@ mod tests {
             "site_token": "site-pseudonym-01",
             "consent_record_sha256": "b".repeat(64)
         });
-        let result = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
+        let result =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
         assert!(result.is_err());
     }
 
