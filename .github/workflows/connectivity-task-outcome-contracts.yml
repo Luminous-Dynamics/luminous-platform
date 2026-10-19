@@ -134,4 +134,9 @@ jobs:
           grep -q '"scenario_sha256"' "$RUNNER_TEMP/connectivity-recovery-fairshare-run.json"
           ! grep -q '"peer_id"' "$RUNNER_TEMP/connectivity-recovery-fairshare-run.json"
       - name: Run deterministic recovery load sensitivity sweep
-        run: cargo run --manifest-path tools/connectivity-recovery-fairshare-sim/Cargo.toml --bin connectivity-recovery-sensitivity
+        run: |
+          cargo run --manifest-path tools/connectivity-recovery-fairshare-sim/Cargo.toml --bin connectivity-recovery-sensitivity | tee "$RUNNER_TEMP/recovery-load-sweep.csv"
+          grep -q '^49152,12288,250000,online,3,3,1000000,1000000,' "$RUNNER_TEMP/recovery-load-sweep.csv"
+          grep -q '^9830,12288,1250050,online,1,2,333333,666666,' "$RUNNER_TEMP/recovery-load-sweep.csv"
+          grep -q '^6144,12288,2000000,online,0,1,NA,333333,' "$RUNNER_TEMP/recovery-load-sweep.csv"
+          grep -q '^6144,12288,2000000,wan_partition,0,2,NA,666666,' "$RUNNER_TEMP/recovery-load-sweep.csv"
