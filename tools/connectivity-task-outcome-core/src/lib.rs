@@ -137,12 +137,23 @@ impl ArmStats {
             .then(|| checked_u64_sum(self.successful_charge_minor.iter().flatten().copied()))
             .flatten();
         let energy_per_success = if self.succeeded > 0 {
-            energy_sum.map(|sum| sum / self.succeeded)
+            energy_sum.map(|sum| sum.div_ceil(self.succeeded))
         } else {
             None
         };
         let charge_per_success = if self.succeeded > 0 {
-            charge_sum.map(|sum| sum / self.succeeded)
+            charge_sum.map(|sum| sum.div_ceil(self.succeeded))
+        } else {
+            None
+        };
+        let successful_bytes_complete = self.successful_bytes.len() as u64 == self.succeeded;
+        let successful_bytes_total = if successful_bytes_complete {
+            successful_bytes
+        } else {
+            None
+        };
+        let bytes_per_success = if self.succeeded > 0 && successful_bytes_complete {
+            successful_bytes.map(|sum| sum.div_ceil(self.succeeded))
         } else {
             None
         };
@@ -165,12 +176,14 @@ impl ArmStats {
             "latency_p95_ms": percentile_nearest_rank(&latencies, 95, 100),
             "latency_p99_ms": percentile_nearest_rank(&latencies, 99, 100),
             "bytes_all_trials": bytes_all,
-            "bytes_per_successful_task": if self.succeeded > 0 && self.successful_bytes.len() as u64 == self.succeeded {
-                successful_bytes.map(|sum| sum / self.succeeded)
-            } else {
-                None
-            },
+            "successful_task_count": self.succeeded,
+            "successful_bytes_total": successful_bytes_total,
+            "bytes_per_successful_task": bytes_per_success,
+            "successful_energy_total_millijoules": energy_sum,
+            "energy_observations_for_successful_tasks": self.successful_energy_mj.iter().filter(|value| value.is_some()).count(),
             "energy_per_successful_task_millijoules": energy_per_success,
+            "successful_user_charge_total_minor": charge_sum,
+            "charge_observations_for_successful_tasks": self.successful_charge_minor.iter().filter(|value| value.is_some()).count(),
             "user_charge_per_successful_task_minor": charge_per_success,
             "currency": currency,
             "zero_success_denominator": self.succeeded == 0
@@ -652,6 +665,30 @@ mod tests {
         assert_eq!(interactive["candidate"]["latency_p50_ms"], 250);
         assert_eq!(interactive["candidate"]["latency_p99_ms"], 250);
         assert_eq!(interactive["baseline"]["latency_p50_ms"], Value::Null);
+    }
+
+    #[test]
+    fn per_successful_task_integer_metrics_round_up_to_avoid_understatement() {
+        let (run_schema, profile_schema, profile_bytes, run) = fixtures();
+        let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
+        let run = ready_run(run, &profile_bytes);
+        let report = validate_and_report(
+            &run_schema,
+            &profile_schema,
+            &profile_bytes,
+            &profile,
+            &run,
+        )
+        .unwrap();
+        assert_eq!(
+            report["candidate"]["energy_per_successful_task_millijoules"],
+            1267
+        );
+        assert_eq!(
+            report["candidate"]["user_charge_per_successful_task_minor"],
+            1
+        );
+        assert_eq!(report["candidate"]["bytes_per_successful_task"], 6884);
     }
 
     #[test]
