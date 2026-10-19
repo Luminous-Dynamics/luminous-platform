@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/edge-policy-conformance-corpus-v1.schema.json",
+  "title": "Luminous Edge Policy Conformance Corpus v1",
+  "description": "Synthetic benchmark intent only; not a measurement receipt or proof of enforcement.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "corpus_id",
+    "evidence_class",
+    "claim_ceiling",
+    "non_negotiable_invariants",
+    "cases"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "corpus_id": {
+      "const": "luminous-edge-policy-conformance-v1"
+    },
+    "evidence_class": {
+      "const": "synthetic_contract"
+    },
+    "claim_ceiling": {
+      "const": "synthetic_only_not_a_measurement"
+    },
+    "non_negotiable_invariants": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "zero_unauthorized_effects",
+          "unknown_or_stale_authority_denies_high_risk",
+          "independent_data_plane_probe_required",
+          "no_identity_or_payload_export"
+        ]
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 20000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id",
+          "title",
+          "family",
+          "severity",
+          "description",
+          "authority_state",
+          "intended_decision",
+          "expected_probe_outcome",
+          "path_variant",
+          "fault_injection",
+          "high_risk",
+          "independent_probe_required",
+          "target_response_ms",
+          "evidence_required"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "pattern": "^EPC-[0-9]{3,5}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 140
+          },
+          "family": {
+            "type": "string",
+            "enum": [
+              "segmentation",
+              "revocation",
+              "authority_freshness",
+              "control_plane",
+              "alternate_path",
+              "failover",
+              "rollout",
+              "tenant_isolation",
+              "drift_detection",
+              "rollback"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 600
+          },
+          "authority_state": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "revoked",
+              "expired",
+              "unknown"
+            ]
+          },
+          "intended_decision": {
+            "type": "string",
+            "enum": [
+              "allow",
+              "deny"
+            ]
+          },
+          "expected_probe_outcome": {
+            "type": "string",
+            "enum": [
+              "permitted",
+              "blocked"
+            ]
+          },
+          "path_variant": {
+            "type": "string",
+            "enum": [
+              "ipv4_new_session",
+              "ipv6_new_session",
+              "dns_resolved_egress",
+              "existing_session",
+              "management_plane",
+              "failover_node",
+              "staged_rollout",
+              "local_essential_service",
+              "cross_tenant"
+            ]
+          },
+          "fault_injection": {
+            "type": "string",
+            "enum": [
+              "none",
+              "authority_revoked",
+              "authority_expired",
+              "controller_partition",
+              "dns_ipv6_alternate_path",
+              "stale_failover_policy",
+              "partial_rollout",
+              "cross_tenant_route",
+              "seeded_policy_drift",
+              "rollback_required"
+            ]
+          },
+          "high_risk": {
+            "type": "boolean"
+          },
+          "independent_probe_required": {
+            "const": true
+          },
+          "target_response_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence_required": {
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "effective_policy_digest",
+                "normalized_policy_snapshot",
+                "independent_probe",
+                "authority_snapshot",
+                "decision_log",
+                "change_receipt",
+                "time_source"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
