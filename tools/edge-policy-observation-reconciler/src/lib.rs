@@ -105,11 +105,7 @@ fn value_string<'a>(value: &'a Value, pointer: &str) -> Option<&'a str> {
     value.pointer(pointer).and_then(Value::as_str)
 }
 
-fn evidence_problem(
-    receipt: &Value,
-    observation: &Value,
-    case: &Value,
-) -> Option<String> {
+fn evidence_problem(receipt: &Value, observation: &Value, case: &Value) -> Option<String> {
     let evidence_class = value_string(receipt, "/evidence_class").unwrap_or("");
     let source = value_string(observation, "/evidence_source").unwrap_or("");
     let outcome = value_string(observation, "/observed_outcome").unwrap_or("");
@@ -658,7 +654,10 @@ mod tests {
             observation["duration_ms"] = Value::from(10_u64);
             observation["evidence_sha256"] = Value::String("e".repeat(64));
         }
-        receipt["observations"].as_array_mut().expect("array").swap(3, 4);
+        receipt["observations"]
+            .as_array_mut()
+            .expect("array")
+            .swap(3, 4);
         let report = reconcile_receipt(&receipt).expect("report");
         assert_eq!(report["disposition"], "insufficient_evidence");
         assert_eq!(report["counts"]["insufficient_evidence"], 1);
