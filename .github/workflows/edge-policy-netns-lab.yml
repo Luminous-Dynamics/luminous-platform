@@ -56,3 +56,9 @@ jobs:
             LUMINOUS_EDGE_NETNS_ACK=EPHEMERAL_NAMESPACES_ONLY \
             tools/edge-policy-netns-lab/target/debug/edge-policy-netns-lab \
             --confirm-ephemeral-netns-only
+      - name: Assert temporary namespaces were removed
+        run: |
+          if sudo ip netns list | grep -E '^lp-edge-[cs]-'; then
+            echo "temporary Luminous Edge namespace leaked after the run"
+            exit 1
+          fi
