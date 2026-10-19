@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/connectivity-outage-scenario-v1.schema.json",
+  "title": "Connectivity Outage Discrete Simulation Scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "simulation_id", "run_id", "currency",
+    "outage_start_ms", "outage_end_ms", "queue_policy", "link_model", "tasks"
+  ],
+  "properties": {
+    "schema_version": { "const": "luminous.connectivity-outage-scenario.v1" },
+    "simulation_id": { "$ref": "#/$defs/token" },
+    "run_id": { "$ref": "#/$defs/token" },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "outage_start_ms": { "type": "integer", "minimum": 1, "maximum": 31536000000 },
+    "outage_end_ms": { "type": "integer", "minimum": 2, "maximum": 31536000000 },
+    "queue_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_items", "max_bytes", "failure_detection_ms", "local_link_available"],
+      "properties": {
+        "max_items": { "type": "integer", "minimum": 1, "maximum": 4096 },
+        "max_bytes": { "type": "integer", "minimum": 1, "maximum": 18446744073709551615 },
+        "failure_detection_ms": { "type": "integer", "minimum": 1, "maximum": 60000 },
+        "local_link_available": { "type": "boolean" }
+      }
+    },
+    "link_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "wan_latency_ms", "wan_bytes_per_second",
+        "local_latency_ms", "local_bytes_per_second",
+        "base_attempt_energy_millijoules",
+        "wan_energy_millijoules_per_kib", "local_energy_millijoules_per_kib",
+        "wan_charge_minor_per_kib", "local_charge_minor_per_kib"
+      ],
+      "properties": {
+        "wan_latency_ms": { "type": "integer", "minimum": 1, "maximum": 600000 },
+        "wan_bytes_per_second": { "type": "integer", "minimum": 1, "maximum": 1000000000000 },
+        "local_latency_ms": { "type": "integer", "minimum": 1, "maximum": 60000 },
+        "local_bytes_per_second": { "type": "integer", "minimum": 1, "maximum": 1000000000000 },
+        "base_attempt_energy_millijoules": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "wan_energy_millijoules_per_kib": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "local_energy_millijoules_per_kib": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "wan_charge_minor_per_kib": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "local_charge_minor_per_kib": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id", "pair_id", "scenario_id", "priority", "mode",
+          "arrival_ms", "payload_bytes", "local_execution_allowed",
+          "allow_store_forward", "expires_after_ms", "deadline_ms"
+        ],
+        "properties": {
+          "task_id": { "$ref": "#/$defs/taskToken" },
+          "pair_id": { "$ref": "#/$defs/taskToken" },
+          "scenario_id": { "$ref": "#/$defs/taskToken" },
+          "priority": { "enum": ["essential", "interactive", "bulk"] },
+          "mode": { "enum": ["online", "wan_partition", "route_recovery"] },
+          "arrival_ms": { "type": "integer", "minimum": 0, "maximum": 31536000000 },
+          "payload_bytes": { "type": "integer", "minimum": 1, "maximum": 10000000 },
+          "local_execution_allowed": { "type": "boolean" },
+          "allow_store_forward": { "type": "boolean" },
+          "expires_after_ms": { "type": "integer", "minimum": 1, "maximum": 31536000000 },
+          "deadline_ms": { "type": "integer", "minimum": 1, "maximum": 31536000000 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "token": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._-]+$" },
+    "taskToken": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "^[A-Za-z0-9._-]+$" }
+  }
+}
