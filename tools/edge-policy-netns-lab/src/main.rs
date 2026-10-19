@@ -27,6 +27,7 @@ const NFT_POLICY_SCRIPT: &str = r#"table inet luminous_edge_lab {
     chain input {
         type filter hook input priority 0; policy drop;
         iifname "lo" accept
+        icmpv6 type { nd-neighbor-solicit, nd-neighbor-advert } accept
         tcp dport 8080 accept
     }
 }
@@ -493,6 +494,8 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
         || !effective_ruleset.contains("tcp dport 8080 accept")
         || effective_ruleset.contains("tcp dport 8081 accept")
         || !effective_ruleset.contains("iifname \"lo\" accept")
+        || !effective_ruleset.contains("nd-neighbor-solicit")
+        || !effective_ruleset.contains("nd-neighbor-advert")
         || effective_ruleset
             .lines()
             .filter(|line| line.contains("tcp dport") && line.contains("accept"))
@@ -620,6 +623,8 @@ mod tests {
         assert!(NFT_POLICY_SCRIPT.contains("tcp dport 8080 accept"));
         assert!(!NFT_POLICY_SCRIPT.contains("tcp dport 8081 accept"));
         assert!(NFT_POLICY_SCRIPT.contains("policy drop"));
+        assert!(NFT_POLICY_SCRIPT.contains("nd-neighbor-solicit"));
+        assert!(NFT_POLICY_SCRIPT.contains("nd-neighbor-advert"));
     }
 
     #[test]
