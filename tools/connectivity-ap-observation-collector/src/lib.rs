@@ -300,6 +300,26 @@ pub fn validate_observation_manifest(
             "observation requires an owner-authorized isolated test network with no public users".to_owned(),
         ]);
     }
+    for pointer in [
+        "/access_point/hardware_revision",
+        "/access_point/firmware_version",
+        "/access_point/firmware_sha256",
+        "/access_point/radio_config_sha256",
+        "/access_point/channel",
+        "/access_point/channel_width_mhz",
+        "/access_point/tx_power_dbm",
+        "/instrumentation/iw_version",
+        "/run_controls/test_profile_sha256",
+        "/software/harness_revision",
+        "/software/profile_sha256",
+    ] {
+        if manifest.pointer(pointer).is_none_or(Value::is_null) {
+            return Err(vec![format!("{pointer} is required for AP observation")]);
+        }
+    }
+    if manifest.pointer("/access_point/radio_band").and_then(Value::as_str) == Some("unknown") {
+        return Err(vec!["radio_band must be recorded for AP observation".to_owned()]);
+    }
     Ok(manifest)
 }
 
