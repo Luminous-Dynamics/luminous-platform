@@ -103,6 +103,28 @@ fn percentile_nearest_rank(sorted: &[u64], numerator: usize, denominator: usize)
     sorted.get(rank - 1).copied()
 }
 
+/// Conservative Wilson score interval for a binomial proportion, in parts per
+/// million. Bounds are rounded outward to avoid overstating precision. These
+/// bounds assume independent Bernoulli trials; clustered runs may be overconfident.
+fn wilson_95_ppm(successes: u64, attempted: u64) -> (Option<u64>, Option<u64>) {
+    if attempted == 0 || successes > attempted {
+        return (None, None);
+    }
+    let n = attempted as f64;
+    let p = successes as f64 / n;
+    let z = 1.959_963_984_540_054_f64;
+    let z2 = z * z;
+    let denominator = 1.0 + z2 / n;
+    let center = (p + z2 / (2.0 * n)) / denominator;
+    let margin = z * ((p * (1.0 - p) / n + z2 / (4.0 * n * n)).sqrt()) / denominator;
+    let lower = (center - margin).clamp(0.0, 1.0);
+    let upper = (center + margin).clamp(0.0, 1.0);
+    (
+        Some((lower * 1_000_000.0).floor() as u64),
+        Some((upper * 1_000_000.0).ceil() as u64),
+    )
+}
+
 /// Summarizes matched binary success outcomes. Failure and inconclusive both
 /// mean "success not confirmed" for this paired comparison; raw outcomes remain
 /// reported separately and are never deleted from the denominator.
@@ -186,6 +208,8 @@ impl ArmStats {
         } else {
             None
         };
+        let (success_rate_wilson95_lower_ppm, success_rate_wilson95_upper_ppm) =
+            wilson_95_ppm(self.succeeded, attempted);
 
         json!({
             "attempted": attempted,
@@ -195,6 +219,9 @@ impl ArmStats {
             "success_rate_numerator": self.succeeded,
             "success_rate_denominator": attempted,
             "success_rate_ppm": success_rate_ppm,
+            "success_rate_wilson95_lower_ppm": success_rate_wilson95_lower_ppm,
+            "success_rate_wilson95_upper_ppm": success_rate_wilson95_upper_ppm,
+            "confidence_interval_method": "Wilson score interval, 95% nominal, independent Bernoulli assumption",
             "successful_latency_sample_count": latencies.len(),
             "latency_p50_ms": percentile_nearest_rank(&latencies, 1, 2),
             "latency_p95_ms": percentile_nearest_rank(&latencies, 95, 100),
@@ -596,6 +623,8 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
                 } else {
                     None
                 };
+                let (success_rate_wilson95_lower_ppm, success_rate_wilson95_upper_ppm) =
+                    wilson_95_ppm(counts[0], attempted);
                 let key = (priority.clone(), mode.clone(), arm.to_owned());
                 let mut latencies = stratified_latencies.get(&key).cloned().unwrap_or_default();
                 latencies.sort_unstable();
@@ -607,6 +636,9 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
                     "success_rate_numerator": counts[0],
                     "success_rate_denominator": attempted,
                     "success_rate_ppm": success_rate_ppm,
+                    "success_rate_wilson95_lower_ppm": success_rate_wilson95_lower_ppm,
+                    "success_rate_wilson95_upper_ppm": success_rate_wilson95_upper_ppm,
+                    "confidence_interval_method": "Wilson score interval, 95% nominal, independent Bernoulli assumption",
                     "successful_latency_sample_count": latencies.len(),
                     "latency_p50_ms": percentile_nearest_rank(&latencies, 1, 2),
                     "latency_p95_ms": percentile_nearest_rank(&latencies, 95, 100),
@@ -777,6 +809,10 @@ mod tests {
         assert_eq!(report["baseline"]["inconclusive"], 1);
         assert_eq!(report["baseline"]["success_rate_denominator"], 3);
         assert_eq!(report["baseline"]["success_rate_ppm"], 333333);
+        assert!(report["baseline"]["success_rate_wilson95_lower_ppm"].as_u64().unwrap() < 333333);
+        assert!(report["baseline"]["success_rate_wilson95_upper_ppm"].as_u64().unwrap() > 333333);
+        assert!(report["candidate"]["success_rate_wilson95_lower_ppm"].as_u64().unwrap() > 0);
+        assert_eq!(report["candidate"]["success_rate_wilson95_upper_ppm"], 1_000_000);
         assert_eq!(report["candidate"]["succeeded"], 3);
         assert_eq!(report["paired_comparison"]["matched_pair_count"], 3);
         assert_eq!(report["paired_comparison"]["both_succeeded"], 1);
