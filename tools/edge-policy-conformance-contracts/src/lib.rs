@@ -10,7 +10,7 @@ use std::collections::HashSet;
 use jsonschema::draft202012;
 use serde_json::Value;
 
-const MAX_JSON_BYTES: usize = 2_097_152;
+const MAX_JSON_BYTES: usize = 33_554_432;
 
 fn reject_remote_references(value: &Value, path: &str, errors: &mut Vec<String>) {
     match value {
@@ -74,8 +74,8 @@ fn semantic_checks(corpus: &Value, errors: &mut Vec<String>) {
             return;
         }
     };
-    if cases.len() > 1000 {
-        errors.push("case count exceeds 1000".to_owned());
+    if cases.len() > 20_000 {
+        errors.push("case count exceeds 20000".to_owned());
         return;
     }
 

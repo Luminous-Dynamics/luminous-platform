@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use edge_policy_conformance_contracts::validate_corpus;
 
-const MAX_FILE_BYTES: u64 = 2_097_152;
+const MAX_FILE_BYTES: u64 = 33_554_432;
 
 fn read_utf8(path: &str) -> Result<String, String> {
     let metadata = fs::metadata(path).map_err(|error| format!("{path}: {error}"))?;
