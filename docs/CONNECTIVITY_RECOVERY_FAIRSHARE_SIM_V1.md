@@ -28,6 +28,8 @@ In the FCFS baseline, A consumes 8,192 bytes and succeeds, leaving 808 bytes for
 
 Across the nine paired records, the smoke report should show 3 baseline-only successes and 6 candidate-only successes. The comparator deliberately makes no p-value claim; a three-peer smoke fixture cannot establish statistical significance.
 
+The companion sensitivity executable sweeps each independent mode window across budgets of 49,152, 24,576, 16,384, 12,288, 9,830, 8,192 and 6,144 bytes, corresponding to approximately 25%, 50%, 75%, 100%, 125%, 150% and 200% offered demand relative to capacity. It emits deterministic CSV with the actual load ratio in parts per million, completed-task counts, Jain completion fairness, actual transferred bytes, allocator grants and allocator-unallocated bytes. The essential reserve scales to one ninth of the window budget for this sweep. These remain model-derived sensitivity outputs, not measurements of real traffic.
+
 ## Invariants
 
 - Total assigned byte grants never exceed the declared recovery-window budget.
