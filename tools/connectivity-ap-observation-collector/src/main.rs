@@ -8,8 +8,6 @@ use connectivity_ap_observation_collector::build_snapshot;
 use connectivity_ap_testbed_contracts::validate_manifest;
 use serde_json::{Value, json};
 
-const MANIFEST_SCHEMA: &str =
-    include_str!("../../../schemas/connectivity-ap-testbed-manifest-v1.schema.json");
 const MAX_INPUT_BYTES: u64 = 1_048_576;
 
 struct Capture {
@@ -67,16 +65,12 @@ fn write_json(path: &str, value: &Value) -> Result<(), String> {
 
 fn run() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 5 {
+    if args.len() != 6 {
         return Err(format!(
             "usage: {} <manifest-schema.json> <measured-testbed-manifest.json> <interface> <run-id> <output.json>",
             args.first().map(String::as_str).unwrap_or("connectivity-ap-observe")
         ));
     }
-    if args.len() == 5 {
-        // Positional layout is schema, manifest, interface, run ID, output path.
-    }
-
     let manifest_schema = read_limited(&args[1])?;
     let manifest_bytes = read_limited(&args[2])?;
     let schema_text = std::str::from_utf8(&manifest_schema)
@@ -143,7 +137,7 @@ fn run() -> Result<(), String> {
     )
     .map_err(|errors| errors.join("\n"))?;
 
-    write_json(&args[5.min(args.len() - 1)], &snapshot)?;
+    write_json(&args[5], &snapshot)?;
     println!("Observation snapshot written; no configuration changes or test traffic were initiated.");
     println!("Counters are a single read-only snapshot. Unavailable values remain null.");
     Ok(())
