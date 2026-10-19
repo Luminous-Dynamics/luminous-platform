@@ -147,7 +147,7 @@ fn ceil_div(numerator: u128, denominator: u128) -> Result<u128, EconomicsError> 
         return Err(EconomicsError::ArithmeticOverflow);
     }
     let quotient = numerator / denominator;
-    if numerator % denominator == 0 {
+    if numerator.is_multiple_of(denominator) {
         Ok(quotient)
     } else {
         quotient.checked_add(1).ok_or(EconomicsError::ArithmeticOverflow)
