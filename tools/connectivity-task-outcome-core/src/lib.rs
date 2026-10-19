@@ -478,8 +478,7 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             let cell_key = (priority.to_owned(), mode.to_owned());
             *pair_cells.entry(cell_key.clone()).or_default() += 1;
 
-            let baseline_succeeded =
-                required_string(baseline[0], "/outcome") == Some("succeeded");
+            let baseline_succeeded = required_string(baseline[0], "/outcome") == Some("succeeded");
             let candidate_succeeded =
                 required_string(candidate[0], "/outcome") == Some("succeeded");
             let outcome_index = match (baseline_succeeded, candidate_succeeded) {
