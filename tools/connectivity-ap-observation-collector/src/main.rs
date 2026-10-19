@@ -5,7 +5,7 @@ use std::process::{Command, ExitCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use connectivity_ap_observation_collector::{
-    build_snapshot, validate_observation_manifest, CapturedOutputs,
+    CapturedOutputs, build_snapshot, validate_observation_manifest,
 };
 use serde_json::{Value, json};
 
@@ -75,7 +75,9 @@ fn run() -> Result<(), String> {
     if args.len() != 6 {
         return Err(format!(
             "usage: {} <manifest-schema.json> <measured-testbed-manifest.json> <interface> <run-id> <output.json>",
-            args.first().map(String::as_str).unwrap_or("connectivity-ap-observe")
+            args.first()
+                .map(String::as_str)
+                .unwrap_or("connectivity-ap-observe")
         ));
     }
     let manifest_schema = read_limited(&args[1])?;
@@ -135,7 +137,9 @@ fn run() -> Result<(), String> {
     .map_err(|errors| errors.join("\n"))?;
 
     write_json(&args[5], &snapshot)?;
-    println!("Observation snapshot written; no configuration changes or test traffic were initiated.");
+    println!(
+        "Observation snapshot written; no configuration changes or test traffic were initiated."
+    );
     println!("Counters are a single read-only snapshot. Unavailable values remain null.");
     Ok(())
 }
