@@ -103,6 +103,30 @@ fn percentile_nearest_rank(sorted: &[u64], numerator: usize, denominator: usize)
     sorted.get(rank - 1).copied()
 }
 
+/// Summarizes matched binary success outcomes. Failure and inconclusive both
+/// mean "success not confirmed" for this paired comparison; raw outcomes remain
+/// reported separately and are never deleted from the denominator.
+fn paired_outcome_report(counts: &[u64; 4]) -> Value {
+    let pair_count = counts.iter().sum::<u64>();
+    let delta_ppm = if pair_count > 0 {
+        let difference = i64::try_from(counts[1]).unwrap_or(i64::MAX)
+            - i64::try_from(counts[2]).unwrap_or(i64::MAX);
+        Some((i128::from(difference) * 1_000_000 / i128::from(pair_count)) as i64)
+    } else {
+        None
+    };
+    json!({
+        "matched_pair_count": pair_count,
+        "both_succeeded": counts[0],
+        "candidate_only_succeeded": counts[1],
+        "baseline_only_succeeded": counts[2],
+        "neither_succeeded": counts[3],
+        "candidate_minus_baseline_paired_success_delta_ppm": delta_ppm,
+        "non_success_definition": "failed_or_inconclusive",
+        "inferential_test_performed": false
+    })
+}
+
 #[derive(Default)]
 struct ArmStats {
     succeeded: u64,
@@ -293,6 +317,8 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
     let mut ids = BTreeSet::new();
     let mut pairs: BTreeMap<String, Vec<&Value>> = BTreeMap::new();
     let mut pair_cells: BTreeMap<(String, String), usize> = BTreeMap::new();
+    let mut paired_outcomes = [0_u64; 4];
+    let mut paired_outcomes_by_cell: BTreeMap<(String, String), [u64; 4]> = BTreeMap::new();
     let mut priorities = BTreeSet::new();
     let mut modes = BTreeSet::new();
     let mut stats: BTreeMap<String, ArmStats> = BTreeMap::new();
@@ -449,9 +475,23 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
                 required_string(baseline[0], "/mode"),
             )
         {
-            *pair_cells
-                .entry((priority.to_owned(), mode.to_owned()))
-                .or_default() += 1;
+            let cell_key = (priority.to_owned(), mode.to_owned());
+            *pair_cells.entry(cell_key.clone()).or_default() += 1;
+
+            let baseline_succeeded =
+                required_string(baseline[0], "/outcome") == Some("succeeded");
+            let candidate_succeeded =
+                required_string(candidate[0], "/outcome") == Some("succeeded");
+            let outcome_index = match (baseline_succeeded, candidate_succeeded) {
+                (true, true) => 0,
+                (false, true) => 1,
+                (true, false) => 2,
+                (false, false) => 3,
+            };
+            paired_outcomes[outcome_index] += 1;
+            paired_outcomes_by_cell
+                .entry(cell_key)
+                .or_insert([0_u64; 4])[outcome_index] += 1;
         }
     }
 
@@ -574,11 +614,16 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
                     "latency_p99_ms": percentile_nearest_rank(&latencies, 99, 100)
                 })
             };
+            let paired = paired_outcomes_by_cell
+                .get(&(priority.clone(), mode.clone()))
+                .copied()
+                .unwrap_or([0_u64; 4]);
             json!({
                 "priority": priority,
                 "mode": mode,
                 "baseline": arm_report("baseline"),
-                "candidate": arm_report("candidate")
+                "candidate": arm_report("candidate"),
+                "paired_comparison": paired_outcome_report(&paired)
             })
         })
         .collect();
@@ -610,6 +655,7 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
         "baseline": reports.get("baseline"),
         "candidate": reports.get("candidate"),
         "by_priority_and_mode": by_priority_and_mode,
+        "paired_comparison": paired_outcome_report(&paired_outcomes),
         "candidate_minus_baseline_success_rate_ppm": successful_delta_ppm,
         "interpretation_boundary": {
             "task_outcomes_are_reporter_assertions": true,
@@ -733,6 +779,14 @@ mod tests {
         assert_eq!(report["baseline"]["success_rate_denominator"], 3);
         assert_eq!(report["baseline"]["success_rate_ppm"], 333333);
         assert_eq!(report["candidate"]["succeeded"], 3);
+        assert_eq!(report["paired_comparison"]["matched_pair_count"], 3);
+        assert_eq!(report["paired_comparison"]["both_succeeded"], 1);
+        assert_eq!(report["paired_comparison"]["candidate_only_succeeded"], 2);
+        assert_eq!(report["paired_comparison"]["baseline_only_succeeded"], 0);
+        assert_eq!(
+            report["paired_comparison"]["candidate_minus_baseline_paired_success_delta_ppm"],
+            666666
+        );
         let strata = report["by_priority_and_mode"].as_array().unwrap();
         let interactive = strata
             .iter()
@@ -743,6 +797,33 @@ mod tests {
         assert_eq!(interactive["candidate"]["latency_p50_ms"], 250);
         assert_eq!(interactive["candidate"]["latency_p99_ms"], 250);
         assert_eq!(interactive["baseline"]["latency_p50_ms"], Value::Null);
+        assert_eq!(
+            interactive["paired_comparison"]["candidate_only_succeeded"],
+            1
+        );
+    }
+
+    #[test]
+    fn paired_comparison_reports_baseline_only_wins_and_neither_wins() {
+        let (run_schema, profile_schema, profile_bytes, run) = fixtures();
+        let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
+        let mut run = ready_run(run, &profile_bytes);
+        run["trials"][1]["outcome"] = json!("failed");
+        run["trials"][1]["elapsed_ms"] = json!(250);
+        run["trials"][4]["outcome"] = json!("succeeded");
+        run["trials"][4]["elapsed_ms"] = json!(500);
+        run["trials"][5]["outcome"] = json!("failed");
+        run["trials"][5]["elapsed_ms"] = json!(450);
+        let report =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run)
+                .unwrap();
+        assert_eq!(report["paired_comparison"]["candidate_only_succeeded"], 0);
+        assert_eq!(report["paired_comparison"]["baseline_only_succeeded"], 1);
+        assert_eq!(report["paired_comparison"]["neither_succeeded"], 2);
+        assert_eq!(
+            report["paired_comparison"]["candidate_minus_baseline_paired_success_delta_ppm"],
+            -333333
+        );
     }
 
     #[test]
