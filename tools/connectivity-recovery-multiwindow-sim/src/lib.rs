@@ -1069,7 +1069,7 @@ mod tests {
             assert!(!receipt.contains(token));
             assert!(!aggregate.contains(token));
         }
-        assert!(!receipt.contains("\\"peer_id\\""));
+        assert!(!receipt.contains("peer_id"));
     }
 
     #[test]
