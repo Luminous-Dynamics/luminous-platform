@@ -121,40 +121,53 @@ fn parse_frequency_mhz(line: &str) -> Option<u64> {
         .ok()
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+struct SurveyChannel {
+    frequency_mhz: Option<u64>,
+    active_time_ms: Option<u64>,
+    busy_time_ms: Option<u64>,
+    noise_dbm: Option<i64>,
+}
+
+impl SurveyChannel {
+    fn into_json(self) -> Value {
+        json!({
+            "frequency_mhz": self.frequency_mhz,
+            "channel_active_time_ms": self.active_time_ms,
+            "channel_busy_time_ms": self.busy_time_ms,
+            "noise_dbm": self.noise_dbm
+        })
+    }
+}
+
 fn parse_survey(source: &str) -> Vec<Value> {
     let mut channels: Vec<Value> = Vec::new();
-    let mut current: Option<(Option<u64>, Option<u64>, Option<u64>, Option<i64>)> = None;
+    let mut current: Option<SurveyChannel> = None;
 
     for line in source.lines().map(str::trim) {
         if line.starts_with("frequency:") {
-            if let Some((frequency, active, busy, noise)) = current.take() {
-                channels.push(json!({
-                    "frequency_mhz": frequency,
-                    "channel_active_time_ms": active,
-                    "channel_busy_time_ms": busy,
-                    "noise_dbm": noise
-                }));
+            if let Some(channel) = current.take() {
+                channels.push(channel.into_json());
             }
-            current = Some((parse_frequency_mhz(line), None, None, None));
+            current = Some(SurveyChannel {
+                frequency_mhz: parse_frequency_mhz(line),
+                ..Default::default()
+            });
             continue;
         }
-        if let Some((_, active, busy, noise)) = current.as_mut() {
+        if let Some(channel) = current.as_mut() {
             if line.starts_with("channel active time:") {
-                *active = parse_u64_after_colon(line);
+                channel.active_time_ms = parse_u64_after_colon(line);
             } else if line.starts_with("channel busy time:") {
-                *busy = parse_u64_after_colon(line);
+                channel.busy_time_ms = parse_u64_after_colon(line);
             } else if line.starts_with("noise:") {
-                *noise = parse_i64_after_colon(line).filter(|value| (-150..=0).contains(value));
+                channel.noise_dbm =
+                    parse_i64_after_colon(line).filter(|value| (-150..=0).contains(value));
             }
         }
     }
-    if let Some((frequency, active, busy, noise)) = current {
-        channels.push(json!({
-            "frequency_mhz": frequency,
-            "channel_active_time_ms": active,
-            "channel_busy_time_ms": busy,
-            "noise_dbm": noise
-        }));
+    if let Some(channel) = current {
+        channels.push(channel.into_json());
     }
     channels
 }
@@ -197,7 +210,7 @@ fn parse_qdiscs(source: &str) -> Value {
         }
         if line.starts_with("Sent ") {
             sent_rows = sent_rows.saturating_add(1);
-            let normalized = line.replace(',', " ").replace('(', " ").replace(')', " ");
+            let normalized = line.replace([',', '(', ')'], " ");
             let tokens: Vec<&str> = normalized.split_whitespace().collect();
             let bytes = tokens.get(1).and_then(|v| v.parse::<u64>().ok());
             let packets = tokens.get(3).and_then(|v| v.parse::<u64>().ok());
