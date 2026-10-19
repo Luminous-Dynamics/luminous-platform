@@ -619,6 +619,7 @@ mod tests {
                 ..Default::default()
             },
             json!({
+                "iw_info": {"status":"available","exit_code":0},
                 "iw_station": {"status":"unavailable","exit_code":null},
                 "iw_survey": {"status":"error","exit_code":1},
                 "tc_qdisc": {"status":"unavailable","exit_code":null},
@@ -665,7 +666,10 @@ mod tests {
                 "wlan0",
                 b"manifest",
                 0,
-                CapturedOutputs::default(),
+                CapturedOutputs {
+                    info: Some("Interface wlan0\n\ttype AP\n"),
+                    ..Default::default()
+                },
                 statuses(),
             )
             .is_err()
