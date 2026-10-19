@@ -1,0 +1,40 @@
+name: community-bandwidth-fairshare-contracts
+
+on:
+  pull_request:
+    paths:
+      - "tools/community-bandwidth-fairshare-core/**"
+      - "docs/COMMUNITY_BANDWIDTH_FAIRSHARE_V1.md"
+      - ".github/workflows/community-bandwidth-fairshare-contracts.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tools/community-bandwidth-fairshare-core/**"
+      - "docs/COMMUNITY_BANDWIDTH_FAIRSHARE_V1.md"
+      - ".github/workflows/community-bandwidth-fairshare-contracts.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  fairshare-contract:
+    name: Test and benchmark fair-share reference model
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.99.0
+          components: clippy,rustfmt
+      - name: Check formatting
+        run: cargo fmt --manifest-path tools/community-bandwidth-fairshare-core/Cargo.toml -- --check
+      - name: Run all targets and tests
+        run: cargo test --manifest-path tools/community-bandwidth-fairshare-core/Cargo.toml --all-targets
+      - name: Lint with warnings denied
+        run: cargo clippy --manifest-path tools/community-bandwidth-fairshare-core/Cargo.toml --all-targets -- -D warnings
+      - name: Run reproducible scale benchmark
+        run: cargo run --release --manifest-path tools/community-bandwidth-fairshare-core/Cargo.toml --bin fairshare-benchmark
