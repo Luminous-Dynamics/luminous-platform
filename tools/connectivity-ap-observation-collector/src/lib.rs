@@ -51,6 +51,57 @@ fn parse_i64_after_colon(line: &str) -> Option<i64> {
         .ok()
 }
 
+/// Parse only non-identifying radio metadata from `iw dev IFACE info`.
+/// SSID, MAC address, wiphy IDs and other fields are intentionally discarded.
+pub fn parse_interface_info(source: &str) -> Value {
+    let mut interface_type = None;
+    let mut channel_number = None;
+    let mut frequency_mhz = None;
+    let mut channel_width_mhz = None;
+    let mut tx_power_centi_dbm = None;
+
+    for line in source.lines().map(str::trim) {
+        if let Some(value) = line.strip_prefix("type ") {
+            interface_type = Some(value.to_owned());
+        } else if line.starts_with("channel ") {
+            let rest = line.trim_start_matches("channel ");
+            channel_number = rest
+                .split_whitespace()
+                .next()
+                .and_then(|value| value.parse::<u64>().ok());
+
+            if let Some(start) = rest.find('(') {
+                frequency_mhz = rest[start + 1..]
+                    .split_whitespace()
+                    .next()
+                    .and_then(|value| value.parse::<u64>().ok());
+            }
+            if let Some(width) = line.split_once("width:") {
+                channel_width_mhz = width
+                    .1
+                    .split_whitespace()
+                    .next()
+                    .and_then(|value| value.parse::<u64>().ok());
+            }
+        } else if let Some(value) = line.strip_prefix("txpower ") {
+            tx_power_centi_dbm = value
+                .split_whitespace()
+                .next()
+                .and_then(|number| number.parse::<f64>().ok())
+                .filter(|number| (-50.0..=60.0).contains(number))
+                .map(|number| (number * 100.0).round() as i64);
+        }
+    }
+
+    json!({
+        "interface_type": interface_type,
+        "channel_number": channel_number,
+        "frequency_mhz": frequency_mhz,
+        "channel_width_mhz": channel_width_mhz,
+        "tx_power_centi_dbm": tx_power_centi_dbm
+    })
+}
+
 fn parse_stations(source: &str) -> Value {
     let mut blocks: Vec<Vec<&str>> = Vec::new();
     for line in source.lines() {
@@ -359,6 +410,7 @@ pub fn validate_observation_manifest(
 /// Outputs of four allow-listed read-only observation commands.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct CapturedOutputs<'a> {
+    pub info: Option<&'a str>,
     pub station: Option<&'a str>,
     pub survey: Option<&'a str>,
     pub qdisc: Option<&'a str>,
@@ -376,6 +428,16 @@ pub fn build_snapshot(
     command_status: Value,
 ) -> Result<Value, Vec<String>> {
     validate_interface_token(interface).map_err(|error| vec![error])?;
+    let interface_radio = outputs
+        .info
+        .map(parse_interface_info)
+        .ok_or_else(|| vec!["iw interface-info output is required".to_owned()])?;
+    if interface_radio.get("interface_type").and_then(Value::as_str) != Some("AP") {
+        return Err(vec![
+            "refusing to emit AP snapshot because the interface mode is not confirmed as AP"
+                .to_owned(),
+        ]);
+    }
     if !valid_token(run_id) {
         return Err(vec![
             "run_id must be a non-empty ASCII token of at most 128 bytes".to_owned(),
@@ -408,6 +470,7 @@ pub fn build_snapshot(
             "interface_source": "operator_supplied"
         },
         "interface_token": interface,
+        "interface_radio": interface_radio,
         "command_status": command_status,
         "station_metrics": outputs.station.map(parse_stations).unwrap_or(empty_station),
         "survey_channels": outputs.survey.map(parse_survey).unwrap_or_default(),
@@ -432,11 +495,42 @@ mod tests {
 
     fn statuses() -> Value {
         json!({
+            "iw_info": {"status":"available","exit_code":0},
             "iw_station": {"status":"available","exit_code":0},
             "iw_survey": {"status":"available","exit_code":0},
             "tc_qdisc": {"status":"available","exit_code":0},
             "ip_link": {"status":"available","exit_code":0}
         })
+    }
+
+    #[test]
+    fn interface_info_confirms_ap_mode_without_exporting_mac_or_ssid() {
+        let info = "Interface wlan0\n\tifindex 3\n\taddr aa:bb:cc:dd:ee:01\n\tssid household-secret\n\ttype AP\n\tchannel 36 (5180 MHz), width: 80 MHz, center1: 5210 MHz\n\ttxpower 20.00 dBm\n";
+        let parsed = parse_interface_info(info);
+        assert_eq!(parsed["interface_type"], "AP");
+        assert_eq!(parsed["channel_number"], 36);
+        assert_eq!(parsed["frequency_mhz"], 5180);
+        assert_eq!(parsed["channel_width_mhz"], 80);
+        assert_eq!(parsed["tx_power_centi_dbm"], 2000);
+        let exported = serde_json::to_string(&parsed).unwrap();
+        assert!(!exported.contains("aa:bb:cc:dd:ee:01"));
+        assert!(!exported.contains("household-secret"));
+    }
+
+    #[test]
+    fn client_interface_cannot_be_labelled_as_ap_snapshot() {
+        let error = build_snapshot(
+            "run-client-mode",
+            "wlan0",
+            b"manifest",
+            0,
+            CapturedOutputs {
+                info: Some("Interface wlan0\n\ttype managed\n"),
+                ..Default::default()
+            },
+            statuses(),
+        ).expect_err("client-mode interface must not claim AP observation");
+        assert!(error.iter().any(|message| message.contains("mode is not confirmed as AP")));
     }
 
     #[test]
@@ -448,6 +542,7 @@ mod tests {
             b"manifest bytes",
             123,
             CapturedOutputs {
+                info: Some("Interface wlan0\n\ttype AP\n\tchannel 36 (5180 MHz), width: 80 MHz\n\ttxpower 20.00 dBm\n"),
                 station: Some(stations),
                 ..Default::default()
             },
@@ -519,7 +614,10 @@ mod tests {
             "wlan0",
             b"manifest",
             0,
-            CapturedOutputs::default(),
+            CapturedOutputs {
+                info: Some("Interface wlan0\n\ttype AP\n"),
+                ..Default::default()
+            },
             json!({
                 "iw_station": {"status":"unavailable","exit_code":null},
                 "iw_survey": {"status":"error","exit_code":1},
@@ -583,6 +681,7 @@ mod tests {
             b"manifest",
             0,
             CapturedOutputs {
+                info: Some("Interface wlan0\n\ttype AP\n"),
                 station: Some(stations),
                 ..Default::default()
             },
