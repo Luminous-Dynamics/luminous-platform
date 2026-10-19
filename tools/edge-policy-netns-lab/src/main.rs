@@ -280,11 +280,7 @@ fn prepare_namespaces(
     Ok(())
 }
 
-fn wait_for_ipv6_ready(
-    namespace: &str,
-    interface: &str,
-    address: &str,
-) -> Result<(), String> {
+fn wait_for_ipv6_ready(namespace: &str, interface: &str, address: &str) -> Result<(), String> {
     let started = Instant::now();
     let timeout = Duration::from_secs(5);
     loop {
