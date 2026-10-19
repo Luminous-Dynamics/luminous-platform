@@ -72,3 +72,5 @@ jobs:
         run: |
           grep -q '"evidence_class": "synthetic_simulation"' "$RUNNER_TEMP/connectivity-recovery-fairshare-run.json"
           ! grep -q '"peer_id"' "$RUNNER_TEMP/connectivity-recovery-fairshare-run.json"
+      - name: Run deterministic offered-load sweep
+        run: cargo run --manifest-path tools/connectivity-recovery-fairshare-sim/Cargo.toml --bin connectivity-recovery-sensitivity
