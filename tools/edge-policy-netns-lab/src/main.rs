@@ -111,7 +111,12 @@ fn apply_nft_script(namespace: &str, script: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn spawn_listener(namespace: &str, ipv6: bool, address: &str, port: &str) -> Result<Child, String> {
+fn spawn_listener(
+    namespace: &str,
+    ipv6: bool,
+    address: &str,
+    port: &str,
+) -> Result<Child, String> {
     let mut arguments = vec!["netns", "exec", namespace, "nc"];
     if ipv6 {
         arguments.push("-6");
@@ -262,7 +267,7 @@ fn prepare_namespaces(
     for namespace in [&guard.client_ns, &guard.server_ns] {
         for family in ["route", "-6"] {
             let output = if family == "-6" {
-                namespace_output(namespace, &["-6", "route", "show"])?
+                checked("ip", &["-n", namespace, "-6", "route", "show"])?
             } else {
                 checked("ip", &["-n", namespace, "route", "show"])?
             };
@@ -422,34 +427,10 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
     apply_nft_script(&guard.server_ns, NFT_POLICY_SCRIPT)?;
 
     let server_ns_for_listeners = guard.server_ns.clone();
-    start_and_check_listener(
-        &mut guard,
-        &server_ns_for_listeners,
-        false,
-        "198.18.0.2",
-        "8080",
-    )?;
-    start_and_check_listener(
-        &mut guard,
-        &server_ns_for_listeners,
-        false,
-        "198.18.0.2",
-        "8081",
-    )?;
-    start_and_check_listener(
-        &mut guard,
-        &server_ns_for_listeners,
-        true,
-        "2001:db8:1::2",
-        "8080",
-    )?;
-    start_and_check_listener(
-        &mut guard,
-        &server_ns_for_listeners,
-        true,
-        "2001:db8:1::2",
-        "8081",
-    )?;
+    start_and_check_listener(&mut guard, &server_ns_for_listeners, false, "198.18.0.2", "8080")?;
+    start_and_check_listener(&mut guard, &server_ns_for_listeners, false, "198.18.0.2", "8081")?;
+    start_and_check_listener(&mut guard, &server_ns_for_listeners, true, "2001:db8:1::2", "8080")?;
+    start_and_check_listener(&mut guard, &server_ns_for_listeners, true, "2001:db8:1::2", "8081")?;
 
     let ruleset = namespace_output(&guard.server_ns, &["nft", "list", "ruleset"])?;
     let effective_ruleset = String::from_utf8_lossy(&ruleset.stdout);
@@ -458,11 +439,7 @@ fn run_lab() -> Result<(Value, ExitCode), String> {
         || !effective_ruleset.contains("tcp dport 8080 accept")
         || effective_ruleset.contains("tcp dport 8081 accept")
         || !effective_ruleset.contains("iifname \"lo\" accept")
-        || effective_ruleset
-            .lines()
-            .filter(|line| line.contains("tcp dport") && line.contains("accept"))
-            .count()
-            != 1
+        || effective_ruleset.lines().filter(|line| line.contains("tcp dport") && line.contains("accept")).count() != 1
     {
         return Err(
             "effective namespace ruleset does not match the fixed allow/deny contract".to_owned(),
