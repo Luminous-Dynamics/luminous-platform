@@ -5,7 +5,7 @@
 #![forbid(unsafe_code)]
 
 use jsonschema::draft202012;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -24,7 +24,9 @@ fn reject_remote_references(value: &Value, path: &str, errors: &mut Vec<String>)
                 if key == "$ref" || key == "$dynamicRef" {
                     match child.as_str() {
                         Some(reference) if reference.starts_with('#') => {}
-                        Some(_) => errors.push(format!("{path}/{key}: only local references are allowed")),
+                        Some(_) => {
+                            errors.push(format!("{path}/{key}: only local references are allowed"))
+                        }
                         None => errors.push(format!("{path}/{key}: reference must be a string")),
                     }
                 }
@@ -48,14 +50,27 @@ fn schema_errors(schema: &Value, value: &Value, label: &str) -> Vec<String> {
     }
     let meta = match jsonschema::meta::validator_for(schema) {
         Ok(validator) => validator,
-        Err(error) => return vec![format!("{label}: cannot build JSON Schema meta-validator: {error}")],
+        Err(error) => {
+            return vec![format!(
+                "{label}: cannot build JSON Schema meta-validator: {error}"
+            )];
+        }
     };
     if !meta.evaluate(schema).flag().valid {
-        return vec![format!("{label}: schema failed JSON Schema meta-validation")];
+        return vec![format!(
+            "{label}: schema failed JSON Schema meta-validation"
+        )];
     }
-    let validator = match draft202012::options().should_validate_formats(true).build(schema) {
+    let validator = match draft202012::options()
+        .should_validate_formats(true)
+        .build(schema)
+    {
         Ok(validator) => validator,
-        Err(error) => return vec![format!("{label}: cannot build Draft 2020-12 validator: {error}")],
+        Err(error) => {
+            return vec![format!(
+                "{label}: cannot build Draft 2020-12 validator: {error}"
+            )];
+        }
     };
     errors.extend(
         validator
@@ -80,7 +95,11 @@ fn percentile_nearest_rank(sorted: &[u64], numerator: usize, denominator: usize)
     if sorted.is_empty() || denominator == 0 || numerator == 0 || numerator > denominator {
         return None;
     }
-    let rank = sorted.len().saturating_mul(numerator).div_ceil(denominator).max(1);
+    let rank = sorted
+        .len()
+        .saturating_mul(numerator)
+        .div_ceil(denominator)
+        .max(1);
     sorted.get(rank - 1).copied()
 }
 
@@ -174,14 +193,18 @@ fn validate_environment(run: &Value, evidence: &str, errors: &mut Vec<String>) {
             "power_meter_token",
         ] {
             if !present(key) {
-                errors.push(format!("environment.{key} is required for {evidence} evidence"));
+                errors.push(format!(
+                    "environment.{key} is required for {evidence} evidence"
+                ));
             }
         }
     }
     if evidence == "field_observed" {
         for key in ["site_token", "consent_record_sha256"] {
             if !present(key) {
-                errors.push(format!("environment.{key} is required for field_observed evidence"));
+                errors.push(format!(
+                    "environment.{key} is required for field_observed evidence"
+                ));
             }
         }
     }
@@ -190,7 +213,9 @@ fn validate_environment(run: &Value, evidence: &str, errors: &mut Vec<String>) {
 fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> {
     let mut errors = Vec::new();
     if required_string(profile, "/schema_version") != Some(PROFILE_SCHEMA_VERSION) {
-        errors.push(format!("profile.schema_version must be {PROFILE_SCHEMA_VERSION}"));
+        errors.push(format!(
+            "profile.schema_version must be {PROFILE_SCHEMA_VERSION}"
+        ));
     }
     if required_string(run, "/schema_version") != Some(RUN_SCHEMA_VERSION) {
         errors.push(format!("run.schema_version must be {RUN_SCHEMA_VERSION}"));
@@ -262,16 +287,30 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
                 arm_stats.succeeded += 1;
                 match trial.get("elapsed_ms").and_then(Value::as_u64) {
                     Some(elapsed) => arm_stats.successful_elapsed_ms.push(elapsed),
-                    None => errors.push(format!("trials/{index}: succeeded task requires elapsed_ms")),
+                    None => errors.push(format!(
+                        "trials/{index}: succeeded task requires elapsed_ms"
+                    )),
                 }
-                let bytes_tx = trial.get("bytes_tx").and_then(Value::as_u64).unwrap_or(u64::MAX);
-                let bytes_rx = trial.get("bytes_rx").and_then(Value::as_u64).unwrap_or(u64::MAX);
+                let bytes_tx = trial
+                    .get("bytes_tx")
+                    .and_then(Value::as_u64)
+                    .unwrap_or(u64::MAX);
+                let bytes_rx = trial
+                    .get("bytes_rx")
+                    .and_then(Value::as_u64)
+                    .unwrap_or(u64::MAX);
                 match bytes_tx.checked_add(bytes_rx) {
                     Some(bytes) => arm_stats.successful_bytes.push(bytes),
-                    None => errors.push(format!("trials/{index}: transmitted+received bytes overflow")),
+                    None => errors.push(format!(
+                        "trials/{index}: transmitted+received bytes overflow"
+                    )),
                 }
-                arm_stats.successful_energy_mj.push(trial.get("energy_millijoules").and_then(Value::as_u64));
-                arm_stats.successful_charge_minor.push(trial.get("charge_minor").and_then(Value::as_u64));
+                arm_stats
+                    .successful_energy_mj
+                    .push(trial.get("energy_millijoules").and_then(Value::as_u64));
+                arm_stats
+                    .successful_charge_minor
+                    .push(trial.get("charge_minor").and_then(Value::as_u64));
             }
             "failed" => {
                 arm_stats.failed += 1;
@@ -281,25 +320,40 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             }
             "inconclusive" => {
                 arm_stats.inconclusive += 1;
-                if trial.get("elapsed_ms").is_some_and(|value| !value.is_null()) {
-                    errors.push(format!("trials/{index}: inconclusive trial must not assert elapsed_ms"));
+                if trial
+                    .get("elapsed_ms")
+                    .is_some_and(|value| !value.is_null())
+                {
+                    errors.push(format!(
+                        "trials/{index}: inconclusive trial must not assert elapsed_ms"
+                    ));
                 }
             }
             _ => errors.push(format!("trials/{index}: outcome is invalid")),
         }
 
-        let bytes_tx = trial.get("bytes_tx").and_then(Value::as_u64).unwrap_or(u64::MAX);
-        let bytes_rx = trial.get("bytes_rx").and_then(Value::as_u64).unwrap_or(u64::MAX);
+        let bytes_tx = trial
+            .get("bytes_tx")
+            .and_then(Value::as_u64)
+            .unwrap_or(u64::MAX);
+        let bytes_rx = trial
+            .get("bytes_rx")
+            .and_then(Value::as_u64)
+            .unwrap_or(u64::MAX);
         if let Some(bytes) = bytes_tx.checked_add(bytes_rx) {
             arm_stats.bytes_all_trials.push(bytes);
         } else {
-            errors.push(format!("trials/{index}: transmitted+received bytes overflow"));
+            errors.push(format!(
+                "trials/{index}: transmitted+received bytes overflow"
+            ));
         }
     }
 
     for (pair_id, pair_trials) in &pairs {
         if pair_trials.len() != 2 {
-            errors.push(format!("pair {pair_id} must contain exactly one baseline and one candidate trial"));
+            errors.push(format!(
+                "pair {pair_id} must contain exactly one baseline and one candidate trial"
+            ));
             continue;
         }
         let baseline: Vec<&Value> = pair_trials
@@ -313,7 +367,9 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             .filter(|trial| required_string(trial, "/arm") == Some("candidate"))
             .collect();
         if baseline.len() != 1 || candidate.len() != 1 {
-            errors.push(format!("pair {pair_id} must contain one baseline and one candidate"));
+            errors.push(format!(
+                "pair {pair_id} must contain one baseline and one candidate"
+            ));
             continue;
         }
         for key in ["/scenario_id", "/priority", "/mode"] {
@@ -324,9 +380,16 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
     }
 
     if pairs.len() < minimum_pairs {
-        errors.push(format!("run has {} pair IDs; profile requires at least {minimum_pairs}", pairs.len()));
+        errors.push(format!(
+            "run has {} pair IDs; profile requires at least {minimum_pairs}",
+            pairs.len()
+        ));
     }
-    if profile.get("require_each_priority").and_then(Value::as_bool) == Some(true) {
+    if profile
+        .get("require_each_priority")
+        .and_then(Value::as_bool)
+        == Some(true)
+    {
         for priority in &required_priorities {
             if !priorities.contains(priority) {
                 errors.push(format!("required priority {priority} is absent"));
@@ -346,10 +409,14 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
             errors.push(format!("arm {arm} has no trials"));
         }
         if arm_stats.successful_elapsed_ms.len() as u64 != arm_stats.succeeded {
-            errors.push(format!("arm {arm} latency samples must match successful task count"));
+            errors.push(format!(
+                "arm {arm} latency samples must match successful task count"
+            ));
         }
         if arm_stats.successful_bytes.len() as u64 != arm_stats.succeeded {
-            errors.push(format!("arm {arm} successful byte samples must match successful task count"));
+            errors.push(format!(
+                "arm {arm} successful byte samples must match successful task count"
+            ));
         }
     }
 
@@ -369,8 +436,10 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
     let baseline_attempts = stats.get("baseline").map(ArmStats::attempted).unwrap_or(0);
     let candidate_attempts = stats.get("candidate").map(ArmStats::attempted).unwrap_or(0);
     let successful_delta_ppm = if baseline_attempts > 0 && candidate_attempts > 0 {
-        let base = (u128::from(baseline_success) * 1_000_000 / u128::from(baseline_attempts)) as i64;
-        let cand = (u128::from(candidate_success) * 1_000_000 / u128::from(candidate_attempts)) as i64;
+        let base =
+            (u128::from(baseline_success) * 1_000_000 / u128::from(baseline_attempts)) as i64;
+        let cand =
+            (u128::from(candidate_success) * 1_000_000 / u128::from(candidate_attempts)) as i64;
         Some(cand - base)
     } else {
         None
@@ -399,7 +468,10 @@ fn aggregate_policy(profile: &Value, run: &Value) -> Result<Value, Vec<String>> 
 }
 
 fn is_sha256(value: &str) -> bool {
-    value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
 /// Validates schema/profile/run content and aggregates outcomes. The profile
@@ -435,11 +507,22 @@ mod tests {
     use super::*;
 
     fn fixtures() -> (Value, Value, Vec<u8>, Value) {
-        let run_schema: Value = serde_json::from_str(include_str!("../../../schemas/connectivity-task-outcome-run-v1.schema.json")).expect("run schema parses");
-        let profile_schema: Value = serde_json::from_str(include_str!("../../../schemas/connectivity-task-outcome-profile-v1.schema.json")).expect("profile schema parses");
-        let profile_bytes = include_bytes!("../../../profiles/connectivity-task-outcome-benchmark-profile-v1.json").to_vec();
+        let run_schema: Value = serde_json::from_str(include_str!(
+            "../../../schemas/connectivity-task-outcome-run-v1.schema.json"
+        ))
+        .expect("run schema parses");
+        let profile_schema: Value = serde_json::from_str(include_str!(
+            "../../../schemas/connectivity-task-outcome-profile-v1.schema.json"
+        ))
+        .expect("profile schema parses");
+        let profile_bytes =
+            include_bytes!("../../../profiles/connectivity-task-outcome-benchmark-profile-v1.json")
+                .to_vec();
         let profile: Value = serde_json::from_slice(&profile_bytes).expect("profile parses");
-        let run: Value = serde_json::from_str(include_str!("../../../examples/connectivity-task-outcome-run-synthetic-v1.json")).expect("run parses");
+        let run: Value = serde_json::from_str(include_str!(
+            "../../../examples/connectivity-task-outcome-run-synthetic-v1.json"
+        ))
+        .expect("run parses");
         (run_schema, profile_schema, profile_bytes, run)
     }
 
@@ -453,7 +536,8 @@ mod tests {
         let (run_schema, profile_schema, profile_bytes, run) = fixtures();
         let run = ready_run(run, &profile_bytes);
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
-        let result = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
+        let result =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
         assert!(result.is_ok(), "report errors: {result:#?}");
     }
 
@@ -462,7 +546,9 @@ mod tests {
         let (run_schema, profile_schema, profile_bytes, run) = fixtures();
         let run = ready_run(run, &profile_bytes);
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
-        let report = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run).unwrap();
+        let report =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run)
+                .unwrap();
         assert_eq!(report["baseline"]["attempted"], 3);
         assert_eq!(report["baseline"]["succeeded"], 1);
         assert_eq!(report["baseline"]["failed"], 1);
@@ -478,7 +564,8 @@ mod tests {
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
         let mut run = ready_run(run, &profile_bytes);
         run["trials"][1]["scenario_id"] = json!("other-scenario");
-        let result = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
+        let result =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
         assert!(result.is_err());
     }
 
@@ -488,7 +575,8 @@ mod tests {
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
         let mut run = ready_run(run, &profile_bytes);
         run["trials"][1]["trial_id"] = run["trials"][0]["trial_id"].clone();
-        let result = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
+        let result =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
         assert!(result.is_err());
     }
 
@@ -497,7 +585,10 @@ mod tests {
         let (run_schema, profile_schema, profile_bytes, mut run) = fixtures();
         run["source"]["profile_sha256"] = json!("a".repeat(64));
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
-        assert!(validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run).is_err());
+        assert!(
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run)
+                .is_err()
+        );
     }
 
     #[test]
@@ -506,7 +597,8 @@ mod tests {
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
         let mut run = ready_run(run, &profile_bytes);
         run["evidence_class"] = json!("bench_measured");
-        let result = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
+        let result =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
         assert!(result.is_err());
     }
 
@@ -516,7 +608,8 @@ mod tests {
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
         let mut run = ready_run(run, &profile_bytes);
         run["evidence_class"] = json!("field_observed");
-        let result = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
+        let result =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
         assert!(result.is_err());
     }
 
@@ -529,12 +622,22 @@ mod tests {
             trial["outcome"] = json!("failed");
             trial["elapsed_ms"] = json!(1);
         }
-        let result = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
-        assert!(result.is_ok(), "zero-success run should be valid: {result:#?}");
+        let result =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run);
+        assert!(
+            result.is_ok(),
+            "zero-success run should be valid: {result:#?}"
+        );
         let report = result.unwrap();
         assert_eq!(report["baseline"]["success_rate_ppm"], 0);
-        assert_eq!(report["baseline"]["energy_per_successful_task_millijoules"], Value::Null);
-        assert_eq!(report["baseline"]["user_charge_per_successful_task_minor"], Value::Null);
+        assert_eq!(
+            report["baseline"]["energy_per_successful_task_millijoules"],
+            Value::Null
+        );
+        assert_eq!(
+            report["baseline"]["user_charge_per_successful_task_minor"],
+            Value::Null
+        );
     }
 
     #[test]
@@ -546,7 +649,9 @@ mod tests {
         run["trials"][2]["elapsed_ms"] = json!(6000);
         run["trials"][2]["energy_millijoules"] = json!(2000);
         run["trials"][2]["charge_minor"] = json!(0);
-        let report = validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run).unwrap();
+        let report =
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run)
+                .unwrap();
         assert_eq!(report["baseline"]["latency_p50_ms"], 110);
         assert_eq!(report["baseline"]["latency_p95_ms"], 6000);
     }
@@ -555,8 +660,12 @@ mod tests {
     fn remote_schema_refs_are_rejected_without_resolution() {
         let (mut run_schema, profile_schema, profile_bytes, run) = fixtures();
         let profile: Value = serde_json::from_slice(&profile_bytes).unwrap();
-        run_schema["properties"]["run_id"]["$ref"] = json!("https://example.invalid/remote-schema.json");
+        run_schema["properties"]["run_id"]["$ref"] =
+            json!("https://example.invalid/remote-schema.json");
         let run = ready_run(run, &profile_bytes);
-        assert!(validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run).is_err());
+        assert!(
+            validate_and_report(&run_schema, &profile_schema, &profile_bytes, &profile, &run)
+                .is_err()
+        );
     }
 }
