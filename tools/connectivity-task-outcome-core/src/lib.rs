@@ -130,13 +130,35 @@ fn wilson_95_ppm(successes: u64, attempted: u64) -> (Option<u64>, Option<u64>) {
 /// reported separately and are never deleted from the denominator.
 fn paired_outcome_report(counts: &[u64; 4]) -> Value {
     let pair_count = counts.iter().sum::<u64>();
+    let difference = i64::try_from(counts[1]).unwrap_or(i64::MAX)
+        - i64::try_from(counts[2]).unwrap_or(i64::MAX);
     let delta_ppm = if pair_count > 0 {
-        let difference = i64::try_from(counts[1]).unwrap_or(i64::MAX)
-            - i64::try_from(counts[2]).unwrap_or(i64::MAX);
         Some((i128::from(difference) * 1_000_000 / i128::from(pair_count)) as i64)
     } else {
         None
     };
+
+    // A normal interval is deliberately withheld unless there are at least
+    // ten discordant pairs. With few/no discordances it can look spuriously
+    // precise; small samples need a pre-specified exact paired analysis instead.
+    let discordant_pairs = counts[1] + counts[2];
+    let paired_delta_ci95_ppm = if pair_count >= 2 && discordant_pairs >= 10 {
+        let n = pair_count as f64;
+        let mean = difference as f64 / n;
+        let sample_variance =
+            ((discordant_pairs as f64 - (difference as f64).powi(2) / n) / (n - 1.0))
+                .max(0.0);
+        let standard_error = (sample_variance / n).sqrt();
+        let z = 1.959_963_984_540_054_f64;
+        let lower = ((mean - z * standard_error).clamp(-1.0, 1.0) * 1_000_000.0).floor()
+            as i64;
+        let upper = ((mean + z * standard_error).clamp(-1.0, 1.0) * 1_000_000.0).ceil()
+            as i64;
+        Some((lower, upper))
+    } else {
+        None
+    };
+
     json!({
         "matched_pair_count": pair_count,
         "both_succeeded": counts[0],
@@ -144,6 +166,9 @@ fn paired_outcome_report(counts: &[u64; 4]) -> Value {
         "baseline_only_succeeded": counts[2],
         "neither_succeeded": counts[3],
         "candidate_minus_baseline_paired_success_delta_ppm": delta_ppm,
+        "paired_success_delta_approx95_ci_lower_ppm": paired_delta_ci95_ppm.map(|bounds| bounds.0),
+        "paired_success_delta_approx95_ci_upper_ppm": paired_delta_ci95_ppm.map(|bounds| bounds.1),
+        "paired_success_delta_ci_method": "paired-difference normal approximation; shown only with >=10 discordant pairs",
         "non_success_definition": "failed_or_inconclusive",
         "inferential_test_performed": false
     })
@@ -758,6 +783,27 @@ mod tests {
     fn ready_run(mut run: Value, profile_bytes: &[u8]) -> Value {
         run["source"]["profile_sha256"] = json!(sha256_hex(profile_bytes));
         run
+    }
+
+    #[test]
+    fn paired_difference_interval_is_withheld_for_tiny_smoke_samples() {
+        let report = paired_outcome_report(&[1, 2, 0, 0]);
+        assert_eq!(
+            report["paired_success_delta_approx95_ci_lower_ppm"],
+            Value::Null
+        );
+        assert_eq!(
+            report["paired_success_delta_approx95_ci_upper_ppm"],
+            Value::Null
+        );
+    }
+
+    #[test]
+    fn paired_difference_interval_requires_ten_discordant_pairs() {
+        let report = paired_outcome_report(&[10, 5, 5, 10]);
+        assert_eq!(report["candidate_minus_baseline_paired_success_delta_ppm"], 0);
+        assert!(report["paired_success_delta_approx95_ci_lower_ppm"].as_i64().unwrap() < 0);
+        assert!(report["paired_success_delta_approx95_ci_upper_ppm"].as_i64().unwrap() > 0);
     }
 
     #[test]
