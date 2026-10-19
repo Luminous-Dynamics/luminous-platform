@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/open-hardware-connectivity-candidate-ledger-v1.schema.json",
+  "title": "Open Hardware Connectivity Candidate Ledger v1",
+  "description": "Strict status/claim contract for candidate hardware. Passing shape validation does not prove licences, opensource completeness, physical qualification or deployment authorization.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "status",
+    "reviewed_at",
+    "authority",
+    "deployment_gates",
+    "claim_contract",
+    "candidate_profiles",
+    "next_required_artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "luminous.open-hardware-connectivity-candidate-ledger.v1"
+    },
+    "profile_id": {
+      "const": "open-hardware-connectivity-candidate-ledger-2026-10-18"
+    },
+    "status": {
+      "const": "draft_research_only"
+    },
+    "reviewed_at": {
+      "const": "2026-10-18"
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issue",
+        "design_document"
+      ],
+      "properties": {
+        "issue": {
+          "const": "https://github.com/Luminous-Dynamics/luminous-platform/issues/71"
+        },
+        "design_document": {
+          "const": "docs/OPEN_HARDWARE_CONNECTIVITY_QUALIFICATION_V1.md"
+        }
+      }
+    },
+    "deployment_gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "public_site_deployment_authorized",
+        "south_africa_type_approval_status",
+        "upstream_sharing_permission_status",
+        "spectrum_permission_status",
+        "installation_safety_review_status",
+        "live_radio_measurement_available"
+      ],
+      "properties": {
+        "public_site_deployment_authorized": {
+          "const": false
+        },
+        "south_africa_type_approval_status": {
+          "const": "not_verified"
+        },
+        "upstream_sharing_permission_status": {
+          "const": "not_verified"
+        },
+        "spectrum_permission_status": {
+          "const": "not_verified"
+        },
+        "installation_safety_review_status": {
+          "const": "not_verified"
+        },
+        "live_radio_measurement_available": {
+          "const": false
+        }
+      }
+    },
+    "claim_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overall_open_hardware_claim",
+        "firmware_availability_alone_proves_hardware_open",
+        "design_file_link_alone_proves_design_license",
+        "openwrt_support_alone_proves_open_radio_stack",
+        "ci_pass_alone_proves_field_qualification",
+        "starlink_ip_compatibility_proves_terminal_open",
+        "unknown_critical_dimension_blocks_full_open_claim"
+      ],
+      "properties": {
+        "overall_open_hardware_claim": {
+          "const": false
+        },
+        "firmware_availability_alone_proves_hardware_open": {
+          "const": false
+        },
+        "design_file_link_alone_proves_design_license": {
+          "const": false
+        },
+        "openwrt_support_alone_proves_open_radio_stack": {
+          "const": false
+        },
+        "ci_pass_alone_proves_field_qualification": {
+          "const": false
+        },
+        "starlink_ip_compatibility_proves_terminal_open": {
+          "const": false
+        },
+        "unknown_critical_dimension_blocks_full_open_claim": {
+          "const": true
+        }
+      }
+    },
+    "candidate_profiles": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "manufacturer",
+          "model",
+          "role",
+          "exact_purchased_hardware_revision",
+          "qualification_status",
+          "overall_openness_status",
+          "current_upstream_firmware_reference",
+          "hardware_summary",
+          "firmware_and_driver_summary",
+          "source_references",
+          "critical_artifacts",
+          "explicit_non_claims"
+        ],
+        "properties": {
+          "candidate_id": {
+            "enum": [
+              "GLINET_GL_MT6000_FLINT2_GATEWAY_CANDIDATE",
+              "BANANAPI_BPI_R4_HARDWARE_FILE_CANDIDATE"
+            ]
+          },
+          "manufacturer": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "enum": [
+              "gateway_candidate",
+              "gateway_development_board_candidate",
+              "access_point_candidate",
+              "local_service_node_candidate",
+              "power_candidate"
+            ]
+          },
+          "exact_purchased_hardware_revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "qualification_status": {
+            "const": "design_candidate_only"
+          },
+          "overall_openness_status": {
+            "enum": [
+              "mixed_firmware_driver_and_unknown_hardware_file_status",
+              "hardware_files_linked_license_unverified_radio_stack_unknown"
+            ]
+          },
+          "current_upstream_firmware_reference": {
+            "type": "string",
+            "minLength": 1
+          },
+          "hardware_summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "firmware_and_driver_summary": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_references": {
+            "type": "array",
+            "minItems": 2,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "critical_artifacts": {
+            "type": "array",
+            "minItems": 8,
+            "maxItems": 9,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "artifact_id",
+                "status",
+                "evidence_url",
+                "review_note"
+              ],
+              "properties": {
+                "artifact_id": {
+                  "enum": [
+                    "board_schematics_and_pcb",
+                    "hardware_bom_and_component_replacement",
+                    "upstream_openwrt_support",
+                    "radio_driver",
+                    "radio_firmware_blobs_and_calibration",
+                    "bootloader_and_recovery",
+                    "kernel_and_vendor_bsp",
+                    "south_africa_equipment_approval",
+                    "power_thermal_and_environment"
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "unknown",
+                    "source_claim_seen",
+                    "source_repositories_linked",
+                    "file_location_linked_license_unverified",
+                    "partially_documented_review_required",
+                    "mixed_or_stream_dependent",
+                    "unknown_or_blob_dependent",
+                    "recovery_path_documented_not_tested",
+                    "not_verified",
+                    "not_measured"
+                  ]
+                },
+                "evidence_url": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "review_note": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "explicit_non_claims": {
+            "type": "array",
+            "minItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "candidate_id": {
+                "const": "GLINET_GL_MT6000_FLINT2_GATEWAY_CANDIDATE"
+              },
+              "qualification_status": {
+                "const": "design_candidate_only"
+              }
+            },
+            "required": [
+              "candidate_id",
+              "qualification_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "candidate_id": {
+                "const": "BANANAPI_BPI_R4_HARDWARE_FILE_CANDIDATE"
+              },
+              "qualification_status": {
+                "const": "design_candidate_only"
+              }
+            },
+            "required": [
+              "candidate_id",
+              "qualification_status"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "next_required_artifacts": {
+      "type": "array",
+      "minItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
