@@ -76,9 +76,6 @@ fn run() -> Result<(), String> {
     let manifest_bytes = read_limited(&args[2])?;
     let schema_text = std::str::from_utf8(&manifest_schema)
         .map_err(|error| format!("{}: schema is not UTF-8: {error}", args[1]))?;
-    let manifest_text = std::str::from_utf8(&manifest_bytes)
-        .map_err(|error| format!("{}: manifest is not UTF-8: {error}", args[2]))?;
-
     let _: Value = validate_observation_manifest(schema_text, &manifest_bytes)
         .map_err(|errors| format!("manifest rejected:\n{}", errors.join("\n")))?;
 
