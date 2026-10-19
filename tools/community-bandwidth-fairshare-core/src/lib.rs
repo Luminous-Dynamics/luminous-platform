@@ -118,11 +118,8 @@ pub fn allocate(
     } else {
         0
     };
-    let extra_essential_grants = weighted_max_min(
-        &weights,
-        &essential_remaining,
-        extra_essential_capacity,
-    );
+    let extra_essential_grants =
+        weighted_max_min(&weights, &essential_remaining, extra_essential_capacity);
     let essential_grants: Vec<u64> = reserve_grants
         .iter()
         .zip(&extra_essential_grants)
@@ -167,9 +164,9 @@ pub fn allocate(
 fn valid_peer_id(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 128
-        && value.bytes().all(|byte| {
-            byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-')
-        })
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-'))
 }
 
 fn checked_sum(values: impl Iterator<Item = u64>) -> Result<u64, AllocationError> {
@@ -194,10 +191,7 @@ fn weighted_max_min(weights: &[u16], requests: &[u64], capacity: u64) -> Vec<u64
     let mut remaining_capacity = capacity;
 
     while remaining_capacity > 0 && !active.is_empty() {
-        let weight_sum: u128 = active
-            .iter()
-            .map(|index| u128::from(weights[*index]))
-            .sum();
+        let weight_sum: u128 = active.iter().map(|index| u128::from(weights[*index])).sum();
         let capacity_wide = u128::from(remaining_capacity);
 
         let constrained: Vec<usize> = active
@@ -240,12 +234,7 @@ fn weighted_max_min(weights: &[u16], requests: &[u64], capacity: u64) -> Vec<u64
             unmet[*index] -= *share;
         }
         let leftover = remaining_capacity - floor_total;
-        shares.sort_by(|left, right| {
-            right
-                .2
-                .cmp(&left.2)
-                .then_with(|| left.0.cmp(&right.0))
-        });
+        shares.sort_by(|left, right| right.2.cmp(&left.2).then_with(|| left.0.cmp(&right.0)));
         for (index, _, _) in shares.into_iter().take(leftover as usize) {
             grants[index] += 1;
             unmet[index] -= 1;
@@ -278,7 +267,10 @@ mod tests {
 
     #[test]
     fn zero_capacity_and_invalid_reserve_are_rejected() {
-        assert_eq!(allocate(&policy(0, 0), &[]), Err(AllocationError::ZeroCapacity));
+        assert_eq!(
+            allocate(&policy(0, 0), &[]),
+            Err(AllocationError::ZeroCapacity)
+        );
         assert_eq!(
             allocate(&policy(10, 11), &[]),
             Err(AllocationError::EssentialReserveExceedsCapacity)
@@ -288,7 +280,10 @@ mod tests {
     #[test]
     fn duplicate_and_malformed_peer_ids_are_rejected() {
         assert_eq!(
-            allocate(&policy(100, 0), &[peer("same", 1, 0, 1), peer("same", 1, 0, 1)]),
+            allocate(
+                &policy(100, 0),
+                &[peer("same", 1, 0, 1), peer("same", 1, 0, 1)]
+            ),
             Err(AllocationError::DuplicatePeerId)
         );
         assert_eq!(
@@ -306,16 +301,15 @@ mod tests {
         let too_many: Vec<PeerDemand> = (0..=MAX_PEERS)
             .map(|index| peer(&format!("peer-{index:04}"), 1, 0, 1))
             .collect();
-        assert_eq!(allocate(&policy(100, 0), &too_many), Err(AllocationError::TooManyPeers));
+        assert_eq!(
+            allocate(&policy(100, 0), &too_many),
+            Err(AllocationError::TooManyPeers)
+        );
     }
 
     #[test]
     fn essential_demand_is_served_before_ordinary_demand() {
-        let result = allocate(
-            &policy(100, 20),
-            &[peer("peer-a", 1, 80, 100)],
-        )
-        .unwrap();
+        let result = allocate(&policy(100, 20), &[peer("peer-a", 1, 80, 100)]).unwrap();
         assert_eq!(result.grants[0].essential_granted_bytes, 80);
         assert_eq!(result.grants[0].ordinary_granted_bytes, 20);
         assert_eq!(result.unallocated_bytes, 0);
@@ -400,7 +394,11 @@ mod tests {
             peer("peer-m", 2, 10, 70),
         ];
         let forward = allocate(&policy(100, 25), &inputs).unwrap();
-        let reversed = allocate(&policy(100, 25), &inputs.into_iter().rev().collect::<Vec<_>>()).unwrap();
+        let reversed = allocate(
+            &policy(100, 25),
+            &inputs.into_iter().rev().collect::<Vec<_>>(),
+        )
+        .unwrap();
         assert_eq!(forward, reversed);
     }
 
@@ -416,7 +414,10 @@ mod tests {
         let total = result.total_essential_granted_bytes + result.total_ordinary_granted_bytes;
         assert_eq!(total + result.unallocated_bytes, 177);
         for grant in &result.grants {
-            let request = demands.iter().find(|item| item.peer_id == grant.peer_id).unwrap();
+            let request = demands
+                .iter()
+                .find(|item| item.peer_id == grant.peer_id)
+                .unwrap();
             assert!(grant.essential_granted_bytes <= request.essential_demand_bytes);
             assert!(grant.ordinary_granted_bytes <= request.ordinary_demand_bytes);
         }
@@ -443,11 +444,7 @@ mod tests {
 
     #[test]
     fn maximum_u64_budget_does_not_overflow() {
-        let result = allocate(
-            &policy(u64::MAX, 0),
-            &[peer("peer-a", 1, 0, u64::MAX)],
-        )
-        .unwrap();
+        let result = allocate(&policy(u64::MAX, 0), &[peer("peer-a", 1, 0, u64::MAX)]).unwrap();
         assert_eq!(result.total_ordinary_granted_bytes, u64::MAX);
         assert_eq!(result.unallocated_bytes, 0);
     }
