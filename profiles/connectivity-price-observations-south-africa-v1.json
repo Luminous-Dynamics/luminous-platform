@@ -1,0 +1,79 @@
+{
+  "schema_version": "luminous.connectivity-price-observations.v1",
+  "profile_id": "south-africa-connectivity-price-observations-2026-10-18",
+  "status": "source_observations_not_matched_quotes",
+  "captured_at": "2026-10-18T00:00:00+02:00",
+  "currency": "ZAR",
+  "unit": "minor_units_per_observation_period",
+  "observations": [
+    {
+      "observation_id": "ICASA_STANDARD_2GB_MOBILE_2024",
+      "provider_or_publisher": "ICASA",
+      "product_category": "national_standardized_mobile_broadband_basket",
+      "observation_type": "published_statistical_basket",
+      "price_minor_units": 15200,
+      "currency": "ZAR",
+      "period_days": 30,
+      "reported_reference_period": "2024",
+      "source_published_at": "2026-03-31",
+      "source_url": "https://www.icasa.org.za/legislation-and-regulations/the-state-of-the-ict-sector-report-in-south-africa-2026-report",
+      "source_data_note": "ICASA's March 2026 report describes a standardized 2 GB mobile-broadband basket costing R152 per month for the 2024 reference period.",
+      "terms": [
+        "National standardized basket, not a named retail offer",
+        "2 GB data-only reference basket",
+        "Not a measured site-specific quote",
+        "Not equivalent to a 10 GB bundle with time-of-day restrictions",
+        "Does not establish affordability for every household"
+      ],
+      "comparison_eligibility": "not_comparable_until_scope_matched",
+      "comparison_exclusions": [
+        "Different product definition from retail prepaid bundles",
+        "No named site coverage or device assumptions",
+        "No task-success or quality measurements",
+        "Does not include the proposed community network's full operating costs"
+      ]
+    },
+    {
+      "observation_id": "VODACOM_PREPAID_LTE_5GB_ANYTIME_PLUS_5GB_NIGHTOWL",
+      "provider_or_publisher": "Vodacom",
+      "product_category": "retail_prepaid_lte_data_bundle",
+      "observation_type": "published_retail_offer",
+      "price_minor_units": 9900,
+      "currency": "ZAR",
+      "period_days": 30,
+      "reported_reference_period": "page_observed_2026-10-18",
+      "source_published_at": null,
+      "source_url": "https://www.vodacom.co.za/vodacom/shopping/plans/prepaid-plans",
+      "source_data_note": "The indexed official page lists 5 GB Anytime plus 5 GB Night Owl for R99 over 30 days, including VAT.",
+      "terms": [
+        "5 GB Anytime allocation",
+        "5 GB Night Owl allocation with time restrictions",
+        "Terms and conditions apply",
+        "Availability, eligibility, signal quality and actual throughput were not independently tested",
+        "Page price can change; revalidate before procurement"
+      ],
+      "comparison_eligibility": "not_comparable_until_scope_matched",
+      "comparison_exclusions": [
+        "Time-of-day allocation differs from a single unrestricted 10 GB allowance",
+        "No device or site-level coverage test",
+        "No task-success or quality measurements",
+        "Not directly equivalent to ICASA's standardized 2 GB basket"
+      ]
+    }
+  ],
+  "comparison_contract": {
+    "prices_are_observations_not_universal_tariffs": true,
+    "unmatched_products_must_not_be_ranked_as_direct_savings": true,
+    "every_observation_requires_a_source_url": true,
+    "source_reference_period_must_be_separate_from_capture_date": true,
+    "quality_security_and_geographic_scope_must_be_matched_before_savings_claim": true,
+    "full_network_costs_must_include_hardware_energy_maintenance_support_and_labor": true
+  },
+  "explicit_non_claims": [
+    "No claim these observations are equivalent products",
+    "No claim any community network is cheaper than either observed offer",
+    "No claim of measured coverage, throughput, reliability or task quality",
+    "No claim a price observation is guaranteed to remain available",
+    "No claim that ICASA's standardized national basket is a named retail tariff"
+  ]
+}
