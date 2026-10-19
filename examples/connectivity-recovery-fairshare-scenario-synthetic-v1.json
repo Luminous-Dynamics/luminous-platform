@@ -1,0 +1,59 @@
+{
+  "schema_version": "luminous.connectivity-recovery-fairshare-scenario.v1",
+  "simulation_id": "recovery-fairshare-smoke-v1",
+  "run_id": "recovery-fairshare-run-001",
+  "currency": "ZAR",
+  "window_budget_bytes": 9000,
+  "essential_reserve_bytes": 1000,
+  "completion_latency_ms": 80,
+  "base_attempt_energy_millijoules": 500,
+  "energy_millijoules_per_kib": 100,
+  "charge_minor_per_kib": 1,
+  "tasks": [
+    {
+      "task_id": "online-essential-large-a", "pair_id": "pair-online-essential-a", "scenario_id": "scenario-online-essential",
+      "peer_id": "peer-a", "weight": 1, "priority": "essential", "mode": "online", "arrival_ms": 0,
+      "service_bytes": 8192, "deadline_ms": 1000, "expires_after_ms": 1500
+    },
+    {
+      "task_id": "online-essential-small-b", "pair_id": "pair-online-essential-b", "scenario_id": "scenario-online-essential",
+      "peer_id": "peer-b", "weight": 1, "priority": "essential", "mode": "online", "arrival_ms": 1,
+      "service_bytes": 2048, "deadline_ms": 1000, "expires_after_ms": 1500
+    },
+    {
+      "task_id": "online-essential-small-c", "pair_id": "pair-online-essential-c", "scenario_id": "scenario-online-essential",
+      "peer_id": "peer-c", "weight": 1, "priority": "essential", "mode": "online", "arrival_ms": 2,
+      "service_bytes": 2048, "deadline_ms": 1000, "expires_after_ms": 1500
+    },
+    {
+      "task_id": "partition-interactive-large-a", "pair_id": "pair-partition-interactive-a", "scenario_id": "scenario-partition-interactive",
+      "peer_id": "peer-a", "weight": 1, "priority": "interactive", "mode": "wan_partition", "arrival_ms": 0,
+      "service_bytes": 8192, "deadline_ms": 1000, "expires_after_ms": 1500
+    },
+    {
+      "task_id": "partition-interactive-small-b", "pair_id": "pair-partition-interactive-b", "scenario_id": "scenario-partition-interactive",
+      "peer_id": "peer-b", "weight": 1, "priority": "interactive", "mode": "wan_partition", "arrival_ms": 1,
+      "service_bytes": 2048, "deadline_ms": 1000, "expires_after_ms": 1500
+    },
+    {
+      "task_id": "partition-interactive-small-c", "pair_id": "pair-partition-interactive-c", "scenario_id": "scenario-partition-interactive",
+      "peer_id": "peer-c", "weight": 1, "priority": "interactive", "mode": "wan_partition", "arrival_ms": 2,
+      "service_bytes": 2048, "deadline_ms": 1000, "expires_after_ms": 1500
+    },
+    {
+      "task_id": "recovery-bulk-large-a", "pair_id": "pair-recovery-bulk-a", "scenario_id": "scenario-recovery-bulk",
+      "peer_id": "peer-a", "weight": 1, "priority": "bulk", "mode": "route_recovery", "arrival_ms": 0,
+      "service_bytes": 8192, "deadline_ms": 1000, "expires_after_ms": 1500
+    },
+    {
+      "task_id": "recovery-bulk-small-b", "pair_id": "pair-recovery-bulk-b", "scenario_id": "scenario-recovery-bulk",
+      "peer_id": "peer-b", "weight": 1, "priority": "bulk", "mode": "route_recovery", "arrival_ms": 1,
+      "service_bytes": 2048, "deadline_ms": 1000, "expires_after_ms": 1500
+    },
+    {
+      "task_id": "recovery-bulk-small-c", "pair_id": "pair-recovery-bulk-c", "scenario_id": "scenario-recovery-bulk",
+      "peer_id": "peer-c", "weight": 1, "priority": "bulk", "mode": "route_recovery", "arrival_ms": 2,
+      "service_bytes": 2048, "deadline_ms": 1000, "expires_after_ms": 1500
+    }
+  ]
+}
