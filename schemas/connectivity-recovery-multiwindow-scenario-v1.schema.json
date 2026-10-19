@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/connectivity-recovery-multiwindow-scenario-v1.schema.json",
+  "title": "Connectivity Multi-Window Recovery Scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "simulation_id", "run_id", "currency",
+    "window_capacity_bytes", "essential_reserve_bytes", "max_windows",
+    "window_duration_ms", "base_attempt_energy_millijoules",
+    "energy_millijoules_per_kib", "charge_minor_per_kib", "tasks"
+  ],
+  "properties": {
+    "schema_version": { "const": "luminous.connectivity-recovery-multiwindow-scenario.v1" },
+    "simulation_id": { "$ref": "#/$defs/token" },
+    "run_id": { "$ref": "#/$defs/token" },
+    "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+    "window_capacity_bytes": { "type": "integer", "minimum": 1, "maximum": 18446744073709551615 },
+    "essential_reserve_bytes": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+    "max_windows": { "type": "integer", "minimum": 1, "maximum": 256 },
+    "window_duration_ms": { "type": "integer", "minimum": 1, "maximum": 60000 },
+    "base_attempt_energy_millijoules": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+    "energy_millijoules_per_kib": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+    "charge_minor_per_kib": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+    "tasks": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 4096,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "task_id", "pair_id", "scenario_id", "peer_id", "weight",
+          "priority", "mode", "arrival_window", "arrival_order",
+          "deadline_window", "expires_after_window", "service_bytes"
+        ],
+        "properties": {
+          "task_id": { "$ref": "#/$defs/token" },
+          "pair_id": { "$ref": "#/$defs/token" },
+          "scenario_id": { "$ref": "#/$defs/token" },
+          "peer_id": { "$ref": "#/$defs/peer_token" },
+          "weight": { "type": "integer", "minimum": 1, "maximum": 1000 },
+          "priority": { "enum": ["essential", "interactive", "bulk"] },
+          "mode": { "enum": ["online", "wan_partition", "route_recovery"] },
+          "arrival_window": { "type": "integer", "minimum": 0, "maximum": 255 },
+          "arrival_order": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+          "deadline_window": { "type": "integer", "minimum": 0, "maximum": 255 },
+          "expires_after_window": { "type": "integer", "minimum": 0, "maximum": 255 },
+          "service_bytes": { "type": "integer", "minimum": 1, "maximum": 18446744073709551615 }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "token": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._-]+$" },
+    "peer_token": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$" }
+  }
+}
