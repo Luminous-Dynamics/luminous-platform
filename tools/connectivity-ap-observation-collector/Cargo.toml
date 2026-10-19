@@ -1,0 +1,25 @@
+[package]
+name = "connectivity-ap-observation-collector"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "AGPL-3.0-or-later"
+description = "Read-only Linux Wi-Fi/link/qdisc observation collector with privacy-safe aggregate output"
+
+[dependencies]
+connectivity-ap-testbed-contracts = { path = "../connectivity-ap-testbed-contracts" }
+connectivity-task-outcome-core = { path = "../connectivity-task-outcome-core" }
+serde_json = "=1.0.145"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "connectivity-ap-observe"
+path = "src/main.rs"
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
