@@ -409,7 +409,9 @@ pub fn validate_and_simulate(
         trials.push(make_trial(&task, "candidate", candidate));
     }
 
-    let canonical_scenario_bytes = serde_json::to_vec(scenario)
+    let mut canonical_scenario = scenario.clone();
+    canonical_scenario["tasks"] = json!(ordered);
+    let canonical_scenario_bytes = serde_json::to_vec(&canonical_scenario)
         .map_err(|error| vec![format!("cannot canonicalize scenario: {error}")])?;
     let scenario_digest = sha256_hex(&canonical_scenario_bytes);
     let run = json!({
