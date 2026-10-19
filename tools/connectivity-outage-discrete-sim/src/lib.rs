@@ -26,32 +26,49 @@ struct TrialOutcome {
 }
 
 fn string_field<'a>(value: &'a Value, key: &str) -> Result<&'a str, String> {
-    value.get(key).and_then(Value::as_str).ok_or_else(|| format!("{key} must be a string"))
+    value
+        .get(key)
+        .and_then(Value::as_str)
+        .ok_or_else(|| format!("{key} must be a string"))
 }
 
 fn u64_field(value: &Value, key: &str) -> Result<u64, String> {
-    value.get(key).and_then(Value::as_u64).ok_or_else(|| format!("{key} must be a non-negative integer"))
+    value
+        .get(key)
+        .and_then(Value::as_u64)
+        .ok_or_else(|| format!("{key} must be a non-negative integer"))
 }
 
 fn bool_field(value: &Value, key: &str) -> Result<bool, String> {
-    value.get(key).and_then(Value::as_bool).ok_or_else(|| format!("{key} must be a boolean"))
+    value
+        .get(key)
+        .and_then(Value::as_bool)
+        .ok_or_else(|| format!("{key} must be a boolean"))
 }
 
 fn reject_remote_refs(value: &Value, path: &str, errors: &mut Vec<String>) {
     match value {
-        Value::Object(object) => for (key, child) in object {
-            if key == "$ref" || key == "$dynamicRef" {
-                match child.as_str() {
-                    Some(reference) if reference.starts_with('#') => {}
-                    Some(_) => errors.push(format!("{path}/{key}: only local schema references are allowed")),
-                    None => errors.push(format!("{path}/{key}: schema reference must be a string")),
+        Value::Object(object) => {
+            for (key, child) in object {
+                if key == "$ref" || key == "$dynamicRef" {
+                    match child.as_str() {
+                        Some(reference) if reference.starts_with('#') => {}
+                        Some(_) => errors.push(format!(
+                            "{path}/{key}: only local schema references are allowed"
+                        )),
+                        None => {
+                            errors.push(format!("{path}/{key}: schema reference must be a string"))
+                        }
+                    }
                 }
+                reject_remote_refs(child, &format!("{path}/{key}"), errors);
             }
-            reject_remote_refs(child, &format!("{path}/{key}"), errors);
-        },
-        Value::Array(items) => for (index, child) in items.iter().enumerate() {
-            reject_remote_refs(child, &format!("{path}/{index}"), errors);
-        },
+        }
+        Value::Array(items) => {
+            for (index, child) in items.iter().enumerate() {
+                reject_remote_refs(child, &format!("{path}/{index}"), errors);
+            }
+        }
         _ => {}
     }
 }
@@ -64,16 +81,27 @@ fn schema_errors(schema: &Value, value: &Value) -> Vec<String> {
     }
     let meta = match jsonschema::meta::validator_for(schema) {
         Ok(validator) => validator,
-        Err(error) => return vec![format!("cannot create scenario schema meta-validator: {error}")],
+        Err(error) => {
+            return vec![format!(
+                "cannot create scenario schema meta-validator: {error}"
+            )];
+        }
     };
     if !meta.evaluate(schema).flag().valid {
         return vec!["scenario schema failed JSON Schema meta-validation".to_owned()];
     }
-    let validator = match draft202012::options().should_validate_formats(true).build(schema) {
+    let validator = match draft202012::options()
+        .should_validate_formats(true)
+        .build(schema)
+    {
         Ok(validator) => validator,
         Err(error) => return vec![format!("cannot create scenario validator: {error}")],
     };
-    errors.extend(validator.iter_errors(value).map(|error| format!("scenario: {error}")));
+    errors.extend(
+        validator
+            .iter_errors(value)
+            .map(|error| format!("scenario: {error}")),
+    );
     errors
 }
 
@@ -99,9 +127,18 @@ fn ceil_div(numerator: u128, denominator: u128) -> Result<u64, String> {
     u64::try_from(result).map_err(|_| "simulated value overflows u64".to_owned())
 }
 
-fn path_duration_ms(payload_bytes: u64, latency_ms: u64, bytes_per_second: u64) -> Result<u64, String> {
-    let transfer_ms = ceil_div(u128::from(payload_bytes) * 1000, u128::from(bytes_per_second))?;
-    latency_ms.checked_add(transfer_ms).ok_or_else(|| "path duration overflows u64".to_owned())
+fn path_duration_ms(
+    payload_bytes: u64,
+    latency_ms: u64,
+    bytes_per_second: u64,
+) -> Result<u64, String> {
+    let transfer_ms = ceil_div(
+        u128::from(payload_bytes) * 1000,
+        u128::from(bytes_per_second),
+    )?;
+    latency_ms
+        .checked_add(transfer_ms)
+        .ok_or_else(|| "path duration overflows u64".to_owned())
 }
 
 fn payload_kib_ceil(payload_bytes: u64) -> u64 {
@@ -114,13 +151,15 @@ fn payload_kib_ceil(payload_bytes: u64) -> u64 {
 }
 
 fn energy_cost(base: u64, payload_bytes: u64, per_kib: u64) -> Result<u64, String> {
-    payload_kib_ceil(payload_bytes).checked_mul(per_kib)
+    payload_kib_ceil(payload_bytes)
+        .checked_mul(per_kib)
         .and_then(|variable| base.checked_add(variable))
         .ok_or_else(|| "synthetic energy arithmetic overflows u64".to_owned())
 }
 
 fn charge_cost(payload_bytes: u64, per_kib: u64) -> Result<u64, String> {
-    payload_kib_ceil(payload_bytes).checked_mul(per_kib)
+    payload_kib_ceil(payload_bytes)
+        .checked_mul(per_kib)
         .ok_or_else(|| "synthetic charge arithmetic overflows u64".to_owned())
 }
 
@@ -141,7 +180,12 @@ fn link_path(link: &Value, kind: &str) -> Result<LinkPath, String> {
     })
 }
 
-fn blocked_attempt(deadline_ms: u64, ttl_ms: u64, detection_ms: u64, base_energy: u64) -> TrialOutcome {
+fn blocked_attempt(
+    deadline_ms: u64,
+    ttl_ms: u64,
+    detection_ms: u64,
+    base_energy: u64,
+) -> TrialOutcome {
     TrialOutcome {
         outcome: "failed",
         elapsed_ms: deadline_ms.min(ttl_ms).min(detection_ms),
@@ -175,7 +219,9 @@ fn transfer_attempt(
         });
     }
     let path_ms = path_duration_ms(payload_bytes, path.latency_ms, path.bytes_per_second)?;
-    let completion_ms = wait_ms.checked_add(path_ms).ok_or_else(|| "wait plus path duration overflows u64".to_owned())?;
+    let completion_ms = wait_ms
+        .checked_add(path_ms)
+        .ok_or_else(|| "wait plus path duration overflows u64".to_owned())?;
     let energy = energy_cost(base_energy, payload_bytes, path.energy_millijoules_per_kib)?;
     let charge = charge_cost(payload_bytes, path.charge_minor_per_kib)?;
     if completion_ms <= allowed {
@@ -199,14 +245,20 @@ fn transfer_attempt(
     }
 }
 
-fn blocked_for_outage(task: &Value, scenario: &Value, base_energy: u64) -> Result<TrialOutcome, String> {
+fn blocked_for_outage(
+    task: &Value,
+    scenario: &Value,
+    base_energy: u64,
+) -> Result<TrialOutcome, String> {
     let arrival = u64_field(task, "arrival_ms")?;
     let start = u64_field(scenario, "outage_start_ms")?;
     let end = u64_field(scenario, "outage_end_ms")?;
     if arrival < start || arrival >= end {
         return Err("internal simulation error: expected WAN outage at task arrival".to_owned());
     }
-    let queue_policy = scenario.get("queue_policy").ok_or("queue_policy is missing")?;
+    let queue_policy = scenario
+        .get("queue_policy")
+        .ok_or("queue_policy is missing")?;
     Ok(blocked_attempt(
         u64_field(task, "deadline_ms")?,
         u64_field(task, "expires_after_ms")?,
@@ -234,38 +286,30 @@ fn simulate_baseline(task: &Value, scenario: &Value) -> Result<TrialOutcome, Str
     )
 }
 
-fn simulate_candidate(task: &Value, scenario: &Value, pending: &mut Vec<(u64, u64)>) -> Result<TrialOutcome, String> {
+fn simulate_candidate(
+    task: &Value,
+    scenario: &Value,
+    pending: &mut Vec<(u64, u64)>,
+) -> Result<TrialOutcome, String> {
     let arrival = u64_field(task, "arrival_ms")?;
     let start = u64_field(scenario, "outage_start_ms")?;
     let end = u64_field(scenario, "outage_end_ms")?;
     let payload = u64_field(task, "payload_bytes")?;
     let deadline = u64_field(task, "deadline_ms")?;
     let ttl = u64_field(task, "expires_after_ms")?;
-    let queue = scenario.get("queue_policy").ok_or("queue_policy is missing")?;
+    let queue = scenario
+        .get("queue_policy")
+        .ok_or("queue_policy is missing")?;
     let link = scenario.get("link_model").ok_or("link_model is missing")?;
     let base = u64_field(link, "base_attempt_energy_millijoules")?;
     pending.retain(|(release_at, _)| *release_at > arrival);
 
     if bool_field(task, "local_execution_allowed")? && bool_field(queue, "local_link_available")? {
-        return transfer_attempt(
-            payload,
-            0,
-            link_path(link, "local")?,
-            deadline,
-            ttl,
-            base,
-        );
+        return transfer_attempt(payload, 0, link_path(link, "local")?, deadline, ttl, base);
     }
 
     if arrival < start || arrival >= end {
-        return transfer_attempt(
-            payload,
-            0,
-            link_path(link, "wan")?,
-            deadline,
-            ttl,
-            base,
-        );
+        return transfer_attempt(payload, 0, link_path(link, "wan")?, deadline, ttl, base);
     }
 
     let failure_detection = u64_field(queue, "failure_detection_ms")?;
@@ -278,17 +322,27 @@ fn simulate_candidate(task: &Value, scenario: &Value, pending: &mut Vec<(u64, u6
     // reason to reserve queue space for a result that can no longer succeed.
     if deadline <= wait_ms {
         return Ok(TrialOutcome {
-            outcome: "failed", elapsed_ms: deadline.min(ttl),
-            bytes_tx: 0, bytes_rx: 0, energy_millijoules: base, charge_minor: 0,
+            outcome: "failed",
+            elapsed_ms: deadline.min(ttl),
+            bytes_tx: 0,
+            bytes_rx: 0,
+            energy_millijoules: base,
+            charge_minor: 0,
         });
     }
 
-    let expiry_at = arrival.checked_add(ttl).ok_or_else(|| "expiry timestamp overflows u64".to_owned())?;
-    let deadline_at = arrival.checked_add(deadline).ok_or_else(|| "deadline timestamp overflows u64".to_owned())?;
+    let expiry_at = arrival
+        .checked_add(ttl)
+        .ok_or_else(|| "expiry timestamp overflows u64".to_owned())?;
+    let deadline_at = arrival
+        .checked_add(deadline)
+        .ok_or_else(|| "deadline timestamp overflows u64".to_owned())?;
     let release_at = expiry_at.min(deadline_at).min(end);
     let max_items = u64_field(queue, "max_items")? as usize;
     let max_bytes = u64_field(queue, "max_bytes")?;
-    let pending_bytes = pending.iter().try_fold(0_u64, |sum, (_, bytes)| sum.checked_add(*bytes))
+    let pending_bytes = pending
+        .iter()
+        .try_fold(0_u64, |sum, (_, bytes)| sum.checked_add(*bytes))
         .ok_or_else(|| "pending queue-byte counter overflows u64".to_owned())?;
     let next_bytes = pending_bytes.checked_add(payload);
     if pending.len() >= max_items || next_bytes.is_none_or(|bytes| bytes > max_bytes) {
@@ -298,8 +352,12 @@ fn simulate_candidate(task: &Value, scenario: &Value, pending: &mut Vec<(u64, u6
 
     if ttl <= wait_ms {
         return Ok(TrialOutcome {
-            outcome: "failed", elapsed_ms: ttl.min(deadline),
-            bytes_tx: 0, bytes_rx: 0, energy_millijoules: base, charge_minor: 0,
+            outcome: "failed",
+            elapsed_ms: ttl.min(deadline),
+            bytes_tx: 0,
+            bytes_rx: 0,
+            energy_millijoules: base,
+            charge_minor: 0,
         });
     }
 
@@ -345,9 +403,13 @@ fn validate_semantics(scenario: &Value) -> Result<(), Vec<String>> {
         let mode = string_field(task, "mode").unwrap_or("");
         let in_outage = arrival >= start && arrival < end;
         match mode {
-            "online" if in_outage => errors.push(format!("tasks/{index}: online task arrives during WAN outage")),
-            "wan_partition" | "route_recovery" if !in_outage => errors.push(format!("tasks/{index}: {mode} task must arrive during WAN outage")),
-            "online" | "wan_partition" | "route_recovery" => {},
+            "online" if in_outage => errors.push(format!(
+                "tasks/{index}: online task arrives during WAN outage"
+            )),
+            "wan_partition" | "route_recovery" if !in_outage => errors.push(format!(
+                "tasks/{index}: {mode} task must arrive during WAN outage"
+            )),
+            "online" | "wan_partition" | "route_recovery" => {}
             _ => errors.push(format!("tasks/{index}: unsupported mode {mode}")),
         }
         let priority = string_field(task, "priority").unwrap_or("");
@@ -358,10 +420,18 @@ fn validate_semantics(scenario: &Value) -> Result<(), Vec<String>> {
             || u64_field(task, "deadline_ms").unwrap_or(0) == 0
             || u64_field(task, "expires_after_ms").unwrap_or(0) == 0
         {
-            errors.push(format!("tasks/{index}: payload, deadline, and TTL must be positive"));
+            errors.push(format!(
+                "tasks/{index}: payload, deadline, and TTL must be positive"
+            ));
         }
     }
-    if errors.is_empty() { Ok(()) } else { errors.sort(); errors.dedup(); Err(errors) }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        errors.sort();
+        errors.dedup();
+        Err(errors)
+    }
 }
 
 fn make_trial(task: &Value, arm: &str, result: TrialOutcome) -> Value {
@@ -403,23 +473,47 @@ pub fn validate_and_simulate(
     }
     validate_semantics(scenario)?;
 
-    let tasks = scenario.get("tasks").and_then(Value::as_array)
+    let tasks = scenario
+        .get("tasks")
+        .and_then(Value::as_array)
         .ok_or_else(|| vec!["tasks must be an array".to_owned()])?;
     let mut ordered = tasks.clone();
     ordered.sort_by(|left, right| {
-        u64_field(left, "arrival_ms").unwrap_or(0).cmp(&u64_field(right, "arrival_ms").unwrap_or(0))
-            .then_with(|| priority_rank(string_field(right, "priority").unwrap_or("")).cmp(&priority_rank(string_field(left, "priority").unwrap_or(""))))
-            .then_with(|| string_field(left, "task_id").unwrap_or("").cmp(string_field(right, "task_id").unwrap_or("")))
+        u64_field(left, "arrival_ms")
+            .unwrap_or(0)
+            .cmp(&u64_field(right, "arrival_ms").unwrap_or(0))
+            .then_with(|| {
+                priority_rank(string_field(right, "priority").unwrap_or(""))
+                    .cmp(&priority_rank(string_field(left, "priority").unwrap_or("")))
+            })
+            .then_with(|| {
+                string_field(left, "task_id")
+                    .unwrap_or("")
+                    .cmp(string_field(right, "task_id").unwrap_or(""))
+            })
     });
 
     let mut pending: Vec<(u64, u64)> = Vec::new();
-    let mut output: Vec<(String, Value, TrialOutcome, TrialOutcome)> = Vec::with_capacity(ordered.len());
+    let mut output: Vec<(String, Value, TrialOutcome, TrialOutcome)> =
+        Vec::with_capacity(ordered.len());
     for task in &ordered {
         let baseline = simulate_baseline(task, scenario).map_err(|error| vec![error])?;
-        let candidate = simulate_candidate(task, scenario, &mut pending).map_err(|error| vec![error])?;
-        output.push((string_field(task, "task_id").map_err(|error| vec![error])?.to_owned(), task.clone(), baseline, candidate));
+        let candidate =
+            simulate_candidate(task, scenario, &mut pending).map_err(|error| vec![error])?;
+        output.push((
+            string_field(task, "task_id")
+                .map_err(|error| vec![error])?
+                .to_owned(),
+            task.clone(),
+            baseline,
+            candidate,
+        ));
     }
-    output.sort_by(|left, right| string_field(&left.1, "pair_id").unwrap_or("").cmp(string_field(&right.1, "pair_id").unwrap_or("")));
+    output.sort_by(|left, right| {
+        string_field(&left.1, "pair_id")
+            .unwrap_or("")
+            .cmp(string_field(&right.1, "pair_id").unwrap_or(""))
+    });
 
     let mut trials = Vec::with_capacity(output.len() * 2);
     for (_, task, baseline, candidate) in output {
@@ -445,7 +539,10 @@ pub fn validate_and_simulate(
         "trials": trials
     });
     let mut report = validate_and_report(run_schema, profile_schema, profile_bytes, profile, &run)?;
-    report["simulation_id"] = scenario.get("simulation_id").cloned().unwrap_or(Value::Null);
+    report["simulation_id"] = scenario
+        .get("simulation_id")
+        .cloned()
+        .unwrap_or(Value::Null);
     report["scenario_canonical_sha256"] = json!(scenario_digest);
     Ok((run, report))
 }
@@ -464,19 +561,40 @@ mod tests {
     }
 
     fn fixtures() -> Fixtures {
-        let profile_bytes = include_bytes!("../../../profiles/connectivity-task-outcome-benchmark-profile-v1.json").to_vec();
+        let profile_bytes =
+            include_bytes!("../../../profiles/connectivity-task-outcome-benchmark-profile-v1.json")
+                .to_vec();
         Fixtures {
-            schema: serde_json::from_str(include_str!("../../../schemas/connectivity-outage-scenario-v1.schema.json")).unwrap(),
-            scenario: serde_json::from_str(include_str!("../../../examples/connectivity-outage-scenario-synthetic-v1.json")).unwrap(),
-            run_schema: serde_json::from_str(include_str!("../../../schemas/connectivity-task-outcome-run-v1.schema.json")).unwrap(),
-            profile_schema: serde_json::from_str(include_str!("../../../schemas/connectivity-task-outcome-profile-v1.schema.json")).unwrap(),
+            schema: serde_json::from_str(include_str!(
+                "../../../schemas/connectivity-outage-scenario-v1.schema.json"
+            ))
+            .unwrap(),
+            scenario: serde_json::from_str(include_str!(
+                "../../../examples/connectivity-outage-scenario-synthetic-v1.json"
+            ))
+            .unwrap(),
+            run_schema: serde_json::from_str(include_str!(
+                "../../../schemas/connectivity-task-outcome-run-v1.schema.json"
+            ))
+            .unwrap(),
+            profile_schema: serde_json::from_str(include_str!(
+                "../../../schemas/connectivity-task-outcome-profile-v1.schema.json"
+            ))
+            .unwrap(),
             profile: serde_json::from_slice(&profile_bytes).unwrap(),
             profile_bytes,
         }
     }
 
     fn simulate(f: &Fixtures, scenario: &Value) -> Result<(Value, Value), Vec<String>> {
-        validate_and_simulate(&f.schema, scenario, &f.run_schema, &f.profile_schema, &f.profile_bytes, &f.profile)
+        validate_and_simulate(
+            &f.schema,
+            scenario,
+            &f.run_schema,
+            &f.profile_schema,
+            &f.profile_bytes,
+            &f.profile,
+        )
     }
 
     #[test]
@@ -487,8 +605,14 @@ mod tests {
         assert_eq!(run["trials"].as_array().unwrap().len(), 18);
         assert_eq!(report["trial_count"], 18);
         assert_eq!(report["pair_count"], 9);
-        assert_eq!(report["interpretation_boundary"]["field_performance_proven"], false);
-        assert_eq!(run["source"]["run_artifact_sha256"], report["scenario_canonical_sha256"]);
+        assert_eq!(
+            report["interpretation_boundary"]["field_performance_proven"],
+            false
+        );
+        assert_eq!(
+            run["source"]["run_artifact_sha256"],
+            report["scenario_canonical_sha256"]
+        );
         assert_eq!(report["simulation_id"], "outage-scenario-smoke-v1");
     }
 
@@ -496,8 +620,12 @@ mod tests {
     fn local_essential_task_survives_a_wan_partition() {
         let f = fixtures();
         let (_, report) = simulate(&f, &f.scenario).unwrap();
-        let row = report["by_priority_and_mode"].as_array().unwrap().iter()
-            .find(|item| item["priority"] == "essential" && item["mode"] == "wan_partition").unwrap();
+        let row = report["by_priority_and_mode"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|item| item["priority"] == "essential" && item["mode"] == "wan_partition")
+            .unwrap();
         assert_eq!(row["baseline"]["success_rate_ppm"], 0);
         assert_eq!(row["candidate"]["success_rate_ppm"], 1_000_000);
     }
@@ -506,8 +634,12 @@ mod tests {
     fn message_expired_before_recovery_is_not_forwarded() {
         let f = fixtures();
         let (run, _) = simulate(&f, &f.scenario).unwrap();
-        let trial = run["trials"].as_array().unwrap().iter()
-            .find(|trial| trial["trial_id"] == "task-partition-bulk-candidate").unwrap();
+        let trial = run["trials"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|trial| trial["trial_id"] == "task-partition-bulk-candidate")
+            .unwrap();
         assert_eq!(trial["outcome"], "failed");
         assert_eq!(trial["bytes_tx"], 0);
         assert_eq!(trial["bytes_rx"], 0);
@@ -519,8 +651,12 @@ mod tests {
         let mut scenario = f.scenario.clone();
         scenario["queue_policy"]["max_items"] = json!(1);
         let (run, _) = simulate(&f, &scenario).unwrap();
-        let trial = run["trials"].as_array().unwrap().iter()
-            .find(|trial| trial["trial_id"] == "task-recovery-interactive-candidate").unwrap();
+        let trial = run["trials"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|trial| trial["trial_id"] == "task-recovery-interactive-candidate")
+            .unwrap();
         assert_eq!(trial["outcome"], "failed");
         assert_eq!(trial["bytes_tx"], 0);
     }
@@ -550,14 +686,18 @@ mod tests {
     fn generated_run_binds_exact_profile_bytes() {
         let f = fixtures();
         let (run, _) = simulate(&f, &f.scenario).unwrap();
-        assert_eq!(run["source"]["profile_sha256"], sha256_hex(&f.profile_bytes));
+        assert_eq!(
+            run["source"]["profile_sha256"],
+            sha256_hex(&f.profile_bytes)
+        );
     }
 
     #[test]
     fn scenario_schema_with_remote_reference_is_rejected() {
         let f = fixtures();
         let mut schema = f.schema.clone();
-        schema["properties"]["simulation_id"]["$ref"] = json!("https://example.invalid/schema.json");
+        schema["properties"]["simulation_id"]["$ref"] =
+            json!("https://example.invalid/schema.json");
         let err = schema_errors(&schema, &f.scenario);
         assert!(!err.is_empty());
     }
