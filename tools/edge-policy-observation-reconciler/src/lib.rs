@@ -5,6 +5,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod freshness;
+
 use std::collections::{HashMap, HashSet};
 use std::fmt::Write as _;
 
