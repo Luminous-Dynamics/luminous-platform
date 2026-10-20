@@ -19,6 +19,7 @@ make_archive() {
   for name in \
     srq-challenge-promotion-model-test.log \
     srq-evidence-003-model-result.json \
+    srq-process-kill-model-test.log \
     srq-recovery-model-test.log \
     srq-release-qualification.json \
     srq-update-004-model-result.json; do
@@ -37,6 +38,7 @@ make_archive() {
     printf 'tampered after hashing\n' >> "$bundle/srq-recovery-model-test.log"
   fi
   checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
+  process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
   jq -n \
     --arg repo "Luminous-Dynamics/luminous-platform" \
     --arg workflow_path ".github/workflows/srq-v1.yml" \
@@ -47,6 +49,7 @@ make_archive() {
     --arg run_attempt "$run_attempt" \
     --arg source_sha "$source_sha" \
     --arg checksum_sha "$checksum_sha" \
+    --arg process_kill_sha "$process_kill_sha" \
     --arg corpus_sha "$(printf 'a%.0s' {1..64})" \
     '{
       schema_version: 1,
@@ -65,7 +68,16 @@ make_archive() {
         source_matches_expected: true
       },
       corpus_sha256: $corpus_sha,
-      checksum_manifest_sha256: $checksum_sha
+      checksum_manifest_sha256: $checksum_sha,
+      supplemental_observations: [{
+        test_id: "SRQ-PROCESS-KILL-V1",
+        scenario_id: "UPDATE-004",
+        execution_tier: "model",
+        claim_ceiling: "abstract_model_only",
+        status: "PASS",
+        evidence_artifact: "srq-process-kill-model-test.log",
+        evidence_sha256: $process_kill_sha
+      }]
     }' > "$bundle/manifest.json"
   tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - -C "$tmp/work" srq-evidence-bundle \
     | gzip -n > "$archive"
