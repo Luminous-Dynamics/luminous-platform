@@ -134,7 +134,10 @@ fn validate_policy_text(stage: PolicyStage, ruleset: &str) -> Result<(), String>
                 return Err("initial policy rule order is unexpected".to_owned());
             }
             if revoke_at.is_some() {
-                return Err("initial/restored policy must not retain a tuple-specific revocation override".to_owned());
+                return Err(
+                    "initial/restored policy must not retain a tuple-specific revocation override"
+                        .to_owned(),
+                );
             }
             if control_allow_at.is_none() {
                 return Err("initial policy lacks the independent TCP/8082 path control".to_owned());
@@ -590,7 +593,9 @@ fn run_lab() -> Result<ExitCode, String> {
     let (new_session_blocked_after_rollback, rollback_new_session_probe_ms) =
         check_new_session(&guard.client_ns, &executable)?;
     if new_session_blocked_after_rollback {
-        return Err("a fresh TCP/8080 session remained blocked after approved-policy rollback".to_owned());
+        return Err(
+            "a fresh TCP/8080 session remained blocked after approved-policy rollback".to_owned(),
+        );
     }
 
     let summary: Value = json!({
@@ -892,8 +897,7 @@ mod tests {
 
     #[test]
     fn initial_policy_must_not_keep_a_revocation_override() {
-        let ruleset =
-            format!("{HEADER}{REVOKE}{ESTABLISHED}{PORT_ALLOW}{CONTROL_ALLOW}{FOOTER}");
+        let ruleset = format!("{HEADER}{REVOKE}{ESTABLISHED}{PORT_ALLOW}{CONTROL_ALLOW}{FOOTER}");
         assert!(validate_policy_text(PolicyStage::Initial, &ruleset).is_err());
     }
 
