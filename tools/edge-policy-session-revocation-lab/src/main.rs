@@ -667,7 +667,7 @@ fn run_lab() -> Result<ExitCode, String> {
             "restore_initial_approved_policy": rollback_apply_ms,
             "note": "local nft command duration only; not a fleet rollout or end-to-end SLA"
         },
-        "result": "all_three_session_semantics_and_policy_rollback_checked",
+        "result": "all_four_session_semantics_and_policy_rollback_checked",
         "cleanup": "pending"
     });
     guard.cleanup()?;
