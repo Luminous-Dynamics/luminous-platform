@@ -17,7 +17,10 @@ CREATE TABLE IF NOT EXISTS target_policy_state (
     corpus_digest TEXT NOT NULL
         CHECK (length(corpus_digest) = 64
                AND corpus_digest NOT GLOB '*[^0-9a-f]*'),
-    last_decision_id TEXT
+    last_decision_id TEXT,
+    -- A non-NULL last decision must name this target and its current generation.
+    FOREIGN KEY (last_decision_id, target_id, generation)
+        REFERENCES promotion_decisions(decision_id, target_id, next_generation)
 ) WITHOUT ROWID;
 
 -- Rows are committed decisions only: insert/update all related rows in ONE
@@ -42,7 +45,10 @@ CREATE TABLE IF NOT EXISTS promotion_decisions (
         CHECK (length(corpus_digest) = 64
                AND corpus_digest NOT GLOB '*[^0-9a-f]*'),
     verifier_id TEXT NOT NULL,
-    UNIQUE (target_id, challenge_id)
+    UNIQUE (target_id, challenge_id),
+    -- Parent keys let SQLite enforce target and generation binding across tables.
+    UNIQUE (decision_id, target_id, next_generation),
+    UNIQUE (decision_id, target_id, challenge_id, next_generation)
 ) WITHOUT ROWID;
 
 -- Explicit replay ledger. The target/challenge pair and decision ID must be
@@ -50,11 +56,12 @@ CREATE TABLE IF NOT EXISTS promotion_decisions (
 CREATE TABLE IF NOT EXISTS challenge_consumptions (
     target_id TEXT NOT NULL,
     challenge_id TEXT NOT NULL,
-    decision_id TEXT NOT NULL UNIQUE
-        REFERENCES promotion_decisions(decision_id),
+    decision_id TEXT NOT NULL,
     consumed_generation INTEGER NOT NULL CHECK (consumed_generation > 0),
     PRIMARY KEY (target_id, challenge_id),
-    FOREIGN KEY (target_id) REFERENCES target_policy_state(target_id)
+    FOREIGN KEY (target_id) REFERENCES target_policy_state(target_id),
+    FOREIGN KEY (decision_id, target_id, challenge_id, consumed_generation)
+        REFERENCES promotion_decisions(decision_id, target_id, challenge_id, next_generation)
 ) WITHOUT ROWID;
 
 -- Required writer transaction (parameter names are illustrative):
