@@ -72,7 +72,7 @@ jobs:
               profile_id: "SRQ-1",
               scenario_id: "UPDATE-004",
               status: "PASS",
-              reason: "The filesystem-backed model kept the previous or next complete generation at all five injected process-interruption checkpoints.",
+              reason: "The filesystem-backed model kept the previous or next complete generation across 100 trials at each of five injected process-interruption checkpoints (500 trials total).",
               source: {
                 expected_source_sha: $expected,
                 event_sha: $event,
