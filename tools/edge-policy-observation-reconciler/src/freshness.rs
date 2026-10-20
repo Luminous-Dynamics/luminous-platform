@@ -270,11 +270,12 @@ impl ChallengeReplayGuard {
                     "receipt.observations[{index}] predates the monotonic origin"
                 )]
             })?;
-            let reconstructed_time = wall_anchor.checked_add(relative_elapsed).ok_or_else(|| {
-                vec![format!(
-                    "receipt.observations[{index}] reconstructed wall time overflows"
-                )]
-            })?;
+            let reconstructed_time =
+                wall_anchor.checked_add(relative_elapsed).ok_or_else(|| {
+                    vec![format!(
+                        "receipt.observations[{index}] reconstructed wall time overflows"
+                    )]
+                })?;
             if reconstructed_time != observed_at {
                 return Err(vec![format!(
                     "receipt.observations[{index}] wall and monotonic timestamps disagree"
@@ -556,8 +557,7 @@ mod tests {
         let envelope = envelope_source(&receipt);
         let mut guard = ChallengeReplayGuard::new();
 
-        let mut wrong_target: Value =
-            serde_json::from_str(&challenge_source()).expect("challenge");
+        let mut wrong_target: Value = serde_json::from_str(&challenge_source()).expect("challenge");
         wrong_target["target_token"] = json!("target-other-lab");
         let error = verify(
             &mut guard,
@@ -569,8 +569,7 @@ mod tests {
         .expect_err("target mismatch");
         assert!(error.iter().any(|item| item.contains("target token")));
 
-        let mut wrong_policy: Value =
-            serde_json::from_str(&challenge_source()).expect("challenge");
+        let mut wrong_policy: Value = serde_json::from_str(&challenge_source()).expect("challenge");
         wrong_policy["approved_policy_sha256"] = json!("f".repeat(64));
         let error = verify(
             &mut guard,
@@ -580,10 +579,13 @@ mod tests {
             1_400,
         )
         .expect_err("policy mismatch");
-        assert!(error.iter().any(|item| item.contains("approved policy digest")));
+        assert!(
+            error
+                .iter()
+                .any(|item| item.contains("approved policy digest"))
+        );
 
-        let mut wrong_corpus: Value =
-            serde_json::from_str(&challenge_source()).expect("challenge");
+        let mut wrong_corpus: Value = serde_json::from_str(&challenge_source()).expect("challenge");
         wrong_corpus["corpus_sha256"] = json!("f".repeat(64));
         let error = verify(
             &mut guard,
@@ -611,7 +613,11 @@ mod tests {
             1_400,
         )
         .expect_err("wall and monotonic time disagree");
-        assert!(error.iter().any(|item| item.contains("timestamps disagree")));
+        assert!(
+            error
+                .iter()
+                .any(|item| item.contains("timestamps disagree"))
+        );
     }
 
     #[test]
