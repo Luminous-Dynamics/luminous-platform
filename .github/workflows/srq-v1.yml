@@ -50,6 +50,12 @@ jobs:
           bash -n benchmarks/srq-v1/test-result-validator.sh
           bash -n benchmarks/srq-v1/evaluate-release.sh
           bash -n benchmarks/srq-v1/test-evaluate-release.sh
+          bash -n benchmarks/srq-v1/install-pinned-gh.sh
+          bash -n benchmarks/srq-v1/verify-attestation.sh
+          bash -n benchmarks/srq-v1/test-verify-attestation.sh
+          bash -n benchmarks/srq-v1/verify-evidence-bundle.sh
+          bash -n benchmarks/srq-v1/test-verify-evidence-bundle.sh
+          bash -n benchmarks/srq-v1/evaluate-attested-release.sh
 
       - name: Run bounded filesystem activation model
         shell: bash
