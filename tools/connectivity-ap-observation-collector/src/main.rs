@@ -5,7 +5,7 @@ use std::process::{Command, ExitCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use connectivity_ap_observation_collector::{
-    CapturedOutputs, build_snapshot, validate_observation_manifest,
+    CapturedOutputs, build_snapshot, parse_interface_info, validate_observation_manifest,
 };
 use serde_json::{Value, json};
 
