@@ -111,8 +111,9 @@ jobs:
           command='cargo test --manifest-path tools/srq-challenge-promotion-model/Cargo.toml --locked'
           cargo test --manifest-path tools/srq-challenge-promotion-model/Cargo.toml --locked 2>&1 | tee "$model_log"
           # Protect the race/crash acceptance claims against accidental test deletion.
-          grep -Fq 'test result: ok. 7 passed; 0 failed' "$model_log"
+          grep -Fq 'test result: ok. 9 passed; 0 failed' "$model_log"
           grep -Fq 'tests::sixty_four_concurrent_attempts_for_one_challenge_commit_exactly_once ... ok' "$model_log"
+          grep -Fq 'tests::eight_independent_processes_share_one_challenge_commit ... ok' "$model_log"
           grep -Fq 'tests::interruption_boundaries_preserve_old_or_fully_promoted_state ... ok' "$model_log"
 
           actual_head="$(git rev-parse HEAD)"
@@ -131,7 +132,7 @@ jobs:
               profile_id: "SRQ-1",
               scenario_id: "EVIDENCE-003",
               status: "PASS",
-              reason: "The Linux filesystem model serialized 64 concurrent attempts so exactly one consumed the challenge and promoted the next policy generation; 100 injected process-interruption trials preserved the previous or fully promoted state.",
+              reason: "The Linux filesystem model serialized 64 concurrent worker threads and eight independent same-host processes so exactly one attempt consumed the challenge and promoted the next policy generation; 100 injected process-interruption trials preserved the previous or fully promoted state.",
               source: {
                 expected_source_sha: $expected,
                 event_sha: $event,
@@ -149,7 +150,7 @@ jobs:
               claim_ceiling: "abstract_model_only",
               non_claims: [
                 "This is a filesystem-backed contract model, not the production durable promotion database or policy gate.",
-                "Linux flock serialization was tested with concurrent workers using separate open file descriptions in one runner; cross-host or distributed locking is not qualified.",
+                "Linux flock serialization was tested with concurrent worker threads and separate child processes on one runner; cross-host or distributed locking is not qualified.",
                 "Normal process-interruption tests on the runner filesystem are not equivalent to sudden physical power loss.",
                 "No signer/device identity, trusted time, TUF metadata verification, TPM, firmware root of trust, QEMU or physical-device behavior is qualified."
               ],
