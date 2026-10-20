@@ -17,7 +17,7 @@ mkdir -p "$install_root"
 archive_path="$install_root/$archive_name"
 
 curl --fail --location --retry 3 --retry-all-errors --silent --show-error \
-  "$archive_url" --output "$archive_path"
+  --output "$archive_path" "$archive_url"
 printf '%s  %s\n' "$expected_sha256" "$archive_path" | sha256sum --check --status || {
   echo "BLOCKED: downloaded GitHub CLI archive failed pinned SHA-256 verification." >&2
   exit 2
