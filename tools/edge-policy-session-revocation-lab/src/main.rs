@@ -506,8 +506,8 @@ fn run_lab() -> Result<ExitCode, String> {
     spawn_lab_server(&mut guard, &executable, "--control-server")?;
     let (mut client_stdin, mut client_stdout) = spawn_lab_client(&mut guard, &executable)?;
 
-    let baseline_start = Instant::now();
     let initial_control_probe_ms = check_control_path(&guard.client_ns, &executable)?;
+    let baseline_start = Instant::now();
     let baseline_reply = client_exchange(&mut client_stdin, &mut client_stdout, "baseline")?;
     let baseline_exchange_ms = u64::try_from(baseline_start.elapsed().as_millis())
         .map_err(|error| format!("baseline elapsed time overflow: {error}"))?;
@@ -544,8 +544,8 @@ fn run_lab() -> Result<ExitCode, String> {
     let revoke_apply_ms = u64::try_from(revoke_start.elapsed().as_millis())
         .map_err(|error| format!("revocation policy apply time overflow: {error}"))?;
     let revoked_policy_sha256 = effective_policy(&guard.server_ns, PolicyStage::ExplicitRevoke)?;
-    let revocation_observation_start = Instant::now();
     let control_after_explicit_revoke_ms = check_control_path(&guard.client_ns, &executable)?;
+    let revocation_observation_start = Instant::now();
     let revoked_reply = client_exchange(&mut client_stdin, &mut client_stdout, "revoked")?;
     let revocation_observation_ms =
         u64::try_from(revocation_observation_start.elapsed().as_millis())
@@ -833,6 +833,15 @@ mod tests {
     fn retained_policy_must_not_keep_the_new_session_allow_rule() {
         let ruleset = format!("{HEADER}{ESTABLISHED}{PORT_ALLOW}{CONTROL_ALLOW}{FOOTER}");
         assert!(validate_policy_text(PolicyStage::RetainEstablished, &ruleset).is_err());
+    }
+
+    #[test]
+    fn every_stage_requires_the_independent_allowed_path() {
+        let initial_without_control = format!("{HEADER}{ESTABLISHED}{PORT_ALLOW}{FOOTER}");
+        assert!(validate_policy_text(PolicyStage::Initial, &initial_without_control).is_err());
+
+        let revoke_without_control = format!("{HEADER}{REVOKE}{ESTABLISHED}{FOOTER}");
+        assert!(validate_policy_text(PolicyStage::ExplicitRevoke, &revoke_without_control).is_err());
     }
 
     #[test]
