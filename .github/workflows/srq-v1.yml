@@ -1,0 +1,33 @@
+name: SRQ-1 corpus contract
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/srq-v1.yml"
+      - "benchmarks/srq-v1/**"
+      - "docs/SOVEREIGN_RECOVERY_QUALIFICATION_V1.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-corpus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out source
+        # Immutable commit pin for actions/checkout v4.
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Validate shell syntax
+        run: |
+          set -euo pipefail
+          bash -n benchmarks/srq-v1/validate.sh
+          bash -n benchmarks/srq-v1/test-validator.sh
+
+      - name: Validate the frozen SRQ-1 corpus
+        run: bash benchmarks/srq-v1/validate.sh
+
+      - name: Exercise validator negative controls
+        run: bash benchmarks/srq-v1/test-validator.sh
