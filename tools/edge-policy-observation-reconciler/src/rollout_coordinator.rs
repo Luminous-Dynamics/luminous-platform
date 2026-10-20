@@ -8,7 +8,7 @@
 
 use std::fs::File;
 use std::io::Read;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
 
@@ -636,8 +636,7 @@ fn unix_now_ms() -> Result<u64, String> {
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
-    let digest = super::sha256_hex(bytes);
-    digest
+    super::sha256_hex(bytes)
 }
 
 #[cfg(test)]
