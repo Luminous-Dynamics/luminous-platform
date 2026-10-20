@@ -13,8 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde_json::{Value, json};
 
 use super::promotion_journal::{
-    PromotionJournal, PromotionOperation, PromotionSpec, PromotionState,
-    PromotionVerificationInput,
+    PromotionJournal, PromotionOperation, PromotionSpec, PromotionState, PromotionVerificationInput,
 };
 use super::replay_ledger::SqliteReplayLedger;
 
@@ -169,7 +168,9 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         P: IndependentPolicyProbe,
     {
         let capabilities = device.capabilities();
-        if !capabilities.atomic_generation_revision_cas || !capabilities.stable_effective_policy_digest {
+        if !capabilities.atomic_generation_revision_cas
+            || !capabilities.stable_effective_policy_digest
+        {
             return Err(
                 "automatic rollout refused: adapter must provide atomic generation/revision CAS and stable effective-policy digests"
                     .to_owned(),
@@ -308,10 +309,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             ));
         }
 
-        let envelope_source = match build_envelope(
-            &challenge_source,
-            &probe_output,
-        ) {
+        let envelope_source = match build_envelope(&challenge_source, &probe_output) {
             Ok(envelope) => envelope,
             Err(error) => {
                 return Err(self.with_rollback_result(
@@ -345,7 +343,10 @@ impl<'a> PolicyRolloutCoordinator<'a> {
                     request,
                     &candidate_digest,
                     &baseline_digest,
-                    format!("freshness/conformance/replay verification failed: {}", errors.join("; ")),
+                    format!(
+                        "freshness/conformance/replay verification failed: {}",
+                        errors.join("; ")
+                    ),
                 ));
             }
         };
@@ -376,7 +377,11 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             ));
         }
 
-        match self.journal.promote(&permit, &pre_promotion.effective_policy_sha256, unix_now_ms()?) {
+        match self.journal.promote(
+            &permit,
+            &pre_promotion.effective_policy_sha256,
+            unix_now_ms()?,
+        ) {
             Ok(operation) => Ok(operation),
             Err(error) => Err(self.with_rollback_result(
                 device,
@@ -405,9 +410,12 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         if operation.target_token != target_token
             || operation.baseline_policy_sha256 != baseline_digest
         {
-            return Err("rollback target or approved baseline digest does not match the journal".to_owned());
+            return Err(
+                "rollback target or approved baseline digest does not match the journal".to_owned(),
+            );
         }
-        self.journal.request_rollback(operation_id, unix_now_ms()?)?;
+        self.journal
+            .request_rollback(operation_id, unix_now_ms()?)?;
         self.rollback_device_to_baseline(
             device,
             operation_id,
@@ -447,7 +455,9 @@ impl<'a> PolicyRolloutCoordinator<'a> {
                 "{reason}; rollback incomplete in state {:?}; manual recovery required",
                 operation.state
             ),
-            Err(error) => format!("{reason}; rollback incomplete: {error}; manual recovery required"),
+            Err(error) => {
+                format!("{reason}; rollback incomplete: {error}; manual recovery required")
+            }
         }
     }
 
@@ -461,7 +471,9 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         candidate_digest: &str,
     ) -> Result<PromotionOperation, String> {
         let capabilities = device.capabilities();
-        if !capabilities.atomic_generation_revision_cas || !capabilities.stable_effective_policy_digest {
+        if !capabilities.atomic_generation_revision_cas
+            || !capabilities.stable_effective_policy_digest
+        {
             return Err("rollback requires atomic generation/revision CAS and stable effective-policy digests".to_owned());
         }
         let current = device.read_effective_policy()?;
@@ -493,11 +505,17 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         device.compare_and_apply(&current, &baseline_artifact)?;
         let restored = device.read_effective_policy()?;
         validate_snapshot(&restored)?;
-        if restored.target_token != target_token || restored.effective_policy_sha256 != baseline_digest {
+        if restored.target_token != target_token
+            || restored.effective_policy_sha256 != baseline_digest
+        {
             return Err("rollback readback did not match the exact approved baseline".to_owned());
         }
         self.journal
-            .record_rolled_back(operation_id, &restored.effective_policy_sha256, unix_now_ms()?)
+            .record_rolled_back(
+                operation_id,
+                &restored.effective_policy_sha256,
+                unix_now_ms()?,
+            )
             .map_err(|error| {
                 format!("baseline restored but journal did not confirm rollback: {error}")
             })
@@ -584,7 +602,9 @@ fn validate_identifier(value: &str, label: &str) -> Result<(), String> {
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
     {
-        return Err(format!("{label} must be a non-empty ASCII identifier of at most 80 characters"));
+        return Err(format!(
+            "{label} must be a non-empty ASCII identifier of at most 80 characters"
+        ));
     }
     Ok(())
 }
@@ -608,7 +628,9 @@ fn validate_digest(value: &str, label: &str) -> Result<(), String> {
             .bytes()
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
     {
-        return Err(format!("{label} must be a 64-character lowercase SHA-256 digest"));
+        return Err(format!(
+            "{label} must be a 64-character lowercase SHA-256 digest"
+        ));
     }
     Ok(())
 }
@@ -617,7 +639,9 @@ fn random_hex_32() -> Result<String, String> {
     let mut bytes = [0_u8; 32];
     File::open("/dev/urandom")
         .and_then(|mut file| file.read_exact(&mut bytes))
-        .map_err(|error| format!("cannot obtain a cryptographically secure challenge nonce: {error}"))?;
+        .map_err(|error| {
+            format!("cannot obtain a cryptographically secure challenge nonce: {error}")
+        })?;
     let mut output = String::with_capacity(64);
     for byte in bytes {
         use std::fmt::Write as _;
@@ -774,8 +798,8 @@ mod tests {
                 .duration_since(UNIX_EPOCH)
                 .map_err(|error| error.to_string())?
                 .as_millis() as u64;
-            let mut receipt = crate::build_synthetic_receipt(CORPUS)
-                .map_err(|errors| errors.join("; "))?;
+            let mut receipt =
+                crate::build_synthetic_receipt(CORPUS).map_err(|errors| errors.join("; "))?;
             receipt["evidence_class"] = json!("namespace_lab_observation");
             receipt["run_id"] = json!("run-independent-coordinator-probe");
             receipt["approved_policy_sha256"] = json!(self.baseline_digest);
@@ -808,7 +832,8 @@ mod tests {
             let receipt_source =
                 serde_json::to_string(&receipt).map_err(|error| error.to_string())?;
             Ok(ProbeOutput {
-                started_at_unix_ms: started.max(challenge["issued_at_unix_ms"].as_u64().unwrap_or(started)),
+                started_at_unix_ms: started
+                    .max(challenge["issued_at_unix_ms"].as_u64().unwrap_or(started)),
                 completed_at_unix_ms: completed,
                 receipt_source,
             })
@@ -841,9 +866,16 @@ mod tests {
                 corpus_source: CORPUS,
             },
         );
-        assert!(result.expect_err("no-CAS adapter rejected").contains("atomic generation/revision CAS"));
+        assert!(
+            result
+                .expect_err("no-CAS adapter rejected")
+                .contains("atomic generation/revision CAS")
+        );
         assert_eq!(device.writes, 0);
-        assert_eq!(device.snapshot.effective_policy_sha256, crate::sha256_hex(&baseline));
+        assert_eq!(
+            device.snapshot.effective_policy_sha256,
+            crate::sha256_hex(&baseline)
+        );
         drop(ledger);
         drop(journal);
         remove_database(&journal_path);
@@ -917,20 +949,25 @@ mod tests {
             baseline_digest,
             candidate_digest: candidate_digest.clone(),
         };
-        let operation = coordinator.apply_and_promote(
-            &mut device,
-            &mut probe,
-            &RolloutRequest {
-                operation_id: "operation-rollout-success",
-                target_token: TARGET,
-                approved_baseline_policy: &baseline,
-                candidate_policy: &candidate,
-                corpus_schema_source: CORPUS_SCHEMA,
-                corpus_source: CORPUS,
-            },
-        ).expect("candidate promoted");
+        let operation = coordinator
+            .apply_and_promote(
+                &mut device,
+                &mut probe,
+                &RolloutRequest {
+                    operation_id: "operation-rollout-success",
+                    target_token: TARGET,
+                    approved_baseline_policy: &baseline,
+                    candidate_policy: &candidate,
+                    corpus_schema_source: CORPUS_SCHEMA,
+                    corpus_source: CORPUS,
+                },
+            )
+            .expect("candidate promoted");
         assert_eq!(operation.state, PromotionState::Promoted);
-        assert_eq!(operation.observed_policy_sha256.as_deref(), Some(candidate_digest.as_str()));
+        assert_eq!(
+            operation.observed_policy_sha256.as_deref(),
+            Some(candidate_digest.as_str())
+        );
         assert_eq!(device.snapshot.generation, 2);
         assert_eq!(device.writes, 1);
         drop(ledger);
@@ -966,9 +1003,15 @@ mod tests {
             },
         );
         assert!(result.is_err());
-        let operation = journal.get("operation-rollout-failed").expect("read journal").expect("operation");
+        let operation = journal
+            .get("operation-rollout-failed")
+            .expect("read journal")
+            .expect("operation");
         assert_eq!(operation.state, PromotionState::RolledBack);
-        assert_eq!(device.snapshot.effective_policy_sha256, crate::sha256_hex(&baseline));
+        assert_eq!(
+            device.snapshot.effective_policy_sha256,
+            crate::sha256_hex(&baseline)
+        );
         drop(ledger);
         drop(journal);
         remove_database(&journal_path);
