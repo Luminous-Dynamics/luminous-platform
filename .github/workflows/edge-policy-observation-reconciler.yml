@@ -49,3 +49,5 @@ jobs:
         run: cargo clippy --manifest-path tools/edge-policy-observation-reconciler/Cargo.toml --all-targets -- -D warnings
       - name: Verify synthetic end-to-end smoke
         run: cargo run --manifest-path tools/edge-policy-observation-reconciler/Cargo.toml --bin edge-policy-observation-reconcile -- --smoke schemas/edge-policy-conformance-corpus-v1.schema.json examples/edge-policy-conformance-corpus-synthetic-v1.json schemas/edge-policy-observation-receipt-v1.schema.json
+      - name: Measure adapter-qualified rollout gate at registered scales
+        run: cargo run --release --manifest-path tools/edge-policy-observation-reconciler/Cargo.toml --bin edge-policy-rollout-bench

@@ -24,3 +24,7 @@ unsafe_code = "forbid"
 
 [lints.clippy]
 all = "warn"
+
+[[bin]]
+name = "edge-policy-rollout-bench"
+path = "src/bin/edge-policy-rollout-bench.rs"
