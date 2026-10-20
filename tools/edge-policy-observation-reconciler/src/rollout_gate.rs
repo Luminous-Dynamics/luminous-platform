@@ -513,7 +513,7 @@ mod tests {
     };
     use crate::adapter_capability::{
         AdapterQualificationPolicy, CommitSemantics, DeviceAdapterCapabilities, RollbackSemantics,
-    };    };
+    };
 
     const CANDIDATE: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
@@ -680,7 +680,7 @@ mod tests {
         assert!(
             reasons
                 .iter()
-                .any(|reason| reason.contains("target-router-c") && reason.contains("no qualified rollback"))
+                .any(|reason| reason.contains("target-router-c") && reason.contains("without a qualified rollback"))
         );
     }
 
