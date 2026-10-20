@@ -252,9 +252,21 @@ INSERT INTO promotion_decisions
    previous_effective_policy_digest,approved_policy_digest,effective_policy_digest,
    corpus_digest,verifier_id)
 VALUES ('$decision_id','target-1','$challenge_id',0,1,'$a','$b','$c','$d','$verifier');
+SQL
+    if [[ "$phase" == "after_decision_insert" ]]; then
+      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
+    fi
+
+    cat <<SQL
 INSERT INTO challenge_consumptions
   (target_id,challenge_id,decision_id,consumed_generation)
 VALUES ('target-1','$challenge_id','$decision_id',1);
+SQL
+    if [[ "$phase" == "after_challenge_insert" ]]; then
+      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
+    fi
+
+    cat <<SQL
 UPDATE target_policy_state
    SET generation=1,approved_policy_digest='$b',effective_policy_digest='$c',
        corpus_digest='$d',last_decision_id='$decision_id'
@@ -265,7 +277,9 @@ SQL
       printf 'COMMIT;\n'
     else
       printf 'COMMIT;\n'
-      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
+      if [[ "$phase" == "after_commit" ]]; then
+        printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
+      fi
     fi
   } > "$script"
 
@@ -289,12 +303,16 @@ SQL
     fail "SQLite worker unexpectedly exited successfully rather than being killed ($label)"
   fi
 
-  if [[ "$phase" == "before_commit" ]]; then
-    [[ "$(sqlite3 -batch "$db" "SELECT generation FROM target_policy_state WHERE target_id='target-1';")" == "0" ]] || fail "pre-commit kill changed generation"
-    [[ "$(sqlite3 -batch "$db" "SELECT count(*) FROM promotion_decisions WHERE decision_id='$decision_id';")" == "0" ]] || fail "pre-commit kill persisted decision"
-    [[ "$(sqlite3 -batch "$db" "SELECT count(*) FROM challenge_consumptions WHERE challenge_id='$challenge_id';")" == "0" ]] || fail "pre-commit kill consumed challenge"
-    [[ "$(sqlite3 -batch "$db" "PRAGMA integrity_check;")" == "ok" ]] || fail "pre-commit kill left SQLite inconsistent"
-    echo "PASS: SIGKILL before SQLite COMMIT rolls back decision, challenge and target state"
+  if [[ "$phase" != "after_commit" ]]; then
+    [[ "$(sqlite3 -batch "$db" "SELECT generation FROM target_policy_state WHERE target_id='target-1';")" == "0" ]] || fail "pre-commit kill changed generation at $phase"
+    [[ "$(sqlite3 -batch "$db" "SELECT count(*) FROM promotion_decisions WHERE decision_id='$decision_id';")" == "0" ]] || fail "pre-commit kill persisted decision at $phase"
+    [[ "$(sqlite3 -batch "$db" "SELECT count(*) FROM challenge_consumptions WHERE challenge_id='$challenge_id';")" == "0" ]] || fail "pre-commit kill consumed challenge at $phase"
+    [[ "$(sqlite3 -batch "$db" "PRAGMA integrity_check;")" == "ok" ]] || fail "pre-commit kill left SQLite inconsistent at $phase"
+    if [[ "$phase" == "before_commit" ]]; then
+      echo "PASS: SIGKILL before SQLite COMMIT rolls back decision, challenge and target state"
+    else
+      echo "PASS: SIGKILL at $phase rolls back all uncommitted writes"
+    fi
   else
     [[ "$(sqlite3 -batch "$db" "SELECT generation || ':' || last_decision_id FROM target_policy_state WHERE target_id='target-1';")" == "1:$decision_id" ]] || fail "post-commit kill lost committed state"
     [[ "$(sqlite3 -batch "$db" "SELECT count(*) FROM promotion_decisions WHERE decision_id='$decision_id';")" == "1" ]] || fail "post-commit kill did not preserve exactly one decision"
@@ -305,6 +323,14 @@ SQL
   fi
 }
 
+decision_kill_db="$tmp/decision-kill.sqlite"
+init_db "$decision_kill_db"
+run_sqlite_sigkill_case "sqlite-decision-insert-kill" "$decision_kill_db" "after_decision_insert"
+
+challenge_kill_db="$tmp/challenge-kill.sqlite"
+init_db "$challenge_kill_db"
+run_sqlite_sigkill_case "sqlite-challenge-insert-kill" "$challenge_kill_db" "after_challenge_insert"
+
 precommit_db="$tmp/precommit.sqlite"
 init_db "$precommit_db"
 run_sqlite_sigkill_case "sqlite-precommit-kill" "$precommit_db" "before_commit"
@@ -313,7 +339,8 @@ postcommit_db="$tmp/postcommit.sqlite"
 init_db "$postcommit_db"
 run_sqlite_sigkill_case "sqlite-postcommit-kill" "$postcommit_db" "after_commit"
 
+
 # Publish enough execution identity to aid later signed-bundle correlation.
 sqlite_version="$(sqlite3 --version | awk '{print $1}')"
-printf 'sqlite_version=%s journal_mode=%s synchronous=FULL cases=6 process_contenders=64 commit_sigkill_cases=2\n'\
+printf 'sqlite_version=%s journal_mode=%s synchronous=FULL cases=8 process_contenders=64 commit_sigkill_cases=4\n'\
   "$sqlite_version" "$(sqlite3 -batch "$success_db" "PRAGMA journal_mode;")"
