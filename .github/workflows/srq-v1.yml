@@ -7,6 +7,7 @@ on:
       - "benchmarks/srq-v1/**"
       - "tools/srq-recovery-model/**"
       - "tools/srq-challenge-promotion-model/**"
+      - "tools/srq-process-kill-model/**"
       - "docs/SOVEREIGN_RECOVERY_QUALIFICATION_V1.md"
       - "docs/SRQ_PROVENANCE_ATTESTATION_V1.md"
   workflow_dispatch:
@@ -170,6 +171,19 @@ jobs:
 
           bash benchmarks/srq-v1/validate-result.sh --evidence-root "$RUNNER_TEMP" "$model_receipt"
 
+      - name: Exercise real process-kill recovery at persistence boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          model_log="$RUNNER_TEMP/srq-process-kill-model-test.log"
+          cargo test --manifest-path tools/srq-process-kill-model/Cargo.toml --locked -- --nocapture 2>&1 | tee "$model_log"
+          grep -Fq 'test result: ok. 3 passed; 0 failed' "$model_log"
+          for checkpoint in after_temp_create during_temp_write after_temp_sync after_rename after_dir_sync; do
+            grep -Fq "PASS: SIGKILL at $checkpoint recovered generation" "$model_log"
+          done
+          echo "PASS: child-process SIGKILL recovery model completed five persistence-boundary trials."
+          echo "LIMIT: live-kernel process-kill test; not a kernel crash or physical power-loss test."
+
       - name: Compile release qualification status from observed receipts
         shell: bash
         run: |
@@ -209,6 +223,7 @@ jobs:
           evidence_names=(
             srq-challenge-promotion-model-test.log
             srq-evidence-003-model-result.json
+            srq-process-kill-model-test.log
             srq-recovery-model-test.log
             srq-release-qualification.json
             srq-update-004-model-result.json
