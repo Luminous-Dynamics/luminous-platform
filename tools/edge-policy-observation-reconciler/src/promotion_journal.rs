@@ -348,12 +348,7 @@ impl PromotionJournal {
                 operation.state
             ));
         }
-        let updated = self.update_state(
-            operation_id,
-            "prepared",
-            "abandoned",
-            now_unix_ms,
-        )?;
+        let updated = self.update_state(operation_id, "prepared", "abandoned", now_unix_ms)?;
         Ok(updated)
     }
 
@@ -835,7 +830,9 @@ impl PromotionJournal {
                     RecoveryAction::RequireFreshChallengeAndIndependentProbe
                 }
                 PromotionState::RollbackIntent => RecoveryAction::InspectAndEnforceBaselinePolicy,
-                PromotionState::Promoted | PromotionState::RolledBack | PromotionState::Abandoned => {
+                PromotionState::Promoted
+                | PromotionState::RolledBack
+                | PromotionState::Abandoned => {
                     continue;
                 }
             };
@@ -1397,7 +1394,10 @@ mod tests {
             created_at_unix_ms: 110,
         };
         assert_eq!(
-            journal.prepare(&next_generation).expect("new generation").state,
+            journal
+                .prepare(&next_generation)
+                .expect("new generation")
+                .state,
             PromotionState::Prepared
         );
         drop(journal);
