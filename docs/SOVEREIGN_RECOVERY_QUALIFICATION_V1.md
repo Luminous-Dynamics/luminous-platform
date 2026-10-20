@@ -65,7 +65,7 @@ Each receipt must bind at least the scenario/corpus digest, source commit, actua
 | `BLOCKED` | A prerequisite prevented a valid determination | Record the missing prerequisite and what did/did not execute; never treat the blocker as a pass |
 | `NOT_APPLICABLE` | A documented reason makes this scenario inapplicable for this specific target | Explicit reason required; this does not satisfy another required release gate |
 
-The companion `validate-result.sh` checks SRQ's core status/provenance invariants, requires the scenario ID to exist in the frozen corpus, rejects `fixture=true` as qualification evidence by default, and constrains `claim_ceiling` to the execution tier. The explicit `--allow-fixtures` switch is for validator tests only; it reports `VALID_FIXTURE_ONLY`, not qualification PASS.
+The companion `validate-result.sh` checks SRQ's core status/provenance invariants, requires the scenario ID to exist in the frozen corpus, rejects `fixture=true` as qualification evidence by default, and constrains `claim_ceiling` to the execution tier. A non-fixture `PASS` also requires `--evidence-root`; the validator hashes each referenced evidence file and rejects missing, mismatched, absolute, or traversal-based locators. The explicit `--allow-fixtures` switch is for validator tests only; it reports `VALID_FIXTURE_ONLY`, not qualification PASS.
 
 A scenario can record a partial tier result without becoming qualified: `UPDATE-004` now records `observed_tiers: ["model"]` and `partial_model_pass_not_qualified`. Its source-bound receipt demonstrates only an abstract filesystem activation model. The QEMU and physical tiers remain open, and the overall SRQ profile remains `NOT_QUALIFIED` until all required release gates have eligible evidence.
 
