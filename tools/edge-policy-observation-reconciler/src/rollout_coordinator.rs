@@ -39,6 +39,7 @@ pub struct PolicySnapshot {
 /// atomically rejects writes against a stale generation/revision/digest.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct AdapterCapabilities {
+    pub exclusive_target_lease: bool,
     pub atomic_generation_revision_cas: bool,
     pub stable_effective_policy_digest: bool,
 }
@@ -72,21 +73,43 @@ pub struct ProbeOutput {
     pub receipt_source: String,
 }
 
-/// Minimum device contract required for automatic rollout.
+/// A target-scoped lease held across the whole change protocol.
 ///
-/// Implementations must serialize compare-and-apply atomically with the revision
-/// check. An API that merely reads and then writes without a device/controller
-/// lock does not satisfy this trait's safety contract.
-pub trait PolicyDeviceAdapter {
+/// The lease must exclude all policy writers that could invalidate the candidate
+/// between final readback and promotion. `renew` must fail if exclusive control
+/// can no longer be guaranteed. A local mutex that vendor controllers or other
+/// operators can bypass does not satisfy this production contract.
+pub trait PolicyDeviceLease {
     fn capabilities(&self) -> AdapterCapabilities;
+
+    /// Renew/validate the target lease at a protocol stage boundary.
+    fn renew(&mut self) -> Result<(), String>;
 
     fn read_effective_policy(&mut self) -> Result<PolicySnapshot, String>;
 
+    /// Must atomically reject a stale generation, revision token, or digest.
+    /// Candidate generation must exceed the observed generation; it may skip
+    /// values consumed by operations abandoned before actuation.
     fn compare_and_apply(
         &mut self,
         expected: &PolicySnapshot,
         candidate: &PolicyArtifact,
     ) -> Result<ApplyAcknowledgement, String>;
+}
+
+/// Adapter capable of acquiring an exclusive lease for one target.
+///
+/// The lease guard owns writer exclusion until dropped. It must cover writes
+/// performed outside this process too, or refuse to advertise this capability.
+pub trait PolicyDeviceAdapter {
+    type Lease<'a>: PolicyDeviceLease
+    where
+        Self: 'a;
+
+    fn acquire_target_lease<'a>(
+        &'a mut self,
+        target_token: &str,
+    ) -> Result<Self::Lease<'a>, String>;
 }
 
 /// Independent probe contract. Its implementation should run from a separate
@@ -108,8 +131,8 @@ pub struct RolloutRequest<'a> {
     pub corpus_source: &'a str,
 }
 
-/// One-target coordinator. A real deployment should create one coordinator per
-/// trusted control plane and add device-side leases/locking where CAS is unavailable.
+/// One-target coordinator. The target lease is held for the full apply → probe →
+/// promote or rollback lifecycle; adapters without this guarantee are refused.
 #[derive(Debug)]
 pub struct PolicyRolloutCoordinator<'a> {
     journal: &'a PromotionJournal,
@@ -167,17 +190,13 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         D: PolicyDeviceAdapter,
         P: IndependentPolicyProbe,
     {
-        let capabilities = device.capabilities();
-        if !capabilities.atomic_generation_revision_cas
-            || !capabilities.stable_effective_policy_digest
-        {
-            return Err(
-                "automatic rollout refused: adapter must provide atomic generation/revision CAS and stable effective-policy digests"
-                    .to_owned(),
-            );
-        }
         validate_identifier(request.operation_id, "operation_id")?;
         validate_target_token(request.target_token)?;
+        let mut lease = device.acquire_target_lease(request.target_token)?;
+        require_safe_capabilities(lease.capabilities())?;
+        lease
+            .renew()
+            .map_err(|error| format!("cannot establish exclusive target lease: {error}"))?;
 
         let baseline_digest = sha256_hex(request.approved_baseline_policy);
         let candidate_digest = sha256_hex(request.candidate_policy);
@@ -185,7 +204,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             return Err("candidate policy is identical to the approved baseline".to_owned());
         }
 
-        let baseline = device.read_effective_policy()?;
+        let baseline = lease.read_effective_policy()?;
         validate_snapshot(&baseline)?;
         if baseline.target_token != request.target_token {
             return Err("device adapter returned a snapshot for the wrong target".to_owned());
@@ -217,9 +236,18 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             bytes: request.candidate_policy.to_vec(),
         };
 
-        if let Err(error) = device.compare_and_apply(&baseline, &candidate) {
+        if let Err(error) = lease.renew() {
             return Err(self.with_rollback_result(
-                device,
+                &mut lease,
+                request,
+                &candidate_digest,
+                &baseline_digest,
+                format!("exclusive target lease renewal failed before apply: {error}"),
+            ));
+        }
+        if let Err(error) = lease.compare_and_apply(&baseline, &candidate) {
+            return Err(self.with_rollback_result(
+                &mut lease,
                 request,
                 &candidate_digest,
                 &baseline_digest,
@@ -232,7 +260,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             Ok(snapshot) => snapshot,
             Err(error) => {
                 return Err(self.with_rollback_result(
-                    device,
+                    &mut lease,
                     request,
                     &candidate_digest,
                     &baseline_digest,
@@ -246,7 +274,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             || applied_snapshot.effective_policy_sha256 != candidate_digest
         {
             return Err(self.with_rollback_result(
-                device,
+                &mut lease,
                 request,
                 &candidate_digest,
                 &baseline_digest,
@@ -260,7 +288,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             unix_now_ms()?,
         ) {
             return Err(self.with_rollback_result(
-                device,
+                &mut lease,
                 request,
                 &candidate_digest,
                 &baseline_digest,
@@ -278,7 +306,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             Ok(challenge) => challenge,
             Err(error) => {
                 return Err(self.with_rollback_result(
-                    device,
+                    &mut lease,
                     request,
                     &candidate_digest,
                     &baseline_digest,
@@ -287,11 +315,20 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             }
         };
 
+        if let Err(error) = lease.renew() {
+            return Err(self.with_rollback_result(
+                &mut lease,
+                request,
+                &candidate_digest,
+                &baseline_digest,
+                format!("exclusive target lease renewal failed before probe: {error}"),
+            ));
+        }
         let probe_output = match probe.run_challenged_probe(&challenge_source) {
             Ok(output) => output,
             Err(error) => {
                 return Err(self.with_rollback_result(
-                    device,
+                    &mut lease,
                     request,
                     &candidate_digest,
                     &baseline_digest,
@@ -301,7 +338,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         };
         if probe_output.completed_at_unix_ms < probe_output.started_at_unix_ms {
             return Err(self.with_rollback_result(
-                device,
+                &mut lease,
                 request,
                 &candidate_digest,
                 &baseline_digest,
@@ -313,7 +350,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             Ok(envelope) => envelope,
             Err(error) => {
                 return Err(self.with_rollback_result(
-                    device,
+                    &mut lease,
                     request,
                     &candidate_digest,
                     &baseline_digest,
@@ -339,7 +376,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             Ok(value) => value,
             Err(errors) => {
                 return Err(self.with_rollback_result(
-                    device,
+                    &mut lease,
                     request,
                     &candidate_digest,
                     &baseline_digest,
@@ -355,7 +392,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             Ok(snapshot) => snapshot,
             Err(error) => {
                 return Err(self.with_rollback_result(
-                    device,
+                    &mut lease,
                     request,
                     &candidate_digest,
                     &baseline_digest,
@@ -369,7 +406,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             || pre_promotion.effective_policy_sha256 != candidate_digest
         {
             return Err(self.with_rollback_result(
-                device,
+                &mut lease,
                 request,
                 &candidate_digest,
                 &baseline_digest,
@@ -384,7 +421,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         ) {
             Ok(operation) => Ok(operation),
             Err(error) => Err(self.with_rollback_result(
-                device,
+                &mut lease,
                 request,
                 &candidate_digest,
                 &baseline_digest,
@@ -414,10 +451,15 @@ impl<'a> PolicyRolloutCoordinator<'a> {
                 "rollback target or approved baseline digest does not match the journal".to_owned(),
             );
         }
+        let mut lease = device.acquire_target_lease(target_token)?;
+        require_safe_capabilities(lease.capabilities())?;
+        lease
+            .renew()
+            .map_err(|error| format!("cannot establish rollback lease: {error}"))?;
         self.journal
             .request_rollback(operation_id, unix_now_ms()?)?;
         self.rollback_device_to_baseline(
-            device,
+            &mut lease,
             operation_id,
             target_token,
             approved_baseline_policy,
@@ -426,9 +468,9 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         )
     }
 
-    fn with_rollback_result<D: PolicyDeviceAdapter>(
+    fn with_rollback_result<L: PolicyDeviceLease>(
         &self,
-        device: &mut D,
+        device: &mut L,
         request: &RolloutRequest<'_>,
         candidate_digest: &str,
         baseline_digest: &str,
@@ -461,21 +503,19 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         }
     }
 
-    fn rollback_device_to_baseline<D: PolicyDeviceAdapter>(
+    fn rollback_device_to_baseline<L: PolicyDeviceLease>(
         &self,
-        device: &mut D,
+        device: &mut L,
         operation_id: &str,
         target_token: &str,
         approved_baseline_policy: &[u8],
         baseline_digest: &str,
         candidate_digest: &str,
     ) -> Result<PromotionOperation, String> {
-        let capabilities = device.capabilities();
-        if !capabilities.atomic_generation_revision_cas
-            || !capabilities.stable_effective_policy_digest
-        {
-            return Err("rollback requires atomic generation/revision CAS and stable effective-policy digests".to_owned());
-        }
+        require_safe_capabilities(device.capabilities())?;
+        device
+            .renew()
+            .map_err(|error| format!("cannot renew rollback lease: {error}"))?;
         let current = device.read_effective_policy()?;
         validate_snapshot(&current)?;
         if current.target_token != target_token {
@@ -502,7 +542,13 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             policy_sha256: baseline_digest.to_owned(),
             bytes: approved_baseline_policy.to_vec(),
         };
+        device
+            .renew()
+            .map_err(|error| format!("cannot renew rollback lease before apply: {error}"))?;
         device.compare_and_apply(&current, &baseline_artifact)?;
+        device
+            .renew()
+            .map_err(|error| format!("cannot renew rollback lease before readback: {error}"))?;
         let restored = device.read_effective_policy()?;
         validate_snapshot(&restored)?;
         if restored.target_token != target_token
@@ -583,6 +629,19 @@ fn build_envelope(challenge_source: &str, output: &ProbeOutput) -> Result<String
     });
     serde_json::to_string(&envelope)
         .map_err(|error| format!("cannot serialize freshness envelope: {error}"))
+}
+
+fn require_safe_capabilities(capabilities: AdapterCapabilities) -> Result<(), String> {
+    if !capabilities.exclusive_target_lease
+        || !capabilities.atomic_generation_revision_cas
+        || !capabilities.stable_effective_policy_digest
+    {
+        return Err(
+            "automatic rollout refused: adapter must guarantee an exclusive target lease, atomic generation/revision CAS, and stable effective-policy digests"
+                .to_owned(),
+        );
+    }
+    Ok(())
 }
 
 fn validate_snapshot(snapshot: &PolicySnapshot) -> Result<(), String> {
