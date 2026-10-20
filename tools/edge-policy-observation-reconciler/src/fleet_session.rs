@@ -159,7 +159,7 @@ impl FleetSessionJournal {
             return Err("fleet session journal requires a durable file path".to_owned());
         }
         ensure_private_file(&path)?;
-        let mut connection = connect(&path)?;
+        let connection = connect(&path)?;
         let has_sessions = table_exists(&connection, "rollout_sessions")?;
         if !has_sessions {
             let existing_tables: i64 = connection
@@ -1049,11 +1049,9 @@ impl FleetSessionJournal {
 struct StoredTarget {
     target_token: String,
     wave_index: usize,
-    failure_domain: String,
     generation: u64,
     baseline_policy_sha256: String,
     candidate_policy_sha256: String,
-    canary: bool,
     state: String,
     apply_command_id: Option<String>,
     rollback_command_id: Option<String>,
@@ -1258,29 +1256,26 @@ fn get_target_conn(
 ) -> Result<Option<StoredTarget>, String> {
     connection
         .query_row(
-            "SELECT target_token, wave_index, failure_domain, generation,
-                    baseline_policy_sha256, candidate_policy_sha256, canary, state,
-                    apply_command_id, rollback_command_id, observed_policy_sha256
+            "SELECT target_token, wave_index, generation, baseline_policy_sha256,
+                    candidate_policy_sha256, state, apply_command_id, rollback_command_id,
+                    observed_policy_sha256
              FROM rollout_targets WHERE plan_sha256 = ?1 AND target_token = ?2;",
             params![plan_sha256, target_token],
             |row| {
-                let canary: i64 = row.get(6)?;
                 let wave_index: i64 = row.get(1)?;
-                let generation: i64 = row.get(3)?;
+                let generation: i64 = row.get(2)?;
                 Ok(StoredTarget {
                     target_token: row.get(0)?,
                     wave_index: u64_to_usize(wave_index)
                         .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(1, wave_index))?,
-                    failure_domain: row.get(2)?,
                     generation: u64::try_from(generation)
-                        .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(3, generation))?,
-                    baseline_policy_sha256: row.get(4)?,
-                    candidate_policy_sha256: row.get(5)?,
-                    canary: canary == 1,
-                    state: row.get(7)?,
-                    apply_command_id: row.get(8)?,
-                    rollback_command_id: row.get(9)?,
-                    observed_policy_sha256: row.get(10)?,
+                        .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(2, generation))?,
+                    baseline_policy_sha256: row.get(3)?,
+                    candidate_policy_sha256: row.get(4)?,
+                    state: row.get(5)?,
+                    apply_command_id: row.get(6)?,
+                    rollback_command_id: row.get(7)?,
+                    observed_policy_sha256: row.get(8)?,
                 })
             },
         )
@@ -1343,9 +1338,9 @@ fn get_wave_targets_conn(
 ) -> Result<Vec<StoredTarget>, String> {
     let mut statement = connection
         .prepare(
-            "SELECT target_token, wave_index, failure_domain, generation,
-                    baseline_policy_sha256, candidate_policy_sha256, canary, state,
-                    apply_command_id, rollback_command_id, observed_policy_sha256
+            "SELECT target_token, wave_index, generation, baseline_policy_sha256,
+                    candidate_policy_sha256, state, apply_command_id, rollback_command_id,
+                    observed_policy_sha256
              FROM rollout_targets WHERE plan_sha256 = ?1 AND wave_index = ?2
              ORDER BY failure_domain, target_token;",
         )
@@ -1357,23 +1352,20 @@ fn get_wave_targets_conn(
                 to_sql_integer(wave_index as u64, "wave index")?
             ],
             |row| {
-                let canary: i64 = row.get(6)?;
                 let wave_index_raw: i64 = row.get(1)?;
-                let generation: i64 = row.get(3)?;
+                let generation: i64 = row.get(2)?;
                 Ok(StoredTarget {
                     target_token: row.get(0)?,
                     wave_index: u64_to_usize(wave_index_raw)
                         .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(1, wave_index_raw))?,
-                    failure_domain: row.get(2)?,
                     generation: u64::try_from(generation)
-                        .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(3, generation))?,
-                    baseline_policy_sha256: row.get(4)?,
-                    candidate_policy_sha256: row.get(5)?,
-                    canary: canary == 1,
-                    state: row.get(7)?,
-                    apply_command_id: row.get(8)?,
-                    rollback_command_id: row.get(9)?,
-                    observed_policy_sha256: row.get(10)?,
+                        .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(2, generation))?,
+                    baseline_policy_sha256: row.get(3)?,
+                    candidate_policy_sha256: row.get(4)?,
+                    state: row.get(5)?,
+                    apply_command_id: row.get(6)?,
+                    rollback_command_id: row.get(7)?,
+                    observed_policy_sha256: row.get(8)?,
                 })
             },
         )
