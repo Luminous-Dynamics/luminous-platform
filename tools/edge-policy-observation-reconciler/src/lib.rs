@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 pub mod replay_ledger;
+pub mod promotion_journal;
 
 pub mod freshness;
 
