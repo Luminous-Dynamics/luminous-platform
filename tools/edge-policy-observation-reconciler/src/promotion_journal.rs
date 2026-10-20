@@ -27,7 +27,7 @@ CREATE TABLE promotion_operations (
     candidate_policy_sha256 TEXT NOT NULL CHECK (length(candidate_policy_sha256) = 64),
     state TEXT NOT NULL CHECK (state IN
         ('prepared', 'apply_intent', 'applied', 'verified', 'promoted',
-         'rollback_intent', 'rolled_back')),
+         'rollback_intent', 'rolled_back', 'abandoned')),
     created_at_unix_ms INTEGER NOT NULL CHECK (created_at_unix_ms >= 0),
     updated_at_unix_ms INTEGER NOT NULL CHECK (updated_at_unix_ms >= 0),
     observed_policy_sha256 TEXT,
@@ -92,7 +92,7 @@ pub struct PromotionOperation {
     pub evidence_expires_at_unix_ms: Option<u64>,
 }
 
-/// Persisted transition states. Terminal states are Promoted and RolledBack.
+/// Persisted transition states. Promoted, RolledBack, and Abandoned are terminal.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum PromotionState {
     Prepared,
@@ -102,6 +102,7 @@ pub enum PromotionState {
     Promoted,
     RollbackIntent,
     RolledBack,
+    Abandoned,
 }
 
 impl PromotionState {
@@ -114,6 +115,7 @@ impl PromotionState {
             Self::Promoted => "promoted",
             Self::RollbackIntent => "rollback_intent",
             Self::RolledBack => "rolled_back",
+            Self::Abandoned => "abandoned",
         }
     }
 
@@ -126,6 +128,7 @@ impl PromotionState {
             "promoted" => Ok(Self::Promoted),
             "rollback_intent" => Ok(Self::RollbackIntent),
             "rolled_back" => Ok(Self::RolledBack),
+            "abandoned" => Ok(Self::Abandoned),
             _ => Err(format!(
                 "unknown promotion state {value:?}; refusing to recover"
             )),
@@ -133,7 +136,7 @@ impl PromotionState {
     }
 
     fn is_terminal(self) -> bool {
-        matches!(self, Self::Promoted | Self::RolledBack)
+        matches!(self, Self::Promoted | Self::RolledBack | Self::Abandoned)
     }
 }
 
@@ -272,7 +275,7 @@ impl PromotionJournal {
         let active: Option<String> = transaction
             .query_row(
                 "SELECT operation_id FROM promotion_operations
-                 WHERE target_token = ?1 AND state NOT IN ('promoted', 'rolled_back')
+                 WHERE target_token = ?1 AND state NOT IN ('promoted', 'rolled_back', 'abandoned')
                  LIMIT 1;",
                 params![spec.target_token],
                 |row| row.get(0),
@@ -323,6 +326,35 @@ impl PromotionJournal {
             .commit()
             .map_err(|error| format!("cannot commit prepared operation: {error}"))?;
         Ok(operation)
+    }
+
+    /// Terminally abandon an operation that is still Prepared.
+    ///
+    /// Prepared is the only state in which this method is legal. Once ApplyIntent
+    /// is durable, the device may have changed and recovery must inspect and
+    /// reconcile the actual effective policy instead of pretending no actuation
+    /// happened.
+    pub fn abandon_prepared(
+        &self,
+        operation_id: &str,
+        now_unix_ms: u64,
+    ) -> Result<PromotionOperation, String> {
+        let operation = self
+            .get(operation_id)?
+            .ok_or_else(|| format!("unknown operation {operation_id:?}"))?;
+        if operation.state != PromotionState::Prepared {
+            return Err(format!(
+                "only Prepared operations may be abandoned; found {:?}",
+                operation.state
+            ));
+        }
+        let updated = self.update_state(
+            operation_id,
+            "prepared",
+            "abandoned",
+            now_unix_ms,
+        )?;
+        Ok(updated)
     }
 
     /// Persist an apply intent before interacting with the external device.
@@ -782,7 +814,7 @@ impl PromotionJournal {
                         candidate_policy_sha256, state, created_at_unix_ms, updated_at_unix_ms,
                         observed_policy_sha256, challenge_id, receipt_sha256,
                         evidence_observed_at_unix_ms, evidence_expires_at_unix_ms
-                 FROM promotion_operations WHERE state NOT IN ('promoted', 'rolled_back')
+                 FROM promotion_operations WHERE state NOT IN ('promoted', 'rolled_back', 'abandoned')
                  ORDER BY target_token, generation;",
             )
             .map_err(|error| format!("cannot query recoverable operations: {error}"))?;
@@ -793,6 +825,9 @@ impl PromotionJournal {
         for row in rows {
             let operation =
                 row.map_err(|error| format!("invalid promotion operation row: {error}"))?;
+            if operation.state.is_terminal() {
+                continue;
+            }
             let action = match operation.state {
                 PromotionState::Prepared => RecoveryAction::ApplyOrAbandonPreparedOperation,
                 PromotionState::ApplyIntent => RecoveryAction::InspectEffectivePolicyBeforeRetry,
@@ -800,7 +835,9 @@ impl PromotionJournal {
                     RecoveryAction::RequireFreshChallengeAndIndependentProbe
                 }
                 PromotionState::RollbackIntent => RecoveryAction::InspectAndEnforceBaselinePolicy,
-                PromotionState::Promoted | PromotionState::RolledBack => continue,
+                PromotionState::Promoted | PromotionState::RolledBack | PromotionState::Abandoned => {
+                    continue;
+                }
             };
             recoverable.push(RecoverableOperation { operation, action });
         }
@@ -1338,6 +1375,33 @@ mod tests {
         drop(journal);
         remove_database(&journal_path);
         remove_database(&ledger_path);
+    }
+
+    #[test]
+    fn prepared_operation_can_be_abandoned_without_claiming_device_rollback() {
+        let path = path();
+        let journal = PromotionJournal::open(&path).expect("open");
+        journal.prepare(&spec(1)).expect("prepare");
+        let abandoned = journal
+            .abandon_prepared("operation-policy-0001", 105)
+            .expect("abandon before external actuation");
+        assert_eq!(abandoned.state, PromotionState::Abandoned);
+        assert!(journal.list_recoverable().expect("recoverable").is_empty());
+
+        let next_generation = PromotionSpec {
+            operation_id: "operation-policy-0002",
+            target_token: "target-policy-lab",
+            generation: 2,
+            baseline_policy_sha256: BASELINE,
+            candidate_policy_sha256: CANDIDATE,
+            created_at_unix_ms: 110,
+        };
+        assert_eq!(
+            journal.prepare(&next_generation).expect("new generation").state,
+            PromotionState::Prepared
+        );
+        drop(journal);
+        remove_database(&path);
     }
 
     #[test]
