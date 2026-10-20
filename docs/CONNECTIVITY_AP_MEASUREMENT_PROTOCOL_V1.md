@@ -10,12 +10,12 @@ The objective is not to maximize a speed-test score. It is to maximize useful, p
 
 ## Research basis and scope
 
-- **Broadband Forum TR-398 / BBF.398:** a mature Wi-Fi AP performance test plan covering RF performance, coverage, capacity/bandwidth and stability/robustness. Use the current official test plan as a reference; this project does not claim TR-398 compliance or certification: https://www.broadband-forum.org/public/certifications/bbf-398-carrier-grade-wi-fi/
+- **Broadband Forum TR-398 Issue 4 / BBF.398:** the Broadband Forum technical library lists Issue 4 as in force (September 2026). It covers Wi-Fi residential/SOHO AP performance; the BBF.398 program tests products against the applicable mandatory and conditional test cases through approved laboratories. Use it as the AP RF/coverage/capacity/stability reference; this project does not claim TR-398 compliance or certification: https://broadband-forum.org/public/technical-library/ and https://broadband-forum.org/public/certifications/bbf-398-carrier-grade-wi-fi/
 - **IETF RFC 6349:** use its disciplined TCP-throughput methodology, including path-MTU awareness, baseline RTT/bottleneck measurements and tests in both directions when links are asymmetric: https://www.rfc-editor.org/rfc/rfc6349.html
 - **iperf3:** its JSON output is suitable for machine-collected interval summaries; retain original raw output as a local artifact and bind its digest into the private run record: https://github.com/esnet/iperf/blob/master/src/iperf3.1
 - **OpenWrt SQM:** CAKE and FQ-CoDel are concrete queue-management baselines for investigating loaded latency rather than comparing peak throughput alone: https://openwrt.org/docs/guide-user/network/traffic-shaping/sqm
 
-This protocol complements, rather than replaces, regulatory RF tests, an accredited test laboratory, the current TR-398 procedure, or provider permission. Do not transmit outside the allowed band, channel, power or authorization for the exact location and equipment.
+This protocol complements, rather than replaces, regulatory RF tests, an accredited test laboratory, the current TR-398 Issue 4 procedure, or provider permission. Do not transmit outside the allowed band, channel, power or authorization for the exact location and equipment.
 
 ## Isolation and minimum equipment
 
