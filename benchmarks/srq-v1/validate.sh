@@ -35,6 +35,8 @@ jq -e '
     ($scenario.forbidden_outcomes | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
     ($scenario.required_evidence | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
     ($scenario.execution_tiers | type == "array" and length > 0 and all(.[]; . == "static" or . == "model" or . == "qemu" or . == "physical")) and
+    ($scenario.qualifying_tier == "static" or $scenario.qualifying_tier == "model" or $scenario.qualifying_tier == "qemu" or $scenario.qualifying_tier == "physical") and
+    (($scenario.execution_tiers | index($scenario.qualifying_tier)) != null) and
     ($scenario.release_gate == true) and
     ($scenario.status == "proposed_not_executed" or $scenario.status == "partial_model_pass_not_qualified") and
     (($scenario.observed_tiers // []) | type == "array") and
