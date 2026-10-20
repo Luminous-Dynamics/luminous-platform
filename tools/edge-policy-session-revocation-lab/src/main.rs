@@ -16,9 +16,11 @@ use sha2::{Digest, Sha256};
 const ACK_ENV: &str = "LUMINOUS_EDGE_SESSION_LAB_ACK";
 const ACK_VALUE: &str = "EPHEMERAL_NAMESPACES_ONLY";
 const SERVER_ADDR: &str = "198.18.1.2:8080";
+const CONTROL_ADDR: &str = "198.18.1.2:8082";
 const POLICY_TABLE: &str = "table inet luminous_session_lab";
 const ESTABLISHED_RULE: &str = "ct state established,related accept";
 const REVOKE_RULE: &str = "ip saddr 198.18.1.1 tcp dport 8080 drop";
+const CONTROL_RULE: &str = "tcp dport 8082 accept";
 const CLIENT_TIMEOUT: Duration = Duration::from_millis(350);
 
 const INITIAL_POLICY: &str = r#"table inet luminous_session_lab {
@@ -27,6 +29,7 @@ const INITIAL_POLICY: &str = r#"table inet luminous_session_lab {
         iifname "lo" accept
         ct state established,related accept
         tcp dport 8080 accept
+        tcp dport 8082 accept
     }
 }
 "#;
@@ -34,6 +37,7 @@ const INITIAL_POLICY: &str = r#"table inet luminous_session_lab {
 const RETAIN_POLICY: &str = r#"flush chain inet luminous_session_lab input
 add rule inet luminous_session_lab input iifname "lo" accept
 add rule inet luminous_session_lab input ct state established,related accept
+add rule inet luminous_session_lab input tcp dport 8082 accept
 "#;
 
 const REVOKE_POLICY: &str = r#"flush chain inet luminous_session_lab input
@@ -109,6 +113,7 @@ fn validate_policy_text(stage: PolicyStage, ruleset: &str) -> Result<(), String>
 
     let established_at = ruleset.find(ESTABLISHED_RULE);
     let port_allow_at = ruleset.find("tcp dport 8080 accept");
+    let control_allow_at = ruleset.find(CONTROL_RULE);
     let revoke_at = ruleset.find(REVOKE_RULE);
 
     match stage {
@@ -120,9 +125,16 @@ fn validate_policy_text(stage: PolicyStage, ruleset: &str) -> Result<(), String>
             if established_at >= port_allow_at {
                 return Err("initial policy rule order is unexpected".to_owned());
             }
+            if control_allow_at.is_none() {
+                return Err("initial policy lacks the independent TCP/8082 path control".to_owned());
+            }
         }
         PolicyStage::RetainEstablished => {
-            if established_at.is_none() || port_allow_at.is_some() || revoke_at.is_some() {
+            if established_at.is_none()
+                || port_allow_at.is_some()
+                || revoke_at.is_some()
+                || control_allow_at.is_none()
+            {
                 return Err(
                     "retained-session stage must keep only the established exception, not new-session admission or explicit revocation"
                         .to_owned(),
@@ -146,6 +158,9 @@ fn validate_policy_text(stage: PolicyStage, ruleset: &str) -> Result<(), String>
                 return Err(
                     "explicit-revocation stage unexpectedly permits new TCP/8080 flows".to_owned(),
                 );
+            }
+            if control_allow_at.is_none() {
+                return Err("explicit-revocation stage lacks the TCP/8082 path control".to_owned());
             }
         }
     }
@@ -302,18 +317,21 @@ fn prepare_namespaces(guard: &LabGuard, client_if: &str, server_if: &str) -> Res
     Ok(())
 }
 
-fn ensure_server_alive(guard: &mut LabGuard) -> Result<(), String> {
-    let server = guard
-        .children
-        .first_mut()
-        .ok_or_else(|| "server process handle was lost".to_owned())?;
-    match server
-        .try_wait()
-        .map_err(|error| format!("could not inspect server process: {error}"))?
-    {
-        None => Ok(()),
-        Some(status) => Err(format!("echo server exited unexpectedly with {status}")),
+fn ensure_servers_alive(guard: &mut LabGuard) -> Result<(), String> {
+    for (index, label) in [(0, "primary"), (1, "control")] {
+        let server = guard
+            .children
+            .get_mut(index)
+            .ok_or_else(|| format!("{label} server process handle was lost"))?;
+        match server
+            .try_wait()
+            .map_err(|error| format!("could not inspect {label} server process: {error}"))?
+        {
+            None => {}
+            Some(status) => return Err(format!("{label} echo server exited unexpectedly with {status}")),
+        }
     }
+    Ok(())
 }
 
 fn read_handshake<R: BufRead>(reader: &mut R, expected: &str) -> Result<(), String> {
@@ -330,20 +348,24 @@ fn read_handshake<R: BufRead>(reader: &mut R, expected: &str) -> Result<(), Stri
     Ok(())
 }
 
-fn spawn_lab_server(guard: &mut LabGuard, executable: &std::path::Path) -> Result<(), String> {
+fn spawn_lab_server(
+    guard: &mut LabGuard,
+    executable: &std::path::Path,
+    mode: &str,
+) -> Result<(), String> {
     let mut child = Command::new("ip")
         .args(["netns", "exec", &guard.server_ns])
         .arg(executable)
-        .arg("--server")
+        .arg(mode)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
         .spawn()
-        .map_err(|error| format!("could not start the namespaced echo server: {error}"))?;
+        .map_err(|error| format!("could not start the namespaced {mode} server: {error}"))?;
     let stdout = child
         .stdout
         .take()
-        .ok_or_else(|| "server stdout pipe was unavailable".to_owned())?;
+        .ok_or_else(|| format!("{mode} server stdout pipe was unavailable"))?;
     let mut reader = BufReader::new(stdout);
     read_handshake(&mut reader, "READY")?;
     drop(reader);
@@ -428,6 +450,31 @@ fn check_new_session(namespace: &str, executable: &std::path::Path) -> Result<(b
     }
 }
 
+fn check_control_path(namespace: &str, executable: &std::path::Path) -> Result<u64, String> {
+    let started = Instant::now();
+    let output = Command::new("ip")
+        .args(["netns", "exec", namespace])
+        .arg(executable)
+        .arg("--control-check")
+        .output()
+        .map_err(|error| format!("could not launch the independent control-path probe: {error}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "independent control-path probe failed to run: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    let result = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+    let elapsed = u64::try_from(started.elapsed().as_millis())
+        .map_err(|error| format!("control-path probe duration overflow: {error}"))?;
+    if result != "CONNECTED" {
+        return Err(format!(
+            "independent TCP/8082 positive control did not connect: {result:?}"
+        ));
+    }
+    Ok(elapsed)
+}
+
 fn run_lab() -> Result<ExitCode, String> {
     if env::consts::OS != "linux" {
         return Err("this harness only runs on Linux".to_owned());
@@ -454,10 +501,12 @@ fn run_lab() -> Result<ExitCode, String> {
     prepare_namespaces(&guard, &client_if, &server_if)?;
     apply_nft_script(&guard.server_ns, INITIAL_POLICY)?;
     let initial_policy_sha256 = effective_policy(&guard.server_ns, PolicyStage::Initial)?;
-    spawn_lab_server(&mut guard, &executable)?;
+    spawn_lab_server(&mut guard, &executable, "--server")?;
+    spawn_lab_server(&mut guard, &executable, "--control-server")?;
     let (mut client_stdin, mut client_stdout) = spawn_lab_client(&mut guard, &executable)?;
 
     let baseline_start = Instant::now();
+    let initial_control_probe_ms = check_control_path(&guard.client_ns, &executable)?;
     let baseline_reply = client_exchange(&mut client_stdin, &mut client_stdout, "baseline")?;
     let baseline_exchange_ms = u64::try_from(baseline_start.elapsed().as_millis())
         .map_err(|error| format!("baseline elapsed time overflow: {error}"))?;
@@ -473,6 +522,7 @@ fn run_lab() -> Result<ExitCode, String> {
         .map_err(|error| format!("retained-policy apply time overflow: {error}"))?;
     let retained_policy_sha256 =
         effective_policy(&guard.server_ns, PolicyStage::RetainEstablished)?;
+    let control_after_admission_removal_ms = check_control_path(&guard.client_ns, &executable)?;
     let retained_reply = client_exchange(&mut client_stdin, &mut client_stdout, "retained")?;
     if retained_reply != "ACK:retained" {
         return Err(format!(
@@ -486,7 +536,7 @@ fn run_lab() -> Result<ExitCode, String> {
             "a fresh TCP/8080 session connected after its admission rule was removed".to_owned(),
         );
     }
-    ensure_server_alive(&mut guard)?;
+    ensure_servers_alive(&mut guard)?;
 
     let revoke_start = Instant::now();
     apply_nft_script(&guard.server_ns, REVOKE_POLICY)?;
@@ -494,6 +544,7 @@ fn run_lab() -> Result<ExitCode, String> {
         .map_err(|error| format!("revocation policy apply time overflow: {error}"))?;
     let revoked_policy_sha256 = effective_policy(&guard.server_ns, PolicyStage::ExplicitRevoke)?;
     let revocation_observation_start = Instant::now();
+    let control_after_explicit_revoke_ms = check_control_path(&guard.client_ns, &executable)?;
     let revoked_reply = client_exchange(&mut client_stdin, &mut client_stdout, "revoked")?;
     let revocation_observation_ms =
         u64::try_from(revocation_observation_start.elapsed().as_millis())
@@ -508,7 +559,7 @@ fn run_lab() -> Result<ExitCode, String> {
     if !new_session_blocked_after_explicit_revoke {
         return Err("a fresh TCP/8080 session connected after explicit revocation".to_owned());
     }
-    ensure_server_alive(&mut guard)?;
+    ensure_servers_alive(&mut guard)?;
 
     let summary: Value = json!({
         "schema_version": "edge-policy-session-revocation-observation-v1",
@@ -519,6 +570,7 @@ fn run_lab() -> Result<ExitCode, String> {
             "server_address": "198.18.1.2/30",
             "transport": "tcp",
             "port": 8080,
+            "independent_control_port": 8082,
             "route_scope": "two_ephemeral_namespaces_connected_by_one_veth_without_default_routes",
             "host_firewall_changed": false,
             "external_route_configured": false,
@@ -531,6 +583,8 @@ fn run_lab() -> Result<ExitCode, String> {
                 "expected": "permitted",
                 "observed": "permitted",
                 "baseline_round_trip_ms": baseline_exchange_ms,
+                "independent_control_path": "permitted",
+                "independent_control_probe_ms": initial_control_probe_ms,
                 "effective_policy_sha256": initial_policy_sha256
             },
             {
@@ -540,6 +594,8 @@ fn run_lab() -> Result<ExitCode, String> {
                 "existing_session_observed": "permitted",
                 "new_session_observed": "blocked",
                 "new_session_probe_ms": new_session_check_ms,
+                "independent_control_path": "permitted",
+                "independent_control_probe_ms": control_after_admission_removal_ms,
                 "effective_policy_sha256": retained_policy_sha256
             },
             {
@@ -551,6 +607,8 @@ fn run_lab() -> Result<ExitCode, String> {
                 "response_timeout_window_ms": CLIENT_TIMEOUT.as_millis(),
                 "observed_wait_ms": revocation_observation_ms,
                 "new_session_probe_ms": final_new_session_check_ms,
+                "independent_control_path": "permitted",
+                "independent_control_probe_ms": control_after_explicit_revoke_ms,
                 "effective_policy_sha256": revoked_policy_sha256
             }
         ],
@@ -574,8 +632,16 @@ fn run_lab() -> Result<ExitCode, String> {
 }
 
 fn run_server() -> Result<(), String> {
-    let listener = TcpListener::bind(SERVER_ADDR)
-        .map_err(|error| format!("could not bind fixed echo service at {SERVER_ADDR}: {error}"))?;
+    run_server_at(SERVER_ADDR)
+}
+
+fn run_control_server() -> Result<(), String> {
+    run_server_at(CONTROL_ADDR)
+}
+
+fn run_server_at(address: &str) -> Result<(), String> {
+    let listener = TcpListener::bind(address)
+        .map_err(|error| format!("could not bind fixed echo service at {address}: {error}"))?;
     println!("READY");
     io::stdout()
         .flush()
@@ -669,7 +735,15 @@ fn run_client() -> Result<(), String> {
 }
 
 fn run_connect_check() -> Result<(), String> {
-    let address = SERVER_ADDR
+    run_connect_check_at(SERVER_ADDR)
+}
+
+fn run_control_check() -> Result<(), String> {
+    run_connect_check_at(CONTROL_ADDR)
+}
+
+fn run_connect_check_at(address: &str) -> Result<(), String> {
+    let address = address
         .parse()
         .map_err(|error| format!("fixed server address was invalid: {error}"))?;
     match TcpStream::connect_timeout(&address, Duration::from_millis(300)) {
@@ -696,12 +770,20 @@ fn run() -> Result<ExitCode, String> {
             run_server()?;
             Ok(ExitCode::SUCCESS)
         }
+        [mode] if mode == "--control-server" => {
+            run_control_server()?;
+            Ok(ExitCode::SUCCESS)
+        }
         [mode] if mode == "--client" => {
             run_client()?;
             Ok(ExitCode::SUCCESS)
         }
         [mode] if mode == "--connect-check" => {
             run_connect_check()?;
+            Ok(ExitCode::SUCCESS)
+        }
+        [mode] if mode == "--control-check" => {
+            run_control_check()?;
             Ok(ExitCode::SUCCESS)
         }
         [confirmation] if confirmation == "--confirm-session-revocation-lab" => run_lab(),
@@ -720,34 +802,35 @@ mod tests {
     const HEADER: &str = "table inet luminous_session_lab {\n chain input { type filter hook input priority 0; policy drop;\n iifname \"lo\" accept\n";
     const ESTABLISHED: &str = " ct state established,related accept\n";
     const PORT_ALLOW: &str = " tcp dport 8080 accept\n";
+    const CONTROL_ALLOW: &str = " tcp dport 8082 accept\n";
     const REVOKE: &str = " ip saddr 198.18.1.1 tcp dport 8080 drop\n";
     const FOOTER: &str = " }\n}\n";
 
     #[test]
     fn initial_policy_has_positive_and_established_controls() {
-        let ruleset = format!("{HEADER}{ESTABLISHED}{PORT_ALLOW}{FOOTER}");
+        let ruleset = format!("{HEADER}{ESTABLISHED}{PORT_ALLOW}{CONTROL_ALLOW}{FOOTER}");
         assert!(validate_policy_text(PolicyStage::Initial, &ruleset).is_ok());
     }
 
     #[test]
     fn removing_admission_does_not_claim_to_revoke_existing_sessions() {
-        let ruleset = format!("{HEADER}{ESTABLISHED}{FOOTER}");
+        let ruleset = format!("{HEADER}{ESTABLISHED}{CONTROL_ALLOW}{FOOTER}");
         assert!(validate_policy_text(PolicyStage::RetainEstablished, &ruleset).is_ok());
         assert!(validate_policy_text(PolicyStage::ExplicitRevoke, &ruleset).is_err());
     }
 
     #[test]
     fn explicit_deny_must_precede_generic_established_accept() {
-        let correct = format!("{HEADER}{REVOKE}{ESTABLISHED}{FOOTER}");
+        let correct = format!("{HEADER}{REVOKE}{ESTABLISHED}{CONTROL_ALLOW}{FOOTER}");
         assert!(validate_policy_text(PolicyStage::ExplicitRevoke, &correct).is_ok());
 
-        let wrong_order = format!("{HEADER}{ESTABLISHED}{REVOKE}{FOOTER}");
+        let wrong_order = format!("{HEADER}{ESTABLISHED}{REVOKE}{CONTROL_ALLOW}{FOOTER}");
         assert!(validate_policy_text(PolicyStage::ExplicitRevoke, &wrong_order).is_err());
     }
 
     #[test]
     fn retained_policy_must_not_keep_the_new_session_allow_rule() {
-        let ruleset = format!("{HEADER}{ESTABLISHED}{PORT_ALLOW}{FOOTER}");
+        let ruleset = format!("{HEADER}{ESTABLISHED}{PORT_ALLOW}{CONTROL_ALLOW}{FOOTER}");
         assert!(validate_policy_text(PolicyStage::RetainEstablished, &ruleset).is_err());
     }
 
