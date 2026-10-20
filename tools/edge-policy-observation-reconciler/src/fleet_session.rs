@@ -561,9 +561,9 @@ impl FleetSessionJournal {
                 _ => None,
             };
             if persisted == Some(evaluation.decision) {
-                transaction
-                    .commit()
-                    .map_err(|error| format!("cannot commit idempotent wave evaluation: {error}"))?;
+                transaction.commit().map_err(|error| {
+                    format!("cannot commit idempotent wave evaluation: {error}")
+                })?;
                 return Ok(evaluation);
             }
             return Err(format!(
@@ -645,7 +645,9 @@ impl FleetSessionJournal {
         let target = get_target_conn(&transaction, plan_sha256, target_token)?
             .ok_or_else(|| format!("target {target_token:?} is not registered"))?;
         if target.wave_index != wave_index {
-            return Err(format!("target {target_token:?} is not in wave {wave_index}"));
+            return Err(format!(
+                "target {target_token:?} is not in wave {wave_index}"
+            ));
         }
         if target.candidate_policy_sha256 != effective_policy_sha256
             || target.observed_policy_sha256.as_deref() != Some(effective_policy_sha256)
@@ -699,9 +701,7 @@ impl FleetSessionJournal {
         let state = get_wave_state(&transaction, plan_sha256, wave_index)?;
         let session = get_session_conn(&transaction, plan_sha256)?
             .ok_or_else(|| "unknown fleet plan digest".to_owned())?;
-        if state == "continued"
-            && session.active_wave_index != Some(wave_index)
-        {
+        if state == "continued" && session.active_wave_index != Some(wave_index) {
             transaction
                 .commit()
                 .map_err(|error| format!("cannot commit idempotent wave completion: {error}"))?;
@@ -715,7 +715,10 @@ impl FleetSessionJournal {
             .query_row(
                 "SELECT COUNT(*) FROM rollout_targets
                  WHERE plan_sha256 = ?1 AND wave_index = ?2 AND state != 'promoted';",
-                params![plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                params![
+                    plan_sha256,
+                    to_sql_integer(wave_index as u64, "wave index")?
+                ],
                 |row| row.get(0),
             )
             .map_err(|error| format!("cannot count unpromoted wave targets: {error}"))?;
@@ -729,7 +732,11 @@ impl FleetSessionJournal {
             .execute(
                 "UPDATE rollout_waves SET state = 'continued', updated_at_unix_ms = ?1
                  WHERE plan_sha256 = ?2 AND wave_index = ?3 AND state = 'verified';",
-                params![now, plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                params![
+                    now,
+                    plan_sha256,
+                    to_sql_integer(wave_index as u64, "wave index")?
+                ],
             )
             .map_err(|error| format!("cannot close rollout wave: {error}"))?;
         let wave_count: i64 = transaction
@@ -804,7 +811,10 @@ impl FleetSessionJournal {
         }
 
         require_active_wave(&transaction, plan_sha256, wave_index)?;
-        if !matches!(wave_state.as_str(), "verified" | "rollback_required" | "rolling_back") {
+        if !matches!(
+            wave_state.as_str(),
+            "verified" | "rollback_required" | "rolling_back"
+        ) {
             return Err(format!(
                 "cannot request rollback from wave state {wave_state:?}"
             ));
@@ -887,7 +897,9 @@ impl FleetSessionJournal {
         let target = get_target_conn(&transaction, plan_sha256, target_token)?
             .ok_or_else(|| format!("target {target_token:?} is not registered"))?;
         if target.wave_index != wave_index {
-            return Err(format!("target {target_token:?} is not in wave {wave_index}"));
+            return Err(format!(
+                "target {target_token:?} is not in wave {wave_index}"
+            ));
         }
         if target.baseline_policy_sha256 != effective_policy_sha256 {
             return Err(
@@ -901,7 +913,9 @@ impl FleetSessionJournal {
         {
             let complete = wave_state == "rolled_back";
             if !matches!(wave_state.as_str(), "rolling_back" | "rolled_back") {
-                return Err(format!("rolled-back target is in unexpected wave state {wave_state:?}"));
+                return Err(format!(
+                    "rolled-back target is in unexpected wave state {wave_state:?}"
+                ));
             }
             transaction
                 .commit()
@@ -1131,9 +1145,7 @@ fn verify_schema(connection: &Connection) -> Result<(), String> {
             .map_err(|error| format!("cannot query fleet journal table {table:?}: {error}"))?;
         let mut actual = Vec::new();
         for row in rows {
-            actual.push(
-                row.map_err(|error| format!("cannot read fleet journal column: {error}"))?,
-            );
+            actual.push(row.map_err(|error| format!("cannot read fleet journal column: {error}"))?);
         }
         if actual.iter().map(String::as_str).collect::<Vec<_>>() != expected_columns {
             return Err(format!(
@@ -1702,8 +1714,12 @@ mod tests {
         };
         let journal = FleetSessionJournal::open(&database_path).expect("child opens journal");
         let plan = plan();
-        journal.register_plan(&plan, 100).expect("child registers plan");
-        journal.begin_wave(&plan.plan_sha256, 0, 101).expect("child begins canary");
+        journal
+            .register_plan(&plan, 100)
+            .expect("child registers plan");
+        journal
+            .begin_wave(&plan.plan_sha256, 0, 101)
+            .expect("child begins canary");
         journal
             .record_apply_intent(&plan.plan_sha256, 0, "target-canary", 102)
             .expect("child commits target apply intent");
@@ -1788,7 +1804,9 @@ mod tests {
             .evaluate_and_record_wave(&plan.plan_sha256, 0, &probe, 130)
             .expect("evaluate");
         assert_eq!(evaluation.decision, WaveDecision::RollbackWave);
-        let recovery = journal.list_recoverable_targets().expect("rollback recovery");
+        let recovery = journal
+            .list_recoverable_targets()
+            .expect("rollback recovery");
         assert_eq!(recovery.len(), 1);
         assert_eq!(
             recovery[0].action,
@@ -1907,7 +1925,12 @@ mod tests {
                 )
                 .expect("duplicate terminal acknowledgement")
         );
-        assert!(journal.list_recoverable_targets().expect("none pending").is_empty());
+        assert!(
+            journal
+                .list_recoverable_targets()
+                .expect("none pending")
+                .is_empty()
+        );
         drop(journal);
         remove_database(&path);
     }
@@ -1972,7 +1995,9 @@ mod tests {
                 .state,
             FleetSessionState::Halted
         );
-        let recovery = journal.list_recoverable_targets().expect("halted state recovery");
+        let recovery = journal
+            .list_recoverable_targets()
+            .expect("halted state recovery");
         assert_eq!(recovery.len(), 1);
         assert_eq!(recovery[0].action, FleetRecoveryAction::HaltAndReconcile);
         assert!(journal.begin_wave(&plan.plan_sha256, 1, 131).is_err());
