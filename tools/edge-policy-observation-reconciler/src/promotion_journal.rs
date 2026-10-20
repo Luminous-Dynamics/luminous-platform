@@ -399,9 +399,132 @@ impl PromotionJournal {
         Ok(updated)
     }
 
-    /// Record freshness-verified, independent evidence and return a process-local
-    /// permit. The caller must already have consumed the challenge durably.
-    pub fn record_verified(
+    /// Verify receipt conformance and freshness, durably consume its nonce,
+    /// bind that challenge to this operation, then mint a process-local permit.
+    ///
+    /// This is the public verification entry point. It performs no device
+    /// actuation: the caller supplies a digest obtained from its live effective-
+    /// policy readback, and promotion still requires a second readback.
+    ///
+    /// If the nonce commit succeeds but journal recording fails, the challenge
+    /// remains consumed; retry with a newly issued challenge. This is the safe
+    /// failure mode for two separate durable stores.
+    pub fn verify_and_record_evidence(
+        &self,
+        ledger: &super::replay_ledger::SqliteReplayLedger,
+        operation_id: &str,
+        challenge_source: &str,
+        envelope_source: &str,
+        corpus_schema_source: &str,
+        corpus_source: &str,
+        receipt_source: &str,
+        effective_policy_sha256: &str,
+        verifier_now_unix_ms: u64,
+    ) -> Result<(serde_json::Value, PromotionPermit), Vec<String>> {
+        validate_digest(effective_policy_sha256, "effective_policy_sha256")
+            .map_err(|error| vec![error])?;
+        let operation = self
+            .get(operation_id)
+            .map_err(|error| vec![error])?
+            .ok_or_else(|| vec![format!("unknown operation {operation_id:?}")])?;
+        if operation.state != PromotionState::Applied {
+            return Err(vec![format!(
+                "fresh verification requires Applied state; found {:?}",
+                operation.state
+            )]);
+        }
+        if effective_policy_sha256 != operation.candidate_policy_sha256
+            || operation.observed_policy_sha256.as_deref()
+                != Some(operation.candidate_policy_sha256.as_str())
+        {
+            return Err(vec![
+                "live effective policy readback does not match the applied candidate".to_owned(),
+            ]);
+        }
+
+        let challenge: serde_json::Value = serde_json::from_str(challenge_source)
+            .map_err(|error| vec![format!("cannot parse verification challenge: {error}")])?;
+        let envelope: serde_json::Value = serde_json::from_str(envelope_source)
+            .map_err(|error| vec![format!("cannot parse freshness envelope: {error}")])?;
+        let challenge_id = json_string_field(&challenge, "/challenge_id", "challenge.challenge_id")?
+            .to_owned();
+        let target_token = json_string_field(&challenge, "/target_token", "challenge.target_token")?
+            .to_owned();
+        let policy_generation = json_integer_field(
+            &challenge,
+            "/policy_generation",
+            "challenge.policy_generation",
+        )?;
+        let expected_effective_policy_sha256 = json_string_field(
+            &challenge,
+            "/expected_effective_policy_sha256",
+            "challenge.expected_effective_policy_sha256",
+        )?;
+        let approved_policy_sha256 = json_string_field(
+            &challenge,
+            "/approved_policy_sha256",
+            "challenge.approved_policy_sha256",
+        )?;
+        let expires_at_unix_ms = json_integer_field(
+            &challenge,
+            "/expires_at_unix_ms",
+            "challenge.expires_at_unix_ms",
+        )?;
+        let observed_at_unix_ms = json_integer_field(
+            &envelope,
+            "/completed_at_unix_ms",
+            "envelope.completed_at_unix_ms",
+        )?;
+
+        if challenge_id.is_empty()
+            || target_token != operation.target_token
+            || policy_generation != operation.generation
+        {
+            return Err(vec![
+                "freshness challenge target or policy generation does not match the prepared operation"
+                    .to_owned(),
+            ]);
+        }
+        if approved_policy_sha256 != operation.baseline_policy_sha256
+            || expected_effective_policy_sha256 != operation.candidate_policy_sha256
+        {
+            return Err(vec![
+                "freshness challenge baseline/candidate digests do not match the prepared operation"
+                    .to_owned(),
+            ]);
+        }
+
+        // This validates challenge/envelope/receipt/corpus bindings and commits
+        // nonce consumption before the journal is allowed to mint a permit.
+        let report = super::replay_ledger::verify_and_consume_durable(
+            ledger,
+            challenge_source,
+            envelope_source,
+            corpus_schema_source,
+            corpus_source,
+            receipt_source,
+            verifier_now_unix_ms,
+        )?;
+        let receipt_sha256 = sha256_hex(receipt_source.as_bytes());
+        let evidence = PromotionEvidence {
+            challenge_id: &challenge_id,
+            target_token: &target_token,
+            policy_generation,
+            receipt_sha256: &receipt_sha256,
+            effective_policy_sha256,
+            observed_at_unix_ms,
+            expires_at_unix_ms,
+        };
+        let permit = self
+            .record_verified(operation_id, &evidence, verifier_now_unix_ms)
+            .map_err(|error| vec![error])?;
+        Ok((report, permit))
+    }
+
+    /// Internal post-verifier transition. External callers must use
+    /// verify_and_record_evidence so durable challenge consumption cannot be
+    /// accidentally skipped.
+    fn record_verified(
         &self,
         operation_id: &str,
         evidence: &PromotionEvidence<'_>,
@@ -869,6 +992,28 @@ fn promotion_operation_from_row(row: &Row<'_>) -> rusqlite::Result<PromotionOper
         evidence_observed_at_unix_ms: observed.and_then(|value| u64::try_from(value).ok()),
         evidence_expires_at_unix_ms: expires.and_then(|value| u64::try_from(value).ok()),
     })
+}
+
+fn json_string_field<'a>(
+    value: &'a serde_json::Value,
+    pointer: &str,
+    label: &str,
+) -> Result<&'a str, Vec<String>> {
+    value
+        .pointer(pointer)
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| vec![format!("{label} must be a string")])
+}
+
+fn json_integer_field(
+    value: &serde_json::Value,
+    pointer: &str,
+    label: &str,
+) -> Result<u64, Vec<String>> {
+    value
+        .pointer(pointer)
+        .and_then(serde_json::Value::as_u64)
+        .ok_or_else(|| vec![format!("{label} must be an unsigned integer")])
 }
 
 fn validate_spec(spec: &PromotionSpec<'_>) -> Result<(), String> {
