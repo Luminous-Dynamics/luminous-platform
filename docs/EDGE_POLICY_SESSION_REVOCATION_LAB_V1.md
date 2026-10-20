@@ -6,13 +6,16 @@
 
 A new-flow allow/deny matrix does not establish what happens to an already-established TCP stream after a policy update. In stateful firewalls, generic `established,related` rules may continue accepting packets for a conntracked flow even when the rule that admitted new connections has been removed. The [nftables conntrack state documentation](https://wiki.nftables.org/wiki-nftables/index.php/Matching_connection_tracking_stateful_metainformation) defines the established state and its matching behavior.
 
-This lab deliberately distinguishes three outcomes instead of conflating them:
+This lab deliberately distinguishes session semantics and approved-policy restoration:
 
 | Case | Policy transition | Existing TCP/8080 session | New TCP/8080 session | Independent TCP/8082 path |
 |---|---|---|---|---|
 | ESR-001 | Initial allow policy | Must exchange a fixed positive-control line | Not evaluated | Must connect |
 | ESR-002 | Remove the TCP/8080 admission rule but keep generic established acceptance | Must still exchange a fixed line | Must be blocked | Must still connect |
 | ESR-003 | Add a source/service-specific deny before generic established acceptance | Must receive no response within the fixed timeout window | Must be blocked | Must still connect |
+| ESR-004 | Restore the approved initial ruleset after explicit revocation | Existing flow is not re-evaluated after the harness closes it on timeout | Must be permitted again | Must still connect |
+
+ESR-004 requires the restored effective-policy SHA-256 to equal the exact digest observed before changes. This catches “rollback” that merely reports command success while leaving a different effective ruleset installed. The fresh connection check confirms the restored admission behavior, while TCP/8082 remains an independent control.
 
 The second case is not a recommendation to preserve revoked access. It is a control demonstrating that *removing permission to start a session is not necessarily revoking permission for a session already in progress*. The third case expresses explicit revocation semantics for this fixed test tuple.
 
@@ -48,7 +51,7 @@ The first objective is semantic correctness, not speed.
 | Policy identity | Record SHA-256 of the effective ruleset for each stage | Required integrity check; not authentication |
 | Replication | At least 30 randomized paired trials per qualified kernel/ruleset revision; report every failure | Proposed target |
 | Revocation delay | Report distribution from policy update to observed application cutoff; use p50/p95/p99 and the declared timeout, not a single mean | Proposed measurement |
-| Rollback | Restore the prior approved policy and independently re-probe both allowed and denied paths | Next qualification step |
+| Rollback | Restore the exact pre-change effective-policy digest; verify target TCP/8080 admission and independent TCP/8082 control | Implemented in this PR; live confirmation pending |
 
 Do not claim “zero false permits” from a tiny fixed matrix as a universal security result. Report the case denominator, kernel version, nftables version, number of trials, all mismatches, and whether a trial was inconclusive. An inaccessible endpoint, dead listener, or failed positive control invalidates the corresponding denial result.
 
@@ -67,7 +70,7 @@ The report must distinguish controller acknowledgements, policy snapshots, and i
 
 ## Remaining gaps
 
-This lab does not yet test physical APs/firewalls, UDP behavior, IPv6 session revocation, DNS/NAT64, multi-device rollout, controller partition, stale controller state, packet-loss conditions, failover, application transaction success, or rollback. Those should be separate registered cases with positive controls. PR #87 adds a challenge-bound freshness layer, but production replay protection still needs a durable, atomic nonce ledger and authenticated evidence. The next policy-lab extension should add a multi-stage rollback matrix before testing any external device.
+This lab does not yet test physical APs/firewalls, UDP behavior, IPv6 session revocation, DNS/NAT64, multi-device rollout, controller partition, stale controller state, packet-loss conditions, failover, application transaction success, or whether an already-established TCP stream resumes after rollback. The harness closes the test client after ESR-003, so ESR-004 qualifies restoration of the effective policy and fresh-connection behavior—not persistence or termination of a pre-existing socket. PR #87 adds challenge-bound freshness; PR #89 adds durable nonce consumption, subject to its own CI validation. Multi-device, failure-injection and active-session-after-rollback cases remain future qualifications.
 
 ## Run
 
