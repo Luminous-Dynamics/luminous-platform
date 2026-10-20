@@ -16,6 +16,7 @@ The verifier accepts only all of the following:
 - Signer workflow: `Luminous-Dynamics/luminous-platform/.github/workflows/srq-v1.yml`.
 - OIDC issuer: `https://token.actions.githubusercontent.com`.
 - Predicate type: `https://slsa.dev/provenance/v1`.
+- Runner class: GitHub-hosted runner only; the verifier invokes `gh attestation verify --deny-self-hosted-runners`.
 - Source ref: `refs/heads/main`.
 - Exact expected source commit SHA and the SHA-256 digest of the bundle being verified.
 - Workflow-produced run ID and attempt match the manifest inside the signed subject.
