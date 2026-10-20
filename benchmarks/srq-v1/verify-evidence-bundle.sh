@@ -100,7 +100,8 @@ jq -e \
     .repository == $repo and
     .workflow_path == $workflow_path and
     .workflow_ref == $workflow_ref and
-    (.workflow_sha | type == "string" and test("^[0-9a-f]{40}$")) and
+    ((.workflow_sha | type) == "string") and
+    (.workflow_sha | test("^[0-9a-f]{40}$")) and
     .event_name == "workflow_dispatch" and
     .run_id == $run_id and
     .run_attempt == $run_attempt and
@@ -108,7 +109,8 @@ jq -e \
     .source.event_sha == $source_sha and
     .source.actual_checkout_sha == $source_sha and
     .source.source_matches_expected == true and
-    .corpus_sha256 | type == "string" and test("^[0-9a-f]{64}$") and
+    ((.corpus_sha256 | type) == "string") and
+    (.corpus_sha256 | test("^[0-9a-f]{64}$")) and
     .checksum_manifest_sha256 == $checksum_sha
   ' "$manifest" >/dev/null || {
     echo "BLOCKED: evidence manifest does not match the expected trusted workflow run." >&2
