@@ -1024,6 +1024,46 @@ mod tests {
     }
 
     #[test]
+    fn refuses_automatic_writes_without_exclusive_target_lease() {
+        let (mut device, baseline) = FakeDevice::baseline();
+        device.capabilities.exclusive_target_lease = false;
+        let candidate = b"candidate-policy".to_vec();
+        let journal_path = new_path("no-lease-journal");
+        let ledger_path = new_path("no-lease-ledger");
+        let journal = PromotionJournal::open(&journal_path).expect("open journal");
+        let ledger = SqliteReplayLedger::open(&ledger_path).expect("open ledger");
+        let coordinator = PolicyRolloutCoordinator::new(&journal, &ledger);
+        let mut probe = PassingProbe {
+            baseline_digest: crate::sha256_hex(&baseline),
+            candidate_digest: crate::sha256_hex(&candidate),
+        };
+        let error = coordinator
+            .apply_and_promote(
+                &mut device,
+                &mut probe,
+                &RolloutRequest {
+                    operation_id: "operation-rollout-no-lease",
+                    target_token: TARGET,
+                    approved_baseline_policy: &baseline,
+                    candidate_policy: &candidate,
+                    corpus_schema_source: CORPUS_SCHEMA,
+                    corpus_source: CORPUS,
+                },
+            )
+            .expect_err("unsafe adapter rejected before writes");
+        assert!(error.contains("exclusive target lease"));
+        assert_eq!(device.writes, 0);
+        assert!(journal
+            .get("operation-rollout-no-lease")
+            .expect("query journal")
+            .is_none());
+        drop(ledger);
+        drop(journal);
+        remove_database(&journal_path);
+        remove_database(&ledger_path);
+    }
+
+    #[test]
     fn coordinator_skips_generation_consumed_by_pre_actuation_abandonment() {
         let (mut device, baseline) = FakeDevice::baseline();
         let candidate = b"candidate-after-abandon".to_vec();
