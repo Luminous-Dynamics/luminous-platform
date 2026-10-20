@@ -174,3 +174,7 @@ The machine-readable reference list is `benchmarks/srq-v1/industry-baselines.tsv
 ## Current qualification status
 
 **NOT_QUALIFIED / PROPOSAL_ONLY.** This document and corpus define future work. They do not show that boot, update, recovery, fleet operations, secure boot, TPM measurement, cryptographic proofs, or physical hardware have passed. The separate open PRs and issues remain subject to their own exact-head evidence.
+
+## Supplemental process-kill transaction model
+
+The new [SRQ-1 real process-kill transaction model](SRQ_PROCESS_KILL_MODEL_V1.md) launches a real child process, kills it with Linux SIGKILL at five persistence boundaries, and reopens the same state directory. It requires the complete previous snapshot before atomic rename and the complete promoted snapshot afterward, rejects mixed snapshots, and cleans orphan temporary files. The test is included as supplemental model evidence in the signed bundle with an explicit `abstract_model_only` ceiling. It is not a kernel-crash, power-loss, production-store, QEMU, or physical test, and it does not change the aggregate 22-gate result.
