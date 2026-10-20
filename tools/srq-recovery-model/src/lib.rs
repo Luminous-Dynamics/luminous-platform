@@ -3,7 +3,8 @@
 //! This is a filesystem-backed test model, not a bootloader, TUF client, real
 //! power-loss simulator, or production update transaction. It uses immutable
 //! synthetic generation payloads and an atomically replaced pointer to exercise
-//! old-or-new completeness across injected process-interruption checkpoints.
+//! old-or-new completeness across injected checkpoint returns. These are modeled
+//! early returns followed by reopening the store, not process-kill or power-cut tests.
 
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, ErrorKind, Write};
