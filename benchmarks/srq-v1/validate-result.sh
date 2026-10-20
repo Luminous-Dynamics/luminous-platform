@@ -48,7 +48,11 @@ jq -e '
   (.execution.environment.architecture == null or (.execution.environment.architecture | type == "string")) and
   (.execution.environment.toolchain == null or (.execution.environment.toolchain | type == "string")) and
   (.evidence | type == "array" and all(.[]; (.artifact | type == "string" and length > 0) and (.sha256 | type == "string" and test("^[0-9a-f]{64}$")) and (.kind == "log" or .kind == "receipt" or .kind == "capture" or .kind == "manifest" or .kind == "benchmark" or .kind == "other"))) and
-  (.claim_ceiling | type == "string" and length > 0) and
+  (.claim_ceiling == "none" or .claim_ceiling == "static_contract_only" or .claim_ceiling == "abstract_model_only" or .claim_ceiling == "qemu_guest_recovery_only" or .claim_ceiling == "physical_device_recovery_only") and
+  (if .execution.tier == "static" then (.claim_ceiling == "none" or .claim_ceiling == "static_contract_only")
+   elif .execution.tier == "model" then (.claim_ceiling == "none" or .claim_ceiling == "static_contract_only" or .claim_ceiling == "abstract_model_only")
+   elif .execution.tier == "qemu" then (.claim_ceiling == "none" or .claim_ceiling == "static_contract_only" or .claim_ceiling == "abstract_model_only" or .claim_ceiling == "qemu_guest_recovery_only")
+   else true end) and
   (.non_claims | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
   (if .status == "PASS" then
      (.source.actual_checkout_sha != null) and
