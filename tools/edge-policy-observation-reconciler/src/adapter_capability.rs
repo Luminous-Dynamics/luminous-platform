@@ -271,9 +271,6 @@ pub fn qualify_adapter(
             );
             QualifiedRollbackMode::NotQualified
         }
-        (CommitSemantics::GnmiSingleSet { .. }, RollbackSemantics::Explicit { .. }) => {
-            unreachable!("all gNMI explicit rollback combinations are handled above")
-        }
     };
 
     let claim_limits = vec![
