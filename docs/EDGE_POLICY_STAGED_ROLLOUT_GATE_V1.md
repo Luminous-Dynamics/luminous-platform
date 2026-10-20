@@ -6,7 +6,7 @@
 
 A successful configuration call is not sufficient to justify expanding a change across a fleet. A rollout should proceed in bounded waves, diversifying failure domains, with the next wave withheld until every target in the prior wave is observed to be healthy under the exact intended policy.
 
-The Rust module `tools/edge-policy-observation-reconciler/src/rollout_gate.rs` is a pure decision gate. It:
+The Rust module `tools/edge-policy-observation-reconciler/src/rollout_gate.rs` is a pure decision gate. The adapter-qualified entry point `authorize_next_wave_with_adapter_capabilities` validates an adapter profile for every planned target before authorizing any wave, including wave zero. Missing or duplicate profiles are rejected; if even one future-wave target is ineligible, the whole rollout is halted before it starts. It:
 - Validates unique target membership, contiguous wave indices, bounded wave size, and per-failure-domain concurrency.
 - Requires the exact candidate policy digest and expected generation for each target.
 - Requires `Promoted` state, a fresh independent data-plane probe, and an independent positive-control path for every target in a completed wave.
@@ -44,7 +44,7 @@ For early software experiments, the test suite includes a 100,000-target plan ch
 
 ## Known limits and next integration work
 
-- The gate is currently stateless: it consumes the plan and the latest observation per target. The caller must durably journal rollout decisions and preserve observation provenance.
+- The gate is currently stateless: it consumes the plan and the latest observation per target, plus the adapter-qualified wrapper's capability profiles. The caller must durably journal rollout decisions and preserve observation provenance.
 - `failure_domain` labels are trusted input and must come from verified asset inventory; untrusted or stale topology labels invalidate diversity claims.
 - The gate requires refreshed observations before authorizing an upcoming wave; expired proof cannot be reused.
 - It does not own NETCONF confirmed commit, gNMI Set, vendor APIs, device leases, or external apply/rollback. These belong in capability-specific adapters.
