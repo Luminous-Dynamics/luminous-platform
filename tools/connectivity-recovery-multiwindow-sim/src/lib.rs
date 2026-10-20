@@ -1133,6 +1133,26 @@ mod tests {
     }
 
     #[test]
+    fn task_results_keep_deadline_and_expiry_context_for_explanations() {
+        let f = fixtures();
+        let (_, report) = simulate(&f, &f.scenario).unwrap();
+        let results = report["multiwindow_recovery"]["task_results"]
+            .as_array()
+            .unwrap();
+        let baseline = results[0].as_array().unwrap();
+        let essential = baseline
+            .iter()
+            .find(|task| task["task_id"] == "online-essential-small-b")
+            .unwrap();
+        assert_eq!(essential["arrival_window"], 0);
+        assert_eq!(essential["deadline_window"], 0);
+        assert_eq!(essential["expires_after_window"], 4);
+        assert_eq!(essential["service_bytes"], 3000);
+        assert_eq!(essential["delivered_bytes"], 0);
+        assert_eq!(essential["failure_reason"], "deadline");
+    }
+
+    #[test]
     fn peer_tokens_never_leave_exported_receipt_or_report() {
         let f = fixtures();
         let (run, report) = simulate(&f, &f.scenario).unwrap();
