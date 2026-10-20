@@ -635,8 +635,7 @@ mod tests {
     #[test]
     fn effective_policy_digest_mismatch_is_rejected_without_consuming_nonce() {
         let valid_receipt = receipt_source();
-        let mut tampered: Value =
-            serde_json::from_str(&valid_receipt).expect("valid receipt JSON");
+        let mut tampered: Value = serde_json::from_str(&valid_receipt).expect("valid receipt JSON");
         tampered["observations"][0]["effective_policy_sha256"] = json!("f".repeat(64));
         let tampered_source = tampered.to_string();
         let tampered_envelope = envelope_source(&tampered_source);
