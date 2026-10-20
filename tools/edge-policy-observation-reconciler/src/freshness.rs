@@ -310,12 +310,12 @@ mod tests {
     const CORPUS: &str =
         include_str!("../../../examples/edge-policy-conformance-corpus-synthetic-v1.json");
     const CHALLENGE_ID: &str = "challenge-test-0001";
-    const NONCE: &str = "c".repeat(64);
+    const NONCE: &str = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
     const ISSUED_AT: u64 = 1_000;
     const STARTED_AT: u64 = 1_050;
     const COMPLETED_AT: u64 = 1_200;
     const EXPIRES_AT: u64 = 2_000;
-    const POLICY_SHA256: &str = "a".repeat(64);
+    const POLICY_SHA256: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const TARGET: &str = "target-synthetic-lab";
 
     fn receipt_source() -> String {
