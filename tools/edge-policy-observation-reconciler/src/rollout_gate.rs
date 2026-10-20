@@ -142,7 +142,12 @@ pub fn authorize_next_wave_with_adapter_capabilities(
         let assessment = qualify_adapter(profile, qualification_policy).map_err(|errors| {
             errors
                 .into_iter()
-                .map(|error| format!("target {:?} has invalid adapter profile: {error}", target.target_token))
+                .map(|error| {
+                    format!(
+                        "target {:?} has invalid adapter profile: {error}",
+                        target.target_token
+                    )
+                })
                 .collect::<Vec<_>>()
         })?;
         if !assessment.automatic_rollout_eligible {
@@ -673,14 +678,19 @@ mod tests {
             1_100,
         )
         .expect("valid but ineligible adapter profile");
-        let RolloutGateDecision::Halted { wave_index, reasons } = decision else {
+        let RolloutGateDecision::Halted {
+            wave_index,
+            reasons,
+        } = decision
+        else {
             panic!("ineligible future-wave device must block before wave zero");
         };
         assert_eq!(wave_index, 0);
         assert!(
             reasons
                 .iter()
-                .any(|reason| reason.contains("target-router-c") && reason.contains("without a qualified rollback"))
+                .any(|reason| reason.contains("target-router-c")
+                    && reason.contains("without a qualified rollback"))
         );
     }
 
