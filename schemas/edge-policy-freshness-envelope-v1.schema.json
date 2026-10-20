@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/edge-policy-freshness-envelope-v1.schema.json",
+  "title": "Luminous Edge Freshness Envelope v1",
+  "description": "Verifier challenge binding around an exact observation receipt. This envelope does not authenticate the producer.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "challenge_id",
+    "nonce",
+    "run_id",
+    "policy_generation",
+    "started_at_unix_ms",
+    "completed_at_unix_ms",
+    "receipt_sha256"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "challenge_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"
+    },
+    "nonce": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"
+    },
+    "policy_generation": { "type": "integer", "minimum": 1 },
+    "started_at_unix_ms": { "type": "integer", "minimum": 0 },
+    "completed_at_unix_ms": { "type": "integer", "minimum": 0 },
+    "receipt_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}
