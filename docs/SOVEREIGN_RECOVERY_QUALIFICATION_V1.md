@@ -69,6 +69,8 @@ The companion `validate-result.sh` checks SRQ's core status/provenance invariant
 
 A scenario can record a partial tier result without becoming qualified: `UPDATE-004` now records `observed_tiers: ["model"]` and `partial_model_pass_not_qualified`. Its source-bound receipt demonstrates only an abstract filesystem activation model. The QEMU and physical tiers remain open, and the overall SRQ profile remains `NOT_QUALIFIED` until all required release gates have eligible evidence.
 
+A second standalone model at `tools/srq-challenge-promotion-model/` exercises `EVIDENCE-003`. It persists the challenge-consumption record and promoted policy generation together in one atomically replaced snapshot, uses a Linux advisory file lock for local contention, and injects interruption before/after the rename boundary. The model test is designed to require exactly one successful commit across 64 concurrent worker threads and to reject replay after reopening the store. Its evidence ceiling is still `abstract_model_only`: it does not qualify the production store adapter, cross-host consensus/locking, trusted time, cryptographic challenge issuance, or physical power loss. When that run is green, `EVIDENCE-003` can record observed model coverage without closing its required QEMU/production gate.
+
 | Execution tier | Maximum allowed claim ceiling | What it still does not establish |
 |---|---|---|
 | `static` | `static_contract_only` | Runtime behavior, host recovery, signer/device identity |
