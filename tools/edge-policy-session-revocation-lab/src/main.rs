@@ -652,7 +652,7 @@ fn run_lab() -> Result<ExitCode, String> {
                 "case_id": "ESR-004",
                 "condition": "restore_exact_approved_effective_policy_and_reprobe",
                 "expected": "approved_policy_hash_restored_new_session_permitted",
-                "approved_policy_sha256_before_change": initial_policy_sha256,
+                "baseline_effective_policy_sha256": initial_policy_sha256,
                 "effective_policy_sha256_after_rollback": restored_policy_sha256,
                 "effective_policy_digest_restored": restored_policy_sha256 == initial_policy_sha256,
                 "new_session_observed": "permitted",
