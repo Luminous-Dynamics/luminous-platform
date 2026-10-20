@@ -292,13 +292,13 @@ impl PromotionJournal {
                 |row| row.get(0),
             )
             .map_err(|error| format!("cannot inspect target generation: {error}"))?;
-        if let Some(maximum) = max_generation {
-            if to_sql_integer(spec.generation, "policy generation")? <= maximum {
-                return Err(format!(
-                    "generation {} is not greater than the highest previously used generation {maximum}",
-                    spec.generation
-                ));
-            }
+        if let Some(maximum) = max_generation
+            && to_sql_integer(spec.generation, "policy generation")? <= maximum
+        {
+            return Err(format!(
+                "generation {} is not greater than the highest previously used generation {maximum}",
+                spec.generation
+            ));
         }
 
         transaction
@@ -1102,6 +1102,26 @@ mod tests {
         let path = path();
         let journal = PromotionJournal::open(&path).expect("open");
         prepared_applied(&journal);
+        let wrong_target = PromotionEvidence {
+            target_token: "target-other-lab",
+            ..evidence(130, 180)
+        };
+        assert!(
+            journal
+                .record_verified("operation-policy-0001", &wrong_target, 150)
+                .expect_err("wrong target")
+                .contains("target or policy generation")
+        );
+        let wrong_generation = PromotionEvidence {
+            policy_generation: 2,
+            ..evidence(130, 180)
+        };
+        assert!(
+            journal
+                .record_verified("operation-policy-0001", &wrong_generation, 150)
+                .expect_err("wrong generation")
+                .contains("target or policy generation")
+        );
         assert!(
             journal
                 .record_verified("operation-policy-0001", &evidence(130, 180), 181)
