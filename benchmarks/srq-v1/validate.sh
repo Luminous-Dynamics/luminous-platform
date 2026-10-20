@@ -41,23 +41,27 @@ jq -e '
 
 awk -F '\t' '
   NR == 1 {
-    if (NF != 5 || $1 != "baseline" || $2 != "baseline_scope" || $3 != "SRQ_comparison" || $4 != "measured_outputs" || $5 != "claim_boundary") {
-      print "FAIL: industry baseline header must contain the five SRQ v1 columns" > "/dev/stderr"
+    if (NF != 6 || $1 != "baseline" || $2 != "baseline_scope" || $3 != "SRQ_comparison" || $4 != "measured_outputs" || $5 != "claim_boundary" || $6 != "reference_url") {
+      print "FAIL: industry baseline header must contain the six SRQ v1 columns" > "/dev/stderr"
       bad = 1
     }
     next
   }
   {
     rows++
-    if (NF != 5) {
-      printf "FAIL: baseline row %d has %d columns; expected 5\n", NR, NF > "/dev/stderr"
+    if (NF != 6) {
+      printf "FAIL: baseline row %d has %d columns; expected 6\n", NR, NF > "/dev/stderr"
       bad = 1
     }
-    for (i = 1; i <= 5; i++) {
+    for (i = 1; i <= 6; i++) {
       if ($i == "") {
         printf "FAIL: baseline row %d has an empty column %d\n", NR, i > "/dev/stderr"
         bad = 1
       }
+    }
+    if ($6 !~ /^https:\/\/[^[:space:]]+$/) {
+      printf "FAIL: baseline row %d reference_url must be an HTTPS URL\n", NR > "/dev/stderr"
+      bad = 1
     }
     if ($1 in seen) {
       printf "FAIL: duplicate baseline name on row %d: %s\n", NR, $1 > "/dev/stderr"
