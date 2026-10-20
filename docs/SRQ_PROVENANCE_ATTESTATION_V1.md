@@ -18,7 +18,7 @@ The verifier accepts only all of the following:
 - Predicate type: `https://slsa.dev/provenance/v1`.
 - Runner class: GitHub-hosted runner only; the verifier invokes `gh attestation verify --deny-self-hosted-runners`.
 - Source ref: `refs/heads/main`.
-- Exact expected source commit SHA and the SHA-256 digest of the bundle being verified.
+- Exact expected source commit SHA, the workflow-file commit SHA supplied independently from the trusted workflow context, and the SHA-256 digest of the bundle being verified. The archive verifier compares the manifest's workflow SHA to the caller-supplied expected SHA; a correctly shaped but different workflow SHA is rejected.
 - Workflow-produced run ID and attempt match the manifest inside the signed subject.
 
 The signing job runs only for `workflow_dispatch` on `refs/heads/main` and only after the full corpus, model, and negative-control job succeeds. The PR validation job remains read-only and does not receive OIDC/attestation write permissions. Repository rules must protect the main branch and its workflow file; provenance verification does not independently prove that branch-protection rules were configured.
@@ -50,6 +50,7 @@ bash benchmarks/srq-v1/evaluate-attested-release.sh \
   --expected-source-sha FULL_40_HEX_COMMIT \
   --expected-source-ref refs/heads/main \
   --expected-workflow-ref Luminous-Dynamics/luminous-platform/.github/workflows/srq-v1.yml@refs/heads/main \
+  --expected-workflow-sha TRUSTED_WORKFLOW_COMMIT_SHA \
   --expected-run-id RUN_ID \
   --expected-run-attempt RUN_ATTEMPT \
   --output-envelope /path/to/attested-integrity.json \
@@ -57,11 +58,11 @@ bash benchmarks/srq-v1/evaluate-attested-release.sh \
   --output-verification /path/to/github-cli-verification.json
 ```
 
-Values for SHA/ref/run identity must come from the trusted workflow context or another independently trusted release manifest, never from fields copied only from the artifact under review.
+Source SHA, workflow-file SHA, ref, run ID and run attempt must come from the trusted workflow context or another independently trusted release manifest, never from fields copied only from the artifact under review.
 
 ## Negative controls and scope
 
-The unit contract tests check that the wrapper passes each trust-policy constraint to the CLI, rejects a wrong CLI version, fails on CLI rejection/empty/malformed output, rejects bad source identities, rejects a changed evidence byte, and rejects unexpected archive inventory. The test double verifies command construction and fail-closed behavior; it is **not** a cryptographic signature test.
+The unit contract tests check that the wrapper passes each trust-policy constraint to the CLI, rejects a wrong CLI version, fails on CLI rejection/empty/malformed output, rejects bad source/workflow identities, rejects a changed evidence byte, and rejects unexpected archive inventory. Archive tests also reject a manifest whose workflow commit SHA differs from the expected value. The test double verifies command construction and fail-closed behavior; it is **not** a cryptographic signature test.
 
 The real trust check is the manual main-branch run that signs the archive and successfully executes the pinned CLI against GitHub's attestation API. Tampering with one archive byte, using an unattested archive, or using another repo/workflow/ref must make real verification fail.
 
