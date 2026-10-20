@@ -71,9 +71,14 @@ impl SqliteReplayLedger {
 
         ensure_private_database_file(&path)?;
         let connection = Self::connect(&path)?;
-        connection
-            .execute_batch("PRAGMA journal_mode = WAL;")
-            .map_err(|error| format!("cannot enable SQLite WAL mode: {error}"))?;
+        let journal_mode: String = connection
+            .query_row("PRAGMA journal_mode;", [], |row| row.get(0))
+            .map_err(|error| format!("cannot read SQLite journal mode: {error}"))?;
+        if !journal_mode.eq_ignore_ascii_case("wal") {
+            connection
+                .execute_batch("PRAGMA journal_mode = WAL;")
+                .map_err(|error| format!("cannot enable SQLite WAL mode: {error}"))?;
+        }
         connection
             .execute_batch(CREATE_TABLE)
             .or_else(|error| {
@@ -411,9 +416,10 @@ fn is_identifier(value: &str) -> bool {
 mod tests {
     use super::{ReplayConsumption, SqliteReplayLedger};
     use std::path::PathBuf;
+    use std::process::{Command, Stdio};
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::thread;
-    use std::time::{SystemTime, UNIX_EPOCH};
+    use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
     static NEXT_ID: AtomicU64 = AtomicU64::new(0);
 
@@ -429,7 +435,7 @@ mod tests {
         ))
     }
 
-    fn event(nonce: &'static str) -> ReplayConsumption<'static> {
+    fn event(nonce: &str) -> ReplayConsumption<'_> {
         ReplayConsumption {
             nonce,
             challenge_id: "challenge-ledger-0001",
@@ -499,6 +505,104 @@ mod tests {
             .collect();
         assert_eq!(results.iter().filter(|result| result.is_ok()).count(), 1);
         assert_eq!(results.iter().filter(|result| result.is_err()).count(), 1);
+        remove_database(&path);
+    }
+
+    #[test]
+    fn consume_nonce_in_child_process() {
+        let Ok(database) = std::env::var("LUMINOUS_REPLAY_CHILD_DATABASE") else {
+            return;
+        };
+        let nonce = std::env::var("LUMINOUS_REPLAY_CHILD_NONCE").expect("child nonce");
+        let ready = PathBuf::from(std::env::var_os("LUMINOUS_REPLAY_CHILD_READY").expect("ready path"));
+        let gate = PathBuf::from(std::env::var_os("LUMINOUS_REPLAY_CHILD_GATE").expect("gate path"));
+
+        std::fs::write(&ready, b"ready").expect("signal child readiness");
+        let started = Instant::now();
+        while !gate.exists() {
+            assert!(
+                started.elapsed() < Duration::from_secs(10),
+                "parent did not release cross-process replay test gate"
+            );
+            thread::sleep(Duration::from_millis(5));
+        }
+
+        let ledger = SqliteReplayLedger::open(database).expect("open shared durable ledger");
+        ledger
+            .consume(&event(&nonce))
+            .expect("this child should win the one-use nonce race");
+    }
+
+    #[test]
+    fn independent_processes_cannot_consume_the_same_nonce_twice() {
+        let path = database_path();
+        let nonce = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+        let seed = SqliteReplayLedger::open(&path).expect("initialize durable database");
+        drop(seed);
+
+        let gate = path.with_extension("gate");
+        let ready_one = path.with_extension("child-one-ready");
+        let ready_two = path.with_extension("child-two-ready");
+        let executable = std::env::current_exe().expect("test executable");
+        let mut spawn_child = |ready: &PathBuf| {
+            Command::new(&executable)
+                .args([
+                    "--exact",
+                    "replay_ledger::tests::consume_nonce_in_child_process",
+                    "--nocapture",
+                ])
+                .env("LUMINOUS_REPLAY_CHILD_DATABASE", &path)
+                .env("LUMINOUS_REPLAY_CHILD_NONCE", nonce)
+                .env("LUMINOUS_REPLAY_CHILD_READY", ready)
+                .env("LUMINOUS_REPLAY_CHILD_GATE", &gate)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .expect("start competing verifier process")
+        };
+        let child_one = spawn_child(&ready_one);
+        let child_two = spawn_child(&ready_two);
+
+        let wait_until_ready = |ready: &PathBuf| {
+            let started = Instant::now();
+            while !ready.exists() {
+                assert!(
+                    started.elapsed() < Duration::from_secs(10),
+                    "child verifier did not become ready"
+                );
+                thread::sleep(Duration::from_millis(5));
+            }
+        };
+        wait_until_ready(&ready_one);
+        wait_until_ready(&ready_two);
+        std::fs::write(&gate, b"go").expect("release both verifier processes");
+
+        let result_one = child_one.wait_with_output().expect("join first process");
+        let result_two = child_two.wait_with_output().expect("join second process");
+        let outputs = [&result_one, &result_two];
+        for output in outputs {
+            assert!(
+                String::from_utf8_lossy(&output.stdout)
+                    .contains("consume_nonce_in_child_process"),
+                "child did not run its intended test: {}",
+                String::from_utf8_lossy(&output.stdout)
+            );
+        }
+        let successes = outputs.iter().filter(|output| output.status.success()).count();
+        assert_eq!(
+            successes,
+            1,
+            "exactly one process should commit the nonce; stdout/stderr: {:?} / {:?}; {:?} / {:?}",
+            String::from_utf8_lossy(&result_one.stdout),
+            String::from_utf8_lossy(&result_one.stderr),
+            String::from_utf8_lossy(&result_two.stdout),
+            String::from_utf8_lossy(&result_two.stderr)
+        );
+
+        drop(spawn_child);
+        let _ = std::fs::remove_file(gate);
+        let _ = std::fs::remove_file(ready_one);
+        let _ = std::fs::remove_file(ready_two);
         remove_database(&path);
     }
 
