@@ -89,7 +89,8 @@ pub struct PolicyImpactReport {
     pub baseline_mismatch_case_ids: Vec<String>,
     pub candidate_mismatch_case_ids: Vec<String>,
     pub high_risk_false_permit_case_ids: Vec<String>,
-    pub unknown_case_ids: Vec<String>,
+    pub baseline_unknown_case_ids: Vec<String>,
+    pub candidate_unknown_case_ids: Vec<String>,
     pub newly_permitted_case_ids: Vec<String>,
     pub newly_blocked_case_ids: Vec<String>,
     pub promotable: bool,
@@ -210,7 +211,8 @@ pub fn evaluate_policy_impact(
     let mut baseline_mismatch_case_ids = Vec::new();
     let mut candidate_mismatch_case_ids = Vec::new();
     let mut high_risk_false_permit_case_ids = Vec::new();
-    let mut unknown_case_ids = Vec::new();
+    let mut baseline_unknown_case_ids = Vec::new();
+    let mut candidate_unknown_case_ids = Vec::new();
     let mut newly_permitted_case_ids = Vec::new();
     let mut newly_blocked_case_ids = Vec::new();
 
@@ -244,8 +246,8 @@ pub fn evaluate_policy_impact(
         let high_risk_false_permit = high_risk
             && expected == PredictedOutcome::Blocked
             && predicted.candidate == PredictedOutcome::Permitted;
-        let unknown = predicted.baseline == PredictedOutcome::Unknown
-            || predicted.candidate == PredictedOutcome::Unknown;
+        let baseline_unknown = predicted.baseline == PredictedOutcome::Unknown;
+        let candidate_unknown = predicted.candidate == PredictedOutcome::Unknown;
 
         if baseline_mismatch {
             baseline_mismatch_case_ids.push(case_id.to_owned());
@@ -256,8 +258,11 @@ pub fn evaluate_policy_impact(
         if high_risk_false_permit {
             high_risk_false_permit_case_ids.push(case_id.to_owned());
         }
-        if unknown {
-            unknown_case_ids.push(case_id.to_owned());
+        if baseline_unknown {
+            baseline_unknown_case_ids.push(case_id.to_owned());
+        }
+        if candidate_unknown {
+            candidate_unknown_case_ids.push(case_id.to_owned());
         }
         if newly_permitted {
             newly_permitted_case_ids.push(case_id.to_owned());
@@ -280,7 +285,8 @@ pub fn evaluate_policy_impact(
         });
     }
 
-    let promotable = candidate_mismatch_case_ids.is_empty() && unknown_case_ids.is_empty();
+    let promotable =
+        candidate_mismatch_case_ids.is_empty() && candidate_unknown_case_ids.is_empty();
     let report_payload = json!({
         "schema_version": "1.0.0",
         "target_token": expected_target_token,
@@ -293,7 +299,8 @@ pub fn evaluate_policy_impact(
         "baseline_mismatch_case_ids": &baseline_mismatch_case_ids,
         "candidate_mismatch_case_ids": &candidate_mismatch_case_ids,
         "high_risk_false_permit_case_ids": &high_risk_false_permit_case_ids,
-        "unknown_case_ids": &unknown_case_ids,
+        "baseline_unknown_case_ids": &baseline_unknown_case_ids,
+        "candidate_unknown_case_ids": &candidate_unknown_case_ids,
         "newly_permitted_case_ids": &newly_permitted_case_ids,
         "newly_blocked_case_ids": &newly_blocked_case_ids,
         "promotable": promotable,
@@ -314,7 +321,8 @@ pub fn evaluate_policy_impact(
         baseline_mismatch_case_ids,
         candidate_mismatch_case_ids,
         high_risk_false_permit_case_ids,
-        unknown_case_ids,
+        baseline_unknown_case_ids,
+        candidate_unknown_case_ids,
         newly_permitted_case_ids,
         newly_blocked_case_ids,
         promotable,
@@ -531,12 +539,37 @@ mod tests {
     }
 
     #[test]
+    fn unknown_baseline_can_be_repaired_by_known_conformant_candidate() {
+        let mut vector = vector();
+        let corpus: Value = serde_json::from_str(CORPUS).expect("corpus JSON");
+        let case = corpus["cases"]
+            .as_array()
+            .expect("cases")
+            .iter()
+            .find(|case| case["expected_probe_outcome"] == "blocked")
+            .expect("blocked case exists");
+        let id = case["case_id"].as_str().expect("case id");
+        let decision = vector
+            .decisions
+            .iter_mut()
+            .find(|decision| decision.case_id == id)
+            .expect("decision exists");
+        decision.baseline = PredictedOutcome::Unknown;
+        let report = evaluate(&vector);
+        assert!(report.promotable);
+        assert!(report.baseline_unknown_case_ids.contains(&id.to_owned()));
+        assert!(report.candidate_unknown_case_ids.is_empty());
+    }
+
+    #[test]
     fn unknown_candidate_prediction_fails_closed() {
         let mut vector = vector();
         vector.decisions[0].candidate = PredictedOutcome::Unknown;
         let report = evaluate(&vector);
         assert!(!report.promotable);
-        assert!(report.unknown_case_ids.contains(&vector.decisions[0].case_id));
+        assert!(report
+            .candidate_unknown_case_ids
+            .contains(&vector.decisions[0].case_id));
     }
 
     #[test]
