@@ -82,6 +82,7 @@ while IFS= read -r receipt; do
   scenario_id="$(jq -r '.scenario_id' "$receipt")"
   tier="$(jq -r '.execution.tier' "$receipt")"
   status="$(jq -r '.status' "$receipt")"
+  claim_ceiling="$(jq -r '.claim_ceiling' "$receipt")"
   steps_executed="$(jq -r '.execution.steps_executed' "$receipt")"
   receipt_sha="$(sha256sum "$receipt" | cut -d ' ' -f 1)"
 
@@ -109,8 +110,8 @@ while IFS= read -r receipt; do
   fi
 
   jq --arg id "$scenario_id" --arg tier "$tier" --arg status "$status" \
-    --arg sha "$receipt_sha" --arg steps "$steps_executed" \
-    '. + [{scenario_id:$id,tier:$tier,status:$status,receipt_sha256:$sha,steps_executed:($steps=="true")}]' \
+    --arg ceiling "$claim_ceiling" --arg sha "$receipt_sha" --arg steps "$steps_executed" \
+    '. + [{scenario_id:$id,tier:$tier,status:$status,claim_ceiling:$ceiling,receipt_sha256:$sha,steps_executed:($steps=="true")}]' \
     "$summaries" > "$tmpdir/receipts.next.json"
   mv "$tmpdir/receipts.next.json" "$summaries"
 done < "$input_receipts"
@@ -118,23 +119,38 @@ done < "$input_receipts"
 corpus_sha="$(sha256sum "$corpus" | cut -d ' ' -f 1)"
 jq --arg expected "$expected_source_sha" --arg corpus_sha "$corpus_sha" \
   --slurpfile observed "$summaries" '
+  def tier_rank($value):
+    if $value == "static" then 1
+    elif $value == "model" then 2
+    elif $value == "qemu" then 3
+    elif $value == "physical" then 4
+    else 0 end;
+  def ceiling_rank($value):
+    if $value == "static_contract_only" then 1
+    elif $value == "abstract_model_only" then 2
+    elif $value == "qemu_guest_recovery_only" then 3
+    elif $value == "physical_device_recovery_only" then 4
+    else 0 end;
   . as $corpus |
   [
     .scenarios[] |
     . as $scenario |
+    (tier_rank($scenario.qualifying_tier)) as $required_rank |
     [$observed[0][] | select(.scenario_id == $scenario.id)] as $all |
-    [$all[] | select(.tier == $scenario.qualifying_tier)] as $required |
+    [$all[] | select(tier_rank(.tier) >= $required_rank)] as $at_or_above |
+    [$all[] | select(tier_rank(.tier) >= $required_rank and ceiling_rank(.claim_ceiling) >= $required_rank)] as $eligible |
     {
       scenario_id: $scenario.id,
       qualifying_tier: $scenario.qualifying_tier,
       observed_tiers: ([$all[].tier] | unique),
-      observations: [$all[] | {tier,status,receipt_sha256}],
+      observations: [$all[] | {tier,status,claim_ceiling,receipt_sha256}],
       status: (
-        if any($required[]; .status == "PASS" and .steps_executed == true) then "PASS"
-        elif any($required[]; .status == "FAIL") then "FAIL"
-        elif any($required[]; .status == "BLOCKED") then "BLOCKED"
-        elif any($required[]; .status == "NOT_RUN") then "NOT_RUN"
-        elif any($required[]; .status == "NOT_APPLICABLE") then "NOT_APPLICABLE"
+        if any($all[]; .status == "FAIL") then "FAIL"
+        elif any($eligible[]; .status == "PASS" and .steps_executed == true) then "PASS"
+        elif any($at_or_above[]; .status == "BLOCKED") then "BLOCKED"
+        elif any($at_or_above[]; .status == "NOT_RUN") then "NOT_RUN"
+        elif any($at_or_above[]; .status == "NOT_APPLICABLE") then "NOT_APPLICABLE"
+        elif ($at_or_above | length) > 0 and ($eligible | length) == 0 then "INSUFFICIENT_CLAIM_CEILING"
         elif ($all | length) > 0 then "INSUFFICIENT_TIER"
         else "MISSING_EVIDENCE" end
       )
@@ -150,6 +166,7 @@ jq --arg expected "$expected_source_sha" --arg corpus_sha "$corpus_sha" \
       total_release_gates: ($scenario_results | length),
       passed_at_qualifying_tier: ([$scenario_results[] | select(.status == "PASS")] | length),
       insufficient_tier: ([$scenario_results[] | select(.status == "INSUFFICIENT_TIER")] | length),
+      insufficient_claim_ceiling: ([$scenario_results[] | select(.status == "INSUFFICIENT_CLAIM_CEILING")] | length),
       failed: ([$scenario_results[] | select(.status == "FAIL")] | length),
       blocked: ([$scenario_results[] | select(.status == "BLOCKED")] | length),
       not_run: ([$scenario_results[] | select(.status == "NOT_RUN")] | length),
