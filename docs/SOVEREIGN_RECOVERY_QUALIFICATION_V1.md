@@ -111,6 +111,8 @@ The 100,000 mutations, 64-way concurrency, 100 trials per checkpoint, and 1,000 
 
 ## Industry baselines: compose, do not reimplement
 
+- **OSTree atomic upgrades**: treat its documented old-or-new deployment behavior under a crash or power pull as a first-class baseline. Our filesystem model's old-or-new pointer result is not itself a novelty claim; added value must come from a measured cross-layer join with authorization, the actually booted generation, and recovery outcome. https://github.com/ostreedev/ostree/blob/main/docs/atomic-upgrades.md
+- **The current TUF specification**: as of the October 8, 2026 revision (v1.0.37), TUF explicitly covers rollback, freeze, mix-and-match, wrong-software, and threshold-key threat models. SRQ should adopt its conformance cases and wrap the chosen updater, not create competing bespoke update-security rules. https://github.com/theupdateframework/specification/blob/master/tuf-spec.md
 - **NIST SP 800-193, Platform Firmware Resiliency Guidelines**: use its protect/detect/recover framing for firmware resilience and separate firmware-level qualification from OS recovery. https://csrc.nist.gov/pubs/sp/800/193/final
 - **The Update Framework (TUF)**: use established metadata roles and verification behavior for rollback, freeze, mix-and-match, and key-compromise threat models. SRQ tests Luminous integration; it should not create a bespoke replacement for TUF security semantics. https://theupdateframework.io/docs/security/
 - **SLSA provenance**: bind build inputs and trusted builder claims to artifact verification. Build provenance describes how an artifact was produced; it does not by itself prove which generation is currently running on a host. Use the current specification rather than pinning an obsolete level description. https://slsa.dev/spec/v1.2/
@@ -119,6 +121,18 @@ The 100,000 mutations, 64-way concurrency, 100 trials per checkpoint, and 1,000 
 - **CIS Benchmarks**: use relevant OS configuration guidance as a hardening baseline rather than inventing generic settings that conflict with the deployed OS. https://www.cisecurity.org/cis-benchmarks
 
 The distinctive engineering opportunity is the **cross-layer join**: no single adjacent tool establishes the complete chain from authorized artifact and intent through the booted generation and freshly verified recovery outcome. SRQ should prove that join with reproducible adversarial cases—not claim superiority by feature count.
+
+## Qualification compiler: receipts must satisfy the scenario's required tier
+
+Each scenario now declares a `qualifying_tier`: the minimum execution tier whose receipt can satisfy that release gate. This is distinct from `execution_tiers`, which lists tiers allowed to exercise the scenario. A correct model result is retained as useful partial evidence, but cannot be promoted to a QEMU or physical result merely because the model passed.
+
+`benchmarks/srq-v1/evaluate-release.sh` compiles receipt inputs into a source- and corpus-bound report:
+- It validates the frozen scenario corpus and every receipt, checks the expected release source SHA, and verifies actual evidence bytes against their recorded SHA-256.
+- It rejects duplicate receipts for the same scenario/tier rather than silently selecting the most favorable result.
+- It reports `PASS`, `FAIL`, `BLOCKED`, `NOT_RUN`, `NOT_APPLICABLE`, `INSUFFICIENT_TIER`, and `MISSING_EVIDENCE` per scenario.
+- The overall status is `QUALIFIED` only if every release gate has a `PASS` at its declared qualifying tier. Report mode can produce `NOT_QUALIFIED` with partial results; `--require-qualified` exits nonzero if any gate remains unmet.
+
+The CI evidence currently supplies only model-tier receipts for `UPDATE-004` and `EVIDENCE-003`. Therefore the expected profile result is deliberately `NOT_QUALIFIED`, with two insufficient-tier observations and 20 scenarios with no eligible evidence. This is correct behavior, not a CI failure. The evaluator's negative controls verify that duplicate receipts, wrong source SHAs, missing artifact bytes, and a release request with incomplete coverage are rejected.
 
 ## Comparative benchmark plan: measurable value over the baseline
 
