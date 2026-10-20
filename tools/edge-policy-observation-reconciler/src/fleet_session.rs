@@ -801,7 +801,7 @@ impl FleetSessionJournal {
         }
 
         require_active_wave(&transaction, plan_sha256, wave_index)?;
-        if !matches!(wave_state.as_str(), "rollback_required" | "rolling_back") {
+        if !matches!(wave_state.as_str(), "verified" | "rollback_required" | "rolling_back") {
             return Err(format!(
                 "cannot request rollback from wave state {wave_state:?}"
             ));
@@ -852,7 +852,7 @@ impl FleetSessionJournal {
         let wave_changed = transaction
             .execute(
                 "UPDATE rollout_waves SET state = 'rolling_back', updated_at_unix_ms = ?1
-                 WHERE plan_sha256 = ?2 AND wave_index = ?3 AND state IN ('rollback_required', 'rolling_back');",
+                 WHERE plan_sha256 = ?2 AND wave_index = ?3 AND state IN ('verified', 'rollback_required', 'rolling_back');",
                 params![now, plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
             )
             .map_err(|error| format!("cannot set rolling-back wave state: {error}"))?;
@@ -969,10 +969,17 @@ impl FleetSessionJournal {
         let connection = connect(&self.path)?;
         let mut statement = connection
             .prepare(
-                "SELECT plan_sha256, wave_index, target_token, generation, state
-                 FROM rollout_targets
-                 WHERE state IN ('apply_intent', 'applied', 'promoted', 'rollback_intent')
-                 ORDER BY plan_sha256, wave_index, target_token;",
+                "SELECT t.plan_sha256, t.wave_index, t.target_token, t.generation, t.state
+                 FROM rollout_targets AS t
+                 JOIN rollout_waves AS w
+                   ON w.plan_sha256 = t.plan_sha256 AND w.wave_index = t.wave_index
+                 WHERE
+                   (t.state = 'apply_intent' AND w.state IN ('applying', 'halted'))
+                   OR (t.state = 'applied' AND w.state IN
+                       ('applied', 'verified', 'rollback_required', 'rolling_back', 'halted'))
+                   OR (t.state = 'promoted' AND w.state IN ('verified', 'rolling_back'))
+                   OR (t.state = 'rollback_intent' AND w.state = 'rolling_back')
+                 ORDER BY t.plan_sha256, t.wave_index, t.target_token;",
             )
             .map_err(|error| format!("cannot query recoverable fleet targets: {error}"))?;
         let rows = statement
