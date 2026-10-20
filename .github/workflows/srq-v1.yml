@@ -55,6 +55,7 @@ jobs:
           bash -n benchmarks/srq-v1/test-verify-attestation.sh
           bash -n benchmarks/srq-v1/verify-evidence-bundle.sh
           bash -n benchmarks/srq-v1/test-verify-evidence-bundle.sh
+          bash -n benchmarks/srq-v1/test-evaluate-attested-release.sh
           bash -n benchmarks/srq-v1/evaluate-attested-release.sh
 
       - name: Run bounded filesystem activation model
@@ -308,6 +309,7 @@ jobs:
           set -euo pipefail
           bash benchmarks/srq-v1/test-verify-attestation.sh
           bash benchmarks/srq-v1/test-verify-evidence-bundle.sh
+          bash benchmarks/srq-v1/test-evaluate-attested-release.sh
 
 
   attest-model-evidence:
