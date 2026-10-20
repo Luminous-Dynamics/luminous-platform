@@ -182,9 +182,12 @@ The new [SRQ-1 real process-kill transaction model](SRQ_PROCESS_KILL_MODEL_V1.md
 
 ## Supplemental decision-to-boot reconciliation model
 
-The Rust model at `tools/srq-boot-reconciliation-model/` checks whether promotion intent, durable promotion/challenge consumption, a separate post-commit boot-observation challenge, and the observed booted-generation record agree on target, decision, generation, policy and artifact identities. Missing challenge/observation states remain pending; conflicting records fail closed. It explicitly does not treat a digest's format as proof of authenticity.
+The Rust model at `tools/srq-boot-reconciliation-model/` checks whether promotion intent, durable promotion/challenge consumption, a separate post-commit boot-observation challenge, and the observed deployment agree on target, decision, logical generation, immutable deployment identity, policy and artifact identities. The immutable identity is a Nix store path or OSTree checksum; it is intentionally not collapsed into the SRQ logical counter. The observation records both the actual booted identity and current userspace identity, so a live activation cannot count as a reboot into the authorized deployment. Missing challenge/observation states remain pending; conflicting records fail closed. It explicitly does not treat a digest's format as proof of authenticity.
 
 Exact-head [workflow run 39468550175](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39468550175) passed on `c2c679ea4b55c6430e1542734a3c59180d238e8e`: 16 Rust tests, including 100,000 deterministic cross-layer mutations and 10,000 boot-observation mutations, with no mutated record set returning `Consistent`. The same run validated the fixed evidence archive and negative controls for workflow SHA and supplemental-log digests.
 
 This is **model-tier structural evidence only**. The boot observation is not collected from a real machine and the model does not authenticate signatures, the post-commit challenge's freshness, device identity, secure boot, TPM, or measured-boot state. The aggregate qualification result remains `NOT_QUALIFIED`, 0/22 gates met at their declared qualifying tier.
 
+
+
+The immutable deployment-ID extension was added after source `c2c679ea4b55c6430e1542734a3c59180d238e8e` was tested. It is not yet qualified by an exact-head workflow run. The new tests require old `/run/booted-system` with a newer `/run/current-system` to remain Blocked, even when an abstract logical generation counter matches.
