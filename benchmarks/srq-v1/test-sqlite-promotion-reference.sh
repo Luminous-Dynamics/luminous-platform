@@ -261,11 +261,11 @@ UPDATE target_policy_state
  WHERE target_id='target-1' AND generation=0 AND effective_policy_digest='$a';
 SQL
     if [[ "$phase" == "before_commit" ]]; then
-      printf ".shell sh -c 'touch %s; exec sleep 60'\\n" "$marker"
-      printf 'COMMIT;\\n'
+      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
+      printf 'COMMIT;\n'
     else
-      printf 'COMMIT;\\n'
-      printf ".shell sh -c 'touch %s; exec sleep 60'\\n" "$marker"
+      printf 'COMMIT;\n'
+      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
     fi
   } > "$script"
 
@@ -315,5 +315,5 @@ run_sqlite_sigkill_case "sqlite-postcommit-kill" "$postcommit_db" "after_commit"
 
 # Publish enough execution identity to aid later signed-bundle correlation.
 sqlite_version="$(sqlite3 --version | awk '{print $1}')"
-printf 'sqlite_version=%s journal_mode=%s synchronous=FULL cases=4 process_contenders=64\n' \
+printf 'sqlite_version=%s journal_mode=%s synchronous=FULL cases=6 process_contenders=64 commit_sigkill_cases=2\n'\
   "$sqlite_version" "$(sqlite3 -batch "$success_db" "PRAGMA journal_mode;")"
