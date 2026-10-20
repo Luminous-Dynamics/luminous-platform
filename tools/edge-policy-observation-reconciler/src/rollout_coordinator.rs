@@ -656,9 +656,7 @@ fn validate_snapshot(snapshot: &PolicySnapshot) -> Result<(), String> {
 
 fn validate_revision_token(value: &str) -> Result<(), String> {
     if value.is_empty() || value.len() > 256 || value.chars().any(char::is_control) {
-        return Err(
-            "device revision token must contain 1..=256 non-control characters".to_owned(),
-        );
+        return Err("device revision token must contain 1..=256 non-control characters".to_owned());
     }
     Ok(())
 }
