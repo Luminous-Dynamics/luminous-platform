@@ -18,9 +18,11 @@ The schema now uses composite foreign keys to make several transaction invariant
 
 This is intentionally defense in depth: a bug that pairs a valid decision ID with a different valid target or generation should fail the SQL constraint. It still does not prove that a challenge was cryptographically authorized, fresh, or issued by a trusted identity.
 
-The current branch adds a negative control that attempts such a target-mismatch write and requires the entire transaction to roll back. It also extends real SQLite process termination to four locations: after the decision row, after challenge consumption, after target-state update but before COMMIT, and after COMMIT but before acknowledgement. The first three must reopen as generation zero with no decision/consumption rows; the last must reopen as exactly one complete, decision-ID-discoverable promotion.
+The exact-head [workflow run 39444822197](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39444822197) passed these expanded checks on source head `b3e7102d6a6863bd5538f41f03de03fa40966e26`. The mismatched target/generation negative control failed closed with no partial state. Real SQLite writer processes were killed after the decision row, after challenge consumption, after the target-state update but before COMMIT, and after COMMIT but before acknowledgement: the three pre-commit cases reopened at generation zero with no decision/consumption rows; the post-commit case reopened with exactly one complete outcome discoverable by decision ID.
 
-**These expanded checks were added to the current branch but are awaiting the exact-head run result.** They are not counted as passed evidence until that run completes and its logs are inspected.
+The same run retained the 64-independent-process contention result (exactly one durable promotion), SQLite 3.45.1, WAL mode and synchronous=FULL. The observed per-contender script timing was p50/p95/p99 = 31.1/46.5/51.6 ms, and the sole winner took 15.4 ms. These timings include CLI process startup and lock wait, come from one GitHub-hosted runner invocation, and are not database-only commit latency or an industry comparison.
+
+The gate compiler still reports `NOT_QUALIFIED`, 0/22 gates at qualifying tier. The signing job was skipped on the PR event, so these results are tested and digest-bound in the PR evidence subject contract, but do not claim that a trusted-main attestation was minted or verified. The next step is repeated fault trials per boundary and production-adapter integration.
 
 ## Required transaction contract
 
