@@ -40,7 +40,7 @@ done
 }
 [[ -n "$extract_to" ]] || { echo "BLOCKED: --extract-to is required." >&2; exit 2; }
 mkdir -p "$extract_to"
-if find "$extract_to" -mindepth 1 -print -quit | grep -q .; then
+if [[ -n "$(find "$extract_to" -mindepth 1 -print -quit)" ]]; then
   echo "BLOCKED: extraction destination must be empty." >&2
   exit 2
 fi
