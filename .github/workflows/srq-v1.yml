@@ -250,6 +250,7 @@ jobs:
             srq-process-kill-model-test.log
             srq-recovery-model-test.log
             srq-release-qualification.json
+            srq-sqlite-promotion-reference.log
             srq-update-004-model-result.json
           )
           for name in "${evidence_names[@]}"; do
@@ -265,6 +266,7 @@ jobs:
           )
           checksum_sha="$(sha256sum "$bundle_dir/SHA256SUMS" | cut -d ' ' -f 1)"
           process_kill_sha="$(sha256sum "$bundle_dir/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
+          sqlite_reference_sha="$(sha256sum "$bundle_dir/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
           corpus_sha="$(sha256sum benchmarks/srq-v1/scenarios.json | cut -d ' ' -f 1)"
           actual_head="$(git rev-parse HEAD)"
           test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
@@ -283,6 +285,7 @@ jobs:
             --arg corpus_sha "$corpus_sha" \
             --arg checksum_sha "$checksum_sha" \
             --arg process_kill_sha "$process_kill_sha" \
+            --arg sqlite_reference_sha "$sqlite_reference_sha" \
             '{
               schema_version: 1,
               profile_id: "SRQ-1",
@@ -309,6 +312,14 @@ jobs:
                 status: "PASS",
                 evidence_artifact: "srq-process-kill-model-test.log",
                 evidence_sha256: $process_kill_sha
+              }, {
+                test_id: "SRQ-SQLITE-REFERENCE-V1",
+                scenario_id: "EVIDENCE-003",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-sqlite-promotion-reference.log",
+                evidence_sha256: $sqlite_reference_sha
               }]
             }' > "$bundle_dir/manifest.json"
 
