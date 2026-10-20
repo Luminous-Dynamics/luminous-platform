@@ -30,6 +30,9 @@ expect_reject empty-required-evidence '.scenarios[0].required_evidence = []'
 expect_reject empty-forbidden-outcomes '.scenarios[0].forbidden_outcomes = []'
 expect_reject unknown-surface '.scenarios[0].surface = "untrusted-repo"'
 expect_reject unknown-execution-tier '.scenarios[0].execution_tiers = ["mystery"]'
+expect_reject missing-qualifying-tier 'del(.scenarios[0].qualifying_tier)'
+expect_reject disallowed-qualifying-tier '.scenarios[0].qualifying_tier = "model"'
+expect_reject unknown-qualifying-tier '.scenarios[0].qualifying_tier = "measured-boot"'
 expect_reject missing-release-gate '.scenarios[0].release_gate = false'
 expect_reject executed-status-claim '.scenarios[0].status = "pass"'
 expect_reject unauthorized-partial-status '.scenarios[0].status = "partial_model_pass_not_qualified"'
@@ -60,5 +63,5 @@ expect_baseline_reject duplicate-name 'NR == 3 { $1 = "NixOS generations" } 1'
 expect_baseline_reject invalid-reference-url 'NR == 3 { $6 = "not-a-url" } 1'
 expect_baseline_reject truncated-matrix 'NR <= 6 { print }'
 
-echo "PASS: 13 corpus and 5 baseline negative controls were rejected."
+echo "PASS: 16 corpus and 5 baseline negative controls were rejected."
 echo "NON-CLAIM: these tests validate specification safeguards, not the runtime scenarios."
