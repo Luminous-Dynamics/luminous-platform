@@ -65,11 +65,11 @@ link_found="$(find "$bundle_dir" -type l -print -quit)"
 [[ -z "$link_found" ]] || { echo "BLOCKED: symbolic links are not permitted in an evidence bundle." >&2; exit 1; }
 
 actual_files="$(find "$bundle_dir" -mindepth 1 -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort)"
-expected_files=\nsrq-release-qualification.json\nsrq-update-004-model-result.json'
+expected_files=$'SHA256SUMS\nmanifest.json\nsrq-challenge-promotion-model-test.log\nsrq-evidence-003-model-result.json\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-update-004-model-result.json'
 [[ "$actual_files" == "$expected_files" ]] || { echo "BLOCKED: extracted file inventory is invalid." >&2; exit 1; }
 
 declared_files="$(awk '{print $2}' "$bundle_dir/SHA256SUMS" | LC_ALL=C sort)"
-expected_declared_files=\nsrq-release-qualification.json\nsrq-update-004-model-result.json'
+expected_declared_files=$'srq-challenge-promotion-model-test.log\nsrq-evidence-003-model-result.json\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-update-004-model-result.json'
 [[ "$declared_files" == "$expected_declared_files" ]] || {
   echo "BLOCKED: checksum manifest references unexpected or missing paths." >&2
   exit 1
