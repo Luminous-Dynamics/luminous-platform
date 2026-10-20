@@ -100,17 +100,14 @@ fn benchmark_size(target_count: usize) -> Result<Value, Box<dyn Error>> {
             )
         })?;
         let elapsed_nanos = u64::try_from(started.elapsed().as_nanos())?;
-        if !matches!(
-            decision,
-            RolloutGateDecision::WaveAuthorized {
-                wave_index: 0,
-                ..
+        match decision {
+            RolloutGateDecision::WaveAuthorized { wave_index: 0, .. } => {}
+            unexpected => {
+                return Err(format!(
+                    "public gate did not authorize the first wave for {target_count} targets: {unexpected:?}"
+                )
+                .into());
             }
-        ) {
-            return Err(format!(
-                "public gate did not authorize the first wave for {target_count} targets: {decision:?}"
-            )
-            .into());
         }
         samples_ns.push(elapsed_nanos);
     }
