@@ -560,6 +560,59 @@ mod tests {
     }
 
     #[test]
+    fn one_hundred_thousand_cross_layer_mutations_never_reconcile() {
+        let (intent, durable, challenge, boot) = base();
+        for i in 0..100_000_u64 {
+            let mut changed_intent = intent.clone();
+            let mut changed_durable = durable.clone();
+            let mut changed_challenge = challenge.clone();
+            let mut changed_boot = boot.clone();
+            let token = format!("mut-{i}");
+            let digest = format!("{:064x}", i + 1);
+            match i % 28 {
+                0 => changed_intent.target_id = token,
+                1 => changed_intent.decision_id = token,
+                2 => changed_intent.promotion_challenge_id = token,
+                3 => changed_intent.previous_generation = u64::MAX,
+                4 => changed_intent.next_generation = 43 + i,
+                5 => changed_intent.approved_policy_digest = digest,
+                6 => changed_intent.effective_policy_digest = digest,
+                7 => changed_intent.artifact_digest = digest,
+                8 => changed_intent.corpus_digest = digest,
+                9 => changed_durable.decision_id = token,
+                10 => changed_durable.target_id = token,
+                11 => changed_durable.consumed_challenge_id = token,
+                12 => changed_durable.generation = 1_000 + i,
+                13 => changed_durable.approved_policy_digest = digest,
+                14 => changed_durable.effective_policy_digest = digest,
+                15 => changed_durable.artifact_digest = digest,
+                16 => changed_durable.corpus_digest = digest,
+                17 => changed_challenge.challenge_id = token,
+                18 => changed_challenge.target_id = token,
+                19 => changed_challenge.decision_id = token,
+                20 => changed_challenge.expected_generation = 1_000 + i,
+                21 => changed_challenge.expected_effective_policy_digest = digest,
+                22 => changed_boot.target_id = token,
+                23 => changed_boot.decision_id = token,
+                24 => changed_boot.observation_challenge_id = token,
+                25 => changed_boot.generation = 1_000 + i,
+                26 => changed_boot.effective_policy_digest = digest,
+                _ => changed_boot.artifact_digest = digest,
+            }
+            assert!(
+                !reconcile(
+                    &changed_intent,
+                    Some(&changed_durable),
+                    Some(&changed_challenge),
+                    Some(&changed_boot),
+                )
+                .is_consistent(),
+                "cross-layer mutation {i} unexpectedly reconciled"
+            );
+        }
+    }
+
+    #[test]
     fn digest_shape_is_not_treated_as_authenticity() {
         let (intent, durable, challenge, mut boot) = base();
         boot.measurement_digest = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".into();
