@@ -69,12 +69,39 @@ impl GenerationStore {
     /// The temporary pointer lives beside the active pointer, so rename stays on
     /// the same filesystem. Before rename the prior pointer remains authoritative;
     /// after rename the new pointer references an already-prepared immutable generation.
+    /// Initialize an empty store. Existing or malformed active state is never overwritten.
+    pub fn initialize(&self, id: &str) -> io::Result<()> {
+        validate_id(id)?;
+        if self.root.join("current").exists() {
+            return Err(io::Error::new(
+                ErrorKind::AlreadyExists,
+                "generation store is already initialized",
+            ));
+        }
+        self.load_generation(id)?;
+
+        let temporary_pointer = self.root.join("current.next");
+        let mut file = OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(&temporary_pointer)?;
+        file.write_all(format!("{id}\\n").as_bytes())?;
+        file.sync_all()?;
+        drop(file);
+        fs::rename(&temporary_pointer, self.root.join("current"))?;
+        sync_directory(&self.root)
+    }
+
     pub fn activate(
         &self,
         id: &str,
         interrupt_at: Option<ActivationCheckpoint>,
     ) -> io::Result<ActivationOutcome> {
         validate_id(id)?;
+        // Promotion requires a currently readable and complete active generation.
+        // A missing or malformed pointer is a blocked state, not a cue to self-repair.
+        self.active_generation()?;
         self.load_generation(id)?;
 
         if interrupt_at == Some(ActivationCheckpoint::BeforePointerWrite) {
@@ -233,11 +260,41 @@ mod tests {
         let store = sandbox.store();
         store.prepare_generation("gen-old").expect("prepare old generation");
         store.prepare_generation("gen-next").expect("prepare next generation");
-        assert_eq!(
-            store.activate("gen-old", None).expect("activate initial generation"),
-            ActivationOutcome::Committed
-        );
+        store.initialize("gen-old").expect("initialize initial generation");
         store
+    }
+
+    #[test]
+    fn activation_requires_a_valid_previous_generation() {
+        let sandbox = Sandbox::new();
+        let store = sandbox.store();
+        store
+            .prepare_generation("gen-next")
+            .expect("prepare next generation");
+
+        let error = store
+            .activate("gen-next", None)
+            .expect_err("promotion without an active generation must fail closed");
+        assert_eq!(error.kind(), ErrorKind::NotFound);
+        assert!(!sandbox.0.join("current").exists());
+    }
+
+    #[test]
+    fn initialization_is_one_time_and_does_not_overwrite_current_state() {
+        let sandbox = Sandbox::new();
+        let store = sandbox.store();
+        store.prepare_generation("gen-old").expect("prepare old");
+        store.prepare_generation("gen-next").expect("prepare next");
+        store.initialize("gen-old").expect("initialize store");
+
+        let error = store
+            .initialize("gen-next")
+            .expect_err("a second initialization must not overwrite active state");
+        assert_eq!(error.kind(), ErrorKind::AlreadyExists);
+        assert_eq!(
+            store.active_generation().expect("active generation").id,
+            "gen-old"
+        );
     }
 
     #[test]
@@ -312,6 +369,14 @@ mod tests {
             .active_generation()
             .expect_err("malformed pointer must not choose a fallback");
         assert_eq!(error.kind(), ErrorKind::InvalidData);
+        let activation_error = store
+            .activate("gen-next", None)
+            .expect_err("activation must not silently repair malformed current state");
+        assert_eq!(activation_error.kind(), ErrorKind::InvalidData);
+        assert_eq!(
+            fs::read_to_string(store.root.join("current")).expect("malformed pointer preserved"),
+            "gen-ne"
+        );
     }
 
     #[test]
