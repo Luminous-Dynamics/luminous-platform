@@ -50,7 +50,7 @@ The Rust module is `tools/edge-policy-observation-reconciler/src/promotion_journ
 
 1. Call `prepare` and commit `ApplyIntent` before invoking the external controller.
 2. Apply the candidate, independently read the effective ruleset, and call `record_applied` only when its exact digest equals the candidate.
-3. Run the existing freshness/conformance verifier, call `verify_and_consume_durable` from the replay-ledger module, and only then call `record_verified`. The journal method cannot prove its caller followed that order; a production adapter must encapsulate the sequence and make bypassing it difficult.
+3. Call the public `verify_and_record_evidence` entry point with the durable replay ledger, exact challenge/envelope/corpus/receipt bytes, and a live effective-policy readback digest. It runs the existing freshness/conformance verifier and durable nonce consumption before recording `Verified`; the lower-level transition is private so external callers cannot skip the verifier.
 4. Call `promote` using the returned non-cloneable process-local permit, the current time, and a second live policy readback.
 5. On any mismatch or error, do not promote. Persist rollback intent before external rollback; record completion only after the baseline digest reads back exactly.
 6. After a crash, use `list_recoverable` as a diagnostic for the required recovery action; the list itself does not actuate devices.
