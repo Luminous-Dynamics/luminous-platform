@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "tools/edge-policy-session-revocation-lab/**"
+      - "docs/EDGE_POLICY_SESSION_REVOCATION_LAB_V1.md"
       - ".github/workflows/edge-policy-session-revocation-lab.yml"
 
 permissions:
