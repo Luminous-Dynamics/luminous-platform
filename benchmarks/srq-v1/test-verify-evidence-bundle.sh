@@ -9,11 +9,11 @@ source_sha="0123456789abcdef0123456789abcdef01234567"
 workflow_ref="Luminous-Dynamics/luminous-platform/.github/workflows/srq-v1.yml@refs/heads/main"
 run_id="12345"
 run_attempt="1"
-
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 make_archive() {
-  local work="$tmp/work" bundle="$tmp/work/srq-evidence-bundle" archive="$1" bad_checksum="${2:-false}"
+  local archive="$1" bad_checksum="${2:-false}" bad_supplemental="${3:-false}"
+  local work="$tmp/work" bundle="$tmp/work/srq-evidence-bundle"
   rm -rf "$work"
   mkdir -p "$bundle"
   for name in \
@@ -38,8 +38,13 @@ make_archive() {
   if [[ "$bad_checksum" == "true" ]]; then
     printf 'tampered after hashing\n' >> "$bundle/srq-recovery-model-test.log"
   fi
+  local checksum_sha process_kill_sha manifest_process_kill_sha
   checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
   process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
+  manifest_process_kill_sha="$process_kill_sha"
+  if [[ "$bad_supplemental" == "true" ]]; then
+    manifest_process_kill_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  fi
   jq -n \
     --arg repo "Luminous-Dynamics/luminous-platform" \
     --arg workflow_path ".github/workflows/srq-v1.yml" \
@@ -50,8 +55,8 @@ make_archive() {
     --arg run_attempt "$run_attempt" \
     --arg source_sha "$source_sha" \
     --arg checksum_sha "$checksum_sha" \
-    --arg process_kill_sha "$process_kill_sha" \
     --arg corpus_sha "$(printf 'a%.0s' {1..64})" \
+    --arg process_kill_sha "$manifest_process_kill_sha" \
     '{
       schema_version: 1,
       profile_id: "SRQ-1",
@@ -84,47 +89,40 @@ make_archive() {
     | gzip -n > "$archive"
 }
 
-make_archive "$tmp/good.tar.gz"
-bash "$verifier" --archive "$tmp/good.tar.gz" \
-  --expected-source-sha "$source_sha" \
-  --expected-source-ref refs/heads/main \
-  --expected-workflow-ref "$workflow_ref" \
-  --expected-run-id "$run_id" \
-  --expected-run-attempt "$run_attempt" \
-  --extract-to "$tmp/extracted-good" > "$tmp/manifest-path"
-[[ -f "$(cat "$tmp/manifest-path")" ]] || fail "valid bundle manifest was not returned"
-echo "PASS: bundle source, workflow, run, inventory and byte checksums verify"
+run_verifier() {
+  local archive="$1" expected_sha="$2" expected_ref="$3" destination="$4"
+  bash "$verifier" --archive "$archive" \
+    --expected-source-sha "$expected_sha" \
+    --expected-source-ref "$expected_ref" \
+    --expected-workflow-ref "$workflow_ref" \
+    --expected-run-id "$run_id" \
+    --expected-run-attempt "$run_attempt" \
+    --extract-to "$destination"
+}
 
-if bash "$verifier" --archive "$tmp/good.tar.gz" \
-  --expected-source-sha "1111111111111111111111111111111111111111" \
-  --expected-source-ref refs/heads/main \
-  --expected-workflow-ref "$workflow_ref" \
-  --expected-run-id "$run_id" \
-  --expected-run-attempt "$run_attempt" \
-  --extract-to "$tmp/extracted-wrong-source" >/dev/null 2>&1; then
+make_archive "$tmp/good.tar.gz"
+run_verifier "$tmp/good.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-good" > "$tmp/manifest-path"
+[[ -f "$(cat "$tmp/manifest-path")" ]] || fail "valid bundle manifest was not returned"
+echo "PASS: bundle source, workflow, run, inventory, process-kill claim ceiling and byte checksums verify"
+
+if run_verifier "$tmp/good.tar.gz" "1111111111111111111111111111111111111111" refs/heads/main "$tmp/extracted-wrong-source" >/dev/null 2>&1; then
   fail "wrong expected source SHA was accepted"
 fi
 echo "PASS: source-SHA mismatch fails closed"
 
-if bash "$verifier" --archive "$tmp/good.tar.gz" \
-  --expected-source-sha "$source_sha" \
-  --expected-source-ref refs/heads/research \
-  --expected-workflow-ref "$workflow_ref" \
-  --expected-run-id "$run_id" \
-  --expected-run-attempt "$run_attempt" \
-  --extract-to "$tmp/extracted-wrong-ref" >/dev/null 2>&1; then
+if run_verifier "$tmp/good.tar.gz" "$source_sha" refs/heads/research "$tmp/extracted-wrong-ref" >/dev/null 2>&1; then
   fail "non-main source ref was accepted"
 fi
 echo "PASS: untrusted source ref fails closed"
 
 make_archive "$tmp/bad-checksum.tar.gz" true
-if bash "$verifier" --archive "$tmp/bad-checksum.tar.gz" \
-  --expected-source-sha "$source_sha" \
-  --expected-source-ref refs/heads/main \
-  --expected-workflow-ref "$workflow_ref" \
-  --expected-run-id "$run_id" \
-  --expected-run-attempt "$run_attempt" \
-  --extract-to "$tmp/extracted-bad-checksum" >/dev/null 2>&1; then
+if run_verifier "$tmp/bad-checksum.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-bad-checksum" >/dev/null 2>&1; then
   fail "tampered evidence bytes were accepted"
 fi
 echo "PASS: evidence mutation fails byte verification"
+
+make_archive "$tmp/bad-supplemental.tar.gz" false true
+if run_verifier "$tmp/bad-supplemental.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-bad-supplemental" >/dev/null 2>&1; then
+  fail "false process-kill evidence digest was accepted"
+fi
+echo "PASS: supplemental process-kill digest mismatch fails closed"
