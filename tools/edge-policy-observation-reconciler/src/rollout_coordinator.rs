@@ -194,10 +194,9 @@ impl<'a> PolicyRolloutCoordinator<'a> {
                 "approved baseline bytes do not match the live effective-policy digest".to_owned(),
             );
         }
-        let generation = baseline
-            .generation
-            .checked_add(1)
-            .ok_or_else(|| "device policy generation exhausted".to_owned())?;
+        let generation = self
+            .journal
+            .next_generation(request.target_token, baseline.generation)?;
 
         self.journal.prepare(&PromotionSpec {
             operation_id: request.operation_id,
@@ -738,7 +737,7 @@ mod tests {
                 return Err("stale revision/generation/digest".to_owned());
             }
             if candidate.target_token != self.snapshot.target_token
-                || candidate.generation != expected.generation + 1
+                || candidate.generation <= expected.generation
                 || candidate.policy_sha256 != crate::sha256_hex(&candidate.bytes)
             {
                 return Err("candidate contract mismatch".to_owned());
