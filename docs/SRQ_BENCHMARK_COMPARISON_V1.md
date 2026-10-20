@@ -101,6 +101,14 @@ These are per-contender script elapsed times, including CLI/process startup and 
 Run 39445482359 also passed 100 actual SQLite process-kill trials (25 at each of four transaction boundaries) and the mismatched target/generation negative control. This is process-death evidence on a running Linux kernel only, not kernel-crash, VM-reset or physical-power-loss qualification. The code binds the SQLite and process-kill logs into the deterministic archive manifest, with byte-digest and exact workflow-SHA controls. The real GitHub/Sigstore attestation has not been minted or verified because the trusted-main job is skipped on PR events. Overall SRQ remains NOT_QUALIFIED, 0/22 gates met at qualifying tier.
 
 
+## Cross-layer boot reconciliation — first executed mutation campaign
+
+The dependency-free Rust contract model now joins promotion intent, the durable decision/consumed challenge, a separately issued post-commit observation challenge, and the observed booted generation. Its intended value is composition: do not treat valid update provenance or a committed decision as proof that the expected generation is running.
+
+The exact-head [run 39468550175](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39468550175) passed source `c2c679ea4b55c6430e1542734a3c59180d238e8e). The 16-test Rust suite included a 100,000-case deterministic single-field mutation campaign across the four records and a separate 10,000-case boot-observation mutation campaign. All contradictory cases remained non-consistent. The archive verifier also passed wrong-digest negative controls for the boot-reconciliation log and the other supplemental logs.
+
+This improves evidence about the **structural join contract**, not about real boot state authenticity. The post-commit challenge freshness, signer/device identity and truth of the boot observation remain caller trust responsibilities; QEMU or physical behavior is not tested by the Rust model. The aggregate remains `NOT_QUALIFIED`, 0/22 gates met at the declared qualifying tier.
+
 ## Transaction-binding and interrupted-commit matrix
 
 The SQLite reference schema encodes target/decision/generation correspondence with composite foreign keys. The exact-head [run 39445482359](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39445482359) passed the mismatched target/generation negative control and the 100-trial kill campaign: 25 fresh-database trials at each boundary. Every pre-commit trial reopened the complete old state with no decision/consumption rows; every post-commit trial reopened one complete outcome by decision ID.
