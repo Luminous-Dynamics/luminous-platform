@@ -26,16 +26,24 @@ jq -e '
   (.scenarios | type == "array" and length >= 20) and
   (([.scenarios[].id] | length) == ([.scenarios[].id] | unique | length)) and
   all(.scenarios[];
-    (.id | type == "string" and test("^[A-Z]+-[0-9]{3}$")) and
-    (.surface == "luminous-platform" or .surface == "sovereign-ops" or .surface == "sovereign-boot" or .surface == "all") and
-    (.severity == "release_gate") and
-    (.fault_injection | type == "string" and length > 0) and
-    (.expected_state | type == "string" and length > 0) and
-    (.forbidden_outcomes | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
-    (.required_evidence | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
-    (.execution_tiers | type == "array" and length > 0 and all(.[]; . == "static" or . == "model" or . == "qemu" or . == "physical")) and
-    (.release_gate == true) and
-    (.status == "proposed_not_executed")
+    . as $scenario |
+    ($scenario.id | type == "string" and test("^[A-Z]+-[0-9]{3}$")) and
+    ($scenario.surface == "luminous-platform" or $scenario.surface == "sovereign-ops" or $scenario.surface == "sovereign-boot" or $scenario.surface == "all") and
+    ($scenario.severity == "release_gate") and
+    ($scenario.fault_injection | type == "string" and length > 0) and
+    ($scenario.expected_state | type == "string" and length > 0) and
+    ($scenario.forbidden_outcomes | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
+    ($scenario.required_evidence | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
+    ($scenario.execution_tiers | type == "array" and length > 0 and all(.[]; . == "static" or . == "model" or . == "qemu" or . == "physical")) and
+    ($scenario.release_gate == true) and
+    ($scenario.status == "proposed_not_executed" or $scenario.status == "partial_model_pass_not_qualified") and
+    (($scenario.observed_tiers // []) | type == "array") and
+    all(($scenario.observed_tiers // [])[]; . == "static" or . == "model" or . == "qemu" or . == "physical") and
+    all(($scenario.observed_tiers // [])[]; . as $tier | ($scenario.execution_tiers | index($tier)) != null) and
+    (if $scenario.status == "partial_model_pass_not_qualified"
+     then (($scenario.observed_tiers // []) | length > 0)
+     else (($scenario.observed_tiers // []) | length == 0)
+     end)
   )
 ' "$corpus" >/dev/null
 
