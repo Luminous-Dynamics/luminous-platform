@@ -240,6 +240,7 @@ jobs:
             sha256sum --check --strict SHA256SUMS
           )
           checksum_sha="$(sha256sum "$bundle_dir/SHA256SUMS" | cut -d ' ' -f 1)"
+          process_kill_sha="$(sha256sum "$bundle_dir/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
           corpus_sha="$(sha256sum benchmarks/srq-v1/scenarios.json | cut -d ' ' -f 1)"
           actual_head="$(git rev-parse HEAD)"
           test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
@@ -257,6 +258,7 @@ jobs:
             --arg actual "$actual_head" \
             --arg corpus_sha "$corpus_sha" \
             --arg checksum_sha "$checksum_sha" \
+            --arg process_kill_sha "$process_kill_sha" \
             '{
               schema_version: 1,
               profile_id: "SRQ-1",
@@ -274,7 +276,16 @@ jobs:
                 source_matches_expected: ($expected == $actual)
               },
               corpus_sha256: $corpus_sha,
-              checksum_manifest_sha256: $checksum_sha
+              checksum_manifest_sha256: $checksum_sha,
+              supplemental_observations: [{
+                test_id: "SRQ-PROCESS-KILL-V1",
+                scenario_id: "UPDATE-004",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-process-kill-model-test.log",
+                evidence_sha256: $process_kill_sha
+              }]
             }' > "$bundle_dir/manifest.json"
 
           # GNU tar + gzip -n make archive metadata deterministic for byte-level comparison.
@@ -291,7 +302,8 @@ jobs:
             ${{ runner.temp }}/srq-recovery-model-test.log
             ${{ runner.temp }}/srq-update-004-model-result.json
             ${{ runner.temp }}/srq-challenge-promotion-model-test.log
-            ${{ runner.temp }}/srq-evidence-003-model-result.json
+${{ runner.temp }}/srq-evidence-003-model-result.json
+            ${{ runner.temp }}/srq-process-kill-model-test.log
             ${{ runner.temp }}/srq-release-qualification.json
           if-no-files-found: ignore
           retention-days: 14
