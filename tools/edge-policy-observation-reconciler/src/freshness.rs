@@ -364,11 +364,13 @@ mod tests {
     }
 
     fn envelope_source(receipt: &str) -> String {
+        let receipt_value: Value = serde_json::from_str(receipt).expect("receipt JSON");
+        let run_id = receipt_value["run_id"].as_str().expect("receipt run_id");
         json!({
             "schema_version": "1.0.0",
             "challenge_id": CHALLENGE_ID,
             "nonce": NONCE,
-            "run_id": "run-freshness-0001",
+            "run_id": run_id,
             "policy_generation": 7,
             "started_at_unix_ms": STARTED_AT,
             "completed_at_unix_ms": COMPLETED_AT,
