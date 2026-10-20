@@ -1929,6 +1929,31 @@ mod tests {
     }
 
     #[test]
+    fn altered_session_schema_is_rejected_on_reopen() {
+        let database_path = path();
+        {
+            let journal = FleetSessionJournal::open(&database_path).expect("initialize schema");
+            drop(journal);
+        }
+        {
+            let connection =
+                rusqlite::Connection::open(&database_path).expect("open for schema mutation");
+            connection
+                .execute_batch(
+                    "ALTER TABLE rollout_targets
+                     RENAME COLUMN candidate_policy_sha256 TO candidate_digest_unexpected;",
+                )
+                .expect("alter schema fixture");
+        }
+        assert!(
+            FleetSessionJournal::open(&database_path)
+                .expect_err("altered schema must fail closed")
+                .contains("columns do not match")
+        );
+        remove_database(&database_path);
+    }
+
+    #[test]
     fn incomplete_or_invalid_evidence_halts_instead_of_advancing() {
         let path = path();
         let journal = FleetSessionJournal::open(&path).expect("open");
