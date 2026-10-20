@@ -646,10 +646,19 @@ fn require_safe_capabilities(capabilities: AdapterCapabilities) -> Result<(), St
 
 fn validate_snapshot(snapshot: &PolicySnapshot) -> Result<(), String> {
     validate_target_token(&snapshot.target_token)?;
-    validate_identifier(&snapshot.revision_token, "device revision token")?;
+    validate_revision_token(&snapshot.revision_token)?;
     validate_digest(&snapshot.effective_policy_sha256, "effective policy digest")?;
     if snapshot.generation == 0 {
         return Err("device policy generation must be positive".to_owned());
+    }
+    Ok(())
+}
+
+fn validate_revision_token(value: &str) -> Result<(), String> {
+    if value.is_empty() || value.len() > 256 || value.chars().any(char::is_control) {
+        return Err(
+            "device revision token must contain 1..=256 non-control characters".to_owned(),
+        );
     }
     Ok(())
 }
@@ -726,6 +735,7 @@ mod tests {
     use super::{
         AdapterCapabilities, ApplyAcknowledgement, IndependentPolicyProbe, PolicyDeviceAdapter,
         PolicyDeviceLease, PolicyRolloutCoordinator, PolicySnapshot, ProbeOutput, RolloutRequest,
+        validate_snapshot,
     };
     use crate::promotion_journal::{PromotionJournal, PromotionSpec, PromotionState};
     use crate::replay_ledger::SqliteReplayLedger;
@@ -1129,6 +1139,22 @@ mod tests {
         drop(journal);
         remove_database(&journal_path);
         remove_database(&ledger_path);
+    }
+
+    #[test]
+    fn opaque_revision_tokens_can_preserve_vendor_etag_syntax() {
+        let snapshot = PolicySnapshot {
+            target_token: TARGET.to_owned(),
+            generation: 1,
+            revision_token: "W/\"edge:policy/v3+blue\"".to_owned(),
+            effective_policy_sha256: "a".repeat(64),
+        };
+        assert!(validate_snapshot(&snapshot).is_ok());
+        let invalid = PolicySnapshot {
+            revision_token: "revision-1\nrevision-2".to_owned(),
+            ..snapshot
+        };
+        assert!(validate_snapshot(&invalid).is_err());
     }
 
     #[test]
