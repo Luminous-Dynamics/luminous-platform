@@ -197,12 +197,13 @@ jobs:
           grep -Fq 'PASS: successful SQLite reference transaction commits policy, decision and challenge together' "$reference_log"
           grep -Fq 'PASS: stale-generation assertion rolls back policy, decision and challenge writes' "$reference_log"
           grep -Fq 'PASS: duplicate challenge replay is rejected with no partial state' "$reference_log"
+          grep -Fq 'PASS: mismatched target/generation challenge binding fails closed without partial state' "$reference_log"
           grep -Fq 'PASS: exactly one durable promotion across 64 independent writer processes' "$reference_log"
           grep -Fq 'PASS: SIGKILL at after_decision_insert rolls back all uncommitted writes' "$reference_log"
           grep -Fq 'PASS: SIGKILL at after_challenge_insert rolls back all uncommitted writes' "$reference_log"
           grep -Fq 'PASS: SIGKILL before SQLite COMMIT rolls back decision, challenge and target state' "$reference_log"
           grep -Fq 'PASS: SIGKILL after SQLite COMMIT preserves one discoverable outcome by decision ID' "$reference_log"
-          grep -Eq '^sqlite_version=[0-9]+[.][0-9]+([.][0-9]+)? journal_mode=wal synchronous=FULL cases=8 process_contenders=64 commit_sigkill_cases=4$' "$reference_log"
+          grep -Eq '^sqlite_version=[0-9]+[.][0-9]+([.][0-9]+)? journal_mode=wal synchronous=FULL cases=9 process_contenders=64 commit_sigkill_cases=4$' "$reference_log"
           test "$(grep -c '^race_trial=' "$reference_log")" -eq 64
 
       - name: Preserve SQLite baseline evidence
