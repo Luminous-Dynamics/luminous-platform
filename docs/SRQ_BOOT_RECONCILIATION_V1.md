@@ -30,7 +30,13 @@ The dependency-free model accepts four records:
 
 It returns `Consistent`, `PendingBootChallenge`, `PendingBootObservation`, or `Blocked(reasons)`. Only `Consistent` means the supplied records structurally agree, and even then no authenticity is implied. The test explicitly proves that a different but correctly formatted measurement digest does not turn a structurally consistent record into a trusted attestation.
 
-The test suite includes exact-match reconciliation, missing evidence states, prior-generation boot rejection, target/decision/challenge mismatch, policy/artifact/corpus mismatch, nonconsecutive and overflow transitions, malformed identifiers/digests, and 10,000 deterministic single-field boot-observation mutations that must never reconcile.
+The test suite includes exact-match reconciliation, missing evidence states, prior-generation boot rejection, target/decision/challenge mismatch, policy/artifact/corpus mismatch, nonconsecutive and overflow transitions, malformed identifiers/digests, 10,000 deterministic single-field boot-observation mutations, and 100,000 deterministic mutations distributed across all four record types. The mutation campaigns require zero contradictory records to return Consistent.
+
+## First executed result (2026-10-20)
+
+[Exact-head workflow run 39468550175](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39468550175) passed on source `c2c679ea4b55c6430e1542734a3c59180d238e8e`: all 16 tests passed, including 100,000 cross-layer single-field mutations in about 3.1 seconds for the full Rust test binary (including the other tests). The workflow also passed the archive-inventory/hash tests and the negative control that deliberately supplies a false boot-reconciliation evidence digest.
+
+This is a deterministic contract-model result, not a 100,000-trial field reliability estimate. The mutation cases target structural consistency, not cryptographic signature validity or the truth of an observed boot measurement. The same workflow still reports `NOT_QUALIFIED`, 0/22 release gates met at qualifying tier, and its trusted-main signing job is skipped on pull-request events.
 
 ## Industry comparison: compose existing guarantees rather than replace them
 
@@ -44,7 +50,7 @@ The test suite includes exact-match reconciliation, missing evidence states, pri
 
 These are targets, not measured achievements:
 
-1. Zero false reconciliations in the fixed 10,000-mutation model suite and an expanded seeded 100,000-case mutation campaign.
+1. Zero false reconciliations in both the 10,000-case boot-only mutation suite and the 100,000-case cross-layer mutation campaign; then extend to persisted property-test seeds and imported malformed-record fixtures.
 2. Zero success when durable promotion is missing or the active boot generation, target, decision, challenge, effective-policy digest or artifact digest differs.
 3. Separate observability states: awaiting a fresh challenge, awaiting a boot observation, structurally consistent, blocked, and cryptographically unverified. Never map pending/unverified to PASS.
 4. At integration time, obtain the booted-generation fact from a defined source (for example, a verifier challenge response that includes current target identity and booted deployment digest). Document trust anchors, measurement coverage, freshness, replay prevention and failure behavior for that source.
