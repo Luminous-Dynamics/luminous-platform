@@ -83,7 +83,15 @@ These are **qualification targets**, not achieved measurements.
 | DRM handoff | Preserve the existing issue #9 proposed p95 <= 750 ms QEMU target; publish physical-device results separately | Separates release latency from visual frame-rate claims |
 | Recovery time and data loss | Publish p50/p95/p99 time to known-good operation and retained-state/data-loss measurements for each supported device class; set a stricter SLO only after a reproducible baseline is captured | Avoids inventing a universal recovery-time claim across unlike hardware |
 | Fleet integrity | Test 1, 10, 100, and 1,000 synthetic targets; no lost per-target failures, cross-target receipt reuse, or aggregation of unreachable as compliant; report p50/p95/p99 reconciliation time and memory | Measures operational usefulness without disguising partial results |
+| Operator status legibility | Blindly classify the five statuses across a mixed scenario set; proposed target ≥95% correct classification and zero NOT_RUN-as-PASS mistakes; publish cohort, time-to-decision, and confidence | Tests whether evidence is actually understandable and actionable |
+| Consent and cancellation | Zero mutations after cancellation or without current, target-bound authorization; any violation is a release blocker | User control is a hard safety invariant, not a usability/performance trade-off |
+| Accessibility of security state | Every required state has a text label and accessible name; complete status review and safe cancellation using keyboard-only interaction | Color alone must not carry security meaning |
 | Qualification integrity | All required gates must be PASS on the exact reviewed head with present evidence; otherwise release status is NOT_QUALIFIED | A green badge is not a substitute for an evidence inventory |
+
+
+### Operator sovereignty is measurable
+
+A security console is not successful if an operator cannot tell what happened. The result contract keeps reason, source identity, execution tier, evidence hashes, claim ceiling, and non-claims in the same receipt. The UI should use text—not color alone—to distinguish statuses and explain the next safe action. Scenario `OPS-003` tests status comprehension and accessibility; `OPS-004` checks that preview, cancellation, and explicit consent correspond to actual state changes. Initial human-factors studies are exploratory: publish cohort, task design, time-to-decision, errors, and confidence; never present a small usability pilot as a universal industry ranking.
 
 The 100,000 mutations, 64-way concurrency, 100 trials per checkpoint, and 1,000 VM trials are proposed workload targets. They do not imply statistical proof of zero risk. Record the generator version, seed, corpus digest, number of trials, false accepts/rejects, and untested fault classes.
 
