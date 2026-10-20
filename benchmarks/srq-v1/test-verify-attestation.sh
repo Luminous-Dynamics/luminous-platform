@@ -46,6 +46,7 @@ jq -e 'type == "array" and length == 1' "$tmp/verification.json" >/dev/null
 grep -Fxq -- "Luminous-Dynamics/luminous-platform" "$args_file" || fail "trusted repository was not enforced"
 grep -Fxq -- "Luminous-Dynamics/luminous-platform/.github/workflows/srq-v1.yml" "$args_file" || fail "trusted signer workflow was not enforced"
 grep -Fxq -- "https://token.actions.githubusercontent.com" "$args_file" || fail "OIDC issuer was not enforced"
+grep -Fxq -- "--deny-self-hosted-runners" "$args_file" || fail "self-hosted runner rejection was not enforced"
 grep -Fxq -- "https://slsa.dev/provenance/v1" "$args_file" || fail "SLSA predicate type was not enforced"
 grep -Fxq -- "$source_sha" "$args_file" || fail "exact source SHA was not passed to verifier"
 grep -Fxq -- "refs/heads/main" "$args_file" || fail "trusted source ref was not passed to verifier"
