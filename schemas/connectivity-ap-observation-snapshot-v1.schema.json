@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/connectivity-ap-observation-snapshot-v1.schema.json",
+  "title": "Connectivity AP Observation Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "run_id", "evidence_class", "captured_at_unix_ms",
+    "source", "interface_token", "interface_radio", "command_status", "station_metrics",
+    "survey_channels", "qdisc_metrics", "link_metrics", "privacy"
+  ],
+  "properties": {
+    "schema_version": { "const": "luminous.connectivity-ap-observation-snapshot.v1" },
+    "run_id": { "$ref": "#/$defs/token" },
+    "evidence_class": { "const": "bench_observed_snapshot" },
+    "captured_at_unix_ms": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifest_sha256", "interface_source"],
+      "properties": {
+        "manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "interface_source": { "const": "operator_supplied" }
+      }
+    },
+    "interface_token": { "type": "string", "pattern": "^[A-Za-z0-9_.-]{1,15}$" },
+    "interface_radio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["interface_type", "channel_number", "frequency_mhz", "channel_width_mhz", "tx_power_centi_dbm"],
+      "properties": {
+        "interface_type": { "const": "AP" },
+        "channel_number": { "type": ["integer", "null"], "minimum": 1, "maximum": 233 },
+        "frequency_mhz": { "type": ["integer", "null"], "minimum": 200, "maximum": 80000 },
+        "channel_width_mhz": { "type": ["integer", "null"], "enum": [20, 40, 80, 160, 320, null] },
+        "tx_power_centi_dbm": { "type": ["integer", "null"], "minimum": -5000, "maximum": 6000 }
+      }
+    },
+    "command_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["iw_info", "iw_station", "iw_survey", "tc_qdisc", "ip_link"],
+      "properties": {
+        "iw_info": { "$ref": "#/$defs/commandStatus" },
+        "iw_station": { "$ref": "#/$defs/commandStatus" },
+        "iw_survey": { "$ref": "#/$defs/commandStatus" },
+        "tc_qdisc": { "$ref": "#/$defs/commandStatus" },
+        "ip_link": { "$ref": "#/$defs/commandStatus" }
+      }
+    },
+    "station_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "station_count", "rx_bytes_total", "tx_bytes_total", "tx_retries_total",
+        "tx_failed_total", "signal_min_dbm", "signal_mean_millidbm",
+        "signal_max_dbm", "signal_sample_count"
+      ],
+      "properties": {
+        "station_count": { "type": ["integer", "null"], "minimum": 0, "maximum": 100000 },
+        "rx_bytes_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+        "tx_bytes_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+        "tx_retries_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+        "tx_failed_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+        "signal_min_dbm": { "type": ["integer", "null"], "minimum": -150, "maximum": 0 },
+        "signal_mean_millidbm": { "type": ["integer", "null"], "minimum": -150000, "maximum": 0 },
+        "signal_max_dbm": { "type": ["integer", "null"], "minimum": -150, "maximum": 0 },
+        "signal_sample_count": { "type": "integer", "minimum": 0, "maximum": 100000 }
+      }
+    },
+    "survey_channels": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["frequency_mhz", "channel_active_time_ms", "channel_busy_time_ms", "noise_dbm"],
+        "properties": {
+          "frequency_mhz": { "type": ["integer", "null"], "minimum": 200, "maximum": 80000 },
+          "channel_active_time_ms": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+          "channel_busy_time_ms": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+          "noise_dbm": { "type": ["integer", "null"], "minimum": -150, "maximum": 0 }
+        }
+      }
+    },
+    "qdisc_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "qdisc_count", "sent_bytes_total", "sent_packets_total", "dropped_packets_total",
+        "overlimits_total", "requeues_total", "backlog_bytes_total", "backlog_packets_total"
+      ],
+      "properties": {
+        "qdisc_count": { "type": ["integer", "null"], "minimum": 0, "maximum": 10000 },
+        "sent_bytes_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+        "sent_packets_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+        "dropped_packets_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+        "overlimits_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+        "requeues_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+        "backlog_bytes_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 },
+        "backlog_packets_total": { "type": ["integer", "null"], "minimum": 0, "maximum": 18446744073709551615 }
+      }
+    },
+    "link_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mtu", "operstate", "administratively_up"],
+      "properties": {
+        "mtu": { "type": ["integer", "null"], "minimum": 68, "maximum": 100000 },
+        "operstate": { "type": ["string", "null"], "maxLength": 32 },
+        "administratively_up": { "type": ["boolean", "null"] }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_station_identifiers_exported", "ip_addresses_exported",
+        "payloads_exported", "raw_command_output_exported"
+      ],
+      "properties": {
+        "raw_station_identifiers_exported": { "const": false },
+        "ip_addresses_exported": { "const": false },
+        "payloads_exported": { "const": false },
+        "raw_command_output_exported": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "token": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._-]+$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "commandStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "exit_code"],
+      "properties": {
+        "status": { "enum": ["available", "unavailable", "error"] },
+        "exit_code": { "type": ["integer", "null"], "minimum": 0, "maximum": 255 }
+      }
+    }
+  }
+}
