@@ -329,7 +329,11 @@ fn ensure_servers_alive(guard: &mut LabGuard) -> Result<(), String> {
             .map_err(|error| format!("could not inspect {label} server process: {error}"))?
         {
             None => {}
-            Some(status) => return Err(format!("{label} echo server exited unexpectedly with {status}")),
+            Some(status) => {
+                return Err(format!(
+                    "{label} echo server exited unexpectedly with {status}"
+                ));
+            }
         }
     }
     Ok(())
@@ -841,7 +845,9 @@ mod tests {
         assert!(validate_policy_text(PolicyStage::Initial, &initial_without_control).is_err());
 
         let revoke_without_control = format!("{HEADER}{REVOKE}{ESTABLISHED}{FOOTER}");
-        assert!(validate_policy_text(PolicyStage::ExplicitRevoke, &revoke_without_control).is_err());
+        assert!(
+            validate_policy_text(PolicyStage::ExplicitRevoke, &revoke_without_control).is_err()
+        );
     }
 
     #[test]
