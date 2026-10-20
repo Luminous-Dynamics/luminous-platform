@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/srq-v1.yml"
       - "benchmarks/srq-v1/**"
+      - "tools/srq-recovery-model/**"
       - "docs/SOVEREIGN_RECOVERY_QUALIFICATION_V1.md"
   workflow_dispatch:
 
@@ -33,6 +34,11 @@ jobs:
           printf 'expected_source_sha=%s event_sha=%s actual_checkout_head=%s\n' "$SRQ_EXPECTED_SOURCE_SHA" "$SRQ_EVENT_SHA" "$actual_head"
           test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
 
+      - name: Install pinned Rust toolchain for the dependency-free model
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.96.0
+
       - name: Validate shell syntax
         run: |
           set -euo pipefail
@@ -40,6 +46,69 @@ jobs:
           bash -n benchmarks/srq-v1/test-validator.sh
           bash -n benchmarks/srq-v1/validate-result.sh
           bash -n benchmarks/srq-v1/test-result-validator.sh
+
+      - name: Run bounded filesystem activation model
+        shell: bash
+        run: |
+          set -euo pipefail
+          model_log="$RUNNER_TEMP/srq-recovery-model-test.log"
+          model_receipt="$RUNNER_TEMP/srq-update-004-model-result.json"
+          command='cargo test --manifest-path tools/srq-recovery-model/Cargo.toml --locked'
+          cargo test --manifest-path tools/srq-recovery-model/Cargo.toml --locked 2>&1 | tee "$model_log"
+
+          actual_head="$(git rev-parse HEAD)"
+          evidence_sha="$(sha256sum "$model_log" | cut -d ' ' -f 1)"
+          jq -n \
+            --arg expected "$SRQ_EXPECTED_SOURCE_SHA" \
+            --arg event "$SRQ_EVENT_SHA" \
+            --arg actual "$actual_head" \
+            --arg command "$command" \
+            --arg os "$(uname -sr)" \
+            --arg architecture "$(uname -m)" \
+            --arg toolchain "$(rustc --version)" \
+            --arg evidence_sha "$evidence_sha" \
+            '{
+              schema_version: 1,
+              profile_id: "SRQ-1",
+              scenario_id: "UPDATE-004",
+              status: "PASS",
+              reason: "The filesystem-backed model kept the previous or next complete generation at all five injected process-interruption checkpoints.",
+              source: {
+                expected_source_sha: $expected,
+                event_sha: $event,
+                actual_checkout_sha: $actual,
+                source_matches_expected: ($expected == $actual)
+              },
+              execution: {
+                tier: "model",
+                steps_executed: true,
+                command: $command,
+                exit_code: 0,
+                environment: {os: $os, architecture: $architecture, toolchain: $toolchain}
+              },
+              evidence: [{artifact: "srq-recovery-model-test.log", sha256: $evidence_sha, kind: "log"}],
+              claim_ceiling: "abstract_model_only",
+              non_claims: [
+                "This is a filesystem-backed abstract model with synthetic generation payloads, not a production updater or bootloader.",
+                "Process interruption on a normal filesystem is not equivalent to physical sudden-power-loss testing.",
+                "No TUF signature policy, artifact provenance, signer/device identity, firmware root of trust, or TPM evidence is qualified.",
+                "QEMU and physical activation scenarios remain unexecuted."
+              ],
+              fixture: false
+            }' > "$model_receipt"
+
+          bash benchmarks/srq-v1/validate-result.sh "$model_receipt"
+
+      - name: Preserve activation model evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-activation-model-evidence
+          path: |
+            ${{ runner.temp }}/srq-recovery-model-test.log
+            ${{ runner.temp }}/srq-update-004-model-result.json
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Validate the frozen SRQ-1 corpus
         run: bash benchmarks/srq-v1/validate.sh
