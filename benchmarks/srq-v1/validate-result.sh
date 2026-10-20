@@ -3,17 +3,30 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 schema="$script_dir/result-receipt-v1.schema.json"
-receipt="${1:-$script_dir/fixtures/result-pass-static.example.json}"
+corpus="$script_dir/scenarios.json"
+allow_fixtures=false
+receipt=""
+
+if [[ "${1:-}" == "--allow-fixtures" ]]; then
+  allow_fixtures=true
+  shift
+fi
+if [[ $# -ne 1 ]]; then
+  echo "Usage: $0 [--allow-fixtures] <result-receipt.json>" >&2
+  exit 2
+fi
+receipt="$1"
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "BLOCKED: jq is required; no receipt validation result was produced." >&2
   exit 2
 fi
 [[ -f "$schema" ]] || { echo "FAIL: result schema is missing" >&2; exit 1; }
+[[ -f "$corpus" ]] || { echo "FAIL: scenario corpus is missing" >&2; exit 1; }
 [[ -f "$receipt" ]] || { echo "FAIL: result receipt is missing: $receipt" >&2; exit 1; }
 
-# This is a reference semantic validator for the fields and status invariants
-# used by SRQ-1. It does not implement the complete JSON Schema specification.
+# This is a reference semantic validator for SRQ's status/provenance invariants.
+# It intentionally does not claim to implement the complete JSON Schema spec.
 jq -e 'type == "object"' "$schema" >/dev/null
 
 jq -e '
@@ -55,8 +68,21 @@ jq -e '
    else true end)
 ' "$receipt" >/dev/null
 
-status="$(jq -r '.status' "$receipt")"
 scenario="$(jq -r '.scenario_id' "$receipt")"
 fixture="$(jq -r '.fixture' "$receipt")"
-printf 'PASS: result receipt structure and status invariants are valid (scenario=%s status=%s fixture=%s).\n' "$scenario" "$status" "$fixture"
+if ! jq -e --arg scenario "$scenario" 'any(.scenarios[]; .id == $scenario)' "$corpus" >/dev/null; then
+  echo "FAIL: receipt references scenario '$scenario', which is not present in the SRQ-1 corpus." >&2
+  exit 1
+fi
+if [[ "$fixture" == "true" && "$allow_fixtures" != "true" ]]; then
+  echo "FAIL: fixture=true receipts are examples, not qualification evidence; --allow-fixtures is for tests only." >&2
+  exit 1
+fi
+
+status="$(jq -r '.status' "$receipt")"
+if [[ "$fixture" == "true" ]]; then
+  printf 'VALID_FIXTURE_ONLY: result receipt structure is valid (scenario=%s example_status=%s); this fixture is not qualification evidence.\n' "$scenario" "$status"
+else
+  printf 'PASS: result receipt structure and status invariants are valid (scenario=%s status=%s fixture=false).\n' "$scenario" "$status"
+fi
 echo "NON-CLAIM: this reference subset validator does not authenticate artifacts, verify full JSON Schema conformance, or qualify a runtime scenario."
