@@ -3,15 +3,16 @@ set -euo pipefail
 readonly trusted_repo="Luminous-Dynamics/luminous-platform"
 readonly trusted_workflow_path=".github/workflows/srq-v1.yml"
 readonly trusted_source_ref="refs/heads/main"
-archive="" expected_source_sha="" expected_source_ref="" expected_workflow_ref=""
+archive="" expected_source_sha="" expected_source_ref="" expected_workflow_ref="" expected_workflow_sha=""
 expected_run_id="" expected_run_attempt="" extract_to=""
-usage() { echo "Usage: $0 --archive PATH --expected-source-sha SHA40 --expected-source-ref refs/heads/main --expected-workflow-ref REF --expected-run-id ID --expected-run-attempt N --extract-to EMPTY_DIR" >&2; }
+usage() { echo "Usage: $0 --archive PATH --expected-source-sha SHA40 --expected-source-ref refs/heads/main --expected-workflow-ref REF --expected-workflow-sha SHA40 --expected-run-id ID --expected-run-attempt N --extract-to EMPTY_DIR" >&2; }
 while (($#)); do
   case "$1" in
     --archive) [[ $# -ge 2 ]] || { usage; exit 2; }; archive="$2"; shift 2 ;;
     --expected-source-sha) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_source_sha="$2"; shift 2 ;;
     --expected-source-ref) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_source_ref="$2"; shift 2 ;;
     --expected-workflow-ref) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_workflow_ref="$2"; shift 2 ;;
+    --expected-workflow-sha) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_workflow_sha="$2"; shift 2 ;;
     --expected-run-id) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_run_id="$2"; shift 2 ;;
     --expected-run-attempt) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_run_attempt="$2"; shift 2 ;;
     --extract-to) [[ $# -ge 2 ]] || { usage; exit 2; }; extract_to="$2"; shift 2 ;;
@@ -20,6 +21,7 @@ while (($#)); do
 done
 [[ -n "$archive" && -f "$archive" && ! -L "$archive" ]] || { echo "BLOCKED: archive is missing or is not a regular file." >&2; exit 2; }
 [[ "$expected_source_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "BLOCKED: source SHA is malformed." >&2; exit 2; }
+[[ "$expected_workflow_sha" =~ ^[0-9a-f]{40}$ ]] || { echo "BLOCKED: workflow SHA is malformed." >&2; exit 2; }
 [[ "$expected_source_ref" == "$trusted_source_ref" ]] || { echo "BLOCKED: only refs/heads/main is trusted." >&2; exit 2; }
 [[ "$expected_workflow_ref" == "${trusted_repo}/${trusted_workflow_path}@${trusted_source_ref}" ]] || { echo "BLOCKED: workflow ref does not match fixed policy." >&2; exit 2; }
 [[ "$expected_run_id" =~ ^[0-9]+$ && "$expected_run_attempt" =~ ^[0-9]+$ ]] || { echo "BLOCKED: run ID/attempt must be decimal integers." >&2; exit 2; }
@@ -59,6 +61,7 @@ jq -e \
   --arg source_sha "$expected_source_sha" \
   --arg source_ref "$expected_source_ref" \
   --arg workflow_ref "$expected_workflow_ref" \
+  --arg workflow_sha "$expected_workflow_sha" \
   --arg run_id "$expected_run_id" \
   --arg run_attempt "$expected_run_attempt" \
   --arg repo "$trusted_repo" \
@@ -71,8 +74,7 @@ jq -e \
     .repository == $repo and
     .workflow_path == $workflow_path and
     .workflow_ref == $workflow_ref and
-    ((.workflow_sha | type) == "string") and
-    (.workflow_sha | test("^[0-9a-f]{40}$")) and
+    .workflow_sha == $workflow_sha and
     .event_name == "workflow_dispatch" and
     .run_id == $run_id and
     .run_attempt == $run_attempt and
