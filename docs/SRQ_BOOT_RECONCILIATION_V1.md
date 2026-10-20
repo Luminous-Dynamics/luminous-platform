@@ -12,6 +12,12 @@ The invariant this model tests is:
 
 This differs from checking each component separately. The layers can each emit a valid-looking record while disagreeing with one another. The join must refuse to promote that contradiction into an end-to-end success.
 
+### Immutable deployment identity is separate from the logical generation counter
+
+A logical SRQ generation number (such as 42) cannot be assumed to equal a NixOS generation number or an OSTree deployment identity. The intent, durable record and observation challenge now also carry an immutable `deployment_id`: a canonical Nix store path such as `/nix/store/<32-char-hash>-nixos-system-…`, or a 64-character OSTree deployment checksum. The observation contains both `booted_deployment_id` and `current_userspace_deployment_id`.
+
+This follows the actual NixOS module contract in Sovereign Boot: `/run/booted-system` identifies the system that booted, while `/run/current-system` can change during a live `nixos-rebuild switch/test`. A live activation must not be treated as proof of rebooting into the authorized deployment. The model returns Blocked unless both identities agree with the intended deployment and with each other. This conservative rule detects mixed or not-yet-rebooted transitions; it does not claim to read these paths from a real machine.
+
 ## Why issue a separate post-commit challenge?
 
 The challenge consumed to authorize promotion and the challenge used to request a post-boot observation have different roles. Reusing the promotion nonce for runtime observation makes freshness harder to reason about. This model represents the post-commit boot-observation challenge as a separate object bound to target, decision ID, expected generation and effective-policy digest.
@@ -23,10 +29,10 @@ The model does **not** authenticate that challenge or prove it was issued after 
 Source: `tools/srq-boot-reconciliation-model/src/lib.rs`
 
 The dependency-free model accepts four records:
-- `PromotionIntent`: target, decision, promotion challenge, previous/next generation, approved/effective policy digests, artifact digest and conformance corpus digest.
-- `CommittedPromotion`: durable decision identity, target, consumed challenge, generation and the same bound digests.
-- `BootObservationChallenge`: a distinct post-commit challenge bound to target, decision, expected generation and effective-policy digest.
-- `BootObservation`: target, decision, challenge ID, boot-instance ID, actual generation, effective-policy digest, artifact digest and a measurement digest.
+- `PromotionIntent`: target, decision, promotion challenge, immutable deployment identity, previous/next logical generation, approved/effective policy digests, artifact digest and conformance corpus digest.
+- `CommittedPromotion`: durable decision identity, target, consumed challenge, immutable deployment identity, logical generation and the same bound digests.
+- `BootObservationChallenge`: a distinct post-commit challenge bound to target, decision, expected logical generation, immutable deployment identity and effective-policy digest.
+- `BootObservation`: target, decision, challenge ID, boot-instance ID, the booted deployment identity, the current userspace deployment identity, logical generation, effective-policy digest, artifact digest and a measurement digest.
 
 It returns `Consistent`, `PendingBootChallenge`, `PendingBootObservation`, or `Blocked(reasons)`. Only `Consistent` means the supplied records structurally agree, and even then no authenticity is implied. The test explicitly proves that a different but correctly formatted measurement digest does not turn a structurally consistent record into a trusted attestation.
 
@@ -34,7 +40,7 @@ The test suite includes exact-match reconciliation, missing evidence states, pri
 
 ## First executed result (2026-10-20)
 
-[Exact-head workflow run 39468550175](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39468550175) passed on source `c2c679ea4b55c6430e1542734a3c59180d238e8e`: all 16 tests passed, including 100,000 cross-layer single-field mutations in about 3.1 seconds for the full Rust test binary (including the other tests). The workflow also passed the archive-inventory/hash tests and the negative control that deliberately supplies a false boot-reconciliation evidence digest.
+[Exact-head workflow run 39468550175](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39468550175) passed on source `c2c679ea4b55c6430e1542734a3c59180d238e8e`: all 16 tests passed, including 100,000 cross-layer single-field mutations in about 3.1 seconds for the full Rust test binary (including the other tests). Since then, the model has been extended to bind immutable NixOS/OSTree deployment identities and the current-vs-booted distinction; that extension requires a new exact-head run before it can be reported as passed. The earlier workflow also passed the archive-inventory/hash tests and false boot-reconciliation digest negative control.
 
 This is a deterministic contract-model result, not a 100,000-trial field reliability estimate. The mutation cases target structural consistency, not cryptographic signature validity or the truth of an observed boot measurement. The same workflow still reports `NOT_QUALIFIED`, 0/22 release gates met at qualifying tier, and its trusted-main signing job is skipped on pull-request events.
 
@@ -50,7 +56,7 @@ This is a deterministic contract-model result, not a 100,000-trial field reliabi
 
 These are targets, not measured achievements:
 
-1. Zero false reconciliations in both the 10,000-case boot-only mutation suite and the 100,000-case cross-layer mutation campaign; then extend to persisted property-test seeds and imported malformed-record fixtures.
+1. Zero false reconciliations in the boot-only and cross-layer mutation campaigns, including deployment-ID mutations; retain deterministic seeds and malformed-record fixtures.
 2. Zero success when durable promotion is missing or the active boot generation, target, decision, challenge, effective-policy digest or artifact digest differs.
 3. Separate observability states: awaiting a fresh challenge, awaiting a boot observation, structurally consistent, blocked, and cryptographically unverified. Never map pending/unverified to PASS.
 4. At integration time, obtain the booted-generation fact from a defined source (for example, a verifier challenge response that includes current target identity and booted deployment digest). Document trust anchors, measurement coverage, freshness, replay prevention and failure behavior for that source.
