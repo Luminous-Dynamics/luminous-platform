@@ -544,7 +544,7 @@ mod tests {
         let ready_one = path.with_extension("child-one-ready");
         let ready_two = path.with_extension("child-two-ready");
         let executable = std::env::current_exe().expect("test executable");
-        let mut spawn_child = |ready: &PathBuf| {
+        let spawn_child = |ready: &PathBuf| {
             Command::new(&executable)
                 .args([
                     "--exact",
@@ -599,7 +599,6 @@ mod tests {
             String::from_utf8_lossy(&result_two.stderr)
         );
 
-        drop(spawn_child);
         let _ = std::fs::remove_file(gate);
         let _ = std::fs::remove_file(ready_one);
         let _ = std::fs::remove_file(ready_two);
