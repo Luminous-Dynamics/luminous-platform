@@ -16,6 +16,9 @@ pub struct PromotionIntent {
     pub decision_id: String,
     pub target_id: String,
     pub promotion_challenge_id: String,
+    /// Immutable deployment identity, distinct from the abstract generation.
+    /// NixOS supplies a canonical /nix/store path; OSTree supplies a checksum.
+    pub deployment_id: String,
     pub previous_generation: u64,
     pub next_generation: u64,
     pub approved_policy_digest: String,
@@ -29,6 +32,7 @@ pub struct CommittedPromotion {
     pub decision_id: String,
     pub target_id: String,
     pub consumed_challenge_id: String,
+    pub deployment_id: String,
     pub generation: u64,
     pub approved_policy_digest: String,
     pub effective_policy_digest: String,
@@ -44,6 +48,7 @@ pub struct BootObservationChallenge {
     pub target_id: String,
     pub decision_id: String,
     pub expected_generation: u64,
+    pub expected_deployment_id: String,
     pub expected_effective_policy_digest: String,
 }
 
@@ -53,6 +58,11 @@ pub struct BootObservation {
     pub decision_id: String,
     pub observation_challenge_id: String,
     pub boot_instance_id: String,
+    /// Resolved from /run/booted-system; this is the generation that booted.
+    pub booted_deployment_id: String,
+    /// Resolved from /run/current-system; kept separate to detect a live switch
+    /// or mixed userspace state that has not actually booted the intended system.
+    pub current_userspace_deployment_id: String,
     pub generation: u64,
     pub effective_policy_digest: String,
     pub artifact_digest: String,
@@ -63,6 +73,7 @@ pub struct BootObservation {
 pub enum ReconciliationFault {
     InvalidIdentifier(&'static str),
     InvalidDigest(&'static str),
+    InvalidDeploymentId(&'static str),
     PromotionAndBootChallengesNotDistinct,
     GenerationTransitionIsNotExactlyOne,
     MissingDurablePromotion,
@@ -71,6 +82,7 @@ pub enum ReconciliationFault {
     DurableTargetMismatch,
     DurableChallengeMismatch,
     DurableGenerationMismatch,
+    DurableDeploymentMismatch,
     DurableApprovedPolicyMismatch,
     DurableEffectivePolicyMismatch,
     DurableArtifactMismatch,
@@ -78,11 +90,14 @@ pub enum ReconciliationFault {
     BootChallengeTargetMismatch,
     BootChallengeDecisionMismatch,
     BootChallengeGenerationMismatch,
+    BootChallengeDeploymentMismatch,
     BootChallengePolicyMismatch,
     BootTargetMismatch,
     BootDecisionMismatch,
     BootChallengeMismatch,
     BootGenerationMismatch,
+    BootedDeploymentMismatch,
+    CurrentUserspaceDeploymentMismatch,
     BootPolicyMismatch,
     BootArtifactMismatch,
 }
@@ -158,6 +173,9 @@ pub fn reconcile(
 
 fn validate_intent(intent: &PromotionIntent) -> Vec<ReconciliationFault> {
     let mut faults = Vec::new();
+    if !valid_deployment_id(&intent.deployment_id) {
+        faults.push(ReconciliationFault::InvalidDeploymentId("intent.deployment_id"));
+    }
     for (value, field) in [
         (intent.decision_id.as_str(), "intent.decision_id"),
         (intent.target_id.as_str(), "intent.target_id"),
@@ -197,6 +215,9 @@ fn validate_durable(
             faults.push(ReconciliationFault::InvalidIdentifier(field));
         }
     }
+    if !valid_deployment_id(&durable.deployment_id) {
+        faults.push(ReconciliationFault::InvalidDeploymentId("durable.deployment_id"));
+    }
     for (value, field) in [
         (durable.approved_policy_digest.as_str(), "durable.approved_policy_digest"),
         (durable.effective_policy_digest.as_str(), "durable.effective_policy_digest"),
@@ -218,6 +239,9 @@ fn validate_durable(
     }
     if durable.generation != intent.next_generation {
         faults.push(ReconciliationFault::DurableGenerationMismatch);
+    }
+    if durable.deployment_id != intent.deployment_id {
+        faults.push(ReconciliationFault::DurableDeploymentMismatch);
     }
     if durable.approved_policy_digest != intent.approved_policy_digest {
         faults.push(ReconciliationFault::DurableApprovedPolicyMismatch);
@@ -247,6 +271,9 @@ fn validate_boot_challenge(
             faults.push(ReconciliationFault::InvalidIdentifier(field));
         }
     }
+    if !valid_deployment_id(&challenge.expected_deployment_id) {
+        faults.push(ReconciliationFault::InvalidDeploymentId("challenge.expected_deployment_id"));
+    }
     if !valid_digest(&challenge.expected_effective_policy_digest) {
         faults.push(ReconciliationFault::InvalidDigest("challenge.expected_effective_policy_digest"));
     }
@@ -261,6 +288,9 @@ fn validate_boot_challenge(
     }
     if challenge.expected_generation != intent.next_generation {
         faults.push(ReconciliationFault::BootChallengeGenerationMismatch);
+    }
+    if challenge.expected_deployment_id != intent.deployment_id {
+        faults.push(ReconciliationFault::BootChallengeDeploymentMismatch);
     }
     if challenge.expected_effective_policy_digest != intent.effective_policy_digest {
         faults.push(ReconciliationFault::BootChallengePolicyMismatch);
@@ -283,6 +313,12 @@ fn validate_boot(
             faults.push(ReconciliationFault::InvalidIdentifier(field));
         }
     }
+    if !valid_deployment_id(&boot.booted_deployment_id) {
+        faults.push(ReconciliationFault::InvalidDeploymentId("boot.booted_deployment_id"));
+    }
+    if !valid_deployment_id(&boot.current_userspace_deployment_id) {
+        faults.push(ReconciliationFault::InvalidDeploymentId("boot.current_userspace_deployment_id"));
+    }
     for (value, field) in [
         (boot.effective_policy_digest.as_str(), "boot.effective_policy_digest"),
         (boot.artifact_digest.as_str(), "boot.artifact_digest"),
@@ -304,6 +340,16 @@ fn validate_boot(
     if boot.generation != intent.next_generation || boot.generation != challenge.expected_generation {
         faults.push(ReconciliationFault::BootGenerationMismatch);
     }
+    if boot.booted_deployment_id != intent.deployment_id
+        || boot.booted_deployment_id != challenge.expected_deployment_id
+    {
+        faults.push(ReconciliationFault::BootedDeploymentMismatch);
+    }
+    if boot.current_userspace_deployment_id != intent.deployment_id
+        || boot.current_userspace_deployment_id != boot.booted_deployment_id
+    {
+        faults.push(ReconciliationFault::CurrentUserspaceDeploymentMismatch);
+    }
     if boot.effective_policy_digest != intent.effective_policy_digest
         || boot.effective_policy_digest != challenge.expected_effective_policy_digest
     {
@@ -312,6 +358,30 @@ fn validate_boot(
     if boot.artifact_digest != intent.artifact_digest {
         faults.push(ReconciliationFault::BootArtifactMismatch);
     }
+}
+
+fn valid_deployment_id(value: &str) -> bool {
+    // OSTree immutable deployment checksum.
+    if valid_digest(value) {
+        return true;
+    }
+
+    // NixOS: accept one canonical direct child of /nix/store with a 32-char
+    // Nix base32 store hash and a nonempty store name.
+    let Some(rest) = value.strip_prefix("/nix/store/") else {
+        return false;
+    };
+    let Some((hash, name)) = rest.split_once('-') else {
+        return false;
+    };
+    hash.len() == 32
+        && hash
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || b"abcdfghijklmnpqrsvwxyz".contains(&byte))
+        && !name.is_empty()
+        && name.bytes().all(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'+' | b'-')
+        })
 }
 
 fn valid_identifier(value: &str) -> bool {
