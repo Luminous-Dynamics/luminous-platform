@@ -1,0 +1,104 @@
+{
+  "schema_version": "luminous.connectivity-ap-testbed-manifest.v1",
+  "manifest_id": "jozi-ap-testbed-plan-v1",
+  "evidence_stage": "planned",
+  "created_at": "2026-10-19T12:00:00Z",
+  "access_point": {
+    "vendor_model": "To be selected",
+    "hardware_revision": null,
+    "firmware_version": null,
+    "firmware_sha256": null,
+    "radio_band": "unknown",
+    "channel": null,
+    "channel_width_mhz": null,
+    "tx_power_dbm": null,
+    "radio_config_sha256": null
+  },
+  "clients": [
+    {
+      "client_token": "client-a",
+      "device_model": "Linux Wi-Fi client class A",
+      "hardware_revision": null,
+      "operating_system": "Linux",
+      "kernel_release": null,
+      "wifi_driver": null,
+      "wifi_firmware_revision": null,
+      "radio_band": "unknown",
+      "role": "both"
+    },
+    {
+      "client_token": "client-b",
+      "device_model": "Linux Wi-Fi client class B",
+      "hardware_revision": null,
+      "operating_system": "Linux",
+      "kernel_release": null,
+      "wifi_driver": null,
+      "wifi_firmware_revision": null,
+      "radio_band": "unknown",
+      "role": "task_client"
+    },
+    {
+      "client_token": "client-c",
+      "device_model": "Linux Wi-Fi client class C",
+      "hardware_revision": null,
+      "operating_system": "Linux",
+      "kernel_release": null,
+      "wifi_driver": null,
+      "wifi_firmware_revision": null,
+      "radio_band": "unknown",
+      "role": "background_load_client"
+    }
+  ],
+  "wired_peer": {
+    "device_model": "To be selected",
+    "operating_system": "Linux",
+    "kernel_release": null,
+    "nic_model": "To be selected",
+    "nic_driver": null,
+    "link_speed_mbps": null,
+    "address_class": "unknown"
+  },
+  "instrumentation": {
+    "monotonic_clock": "unknown",
+    "iperf3_version": null,
+    "ping_tool_version": null,
+    "iw_version": null,
+    "tc_version": null,
+    "station_retry_stats": "not_attempted",
+    "airtime_stats": "not_attempted",
+    "qdisc_stats": "not_attempted",
+    "rf_monitor_available": false,
+    "power_meter": {
+      "available": false,
+      "meter_model": null,
+      "calibration_date": null,
+      "sampling_hz": null,
+      "resolution_mw": null
+    },
+    "payload_capture_enabled": false,
+    "packet_capture_mode": "disabled"
+  },
+  "run_controls": {
+    "dedicated_test_network": true,
+    "public_users_present": false,
+    "network_authorization": "not_applicable",
+    "interference_protocol": "uncontrolled_declared",
+    "pair_order": "not_applicable",
+    "wan_profile": "not_applicable",
+    "test_profile_sha256": null,
+    "field_site_token": null,
+    "consent_record_sha256": null
+  },
+  "privacy_contract": {
+    "mac_addresses_exported": false,
+    "subscriber_identifiers_exported": false,
+    "payloads_exported": false,
+    "identity_map_local_only": true
+  },
+  "software": {
+    "host_os": "Linux",
+    "kernel_release": null,
+    "harness_revision": null,
+    "profile_sha256": null
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/connectivity-ap-testbed-manifest-v1.schema.json",
+  "title": "Connectivity Commons AP Testbed Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "manifest_id", "evidence_stage", "created_at",
+    "access_point", "clients", "wired_peer", "instrumentation",
+    "run_controls", "privacy_contract", "software"
+  ],
+  "properties": {
+    "schema_version": { "const": "luminous.connectivity-ap-testbed-manifest.v1" },
+    "manifest_id": { "$ref": "#/$defs/token" },
+    "evidence_stage": { "enum": ["planned", "bench_smoke", "lab_screening", "field_pilot", "reliability_qualification"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "access_point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vendor_model", "hardware_revision", "firmware_version", "firmware_sha256", "radio_band", "channel", "channel_width_mhz", "tx_power_dbm", "radio_config_sha256"],
+      "properties": {
+        "vendor_model": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "hardware_revision": { "type": ["string", "null"], "minLength": 1, "maxLength": 80 },
+        "firmware_version": { "type": ["string", "null"], "minLength": 1, "maxLength": 160 },
+        "firmware_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "radio_band": { "enum": ["2.4GHz", "5GHz", "6GHz", "multi_band", "unknown"] },
+        "channel": { "type": ["integer", "null"], "minimum": 1, "maximum": 233 },
+        "channel_width_mhz": { "enum": [20, 40, 80, 160, 320, null] },
+        "tx_power_dbm": { "type": ["integer", "null"], "minimum": -20, "maximum": 60 },
+        "radio_config_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "clients": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["client_token", "device_model", "hardware_revision", "operating_system", "kernel_release", "wifi_driver", "wifi_firmware_revision", "radio_band", "role"],
+        "properties": {
+          "client_token": { "$ref": "#/$defs/token" },
+          "device_model": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "hardware_revision": { "type": ["string", "null"], "minLength": 1, "maxLength": 80 },
+          "operating_system": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "kernel_release": { "type": ["string", "null"], "minLength": 1, "maxLength": 120 },
+          "wifi_driver": { "type": ["string", "null"], "minLength": 1, "maxLength": 160 },
+          "wifi_firmware_revision": { "type": ["string", "null"], "minLength": 1, "maxLength": 160 },
+          "radio_band": { "enum": ["2.4GHz", "5GHz", "6GHz", "multi_band", "unknown"] },
+          "role": { "enum": ["task_client", "background_load_client", "both"] }
+        }
+      }
+    },
+    "wired_peer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["device_model", "operating_system", "kernel_release", "nic_model", "nic_driver", "link_speed_mbps", "address_class"],
+      "properties": {
+        "device_model": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "operating_system": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "kernel_release": { "type": ["string", "null"], "minLength": 1, "maxLength": 120 },
+        "nic_model": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "nic_driver": { "type": ["string", "null"], "minLength": 1, "maxLength": 160 },
+        "link_speed_mbps": { "type": ["integer", "null"], "minimum": 10, "maximum": 100000 },
+        "address_class": { "enum": ["private_ipv4", "private_ipv6", "isolated_test_segment", "unknown"] }
+      }
+    },
+    "instrumentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["monotonic_clock", "iperf3_version", "ping_tool_version", "iw_version", "tc_version", "station_retry_stats", "airtime_stats", "qdisc_stats", "rf_monitor_available", "power_meter", "payload_capture_enabled", "packet_capture_mode"],
+      "properties": {
+        "monotonic_clock": { "enum": ["CLOCK_MONOTONIC_RAW", "CLOCK_MONOTONIC", "other_documented", "unknown"] },
+        "iperf3_version": { "type": ["string", "null"], "maxLength": 100 },
+        "ping_tool_version": { "type": ["string", "null"], "maxLength": 100 },
+        "iw_version": { "type": ["string", "null"], "maxLength": 100 },
+        "tc_version": { "type": ["string", "null"], "maxLength": 100 },
+        "station_retry_stats": { "enum": ["available", "unavailable", "not_attempted"] },
+        "airtime_stats": { "enum": ["available", "unavailable", "not_attempted"] },
+        "qdisc_stats": { "enum": ["available", "unavailable", "not_attempted"] },
+        "rf_monitor_available": { "type": "boolean" },
+        "power_meter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["available", "meter_model", "calibration_date", "sampling_hz", "resolution_mw"],
+          "properties": {
+            "available": { "type": "boolean" },
+            "meter_model": { "type": ["string", "null"], "minLength": 1, "maxLength": 160 },
+            "calibration_date": { "type": ["string", "null"], "format": "date" },
+            "sampling_hz": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10000 },
+            "resolution_mw": { "type": ["integer", "null"], "minimum": 1, "maximum": 1000000 }
+          }
+        },
+        "payload_capture_enabled": { "const": false },
+        "packet_capture_mode": { "const": "disabled" }
+      }
+    },
+    "run_controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dedicated_test_network", "public_users_present", "network_authorization", "interference_protocol", "pair_order", "wan_profile", "test_profile_sha256", "field_site_token", "consent_record_sha256"],
+      "properties": {
+        "dedicated_test_network": { "const": true },
+        "public_users_present": { "const": false },
+        "network_authorization": { "enum": ["owner_authorized_lab", "not_applicable", "unverified"] },
+        "interference_protocol": { "enum": ["shielded", "scan_and_record", "uncontrolled_declared"] },
+        "pair_order": { "enum": ["randomized", "blocked_randomized", "not_applicable"] },
+        "wan_profile": { "enum": ["wired_lab", "cellular", "satellite", "community_backhaul", "not_applicable", "unknown"] },
+        "test_profile_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+        "field_site_token": { "type": ["string", "null"], "pattern": "^[A-Z0-9][A-Z0-9._-]{2,79}$" },
+        "consent_record_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "privacy_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mac_addresses_exported", "subscriber_identifiers_exported", "payloads_exported", "identity_map_local_only"],
+      "properties": {
+        "mac_addresses_exported": { "const": false },
+        "subscriber_identifiers_exported": { "const": false },
+        "payloads_exported": { "const": false },
+        "identity_map_local_only": { "const": true }
+      }
+    },
+    "software": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host_os", "kernel_release", "harness_revision", "profile_sha256"],
+      "properties": {
+        "host_os": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "kernel_release": { "type": ["string", "null"], "minLength": 1, "maxLength": 120 },
+        "harness_revision": { "type": ["string", "null"], "pattern": "^[a-f0-9]{40,64}$" },
+        "profile_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+      }
+    }
+  },
+  "$defs": {
+    "token": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$" }
+  }
+}
