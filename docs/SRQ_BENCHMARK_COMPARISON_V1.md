@@ -82,3 +82,17 @@ To claim improvement:
 5. Leave every unsupported firmware, TPM, cross-host or physical durability claim unqualified.
 
 SRQ aggregate status remains NOT_QUALIFIED until every required scenario has evidence at its declared qualifying tier and claim ceiling.
+
+
+## First observed measurements (exploratory, not a SOTA comparison)
+
+The SQLite reference harness has now passed the following on two GitHub-hosted runner executions:
+
+| Run | SQLite settings | Contenders | All-contender p50 / p95 / p99 | Winner elapsed |
+|---|---|---:|---:|---:|
+| [39431749407](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39431749407) | 3.45.1, WAL, synchronous=FULL | 64 processes | 82.1 / 138.6 / 150.8 ms | 47.4 ms |
+| [39432653655](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39432653655) | 3.45.1, WAL, synchronous=FULL | 64 processes | 34.7 / 68.4 / 87.2 ms | 11.5 ms |
+
+These are per-contender script elapsed times, including CLI/process startup and lock waiting; they are not pure database commit latency. The between-run spread shows why single-run values must not be presented as a stable benchmark. A defensible comparison still needs repeated runs on a frozen machine/storage tuple and the same fault schedule against the production Luminous adapter.
+
+The latest contract suite also verifies that the SQLite evidence hash is bound into the deterministic SRQ evidence archive manifest. The PR workflow has not minted or verified a real signature: its trusted-main attestation job is skipped on pull-request events. The overall SRQ profile remains NOT_QUALIFIED, 0/22 gates met at qualifying tier.
