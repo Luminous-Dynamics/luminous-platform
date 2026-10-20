@@ -6,8 +6,8 @@
 #![forbid(unsafe_code)]
 
 pub mod promotion_journal;
-pub mod rollout_coordinator;
 pub mod replay_ledger;
+pub mod rollout_coordinator;
 
 pub mod freshness;
 
