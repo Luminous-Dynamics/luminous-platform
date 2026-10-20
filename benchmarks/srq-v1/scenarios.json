@@ -303,7 +303,7 @@
       "observed_tiers": [
         "model"
       ],
-      "target": "Model-only target: exactly one of 64 concurrent attempts may commit; restart and five interruption checkpoints must show either old/unconsumed or new/consumed state. QEMU and production durable-store integration remain required."
+      "target": "Model-only target: exactly one of 64 concurrent worker threads and exactly one of 8 independent same-host worker processes may commit the same challenge; restart and five interruption checkpoints must show either old/unconsumed or new/consumed state. Cross-host store semantics and QEMU/production integration remain open."
     },
     {
       "id": "EVIDENCE-004",
