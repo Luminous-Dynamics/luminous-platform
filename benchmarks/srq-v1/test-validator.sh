@@ -7,7 +7,7 @@ corpus="$script_dir/scenarios.json"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-"$validator" "$corpus"
+bash "$validator" "$corpus"
 
 expect_reject() {
   local label="$1"
@@ -16,7 +16,7 @@ expect_reject() {
   local output="$tmpdir/$label.out"
 
   jq "$filter" "$corpus" > "$mutated"
-  if "$validator" "$mutated" >"$output" 2>&1; then
+  if bash "$validator" "$mutated" >"$output" 2>&1; then
     echo "FAIL: validator accepted negative control '$label'" >&2
     cat "$output" >&2
     exit 1
