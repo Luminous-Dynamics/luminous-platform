@@ -290,12 +290,12 @@ pub fn evaluate_policy_impact(
         "simulator_id": vector.simulator_id,
         "simulator_version": vector.simulator_version,
         "cases_evaluated": cases_report.len(),
-        "baseline_mismatch_case_ids": baseline_mismatch_case_ids,
-        "candidate_mismatch_case_ids": candidate_mismatch_case_ids,
-        "high_risk_false_permit_case_ids": high_risk_false_permit_case_ids,
-        "unknown_case_ids": unknown_case_ids,
-        "newly_permitted_case_ids": newly_permitted_case_ids,
-        "newly_blocked_case_ids": newly_blocked_case_ids,
+        "baseline_mismatch_case_ids": &baseline_mismatch_case_ids,
+        "candidate_mismatch_case_ids": &candidate_mismatch_case_ids,
+        "high_risk_false_permit_case_ids": &high_risk_false_permit_case_ids,
+        "unknown_case_ids": &unknown_case_ids,
+        "newly_permitted_case_ids": &newly_permitted_case_ids,
+        "newly_blocked_case_ids": &newly_blocked_case_ids,
         "promotable": promotable,
         "cases": cases_report.iter().map(case_impact_json).collect::<Vec<_>>()
     });
@@ -464,7 +464,8 @@ mod tests {
             .expect("cases")
             .iter()
             .find(|case| {
-                case["high_risk"] == true && case["expected_probe_outcome"] == "blocked"
+                case["high_risk"].as_bool() == Some(true)
+                    && case["expected_probe_outcome"] == "blocked"
             })
             .expect("corpus includes a high-risk deny case");
         let id = case["case_id"].as_str().expect("case ID");
@@ -526,9 +527,7 @@ mod tests {
         let report = evaluate(&vector);
         assert!(report.promotable);
         assert!(report.baseline_mismatch_case_ids.contains(&id.to_owned()));
-        assert!(report
-            .candidate_mismatch_case_ids
-            .is_empty());
+        assert!(report.candidate_mismatch_case_ids.is_empty());
     }
 
     #[test]
@@ -575,7 +574,6 @@ mod tests {
     fn duplicate_missing_and_unknown_case_ids_are_rejected() {
         let mut vector = vector();
         vector.decisions[1].case_id = vector.decisions[0].case_id.clone();
-        assert!(evaluate(&vector).candidate_mismatch_case_ids.is_empty() == false || true);
         assert!(evaluate_policy_impact(
             CORPUS_SCHEMA,
             CORPUS,
