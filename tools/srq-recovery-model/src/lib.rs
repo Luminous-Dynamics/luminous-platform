@@ -250,28 +250,34 @@ mod tests {
             ActivationCheckpoint::AfterDirectorySync,
         ];
 
+        const TRIALS_PER_CHECKPOINT: usize = 100;
         for checkpoint in checkpoints {
-            let sandbox = Sandbox::new();
-            let store = seeded_store(&sandbox);
-            let outcome = store
-                .activate("gen-next", Some(checkpoint))
-                .expect("injected interruption is an expected outcome");
-            assert_eq!(outcome, ActivationOutcome::InterruptedAt(checkpoint));
+            for trial in 0..TRIALS_PER_CHECKPOINT {
+                let sandbox = Sandbox::new();
+                let store = seeded_store(&sandbox);
+                let outcome = store
+                    .activate("gen-next", Some(checkpoint))
+                    .expect("injected interruption is an expected outcome");
+                assert_eq!(outcome, ActivationOutcome::InterruptedAt(checkpoint));
 
-            // Re-open the store to ensure assertions do not depend on in-memory state.
-            let reopened = sandbox.store();
-            let active = reopened
-                .active_generation()
-                .expect("interrupted state must remain readable");
-            let expected_id = match checkpoint {
-                ActivationCheckpoint::BeforePointerWrite
-                | ActivationCheckpoint::AfterPointerWriteBeforeSync
-                | ActivationCheckpoint::AfterPointerSyncBeforeRename => "gen-old",
-                ActivationCheckpoint::AfterPointerRenameBeforeDirectorySync
-                | ActivationCheckpoint::AfterDirectorySync => "gen-next",
-            };
-            assert_eq!(active.id, expected_id, "checkpoint: {checkpoint:?}");
-            assert_eq!(active.payload, synthetic_payload(expected_id));
+                // Re-open the store to ensure assertions do not depend on in-memory state.
+                let reopened = sandbox.store();
+                let active = reopened
+                    .active_generation()
+                    .expect("interrupted state must remain readable");
+                let expected_id = match checkpoint {
+                    ActivationCheckpoint::BeforePointerWrite
+                    | ActivationCheckpoint::AfterPointerWriteBeforeSync
+                    | ActivationCheckpoint::AfterPointerSyncBeforeRename => "gen-old",
+                    ActivationCheckpoint::AfterPointerRenameBeforeDirectorySync
+                    | ActivationCheckpoint::AfterDirectorySync => "gen-next",
+                };
+                assert_eq!(
+                    active.id, expected_id,
+                    "checkpoint: {checkpoint:?}, trial: {trial}"
+                );
+                assert_eq!(active.payload, synthetic_payload(expected_id));
+            }
         }
     }
 
