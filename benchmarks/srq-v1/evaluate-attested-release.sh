@@ -6,6 +6,7 @@ archive=""
 expected_source_sha=""
 expected_source_ref=""
 expected_workflow_ref=""
+expected_workflow_sha=""
 expected_run_id=""
 expected_run_attempt=""
 output_envelope=""
@@ -14,7 +15,7 @@ output_verification=""
 require_qualified=false
 
 usage() {
-  echo "Usage: $0 --archive PATH --expected-source-sha SHA40 --expected-source-ref refs/heads/main --expected-workflow-ref REF --expected-run-id ID --expected-run-attempt N --output-envelope PATH --output-report PATH --output-verification PATH [--require-qualified]" >&2
+  echo "Usage: $0 --archive PATH --expected-source-sha SHA40 --expected-source-ref refs/heads/main --expected-workflow-ref REF --expected-workflow-sha SHA40 --expected-run-id ID --expected-run-attempt N --output-envelope PATH --output-report PATH --output-verification PATH [--require-qualified]" >&2
 }
 
 while (($#)); do
@@ -23,6 +24,7 @@ while (($#)); do
     --expected-source-sha) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_source_sha="$2"; shift 2 ;;
     --expected-source-ref) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_source_ref="$2"; shift 2 ;;
     --expected-workflow-ref) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_workflow_ref="$2"; shift 2 ;;
+    --expected-workflow-sha) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_workflow_sha="$2"; shift 2 ;;
     --expected-run-id) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_run_id="$2"; shift 2 ;;
     --expected-run-attempt) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_run_attempt="$2"; shift 2 ;;
     --output-envelope) [[ $# -ge 2 ]] || { usage; exit 2; }; output_envelope="$2"; shift 2 ;;
@@ -48,6 +50,7 @@ manifest_path="$(bash "$script_dir/verify-evidence-bundle.sh" \
   --expected-source-sha "$expected_source_sha" \
   --expected-source-ref "$expected_source_ref" \
   --expected-workflow-ref "$expected_workflow_ref" \
+  --expected-workflow-sha "$expected_workflow_sha" \
   --expected-run-id "$expected_run_id" \
   --expected-run-attempt "$expected_run_attempt" \
   --extract-to "$bundle_root")"
