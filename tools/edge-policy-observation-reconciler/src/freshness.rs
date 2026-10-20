@@ -351,6 +351,7 @@ fn integer_field(value: &Value, pointer: &str, label: &str) -> Result<u64, Vec<S
 #[cfg(test)]
 mod tests {
     use super::ChallengeReplayGuard;
+    use crate::replay_ledger::{SqliteReplayLedger, verify_and_consume_durable};
     use crate::sha256_hex;
     use serde_json::{Value, json};
 
@@ -611,6 +612,73 @@ mod tests {
         )
         .expect_err("corpus mismatch");
         assert!(error.iter().any(|item| item.contains("exact corpus bytes")));
+    }
+
+    #[test]
+    fn durable_verification_rejects_replay_across_ledger_reopen() {
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let stamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system time")
+            .as_nanos();
+        let path = std::env::temp_dir().join(format!(
+            "luminous-freshness-integration-{}-{stamp}.sqlite",
+            std::process::id()
+        ));
+        let receipt = receipt_source();
+        let challenge = challenge_source();
+        let envelope = envelope_source(&receipt);
+        {
+            let ledger = SqliteReplayLedger::open(&path).expect("durable ledger");
+            let report = verify_and_consume_durable(
+                &ledger,
+                &challenge,
+                &envelope,
+                CORPUS_SCHEMA,
+                CORPUS,
+                &receipt,
+                1_400,
+            )
+            .expect("first fresh verification");
+            assert_eq!(
+                report["replay_guard"],
+                "sqlite_durable_transactional_nonce_consumed"
+            );
+            assert_eq!(
+                report["durable_replay_ledger"],
+                "commit_confirmed_before_return"
+            );
+
+            let duplicate = verify_and_consume_durable(
+                &ledger,
+                &challenge,
+                &envelope,
+                CORPUS_SCHEMA,
+                CORPUS,
+                &receipt,
+                1_400,
+            )
+            .expect_err("replay must be rejected");
+            assert!(duplicate.iter().any(|item| item.contains("already been consumed")));
+        }
+        {
+            let reopened = SqliteReplayLedger::open(&path).expect("reopen durable ledger");
+            let duplicate = verify_and_consume_durable(
+                &reopened,
+                &challenge,
+                &envelope,
+                CORPUS_SCHEMA,
+                CORPUS,
+                &receipt,
+                1_400,
+            )
+            .expect_err("replay after verifier restart must be rejected");
+            assert!(duplicate.iter().any(|item| item.contains("already been consumed")));
+        }
+        let _ = std::fs::remove_file(&path);
+        let _ = std::fs::remove_file(path.with_extension("sqlite-wal"));
+        let _ = std::fs::remove_file(path.with_extension("sqlite-shm"));
     }
 
     #[test]
