@@ -78,7 +78,7 @@ jobs:
               profile_id: "SRQ-1",
               scenario_id: "UPDATE-004",
               status: "PASS",
-              reason: "The filesystem-backed model kept the previous or next complete generation across 100 trials at each of five injected process-interruption checkpoints (500 trials total).",
+              reason: "The filesystem-backed model kept the previous or next complete generation across 100 injected checkpoint-return simulations at each of five activation boundaries (500 trials total). These are not process-kill or physical power-cut tests.",
               source: {
                 expected_source_sha: $expected,
                 event_sha: $event,
@@ -96,7 +96,7 @@ jobs:
               claim_ceiling: "abstract_model_only",
               non_claims: [
                 "This is a filesystem-backed abstract model with synthetic generation payloads, not a production updater or bootloader.",
-                "Process interruption on a normal filesystem is not equivalent to physical sudden-power-loss testing.",
+                "Checkpoint returns followed by reopen do not kill a process mid-syscall and are not equivalent to physical sudden-power-loss testing.",
                 "No TUF signature policy, artifact provenance, signer/device identity, firmware root of trust, or TPM evidence is qualified.",
                 "QEMU and physical activation scenarios remain unexecuted."
               ],
@@ -135,7 +135,7 @@ jobs:
               profile_id: "SRQ-1",
               scenario_id: "EVIDENCE-003",
               status: "PASS",
-              reason: "The Linux filesystem model serialized 64 concurrent worker threads and eight independent same-host processes so exactly one attempt consumed the challenge and promoted the next policy generation; 100 injected process-interruption trials preserved the previous or fully promoted state.",
+              reason: "The Linux filesystem model serialized 64 concurrent worker threads and eight independent same-host processes so exactly one attempt consumed the challenge and promoted the next policy generation; 100 injected early-return checkpoint simulations preserved the previous or fully promoted state. These are not process-kill or physical power-cut tests.",
               source: {
                 expected_source_sha: $expected,
                 event_sha: $event,
@@ -154,7 +154,7 @@ jobs:
               non_claims: [
                 "This is a filesystem-backed contract model, not the production durable promotion database or policy gate.",
                 "Linux flock serialization was tested with concurrent worker threads and separate child processes on one runner; cross-host or distributed locking is not qualified.",
-                "Normal process-interruption tests on the runner filesystem are not equivalent to sudden physical power loss.",
+                "Injected early returns on the runner filesystem do not emulate a process kill, kernel crash, or sudden physical power loss.",
                 "No signer/device identity, trusted time, TUF metadata verification, TPM, firmware root of trust, QEMU or physical-device behavior is qualified."
               ],
               fixture: false
