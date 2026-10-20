@@ -50,8 +50,8 @@ jobs:
       - name: Validate PASS and NOT_RUN result receipt examples
         run: |
           set -euo pipefail
-          bash benchmarks/srq-v1/validate-result.sh benchmarks/srq-v1/fixtures/result-pass-static.example.json
-          bash benchmarks/srq-v1/validate-result.sh benchmarks/srq-v1/fixtures/result-not-run.example.json
+          bash benchmarks/srq-v1/validate-result.sh --allow-fixtures benchmarks/srq-v1/fixtures/result-pass-static.example.json
+          bash benchmarks/srq-v1/validate-result.sh --allow-fixtures benchmarks/srq-v1/fixtures/result-not-run.example.json
 
       - name: Exercise result receipt negative controls
         run: bash benchmarks/srq-v1/test-result-validator.sh
