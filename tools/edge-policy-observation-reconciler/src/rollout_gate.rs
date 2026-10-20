@@ -353,13 +353,22 @@ fn validate_plan(plan: &StagedRolloutPlan) -> Result<(), Vec<String>> {
 
     if !waves.is_empty() {
         let final_wave = *waves.keys().next_back().expect("non-empty waves");
-        for wave_index in 0..=final_wave {
-            let Some(targets) = waves.get(&wave_index) else {
-                errors.push(format!(
-                    "wave indices must be contiguous; missing wave {wave_index}"
-                ));
-                continue;
-            };
+        // Every wave must contain at least one target, so a valid final index
+        // can never be as large as the number of targets. Check this before
+        // iterating the index range to bound work on malformed plans.
+        if final_wave >= plan.targets.len() {
+            errors.push(
+                "wave index exceeds target count; wave indices must be contiguous from zero"
+                    .to_owned(),
+            );
+        } else {
+            for wave_index in 0..=final_wave {
+                let Some(targets) = waves.get(&wave_index) else {
+                    errors.push(format!(
+                        "wave indices must be contiguous; missing wave {wave_index}"
+                    ));
+                    continue;
+                };
             if targets.len() > plan.max_targets_per_wave {
                 errors.push(format!(
                     "wave {wave_index} has {} targets, over the configured limit {}",
@@ -378,6 +387,7 @@ fn validate_plan(plan: &StagedRolloutPlan) -> Result<(), Vec<String>> {
                     ));
                 }
             }
+        }
         }
     }
 
@@ -575,6 +585,18 @@ mod tests {
         assert_eq!(
             authorize_next_wave(&plan(), &observations, 1_100).expect("valid plan"),
             RolloutGateDecision::Complete
+        );
+    }
+
+    #[test]
+    fn malformed_extreme_wave_index_is_rejected_without_unbounded_iteration() {
+        let mut invalid = plan();
+        invalid.targets[0].wave_index = usize::MAX;
+        assert!(
+            authorize_next_wave(&invalid, &[], 1_100)
+                .expect_err("extreme wave index rejected")
+                .iter()
+                .any(|reason| reason.contains("wave index exceeds target count"))
         );
     }
 
