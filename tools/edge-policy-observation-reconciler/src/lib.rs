@@ -5,10 +5,10 @@
 
 #![forbid(unsafe_code)]
 
+pub mod adapter_capability;
 pub mod promotion_journal;
 pub mod replay_ledger;
 pub mod rollout_gate;
-pub mod adapter_capability;
 
 pub mod freshness;
 
