@@ -709,6 +709,28 @@ mod tests {
     }
 
     #[test]
+    fn durable_decision_must_bind_the_exact_immutable_deployment() {
+        let (intent, mut durable, challenge, boot) = base();
+        durable.deployment_id = PRIOR_NIX_DEPLOYMENT.into();
+        assert!(matches!(
+            reconcile(&intent, Some(&durable), Some(&challenge), Some(&boot)),
+            Reconciliation::Blocked(faults)
+                if faults.contains(&ReconciliationFault::DurableDeploymentMismatch)
+        ));
+    }
+
+    #[test]
+    fn post_commit_challenge_must_name_the_authorized_immutable_deployment() {
+        let (intent, durable, mut challenge, boot) = base();
+        challenge.expected_deployment_id = PRIOR_NIX_DEPLOYMENT.into();
+        assert!(matches!(
+            reconcile(&intent, Some(&durable), Some(&challenge), Some(&boot)),
+            Reconciliation::Blocked(faults)
+                if faults.contains(&ReconciliationFault::BootChallengeDeploymentMismatch)
+        ));
+    }
+
+    #[test]
     fn live_current_system_switch_does_not_substitute_for_the_booted_system() {
         let (intent, durable, challenge, mut boot) = base();
         boot.booted_deployment_id = NIX_DEPLOYMENT.into();
