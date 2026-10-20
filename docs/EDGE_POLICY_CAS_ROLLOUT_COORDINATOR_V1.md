@@ -25,12 +25,12 @@ Module: `tools/edge-policy-observation-reconciler/src/rollout_coordinator.rs`.
 `PolicyDeviceAdapter` implementations must provide:
 
 - A live effective-policy snapshot with target token, monotonically increasing generation, opaque revision token and stable SHA-256 of canonical policy bytes.
-- Atomic compare-and-apply that rejects stale generation/revision/digest expectations at the device/controller boundary.
+- An exclusive per-target lease held across the whole apply → probe → promote/rollback lifecycle, with renewals at critical stage boundaries. The lease must exclude all policy writers that could invalidate the final readback.
 - Effective-policy digest readback using exactly the same canonicalization contract as baseline and candidate policy artifacts.
 
 `IndependentPolicyProbe` must take the verifier's exact challenge bytes and return an observation receipt and run timestamps from a genuinely independent path. It must not infer successful traffic from the device command response. The coordinator creates the freshness envelope from these returned artifacts; the envelope is byte binding, not producer authentication.
 
-Adapters that cannot enforce an atomic generation/revision compare-and-swap or provide stable effective-policy digests are refused before any writes. They may still be supported by a future explicit manual/serialized mode, but that mode must not claim race-free automatic promotion.
+Adapters that cannot guarantee an exclusive per-target lease, atomic generation/revision compare-and-swap, or stable effective-policy digests are refused before any writes. The coordinator holds the lease guard through final readback and journal promotion; an adapter must not claim exclusivity if other controller or operator paths can bypass the lock. They may still be supported by a future explicit manual/serialized mode, but that mode must not claim race-free automatic promotion.
 
 ## Recovery behavior
 
@@ -60,7 +60,8 @@ These are proposed qualification gates, not achieved performance results.
 | Benchmark | Procedure | Initial target |
 |---|---|---|
 | Capability refusal | Try no-CAS, unstable-digest, wrong-target and malformed revision adapters | Zero writes before refusing an unsafe adapter |
-| Stale-write race | Two writers use the same snapshot/generation; interleave writes deterministically and probabilistically | Exactly one conditional update succeeds; loser re-reads and reconciles |
+| Stale-write race | Two writers use the same snapshot/generation; interleave writes deterministically and probabilistically while the target lease is held | Exactly one conditional update succeeds; non-holder writes are blocked or rejected; loser re-reads and reconciles |
+| Lease failure | Expire or revoke the target lease before apply, before probe, and before promotion | No stage proceeds without successful renewal; rollback remains durable if lease reacquisition fails |
 | Apply acknowledgement ambiguity | Simulate timeout before mutation, after mutation and after readback loss | Never infer state from acknowledgement; recover by effective-state readback |
 | Evidence correctness | Mutate challenge target/generation, baseline/candidate digest, receipt hash, timestamps and corpus | Zero invalid promotions, with positive controls passing |
 | Rollback | Inject probe failure, journal write failure and apply timeout; test candidate, baseline and third-party policy readback | No false rollback successes; never overwrite unknown digest |
