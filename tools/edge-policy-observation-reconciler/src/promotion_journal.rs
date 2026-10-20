@@ -124,7 +124,9 @@ impl PromotionState {
             "promoted" => Ok(Self::Promoted),
             "rollback_intent" => Ok(Self::RollbackIntent),
             "rolled_back" => Ok(Self::RolledBack),
-            _ => Err(format!("unknown promotion state {value:?}; refusing to recover")),
+            _ => Err(format!(
+                "unknown promotion state {value:?}; refusing to recover"
+            )),
         }
     }
 
@@ -255,7 +257,9 @@ impl PromotionJournal {
                 && existing.candidate_policy_sha256 == spec.candidate_policy_sha256
                 && existing.created_at_unix_ms == spec.created_at_unix_ms;
             if !identical {
-                return Err("operation ID already exists with different immutable inputs".to_owned());
+                return Err(
+                    "operation ID already exists with different immutable inputs".to_owned(),
+                );
             }
             transaction
                 .commit()
@@ -325,7 +329,8 @@ impl PromotionJournal {
         operation_id: &str,
         now_unix_ms: u64,
     ) -> Result<PromotionOperation, String> {
-        let operation = self.get(operation_id)?
+        let operation = self
+            .get(operation_id)?
             .ok_or_else(|| format!("unknown operation {operation_id:?}"))?;
         match operation.state {
             PromotionState::ApplyIntent => return Ok(operation),
@@ -344,15 +349,18 @@ impl PromotionJournal {
         now_unix_ms: u64,
     ) -> Result<PromotionOperation, String> {
         validate_digest(effective_policy_sha256, "effective_policy_sha256")?;
-        let operation = self.get(operation_id)?
+        let operation = self
+            .get(operation_id)?
             .ok_or_else(|| format!("unknown operation {operation_id:?}"))?;
         if effective_policy_sha256 != operation.candidate_policy_sha256 {
-            return Err("effective policy digest does not match the candidate; do not mark applied".to_owned());
+            return Err(
+                "effective policy digest does not match the candidate; do not mark applied"
+                    .to_owned(),
+            );
         }
         match operation.state {
             PromotionState::Applied
-                if operation.observed_policy_sha256.as_deref()
-                    == Some(effective_policy_sha256) =>
+                if operation.observed_policy_sha256.as_deref() == Some(effective_policy_sha256) =>
             {
                 return Ok(operation);
             }
@@ -377,7 +385,9 @@ impl PromotionJournal {
             )
             .map_err(|error| format!("cannot persist applied-policy readback: {error}"))?;
         if changed != 1 {
-            return Err("promotion state changed concurrently; refusing applied transition".to_owned());
+            return Err(
+                "promotion state changed concurrently; refusing applied transition".to_owned(),
+            );
         }
         let updated = get_operation_conn(&transaction, operation_id)?
             .ok_or_else(|| "applied operation disappeared before commit".to_owned())?;
@@ -402,7 +412,9 @@ impl PromotionJournal {
         let observed_at = to_sql_integer(evidence.observed_at_unix_ms, "observation timestamp")?;
         let expires_at = to_sql_integer(evidence.expires_at_unix_ms, "evidence expiry")?;
         if observed_at > now || now > expires_at || expires_at < observed_at {
-            return Err("independent evidence is future-dated or outside its freshness window".to_owned());
+            return Err(
+                "independent evidence is future-dated or outside its freshness window".to_owned(),
+            );
         }
 
         let mut connection = connect(&self.path)?;
@@ -444,7 +456,9 @@ impl PromotionJournal {
             )
             .map_err(|error| format!("cannot persist verification record: {error}"))?;
         if changed != 1 {
-            return Err("promotion state changed concurrently; refusing verification transition".to_owned());
+            return Err(
+                "promotion state changed concurrently; refusing verification transition".to_owned(),
+            );
         }
         transaction
             .commit()
@@ -466,7 +480,9 @@ impl PromotionJournal {
     ) -> Result<PromotionOperation, String> {
         validate_digest(effective_policy_sha256, "effective_policy_sha256")?;
         if permit.session_id != self.session_id {
-            return Err("promotion permit belongs to a different verifier process session".to_owned());
+            return Err(
+                "promotion permit belongs to a different verifier process session".to_owned(),
+            );
         }
         if now_unix_ms > permit.expires_at_unix_ms {
             return Err("promotion evidence expired before commit".to_owned());
@@ -484,10 +500,16 @@ impl PromotionJournal {
         if operation.candidate_policy_sha256 != effective_policy_sha256
             || operation.observed_policy_sha256.as_deref() != Some(effective_policy_sha256)
         {
-            return Err("promotion readback does not match the verified candidate policy".to_owned());
+            return Err(
+                "promotion readback does not match the verified candidate policy".to_owned(),
+            );
         }
-        if operation.evidence_expires_at_unix_ms.is_none_or(|expiry| now_unix_ms > expiry)
-            || operation.evidence_observed_at_unix_ms.is_none_or(|observed| observed > now_unix_ms)
+        if operation
+            .evidence_expires_at_unix_ms
+            .is_none_or(|expiry| now_unix_ms > expiry)
+            || operation
+                .evidence_observed_at_unix_ms
+                .is_none_or(|observed| observed > now_unix_ms)
         {
             return Err("persisted evidence is outside its valid time window".to_owned());
         }
@@ -499,7 +521,9 @@ impl PromotionJournal {
             )
             .map_err(|error| format!("cannot read verification session binding: {error}"))?;
         if session.as_deref() != Some(self.session_id.as_str()) {
-            return Err("verification session binding does not match the current process".to_owned());
+            return Err(
+                "verification session binding does not match the current process".to_owned(),
+            );
         }
         let changed = transaction
             .execute(
@@ -534,7 +558,8 @@ impl PromotionJournal {
         operation_id: &str,
         now_unix_ms: u64,
     ) -> Result<PromotionOperation, String> {
-        let operation = self.get(operation_id)?
+        let operation = self
+            .get(operation_id)?
             .ok_or_else(|| format!("unknown operation {operation_id:?}"))?;
         if operation.state == PromotionState::RollbackIntent {
             return Ok(operation);
@@ -543,7 +568,10 @@ impl PromotionJournal {
             operation.state,
             PromotionState::ApplyIntent | PromotionState::Applied | PromotionState::Verified
         ) {
-            return Err(format!("cannot request rollback from state {:?}", operation.state));
+            return Err(format!(
+                "cannot request rollback from state {:?}",
+                operation.state
+            ));
         }
         self.update_state(
             operation_id,
@@ -562,13 +590,19 @@ impl PromotionJournal {
         now_unix_ms: u64,
     ) -> Result<PromotionOperation, String> {
         validate_digest(effective_policy_sha256, "effective_policy_sha256")?;
-        let operation = self.get(operation_id)?
+        let operation = self
+            .get(operation_id)?
             .ok_or_else(|| format!("unknown operation {operation_id:?}"))?;
         if operation.state != PromotionState::RollbackIntent {
-            return Err(format!("cannot record rollback from state {:?}", operation.state));
+            return Err(format!(
+                "cannot record rollback from state {:?}",
+                operation.state
+            ));
         }
         if effective_policy_sha256 != operation.baseline_policy_sha256 {
-            return Err("rollback readback does not match the exact baseline policy digest".to_owned());
+            return Err(
+                "rollback readback does not match the exact baseline policy digest".to_owned(),
+            );
         }
         let mut connection = connect(&self.path)?;
         let transaction = connection
@@ -623,7 +657,8 @@ impl PromotionJournal {
             .map_err(|error| format!("cannot list recoverable operations: {error}"))?;
         let mut recoverable = Vec::new();
         for row in rows {
-            let operation = row.map_err(|error| format!("invalid promotion operation row: {error}"))?;
+            let operation =
+                row.map_err(|error| format!("invalid promotion operation row: {error}"))?;
             let action = match operation.state {
                 PromotionState::Prepared => RecoveryAction::ApplyOrAbandonPreparedOperation,
                 PromotionState::ApplyIntent => RecoveryAction::InspectEffectivePolicyBeforeRetry,
@@ -785,7 +820,11 @@ fn promotion_operation_from_row(row: &Row<'_>) -> rusqlite::Result<PromotionOper
         operation_id: row.get(0)?,
         target_token: row.get(1)?,
         generation: u64::try_from(generation).map_err(|error| {
-            rusqlite::Error::FromSqlConversionFailure(2, rusqlite::types::Type::Integer, Box::new(error))
+            rusqlite::Error::FromSqlConversionFailure(
+                2,
+                rusqlite::types::Type::Integer,
+                Box::new(error),
+            )
         })?,
         baseline_policy_sha256: row.get(3)?,
         candidate_policy_sha256: row.get(4)?,
@@ -793,14 +832,25 @@ fn promotion_operation_from_row(row: &Row<'_>) -> rusqlite::Result<PromotionOper
             rusqlite::Error::FromSqlConversionFailure(
                 5,
                 rusqlite::types::Type::Text,
-                Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, "unknown promotion state")),
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "unknown promotion state",
+                )),
             )
         })?,
         created_at_unix_ms: u64::try_from(created).map_err(|error| {
-            rusqlite::Error::FromSqlConversionFailure(6, rusqlite::types::Type::Integer, Box::new(error))
+            rusqlite::Error::FromSqlConversionFailure(
+                6,
+                rusqlite::types::Type::Integer,
+                Box::new(error),
+            )
         })?,
         updated_at_unix_ms: u64::try_from(updated).map_err(|error| {
-            rusqlite::Error::FromSqlConversionFailure(7, rusqlite::types::Type::Integer, Box::new(error))
+            rusqlite::Error::FromSqlConversionFailure(
+                7,
+                rusqlite::types::Type::Integer,
+                Box::new(error),
+            )
         })?,
         observed_policy_sha256,
         challenge_id: row.get(9)?,
@@ -847,7 +897,9 @@ fn validate_target_token(value: &str) -> Result<(), String> {
             .bytes()
             .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
     {
-        return Err("target_token must match the target- prefix and lowercase token alphabet".to_owned());
+        return Err(
+            "target_token must match the target- prefix and lowercase token alphabet".to_owned(),
+        );
     }
     Ok(())
 }
@@ -858,13 +910,16 @@ fn validate_digest(value: &str, label: &str) -> Result<(), String> {
             .bytes()
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
     {
-        return Err(format!("{label} must be 64 lowercase hexadecimal characters"));
+        return Err(format!(
+            "{label} must be 64 lowercase hexadecimal characters"
+        ));
     }
     Ok(())
 }
 
 fn to_sql_integer(value: u64, label: &str) -> Result<i64, String> {
-    i64::try_from(value).map_err(|error| format!("{label} exceeds the SQLite integer range: {error}"))
+    i64::try_from(value)
+        .map_err(|error| format!("{label} exceeds the SQLite integer range: {error}"))
 }
 
 fn ensure_private_database_file(path: &Path) -> Result<(), String> {
@@ -880,7 +935,10 @@ fn ensure_private_database_file(path: &Path) -> Result<(), String> {
             {
                 use std::os::unix::fs::PermissionsExt;
                 if metadata.permissions().mode() & 0o077 != 0 {
-                    return Err("promotion journal database must not grant group or other permissions".to_owned());
+                    return Err(
+                        "promotion journal database must not grant group or other permissions"
+                            .to_owned(),
+                    );
                 }
             }
             Ok(())
@@ -907,7 +965,10 @@ fn ensure_private_database_file(path: &Path) -> Result<(), String> {
                 )),
             }
         }
-        Err(error) => Err(format!("cannot inspect promotion journal path {}: {error}", path.display())),
+        Err(error) => Err(format!(
+            "cannot inspect promotion journal path {}: {error}",
+            path.display()
+        )),
     }
 }
 
@@ -995,8 +1056,12 @@ mod tests {
 
     fn prepared_applied(journal: &PromotionJournal) {
         journal.prepare(&spec(1)).expect("prepare");
-        journal.record_apply_intent("operation-policy-0001", 110).expect("intent");
-        journal.record_applied("operation-policy-0001", CANDIDATE, 120).expect("readback");
+        journal
+            .record_apply_intent("operation-policy-0001", 110)
+            .expect("intent");
+        journal
+            .record_applied("operation-policy-0001", CANDIDATE, 120)
+            .expect("readback");
     }
 
     #[test]
@@ -1005,12 +1070,17 @@ mod tests {
         let journal = PromotionJournal::open(&path).expect("open");
         journal.prepare(&spec(1)).expect("prepare");
         assert!(
-            journal.record_applied("operation-policy-0001", CANDIDATE, 120)
+            journal
+                .record_applied("operation-policy-0001", CANDIDATE, 120)
                 .expect_err("must require intent")
                 .contains("cannot record applied policy")
         );
         assert_eq!(
-            journal.get("operation-policy-0001").expect("read").expect("row").state,
+            journal
+                .get("operation-policy-0001")
+                .expect("read")
+                .expect("row")
+                .state,
             PromotionState::Prepared
         );
         drop(journal);
@@ -1023,7 +1093,8 @@ mod tests {
         let journal = PromotionJournal::open(&path).expect("open");
         prepared_applied(&journal);
         assert!(
-            journal.record_verified("operation-policy-0001", &evidence(130, 180), 181)
+            journal
+                .record_verified("operation-policy-0001", &evidence(130, 180), 181)
                 .expect_err("expired evidence")
                 .contains("outside its freshness window")
         );
@@ -1031,15 +1102,19 @@ mod tests {
             .record_verified("operation-policy-0001", &evidence(130, 180), 150)
             .expect("fresh independent evidence");
         assert!(
-            journal.promote(&permit, BASELINE, 160)
+            journal
+                .promote(&permit, BASELINE, 160)
                 .expect_err("changed policy")
                 .contains("does not match")
         );
-        let promoted = journal.promote(&permit, CANDIDATE, 160).expect("promote exact candidate");
+        let promoted = journal
+            .promote(&permit, CANDIDATE, 160)
+            .expect("promote exact candidate");
         assert_eq!(promoted.state, PromotionState::Promoted);
         assert_eq!(promoted.observed_policy_sha256.as_deref(), Some(CANDIDATE));
         assert!(
-            journal.promote(&permit, CANDIDATE, 160)
+            journal
+                .promote(&permit, CANDIDATE, 160)
                 .expect_err("permit is one-use")
                 .contains("cannot promote")
         );
@@ -1056,13 +1131,20 @@ mod tests {
             .record_verified("operation-policy-0001", &evidence(130, 300), 150)
             .expect("verify");
         assert_eq!(
-            journal.get("operation-policy-0001").expect("read").expect("row").state,
+            journal
+                .get("operation-policy-0001")
+                .expect("read")
+                .expect("row")
+                .state,
             PromotionState::Verified
         );
         drop(journal);
 
         let reopened = PromotionJournal::open(&path).expect("reopen");
-        let operation = reopened.get("operation-policy-0001").expect("read").expect("row");
+        let operation = reopened
+            .get("operation-policy-0001")
+            .expect("read")
+            .expect("row");
         assert_eq!(operation.state, PromotionState::Applied);
         assert!(operation.challenge_id.is_none());
         assert_eq!(
@@ -1070,7 +1152,8 @@ mod tests {
             RecoveryAction::RequireFreshChallengeAndIndependentProbe
         );
         assert!(
-            reopened.promote(&old_permit, CANDIDATE, 160)
+            reopened
+                .promote(&old_permit, CANDIDATE, 160)
                 .expect_err("previous process permit is invalid")
                 .contains("different verifier process session")
         );
@@ -1078,7 +1161,10 @@ mod tests {
             .record_verified("operation-policy-0001", &evidence(170, 300), 180)
             .expect("fresh challenge in new session");
         assert_eq!(
-            reopened.promote(&new_permit, CANDIDATE, 190).expect("promote").state,
+            reopened
+                .promote(&new_permit, CANDIDATE, 190)
+                .expect("promote")
+                .state,
             PromotionState::Promoted
         );
         drop(reopened);
@@ -1091,13 +1177,18 @@ mod tests {
         {
             let journal = PromotionJournal::open(&path).expect("open");
             journal.prepare(&spec(1)).expect("prepare");
-            journal.record_apply_intent("operation-policy-0001", 110).expect("intent");
+            journal
+                .record_apply_intent("operation-policy-0001", 110)
+                .expect("intent");
         }
         let reopened = PromotionJournal::open(&path).expect("reopen");
         let recovery = reopened.list_recoverable().expect("list");
         assert_eq!(recovery.len(), 1);
         assert_eq!(recovery[0].operation.state, PromotionState::ApplyIntent);
-        assert_eq!(recovery[0].action, RecoveryAction::InspectEffectivePolicyBeforeRetry);
+        assert_eq!(
+            recovery[0].action,
+            RecoveryAction::InspectEffectivePolicyBeforeRetry
+        );
         drop(reopened);
         remove_database(&path);
     }
@@ -1107,9 +1198,12 @@ mod tests {
         let path = path();
         let journal = PromotionJournal::open(&path).expect("open");
         prepared_applied(&journal);
-        journal.request_rollback("operation-policy-0001", 130).expect("rollback intent");
+        journal
+            .request_rollback("operation-policy-0001", 130)
+            .expect("rollback intent");
         assert!(
-            journal.record_rolled_back("operation-policy-0001", CANDIDATE, 140)
+            journal
+                .record_rolled_back("operation-policy-0001", CANDIDATE, 140)
                 .expect_err("wrong baseline")
                 .contains("exact baseline")
         );
@@ -1117,7 +1211,12 @@ mod tests {
             .record_rolled_back("operation-policy-0001", BASELINE, 150)
             .expect("baseline restored");
         assert_eq!(rolled_back.state, PromotionState::RolledBack);
-        assert!(journal.list_recoverable().expect("no live operations").is_empty());
+        assert!(
+            journal
+                .list_recoverable()
+                .expect("no live operations")
+                .is_empty()
+        );
         drop(journal);
         remove_database(&path);
     }
@@ -1136,13 +1235,23 @@ mod tests {
             created_at_unix_ms: 101,
         };
         assert!(
-            journal.prepare(&another).expect_err("active operation")
+            journal
+                .prepare(&another)
+                .expect_err("active operation")
                 .contains("non-terminal operation")
         );
-        journal.record_apply_intent("operation-policy-0001", 110).expect("intent");
-        journal.record_applied("operation-policy-0001", CANDIDATE, 120).expect("applied");
-        journal.request_rollback("operation-policy-0001", 130).expect("rollback intent");
-        journal.record_rolled_back("operation-policy-0001", BASELINE, 140).expect("rollback");
+        journal
+            .record_apply_intent("operation-policy-0001", 110)
+            .expect("intent");
+        journal
+            .record_applied("operation-policy-0001", CANDIDATE, 120)
+            .expect("applied");
+        journal
+            .request_rollback("operation-policy-0001", 130)
+            .expect("rollback intent");
+        journal
+            .record_rolled_back("operation-policy-0001", BASELINE, 140)
+            .expect("rollback");
         let reused_generation = PromotionSpec {
             operation_id: "operation-policy-0002",
             target_token: "target-policy-lab",
@@ -1152,7 +1261,9 @@ mod tests {
             created_at_unix_ms: 200,
         };
         assert!(
-            journal.prepare(&reused_generation).expect_err("used generation")
+            journal
+                .prepare(&reused_generation)
+                .expect_err("used generation")
                 .contains("not greater")
         );
         drop(journal);
