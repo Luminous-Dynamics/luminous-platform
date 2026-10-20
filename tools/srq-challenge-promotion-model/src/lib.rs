@@ -524,7 +524,7 @@ mod tests {
         }
 
         fs::write(sandbox.0.join("start-gate"), b"go").expect("release concurrent workers");
-        for child in children {
+        for mut child in children {
             assert!(child.wait().expect("wait for worker process").success());
         }
 
