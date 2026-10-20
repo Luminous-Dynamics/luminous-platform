@@ -198,12 +198,14 @@ jobs:
           grep -Fq 'PASS: stale-generation assertion rolls back policy, decision and challenge writes' "$reference_log"
           grep -Fq 'PASS: duplicate challenge replay is rejected with no partial state' "$reference_log"
           grep -Fq 'PASS: mismatched target/generation challenge binding fails closed without partial state' "$reference_log"
+          grep -Fq 'PASS: mismatched consumed generation fails closed without partial state' "$reference_log"
+          grep -Fq 'PASS: active state cannot reference a decision at a different generation' "$reference_log"
           grep -Fq 'PASS: exactly one durable promotion across 64 independent writer processes' "$reference_log"
           grep -Fq 'PASS: SIGKILL at after_decision_insert rolls back all uncommitted writes' "$reference_log"
           grep -Fq 'PASS: SIGKILL at after_challenge_insert rolls back all uncommitted writes' "$reference_log"
           grep -Fq 'PASS: SIGKILL before SQLite COMMIT rolls back decision, challenge and target state' "$reference_log"
           grep -Fq 'PASS: SIGKILL after SQLite COMMIT preserves one discoverable outcome by decision ID' "$reference_log"
-          grep -Eq '^sqlite_version=[0-9]+[.][0-9]+([.][0-9]+)? journal_mode=wal synchronous=FULL cases=9 process_contenders=64 commit_sigkill_boundaries=4 commit_sigkill_trials=100$' "$reference_log"
+          grep -Eq '^sqlite_version=[0-9]+[.][0-9]+([.][0-9]+)? journal_mode=wal synchronous=FULL cases=11 process_contenders=64 commit_sigkill_boundaries=4 commit_sigkill_trials=100$' "$reference_log"
           test "$(grep -c '^race_trial=' "$reference_log")" -eq 64
           grep -Fq 'PASS: 100 SQLite SIGKILL trials across four transaction boundaries' "$reference_log"
           test "$(grep -c '^PASS: SIGKILL at after_decision_insert rolls back all uncommitted writes' "$reference_log")" -eq 25
