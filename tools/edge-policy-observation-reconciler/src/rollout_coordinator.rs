@@ -256,7 +256,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         }
 
         // Never trust the apply acknowledgement as proof of installation.
-        let applied_snapshot = match device.read_effective_policy() {
+        let applied_snapshot = match lease.read_effective_policy() {
             Ok(snapshot) => snapshot,
             Err(error) => {
                 return Err(self.with_rollback_result(
@@ -725,7 +725,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 mod tests {
     use super::{
         AdapterCapabilities, ApplyAcknowledgement, IndependentPolicyProbe, PolicyDeviceAdapter,
-        PolicyRolloutCoordinator, PolicySnapshot, ProbeOutput, RolloutRequest,
+        PolicyDeviceLease, PolicyRolloutCoordinator, PolicySnapshot, ProbeOutput, RolloutRequest,
     };
     use crate::promotion_journal::{PromotionJournal, PromotionSpec, PromotionState};
     use crate::replay_ledger::SqliteReplayLedger;
@@ -782,6 +782,7 @@ mod tests {
                         effective_policy_sha256: digest,
                     },
                     capabilities: AdapterCapabilities {
+                        exclusive_target_lease: true,
                         atomic_generation_revision_cas: true,
                         stable_effective_policy_digest: true,
                     },
@@ -794,18 +795,43 @@ mod tests {
         }
     }
 
+    struct FakeDeviceLease<'a> {
+        device: &'a mut FakeDevice,
+    }
+
     impl PolicyDeviceAdapter for FakeDevice {
+        type Lease<'a> = FakeDeviceLease<'a> where Self: 'a;
+
+        fn acquire_target_lease<'a>(
+            &'a mut self,
+            target_token: &str,
+        ) -> Result<Self::Lease<'a>, String> {
+            if target_token != self.snapshot.target_token {
+                return Err("target lease requested for a different target".to_owned());
+            }
+            Ok(FakeDeviceLease { device: self })
+        }
+    }
+
+    impl PolicyDeviceLease for FakeDeviceLease<'_> {
         fn capabilities(&self) -> AdapterCapabilities {
-            self.capabilities
+            self.device.capabilities
+        }
+
+        fn renew(&mut self) -> Result<(), String> {
+            if !self.device.capabilities.exclusive_target_lease {
+                return Err("exclusive target lease is unavailable".to_owned());
+            }
+            Ok(())
         }
 
         fn read_effective_policy(&mut self) -> Result<PolicySnapshot, String> {
-            if self.unexpected_on_readback {
-                let mut snapshot = self.snapshot.clone();
+            if self.device.unexpected_on_readback {
+                let mut snapshot = self.device.snapshot.clone();
                 snapshot.effective_policy_sha256 = "e".repeat(64);
                 return Ok(snapshot);
             }
-            Ok(self.snapshot.clone())
+            Ok(self.device.snapshot.clone())
         }
 
         fn compare_and_apply(
@@ -813,25 +839,24 @@ mod tests {
             expected: &PolicySnapshot,
             candidate: &super::PolicyArtifact,
         ) -> Result<ApplyAcknowledgement, String> {
-            if !self.capabilities.atomic_generation_revision_cas {
+            if !self.device.capabilities.atomic_generation_revision_cas {
                 return Err("atomic CAS unsupported".to_owned());
             }
-            if &self.snapshot != expected {
+            if &self.device.snapshot != expected {
                 return Err("stale revision/generation/digest".to_owned());
             }
-            if candidate.target_token != self.snapshot.target_token
+            if candidate.target_token != self.device.snapshot.target_token
                 || candidate.generation <= expected.generation
                 || candidate.policy_sha256 != crate::sha256_hex(&candidate.bytes)
             {
                 return Err("candidate contract mismatch".to_owned());
             }
-            self.writes += 1;
-            if self.fail_apply {
-                // Intentionally model ambiguous failure: a timeout might occur
-                // after actuation, so do not assume the policy stayed unchanged.
+            self.device.writes += 1;
+            if self.device.fail_apply {
+                // Model a command failure before mutation.
                 return Err("simulated command timeout before mutation".to_owned());
             }
-            self.snapshot = PolicySnapshot {
+            self.device.snapshot = PolicySnapshot {
                 target_token: candidate.target_token.clone(),
                 generation: candidate.generation,
                 revision_token: format!("revision-{}", candidate.generation),
