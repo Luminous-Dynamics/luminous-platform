@@ -74,15 +74,18 @@ impl SqliteReplayLedger {
         connection
             .execute_batch("PRAGMA journal_mode = WAL;")
             .map_err(|error| format!("cannot enable SQLite WAL mode: {error}"))?;
-        connection.execute_batch(CREATE_TABLE).or_else(|error| {
-            // An existing table is accepted only if schema version and shape
-            // checks below prove it matches this contract.
-            if table_exists(&connection)? {
-                Ok(())
-            } else {
-                Err(error)
-            }
-        }).map_err(|error| format!("cannot initialize replay ledger schema: {error}"))?;
+        connection
+            .execute_batch(CREATE_TABLE)
+            .or_else(|error| {
+                // An existing table is accepted only if schema version and shape
+                // checks below prove it matches this contract.
+                if table_exists(&connection)? {
+                    Ok(())
+                } else {
+                    Err(error)
+                }
+            })
+            .map_err(|error| format!("cannot initialize replay ledger schema: {error}"))?;
 
         let user_version: i64 = connection
             .query_row("PRAGMA user_version;", [], |row| row.get(0))
@@ -249,7 +252,8 @@ pub fn verify_and_consume_durable(
 
     // The parent verifier report was produced by a throwaway in-memory guard;
     // replace that description so callers see the actual persistence guarantee.
-    report["replay_guard"] = Value::String("sqlite_durable_transactional_nonce_consumed".to_owned());
+    report["replay_guard"] =
+        Value::String("sqlite_durable_transactional_nonce_consumed".to_owned());
     report["durable_replay_ledger"] = Value::String("commit_confirmed_before_return".to_owned());
     Ok(report)
 }
@@ -301,7 +305,10 @@ fn verify_schema(connection: &Connection) -> Result<(), String> {
         ("target_token".to_owned(), "TEXT".to_owned(), 1, 0),
     ];
     if actual != expected {
-        return Err("replay ledger table structure or nonce primary key does not match the expected schema".to_owned());
+        return Err(
+            "replay ledger table structure or nonce primary key does not match the expected schema"
+                .to_owned(),
+        );
     }
     Ok(())
 }
@@ -318,7 +325,9 @@ fn ensure_private_database_file(path: &Path) -> Result<(), String> {
         {
             use std::os::unix::fs::PermissionsExt;
             if metadata.permissions().mode() & 0o077 != 0 {
-                return Err("replay ledger database must not grant group or other permissions".to_owned());
+                return Err(
+                    "replay ledger database must not grant group or other permissions".to_owned(),
+                );
             }
         }
         return Ok(());
@@ -351,7 +360,9 @@ fn validate_event(event: &ReplayConsumption<'_>) -> Result<(), String> {
         return Err("nonce must be 32 cryptographically random bytes encoded as 64 lowercase hex characters".to_owned());
     }
     if !is_identifier(event.challenge_id) {
-        return Err("challenge_id must be a non-empty ASCII identifier of at most 80 characters".to_owned());
+        return Err(
+            "challenge_id must be a non-empty ASCII identifier of at most 80 characters".to_owned(),
+        );
     }
     if !is_lower_hex_digest(event.receipt_sha256) {
         return Err("receipt_sha256 must be 64 lowercase hexadecimal characters".to_owned());
@@ -370,7 +381,9 @@ fn validate_event(event: &ReplayConsumption<'_>) -> Result<(), String> {
             .bytes()
             .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
     {
-        return Err("target_token must match the target- prefix and lowercase token alphabet".to_owned());
+        return Err(
+            "target_token must match the target- prefix and lowercase token alphabet".to_owned(),
+        );
     }
     Ok(())
 }
@@ -503,8 +516,9 @@ mod tests {
     fn existing_database_with_changed_schema_is_rejected() {
         let path = database_path();
         let connection = rusqlite::Connection::open(&path).expect("make bad database");
-        connection.execute_batch(
-            "CREATE TABLE consumed_challenges (
+        connection
+            .execute_batch(
+                "CREATE TABLE consumed_challenges (
                 nonce_sha256 TEXT NOT NULL,
                 challenge_id TEXT NOT NULL,
                 consumed_at_unix_ms INTEGER NOT NULL,
@@ -513,7 +527,8 @@ mod tests {
                 target_token TEXT NOT NULL
             );
             PRAGMA user_version = 1;",
-        ).expect("create invalid schema");
+            )
+            .expect("create invalid schema");
         drop(connection);
 
         #[cfg(unix)]
@@ -538,11 +553,13 @@ mod tests {
         ledger.consume(&event(nonce)).expect("consume nonce");
 
         let raw = rusqlite::Connection::open(&path).expect("inspect database");
-        let (stored_digest, stored_nonce_length): (String, i64) = raw.query_row(
-            "SELECT nonce_sha256, length(nonce_sha256) FROM consumed_challenges LIMIT 1;",
-            [],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        ).expect("stored nonce digest");
+        let (stored_digest, stored_nonce_length): (String, i64) = raw
+            .query_row(
+                "SELECT nonce_sha256, length(nonce_sha256) FROM consumed_challenges LIMIT 1;",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .expect("stored nonce digest");
         assert_eq!(stored_digest, crate::sha256_hex(nonce.as_bytes()));
         assert_eq!(stored_nonce_length, 64);
         drop(raw);
