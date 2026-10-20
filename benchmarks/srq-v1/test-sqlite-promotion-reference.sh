@@ -128,7 +128,9 @@ race_db="$tmp/race.sqlite"
 init_db "$race_db"
 race_attempt() {
   local db="$1" attempt="$2" decision_id="decision-race-$2"
-  sqlite3 -batch -bail "$db" <<SQL
+  local started_ns finished_ns elapsed_ns outcome
+  started_ns="$(date +%s%N)"
+  if sqlite3 -batch -bail "$db" <<SQL
 PRAGMA foreign_keys=ON;
 PRAGMA busy_timeout=10000;
 PRAGMA synchronous=FULL;
@@ -149,6 +151,15 @@ UPDATE target_policy_state
 INSERT INTO assert_one_change SELECT changes();
 COMMIT;
 SQL
+  then
+    outcome="committed"
+  else
+    outcome="rejected"
+  fi
+  finished_ns="$(date +%s%N)"
+  elapsed_ns=$((finished_ns - started_ns))
+  printf 'race_result %s %s\n' "$outcome" "$elapsed_ns"
+  [[ "$outcome" == "committed" ]]
 }
 pids=()
 for attempt in $(seq 1 64); do
@@ -171,6 +182,42 @@ done
 [[ "$(sqlite3 -batch "$race_db" "SELECT count(*) FROM challenge_consumptions WHERE target_id='target-1' AND challenge_id='challenge-race';")" == "1" ]] || fail "race consumed challenge more than once"
 [[ "$(sqlite3 -batch "$race_db" "PRAGMA integrity_check;")" == "ok" ]] || fail "SQLite integrity_check failed after race"
 echo "PASS: exactly one durable promotion across 64 independent writer processes"
+
+# Preserve a simple latency distribution for this runner class. These numbers
+# are exploratory, not a baseline comparison; use matched hardware and repeated
+# runs before publishing performance claims.
+all_latency="$tmp/race-all-latency-ns.txt"
+rejected_latency="$tmp/race-rejected-latency-ns.txt"
+committed_latency="$tmp/race-committed-latency-ns.txt"
+: > "$all_latency"
+: > "$rejected_latency"
+: > "$committed_latency"
+for attempt in $(seq 1 64); do
+  log="$tmp/race-$attempt.log"
+  awk '$1 == "race_result" { print $3 }' "$log" >> "$all_latency"
+  awk '$1 == "race_result" && $2 == "rejected" { print $3 }' "$log" >> "$rejected_latency"
+  awk '$1 == "race_result" && $2 == "committed" { print $3 }' "$log" >> "$committed_latency"
+done
+sort -n -o "$all_latency" "$all_latency"
+sort -n -o "$rejected_latency" "$rejected_latency"
+percentile_ns() {
+  local file="$1" percentile="$2" count index
+  count="$(wc -l < "$file")"
+  ((count > 0)) || { echo "NA"; return 0; }
+  index=$(((percentile * count + 99) / 100))
+  ((index > 0)) || index=1
+  sed -n "${index}p" "$file"
+}
+all_p50="$(percentile_ns "$all_latency" 50)"
+all_p95="$(percentile_ns "$all_latency" 95)"
+all_p99="$(percentile_ns "$all_latency" 99)"
+reject_p50="$(percentile_ns "$rejected_latency" 50)"
+reject_p95="$(percentile_ns "$rejected_latency" 95)"
+reject_p99="$(percentile_ns "$rejected_latency" 99)"
+winner_ns="$(awk 'NR == 1 { print $1 }' "$committed_latency")"
+printf 'race_latency_ns all_p50=%s all_p95=%s all_p99=%s rejected_p50=%s rejected_p95=%s rejected_p99=%s winner=%s\n' \
+  "$all_p50" "$all_p95" "$all_p99" "$reject_p50" "$reject_p95" "$reject_p99" "$winner_ns"
+printf 'host_os=%s architecture=%s filesystem=%s\n' "$(uname -sr)" "$(uname -m)" "$(stat -f -c %T "$tmp")"
 
 # Publish enough execution identity to aid later signed-bundle correlation.
 sqlite_version="$(sqlite3 --version | awk '{print $1}')"
