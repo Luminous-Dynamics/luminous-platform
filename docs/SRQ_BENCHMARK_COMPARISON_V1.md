@@ -98,3 +98,20 @@ The SQLite reference harness has passed four GitHub-hosted runner executions:
 These are per-contender script elapsed times, including CLI/process startup and lock waiting; they are not pure database commit latency. The spread is evidence of runner scheduling noise, not a SQLite performance flaw or proof of any superiority. A defensible comparison still needs a fixed machine/storage tuple, repeated randomized order, raw per-trial values, and the same fault schedule against the production Luminous adapter.
 
 The latest tested code also binds the SQLite log and process-kill log into the deterministic SRQ archive manifest. The PR's contract tests check the fixed inventory and both digests, plus exact workflow-file SHA matching. The real GitHub/Sigstore attestation has not been minted or verified because the trusted-main job is skipped on PR events. Overall SRQ remains NOT_QUALIFIED, 0/22 gates met at qualifying tier.
+
+
+## Transaction-binding and interrupted-commit matrix
+
+The SQLite reference schema now encodes target/decision/generation correspondence using composite foreign keys, and the current test extension adds a negative control for pairing a decision with a different target. The same extension kills a live SQLite CLI writer after each pre-commit write boundary and after durable commit but before acknowledgement.
+
+Pending exact-head validation, the acceptance table is:
+
+| Fault point | Required reopened outcome |
+|---|---|
+| After decision-row insert, before challenge write | Generation 0; zero decision and consumption rows |
+| After challenge-consumption insert, before target update | Generation 0; zero decision and consumption rows |
+| After target update, before COMMIT | Generation 0; zero decision and consumption rows |
+| After COMMIT, before caller acknowledgement | Generation 1; exactly one decision/consumption; decision ID resolves to the durable outcome |
+| Wrong target binding between decision and consumption | SQL constraint failure; no rows or generation changes survive |
+
+These are process-kill tests on a running kernel. They do not establish kernel-crash, VM-reset, or physical-power-loss durability. Their result is only counted once the exact-head workflow completes and the saved log confirms each individual case; the matrix itself is not evidence of a pass.
