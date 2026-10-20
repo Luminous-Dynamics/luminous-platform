@@ -242,19 +242,30 @@ run_sqlite_sigkill_case() {
   rm -f "$marker"
 
   {
-    printf 'PRAGMA foreign_keys=ON;\n'
-    printf 'PRAGMA busy_timeout=10000;\n'
-    printf 'PRAGMA synchronous=FULL;\n'
-    printf 'BEGIN IMMEDIATE;\n'
-    printf "INSERT INTO promotion_decisions (decision_id,target_id,challenge_id,previous_generation,next_generation,previous_effective_policy_digest,approved_policy_digest,effective_policy_digest,corpus_digest,verifier_id) VALUES ('%s','target-1','%s',0,1,'%s','%s','%s','%s','%s');\n" "$decision_id" "$challenge_id" "$a" "$b" "$c" "$d" "$verifier"
-    printf "INSERT INTO challenge_consumptions (target_id,challenge_id,decision_id,consumed_generation) VALUES ('target-1','%s','%s',1);\n" "$challenge_id" "$decision_id"
-    printf 'UPDATE target_policy_state SET generation=1,approved_policy_digest=''%s'',effective_policy_digest=''%s'',corpus_digest=''%s'',last_decision_id=''%s'' WHERE target_id=''target-1'' AND generation=0 AND effective_policy_digest=''%s'';\n' "$b" "$c" "$d" "$decision_id" "$a"
+    cat <<SQL
+PRAGMA foreign_keys=ON;
+PRAGMA busy_timeout=10000;
+PRAGMA synchronous=FULL;
+BEGIN IMMEDIATE;
+INSERT INTO promotion_decisions
+  (decision_id,target_id,challenge_id,previous_generation,next_generation,
+   previous_effective_policy_digest,approved_policy_digest,effective_policy_digest,
+   corpus_digest,verifier_id)
+VALUES ('$decision_id','target-1','$challenge_id',0,1,'$a','$b','$c','$d','$verifier');
+INSERT INTO challenge_consumptions
+  (target_id,challenge_id,decision_id,consumed_generation)
+VALUES ('target-1','$challenge_id','$decision_id',1);
+UPDATE target_policy_state
+   SET generation=1,approved_policy_digest='$b',effective_policy_digest='$c',
+       corpus_digest='$d',last_decision_id='$decision_id'
+ WHERE target_id='target-1' AND generation=0 AND effective_policy_digest='$a';
+SQL
     if [[ "$phase" == "before_commit" ]]; then
-      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
-      printf 'COMMIT;\n'
+      printf ".shell sh -c 'touch %s; exec sleep 60'\\n" "$marker"
+      printf 'COMMIT;\\n'
     else
-      printf 'COMMIT;\n'
-      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
+      printf 'COMMIT;\\n'
+      printf ".shell sh -c 'touch %s; exec sleep 60'\\n" "$marker"
     fi
   } > "$script"
 
