@@ -435,7 +435,10 @@ impl PromotionJournal {
         if evidence.target_token != operation.target_token
             || evidence.policy_generation != operation.generation
         {
-            return Err("evidence target or policy generation does not match the prepared operation".to_owned());
+            return Err(
+                "evidence target or policy generation does not match the prepared operation"
+                    .to_owned(),
+            );
         }
         if operation.observed_policy_sha256.as_deref()
             != Some(operation.candidate_policy_sha256.as_str())
