@@ -5,6 +5,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod replay_ledger;
+
 pub mod freshness;
 
 use std::collections::{HashMap, HashSet};
