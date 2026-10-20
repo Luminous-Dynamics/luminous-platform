@@ -414,6 +414,7 @@ jobs:
             --expected-source-sha "$GITHUB_SHA" \
             --expected-source-ref "$GITHUB_REF" \
             --expected-workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --expected-workflow-sha "$GITHUB_WORKFLOW_SHA" \
             --expected-run-id "$GITHUB_RUN_ID" \
             --expected-run-attempt "$GITHUB_RUN_ATTEMPT" \
             --extract-to "$RUNNER_TEMP/srq-pre-sign-validated"
@@ -432,6 +433,7 @@ jobs:
             --expected-source-sha "$GITHUB_SHA" \
             --expected-source-ref "$GITHUB_REF" \
             --expected-workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --expected-workflow-sha "$GITHUB_WORKFLOW_SHA" \
             --expected-run-id "$GITHUB_RUN_ID" \
             --expected-run-attempt "$GITHUB_RUN_ATTEMPT" \
             --output-envelope "$RUNNER_TEMP/srq-attested-evaluation-envelope.json" \
