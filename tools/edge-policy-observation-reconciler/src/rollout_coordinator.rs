@@ -884,6 +884,9 @@ mod tests {
                 self.device.unexpected_on_readback = true;
             }
             if self.device.fail_apply_after_mutation {
+                // One-shot injection: simulate exactly one lost acknowledgement,
+                // then allow the recovery controller's rollback to complete.
+                self.device.fail_apply_after_mutation = false;
                 return Err("simulated acknowledgement loss after device mutation".to_owned());
             }
             Ok(ApplyAcknowledgement {
