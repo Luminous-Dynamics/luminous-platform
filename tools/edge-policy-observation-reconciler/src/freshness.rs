@@ -225,8 +225,6 @@ impl ChallengeReplayGuard {
             .pointer("/time_basis/monotonic_origin_ms")
             .and_then(Value::as_u64)
             .ok_or_else(|| vec!["receipt lacks an integer monotonic origin".to_owned()])?;
-        let _ = (wall_anchor, monotonic_origin);
-
         let observations = receipt
             .get("observations")
             .and_then(Value::as_array)
