@@ -63,15 +63,15 @@ pub struct PromotionSpec<'a> {
 /// consumption have succeeded. The journal validates binding and expiry; it
 /// does not itself authenticate the evidence producer or verify the receipt.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PromotionEvidence<'a> {
-    pub challenge_id: &'a str,
-    pub target_token: &'a str,
-    pub policy_generation: u64,
-    pub receipt_sha256: &'a str,
-    pub effective_policy_sha256: &'a str,
-    pub observed_at_unix_ms: u64,
+struct PromotionEvidence<'a> {
+    challenge_id: &'a str,
+    target_token: &'a str,
+    policy_generation: u64,
+    receipt_sha256: &'a str,
+    effective_policy_sha256: &'a str,
+    observed_at_unix_ms: u64,
     /// Expiration from the already-validated freshness envelope.
-    pub expires_at_unix_ms: u64,
+    expires_at_unix_ms: u64,
 }
 
 /// State persisted for a single policy change.
