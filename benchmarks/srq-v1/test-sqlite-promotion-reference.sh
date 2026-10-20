@@ -356,24 +356,20 @@ SQL
   fi
 }
 
-decision_kill_db="$tmp/decision-kill.sqlite"
-init_db "$decision_kill_db"
-run_sqlite_sigkill_case "sqlite-decision-insert-kill" "$decision_kill_db" "after_decision_insert"
-
-challenge_kill_db="$tmp/challenge-kill.sqlite"
-init_db "$challenge_kill_db"
-run_sqlite_sigkill_case "sqlite-challenge-insert-kill" "$challenge_kill_db" "after_challenge_insert"
-
-precommit_db="$tmp/precommit.sqlite"
-init_db "$precommit_db"
-run_sqlite_sigkill_case "sqlite-precommit-kill" "$precommit_db" "before_commit"
-
-postcommit_db="$tmp/postcommit.sqlite"
-init_db "$postcommit_db"
-run_sqlite_sigkill_case "sqlite-postcommit-kill" "$postcommit_db" "after_commit"
+# Repeat each actual process-kill boundary 25 times against fresh databases.
+# The preserved log must contain every individual outcome, not only a summary.
+for phase in after_decision_insert after_challenge_insert before_commit after_commit; do
+  for trial in $(seq 1 25); do
+    label="sqlite-${phase}-${trial}"
+    case_db="$tmp/${label}.sqlite"
+    init_db "$case_db"
+    run_sqlite_sigkill_case "$label" "$case_db" "$phase"
+  done
+done
+echo "PASS: 100 SQLite SIGKILL trials across four transaction boundaries"
 
 
 # Publish enough execution identity to aid later signed-bundle correlation.
 sqlite_version="$(sqlite3 --version | awk '{print $1}')"
-printf 'sqlite_version=%s journal_mode=%s synchronous=FULL cases=9 process_contenders=64 commit_sigkill_cases=4\n'\
+printf 'sqlite_version=%s journal_mode=%s synchronous=FULL cases=9 process_contenders=64 commit_sigkill_boundaries=4 commit_sigkill_trials=100\n'\
   "$sqlite_version" "$(sqlite3 -batch "$success_db" "PRAGMA journal_mode;")"
