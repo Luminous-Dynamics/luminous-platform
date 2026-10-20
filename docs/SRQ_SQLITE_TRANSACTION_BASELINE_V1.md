@@ -81,3 +81,10 @@ Compare the SQLite reference and Luminous's production adapter using the same fr
 [Workflow run 39445482359](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39445482359) passed on exact source head `946924dd4c821637b007a7a78aff9302eac222cb`. It executed 100 actual SQLite writer-process kills across four boundaries—25 trials each after decision insert, after challenge consumption, after target-state update but before COMMIT, and after COMMIT but before acknowledgement. The workflow required and observed 25 explicit successful recovery records for each boundary. The first three classes reopened with generation zero and no decision/consumption rows; the post-commit class reopened with exactly one full outcome discoverable by decision ID. The mismatched target/generation binding negative control also failed closed, and the 64-way contention race retained exactly one durable promotion.
 
 This is deterministic fault-injection coverage on a running Linux kernel, not a statistical estimate of the deployed failure probability. It does not exercise kernel panic, loss of page cache, VM reset, power interruption, lying device caches, cross-host coordination, or the production adapter. The aggregate release profile remains NOT_QUALIFIED, 0/22 gates at their qualifying tier; the trusted-main signing job was skipped for this pull request.
+
+
+## Additional composite-key negative controls (pending exact-head run)
+
+The follow-up schema tests now separately try (a) a challenge-consumption row whose `consumed_generation` differs from the referenced decision's `next_generation`, and (b) a target-state row that points to a decision from a different generation. Both transactions must fail closed, leave the previous target generation intact, leave no decision/consumption rows from the failed transaction, and retain `PRAGMA integrity_check = ok`.
+
+The workflow requires a PASS record for each control and a summary of `cases=11`. These two new rejection tests are pending validation on the current exact head. They are schema-invariant tests, not additional SIGKILL trials.
