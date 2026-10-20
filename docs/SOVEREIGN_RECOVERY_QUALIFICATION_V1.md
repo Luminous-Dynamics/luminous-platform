@@ -65,7 +65,17 @@ Each receipt must bind at least the scenario/corpus digest, source commit, actua
 | `BLOCKED` | A prerequisite prevented a valid determination | Record the missing prerequisite and what did/did not execute; never treat the blocker as a pass |
 | `NOT_APPLICABLE` | A documented reason makes this scenario inapplicable for this specific target | Explicit reason required; this does not satisfy another required release gate |
 
-The companion `validate-result.sh` checks SRQ's core status/provenance invariants, and the example fixtures plus negative controls prove that a mismatched source head, a claimed pass without evidence, invalid digest shape, or a `NOT_RUN` record with executed steps is rejected. This is intentionally a reference-subset validator—not a full JSON Schema engine, artifact authenticator, or runtime qualification tool.
+The companion `validate-result.sh` checks SRQ's core status/provenance invariants, requires the scenario ID to exist in the frozen corpus, rejects `fixture=true` as qualification evidence by default, and constrains `claim_ceiling` to the execution tier. The explicit `--allow-fixtures` switch is for validator tests only; it reports `VALID_FIXTURE_ONLY`, not qualification PASS.
+
+| Execution tier | Maximum allowed claim ceiling | What it still does not establish |
+|---|---|---|
+| `static` | `static_contract_only` | Runtime behavior, host recovery, signer/device identity |
+| `model` | `abstract_model_only` | Correctness of the production integration or real operating-system behavior |
+| `qemu` | `qemu_guest_recovery_only` | Physical hardware, firmware root of trust, real TPM/secure-element behavior |
+| `physical` | `physical_device_recovery_only` | Authentication of claims unless a separate attestation chain was independently qualified |
+| Any tier | `none` | No positive qualification claim |
+
+Lower ceilings are valid; stronger ceilings are not. No tier in SRQ-1 v1 can claim hardware-rooted attestation solely from this receipt schema. The validator remains a reference-subset validator—not a full JSON Schema engine, artifact authenticator, or runtime qualification tool.
 
 **Do not aggregate statuses into a single green score.** One required `FAIL`, `NOT_RUN`, or `BLOCKED` keeps the affected release gate unqualified. `NOT_APPLICABLE` needs scope-owner justification and cannot be used to make a failed or missing test disappear.
 
