@@ -46,11 +46,11 @@ Module: `tools/edge-policy-observation-reconciler/src/fleet_session.rs`.
 
 - `FleetSessionJournal::register_plan` validates the canonical schedule and persists target/wave membership.
 - `begin_wave` prevents skipping the canary or advancing before the prior wave is continued.
-- `record_apply_intent` generates and persists a deterministic command ID before external apply.
+- `record_apply_intent` generates and persists a deterministic command ID before external apply; replaying the same request returns the same ID.
 - `record_applied` compares the actual readback digest to the candidate.
 - `evaluate_and_record_wave` recomputes the wave decision from observations and persists `verified`, `rollback_required`, or `halted`.
 - `record_target_promoted` and `complete_wave` ensure a partial promotion cannot silently count as a completed wave.
-- `request_wave_rollback` commits stable rollback command IDs; `record_target_rolled_back` requires the exact baseline digest.
+- `request_wave_rollback` commits stable rollback command IDs, including across partial rollback and lost responses; `record_target_rolled_back` requires the exact baseline digest and tolerates repeated identical completion acknowledgements.
 - `list_recoverable_targets` exposes recovery obligations without automatically retrying any command.
 
 The caller must supply observation records produced by the already-validated durable freshness/conformance path. The API can check their target/generation/digest/freshness fields, but cannot prove caller-provided booleans originated from authenticated evidence. Similarly, a caller should record a target as promoted only after its PromotionJournal has durably confirmed promotion.
