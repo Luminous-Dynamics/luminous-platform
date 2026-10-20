@@ -8,6 +8,20 @@ OSTree already targets old-or-new deployment behavior for upgrades. SQLite has m
 
 The reference DDL is in benchmarks/srq-v1/sqlite-promotion-reference.sql. It models target policy state, a promotion-decision record, and an explicit challenge-consumption ledger. The writer operation must atomically commit all three or none of them. The companion test-sqlite-promotion-reference.sh checks a successful transaction, a stale-generation compare-and-swap rollback, and rejection of a committed challenge replay.
 
+## Stronger relational invariants added to the reference
+
+The schema now uses composite foreign keys to make several transaction invariants database-enforced rather than relying only on calling code:
+
+- `target_policy_state(last_decision_id, target_id, generation)` must refer to a promotion decision for the same target and current generation.
+- `challenge_consumptions(decision_id, target_id, challenge_id, consumed_generation)` must refer to a decision with the same target, challenge and next generation.
+- Unique parent keys make those composite references valid SQLite foreign-key targets.
+
+This is intentionally defense in depth: a bug that pairs a valid decision ID with a different valid target or generation should fail the SQL constraint. It still does not prove that a challenge was cryptographically authorized, fresh, or issued by a trusted identity.
+
+The current branch adds a negative control that attempts such a target-mismatch write and requires the entire transaction to roll back. It also extends real SQLite process termination to four locations: after the decision row, after challenge consumption, after target-state update but before COMMIT, and after COMMIT but before acknowledgement. The first three must reopen as generation zero with no decision/consumption rows; the last must reopen as exactly one complete, decision-ID-discoverable promotion.
+
+**These expanded checks were added to the current branch but are awaiting the exact-head run result.** They are not counted as passed evidence until that run completes and its logs are inspected.
+
 ## Required transaction contract
 
 ### Current executable reference observation (2026-10-20)
