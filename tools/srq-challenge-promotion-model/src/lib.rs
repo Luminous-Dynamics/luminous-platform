@@ -1,3 +1,10 @@
+//! SRQ-1 challenge/promotion contract model.
+//!
+//! Fault injection returns at selected persistence boundaries and then reopens
+//! the store. These are deterministic state-boundary simulations, not SIGKILL,
+//! kernel crash, power-cut, filesystem fault, or distributed database tests.
+//! The single-host flock model does not qualify cross-host transaction semantics.
+
 use std::collections::BTreeMap;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, ErrorKind, Write};
