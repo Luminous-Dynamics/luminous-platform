@@ -576,6 +576,40 @@ mod tests {
     }
 
     #[test]
+    fn ten_thousand_targets_respect_deterministic_wave_and_domain_caps() {
+        let targets: Vec<_> = (0..10_000)
+            .map(|index| {
+                target(
+                    &format!("target-device-{index:05}"),
+                    &format!("site-{:02}", index % 100),
+                    index == 0,
+                )
+            })
+            .collect();
+        let limits = RolloutConstraints {
+            max_batch_size: 100,
+            max_targets_per_failure_domain: 1,
+        };
+        let plan = plan_rollout(&targets, limits).expect("10k-target plan");
+        let planned_count: usize = plan.waves.iter().map(|wave| wave.targets.len()).sum();
+        assert_eq!(planned_count, targets.len());
+        assert_eq!(plan.waves.len(), 101);
+        assert!(plan.waves[0].is_canary);
+        for wave in plan.waves.iter().skip(1) {
+            assert!(wave.targets.len() <= limits.max_batch_size);
+            let mut per_domain = std::collections::BTreeMap::<&str, usize>::new();
+            for target in &wave.targets {
+                *per_domain.entry(target.failure_domain.as_str()).or_default() += 1;
+            }
+            assert!(
+                per_domain
+                    .values()
+                    .all(|count| *count <= limits.max_targets_per_failure_domain)
+            );
+        }
+    }
+
+    #[test]
     fn valid_complete_wave_continues() {
         let plan = plan_rollout(&targets(), constraints()).expect("plan");
         let wave = &plan.waves[0];
