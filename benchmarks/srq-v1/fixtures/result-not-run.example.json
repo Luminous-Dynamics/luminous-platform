@@ -22,7 +22,7 @@
     }
   },
   "evidence": [],
-  "claim_ceiling": "no_execution_evidence",
+  "claim_ceiling": "none",
   "non_claims": [
     "The scenario did not run.",
     "NOT_RUN is not PASS and is not evidence of a safe boot.",
