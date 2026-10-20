@@ -1405,6 +1405,7 @@ mod tests {
         plan_rollout,
     };
     use std::path::PathBuf;
+    use std::process::Command;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -1572,6 +1573,50 @@ mod tests {
         );
         drop(recovered);
         remove_database(&path);
+    }
+
+    #[test]
+    fn child_exits_after_committing_apply_intent() {
+        let Ok(database_path) = std::env::var("LUMINOUS_FLEET_SESSION_CRASH_TEST_DB") else {
+            return;
+        };
+        let journal = FleetSessionJournal::open(&database_path).expect("child opens journal");
+        let plan = plan();
+        journal.register_plan(&plan, 100).expect("child registers plan");
+        journal.begin_wave(&plan.plan_sha256, 0, 101).expect("child begins canary");
+        journal
+            .record_apply_intent(&plan.plan_sha256, 0, "target-canary", 102)
+            .expect("child commits target apply intent");
+        // Simulate abrupt controller termination after the durable intent commit.
+        std::process::exit(77);
+    }
+
+    #[test]
+    fn apply_intent_survives_abrupt_child_process_exit() {
+        let database_path = path();
+        let executable = std::env::current_exe().expect("current test executable");
+        let status = Command::new(executable)
+            .arg("child_exits_after_committing_apply_intent")
+            .env(
+                "LUMINOUS_FLEET_SESSION_CRASH_TEST_DB",
+                database_path.to_string_lossy().as_ref(),
+            )
+            .status()
+            .expect("launch crash-test child");
+        assert_eq!(status.code(), Some(77));
+
+        let recovered = FleetSessionJournal::open(&database_path).expect("reopen after crash");
+        let targets = recovered
+            .list_recoverable_targets()
+            .expect("recover outstanding target");
+        assert_eq!(targets.len(), 1);
+        assert_eq!(targets[0].target_token, "target-canary");
+        assert_eq!(
+            targets[0].action,
+            FleetRecoveryAction::InspectActualPolicyBeforeRetry
+        );
+        drop(recovered);
+        remove_database(&database_path);
     }
 
     #[test]
