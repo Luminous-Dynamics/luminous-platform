@@ -375,5 +375,5 @@ run_sqlite_sigkill_case "sqlite-postcommit-kill" "$postcommit_db" "after_commit"
 
 # Publish enough execution identity to aid later signed-bundle correlation.
 sqlite_version="$(sqlite3 --version | awk '{print $1}')"
-printf 'sqlite_version=%s journal_mode=%s synchronous=FULL cases=8 process_contenders=64 commit_sigkill_cases=4\n'\
+printf 'sqlite_version=%s journal_mode=%s synchronous=FULL cases=9 process_contenders=64 commit_sigkill_cases=4\n'\
   "$sqlite_version" "$(sqlite3 -batch "$success_db" "PRAGMA journal_mode;")"
