@@ -1216,6 +1216,7 @@ mod tests {
     use crate::replay_ledger::SqliteReplayLedger;
     use serde_json::{Value, json};
     use std::path::PathBuf;
+    use std::process::Command;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -1547,6 +1548,48 @@ mod tests {
             PromotionState::Promoted
         );
         drop(reopened);
+        remove_database(&path);
+    }
+
+    #[test]
+    fn child_process_exits_after_durable_apply_intent() {
+        let Ok(path) = std::env::var("LUMINOUS_PROMOTION_CRASH_TEST_DB") else {
+            return;
+        };
+        let journal = PromotionJournal::open(&path).expect("child opens journal");
+        journal.prepare(&spec(1)).expect("child prepares operation");
+        journal
+            .record_apply_intent("operation-policy-0001", 110)
+            .expect("child commits apply intent");
+        // Deliberately bypass destructors and the test harness to exercise a
+        // real process exit after the durable transition committed.
+        std::process::exit(77);
+    }
+
+    #[test]
+    fn apply_intent_survives_abrupt_child_process_exit() {
+        let path = path();
+        let executable = std::env::current_exe().expect("current test executable");
+        let status = Command::new(executable)
+            .arg("child_process_exits_after_durable_apply_intent")
+            .env("LUMINOUS_PROMOTION_CRASH_TEST_DB", path.to_string_lossy().as_ref())
+            .status()
+            .expect("launch child process");
+        assert_eq!(
+            status.code(),
+            Some(77),
+            "child must reach the deliberate exit after durable intent commit"
+        );
+
+        let recovered = PromotionJournal::open(&path).expect("reopen after child exit");
+        let operations = recovered.list_recoverable().expect("list recoverable state");
+        assert_eq!(operations.len(), 1);
+        assert_eq!(operations[0].operation.state, PromotionState::ApplyIntent);
+        assert_eq!(
+            operations[0].action,
+            RecoveryAction::InspectEffectivePolicyBeforeRetry
+        );
+        drop(recovered);
         remove_database(&path);
     }
 
