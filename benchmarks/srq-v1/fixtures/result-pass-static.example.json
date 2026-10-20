@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "profile_id": "SRQ-1",
-  "scenario_id": "CI-001",
+  "scenario_id": "BOOT-001",
   "status": "PASS",
-  "reason": "Fixture example only: the local corpus-structure check completed successfully.",
+  "reason": "Fixture-only example: hypothetical successful static validation for a real SRQ-1 scenario ID.",
   "source": {
     "expected_source_sha": "1111111111111111111111111111111111111111",
     "event_sha": "2222222222222222222222222222222222222222",
