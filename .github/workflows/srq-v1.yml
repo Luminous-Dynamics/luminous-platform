@@ -6,6 +6,7 @@ on:
       - ".github/workflows/srq-v1.yml"
       - "benchmarks/srq-v1/**"
       - "tools/srq-recovery-model/**"
+      - "tools/srq-challenge-promotion-model/**"
       - "docs/SOVEREIGN_RECOVERY_QUALIFICATION_V1.md"
   workflow_dispatch:
 
@@ -46,6 +47,8 @@ jobs:
           bash -n benchmarks/srq-v1/test-validator.sh
           bash -n benchmarks/srq-v1/validate-result.sh
           bash -n benchmarks/srq-v1/test-result-validator.sh
+          bash -n benchmarks/srq-v1/evaluate-release.sh
+          bash -n benchmarks/srq-v1/test-evaluate-release.sh
 
       - name: Run bounded filesystem activation model
         shell: bash
@@ -159,6 +162,33 @@ jobs:
 
           bash benchmarks/srq-v1/validate-result.sh --evidence-root "$RUNNER_TEMP" "$model_receipt"
 
+      - name: Compile release qualification status from observed receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/srq-release-qualification.json"
+          bash benchmarks/srq-v1/evaluate-release.sh \
+            --expected-source-sha "$SRQ_EXPECTED_SOURCE_SHA" \
+            --evidence-root "$RUNNER_TEMP" \
+            --output "$report" \
+            "$RUNNER_TEMP/srq-update-004-model-result.json" \
+            "$RUNNER_TEMP/srq-evidence-003-model-result.json"
+
+          jq -e '
+            .profile_id == "SRQ-1" and
+            .expected_source_sha == env.SRQ_EXPECTED_SOURCE_SHA and
+            .overall_status == "NOT_QUALIFIED" and
+            .summary.total_release_gates == 22 and
+            .summary.passed_at_qualifying_tier == 0 and
+            .summary.insufficient_tier == 2 and
+            .summary.missing_evidence == 20
+          ' "$report" >/dev/null
+
+          bash benchmarks/srq-v1/test-evaluate-release.sh \
+            "$SRQ_EXPECTED_SOURCE_SHA" "$RUNNER_TEMP" \
+            "$RUNNER_TEMP/srq-update-004-model-result.json" \
+            "$RUNNER_TEMP/srq-evidence-003-model-result.json"
+
       - name: Preserve model evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -169,6 +199,7 @@ jobs:
             ${{ runner.temp }}/srq-update-004-model-result.json
             ${{ runner.temp }}/srq-challenge-promotion-model-test.log
             ${{ runner.temp }}/srq-evidence-003-model-result.json
+            ${{ runner.temp }}/srq-release-qualification.json
           if-no-files-found: ignore
           retention-days: 14
 
