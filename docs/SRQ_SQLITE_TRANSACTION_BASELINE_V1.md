@@ -14,11 +14,16 @@ The reference DDL is in benchmarks/srq-v1/sqlite-promotion-reference.sql. It mod
 
 On exact tested head [6338f6f31d34a5e7d0c2b0ed1b1b879ee9a0b4bd](https://github.com/Luminous-Dynamics/luminous-platform/commit/6338f6f31d34a5e7d0c2b0ed1b1b879ee9a0b4bd), [workflow run 39432653655 passed](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39432653655) with SQLite 3.45.1, WAL mode and synchronous=FULL. The four cases passed: atomic state/decision/challenge commit, stale-generation all-or-nothing rollback, duplicate challenge replay rejection, and 64 independent writer processes contending for one target/challenge with exactly one durable promotion. The final state had one decision, one challenge-consumption row, generation 1, and PRAGMA integrity_check = ok.
 
-Two CI runs now provide exploratory per-contender script elapsed-time distributions (not pure SQLite commit latency; timing includes CLI/process startup and lock waiting):
-- [Run 39431749407](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39431749407): all-contender p50/p95/p99 = 82.1/138.6/150.8 ms; sole winner = 47.4 ms.
-- [Run 39432653655](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39432653655): all-contender p50/p95/p99 = 34.7/68.4/87.2 ms; sole winner = 11.5 ms.
+Four CI runs now provide exploratory per-contender script elapsed-time distributions (not pure SQLite commit latency; timing includes CLI/process startup and lock waiting):
 
-The spread is a useful warning: this is a small GitHub-hosted-runner smoke measurement, not a stable performance benchmark or a comparison against another updater on matched hardware. The logs also record the runner OS, architecture, filesystem label, SQLite version, journal mode and durability setting. Repeated measurements on a frozen machine/storage tuple are required before drawing latency conclusions.
+| Workflow run | All-contender p50 / p95 / p99 | Sole winner elapsed |
+|---|---:|---:|
+| [39431749407](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39431749407) | 82.1 / 138.6 / 150.8 ms | 47.4 ms |
+| [39432653655](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39432653655) | 34.7 / 68.4 / 87.2 ms | 11.5 ms |
+| [39433030759](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39433030759) | 48.1 / 79.2 / 94.9 ms | 42.8 ms |
+| [39433712275](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39433712275) | 22.0 / 57.7 / 62.3 ms | 9.0 ms |
+
+The spread is a useful warning: these are small GitHub-hosted-runner smoke measurements, not a stable performance benchmark or a comparison against another updater on matched hardware. Repeated measurements on a frozen machine/storage tuple are required before drawing latency conclusions. The next benchmark should report the raw per-contender timings and repeat the 64-way race at least 30 times on a fixed host before publishing comparative percentiles.
 
 The SQLite log is now included as a digest-bound supplemental observation in the deterministic SRQ archive subject and is checked by the archive verifier and wrapper contract tests. The actual signed GitHub attestation has **not** yet been minted or verified: the trusted-main signing job is intentionally skipped on pull-request events. The reference remains a small SQL contract fixture, not the production store; it cannot satisfy or upgrade a QEMU/physical gate and does not prove kernel-crash, VM-reset or physical-power-loss behavior.
 
