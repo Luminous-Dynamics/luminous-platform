@@ -125,7 +125,9 @@ pub enum FleetRecoveryAction {
     InspectActualPolicyBeforeRetry,
     RequireFreshEvidenceAndPromotionReconciliation,
     ReconcilePromotionJournalAndEffectivePolicy,
+    PersistRollbackIntentAndEnforceBaseline,
     EnforceBaselinePolicyAndVerify,
+    HaltAndReconcile,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -135,6 +137,7 @@ pub struct RecoverableFleetTarget {
     pub target_token: String,
     pub generation: u64,
     pub state: String,
+    pub wave_state: String,
     pub action: FleetRecoveryAction,
 }
 
@@ -969,7 +972,7 @@ impl FleetSessionJournal {
         let connection = connect(&self.path)?;
         let mut statement = connection
             .prepare(
-                "SELECT t.plan_sha256, t.wave_index, t.target_token, t.generation, t.state
+                "SELECT t.plan_sha256, t.wave_index, t.target_token, t.generation, t.state, w.state
                  FROM rollout_targets AS t
                  JOIN rollout_waves AS w
                    ON w.plan_sha256 = t.plan_sha256 AND w.wave_index = t.wave_index
@@ -985,13 +988,20 @@ impl FleetSessionJournal {
         let rows = statement
             .query_map([], |row| {
                 let state: String = row.get(4)?;
-                let action = match state.as_str() {
-                    "apply_intent" => FleetRecoveryAction::InspectActualPolicyBeforeRetry,
-                    "applied" => {
+                let wave_state: String = row.get(5)?;
+                let action = match (state.as_str(), wave_state.as_str()) {
+                    ("apply_intent", _) => FleetRecoveryAction::InspectActualPolicyBeforeRetry,
+                    ("applied", "rollback_required") => {
+                        FleetRecoveryAction::PersistRollbackIntentAndEnforceBaseline
+                    }
+                    ("applied", "halted") => FleetRecoveryAction::HaltAndReconcile,
+                    ("applied", _) => {
                         FleetRecoveryAction::RequireFreshEvidenceAndPromotionReconciliation
                     }
-                    "promoted" => FleetRecoveryAction::ReconcilePromotionJournalAndEffectivePolicy,
-                    "rollback_intent" => FleetRecoveryAction::EnforceBaselinePolicyAndVerify,
+                    ("promoted", _) => {
+                        FleetRecoveryAction::ReconcilePromotionJournalAndEffectivePolicy
+                    }
+                    ("rollback_intent", _) => FleetRecoveryAction::EnforceBaselinePolicyAndVerify,
                     _ => {
                         return Err(rusqlite::Error::InvalidColumnType(
                             4,
@@ -1008,6 +1018,7 @@ impl FleetSessionJournal {
                     generation: u64::try_from(row.get::<_, i64>(3)?)
                         .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(3, i64::MAX))?,
                     state,
+                    wave_state,
                     action,
                 })
             })
