@@ -299,7 +299,11 @@
         "qemu"
       ],
       "release_gate": true,
-      "status": "proposed_not_executed"
+      "status": "partial_model_pass_not_qualified",
+      "observed_tiers": [
+        "model"
+      ],
+      "target": "Model-only target: exactly one of 64 concurrent attempts may commit; restart and five interruption checkpoints must show either old/unconsumed or new/consumed state. QEMU and production durable-store integration remain required."
     },
     {
       "id": "EVIDENCE-004",
