@@ -769,6 +769,7 @@ mod tests {
         fail_apply: bool,
         fail_apply_after_mutation: bool,
         unexpected_on_readback: bool,
+        unexpected_after_apply: bool,
     }
 
     impl FakeDevice {
@@ -793,6 +794,7 @@ mod tests {
                     fail_apply: false,
                     fail_apply_after_mutation: false,
                     unexpected_on_readback: false,
+                    unexpected_after_apply: false,
                 },
                 bytes,
             )
@@ -870,6 +872,9 @@ mod tests {
                 revision_token: format!("revision-{}", candidate.generation),
                 effective_policy_sha256: candidate.policy_sha256.clone(),
             };
+            if self.device.unexpected_after_apply {
+                self.device.unexpected_on_readback = true;
+            }
             if self.device.fail_apply_after_mutation {
                 return Err("simulated acknowledgement loss after device mutation".to_owned());
             }
@@ -877,6 +882,14 @@ mod tests {
                 reported_generation: Some(candidate.generation),
                 request_id: Some("fake-adapter-request-1".to_owned()),
             })
+        }
+    }
+
+    struct FailingProbe;
+
+    impl IndependentPolicyProbe for FailingProbe {
+        fn run_challenged_probe(&mut self, _challenge_source: &str) -> Result<ProbeOutput, String> {
+            Err("simulated independent probe outage".to_owned())
         }
     }
 
@@ -1022,6 +1035,93 @@ mod tests {
         assert_eq!(device.snapshot.effective_policy_sha256, baseline_digest);
         assert_eq!(device.writes, 2, "candidate apply plus baseline restore");
         assert!(device.lease_renewals >= 3);
+        drop(ledger);
+        drop(journal);
+        remove_database(&journal_path);
+        remove_database(&ledger_path);
+    }
+
+    #[test]
+    fn probe_failure_restores_exact_baseline_after_candidate_was_applied() {
+        let (mut device, baseline) = FakeDevice::baseline();
+        let candidate = b"candidate-probe-outage".to_vec();
+        let baseline_digest = crate::sha256_hex(&baseline);
+        let journal_path = new_path("probe-outage-journal");
+        let ledger_path = new_path("probe-outage-ledger");
+        let journal = PromotionJournal::open(&journal_path).expect("open journal");
+        let ledger = SqliteReplayLedger::open(&ledger_path).expect("open ledger");
+        let coordinator = PolicyRolloutCoordinator::new(&journal, &ledger);
+        let mut probe = FailingProbe;
+
+        let error = coordinator
+            .apply_and_promote(
+                &mut device,
+                &mut probe,
+                &RolloutRequest {
+                    operation_id: "operation-probe-outage",
+                    target_token: TARGET,
+                    approved_baseline_policy: &baseline,
+                    candidate_policy: &candidate,
+                    corpus_schema_source: CORPUS_SCHEMA,
+                    corpus_source: CORPUS,
+                },
+            )
+            .expect_err("probe outage blocks promotion");
+        assert!(error.contains("verified exact-baseline rollback completed"));
+        let operation = journal
+            .get("operation-probe-outage")
+            .expect("read journal")
+            .expect("operation");
+        assert_eq!(operation.state, PromotionState::RolledBack);
+        assert_eq!(device.snapshot.effective_policy_sha256, baseline_digest);
+        assert_eq!(device.writes, 2);
+        drop(ledger);
+        drop(journal);
+        remove_database(&journal_path);
+        remove_database(&ledger_path);
+    }
+
+    #[test]
+    fn unknown_effective_policy_is_never_overwritten_during_rollback() {
+        let (mut device, baseline) = FakeDevice::baseline();
+        device.unexpected_after_apply = true;
+        let candidate = b"candidate-third-party-state".to_vec();
+        let journal_path = new_path("unknown-policy-journal");
+        let ledger_path = new_path("unknown-policy-ledger");
+        let journal = PromotionJournal::open(&journal_path).expect("open journal");
+        let ledger = SqliteReplayLedger::open(&ledger_path).expect("open ledger");
+        let coordinator = PolicyRolloutCoordinator::new(&journal, &ledger);
+        let mut probe = PassingProbe {
+            baseline_digest: crate::sha256_hex(&baseline),
+            candidate_digest: crate::sha256_hex(&candidate),
+        };
+
+        let error = coordinator
+            .apply_and_promote(
+                &mut device,
+                &mut probe,
+                &RolloutRequest {
+                    operation_id: "operation-unknown-policy",
+                    target_token: TARGET,
+                    approved_baseline_policy: &baseline,
+                    candidate_policy: &candidate,
+                    corpus_schema_source: CORPUS_SCHEMA,
+                    corpus_source: CORPUS,
+                },
+            )
+            .expect_err("unrecognized readback blocks promotion");
+        assert!(error.contains("unexpected policy digest"));
+        let operation = journal
+            .get("operation-unknown-policy")
+            .expect("read journal")
+            .expect("operation");
+        assert_eq!(operation.state, PromotionState::RollbackIntent);
+        assert_eq!(
+            device.snapshot.effective_policy_sha256,
+            crate::sha256_hex(&candidate),
+            "the coordinator must not overwrite a state whose readback is ambiguous"
+        );
+        assert_eq!(device.writes, 1, "only the candidate actuation was attempted");
         drop(ledger);
         drop(journal);
         remove_database(&journal_path);
