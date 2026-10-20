@@ -11,14 +11,28 @@ on:
 permissions:
   contents: read
 
+env:
+  SRQ_EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  SRQ_EVENT_SHA: ${{ github.sha }}
+
 jobs:
   validate-corpus:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Check out source
+      - name: Check out exact source head
         # Immutable commit pin for actions/checkout v4.
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.SRQ_EXPECTED_SOURCE_SHA }}
+
+      - name: Record exact-head provenance
+        run: |
+          set -euo pipefail
+          actual_head="$(git rev-parse HEAD)"
+          printf 'expected_source_sha=%s\\nevent_sha=%s\\nactual_checkout_head=%s\\n' \\
+            "$SRQ_EXPECTED_SOURCE_SHA" "$SRQ_EVENT_SHA" "$actual_head"
+          test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
 
       - name: Validate shell syntax
         run: |
