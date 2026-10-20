@@ -230,8 +230,10 @@ jobs:
           set -euo pipefail
           model_log="$RUNNER_TEMP/srq-boot-reconciliation-model-test.log"
           cargo test --manifest-path tools/srq-boot-reconciliation-model/Cargo.toml --locked -- --nocapture 2>&1 | tee "$model_log"
-          grep -Fq 'test result: ok. 15 passed; 0 failed' "$model_log"
+          grep -Fq 'test result: ok. 16 passed; 0 failed' "$model_log"
           grep -Fq 'test tests::ten_thousand_deterministic_single_field_mutations_never_reconcile ... ok' "$model_log"
+          grep -Fq 'test tests::one_hundred_thousand_cross_layer_mutations_never_reconcile ... ok' "$model_log"
+          echo "PASS: 100,000 deterministic cross-layer mutations rejected structural success"
           grep -Fq 'test tests::missing_post_commit_challenge_is_pending_not_success ... ok' "$model_log"
           grep -Fq 'test tests::digest_shape_is_not_treated_as_authenticity ... ok' "$model_log"
           echo "LIMIT: structural reconciliation model only; no signature, trusted boot observation, QEMU or physical qualification."
