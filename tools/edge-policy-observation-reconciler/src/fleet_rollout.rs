@@ -599,7 +599,9 @@ mod tests {
             assert!(wave.targets.len() <= limits.max_batch_size);
             let mut per_domain = std::collections::BTreeMap::<&str, usize>::new();
             for target in &wave.targets {
-                *per_domain.entry(target.failure_domain.as_str()).or_default() += 1;
+                *per_domain
+                    .entry(target.failure_domain.as_str())
+                    .or_default() += 1;
             }
             assert!(
                 per_domain
