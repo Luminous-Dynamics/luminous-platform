@@ -174,6 +174,11 @@ impl ChallengeReplayGuard {
                 "receipt target token does not match the challenged target".to_owned(),
             ]);
         }
+        let expected_effective_policy_sha256 = string_field(
+            &challenge,
+            "/expected_effective_policy_sha256",
+            "challenge.expected_effective_policy_sha256",
+        )?;
 
         let receipt_evidence_class =
             string_field(&receipt, "/evidence_class", "receipt.evidence_class")?;
@@ -239,6 +244,17 @@ impl ChallengeReplayGuard {
             if source != "independent_dataplane_probe" {
                 return Err(vec![format!(
                     "receipt.observations[{index}] is not an independent data-plane probe"
+                )]);
+            }
+
+            let effective_policy_sha256 = string_field(
+                observation,
+                "/effective_policy_sha256",
+                &format!("receipt.observations[{index}].effective_policy_sha256"),
+            )?;
+            if effective_policy_sha256 != expected_effective_policy_sha256 {
+                return Err(vec![format!(
+                    "receipt.observations[{index}] effective policy digest does not match the challenge"
                 )]);
             }
 
@@ -391,6 +407,7 @@ mod tests {
             "policy_generation": 7,
             "corpus_sha256": sha256_hex(CORPUS.as_bytes()),
             "approved_policy_sha256": POLICY_SHA256,
+            "expected_effective_policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
             "target_token": TARGET
         })
         .to_string()
