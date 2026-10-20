@@ -268,8 +268,9 @@ mod tests {
                 thread::sleep(Duration::from_millis(5));
             }
 
+            let child_pid = child.id().to_string();
             let killed = Command::new("kill")
-                .args(["-KILL", &child.id().to_string()])
+                .args(["-KILL", child_pid.as_str()])
                 .status()
                 .expect("invoke Linux kill utility");
             assert!(killed.success(), "SIGKILL failed at {checkpoint}");
