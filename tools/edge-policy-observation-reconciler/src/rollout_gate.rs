@@ -441,8 +441,6 @@ mod tests {
 
     fn observation(
         token: &str,
-        generation: u64,
-        digest: &str,
         outcome: TargetRolloutOutcome,
         probe: bool,
         control: bool,
@@ -451,8 +449,8 @@ mod tests {
     ) -> TargetRolloutObservation {
         TargetRolloutObservation {
             target_token: token.to_owned(),
-            policy_generation: generation,
-            effective_policy_sha256: digest.to_owned(),
+            policy_generation: 7,
+            effective_policy_sha256: CANDIDATE.to_owned(),
             outcome,
             independent_probe_passed: probe,
             positive_control_passed: control,
@@ -462,16 +460,7 @@ mod tests {
     }
 
     fn successful(token: &str) -> TargetRolloutObservation {
-        observation(
-            token,
-            7,
-            CANDIDATE,
-            TargetRolloutOutcome::Promoted,
-            true,
-            true,
-            1_000,
-            1_500,
-        )
+        observation(token, TargetRolloutOutcome::Promoted, true, true, 1_000, 1_500)
     }
 
     #[test]
