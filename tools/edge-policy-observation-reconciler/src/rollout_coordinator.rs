@@ -388,7 +388,7 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             }
         };
 
-        let pre_promotion = match device.read_effective_policy() {
+        let pre_promotion = match lease.read_effective_policy() {
             Ok(snapshot) => snapshot,
             Err(error) => {
                 return Err(self.with_rollback_result(
@@ -765,7 +765,9 @@ mod tests {
         snapshot: PolicySnapshot,
         capabilities: AdapterCapabilities,
         writes: usize,
+        lease_renewals: usize,
         fail_apply: bool,
+        fail_apply_after_mutation: bool,
         unexpected_on_readback: bool,
     }
 
@@ -787,7 +789,9 @@ mod tests {
                         stable_effective_policy_digest: true,
                     },
                     writes: 0,
+                    lease_renewals: 0,
                     fail_apply: false,
+                    fail_apply_after_mutation: false,
                     unexpected_on_readback: false,
                 },
                 bytes,
@@ -822,6 +826,7 @@ mod tests {
             if !self.device.capabilities.exclusive_target_lease {
                 return Err("exclusive target lease is unavailable".to_owned());
             }
+            self.device.lease_renewals += 1;
             Ok(())
         }
 
@@ -862,6 +867,9 @@ mod tests {
                 revision_token: format!("revision-{}", candidate.generation),
                 effective_policy_sha256: candidate.policy_sha256.clone(),
             };
+            if self.device.fail_apply_after_mutation {
+                return Err("simulated acknowledgement loss after device mutation".to_owned());
+            }
             Ok(ApplyAcknowledgement {
                 reported_generation: Some(candidate.generation),
                 request_id: Some("fake-adapter-request-1".to_owned()),
@@ -878,10 +886,13 @@ mod tests {
         fn run_challenged_probe(&mut self, challenge_source: &str) -> Result<ProbeOutput, String> {
             let challenge: Value =
                 serde_json::from_str(challenge_source).map_err(|error| error.to_string())?;
-            let started = SystemTime::now()
+            let observed_start = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map_err(|error| error.to_string())?
                 .as_millis() as u64;
+            let started = observed_start.max(
+                challenge["issued_at_unix_ms"].as_u64().unwrap_or(observed_start),
+            );
             let mut receipt =
                 crate::build_synthetic_receipt(CORPUS).map_err(|errors| errors.join("; "))?;
             receipt["evidence_class"] = json!("namespace_lab_observation");
@@ -960,6 +971,52 @@ mod tests {
             device.snapshot.effective_policy_sha256,
             crate::sha256_hex(&baseline)
         );
+        drop(ledger);
+        drop(journal);
+        remove_database(&journal_path);
+        remove_database(&ledger_path);
+    }
+
+    #[test]
+    fn ambiguous_apply_failure_after_mutation_is_read_back_and_rolled_back() {
+        let (mut device, baseline) = FakeDevice::baseline();
+        device.fail_apply_after_mutation = true;
+        let candidate = b"candidate-policy-after-timeout".to_vec();
+        let baseline_digest = crate::sha256_hex(&baseline);
+        let candidate_digest = crate::sha256_hex(&candidate);
+        let journal_path = new_path("mutated-before-timeout-journal");
+        let ledger_path = new_path("mutated-before-timeout-ledger");
+        let journal = PromotionJournal::open(&journal_path).expect("open journal");
+        let ledger = SqliteReplayLedger::open(&ledger_path).expect("open ledger");
+        let coordinator = PolicyRolloutCoordinator::new(&journal, &ledger);
+        let mut probe = PassingProbe {
+            baseline_digest: baseline_digest.clone(),
+            candidate_digest,
+        };
+
+        let error = coordinator
+            .apply_and_promote(
+                &mut device,
+                &mut probe,
+                &RolloutRequest {
+                    operation_id: "operation-mutated-timeout",
+                    target_token: TARGET,
+                    approved_baseline_policy: &baseline,
+                    candidate_policy: &candidate,
+                    corpus_schema_source: CORPUS_SCHEMA,
+                    corpus_source: CORPUS,
+                },
+            )
+            .expect_err("lost apply acknowledgement");
+        assert!(error.contains("verified exact-baseline rollback completed"));
+        let operation = journal
+            .get("operation-mutated-timeout")
+            .expect("read journal")
+            .expect("operation");
+        assert_eq!(operation.state, PromotionState::RolledBack);
+        assert_eq!(device.snapshot.effective_policy_sha256, baseline_digest);
+        assert_eq!(device.writes, 2, "candidate apply plus baseline restore");
+        assert!(device.lease_renewals >= 3);
         drop(ledger);
         drop(journal);
         remove_database(&journal_path);
