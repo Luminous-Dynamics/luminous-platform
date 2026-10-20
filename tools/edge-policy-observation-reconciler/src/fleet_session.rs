@@ -1074,9 +1074,60 @@ fn verify_schema(connection: &Connection) -> Result<(), String> {
             "unsupported fleet journal schema version {version}; expected {SCHEMA_VERSION}"
         ));
     }
-    for table in ["rollout_sessions", "rollout_waves", "rollout_targets"] {
+    for (table, expected_columns) in [
+        (
+            "rollout_sessions",
+            &[
+                "plan_sha256",
+                "state",
+                "active_wave_index",
+                "created_at_unix_ms",
+                "updated_at_unix_ms",
+            ][..],
+        ),
+        (
+            "rollout_waves",
+            &["plan_sha256", "wave_index", "state", "updated_at_unix_ms"][..],
+        ),
+        (
+            "rollout_targets",
+            &[
+                "plan_sha256",
+                "target_token",
+                "wave_index",
+                "failure_domain",
+                "generation",
+                "baseline_policy_sha256",
+                "candidate_policy_sha256",
+                "canary",
+                "state",
+                "apply_command_id",
+                "rollback_command_id",
+                "observed_policy_sha256",
+                "updated_at_unix_ms",
+            ][..],
+        ),
+    ] {
         if !table_exists(connection, table)? {
             return Err(format!("fleet journal schema is missing table {table:?}"));
+        }
+        let query = format!("PRAGMA table_info({table});");
+        let mut statement = connection
+            .prepare(&query)
+            .map_err(|error| format!("cannot inspect fleet journal table {table:?}: {error}"))?;
+        let rows = statement
+            .query_map([], |row| row.get::<_, String>(1))
+            .map_err(|error| format!("cannot query fleet journal table {table:?}: {error}"))?;
+        let mut actual = Vec::new();
+        for row in rows {
+            actual.push(
+                row.map_err(|error| format!("cannot read fleet journal column: {error}"))?,
+            );
+        }
+        if actual.iter().map(String::as_str).collect::<Vec<_>>() != expected_columns {
+            return Err(format!(
+                "fleet journal table {table:?} columns do not match schema version {SCHEMA_VERSION}"
+            ));
         }
     }
     Ok(())
@@ -1102,14 +1153,44 @@ fn session_from_row(row: &Row<'_>) -> rusqlite::Result<FleetSessionSnapshot> {
     let active: Option<i64> = row.get(2)?;
     let created: i64 = row.get(3)?;
     let updated: i64 = row.get(4)?;
+    let state = FleetSessionState::parse(&state).map_err(|error| {
+        rusqlite::Error::FromSqlConversionFailure(
+            1,
+            rusqlite::types::Type::Text,
+            Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, error)),
+        )
+    })?;
+    let active_wave_index = active
+        .map(|value| {
+            usize::try_from(value).map_err(|error| {
+                rusqlite::Error::FromSqlConversionFailure(
+                    2,
+                    rusqlite::types::Type::Integer,
+                    Box::new(error),
+                )
+            })
+        })
+        .transpose()?;
+    let created_at_unix_ms = u64::try_from(created).map_err(|error| {
+        rusqlite::Error::FromSqlConversionFailure(
+            3,
+            rusqlite::types::Type::Integer,
+            Box::new(error),
+        )
+    })?;
+    let updated_at_unix_ms = u64::try_from(updated).map_err(|error| {
+        rusqlite::Error::FromSqlConversionFailure(
+            4,
+            rusqlite::types::Type::Integer,
+            Box::new(error),
+        )
+    })?;
     Ok(FleetSessionSnapshot {
         plan_sha256: row.get(0)?,
-        state: FleetSessionState::parse(&state).map_err(|_| {
-            rusqlite::Error::InvalidColumnType(1, "state".to_owned(), rusqlite::types::Type::Text)
-        })?,
-        active_wave_index: active.and_then(|value| usize::try_from(value).ok()),
-        created_at_unix_ms: u64::try_from(created).unwrap_or(0),
-        updated_at_unix_ms: u64::try_from(updated).unwrap_or(0),
+        state,
+        active_wave_index,
+        created_at_unix_ms,
+        updated_at_unix_ms,
     })
 }
 
