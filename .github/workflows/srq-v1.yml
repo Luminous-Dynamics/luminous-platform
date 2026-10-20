@@ -303,7 +303,7 @@ jobs:
             ${{ runner.temp }}/srq-recovery-model-test.log
             ${{ runner.temp }}/srq-update-004-model-result.json
             ${{ runner.temp }}/srq-challenge-promotion-model-test.log
-${{ runner.temp }}/srq-evidence-003-model-result.json
+            ${{ runner.temp }}/srq-evidence-003-model-result.json
             ${{ runner.temp }}/srq-process-kill-model-test.log
             ${{ runner.temp }}/srq-release-qualification.json
           if-no-files-found: ignore
