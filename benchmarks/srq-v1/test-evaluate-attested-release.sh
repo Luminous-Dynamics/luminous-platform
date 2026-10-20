@@ -22,12 +22,14 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 printf 'synthetic recovery-model evidence; contract test only\n' > "$bundle/srq-recovery-model-test.log"
 printf 'synthetic process-kill observation; model-tier only\n' > "$bundle/srq-process-kill-model-test.log"
 printf 'synthetic SQLite promotion reference; model-tier only\n' > "$bundle/srq-sqlite-promotion-reference.log"
+printf 'synthetic boot-reconciliation observation; model-tier only\n' > "$bundle/srq-boot-reconciliation-model-test.log"
 printf 'synthetic challenge-model evidence; contract test only\n' > "$bundle/srq-challenge-promotion-model-test.log"
 
 recovery_sha="$(sha256sum "$bundle/srq-recovery-model-test.log" | cut -d ' ' -f 1)"
 challenge_sha="$(sha256sum "$bundle/srq-challenge-promotion-model-test.log" | cut -d ' ' -f 1)"
 process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
 sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
+boot_reconciliation_sha="$(sha256sum "$bundle/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
 
 make_receipt() {
   local scenario="$1" log="$2" log_sha="$3" destination="$4" command="$5"
@@ -91,6 +93,7 @@ jq -e '.overall_status == "NOT_QUALIFIED" and .summary.passed_at_qualifying_tier
 (
   cd "$bundle"
   sha256sum \
+    srq-boot-reconciliation-model-test.log \
     srq-challenge-promotion-model-test.log \
     srq-evidence-003-model-result.json \
     srq-process-kill-model-test.log \
@@ -114,6 +117,7 @@ jq -n \
   --arg checksum_sha "$checksum_sha" \
   --arg process_kill_sha "$process_kill_sha" \
   --arg sqlite_reference_sha "$sqlite_reference_sha" \
+  --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
   '{
     schema_version: 1,
     profile_id: "SRQ-1",
@@ -148,6 +152,14 @@ jq -n \
       status: "PASS",
       evidence_artifact: "srq-sqlite-promotion-reference.log",
       evidence_sha256: $sqlite_reference_sha
+    }, {
+      test_id: "SRQ-BOOT-RECONCILIATION-V1",
+      scenario_id: "RECOVERY-002",
+      execution_tier: "model",
+      claim_ceiling: "abstract_model_only",
+      status: "PASS",
+      evidence_artifact: "srq-boot-reconciliation-model-test.log",
+      evidence_sha256: $boot_reconciliation_sha
     }]
   }' > "$bundle/manifest.json"
 
