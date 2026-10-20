@@ -1143,9 +1143,17 @@ mod tests {
         journal.record_applied("operation-policy-0001", CANDIDATE, 120).expect("applied");
         journal.request_rollback("operation-policy-0001", 130).expect("rollback intent");
         journal.record_rolled_back("operation-policy-0001", BASELINE, 140).expect("rollback");
+        let reused_generation = PromotionSpec {
+            operation_id: "operation-policy-0002",
+            target_token: "target-policy-lab",
+            generation: 1,
+            baseline_policy_sha256: BASELINE,
+            candidate_policy_sha256: CANDIDATE,
+            created_at_unix_ms: 200,
+        };
         assert!(
-            journal.prepare(&spec(1)).expect_err("used generation")
-                .contains("already exists")
+            journal.prepare(&reused_generation).expect_err("used generation")
+                .contains("not greater")
         );
         drop(journal);
         remove_database(&path);
