@@ -10,6 +10,7 @@ pub mod replay_ledger;
 pub mod rollout_coordinator;
 
 pub mod freshness;
+pub mod impact_gate;
 
 use std::collections::{HashMap, HashSet};
 use std::fmt::Write as _;
