@@ -180,7 +180,13 @@
     },
     "claim_ceiling": {
       "type": "string",
-      "minLength": 1
+      "enum": [
+        "none",
+        "static_contract_only",
+        "abstract_model_only",
+        "qemu_guest_recovery_only",
+        "physical_device_recovery_only"
+      ]
     },
     "non_claims": {
       "type": "array",
@@ -296,6 +302,128 @@
                 "type": "null"
               }
             }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "execution"
+        ],
+        "properties": {
+          "execution": {
+            "required": [
+              "tier"
+            ],
+            "properties": {
+              "tier": {
+                "const": "static"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim_ceiling": {
+            "enum": [
+              "none",
+              "static_contract_only"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "execution"
+        ],
+        "properties": {
+          "execution": {
+            "required": [
+              "tier"
+            ],
+            "properties": {
+              "tier": {
+                "const": "model"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim_ceiling": {
+            "enum": [
+              "none",
+              "static_contract_only",
+              "abstract_model_only"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "execution"
+        ],
+        "properties": {
+          "execution": {
+            "required": [
+              "tier"
+            ],
+            "properties": {
+              "tier": {
+                "const": "qemu"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim_ceiling": {
+            "enum": [
+              "none",
+              "static_contract_only",
+              "abstract_model_only",
+              "qemu_guest_recovery_only"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "execution"
+        ],
+        "properties": {
+          "execution": {
+            "required": [
+              "tier"
+            ],
+            "properties": {
+              "tier": {
+                "const": "physical"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim_ceiling": {
+            "enum": [
+              "none",
+              "static_contract_only",
+              "abstract_model_only",
+              "qemu_guest_recovery_only",
+              "physical_device_recovery_only"
+            ]
           }
         }
       }
