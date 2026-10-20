@@ -79,19 +79,22 @@ impl SqliteReplayLedger {
                 .execute_batch("PRAGMA journal_mode = WAL;")
                 .map_err(|error| format!("cannot enable SQLite WAL mode: {error}"))?;
         }
-        if !table_exists(&connection)
-            .map_err(|error| format!("cannot inspect replay ledger schema: {error}"))?
-        {
-            if let Err(create_error) = connection.execute_batch(CREATE_TABLE) {
-                // Another initializer may have created the table concurrently.
-                // Accept that race only when the table exists; exact shape and
-                // schema-version checks below still validate it.
-                if !table_exists(&connection)
-                    .map_err(|error| format!("cannot recheck replay ledger schema: {error}"))?
-                {
-                    return Err(format!(
-                        "cannot initialize replay ledger schema: {create_error}"
-                    ));
+        let table_exists_before_create = table_exists(&connection)
+            .map_err(|error| format!("cannot inspect replay ledger schema: {error}"))?;
+        if !table_exists_before_create {
+            match connection.execute_batch(CREATE_TABLE) {
+                Ok(()) => {}
+                Err(create_error) => {
+                    // Another initializer may have created the table concurrently.
+                    // Accept that race only when the table exists; exact shape and
+                    // schema-version checks below still validate it.
+                    if !table_exists(&connection)
+                        .map_err(|error| format!("cannot recheck replay ledger schema: {error}"))?
+                    {
+                        return Err(format!(
+                            "cannot initialize replay ledger schema: {create_error}"
+                        ));
+                    }
                 }
             }
         }
