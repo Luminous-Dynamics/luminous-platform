@@ -1429,6 +1429,24 @@ mod tests {
     }
 
     #[test]
+    fn next_generation_skips_generation_consumed_by_abandoned_operation() {
+        let path = path();
+        let journal = PromotionJournal::open(&path).expect("open");
+        journal.prepare(&spec(5)).expect("prepare generation five");
+        journal
+            .abandon_prepared("operation-policy-0001", 105)
+            .expect("abandon without actuation");
+        assert_eq!(
+            journal
+                .next_generation("target-policy-lab", 1)
+                .expect("next generation"),
+            6
+        );
+        drop(journal);
+        remove_database(&path);
+    }
+
+    #[test]
     fn prepared_operation_can_be_abandoned_without_claiming_device_rollback() {
         let path = path();
         let journal = PromotionJournal::open(&path).expect("open");
