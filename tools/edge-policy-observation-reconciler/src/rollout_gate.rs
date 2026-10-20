@@ -8,6 +8,10 @@
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+use crate::adapter_capability::{
+    AdapterQualificationPolicy, DeviceAdapterCapabilities, qualify_adapter,
+};
+
 /// A single target's immutable membership in a rollout plan.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RolloutTarget {
@@ -78,6 +82,86 @@ pub enum RolloutGateDecision {
     },
     /// All planned waves have fresh evidence and passed their gate.
     Complete,
+}
+
+/// Qualify every planned target's device adapter before authorizing any wave.
+///
+/// This preflight deliberately checks future-wave targets too: a rollout must
+/// not begin when its later targets cannot satisfy the deployment's declared
+/// transaction, rollback, readback, locking/fencing, and probe requirements.
+pub fn authorize_next_wave_with_adapter_capabilities(
+    plan: &StagedRolloutPlan,
+    observations: &[TargetRolloutObservation],
+    adapter_capabilities: &[DeviceAdapterCapabilities],
+    qualification_policy: &AdapterQualificationPolicy,
+    verifier_now_unix_ms: u64,
+) -> Result<RolloutGateDecision, Vec<String>> {
+    validate_plan(plan)?;
+
+    let planned_targets: HashSet<&str> = plan
+        .targets
+        .iter()
+        .map(|target| target.target_token.as_str())
+        .collect();
+    let mut profiles_by_target: HashMap<&str, &DeviceAdapterCapabilities> = HashMap::new();
+    let mut input_errors = Vec::new();
+    for profile in adapter_capabilities {
+        if !planned_targets.contains(profile.target_token.as_str()) {
+            input_errors.push(format!(
+                "adapter profile targets {:?}, which is not in the rollout plan",
+                profile.target_token
+            ));
+        }
+        if profiles_by_target
+            .insert(profile.target_token.as_str(), profile)
+            .is_some()
+        {
+            input_errors.push(format!(
+                "duplicate adapter capability profile for target {:?}",
+                profile.target_token
+            ));
+        }
+    }
+    for target in &plan.targets {
+        if !profiles_by_target.contains_key(target.target_token.as_str()) {
+            input_errors.push(format!(
+                "rollout target {:?} has no adapter capability profile",
+                target.target_token
+            ));
+        }
+    }
+    if !input_errors.is_empty() {
+        return Err(input_errors);
+    }
+
+    let mut blockers = Vec::new();
+    for target in &plan.targets {
+        let profile = profiles_by_target
+            .get(target.target_token.as_str())
+            .expect("all planned targets have a profile");
+        let assessment = qualify_adapter(profile, qualification_policy).map_err(|errors| {
+            errors
+                .into_iter()
+                .map(|error| format!("target {:?} has invalid adapter profile: {error}", target.target_token))
+                .collect::<Vec<_>>()
+        })?;
+        if !assessment.automatic_rollout_eligible {
+            blockers.extend(assessment.blockers.into_iter().map(|reason| {
+                format!(
+                    "target {:?} adapter {}@{} is not eligible: {reason}",
+                    assessment.target_token, assessment.adapter_id, assessment.adapter_version
+                )
+            }));
+        }
+    }
+    if !blockers.is_empty() {
+        return Ok(RolloutGateDecision::Halted {
+            wave_index: 0,
+            reasons: blockers,
+        });
+    }
+
+    authorize_next_wave(plan, observations, verifier_now_unix_ms)
 }
 
 /// Validate the whole plan, then authorize the earliest wave that has not yet
@@ -425,8 +509,11 @@ fn is_digest(value: &str) -> bool {
 mod tests {
     use super::{
         RolloutGateDecision, RolloutTarget, StagedRolloutPlan, TargetRolloutObservation,
-        TargetRolloutOutcome, authorize_next_wave,
+        TargetRolloutOutcome, authorize_next_wave, authorize_next_wave_with_adapter_capabilities,
     };
+    use crate::adapter_capability::{
+        AdapterQualificationPolicy, CommitSemantics, DeviceAdapterCapabilities, RollbackSemantics,
+    };    };
 
     const CANDIDATE: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
@@ -437,6 +524,59 @@ mod tests {
             policy_generation: 7,
             wave_index,
         }
+    }
+
+    fn adapter_profile(target_token: &str, use_gnmi: bool) -> DeviceAdapterCapabilities {
+        DeviceAdapterCapabilities {
+            target_token: target_token.to_owned(),
+            adapter_id: if use_gnmi {
+                "adapter-gnmi".to_owned()
+            } else {
+                "adapter-netconf".to_owned()
+            },
+            adapter_version: "v1".to_owned(),
+            commit_semantics: if use_gnmi {
+                CommitSemantics::GnmiSingleSet {
+                    atomic_within_single_request: true,
+                }
+            } else {
+                CommitSemantics::NetconfConfirmedCommit {
+                    confirm_timeout_secs: 180,
+                    cancel_commit_supported: true,
+                    candidate_lock_supported: true,
+                    reverts_on_session_loss: true,
+                }
+            },
+            rollback_semantics: if use_gnmi {
+                RollbackSemantics::Explicit {
+                    rollback_is_idempotent: true,
+                    baseline_policy_recoverable: true,
+                }
+            } else {
+                RollbackSemantics::NativeConfirmedCommitTimeout
+            },
+            supports_effective_policy_readback: true,
+            readback_digest_is_effective_policy: true,
+            supports_independent_dataplane_probe: true,
+            supports_positive_control_probe: true,
+            supports_device_side_generation_fence: true,
+            supports_exclusive_config_lock: true,
+        }
+    }
+
+    fn adapter_policy() -> AdapterQualificationPolicy {
+        AdapterQualificationPolicy {
+            minimum_confirmed_commit_timeout_secs: 120,
+            require_device_side_generation_fence: false,
+            allow_explicit_rollback: true,
+        }
+    }
+
+    fn profiles_for(plan: &StagedRolloutPlan) -> Vec<DeviceAdapterCapabilities> {
+        plan.targets
+            .iter()
+            .map(|target| adapter_profile(&target.target_token, false))
+            .collect()
     }
 
     fn plan() -> StagedRolloutPlan {
@@ -493,6 +633,88 @@ mod tests {
                 wave_index: 0,
                 targets: vec!["target-router-a".to_owned(), "target-router-b".to_owned()]
             }
+        );
+    }
+
+    #[test]
+    fn adapter_preflight_authorizes_first_wave_only_when_every_target_is_eligible() {
+        let plan = plan();
+        let profiles = profiles_for(&plan);
+        assert_eq!(
+            authorize_next_wave_with_adapter_capabilities(
+                &plan,
+                &[],
+                &profiles,
+                &adapter_policy(),
+                1_100,
+            )
+            .expect("eligible adapter profiles"),
+            RolloutGateDecision::WaveAuthorized {
+                wave_index: 0,
+                targets: vec!["target-router-a".to_owned(), "target-router-b".to_owned()]
+            }
+        );
+    }
+
+    #[test]
+    fn ineligible_later_wave_adapter_blocks_the_entire_rollout_preflight() {
+        let plan = plan();
+        let mut profiles = profiles_for(&plan);
+        let last = profiles.last_mut().expect("third target profile");
+        last.commit_semantics = CommitSemantics::GnmiSingleSet {
+            atomic_within_single_request: true,
+        };
+        last.rollback_semantics = RollbackSemantics::None;
+        let decision = authorize_next_wave_with_adapter_capabilities(
+            &plan,
+            &[],
+            &profiles,
+            &adapter_policy(),
+            1_100,
+        )
+        .expect("valid but ineligible adapter profile");
+        let RolloutGateDecision::Halted { wave_index, reasons } = decision else {
+            panic!("ineligible future-wave device must block before wave zero");
+        };
+        assert_eq!(wave_index, 0);
+        assert!(
+            reasons
+                .iter()
+                .any(|reason| reason.contains("target-router-c") && reason.contains("no qualified rollback"))
+        );
+    }
+
+    #[test]
+    fn missing_or_duplicate_adapter_profiles_are_rejected() {
+        let plan = plan();
+        let mut profiles = profiles_for(&plan);
+        profiles.pop();
+        assert!(
+            authorize_next_wave_with_adapter_capabilities(
+                &plan,
+                &[],
+                &profiles,
+                &adapter_policy(),
+                1_100,
+            )
+            .expect_err("missing adapter")
+            .iter()
+            .any(|reason| reason.contains("has no adapter capability profile"))
+        );
+
+        let mut profiles = profiles_for(&plan);
+        profiles.push(profiles[0].clone());
+        assert!(
+            authorize_next_wave_with_adapter_capabilities(
+                &plan,
+                &[],
+                &profiles,
+                &adapter_policy(),
+                1_100,
+            )
+            .expect_err("duplicate adapter profile")
+            .iter()
+            .any(|reason| reason.contains("duplicate adapter capability profile"))
         );
     }
 
