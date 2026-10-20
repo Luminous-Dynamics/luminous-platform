@@ -382,8 +382,10 @@ fn sync_directory(path: &Path) -> io::Result<()> {
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicU64, Ordering};
+    use std::process::{Command, Stdio};
     use std::sync::{Arc, Barrier};
     use std::thread;
+    use std::time::{Duration, Instant};
 
     static NEXT_ID: AtomicU64 = AtomicU64::new(0);
 
@@ -484,6 +486,102 @@ mod tests {
         assert!(snapshot.challenge_consumed);
         assert_eq!(snapshot.active_generation, 8);
         assert_eq!(snapshot.active_policy_sha256, "b".repeat(64));
+    }
+
+    #[test]
+    fn eight_independent_processes_share_one_challenge_commit() {
+        const WORKERS: usize = 8;
+        let sandbox = Sandbox::new();
+        let store = seeded_store(&sandbox);
+        let executable = std::env::current_exe().expect("test executable path");
+        let mut children = Vec::with_capacity(WORKERS);
+
+        for index in 0..WORKERS {
+            let child = Command::new(&executable)
+                .arg("--exact")
+                .arg("tests::subprocess_promotion_worker")
+                .arg("--nocapture")
+                .env("SRQ_MODEL_WORKER_ROOT", &sandbox.0)
+                .env("SRQ_MODEL_WORKER_INDEX", index.to_string())
+                .stdout(Stdio::null())
+                .stderr(Stdio::inherit())
+                .spawn()
+                .expect("spawn independent worker process");
+            children.push(child);
+        }
+
+        let deadline = Instant::now() + Duration::from_secs(15);
+        loop {
+            let ready = (0..WORKERS).all(|index| sandbox.0.join(format!("ready-{index}")).exists());
+            if ready {
+                break;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "timed out waiting for subprocess workers to reach the shared gate"
+            );
+            thread::sleep(Duration::from_millis(5));
+        }
+
+        fs::write(sandbox.0.join("start-gate"), b"go").expect("release concurrent workers");
+        for child in children {
+            assert!(child.wait().expect("wait for worker process").success());
+        }
+
+        let mut committed = 0usize;
+        let mut rejected = 0usize;
+        for index in 0..WORKERS {
+            match fs::read_to_string(sandbox.0.join(format!("result-{index}")))
+                .expect("worker result file")
+                .as_str()
+            {
+                "committed" => committed += 1,
+                "rejected" => rejected += 1,
+                other => panic!("unexpected worker outcome: {other}"),
+            }
+        }
+        assert_eq!(committed, 1, "flock must serialize independent processes");
+        assert_eq!(rejected, WORKERS - 1);
+        let snapshot = sandbox.store().snapshot().expect("durable state after processes exit");
+        assert!(snapshot.challenge_consumed);
+        assert_eq!(snapshot.active_generation, 8);
+    }
+
+    #[test]
+    fn subprocess_promotion_worker() {
+        let Ok(root) = std::env::var("SRQ_MODEL_WORKER_ROOT") else {
+            return;
+        };
+        let index = std::env::var("SRQ_MODEL_WORKER_INDEX")
+            .expect("worker index")
+            .parse::<usize>()
+            .expect("integer worker index");
+        let root = PathBuf::from(root);
+        fs::write(root.join(format!("ready-{index}")), b"ready")
+            .expect("mark worker ready");
+
+        let deadline = Instant::now() + Duration::from_secs(15);
+        while !root.join("start-gate").exists() {
+            assert!(
+                Instant::now() < deadline,
+                "timed out waiting for concurrent worker release"
+            );
+            thread::sleep(Duration::from_millis(5));
+        }
+
+        let store = PromotionStore::open(root.clone()).expect("open worker store");
+        let outcome = store.consume_and_promote(
+            &spec(),
+            &format!("process-decision-{index:03}"),
+            None,
+        );
+        let status = match outcome {
+            Ok(CommitOutcome::Committed) => "committed",
+            Err(error) if error.kind() == ErrorKind::AlreadyExists => "rejected",
+            other => panic!("unexpected worker result: {other:?}"),
+        };
+        fs::write(root.join(format!("result-{index}")), status.as_bytes())
+            .expect("persist worker outcome");
     }
 
     #[test]
