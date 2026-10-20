@@ -540,13 +540,39 @@ impl FleetSessionJournal {
         let transaction = connection
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(|error| format!("cannot begin wave evaluation transaction: {error}"))?;
-        require_active_wave(&transaction, plan_sha256, wave_index)?;
+        let session = get_session_conn(&transaction, plan_sha256)?
+            .ok_or_else(|| "unknown fleet plan digest".to_owned())?;
         let state = get_wave_state(&transaction, plan_sha256, wave_index)?;
-        if state != "applied" {
-            return Err(format!("cannot evaluate wave in state {state:?}"));
-        }
         let wave = get_wave_conn(&transaction, plan_sha256, wave_index)?;
         let evaluation = evaluate_wave(&wave, observations);
+
+        // Retries after a lost database response must not alter a persisted
+        // decision. They succeed only if the same class of decision is reproduced.
+        if state != "applied" {
+            let persisted = match state.as_str() {
+                "verified" | "continued" => Some(WaveDecision::Continue),
+                "rollback_required" | "rolling_back" | "rolled_back" => {
+                    Some(WaveDecision::RollbackWave)
+                }
+                "halted" => Some(WaveDecision::HaltAndReconcile),
+                _ => None,
+            };
+            if persisted == Some(evaluation.decision) {
+                transaction
+                    .commit()
+                    .map_err(|error| format!("cannot commit idempotent wave evaluation: {error}"))?;
+                return Ok(evaluation);
+            }
+            return Err(format!(
+                "wave {wave_index} is already in state {state:?}; refusing a different or premature decision"
+            ));
+        }
+        if session.state != FleetSessionState::Running
+            || session.active_wave_index != Some(wave_index)
+        {
+            return Err(format!("wave {wave_index} is not the active fleet wave"));
+        }
+
         let now = to_sql_integer(now_unix_ms, "wave evaluation timestamp")?;
         match evaluation.decision {
             WaveDecision::Continue => {
@@ -575,7 +601,7 @@ impl FleetSessionJournal {
                 transaction
                     .execute(
                         "UPDATE rollout_waves SET state = 'halted', updated_at_unix_ms = ?1
-                         WHERE plan_sha256 = ?2 AND wave_index = ?3;",
+                         WHERE plan_sha256 = ?2 AND wave_index = ?3 AND state = 'applied';",
                         params![
                             now,
                             plan_sha256,
@@ -613,6 +639,24 @@ impl FleetSessionJournal {
         let transaction = connection
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(|error| format!("cannot begin target promotion transaction: {error}"))?;
+        let target = get_target_conn(&transaction, plan_sha256, target_token)?
+            .ok_or_else(|| format!("target {target_token:?} is not registered"))?;
+        if target.wave_index != wave_index {
+            return Err(format!("target {target_token:?} is not in wave {wave_index}"));
+        }
+        if target.candidate_policy_sha256 != effective_policy_sha256
+            || target.observed_policy_sha256.as_deref() != Some(effective_policy_sha256)
+        {
+            return Err("promotion digest does not match the exact applied candidate".to_owned());
+        }
+        // A caller may retry after the PromotionJournal and fleet journal commit
+        // but before its own response arrives. Accept only the same exact result.
+        if target.state == "promoted" {
+            transaction
+                .commit()
+                .map_err(|error| format!("cannot commit idempotent target promotion: {error}"))?;
+            return Ok(());
+        }
         require_active_wave(&transaction, plan_sha256, wave_index)?;
         let wave = get_wave_state(&transaction, plan_sha256, wave_index)?;
         if wave != "verified" {
@@ -620,15 +664,8 @@ impl FleetSessionJournal {
                 "cannot record target promotion from wave state {wave:?}"
             ));
         }
-        let target = get_target_conn(&transaction, plan_sha256, target_token)?
-            .ok_or_else(|| format!("target {target_token:?} is not registered"))?;
-        if target.wave_index != wave_index || target.state != "applied" {
+        if target.state != "applied" {
             return Err("target is not an applied member of the verified wave".to_owned());
-        }
-        if target.candidate_policy_sha256 != effective_policy_sha256
-            || target.observed_policy_sha256.as_deref() != Some(effective_policy_sha256)
-        {
-            return Err("promotion digest does not match the exact applied candidate".to_owned());
         }
         let now = to_sql_integer(now_unix_ms, "promotion timestamp")?;
         transaction
@@ -656,8 +693,18 @@ impl FleetSessionJournal {
         let transaction = connection
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(|error| format!("cannot begin wave-completion transaction: {error}"))?;
-        require_active_wave(&transaction, plan_sha256, wave_index)?;
         let state = get_wave_state(&transaction, plan_sha256, wave_index)?;
+        let session = get_session_conn(&transaction, plan_sha256)?
+            .ok_or_else(|| "unknown fleet plan digest".to_owned())?;
+        if state == "continued"
+            && session.active_wave_index != Some(wave_index)
+        {
+            transaction
+                .commit()
+                .map_err(|error| format!("cannot commit idempotent wave completion: {error}"))?;
+            return Ok(session);
+        }
+        require_active_wave(&transaction, plan_sha256, wave_index)?;
         if state != "verified" {
             return Err(format!("cannot complete wave in state {state:?}"));
         }
@@ -665,10 +712,7 @@ impl FleetSessionJournal {
             .query_row(
                 "SELECT COUNT(*) FROM rollout_targets
                  WHERE plan_sha256 = ?1 AND wave_index = ?2 AND state != 'promoted';",
-                params![
-                    plan_sha256,
-                    to_sql_integer(wave_index as u64, "wave index")?
-                ],
+                params![plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
                 |row| row.get(0),
             )
             .map_err(|error| format!("cannot count unpromoted wave targets: {error}"))?;
@@ -682,11 +726,7 @@ impl FleetSessionJournal {
             .execute(
                 "UPDATE rollout_waves SET state = 'continued', updated_at_unix_ms = ?1
                  WHERE plan_sha256 = ?2 AND wave_index = ?3 AND state = 'verified';",
-                params![
-                    now,
-                    plan_sha256,
-                    to_sql_integer(wave_index as u64, "wave index")?
-                ],
+                params![now, plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
             )
             .map_err(|error| format!("cannot close rollout wave: {error}"))?;
         let wave_count: i64 = transaction
@@ -708,12 +748,12 @@ impl FleetSessionJournal {
                 ],
             )
             .map_err(|error| format!("cannot persist wave completion: {error}"))?;
-        let session = get_session_conn(&transaction, plan_sha256)?
+        let updated = get_session_conn(&transaction, plan_sha256)?
             .ok_or_else(|| "fleet session disappeared at wave completion".to_owned())?;
         transaction
             .commit()
             .map_err(|error| format!("cannot commit wave completion: {error}"))?;
-        Ok(session)
+        Ok(updated)
     }
 
     /// Persist rollback intent for every applied/promoted target in the current
