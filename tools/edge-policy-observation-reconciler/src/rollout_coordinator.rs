@@ -804,7 +804,10 @@ mod tests {
     }
 
     impl PolicyDeviceAdapter for FakeDevice {
-        type Lease<'a> = FakeDeviceLease<'a> where Self: 'a;
+        type Lease<'a>
+            = FakeDeviceLease<'a>
+        where
+            Self: 'a;
 
         fn acquire_target_lease<'a>(
             &'a mut self,
@@ -891,7 +894,9 @@ mod tests {
                 .map_err(|error| error.to_string())?
                 .as_millis() as u64;
             let started = observed_start.max(
-                challenge["issued_at_unix_ms"].as_u64().unwrap_or(observed_start),
+                challenge["issued_at_unix_ms"]
+                    .as_u64()
+                    .unwrap_or(observed_start),
             );
             let mut receipt =
                 crate::build_synthetic_receipt(CORPUS).map_err(|errors| errors.join("; "))?;
@@ -1053,10 +1058,12 @@ mod tests {
             .expect_err("unsafe adapter rejected before writes");
         assert!(error.contains("exclusive target lease"));
         assert_eq!(device.writes, 0);
-        assert!(journal
-            .get("operation-rollout-no-lease")
-            .expect("query journal")
-            .is_none());
+        assert!(
+            journal
+                .get("operation-rollout-no-lease")
+                .expect("query journal")
+                .is_none()
+        );
         drop(ledger);
         drop(journal);
         remove_database(&journal_path);
