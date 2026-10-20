@@ -518,8 +518,10 @@ mod tests {
             return;
         };
         let nonce = std::env::var("LUMINOUS_REPLAY_CHILD_NONCE").expect("child nonce");
-        let ready = PathBuf::from(std::env::var_os("LUMINOUS_REPLAY_CHILD_READY").expect("ready path"));
-        let gate = PathBuf::from(std::env::var_os("LUMINOUS_REPLAY_CHILD_GATE").expect("gate path"));
+        let ready =
+            PathBuf::from(std::env::var_os("LUMINOUS_REPLAY_CHILD_READY").expect("ready path"));
+        let gate =
+            PathBuf::from(std::env::var_os("LUMINOUS_REPLAY_CHILD_GATE").expect("gate path"));
 
         std::fs::write(&ready, b"ready").expect("signal child readiness");
         let started = Instant::now();
@@ -586,13 +588,15 @@ mod tests {
         let outputs = [&result_one, &result_two];
         for output in outputs {
             assert!(
-                String::from_utf8_lossy(&output.stdout)
-                    .contains("consume_nonce_in_child_process"),
+                String::from_utf8_lossy(&output.stdout).contains("consume_nonce_in_child_process"),
                 "child did not run its intended test: {}",
                 String::from_utf8_lossy(&output.stdout)
             );
         }
-        let successes = outputs.iter().filter(|output| output.status.success()).count();
+        let successes = outputs
+            .iter()
+            .filter(|output| output.status.success())
+            .count();
         assert_eq!(
             successes,
             1,
