@@ -1162,6 +1162,8 @@ mod tests {
         PromotionEvidence, PromotionJournal, PromotionPermit, PromotionSpec, PromotionState,
         RecoveryAction,
     };
+    use crate::replay_ledger::SqliteReplayLedger;
+    use serde_json::{Value, json};
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -1212,6 +1214,71 @@ mod tests {
         let _ = std::fs::remove_file(path.with_extension("sqlite-shm"));
     }
 
+    const CORPUS_SCHEMA: &str =
+        include_str!("../../../schemas/edge-policy-conformance-corpus-v1.schema.json");
+    const CORPUS: &str =
+        include_str!("../../../examples/edge-policy-conformance-corpus-synthetic-v1.json");
+    const STARTED_AT: u64 = 1_050;
+    const COMPLETED_AT: u64 = 1_200;
+    const EXPIRES_AT: u64 = 2_000;
+
+    fn freshness_sources(nonce: &str) -> (String, String, String) {
+        let mut receipt = crate::build_synthetic_receipt(CORPUS).expect("receipt template");
+        receipt["evidence_class"] = json!("namespace_lab_observation");
+        receipt["run_id"] = json!("run-promotion-journal-0001");
+        receipt["approved_policy_sha256"] = json!(BASELINE);
+        receipt["effective_config_sha256"] = json!(CANDIDATE);
+        receipt["target_token"] = json!("target-policy-lab");
+        receipt["time_basis"] = json!({
+            "kind": "monotonic_with_wall_anchor",
+            "clock_id": "promotion-journal-test-clock",
+            "wall_anchor_unix_ms": STARTED_AT,
+            "monotonic_origin_ms": 0
+        });
+        for (index, observation) in receipt["observations"]
+            .as_array_mut()
+            .expect("observations array")
+            .iter_mut()
+            .enumerate()
+        {
+            observation["evidence_source"] = json!("independent_dataplane_probe");
+            observation["observed_at_unix_ms"] = json!(STARTED_AT + index as u64);
+            observation["monotonic_elapsed_ms"] = json!(index as u64);
+            observation["duration_ms"] = json!(5);
+            observation["evidence_sha256"] = json!("d".repeat(64));
+            observation["effective_policy_sha256"] = json!(CANDIDATE);
+        }
+        let receipt_source = serde_json::to_string(&receipt).expect("serialize receipt");
+        let challenge_source = json!({
+            "schema_version": "1.0.0",
+            "challenge_id": "challenge-policy-0001",
+            "nonce": nonce,
+            "issued_at_unix_ms": 1_000,
+            "expires_at_unix_ms": EXPIRES_AT,
+            "max_receipt_age_ms": 500,
+            "policy_generation": 1,
+            "corpus_sha256": crate::sha256_hex(CORPUS.as_bytes()),
+            "approved_policy_sha256": BASELINE,
+            "expected_effective_policy_sha256": CANDIDATE,
+            "target_token": "target-policy-lab"
+        })
+        .to_string();
+        let receipt_value: Value =
+            serde_json::from_str(&receipt_source).expect("receipt JSON");
+        let envelope_source = json!({
+            "schema_version": "1.0.0",
+            "challenge_id": "challenge-policy-0001",
+            "nonce": nonce,
+            "run_id": receipt_value["run_id"],
+            "policy_generation": 1,
+            "started_at_unix_ms": STARTED_AT,
+            "completed_at_unix_ms": COMPLETED_AT,
+            "receipt_sha256": crate::sha256_hex(receipt_source.as_bytes())
+        })
+        .to_string();
+        (challenge_source, envelope_source, receipt_source)
+    }
+
     fn prepared_applied(journal: &PromotionJournal) {
         journal.prepare(&spec(1)).expect("prepare");
         journal
@@ -1220,6 +1287,56 @@ mod tests {
         journal
             .record_applied("operation-policy-0001", CANDIDATE, 120)
             .expect("readback");
+    }
+
+    #[test]
+    fn public_verification_gate_consumes_nonce_before_minting_promotion_permit() {
+        let journal_path = path();
+        let ledger_path = journal_path.with_file_name(format!(
+            "{}-ledger.sqlite",
+            journal_path.file_name().expect("journal filename").to_string_lossy()
+        ));
+        let journal = PromotionJournal::open(&journal_path).expect("open journal");
+        let ledger = SqliteReplayLedger::open(&ledger_path).expect("open replay ledger");
+        prepared_applied(&journal);
+        let (challenge, envelope, receipt) = freshness_sources(
+            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        );
+
+        let (report, permit) = journal
+            .verify_and_record_evidence(
+                &ledger,
+                "operation-policy-0001",
+                &challenge,
+                &envelope,
+                CORPUS_SCHEMA,
+                CORPUS,
+                &receipt,
+                CANDIDATE,
+                1_400,
+            )
+            .expect("verified receipt consumes nonce and returns permit");
+        assert_eq!(
+            report["durable_replay_ledger"],
+            "commit_confirmed_before_return"
+        );
+        assert_eq!(
+            journal
+                .get("operation-policy-0001")
+                .expect("read")
+                .expect("operation")
+                .state,
+            PromotionState::Verified
+        );
+        let promoted = journal
+            .promote(&permit, CANDIDATE, 1_600)
+            .expect("promote with exact candidate readback");
+        assert_eq!(promoted.state, PromotionState::Promoted);
+
+        drop(ledger);
+        drop(journal);
+        remove_database(&journal_path);
+        remove_database(&ledger_path);
     }
 
     #[test]
