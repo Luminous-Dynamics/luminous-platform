@@ -130,10 +130,12 @@ fn validate_policy_text(stage: PolicyStage, ruleset: &str) -> Result<(), String>
             }
         }
         PolicyStage::ExplicitRevoke => {
-            let revoke_at = revoke_at
-                .ok_or_else(|| "explicit-revocation stage lacks the tuple-specific deny".to_owned())?;
-            let established_at = established_at
-                .ok_or_else(|| "explicit-revocation stage lacks the stateful-rule control".to_owned())?;
+            let revoke_at = revoke_at.ok_or_else(|| {
+                "explicit-revocation stage lacks the tuple-specific deny".to_owned()
+            })?;
+            let established_at = established_at.ok_or_else(|| {
+                "explicit-revocation stage lacks the stateful-rule control".to_owned()
+            })?;
             if revoke_at >= established_at {
                 return Err(
                     "tuple-specific revocation must precede the generic established-state accept"
@@ -141,7 +143,9 @@ fn validate_policy_text(stage: PolicyStage, ruleset: &str) -> Result<(), String>
                 );
             }
             if port_allow_at.is_some() {
-                return Err("explicit-revocation stage unexpectedly permits new TCP/8080 flows".to_owned());
+                return Err(
+                    "explicit-revocation stage unexpectedly permits new TCP/8080 flows".to_owned(),
+                );
             }
         }
     }
@@ -149,7 +153,10 @@ fn validate_policy_text(stage: PolicyStage, ruleset: &str) -> Result<(), String>
 }
 
 fn effective_policy(namespace: &str, stage: PolicyStage) -> Result<String, String> {
-    let output = checked("ip", &["netns", "exec", namespace, "nft", "list", "ruleset"])?;
+    let output = checked(
+        "ip",
+        &["netns", "exec", namespace, "nft", "list", "ruleset"],
+    )?;
     let ruleset = String::from_utf8(output.stdout)
         .map_err(|error| format!("effective nft ruleset was not UTF-8: {error}"))?;
     validate_policy_text(stage, &ruleset)?;
@@ -186,7 +193,9 @@ impl LabGuard {
                 .lines()
                 .any(|line| line.split_whitespace().next() == Some(namespace))
             {
-                return Err(format!("temporary namespace {namespace} remains after cleanup"));
+                return Err(format!(
+                    "temporary namespace {namespace} remains after cleanup"
+                ));
             }
         }
         self.cleaned = true;
@@ -247,11 +256,27 @@ fn prepare_namespaces(guard: &LabGuard, client_if: &str, server_if: &str) -> Res
     )?;
     checked(
         "ip",
-        &["-n", &guard.client_ns, "link", "set", "dev", client_if, "up"],
+        &[
+            "-n",
+            &guard.client_ns,
+            "link",
+            "set",
+            "dev",
+            client_if,
+            "up",
+        ],
     )?;
     checked(
         "ip",
-        &["-n", &guard.server_ns, "link", "set", "dev", server_if, "up"],
+        &[
+            "-n",
+            &guard.server_ns,
+            "link",
+            "set",
+            "dev",
+            server_if,
+            "up",
+        ],
     )?;
 
     for namespace in [&guard.client_ns, &guard.server_ns] {
@@ -260,14 +285,18 @@ fn prepare_namespaces(guard: &LabGuard, client_if: &str, server_if: &str) -> Res
             .lines()
             .any(|line| line.split_whitespace().next() == Some("default"))
         {
-            return Err(format!("{namespace} unexpectedly has an IPv4 default route"));
+            return Err(format!(
+                "{namespace} unexpectedly has an IPv4 default route"
+            ));
         }
         let routes_v6 = checked("ip", &["-n", namespace, "-6", "route", "show"])?;
         if String::from_utf8_lossy(&routes_v6.stdout)
             .lines()
             .any(|line| line.split_whitespace().next() == Some("default"))
         {
-            return Err(format!("{namespace} unexpectedly has an IPv6 default route"));
+            return Err(format!(
+                "{namespace} unexpectedly has an IPv6 default route"
+            ));
         }
     }
     Ok(())
@@ -301,10 +330,7 @@ fn read_handshake<R: BufRead>(reader: &mut R, expected: &str) -> Result<(), Stri
     Ok(())
 }
 
-fn spawn_lab_server(
-    guard: &mut LabGuard,
-    executable: &std::path::Path,
-) -> Result<(), String> {
+fn spawn_lab_server(guard: &mut LabGuard, executable: &std::path::Path) -> Result<(), String> {
     let mut child = Command::new("ip")
         .args(["netns", "exec", &guard.server_ns])
         .arg(executable)
@@ -328,7 +354,13 @@ fn spawn_lab_server(
 fn spawn_lab_client(
     guard: &mut LabGuard,
     executable: &std::path::Path,
-) -> Result<(std::process::ChildStdin, BufReader<std::process::ChildStdout>), String> {
+) -> Result<
+    (
+        std::process::ChildStdin,
+        BufReader<std::process::ChildStdout>,
+    ),
+    String,
+> {
     let mut child = Command::new("ip")
         .args(["netns", "exec", &guard.client_ns])
         .arg(executable)
@@ -357,7 +389,8 @@ fn client_exchange(
     stdout: &mut BufReader<std::process::ChildStdout>,
     payload: &str,
 ) -> Result<String, String> {
-    writeln!(stdin, "{payload}").map_err(|error| format!("could not send fixed test payload: {error}"))?;
+    writeln!(stdin, "{payload}")
+        .map_err(|error| format!("could not send fixed test payload: {error}"))?;
     stdin
         .flush()
         .map_err(|error| format!("could not flush fixed test payload: {error}"))?;
@@ -429,7 +462,9 @@ fn run_lab() -> Result<ExitCode, String> {
     let baseline_exchange_ms = u64::try_from(baseline_start.elapsed().as_millis())
         .map_err(|error| format!("baseline elapsed time overflow: {error}"))?;
     if baseline_reply != "ACK:baseline" {
-        return Err(format!("positive control failed before policy change: {baseline_reply}"));
+        return Err(format!(
+            "positive control failed before policy change: {baseline_reply}"
+        ));
     }
 
     let retain_start = Instant::now();
@@ -447,7 +482,9 @@ fn run_lab() -> Result<ExitCode, String> {
     let (new_session_blocked_after_admission_removal, new_session_check_ms) =
         check_new_session(&guard.client_ns, &executable)?;
     if !new_session_blocked_after_admission_removal {
-        return Err("a fresh TCP/8080 session connected after its admission rule was removed".to_owned());
+        return Err(
+            "a fresh TCP/8080 session connected after its admission rule was removed".to_owned(),
+        );
     }
     ensure_server_alive(&mut guard)?;
 
@@ -593,7 +630,8 @@ fn run_client() -> Result<(), String> {
         .map_err(|error| format!("could not flush client connection marker: {error}"))?;
 
     for input in io::stdin().lock().lines() {
-        let payload = input.map_err(|error| format!("could not read fixed test command: {error}"))?;
+        let payload =
+            input.map_err(|error| format!("could not read fixed test command: {error}"))?;
         writeln!(stream, "{payload}")
             .map_err(|error| format!("could not send fixed test payload: {error}"))?;
         stream
