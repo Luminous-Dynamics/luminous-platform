@@ -92,7 +92,13 @@ fn benchmark_size(target_count: usize) -> Result<Value, Box<dyn Error>> {
             &profiles,
             &policy,
             1_100,
-        )?;
+        )
+        .map_err(|errors| {
+            format!(
+                "adapter-qualified rollout gate failed for {target_count} targets: {}",
+                errors.join("; ")
+            )
+        })?;
         let elapsed_nanos = u64::try_from(started.elapsed().as_nanos())?;
         if !matches!(
             decision,
