@@ -52,12 +52,10 @@ impl ChallengeReplayGuard {
         receipt_source: &str,
         verifier_now_unix_ms: u64,
     ) -> Result<Value, Vec<String>> {
-        let challenge =
-            super::validate_document(CHALLENGE_SCHEMA, challenge_source, "challenge")?;
+        let challenge = super::validate_document(CHALLENGE_SCHEMA, challenge_source, "challenge")?;
         let envelope =
             super::validate_document(ENVELOPE_SCHEMA, envelope_source, "freshness envelope")?;
-        let receipt =
-            super::validate_document(RECEIPT_SCHEMA, receipt_source, "receipt")?;
+        let receipt = super::validate_document(RECEIPT_SCHEMA, receipt_source, "receipt")?;
 
         let challenge_id = string_field(&challenge, "/challenge_id", "challenge.challenge_id")?;
         let nonce = string_field(&challenge, "/nonce", "challenge.nonce")?;
@@ -67,15 +65,31 @@ impl ChallengeReplayGuard {
             ]);
         }
 
-        let issued_at = integer_field(&challenge, "/issued_at_unix_ms", "challenge.issued_at_unix_ms")?;
-        let expires_at = integer_field(&challenge, "/expires_at_unix_ms", "challenge.expires_at_unix_ms")?;
-        let max_receipt_age =
-            integer_field(&challenge, "/max_receipt_age_ms", "challenge.max_receipt_age_ms")?;
-        let generation =
-            integer_field(&challenge, "/policy_generation", "challenge.policy_generation")?;
+        let issued_at = integer_field(
+            &challenge,
+            "/issued_at_unix_ms",
+            "challenge.issued_at_unix_ms",
+        )?;
+        let expires_at = integer_field(
+            &challenge,
+            "/expires_at_unix_ms",
+            "challenge.expires_at_unix_ms",
+        )?;
+        let max_receipt_age = integer_field(
+            &challenge,
+            "/max_receipt_age_ms",
+            "challenge.max_receipt_age_ms",
+        )?;
+        let generation = integer_field(
+            &challenge,
+            "/policy_generation",
+            "challenge.policy_generation",
+        )?;
 
         if expires_at <= issued_at {
-            return Err(vec!["challenge expiry must be after its issue time".to_owned()]);
+            return Err(vec![
+                "challenge expiry must be after its issue time".to_owned(),
+            ]);
         }
         if expires_at - issued_at > MAX_CHALLENGE_LIFETIME_MS {
             return Err(vec![format!(
@@ -104,8 +118,11 @@ impl ChallengeReplayGuard {
                 "freshness envelope run_id does not match the receipt".to_owned(),
             ]);
         }
-        let envelope_generation =
-            integer_field(&envelope, "/policy_generation", "envelope.policy_generation")?;
+        let envelope_generation = integer_field(
+            &envelope,
+            "/policy_generation",
+            "envelope.policy_generation",
+        )?;
         if envelope_generation != generation {
             return Err(vec![
                 "freshness envelope policy_generation does not match the challenge".to_owned(),
@@ -169,10 +186,16 @@ impl ChallengeReplayGuard {
             ]);
         }
 
-        let started_at =
-            integer_field(&envelope, "/started_at_unix_ms", "envelope.started_at_unix_ms")?;
-        let completed_at =
-            integer_field(&envelope, "/completed_at_unix_ms", "envelope.completed_at_unix_ms")?;
+        let started_at = integer_field(
+            &envelope,
+            "/started_at_unix_ms",
+            "envelope.started_at_unix_ms",
+        )?;
+        let completed_at = integer_field(
+            &envelope,
+            "/completed_at_unix_ms",
+            "envelope.completed_at_unix_ms",
+        )?;
         if started_at < issued_at {
             return Err(vec![
                 "receipt run started before this challenge was issued".to_owned(),
@@ -281,11 +304,7 @@ impl ChallengeReplayGuard {
     }
 }
 
-fn string_field<'a>(
-    value: &'a Value,
-    pointer: &str,
-    label: &str,
-) -> Result<&'a str, Vec<String>> {
+fn string_field<'a>(value: &'a Value, pointer: &str, label: &str) -> Result<&'a str, Vec<String>> {
     value
         .pointer(pointer)
         .and_then(Value::as_str)
@@ -386,14 +405,7 @@ mod tests {
         receipt: &str,
         now: u64,
     ) -> Result<Value, Vec<String>> {
-        guard.verify_and_consume(
-            challenge,
-            envelope,
-            CORPUS_SCHEMA,
-            CORPUS,
-            receipt,
-            now,
-        )
+        guard.verify_and_consume(challenge, envelope, CORPUS_SCHEMA, CORPUS, receipt, now)
     }
 
     #[test]
@@ -403,10 +415,16 @@ mod tests {
         let envelope = envelope_source(&receipt);
         let mut guard = ChallengeReplayGuard::new();
 
-        let report = verify(&mut guard, &challenge, &envelope, &receipt, 1_400)
-            .expect("fresh receipt");
-        assert_eq!(report["disposition"], "freshness_consistent_not_authenticated");
-        assert_eq!(report["conformance_disposition"], "reported_observations_consistent_not_authenticated");
+        let report =
+            verify(&mut guard, &challenge, &envelope, &receipt, 1_400).expect("fresh receipt");
+        assert_eq!(
+            report["disposition"],
+            "freshness_consistent_not_authenticated"
+        );
+        assert_eq!(
+            report["conformance_disposition"],
+            "reported_observations_consistent_not_authenticated"
+        );
         assert_eq!(report["receipt_age_ms"], 200);
         assert_eq!(report["observations_checked"], 13);
     }
@@ -417,11 +435,14 @@ mod tests {
         let challenge = challenge_source();
         let envelope = envelope_source(&receipt);
         let mut guard = ChallengeReplayGuard::new();
-        verify(&mut guard, &challenge, &envelope, &receipt, 1_400)
-            .expect("first receipt");
+        verify(&mut guard, &challenge, &envelope, &receipt, 1_400).expect("first receipt");
         let error = verify(&mut guard, &challenge, &envelope, &receipt, 1_400)
             .expect_err("replay rejected");
-        assert!(error.iter().any(|item| item.contains("already been consumed")));
+        assert!(
+            error
+                .iter()
+                .any(|item| item.contains("already been consumed"))
+        );
     }
 
     #[test]
@@ -432,7 +453,11 @@ mod tests {
         let mut guard = ChallengeReplayGuard::new();
         let error = verify(&mut guard, &challenge, &envelope, &receipt, 1_901)
             .expect_err("age exceeds declared maximum");
-        assert!(error.iter().any(|item| item.contains("maximum receipt age")));
+        assert!(
+            error
+                .iter()
+                .any(|item| item.contains("maximum receipt age"))
+        );
         let valid = verify(&mut guard, &challenge, &envelope, &receipt, 1_400);
         assert!(valid.is_ok(), "invalid attempt must not consume the nonce");
     }
@@ -451,7 +476,11 @@ mod tests {
             1_400,
         )
         .expect_err("nonce mismatch");
-        assert!(error.iter().any(|item| item.contains("challenge ID and nonce")));
+        assert!(
+            error
+                .iter()
+                .any(|item| item.contains("challenge ID and nonce"))
+        );
 
         let mut wrong_generation: Value =
             serde_json::from_str(&envelope_source(&receipt)).expect("envelope");
@@ -483,7 +512,11 @@ mod tests {
             1_400,
         )
         .expect_err("changed bytes");
-        assert!(error.iter().any(|item| item.contains("exact receipt bytes")));
+        assert!(
+            error
+                .iter()
+                .any(|item| item.contains("exact receipt bytes"))
+        );
 
         let synthetic = crate::build_synthetic_receipt(CORPUS).expect("synthetic receipt");
         let synthetic_source = serde_json::to_string(&synthetic).expect("serialize");
@@ -495,7 +528,11 @@ mod tests {
             1_400,
         )
         .expect_err("synthetic evidence isn't fresh dataplane evidence");
-        assert!(error.iter().any(|item| item.contains("non-synthetic lab observation")));
+        assert!(
+            error
+                .iter()
+                .any(|item| item.contains("non-synthetic lab observation"))
+        );
     }
 
     #[test]
@@ -519,6 +556,10 @@ mod tests {
             1_400,
         )
         .expect_err("observation predates run");
-        assert!(error.iter().any(|item| item.contains("outside the envelope run interval")));
+        assert!(
+            error
+                .iter()
+                .any(|item| item.contains("outside the envelope run interval"))
+        );
     }
 }
