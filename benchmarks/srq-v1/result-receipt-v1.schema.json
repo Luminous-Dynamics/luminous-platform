@@ -1,0 +1,304 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/srq-result-v1.schema.json",
+  "title": "SRQ-1 Qualification Result Receipt v1",
+  "description": "Machine-readable record of a single SRQ-1 scenario execution. A receipt records observations and claim limits; it is not itself proof that the observed host state is authentic.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "scenario_id",
+    "status",
+    "reason",
+    "source",
+    "execution",
+    "evidence",
+    "claim_ceiling",
+    "non_claims",
+    "fixture"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "profile_id": {
+      "const": "SRQ-1"
+    },
+    "scenario_id": {
+      "type": "string",
+      "pattern": "^[A-Z]+-[0-9]{3}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_RUN",
+        "BLOCKED",
+        "NOT_APPLICABLE"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_source_sha",
+        "event_sha",
+        "actual_checkout_sha",
+        "source_matches_expected"
+      ],
+      "properties": {
+        "expected_source_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "event_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "actual_checkout_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "source_matches_expected": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tier",
+        "steps_executed",
+        "command",
+        "exit_code",
+        "environment"
+      ],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": [
+            "static",
+            "model",
+            "qemu",
+            "physical"
+          ]
+        },
+        "steps_executed": {
+          "type": "boolean"
+        },
+        "command": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "exit_code": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "os",
+            "architecture",
+            "toolchain"
+          ],
+          "properties": {
+            "os": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "architecture": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "toolchain": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact",
+          "sha256",
+          "kind"
+        ],
+        "properties": {
+          "artifact": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "log",
+              "receipt",
+              "capture",
+              "manifest",
+              "benchmark",
+              "other"
+            ]
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "type": "string",
+      "minLength": 1
+    },
+    "non_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "fixture": {
+      "type": "boolean"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PASS"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "actual_checkout_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "source_matches_expected": {
+                "const": true
+              }
+            }
+          },
+          "execution": {
+            "properties": {
+              "steps_executed": {
+                "const": true
+              },
+              "exit_code": {
+                "const": 0
+              }
+            }
+          },
+          "evidence": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "NOT_RUN"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "actual_checkout_sha": {
+                "type": "null"
+              },
+              "source_matches_expected": {
+                "type": "null"
+              }
+            }
+          },
+          "execution": {
+            "properties": {
+              "steps_executed": {
+                "const": false
+              },
+              "command": {
+                "type": "null"
+              },
+              "exit_code": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "NOT_APPLICABLE"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "execution": {
+            "properties": {
+              "steps_executed": {
+                "const": false
+              },
+              "exit_code": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
