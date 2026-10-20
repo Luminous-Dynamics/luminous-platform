@@ -67,6 +67,8 @@ Each receipt must bind at least the scenario/corpus digest, source commit, actua
 
 The companion `validate-result.sh` checks SRQ's core status/provenance invariants, requires the scenario ID to exist in the frozen corpus, rejects `fixture=true` as qualification evidence by default, and constrains `claim_ceiling` to the execution tier. The explicit `--allow-fixtures` switch is for validator tests only; it reports `VALID_FIXTURE_ONLY`, not qualification PASS.
 
+A scenario can record a partial tier result without becoming qualified: `UPDATE-004` now records `observed_tiers: ["model"]` and `partial_model_pass_not_qualified`. Its source-bound receipt demonstrates only an abstract filesystem activation model. The QEMU and physical tiers remain open, and the overall SRQ profile remains `NOT_QUALIFIED` until all required release gates have eligible evidence.
+
 | Execution tier | Maximum allowed claim ceiling | What it still does not establish |
 |---|---|---|
 | `static` | `static_contract_only` | Runtime behavior, host recovery, signer/device identity |
