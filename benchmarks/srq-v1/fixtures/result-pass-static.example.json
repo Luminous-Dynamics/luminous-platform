@@ -28,7 +28,7 @@
       "kind": "log"
     }
   ],
-  "claim_ceiling": "static_fixture_structure_only",
+  "claim_ceiling": "static_contract_only",
   "non_claims": [
     "This is a synthetic fixture, not a production execution receipt.",
     "No runtime scenario or host recovery was executed.",
