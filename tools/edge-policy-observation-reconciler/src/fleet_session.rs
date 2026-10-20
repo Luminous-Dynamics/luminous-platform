@@ -768,8 +768,39 @@ impl FleetSessionJournal {
         let transaction = connection
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(|error| format!("cannot begin wave rollback transaction: {error}"))?;
-        require_active_wave(&transaction, plan_sha256, wave_index)?;
         let wave_state = get_wave_state(&transaction, plan_sha256, wave_index)?;
+        let session = get_session_conn(&transaction, plan_sha256)?
+            .ok_or_else(|| "unknown fleet plan digest".to_owned())?;
+
+        // A retry after the final rollback commit returns the same complete
+        // command set instead of reporting an error after the side effect exists.
+        if wave_state == "rolled_back"
+            && session.state == FleetSessionState::Halted
+            && session.active_wave_index.is_none()
+        {
+            let targets = get_wave_targets_conn(&transaction, plan_sha256, wave_index)?;
+            let mut commands = Vec::with_capacity(targets.len());
+            for target in targets {
+                if target.state != "rolled_back" {
+                    return Err("rolled_back wave contains a nonterminal target".to_owned());
+                }
+                commands.push(RollbackCommand {
+                    plan_sha256: plan_sha256.to_owned(),
+                    wave_index,
+                    target_token: target.target_token,
+                    command_id: target
+                        .rollback_command_id
+                        .ok_or_else(|| "rolled_back target lacks rollback command ID".to_owned())?,
+                    baseline_policy_sha256: target.baseline_policy_sha256,
+                });
+            }
+            transaction
+                .commit()
+                .map_err(|error| format!("cannot commit idempotent rollback request: {error}"))?;
+            return Ok(commands);
+        }
+
+        require_active_wave(&transaction, plan_sha256, wave_index)?;
         if !matches!(wave_state.as_str(), "rollback_required" | "rolling_back") {
             return Err(format!(
                 "cannot request rollback from wave state {wave_state:?}"
@@ -798,10 +829,9 @@ impl FleetSessionJournal {
                         .map_err(|error| format!("cannot persist target rollback intent: {error}"))?;
                     id
                 }
-                "rollback_intent" => target
+                "rollback_intent" | "rolled_back" => target
                     .rollback_command_id
-                    .ok_or_else(|| "rollback_intent target lacks durable command ID".to_owned())?,
-                "rolled_back" => continue,
+                    .ok_or_else(|| "rollback target lacks durable command ID".to_owned())?,
                 other => {
                     return Err(format!(
                         "target {:?} in state {other:?} cannot be rolled back as part of a complete applied wave",
@@ -809,6 +839,8 @@ impl FleetSessionJournal {
                     ));
                 }
             };
+            // Return the full stable command set even when part of the wave has
+            // already rolled back; adapters can safely deduplicate by command ID.
             commands.push(RollbackCommand {
                 plan_sha256: plan_sha256.to_owned(),
                 wave_index,
@@ -848,19 +880,35 @@ impl FleetSessionJournal {
         let transaction = connection
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(|error| format!("cannot begin target rollback completion: {error}"))?;
-        require_active_wave(&transaction, plan_sha256, wave_index)?;
-        if get_wave_state(&transaction, plan_sha256, wave_index)? != "rolling_back" {
-            return Err("target rollback completion requires a rolling_back wave".to_owned());
-        }
+        let wave_state = get_wave_state(&transaction, plan_sha256, wave_index)?;
         let target = get_target_conn(&transaction, plan_sha256, target_token)?
             .ok_or_else(|| format!("target {target_token:?} is not registered"))?;
-        if target.wave_index != wave_index || target.state != "rollback_intent" {
-            return Err("target is not awaiting rollback in this wave".to_owned());
+        if target.wave_index != wave_index {
+            return Err(format!("target {target_token:?} is not in wave {wave_index}"));
         }
         if target.baseline_policy_sha256 != effective_policy_sha256 {
             return Err(
                 "rollback readback does not match the exact baseline policy digest".to_owned(),
             );
+        }
+        // A retry after the journal commit is idempotent, including the case
+        // where the entire wave and session have already reached terminal state.
+        if target.state == "rolled_back"
+            && target.observed_policy_sha256.as_deref() == Some(effective_policy_sha256)
+        {
+            let complete = wave_state == "rolled_back";
+            if !matches!(wave_state.as_str(), "rolling_back" | "rolled_back") {
+                return Err(format!("rolled-back target is in unexpected wave state {wave_state:?}"));
+            }
+            transaction
+                .commit()
+                .map_err(|error| format!("cannot commit idempotent rollback record: {error}"))?;
+            return Ok(complete);
+        }
+
+        require_active_wave(&transaction, plan_sha256, wave_index)?;
+        if wave_state != "rolling_back" || target.state != "rollback_intent" {
+            return Err("target rollback completion requires a rollback_intent target in a rolling_back wave".to_owned());
         }
         let now = to_sql_integer(now_unix_ms, "rollback completion timestamp")?;
         transaction
