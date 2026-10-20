@@ -154,6 +154,58 @@ fi
 [[ "$(sqlite3 -batch "$binding_db" "PRAGMA integrity_check;")" == "ok" ]] || fail "binding violation damaged SQLite integrity"
 echo "PASS: mismatched target/generation challenge binding fails closed without partial state"
 
+# Case D2: challenge consumption must carry the exact next_generation
+# attached to its decision, not merely a valid challenge/decision identifier.
+generation_binding_db="$tmp/generation-binding.sqlite"
+init_db "$generation_binding_db"
+if sqlite3 -batch -bail "$generation_binding_db" <<SQL > "$tmp/generation-binding.log" 2>&1
+PRAGMA foreign_keys=ON;
+BEGIN IMMEDIATE;
+INSERT INTO promotion_decisions
+  (decision_id,target_id,challenge_id,previous_generation,next_generation,
+   previous_effective_policy_digest,approved_policy_digest,effective_policy_digest,
+   corpus_digest,verifier_id)
+VALUES ('decision-generation-binding','target-1','challenge-generation-binding',0,1,'$a','$b','$c','$d','$verifier');
+INSERT INTO challenge_consumptions
+  (target_id,challenge_id,decision_id,consumed_generation)
+VALUES ('target-1','challenge-generation-binding','decision-generation-binding',2);
+COMMIT;
+SQL
+then
+  fail "challenge consumption with a mismatched generation was accepted"
+fi
+[[ "$(sqlite3 -batch "$generation_binding_db" "SELECT generation FROM target_policy_state WHERE target_id='target-1';")" == "0" ]] || fail "target changed after challenge-generation violation"
+[[ "$(sqlite3 -batch "$generation_binding_db" "SELECT count(*) FROM promotion_decisions;")" == "0" ]] || fail "generation violation left a decision row"
+[[ "$(sqlite3 -batch "$generation_binding_db" "SELECT count(*) FROM challenge_consumptions;")" == "0" ]] || fail "generation violation left a consumption row"
+[[ "$(sqlite3 -batch "$generation_binding_db" "PRAGMA integrity_check;")" == "ok" ]] || fail "generation violation damaged SQLite integrity"
+echo "PASS: mismatched consumed generation fails closed without partial state"
+
+# Case D3: active state cannot point at a decision whose next_generation
+# differs from the state's generation.
+state_generation_db="$tmp/state-generation.sqlite"
+init_db "$state_generation_db"
+if sqlite3 -batch -bail "$state_generation_db" <<SQL > "$tmp/state-generation.log" 2>&1
+PRAGMA foreign_keys=ON;
+BEGIN IMMEDIATE;
+INSERT INTO promotion_decisions
+  (decision_id,target_id,challenge_id,previous_generation,next_generation,
+   previous_effective_policy_digest,approved_policy_digest,effective_policy_digest,
+   corpus_digest,verifier_id)
+VALUES ('decision-state-generation','target-1','challenge-state-generation',0,1,'$a','$b','$c','$d','$verifier');
+UPDATE target_policy_state
+   SET generation=2,approved_policy_digest='$b',effective_policy_digest='$c',
+       corpus_digest='$d',last_decision_id='decision-state-generation'
+ WHERE target_id='target-1' AND generation=0 AND effective_policy_digest='$a';
+COMMIT;
+SQL
+then
+  fail "active state with a mismatched decision generation was accepted"
+fi
+[[ "$(sqlite3 -batch "$state_generation_db" "SELECT generation FROM target_policy_state WHERE target_id='target-1';")" == "0" ]] || fail "state-generation violation changed target generation"
+[[ "$(sqlite3 -batch "$state_generation_db" "SELECT count(*) FROM promotion_decisions;")" == "0" ]] || fail "state-generation violation left a decision row"
+[[ "$(sqlite3 -batch "$state_generation_db" "PRAGMA integrity_check;")" == "ok" ]] || fail "state-generation violation damaged SQLite integrity"
+echo "PASS: active state cannot reference a decision at a different generation"
+
 # Case E: 64 independent writer processes compete for the same target/challenge.
 # SQLite must serialize the write transaction; the unique challenge constraint and
 # generation CAS together permit exactly one durable promotion.
@@ -371,5 +423,5 @@ echo "PASS: 100 SQLite SIGKILL trials across four transaction boundaries"
 
 # Publish enough execution identity to aid later signed-bundle correlation.
 sqlite_version="$(sqlite3 --version | awk '{print $1}')"
-printf 'sqlite_version=%s journal_mode=%s synchronous=FULL cases=9 process_contenders=64 commit_sigkill_boundaries=4 commit_sigkill_trials=100\n'\
+printf 'sqlite_version=%s journal_mode=%s synchronous=FULL cases=11 process_contenders=64 commit_sigkill_boundaries=4 commit_sigkill_trials=100\n'\
   "$sqlite_version" "$(sqlite3 -batch "$success_db" "PRAGMA journal_mode;")"
