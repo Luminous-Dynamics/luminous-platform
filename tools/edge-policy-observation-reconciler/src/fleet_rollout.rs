@@ -75,10 +75,7 @@ pub fn plan_rollout(
     for target in targets {
         validate_target(target)?;
         if !target_tokens.insert(target.target_token.as_str()) {
-            return Err(format!(
-                "duplicate target token {:?}",
-                target.target_token
-            ));
+            return Err(format!("duplicate target token {:?}", target.target_token));
         }
         if target.canary {
             canaries.push(target.clone());
@@ -186,14 +183,8 @@ fn validate_target(target: &FleetTarget) -> Result<(), String> {
             target.target_token
         ));
     }
-    validate_digest(
-        &target.baseline_policy_sha256,
-        "baseline_policy_sha256",
-    )?;
-    validate_digest(
-        &target.candidate_policy_sha256,
-        "candidate_policy_sha256",
-    )?;
+    validate_digest(&target.baseline_policy_sha256, "baseline_policy_sha256")?;
+    validate_digest(&target.candidate_policy_sha256, "candidate_policy_sha256")?;
     if target.baseline_policy_sha256 == target.candidate_policy_sha256 {
         return Err(format!(
             "target {:?} candidate digest must differ from its baseline digest",
@@ -215,9 +206,7 @@ fn valid_identifier(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= 80
         && value.bytes().all(|byte| {
-            byte.is_ascii_lowercase()
-                || byte.is_ascii_digit()
-                || matches!(byte, b'.' | b'_' | b'-')
+            byte.is_ascii_lowercase() || byte.is_ascii_digit() || matches!(byte, b'.' | b'_' | b'-')
         })
 }
 
@@ -328,7 +317,9 @@ pub fn evaluate_wave(
     };
 
     if wave.targets.is_empty() {
-        result.reasons.push("cannot evaluate an empty wave".to_owned());
+        result
+            .reasons
+            .push("cannot evaluate an empty wave".to_owned());
         return result;
     }
 
@@ -457,11 +448,7 @@ mod tests {
     const BASELINE: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const CANDIDATE: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-    fn target(
-        token: &str,
-        domain: &str,
-        canary: bool,
-    ) -> FleetTarget {
+    fn target(token: &str, domain: &str, canary: bool) -> FleetTarget {
         FleetTarget {
             target_token: token.to_owned(),
             failure_domain: domain.to_owned(),
@@ -517,7 +504,9 @@ mod tests {
                 *counts.entry(&target.failure_domain).or_default() += 1;
             }
             assert!(
-                counts.values().all(|count| *count <= constraints().max_targets_per_failure_domain)
+                counts
+                    .values()
+                    .all(|count| *count <= constraints().max_targets_per_failure_domain)
             );
         }
     }
