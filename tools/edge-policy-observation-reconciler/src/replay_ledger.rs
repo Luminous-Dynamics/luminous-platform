@@ -214,8 +214,6 @@ pub fn verify_and_consume_durable(
 
     let challenge: Value = serde_json::from_str(challenge_source)
         .map_err(|error| vec![format!("cannot parse validated challenge: {error}")])?;
-    let challenge: Value = serde_json::from_str(challenge_source)
-        .map_err(|error| vec![format!("cannot parse validated challenge: {error}")])?;
 
     let nonce = ledger_string_field(&challenge, "/nonce", "challenge.nonce")?;
     let challenge_id = ledger_string_field(&challenge, "/challenge_id", "challenge.challenge_id")?;
