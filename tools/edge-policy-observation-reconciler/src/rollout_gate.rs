@@ -369,25 +369,25 @@ fn validate_plan(plan: &StagedRolloutPlan) -> Result<(), Vec<String>> {
                     ));
                     continue;
                 };
-            if targets.len() > plan.max_targets_per_wave {
-                errors.push(format!(
-                    "wave {wave_index} has {} targets, over the configured limit {}",
-                    targets.len(),
-                    plan.max_targets_per_wave
-                ));
-            }
-            let mut domain_counts: HashMap<&str, usize> = HashMap::new();
-            for target in targets {
-                *domain_counts.entry(&target.failure_domain).or_default() += 1;
-            }
-            for (domain, count) in domain_counts {
-                if count > plan.max_targets_per_failure_domain_per_wave {
+                if targets.len() > plan.max_targets_per_wave {
                     errors.push(format!(
-                        "wave {wave_index} exceeds the concurrent target limit for failure domain {domain:?}"
+                        "wave {wave_index} has {} targets, over the configured limit {}",
+                        targets.len(),
+                        plan.max_targets_per_wave
                     ));
                 }
+                let mut domain_counts: HashMap<&str, usize> = HashMap::new();
+                for target in targets {
+                    *domain_counts.entry(&target.failure_domain).or_default() += 1;
+                }
+                for (domain, count) in domain_counts {
+                    if count > plan.max_targets_per_failure_domain_per_wave {
+                        errors.push(format!(
+                        "wave {wave_index} exceeds the concurrent target limit for failure domain {domain:?}"
+                    ));
+                    }
+                }
             }
-        }
         }
     }
 
