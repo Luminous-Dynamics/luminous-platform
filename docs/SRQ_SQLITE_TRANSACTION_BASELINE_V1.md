@@ -73,3 +73,8 @@ This is a single-database reference; it does not provide cross-host consensus or
 ## Comparative claim rule
 
 Compare the SQLite reference and Luminous's production adapter using the same frozen challenge set and fault schedule. Publish both the passing and rejected paths, the SQLite version/journal settings, raw logs, source/artifact digests, and crash outcomes. Do not call the reference fixture an industry win; it is the baseline against which an integration must demonstrate additional cross-layer correctness.
+
+
+## Repeated boundary campaign (awaiting exact-head result)
+
+The next harness iteration repeats each of the four real SQLite process-kill boundaries 25 times against a fresh disposable database (100 total attempts). CI requires exactly 25 explicit PASS records for each boundary, the summary line `commit_sigkill_boundaries=4 commit_sigkill_trials=100`, and all 64 raw writer-contender timing records. This is a deterministic fault-injection coverage campaign, not an estimate of a real-world failure probability. The outcome has not yet been counted as passed pending workflow run 39445344549 on its exact source head.
