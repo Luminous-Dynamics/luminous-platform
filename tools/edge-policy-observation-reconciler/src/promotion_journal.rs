@@ -173,6 +173,22 @@ pub struct PromotionPermit {
     expires_at_unix_ms: u64,
 }
 
+/// Inputs for the public challenge-verification and promotion-evidence gate.
+///
+/// The strings are the exact bytes to be schema-validated and digest-bound.
+#[derive(Clone, Copy, Debug)]
+pub struct PromotionVerificationInput<'a> {
+    pub challenge_source: &'a str,
+    pub envelope_source: &'a str,
+    pub corpus_schema_source: &'a str,
+    pub corpus_source: &'a str,
+    pub receipt_source: &'a str,
+    /// Digest obtained from the live effective-policy readback associated with
+    /// the independent data-plane probe.
+    pub effective_policy_sha256: &'a str,
+    pub verifier_now_unix_ms: u64,
+}
+
 /// SQLite-backed promotion journal. Use a dedicated, permission-restricted
 /// database on durable storage; do not share the replay-ledger database path.
 #[derive(Debug)]
@@ -440,14 +456,15 @@ impl PromotionJournal {
         &self,
         ledger: &super::replay_ledger::SqliteReplayLedger,
         operation_id: &str,
-        challenge_source: &str,
-        envelope_source: &str,
-        corpus_schema_source: &str,
-        corpus_source: &str,
-        receipt_source: &str,
-        effective_policy_sha256: &str,
-        verifier_now_unix_ms: u64,
+        input: &PromotionVerificationInput<'_>,
     ) -> Result<(serde_json::Value, PromotionPermit), Vec<String>> {
+        let challenge_source = input.challenge_source;
+        let envelope_source = input.envelope_source;
+        let corpus_schema_source = input.corpus_schema_source;
+        let corpus_source = input.corpus_source;
+        let receipt_source = input.receipt_source;
+        let effective_policy_sha256 = input.effective_policy_sha256;
+        let verifier_now_unix_ms = input.verifier_now_unix_ms;
         validate_digest(effective_policy_sha256, "effective_policy_sha256")
             .map_err(|error| vec![error])?;
         let operation = self
@@ -1194,7 +1211,7 @@ fn sha256_hex(bytes: &[u8]) -> String {
 mod tests {
     use super::{
         PromotionEvidence, PromotionJournal, PromotionPermit, PromotionSpec, PromotionState,
-        RecoveryAction,
+        PromotionVerificationInput, RecoveryAction,
     };
     use crate::replay_ledger::SqliteReplayLedger;
     use serde_json::{Value, json};
@@ -1342,13 +1359,15 @@ mod tests {
             .verify_and_record_evidence(
                 &ledger,
                 "operation-policy-0001",
-                &challenge,
-                &envelope,
-                CORPUS_SCHEMA,
-                CORPUS,
-                &receipt,
-                CANDIDATE,
-                1_400,
+                &PromotionVerificationInput {
+                    challenge_source: &challenge,
+                    envelope_source: &envelope,
+                    corpus_schema_source: CORPUS_SCHEMA,
+                    corpus_source: CORPUS,
+                    receipt_source: &receipt,
+                    effective_policy_sha256: CANDIDATE,
+                    verifier_now_unix_ms: 1_400,
+                },
             )
             .expect("verified receipt consumes nonce and returns permit");
         assert_eq!(
