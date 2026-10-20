@@ -15,6 +15,7 @@
     "policy_generation",
     "corpus_sha256",
     "approved_policy_sha256",
+    "expected_effective_policy_sha256",
     "target_token"
   ],
   "properties": {
@@ -34,6 +35,11 @@
     "policy_generation": { "type": "integer", "minimum": 1 },
     "corpus_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "approved_policy_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "expected_effective_policy_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Expected digest of the effective installed policy read back before dataplane probing."
+    },
     "target_token": { "type": "string", "pattern": "^target-[a-z0-9-]{1,48}$" }
   }
 }
