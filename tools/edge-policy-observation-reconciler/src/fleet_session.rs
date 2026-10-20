@@ -13,8 +13,8 @@ use std::time::Duration;
 use rusqlite::{Connection, OptionalExtension, Row, TransactionBehavior, params};
 
 use super::fleet_rollout::{
-    FleetRolloutPlan, FleetTarget, FleetTargetObservation, RolloutWave,
-    WaveDecision, WaveEvaluation, digest_plan, evaluate_wave, plan_rollout, validate_target,
+    FleetRolloutPlan, FleetTarget, FleetTargetObservation, RolloutWave, WaveDecision,
+    WaveEvaluation, digest_plan, evaluate_wave, plan_rollout, validate_target,
 };
 
 const SCHEMA_VERSION: i64 = 1;
@@ -92,7 +92,9 @@ impl FleetSessionState {
             "running" => Ok(Self::Running),
             "halted" => Ok(Self::Halted),
             "completed" => Ok(Self::Completed),
-            _ => Err(format!("unknown fleet session state {value:?}; refusing recovery")),
+            _ => Err(format!(
+                "unknown fleet session state {value:?}; refusing recovery"
+            )),
         }
     }
 }
@@ -221,7 +223,9 @@ impl FleetSessionJournal {
             if usize::try_from(target_count).ok() != Some(expected_targets)
                 || usize::try_from(wave_count).ok() != Some(plan.waves.len())
             {
-                return Err("existing fleet session does not match the registered plan shape".to_owned());
+                return Err(
+                    "existing fleet session does not match the registered plan shape".to_owned(),
+                );
             }
             transaction
                 .commit()
@@ -297,13 +301,22 @@ impl FleetSessionJournal {
             .map_err(|error| format!("cannot begin wave-start transaction: {error}"))?;
         let session = get_session_conn(&transaction, plan_sha256)?
             .ok_or_else(|| "unknown fleet plan digest".to_owned())?;
-        if matches!(session.state, FleetSessionState::Halted | FleetSessionState::Completed) {
-            return Err(format!("cannot start a wave for session in state {:?}", session.state));
+        if matches!(
+            session.state,
+            FleetSessionState::Halted | FleetSessionState::Completed
+        ) {
+            return Err(format!(
+                "cannot start a wave for session in state {:?}",
+                session.state
+            ));
         }
         if let Some(active) = session.active_wave_index {
             if active == wave_index {
                 let state = get_wave_state(&transaction, plan_sha256, wave_index)?;
-                if matches!(state.as_str(), "applying" | "applied" | "verified" | "rollback_required" | "rolling_back") {
+                if matches!(
+                    state.as_str(),
+                    "applying" | "applied" | "verified" | "rollback_required" | "rolling_back"
+                ) {
                     transaction
                         .commit()
                         .map_err(|error| format!("cannot commit idempotent wave start: {error}"))?;
@@ -333,7 +346,11 @@ impl FleetSessionJournal {
             .execute(
                 "UPDATE rollout_waves SET state = 'applying', updated_at_unix_ms = ?1
                  WHERE plan_sha256 = ?2 AND wave_index = ?3 AND state = 'planned';",
-                params![now, plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                params![
+                    now,
+                    plan_sha256,
+                    to_sql_integer(wave_index as u64, "wave index")?
+                ],
             )
             .map_err(|error| format!("cannot start rollout wave: {error}"))?;
         if changed != 1 {
@@ -343,7 +360,11 @@ impl FleetSessionJournal {
             .execute(
                 "UPDATE rollout_sessions SET state = 'running', active_wave_index = ?1,
                     updated_at_unix_ms = ?2 WHERE plan_sha256 = ?3;",
-                params![to_sql_integer(wave_index as u64, "wave index")?, now, plan_sha256],
+                params![
+                    to_sql_integer(wave_index as u64, "wave index")?,
+                    now,
+                    plan_sha256
+                ],
             )
             .map_err(|error| format!("cannot persist active fleet wave: {error}"))?;
         transaction
@@ -375,7 +396,8 @@ impl FleetSessionJournal {
             ));
         }
         if target.state == "apply_intent" {
-            let command = target.apply_command_id
+            let command = target
+                .apply_command_id
                 .ok_or_else(|| "apply_intent target lacks a durable command ID".to_owned())?;
             transaction
                 .commit()
@@ -394,7 +416,13 @@ impl FleetSessionJournal {
                 target.state
             ));
         }
-        let command_id = command_identity(plan_sha256, wave_index, target_token, target.generation, "apply");
+        let command_id = command_identity(
+            plan_sha256,
+            wave_index,
+            target_token,
+            target.generation,
+            "apply",
+        );
         let now = to_sql_integer(now_unix_ms, "apply-intent timestamp")?;
         let changed = transaction
             .execute(
@@ -438,19 +466,26 @@ impl FleetSessionJournal {
         let target = get_target_conn(&transaction, plan_sha256, target_token)?
             .ok_or_else(|| format!("target {target_token:?} is not registered in this plan"))?;
         if target.wave_index != wave_index {
-            return Err(format!("target {target_token:?} is not in wave {wave_index}"));
+            return Err(format!(
+                "target {target_token:?} is not in wave {wave_index}"
+            ));
         }
         if effective_policy_sha256 != target.candidate_policy_sha256 {
             return Err("effective policy readback does not match the candidate digest".to_owned());
         }
-        if target.state == "applied" && target.observed_policy_sha256.as_deref() == Some(effective_policy_sha256) {
+        if target.state == "applied"
+            && target.observed_policy_sha256.as_deref() == Some(effective_policy_sha256)
+        {
             transaction
                 .commit()
                 .map_err(|error| format!("cannot commit idempotent applied state: {error}"))?;
             return Ok(());
         }
         if target.state != "apply_intent" {
-            return Err(format!("cannot record applied policy from target state {:?}", target.state));
+            return Err(format!(
+                "cannot record applied policy from target state {:?}",
+                target.state
+            ));
         }
         let now = to_sql_integer(now_unix_ms, "applied timestamp")?;
         transaction
@@ -465,7 +500,10 @@ impl FleetSessionJournal {
             .query_row(
                 "SELECT COUNT(*) FROM rollout_targets
                  WHERE plan_sha256 = ?1 AND wave_index = ?2 AND state != 'applied';",
-                params![plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                params![
+                    plan_sha256,
+                    to_sql_integer(wave_index as u64, "wave index")?
+                ],
                 |row| row.get(0),
             )
             .map_err(|error| format!("cannot count pending wave targets: {error}"))?;
@@ -474,7 +512,11 @@ impl FleetSessionJournal {
                 .execute(
                     "UPDATE rollout_waves SET state = 'applied', updated_at_unix_ms = ?1
                      WHERE plan_sha256 = ?2 AND wave_index = ?3 AND state = 'applying';",
-                    params![now, plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                    params![
+                        now,
+                        plan_sha256,
+                        to_sql_integer(wave_index as u64, "wave index")?
+                    ],
                 )
                 .map_err(|error| format!("cannot mark wave applied: {error}"))?;
         }
@@ -512,7 +554,11 @@ impl FleetSessionJournal {
                     .execute(
                         "UPDATE rollout_waves SET state = 'verified', updated_at_unix_ms = ?1
                          WHERE plan_sha256 = ?2 AND wave_index = ?3 AND state = 'applied';",
-                        params![now, plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                        params![
+                            now,
+                            plan_sha256,
+                            to_sql_integer(wave_index as u64, "wave index")?
+                        ],
                     )
                     .map_err(|error| format!("cannot persist verified wave decision: {error}"))?;
             }
@@ -530,7 +576,11 @@ impl FleetSessionJournal {
                     .execute(
                         "UPDATE rollout_waves SET state = 'halted', updated_at_unix_ms = ?1
                          WHERE plan_sha256 = ?2 AND wave_index = ?3;",
-                        params![now, plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                        params![
+                            now,
+                            plan_sha256,
+                            to_sql_integer(wave_index as u64, "wave index")?
+                        ],
                     )
                     .map_err(|error| format!("cannot persist halt decision: {error}"))?;
                 transaction
@@ -566,7 +616,9 @@ impl FleetSessionJournal {
         require_active_wave(&transaction, plan_sha256, wave_index)?;
         let wave = get_wave_state(&transaction, plan_sha256, wave_index)?;
         if wave != "verified" {
-            return Err(format!("cannot record target promotion from wave state {wave:?}"));
+            return Err(format!(
+                "cannot record target promotion from wave state {wave:?}"
+            ));
         }
         let target = get_target_conn(&transaction, plan_sha256, target_token)?
             .ok_or_else(|| format!("target {target_token:?} is not registered"))?;
@@ -613,7 +665,10 @@ impl FleetSessionJournal {
             .query_row(
                 "SELECT COUNT(*) FROM rollout_targets
                  WHERE plan_sha256 = ?1 AND wave_index = ?2 AND state != 'promoted';",
-                params![plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                params![
+                    plan_sha256,
+                    to_sql_integer(wave_index as u64, "wave index")?
+                ],
                 |row| row.get(0),
             )
             .map_err(|error| format!("cannot count unpromoted wave targets: {error}"))?;
@@ -627,7 +682,11 @@ impl FleetSessionJournal {
             .execute(
                 "UPDATE rollout_waves SET state = 'continued', updated_at_unix_ms = ?1
                  WHERE plan_sha256 = ?2 AND wave_index = ?3 AND state = 'verified';",
-                params![now, plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                params![
+                    now,
+                    plan_sha256,
+                    to_sql_integer(wave_index as u64, "wave index")?
+                ],
             )
             .map_err(|error| format!("cannot close rollout wave: {error}"))?;
         let wave_count: i64 = transaction
@@ -672,7 +731,9 @@ impl FleetSessionJournal {
         require_active_wave(&transaction, plan_sha256, wave_index)?;
         let wave_state = get_wave_state(&transaction, plan_sha256, wave_index)?;
         if !matches!(wave_state.as_str(), "rollback_required" | "rolling_back") {
-            return Err(format!("cannot request rollback from wave state {wave_state:?}"));
+            return Err(format!(
+                "cannot request rollback from wave state {wave_state:?}"
+            ));
         }
         let targets = get_wave_targets_conn(&transaction, plan_sha256, wave_index)?;
         let now = to_sql_integer(now_unix_ms, "rollback-intent timestamp")?;
@@ -757,7 +818,9 @@ impl FleetSessionJournal {
             return Err("target is not awaiting rollback in this wave".to_owned());
         }
         if target.baseline_policy_sha256 != effective_policy_sha256 {
-            return Err("rollback readback does not match the exact baseline policy digest".to_owned());
+            return Err(
+                "rollback readback does not match the exact baseline policy digest".to_owned(),
+            );
         }
         let now = to_sql_integer(now_unix_ms, "rollback completion timestamp")?;
         transaction
@@ -772,7 +835,10 @@ impl FleetSessionJournal {
             .query_row(
                 "SELECT COUNT(*) FROM rollout_targets
                  WHERE plan_sha256 = ?1 AND wave_index = ?2 AND state != 'rolled_back';",
-                params![plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                params![
+                    plan_sha256,
+                    to_sql_integer(wave_index as u64, "wave index")?
+                ],
                 |row| row.get(0),
             )
             .map_err(|error| format!("cannot count outstanding rollbacks: {error}"))?;
@@ -782,7 +848,11 @@ impl FleetSessionJournal {
                 .execute(
                     "UPDATE rollout_waves SET state = 'rolled_back', updated_at_unix_ms = ?1
                      WHERE plan_sha256 = ?2 AND wave_index = ?3 AND state = 'rolling_back';",
-                    params![now, plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+                    params![
+                        now,
+                        plan_sha256,
+                        to_sql_integer(wave_index as u64, "wave index")?
+                    ],
                 )
                 .map_err(|error| format!("cannot finalize wave rollback: {error}"))?;
             transaction
@@ -822,7 +892,9 @@ impl FleetSessionJournal {
                 let state: String = row.get(4)?;
                 let action = match state.as_str() {
                     "apply_intent" => FleetRecoveryAction::InspectActualPolicyBeforeRetry,
-                    "applied" => FleetRecoveryAction::RequireFreshEvidenceAndPromotionReconciliation,
+                    "applied" => {
+                        FleetRecoveryAction::RequireFreshEvidenceAndPromotionReconciliation
+                    }
                     "promoted" => FleetRecoveryAction::ReconcilePromotionJournalAndEffectivePolicy,
                     "rollback_intent" => FleetRecoveryAction::EnforceBaselinePolicyAndVerify,
                     _ => {
@@ -869,8 +941,12 @@ struct StoredTarget {
 }
 
 fn connect(path: &Path) -> Result<Connection, String> {
-    let connection = Connection::open(path)
-        .map_err(|error| format!("cannot open fleet session journal {}: {error}", path.display()))?;
+    let connection = Connection::open(path).map_err(|error| {
+        format!(
+            "cannot open fleet session journal {}: {error}",
+            path.display()
+        )
+    })?;
     connection
         .busy_timeout(BUSY_TIMEOUT)
         .map_err(|error| format!("cannot set fleet journal busy timeout: {error}"))?;
@@ -934,11 +1010,7 @@ fn session_from_row(row: &Row<'_>) -> rusqlite::Result<FleetSessionSnapshot> {
     Ok(FleetSessionSnapshot {
         plan_sha256: row.get(0)?,
         state: FleetSessionState::parse(&state).map_err(|_| {
-            rusqlite::Error::InvalidColumnType(
-                1,
-                "state".to_owned(),
-                rusqlite::types::Type::Text,
-            )
+            rusqlite::Error::InvalidColumnType(1, "state".to_owned(), rusqlite::types::Type::Text)
         })?,
         active_wave_index: active.and_then(|value| usize::try_from(value).ok()),
         created_at_unix_ms: u64::try_from(created).unwrap_or(0),
@@ -954,7 +1026,10 @@ fn get_wave_state(
     connection
         .query_row(
             "SELECT state FROM rollout_waves WHERE plan_sha256 = ?1 AND wave_index = ?2;",
-            params![plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+            params![
+                plan_sha256,
+                to_sql_integer(wave_index as u64, "wave index")?
+            ],
             |row| row.get(0),
         )
         .map_err(|error| format!("cannot read rollout wave {wave_index}: {error}"))
@@ -967,8 +1042,7 @@ fn require_active_wave(
 ) -> Result<(), String> {
     let session = get_session_conn(connection, plan_sha256)?
         .ok_or_else(|| "unknown fleet plan digest".to_owned())?;
-    if session.state != FleetSessionState::Running
-        || session.active_wave_index != Some(wave_index)
+    if session.state != FleetSessionState::Running || session.active_wave_index != Some(wave_index)
     {
         return Err(format!(
             "wave {wave_index} is not the active wave for session {:?}",
@@ -999,9 +1073,8 @@ fn get_target_conn(
                     wave_index: u64_to_usize(wave_index)
                         .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(1, wave_index))?,
                     failure_domain: row.get(2)?,
-                    generation: u64::try_from(generation).map_err(|_| {
-                        rusqlite::Error::IntegralValueOutOfRange(3, generation)
-                    })?,
+                    generation: u64::try_from(generation)
+                        .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(3, generation))?,
                     baseline_policy_sha256: row.get(4)?,
                     candidate_policy_sha256: row.get(5)?,
                     canary: canary == 1,
@@ -1032,15 +1105,17 @@ fn get_wave_conn(
         .map_err(|error| format!("cannot prepare wave target query: {error}"))?;
     let rows = statement
         .query_map(
-            params![plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+            params![
+                plan_sha256,
+                to_sql_integer(wave_index as u64, "wave index")?
+            ],
             |row| {
                 let generation: i64 = row.get(2)?;
                 Ok(FleetTarget {
                     target_token: row.get(0)?,
                     failure_domain: row.get(1)?,
-                    generation: u64::try_from(generation).map_err(|_| {
-                        rusqlite::Error::IntegralValueOutOfRange(2, generation)
-                    })?,
+                    generation: u64::try_from(generation)
+                        .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(2, generation))?,
                     baseline_policy_sha256: row.get(3)?,
                     candidate_policy_sha256: row.get(4)?,
                     canary: row.get::<_, i64>(5)? == 1,
@@ -1078,20 +1153,21 @@ fn get_wave_targets_conn(
         .map_err(|error| format!("cannot prepare wave target listing: {error}"))?;
     let rows = statement
         .query_map(
-            params![plan_sha256, to_sql_integer(wave_index as u64, "wave index")?],
+            params![
+                plan_sha256,
+                to_sql_integer(wave_index as u64, "wave index")?
+            ],
             |row| {
                 let canary: i64 = row.get(6)?;
                 let wave_index_raw: i64 = row.get(1)?;
                 let generation: i64 = row.get(3)?;
                 Ok(StoredTarget {
                     target_token: row.get(0)?,
-                    wave_index: u64_to_usize(wave_index_raw).map_err(|_| {
-                        rusqlite::Error::IntegralValueOutOfRange(1, wave_index_raw)
-                    })?,
+                    wave_index: u64_to_usize(wave_index_raw)
+                        .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(1, wave_index_raw))?,
                     failure_domain: row.get(2)?,
-                    generation: u64::try_from(generation).map_err(|_| {
-                        rusqlite::Error::IntegralValueOutOfRange(3, generation)
-                    })?,
+                    generation: u64::try_from(generation)
+                        .map_err(|_| rusqlite::Error::IntegralValueOutOfRange(3, generation))?,
                     baseline_policy_sha256: row.get(4)?,
                     candidate_policy_sha256: row.get(5)?,
                     canary: canary == 1,
@@ -1118,7 +1194,9 @@ fn validate_plan(plan: &FleetRolloutPlan) -> Result<(), String> {
         ));
     }
     if digest_plan(&plan.waves, plan.constraints) != plan.plan_sha256 {
-        return Err("fleet plan SHA-256 does not match its canonical content and constraints".to_owned());
+        return Err(
+            "fleet plan SHA-256 does not match its canonical content and constraints".to_owned(),
+        );
     }
     let targets: Vec<FleetTarget> = plan
         .waves
@@ -1127,7 +1205,9 @@ fn validate_plan(plan: &FleetRolloutPlan) -> Result<(), String> {
         .collect();
     let canonical = plan_rollout(&targets, plan.constraints)?;
     if &canonical != plan {
-        return Err("fleet plan is validly shaped but not the canonical deterministic schedule".to_owned());
+        return Err(
+            "fleet plan is validly shaped but not the canonical deterministic schedule".to_owned(),
+        );
     }
     for target in &targets {
         validate_target(target)?;
@@ -1156,13 +1236,16 @@ fn validate_digest(value: &str, label: &str) -> Result<(), String> {
             .bytes()
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
     {
-        return Err(format!("{label} must be 64 lowercase hexadecimal characters"));
+        return Err(format!(
+            "{label} must be 64 lowercase hexadecimal characters"
+        ));
     }
     Ok(())
 }
 
 fn to_sql_integer(value: u64, label: &str) -> Result<i64, String> {
-    i64::try_from(value).map_err(|error| format!("{label} exceeds the SQLite integer range: {error}"))
+    i64::try_from(value)
+        .map_err(|error| format!("{label} exceeds the SQLite integer range: {error}"))
 }
 
 fn u64_to_usize(value: i64) -> Result<usize, ()> {
@@ -1182,7 +1265,10 @@ fn ensure_private_file(path: &Path) -> Result<(), String> {
             {
                 use std::os::unix::fs::PermissionsExt;
                 if metadata.permissions().mode() & 0o077 != 0 {
-                    return Err("fleet journal database must not grant group or other permissions".to_owned());
+                    return Err(
+                        "fleet journal database must not grant group or other permissions"
+                            .to_owned(),
+                    );
                 }
             }
             Ok(())
@@ -1200,19 +1286,25 @@ fn ensure_private_file(path: &Path) -> Result<(), String> {
                     drop(file);
                     Ok(())
                 }
-                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => ensure_private_file(path),
-                Err(error) => Err(format!("cannot create fleet journal {}: {error}", path.display())),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                    ensure_private_file(path)
+                }
+                Err(error) => Err(format!(
+                    "cannot create fleet journal {}: {error}",
+                    path.display()
+                )),
             }
         }
-        Err(error) => Err(format!("cannot inspect fleet journal path {}: {error}", path.display())),
+        Err(error) => Err(format!(
+            "cannot inspect fleet journal path {}: {error}",
+            path.display()
+        )),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        ApplyCommand, FleetRecoveryAction, FleetSessionJournal, FleetSessionState,
-    };
+    use super::{ApplyCommand, FleetRecoveryAction, FleetSessionJournal, FleetSessionState};
     use crate::fleet_rollout::{
         FleetTarget, FleetTargetObservation, ProbeOutcome, RolloutConstraints, WaveDecision,
         plan_rollout,
@@ -1365,7 +1457,9 @@ mod tests {
         {
             let journal = FleetSessionJournal::open(&path).expect("open");
             journal.register_plan(&plan, 100).expect("register");
-            journal.begin_wave(&plan.plan_sha256, 0, 101).expect("begin");
+            journal
+                .begin_wave(&plan.plan_sha256, 0, 101)
+                .expect("begin");
             command = journal
                 .record_apply_intent(&plan.plan_sha256, 0, "target-canary", 102)
                 .expect("intent");
@@ -1377,7 +1471,10 @@ mod tests {
         let recovered = FleetSessionJournal::open(&path).expect("reopen");
         let items = recovered.list_recoverable_targets().expect("recovery");
         assert_eq!(items.len(), 1);
-        assert_eq!(items[0].action, FleetRecoveryAction::InspectActualPolicyBeforeRetry);
+        assert_eq!(
+            items[0].action,
+            FleetRecoveryAction::InspectActualPolicyBeforeRetry
+        );
         drop(recovered);
         remove_database(&path);
     }
@@ -1389,7 +1486,8 @@ mod tests {
         let plan = plan();
         journal.register_plan(&plan, 100).expect("register");
         assert!(
-            journal.begin_wave(&plan.plan_sha256, 1, 101)
+            journal
+                .begin_wave(&plan.plan_sha256, 1, 101)
                 .expect_err("cannot skip canary")
                 .contains("cannot begin until prior wave")
         );
@@ -1399,21 +1497,20 @@ mod tests {
             .expect("evaluate");
         assert_eq!(eval.decision, WaveDecision::Continue);
         assert!(
-            journal.complete_wave(&plan.plan_sha256, 0, 131)
+            journal
+                .complete_wave(&plan.plan_sha256, 0, 131)
                 .expect_err("must promote each target")
                 .contains("not durably promoted")
         );
         journal
-            .record_target_promoted(
-                &plan.plan_sha256,
-                0,
-                "target-canary",
-                CANDIDATE,
-                132,
-            )
+            .record_target_promoted(&plan.plan_sha256, 0, "target-canary", CANDIDATE, 132)
             .expect("promote");
-        journal.complete_wave(&plan.plan_sha256, 0, 133).expect("complete");
-        journal.begin_wave(&plan.plan_sha256, 1, 134).expect("next wave");
+        journal
+            .complete_wave(&plan.plan_sha256, 0, 133)
+            .expect("complete");
+        journal
+            .begin_wave(&plan.plan_sha256, 1, 134)
+            .expect("next wave");
         drop(journal);
         remove_database(&path);
     }
@@ -1442,29 +1539,22 @@ mod tests {
             commands
         );
         assert!(
-            journal.record_target_rolled_back(
-                &plan.plan_sha256,
-                0,
-                "target-canary",
-                CANDIDATE,
-                133
-            )
-            .expect_err("candidate is not the baseline")
-            .contains("exact baseline")
+            journal
+                .record_target_rolled_back(&plan.plan_sha256, 0, "target-canary", CANDIDATE, 133)
+                .expect_err("candidate is not the baseline")
+                .contains("exact baseline")
         );
         assert!(
             journal
-                .record_target_rolled_back(
-                    &plan.plan_sha256,
-                    0,
-                    "target-canary",
-                    BASELINE,
-                    134
-                )
+                .record_target_rolled_back(&plan.plan_sha256, 0, "target-canary", BASELINE, 134)
                 .expect("baseline readback")
         );
         assert_eq!(
-            journal.get_session(&plan.plan_sha256).expect("read").expect("session").state,
+            journal
+                .get_session(&plan.plan_sha256)
+                .expect("read")
+                .expect("session")
+                .state,
             FleetSessionState::Halted
         );
         drop(journal);
@@ -1478,7 +1568,8 @@ mod tests {
         let mut invalid = plan();
         invalid.plan_sha256 = "e".repeat(64);
         assert!(
-            journal.register_plan(&invalid, 100)
+            journal
+                .register_plan(&invalid, 100)
                 .expect_err("bad digest")
                 .contains("does not match")
         );
@@ -1498,7 +1589,11 @@ mod tests {
             .expect("evaluation returns an explicit halt");
         assert_eq!(result.decision, WaveDecision::HaltAndReconcile);
         assert_eq!(
-            journal.get_session(&plan.plan_sha256).expect("read").expect("session").state,
+            journal
+                .get_session(&plan.plan_sha256)
+                .expect("read")
+                .expect("session")
+                .state,
             FleetSessionState::Halted
         );
         assert!(journal.begin_wave(&plan.plan_sha256, 1, 131).is_err());
