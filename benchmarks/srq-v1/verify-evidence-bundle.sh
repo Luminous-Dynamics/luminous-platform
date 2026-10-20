@@ -81,7 +81,7 @@ while IFS= read -r line; do
 done < "$bundle_dir/SHA256SUMS"
 (
   cd "$bundle_dir"
-  sha256sum --check --strict SHA256SUMS
+  sha256sum --check --strict SHA256SUMS >/dev/null
 ) || { echo "BLOCKED: evidence bytes do not match the checksum manifest." >&2; exit 1; }
 
 manifest="$bundle_dir/manifest.json"
