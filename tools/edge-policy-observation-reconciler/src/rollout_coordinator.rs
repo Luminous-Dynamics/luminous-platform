@@ -644,7 +644,7 @@ mod tests {
         AdapterCapabilities, ApplyAcknowledgement, IndependentPolicyProbe, PolicyDeviceAdapter,
         PolicyRolloutCoordinator, PolicySnapshot, ProbeOutput, RolloutRequest,
     };
-    use crate::promotion_journal::{PromotionJournal, PromotionState};
+    use crate::promotion_journal::{PromotionJournal, PromotionSpec, PromotionState};
     use crate::replay_ledger::SqliteReplayLedger;
     use serde_json::{Value, json};
     use std::path::PathBuf;
@@ -844,6 +844,58 @@ mod tests {
         assert!(result.expect_err("no-CAS adapter rejected").contains("atomic generation/revision CAS"));
         assert_eq!(device.writes, 0);
         assert_eq!(device.snapshot.effective_policy_sha256, crate::sha256_hex(&baseline));
+        drop(ledger);
+        drop(journal);
+        remove_database(&journal_path);
+        remove_database(&ledger_path);
+    }
+
+    #[test]
+    fn coordinator_skips_generation_consumed_by_pre_actuation_abandonment() {
+        let (mut device, baseline) = FakeDevice::baseline();
+        let candidate = b"candidate-after-abandon".to_vec();
+        let baseline_digest = crate::sha256_hex(&baseline);
+        let candidate_digest = crate::sha256_hex(&candidate);
+        let journal_path = new_path("abandoned-generation-journal");
+        let ledger_path = new_path("abandoned-generation-ledger");
+        let journal = PromotionJournal::open(&journal_path).expect("open journal");
+        let ledger = SqliteReplayLedger::open(&ledger_path).expect("open ledger");
+        journal
+            .prepare(&PromotionSpec {
+                operation_id: "operation-abandoned-before-apply",
+                target_token: TARGET,
+                generation: 2,
+                baseline_policy_sha256: &baseline_digest,
+                candidate_policy_sha256: &candidate_digest,
+                created_at_unix_ms: 100,
+            })
+            .expect("reserve generation two");
+        journal
+            .abandon_prepared("operation-abandoned-before-apply", 101)
+            .expect("abandon before apply intent");
+
+        let coordinator = PolicyRolloutCoordinator::new(&journal, &ledger);
+        let mut probe = PassingProbe {
+            baseline_digest,
+            candidate_digest: candidate_digest.clone(),
+        };
+        let operation = coordinator
+            .apply_and_promote(
+                &mut device,
+                &mut probe,
+                &RolloutRequest {
+                    operation_id: "operation-after-abandon",
+                    target_token: TARGET,
+                    approved_baseline_policy: &baseline,
+                    candidate_policy: &candidate,
+                    corpus_schema_source: CORPUS_SCHEMA,
+                    corpus_source: CORPUS,
+                },
+            )
+            .expect("coordinator uses generation three");
+        assert_eq!(operation.generation, 3);
+        assert_eq!(operation.state, PromotionState::Promoted);
+        assert_eq!(device.snapshot.generation, 3);
         drop(ledger);
         drop(journal);
         remove_database(&journal_path);
