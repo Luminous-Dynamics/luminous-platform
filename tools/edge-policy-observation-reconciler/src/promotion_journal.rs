@@ -261,6 +261,40 @@ impl PromotionJournal {
         })
     }
 
+    /// Calculate the next usable generation above both device readback and
+    /// every generation already consumed in this journal for the target.
+    ///
+    /// This avoids trying to reuse a generation after a Prepared operation was
+    /// abandoned before actuation. This is a read-only hint, not a reservation:
+    /// concurrent callers still race at prepare(), where SQLite's unique key
+    /// and single-active-operation check are authoritative.
+    pub fn next_generation(
+        &self,
+        target_token: &str,
+        observed_device_generation: u64,
+    ) -> Result<u64, String> {
+        validate_target_token(target_token)?;
+        if observed_device_generation == 0 || i64::try_from(observed_device_generation).is_err() {
+            return Err("observed device generation must be a positive SQLite integer".to_owned());
+        }
+        let connection = connect(&self.path)?;
+        let persisted_generation: Option<i64> = connection
+            .query_row(
+                "SELECT MAX(generation) FROM promotion_operations WHERE target_token = ?1;",
+                params![target_token],
+                |row| row.get(0),
+            )
+            .map_err(|error| format!("cannot inspect target generation history: {error}"))?;
+        let persisted_generation = persisted_generation
+            .map(|value| u64::try_from(value).map_err(|error| format!("invalid persisted generation: {error}")))
+            .transpose()?
+            .unwrap_or(0);
+        observed_device_generation
+            .max(persisted_generation)
+            .checked_add(1)
+            .ok_or_else(|| "policy generation exhausted".to_owned())
+    }
+
     /// Prepare an operation durably before issuing an external apply command.
     /// Repeating the exact same operation ID and immutable specification is
     /// idempotent. Different data for the same ID is rejected.
