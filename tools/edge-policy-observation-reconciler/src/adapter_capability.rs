@@ -18,9 +18,7 @@ pub enum CommitSemantics {
         reverts_on_session_loss: bool,
     },
     /// gNMI transaction scope is one Set RPC request, not a multi-device fleet.
-    GnmiSingleSet {
-        atomic_within_single_request: bool,
-    },
+    GnmiSingleSet { atomic_within_single_request: bool },
     /// Adapter-specific behavior has not yet been qualified against a contract.
     Unclassified,
 }
@@ -111,10 +109,13 @@ pub fn qualify_adapter(
         input_errors.push("target_token is invalid".to_owned());
     }
     if !is_identifier(&capabilities.adapter_id) {
-        input_errors.push("adapter_id must be an ASCII identifier of at most 80 characters".to_owned());
+        input_errors
+            .push("adapter_id must be an ASCII identifier of at most 80 characters".to_owned());
     }
     if !is_identifier(&capabilities.adapter_version) {
-        input_errors.push("adapter_version must be an ASCII identifier of at most 80 characters".to_owned());
+        input_errors.push(
+            "adapter_version must be an ASCII identifier of at most 80 characters".to_owned(),
+        );
     }
     if policy.minimum_confirmed_commit_timeout_secs == 0 {
         input_errors.push("minimum_confirmed_commit_timeout_secs must be positive".to_owned());
@@ -144,7 +145,8 @@ pub fn qualify_adapter(
     if policy.require_device_side_generation_fence
         && !capabilities.supports_device_side_generation_fence
     {
-        blockers.push("policy requires device-side generation fencing but adapter lacks it".to_owned());
+        blockers
+            .push("policy requires device-side generation fencing but adapter lacks it".to_owned());
     } else if !policy.require_device_side_generation_fence
         && !capabilities.supports_device_side_generation_fence
         && !capabilities.supports_exclusive_config_lock
@@ -182,8 +184,7 @@ pub fn qualify_adapter(
             }
             if !candidate_lock_supported {
                 blockers.push(
-                    "NETCONF candidate configuration cannot be exclusively locked"
-                        .to_owned(),
+                    "NETCONF candidate configuration cannot be exclusively locked".to_owned(),
                 );
             }
             if !reverts_on_session_loss {
@@ -223,10 +224,7 @@ pub fn qualify_adapter(
             }
             QualifiedRollbackMode::ExplicitIdempotentRollback
         }
-        (
-            CommitSemantics::NetconfConfirmedCommit { .. },
-            _,
-        ) => {
+        (CommitSemantics::NetconfConfirmedCommit { .. }, _) => {
             blockers.push(
                 "NETCONF confirmed-commit semantics conflict with the declared rollback mechanism"
                     .to_owned(),
@@ -395,7 +393,12 @@ mod tests {
         };
         let result = qualify_adapter(&capabilities, &policy()).expect("valid capabilities");
         assert!(!result.automatic_rollout_eligible);
-        assert!(result.blockers.iter().any(|reason| reason.contains("shorter")));
+        assert!(
+            result
+                .blockers
+                .iter()
+                .any(|reason| reason.contains("shorter"))
+        );
     }
 
     #[test]
@@ -409,8 +412,18 @@ mod tests {
         };
         let result = qualify_adapter(&capabilities, &policy()).expect("valid capabilities");
         assert!(!result.automatic_rollout_eligible);
-        assert!(result.blockers.iter().any(|reason| reason.contains("exclusively locked")));
-        assert!(result.blockers.iter().any(|reason| reason.contains("session loss")));
+        assert!(
+            result
+                .blockers
+                .iter()
+                .any(|reason| reason.contains("exclusively locked"))
+        );
+        assert!(
+            result
+                .blockers
+                .iter()
+                .any(|reason| reason.contains("session loss"))
+        );
     }
 
     #[test]
@@ -441,7 +454,12 @@ mod tests {
         required.require_device_side_generation_fence = true;
         let result = qualify_adapter(&gnmi(), &required).expect("valid capabilities");
         assert!(!result.automatic_rollout_eligible);
-        assert!(result.blockers.iter().any(|reason| reason.contains("generation fencing")));
+        assert!(
+            result
+                .blockers
+                .iter()
+                .any(|reason| reason.contains("generation fencing"))
+        );
     }
 
     #[test]
@@ -451,8 +469,18 @@ mod tests {
         capabilities.supports_positive_control_probe = false;
         let result = qualify_adapter(&capabilities, &policy()).expect("valid capabilities");
         assert!(!result.automatic_rollout_eligible);
-        assert!(result.blockers.iter().any(|reason| reason.contains("effective installed policy")));
-        assert!(result.blockers.iter().any(|reason| reason.contains("positive-control")));
+        assert!(
+            result
+                .blockers
+                .iter()
+                .any(|reason| reason.contains("effective installed policy"))
+        );
+        assert!(
+            result
+                .blockers
+                .iter()
+                .any(|reason| reason.contains("positive-control"))
+        );
     }
 
     #[test]
@@ -482,7 +510,12 @@ mod tests {
         strict.allow_explicit_rollback = false;
         let result = qualify_adapter(&gnmi(), &strict).expect("valid capabilities");
         assert!(!result.automatic_rollout_eligible);
-        assert!(result.blockers.iter().any(|reason| reason.contains("explicit rollback is disallowed")));
+        assert!(
+            result
+                .blockers
+                .iter()
+                .any(|reason| reason.contains("explicit rollback is disallowed"))
+        );
     }
 
     #[test]
@@ -491,7 +524,12 @@ mod tests {
         capabilities.supports_exclusive_config_lock = false;
         let result = qualify_adapter(&capabilities, &policy()).expect("valid capabilities");
         assert!(!result.automatic_rollout_eligible);
-        assert!(result.blockers.iter().any(|reason| reason.contains("neither device-side")));
+        assert!(
+            result
+                .blockers
+                .iter()
+                .any(|reason| reason.contains("neither device-side"))
+        );
     }
 
     #[test]
