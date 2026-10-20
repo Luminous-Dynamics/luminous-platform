@@ -54,7 +54,8 @@ expect_baseline_reject() {
 expect_baseline_reject missing-column 'NR == 3 { $5 = "" } 1'
 expect_baseline_reject wrong-column-count 'NR == 3 { $5 = ""; NF = 4 } 1'
 expect_baseline_reject duplicate-name 'NR == 3 { $1 = "NixOS generations" } 1'
+expect_baseline_reject invalid-reference-url 'NR == 3 { $6 = "not-a-url" } 1'
 expect_baseline_reject truncated-matrix 'NR <= 6 { print }'
 
-echo "PASS: 10 corpus and 4 baseline negative controls were rejected."
+echo "PASS: 10 corpus and 5 baseline negative controls were rejected."
 echo "NON-CLAIM: these tests validate specification safeguards, not the runtime scenarios."
