@@ -229,7 +229,10 @@
         "physical"
       ],
       "release_gate": true,
-      "status": "proposed_not_executed"
+      "status": "partial_model_pass_not_qualified",
+      "observed_tiers": [
+        "model"
+      ]
     },
     {
       "id": "EVIDENCE-001",
