@@ -65,6 +65,8 @@ pub struct PromotionSpec<'a> {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PromotionEvidence<'a> {
     pub challenge_id: &'a str,
+    pub target_token: &'a str,
+    pub policy_generation: u64,
     pub receipt_sha256: &'a str,
     pub effective_policy_sha256: &'a str,
     pub observed_at_unix_ms: u64,
@@ -406,6 +408,7 @@ impl PromotionJournal {
         verifier_now_unix_ms: u64,
     ) -> Result<PromotionPermit, String> {
         validate_identifier(evidence.challenge_id, "challenge_id")?;
+        validate_target_token(evidence.target_token)?;
         validate_digest(evidence.receipt_sha256, "receipt_sha256")?;
         validate_digest(evidence.effective_policy_sha256, "effective_policy_sha256")?;
         let now = to_sql_integer(verifier_now_unix_ms, "verifier timestamp")?;
@@ -428,6 +431,11 @@ impl PromotionJournal {
                 "fresh independent evidence is required from Applied state; found {:?}",
                 operation.state
             ));
+        }
+        if evidence.target_token != operation.target_token
+            || evidence.policy_generation != operation.generation
+        {
+            return Err("evidence target or policy generation does not match the prepared operation".to_owned());
         }
         if operation.observed_policy_sha256.as_deref()
             != Some(operation.candidate_policy_sha256.as_str())
@@ -1041,6 +1049,8 @@ mod tests {
     fn evidence<'a>(observed_at_unix_ms: u64, expires_at_unix_ms: u64) -> PromotionEvidence<'a> {
         PromotionEvidence {
             challenge_id: "challenge-policy-0001",
+            target_token: "target-policy-lab",
+            policy_generation: 1,
             receipt_sha256: RECEIPT,
             effective_policy_sha256: CANDIDATE,
             observed_at_unix_ms,
