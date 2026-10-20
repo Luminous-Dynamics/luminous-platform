@@ -1,0 +1,48 @@
+name: edge-policy-session-revocation-lab
+
+on:
+  pull_request:
+    paths:
+      - "tools/edge-policy-session-revocation-lab/**"
+      - "docs/EDGE_POLICY_SESSION_REVOCATION_LAB_V1.md"
+      - ".github/workflows/edge-policy-session-revocation-lab.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-session-revocation:
+    name: Verify established and new TCP flows in disposable namespaces
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.99.0
+          components: clippy, rustfmt
+      - name: Install fixed lab utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes iproute2 nftables
+      - name: Check formatting
+        run: cargo fmt --manifest-path tools/edge-policy-session-revocation-lab/Cargo.toml -- --check
+      - name: Run offline policy-ordering tests
+        run: cargo test --manifest-path tools/edge-policy-session-revocation-lab/Cargo.toml --all-targets
+      - name: Lint with warnings denied
+        run: cargo clippy --manifest-path tools/edge-policy-session-revocation-lab/Cargo.toml --all-targets -- -D warnings
+      - name: Build the fixed session-revocation runner
+        run: cargo build --manifest-path tools/edge-policy-session-revocation-lab/Cargo.toml --bin edge-policy-session-revocation-lab
+      - name: Execute only the explicitly authorized ephemeral namespace lab
+        run: |
+          sudo timeout 30s env PATH="$PATH" HOME="$HOME" CARGO_HOME="$CARGO_HOME" LUMINOUS_EDGE_SESSION_LAB_ACK=EPHEMERAL_NAMESPACES_ONLY tools/edge-policy-session-revocation-lab/target/debug/edge-policy-session-revocation-lab --confirm-session-revocation-lab
+      - name: Assert temporary namespaces were removed
+        run: |
+          if sudo ip netns list | grep -E '^lp-edge-session-[cs]-'; then
+            echo "temporary session-policy namespace leaked after the run"
+            exit 1
+          fi
