@@ -121,7 +121,40 @@ fi
 [[ "$(sqlite3 -batch "$success_db" "SELECT count(*) FROM challenge_consumptions;")" == "1" ]] || fail "replay left a second consumption"
 echo "PASS: duplicate challenge replay is rejected with no partial state"
 
-# Case D: 64 independent writer processes compete for the same target/challenge.
+# Case D: a challenge-consumption row must reference the same target and
+# generation as its decision. This fails even when all target IDs exist.
+binding_db="$tmp/binding.sqlite"
+init_db "$binding_db"
+sqlite3 -batch -bail "$binding_db" <<SQL
+PRAGMA foreign_keys=ON;
+INSERT INTO target_policy_state
+  (target_id,generation,approved_policy_digest,effective_policy_digest,corpus_digest,last_decision_id)
+VALUES ('target-2',0,'$a','$a','$d',NULL);
+SQL
+if sqlite3 -batch -bail "$binding_db" <<SQL > "$tmp/binding.log" 2>&1
+PRAGMA foreign_keys=ON;
+BEGIN IMMEDIATE;
+INSERT INTO promotion_decisions
+  (decision_id,target_id,challenge_id,previous_generation,next_generation,
+   previous_effective_policy_digest,approved_policy_digest,effective_policy_digest,
+   corpus_digest,verifier_id)
+VALUES ('decision-binding','target-1','challenge-binding',0,1,'$a','$b','$c','$d','$verifier');
+INSERT INTO challenge_consumptions
+  (target_id,challenge_id,decision_id,consumed_generation)
+VALUES ('target-2','challenge-binding','decision-binding',1);
+COMMIT;
+SQL
+then
+  fail "challenge consumption with a mismatched target was accepted"
+fi
+[[ "$(sqlite3 -batch "$binding_db" "SELECT generation FROM target_policy_state WHERE target_id='target-1';")" == "0" ]] || fail "target-1 changed after binding violation"
+[[ "$(sqlite3 -batch "$binding_db" "SELECT generation FROM target_policy_state WHERE target_id='target-2';")" == "0" ]] || fail "target-2 changed after binding violation"
+[[ "$(sqlite3 -batch "$binding_db" "SELECT count(*) FROM promotion_decisions;")" == "0" ]] || fail "binding violation left a decision row"
+[[ "$(sqlite3 -batch "$binding_db" "SELECT count(*) FROM challenge_consumptions;")" == "0" ]] || fail "binding violation left a consumption row"
+[[ "$(sqlite3 -batch "$binding_db" "PRAGMA integrity_check;")" == "ok" ]] || fail "binding violation damaged SQLite integrity"
+echo "PASS: mismatched target/generation challenge binding fails closed without partial state"
+
+# Case E: 64 independent writer processes compete for the same target/challenge.
 # SQLite must serialize the write transaction; the unique challenge constraint and
 # generation CAS together permit exactly one durable promotion.
 race_db="$tmp/race.sqlite"
