@@ -82,6 +82,31 @@ The 100,000 mutations, 64-way concurrency, 100 trials per checkpoint, and 1,000 
 
 The distinctive engineering opportunity is the **cross-layer join**: no single adjacent tool establishes the complete chain from authorized artifact and intent through the booted generation and freshly verified recovery outcome. SRQ should prove that join with reproducible adversarial cases—not claim superiority by feature count.
 
+## Comparative benchmark plan: measurable value over the baseline
+
+SRQ-1 should not be marketed as a replacement for these systems. It composes their relevant strengths and measures the integration gap each leaves to the system owner.
+
+| Baseline | What it already does | SRQ integration test | Evidence needed before claiming added value |
+|---|---|---|---|
+| NixOS generations | Selects an earlier or newer system configuration at boot | Update, force interruption at each activation checkpoint, reboot, and verify the generation that actually came up | Old-or-new complete-generation result, measured recovery time, retained data/state |
+| OSTree atomic deployments / systemd-sysupdate A/B | Supports atomic deployment or multi-version resource updates | Run matching power-loss, partial artifact, and fallback scenarios with the selected baseline and Luminous path | Comparable device, same fault injection points, artifact hashes, failure/recovery distributions |
+| TUF | Protects update metadata and software selection against rollback, freeze, mix-and-match, and key-compromise cases | Reuse TUF threat cases and conformance fixtures; test Luminous's policy/target/generation binding around the updater | Zero unauthorized acceptances, explicit metadata errors, no reimplementation of TUF cryptographic policy |
+| SLSA / in-toto provenance | Describes artifact source/build process and provides verifiable attestations | Verify that the selected artifact satisfies an expected source, builder, and build definition, then independently verify the resulting deployed generation | Attestation verification result plus separate runtime generation observation |
+| RATS / Keylime-style measured boot | Defines remote-attestation roles and, in Keylime's case, TPM-based boot/runtime integrity monitoring | Keep freshness/replay tests separate from hardware-rooted attestation tests; bind the two only through an explicitly qualified adapter | Freshness result, verifier policy, attester evidence, trust-anchor chain, device/firmware-specific test evidence |
+| Batfish differential reachability | Analyzes reachability changes between network snapshots and exposes unintended effects | Use it as the pre-deployment network-analysis baseline; separately exercise live effective-policy observation and fresh challenge-bound receipt acceptance | Matched network snapshots, differential result, observed effective-policy digest, and promotion decision |
+| NIST SP 800-193 | Frames firmware resilience as protection, detection, and recovery | Run firmware-level faults only on supported hardware; keep OS rollback and firmware recovery claims separate | Hardware/firmware tuple, recovery outcome, trust-root and firmware evidence |
+| CIS Benchmarks | Supplies established OS configuration hardening guidance | Map applicable controls to the actual NixOS profile rather than creating a conflicting generic score | Versioned control mapping, exceptions, independent configuration assessment |
+
+### How to make a defensible “better than baseline” claim
+
+1. Freeze the threat model and inputs. Run baseline and Luminous paths against the same deterministic fault corpus. Do not compare a unit test to a hardware test or a software receipt to TPM-backed attestation.
+2. Report safety first: false accepts and unauthorized promotions are release blockers, not trade-offs to average against speed. Report false rejects separately.
+3. Report distributions, not a headline average: p50/p95/p99 latency, recovery time, host count, concurrency, memory/CPU, and failed/unreachable targets.
+4. Make the integration benefit falsifiable: SRQ should demonstrate that a fresh, authorized, artifact-bound decision corresponds to the generation actually selected after restart, with complete failure evidence. It must show this on the same cases where the baseline mechanism alone only supplies a narrower property.
+5. Publish gaps. If a firmware, TPM, key-management, or physical-power-loss property is not implemented or tested, it remains `NOT_QUALIFIED`; a richer JSON receipt cannot close that gap.
+
+The machine-readable reference list is `benchmarks/srq-v1/industry-baselines.tsv`. It records comparison scope and deliberately avoids unsupported overall superiority rankings.
+
 ## Implementation order
 
 1. Land and freeze this proposal plus the scenario corpus; validate its structure independently of CI.
