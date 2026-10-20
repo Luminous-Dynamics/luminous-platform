@@ -97,7 +97,7 @@ jobs:
               fixture: false
             }' > "$model_receipt"
 
-          bash benchmarks/srq-v1/validate-result.sh "$model_receipt"
+          bash benchmarks/srq-v1/validate-result.sh --evidence-root "$RUNNER_TEMP" "$model_receipt"
 
       - name: Preserve activation model evidence
         if: always()
