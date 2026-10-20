@@ -627,7 +627,8 @@ mod tests {
             &envelope_source(&changed),
             &changed,
             1_400,
-        ).expect_err("changed effective policy must be rejected");
+        )
+        .expect_err("changed effective policy must be rejected");
         assert!(error.iter().any(|e| e.contains("effective policy digest")));
     }
 
