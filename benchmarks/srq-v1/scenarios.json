@@ -457,6 +457,57 @@
       ],
       "release_gate": true,
       "status": "proposed_not_executed"
+    },
+    {
+      "id": "OPS-003",
+      "surface": "all",
+      "severity": "release_gate",
+      "fault_injection": "A required check is NOT_RUN or BLOCKED, and the operator console receives incomplete or stale evidence.",
+      "expected_state": "The interface preserves the exact status, gives the reason and safe next step, and makes no positive compliance claim.",
+      "forbidden_outcomes": [
+        "NOT_RUN or BLOCKED rendered as PASS/green-compliant.",
+        "Status color is the only distinction without an accessible text label.",
+        "The operator cannot determine whether a scenario ran or what is needed next."
+      ],
+      "required_evidence": [
+        "Injected state/status fixtures for PASS, FAIL, NOT_RUN, BLOCKED, and NOT_APPLICABLE",
+        "Rendered UI capture and accessible-name/status assertions",
+        "Blinded operator interpretation record with wrong-status counts and time-to-next-safe-action"
+      ],
+      "execution_tiers": [
+        "static",
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "target": "Proposed usability gate: at least 95% correct classification over a blinded scenario set and zero NOT_RUN-as-PASS misclassifications; measure cohort, task time, and confidence instead of assuming usability."
+    },
+    {
+      "id": "OPS-004",
+      "surface": "sovereign-ops",
+      "severity": "release_gate",
+      "fault_injection": "An operator previews a high-impact action then cancels, closes the preview, or presents stale/target-mismatched authorization.",
+      "expected_state": "No mutation occurs until current, target-bound, explicit authorization is validated; cancellation leaves the target generation unchanged.",
+      "forbidden_outcomes": [
+        "Preview implies that the action has been submitted or completed.",
+        "Cancelled operation continues in the background.",
+        "Stale consent or approval for another target/generation is reused."
+      ],
+      "required_evidence": [
+        "Before/after target-generation identity",
+        "Action dispatch/decision audit log",
+        "UI preview/cancel interaction trace and keyboard-only run",
+        "Negative controls for stale authorization and target mismatch"
+      ],
+      "execution_tiers": [
+        "static",
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "target": "Proposed hard safety gate: zero mutations after cancellation or without current authorization; do not average any violation against usability or latency."
     }
   ]
 }
