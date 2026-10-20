@@ -660,7 +660,11 @@ mod tests {
                 1_400,
             )
             .expect_err("replay must be rejected");
-            assert!(duplicate.iter().any(|item| item.contains("already been consumed")));
+            assert!(
+                duplicate
+                    .iter()
+                    .any(|item| item.contains("already been consumed"))
+            );
         }
         {
             let reopened = SqliteReplayLedger::open(&path).expect("reopen durable ledger");
