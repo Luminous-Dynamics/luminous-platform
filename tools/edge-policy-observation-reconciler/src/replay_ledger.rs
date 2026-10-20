@@ -214,30 +214,18 @@ pub fn verify_and_consume_durable(
 
     let challenge: Value = serde_json::from_str(challenge_source)
         .map_err(|error| vec![format!("cannot parse validated challenge: {error}")])?;
-    let receipt: Value = serde_json::from_str(receipt_source)
-        .map_err(|error| vec![format!("cannot parse validated receipt: {error}")])?;
-    let string_field = |value: &Value, pointer: &str, label: &str| {
-        value
-            .pointer(pointer)
-            .and_then(Value::as_str)
-            .ok_or_else(|| vec![format!("{label} must be a string")])
-    };
-    let integer_field = |value: &Value, pointer: &str, label: &str| {
-        value
-            .pointer(pointer)
-            .and_then(Value::as_u64)
-            .ok_or_else(|| vec![format!("{label} must be an unsigned integer")])
-    };
+    let challenge: Value = serde_json::from_str(challenge_source)
+        .map_err(|error| vec![format!("cannot parse validated challenge: {error}")])?;
 
-    let nonce = string_field(&challenge, "/nonce", "challenge.nonce")?;
-    let challenge_id = string_field(&challenge, "/challenge_id", "challenge.challenge_id")?;
+    let nonce = ledger_string_field(&challenge, "/nonce", "challenge.nonce")?;
+    let challenge_id = ledger_string_field(&challenge, "/challenge_id", "challenge.challenge_id")?;
     let receipt_hash = super::sha256_hex(receipt_source.as_bytes());
-    let policy_generation = integer_field(
+    let policy_generation = ledger_integer_field(
         &challenge,
         "/policy_generation",
         "challenge.policy_generation",
     )?;
-    let target_token = string_field(&challenge, "/target_token", "challenge.target_token")?;
+    let target_token = ledger_string_field(&challenge, "/target_token", "challenge.target_token")?;
 
     ledger
         .consume(&ReplayConsumption {
@@ -256,6 +244,24 @@ pub fn verify_and_consume_durable(
         Value::String("sqlite_durable_transactional_nonce_consumed".to_owned());
     report["durable_replay_ledger"] = Value::String("commit_confirmed_before_return".to_owned());
     Ok(report)
+}
+
+fn ledger_string_field<'a>(
+    value: &'a Value,
+    pointer: &str,
+    label: &str,
+) -> Result<&'a str, Vec<String>> {
+    value
+        .pointer(pointer)
+        .and_then(Value::as_str)
+        .ok_or_else(|| vec![format!("{label} must be a string")])
+}
+
+fn ledger_integer_field(value: &Value, pointer: &str, label: &str) -> Result<u64, Vec<String>> {
+    value
+        .pointer(pointer)
+        .and_then(Value::as_u64)
+        .ok_or_else(|| vec![format!("{label} must be an unsigned integer")])
 }
 
 fn table_exists(connection: &Connection) -> rusqlite::Result<bool> {
