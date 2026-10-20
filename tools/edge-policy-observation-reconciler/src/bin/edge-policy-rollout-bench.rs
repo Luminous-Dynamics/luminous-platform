@@ -86,19 +86,14 @@ fn benchmark_size(target_count: usize) -> Result<Value, Box<dyn Error>> {
 
     for _ in 0..SAMPLE_COUNT {
         let started = Instant::now();
-        let decision = authorize_next_wave_with_adapter_capabilities(
-            &plan,
-            &[],
-            &profiles,
-            &policy,
-            1_100,
-        )
-        .map_err(|errors| {
-            format!(
-                "adapter-qualified rollout gate failed for {target_count} targets: {}",
-                errors.join("; ")
-            )
-        })?;
+        let decision =
+            authorize_next_wave_with_adapter_capabilities(&plan, &[], &profiles, &policy, 1_100)
+                .map_err(|errors| {
+                    format!(
+                        "adapter-qualified rollout gate failed for {target_count} targets: {}",
+                        errors.join("; ")
+                    )
+                })?;
         let elapsed_nanos = u64::try_from(started.elapsed().as_nanos())?;
         match decision {
             RolloutGateDecision::WaveAuthorized { wave_index: 0, .. } => {}
