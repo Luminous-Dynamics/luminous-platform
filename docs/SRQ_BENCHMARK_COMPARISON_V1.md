@@ -86,13 +86,15 @@ SRQ aggregate status remains NOT_QUALIFIED until every required scenario has evi
 
 ## First observed measurements (exploratory, not a SOTA comparison)
 
-The SQLite reference harness has now passed the following on two GitHub-hosted runner executions:
+The SQLite reference harness has passed four GitHub-hosted runner executions:
 
 | Run | SQLite settings | Contenders | All-contender p50 / p95 / p99 | Winner elapsed |
 |---|---|---:|---:|---:|
 | [39431749407](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39431749407) | 3.45.1, WAL, synchronous=FULL | 64 processes | 82.1 / 138.6 / 150.8 ms | 47.4 ms |
 | [39432653655](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39432653655) | 3.45.1, WAL, synchronous=FULL | 64 processes | 34.7 / 68.4 / 87.2 ms | 11.5 ms |
+| [39433030759](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39433030759) | 3.45.1, WAL, synchronous=FULL | 64 processes | 48.1 / 79.2 / 94.9 ms | 42.8 ms |
+| [39433712275](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39433712275) | 3.45.1, WAL, synchronous=FULL | 64 processes | 22.0 / 57.7 / 62.3 ms | 9.0 ms |
 
-These are per-contender script elapsed times, including CLI/process startup and lock waiting; they are not pure database commit latency. The between-run spread shows why single-run values must not be presented as a stable benchmark. A defensible comparison still needs repeated runs on a frozen machine/storage tuple and the same fault schedule against the production Luminous adapter.
+These are per-contender script elapsed times, including CLI/process startup and lock waiting; they are not pure database commit latency. The spread is evidence of runner scheduling noise, not a SQLite performance flaw or proof of any superiority. A defensible comparison still needs a fixed machine/storage tuple, repeated randomized order, raw per-trial values, and the same fault schedule against the production Luminous adapter.
 
-The latest contract suite also verifies that the SQLite evidence hash is bound into the deterministic SRQ evidence archive manifest. The PR workflow has not minted or verified a real signature: its trusted-main attestation job is skipped on pull-request events. The overall SRQ profile remains NOT_QUALIFIED, 0/22 gates met at qualifying tier.
+The latest tested code also binds the SQLite log and process-kill log into the deterministic SRQ archive manifest. The PR's contract tests check the fixed inventory and both digests, plus exact workflow-file SHA matching. The real GitHub/Sigstore attestation has not been minted or verified because the trusted-main job is skipped on PR events. Overall SRQ remains NOT_QUALIFIED, 0/22 gates met at qualifying tier.
