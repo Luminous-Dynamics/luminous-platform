@@ -43,7 +43,7 @@ Expected synthetic outcome for each mode:
 | Interactive task by its window-1 deadline | Missed | Completed |
 | Large bulk task | Completed by window 2 | Completed by window 2 |
 
-The report now includes explicit `baseline_by_priority` and `candidate_by_priority` summaries: eligible task count, completed/failed count, completion rate in parts-per-million, deadline misses and expiry misses. This prevents a single all-task fairness scalar from hiding an essential or interactive deadline failure. The expected class rates in this fixture are 0% essential/interactive and 100% bulk for FIFO, versus 100% for all three classes under fair share.
+The report now includes explicit `baseline_by_priority` and `candidate_by_priority` summaries: eligible task count, completed/failed count, completion rate in parts-per-million, deadline misses and expiry misses. It also carries task-level arrival/deadline/expiry context in its explanatory report. This prevents a single all-task fairness scalar from hiding an essential or interactive deadline failure and enables a precise “why this task missed its deadline” explanation. The expected class rates in this fixture are 0% essential/interactive and 100% bulk for FIFO, versus 100% for all three classes under fair share.
 
 That result is a consequence of this specific demand order and deadline configuration. It is not evidence of general improvement on a live network, and it is not a claim about radio airtime fairness.
 
@@ -57,6 +57,7 @@ That result is a consequence of this specific demand order and deadline configur
 - Every task's arrival, deadline and expiry must be inside the declared horizon; deadlines/expiries cannot precede arrival.
 - Canonical task ordering binds the scenario SHA-256; paired baseline/candidate trials reuse the existing task-outcome profile/run validator.
 - The exported raw receipt carries the evidence class synthetic_simulation and omits peer identifiers. Aggregate results keep per-mode per-peer completed-task Jain indices, while omitting identity mappings and peer tokens.
+- Report-only task comparisons now retain each task's arrival, deadline and expiry windows next to requested/delivered bytes, terminal window and failure reason. This allows the explainer to say which specific task missed which declared deadline. These task IDs are scenario-local tokens, not network peer identifiers.
 
 ## Next measurable benchmarks
 
