@@ -30,6 +30,7 @@ make_archive() {
     sha256sum \
       srq-challenge-promotion-model-test.log \
       srq-evidence-003-model-result.json \
+      srq-process-kill-model-test.log \
       srq-recovery-model-test.log \
       srq-release-qualification.json \
       srq-update-004-model-result.json > SHA256SUMS
