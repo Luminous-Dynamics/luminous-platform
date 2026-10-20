@@ -13,7 +13,7 @@ use std::time::Duration;
 use rusqlite::{Connection, OptionalExtension, Row, TransactionBehavior, params};
 
 use super::fleet_rollout::{
-    FleetRolloutPlan, FleetTarget, FleetTargetObservation, ProbeOutcome, RolloutWave,
+    FleetRolloutPlan, FleetTarget, FleetTargetObservation, RolloutWave,
     WaveDecision, WaveEvaluation, digest_plan, evaluate_wave, plan_rollout, validate_target,
 };
 
@@ -267,7 +267,7 @@ impl FleetSessionJournal {
                             to_sql_integer(target.generation, "policy generation")?,
                             target.baseline_policy_sha256,
                             target.candidate_policy_sha256,
-                            i64::from(target.canary),
+                            if target.canary { 1_i64 } else { 0_i64 },
                             now
                         ],
                     )
