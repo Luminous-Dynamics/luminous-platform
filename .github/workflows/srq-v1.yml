@@ -198,6 +198,15 @@ jobs:
           grep -Fq 'PASS: duplicate challenge replay is rejected with no partial state' "$reference_log"
           grep -Eq '^sqlite_version=[0-9]+[.][0-9]+([.][0-9]+)? journal_mode=wal synchronous=FULL cases=3$' "$reference_log"
 
+      - name: Preserve SQLite baseline evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-sqlite-reference-evidence
+          path: ${{ runner.temp }}/srq-sqlite-promotion-reference.log
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Compile release qualification status from observed receipts
         shell: bash
         run: |
@@ -238,7 +247,6 @@ jobs:
             srq-challenge-promotion-model-test.log
             srq-evidence-003-model-result.json
             srq-process-kill-model-test.log
-            srq-sqlite-promotion-reference.log
             srq-recovery-model-test.log
             srq-release-qualification.json
             srq-update-004-model-result.json
@@ -256,7 +264,6 @@ jobs:
           )
           checksum_sha="$(sha256sum "$bundle_dir/SHA256SUMS" | cut -d ' ' -f 1)"
           process_kill_sha="$(sha256sum "$bundle_dir/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
-          sqlite_reference_sha="$(sha256sum "$bundle_dir/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
           corpus_sha="$(sha256sum benchmarks/srq-v1/scenarios.json | cut -d ' ' -f 1)"
           actual_head="$(git rev-parse HEAD)"
           test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
@@ -275,7 +282,6 @@ jobs:
             --arg corpus_sha "$corpus_sha" \
             --arg checksum_sha "$checksum_sha" \
             --arg process_kill_sha "$process_kill_sha" \
-            --arg sqlite_reference_sha "$sqlite_reference_sha" \
             '{
               schema_version: 1,
               profile_id: "SRQ-1",
@@ -302,14 +308,6 @@ jobs:
                 status: "PASS",
                 evidence_artifact: "srq-process-kill-model-test.log",
                 evidence_sha256: $process_kill_sha
-              }, {
-                test_id: "SRQ-SQLITE-REFERENCE-V1",
-                scenario_id: "EVIDENCE-003",
-                execution_tier: "model",
-                claim_ceiling: "abstract_model_only",
-                status: "PASS",
-                evidence_artifact: "srq-sqlite-promotion-reference.log",
-                evidence_sha256: $sqlite_reference_sha
               }]
             }' > "$bundle_dir/manifest.json"
 
@@ -329,7 +327,6 @@ jobs:
             ${{ runner.temp }}/srq-challenge-promotion-model-test.log
             ${{ runner.temp }}/srq-evidence-003-model-result.json
             ${{ runner.temp }}/srq-process-kill-model-test.log
-            ${{ runner.temp }}/srq-sqlite-promotion-reference.log
             ${{ runner.temp }}/srq-release-qualification.json
           if-no-files-found: ignore
           retention-days: 14
