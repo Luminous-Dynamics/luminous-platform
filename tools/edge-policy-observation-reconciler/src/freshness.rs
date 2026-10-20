@@ -633,6 +633,48 @@ mod tests {
     }
 
     #[test]
+    fn effective_policy_digest_mismatch_is_rejected_without_consuming_nonce() {
+        let valid_receipt = receipt_source();
+        let mut tampered: Value =
+            serde_json::from_str(&valid_receipt).expect("valid receipt JSON");
+        tampered["observations"][0]["effective_policy_sha256"] = json!("f".repeat(64));
+        let tampered_source = tampered.to_string();
+        let tampered_envelope = envelope_source(&tampered_source);
+        let challenge = challenge_source();
+        let mut guard = ChallengeReplayGuard::new();
+
+        let error = verify(
+            &mut guard,
+            &challenge,
+            &tampered_envelope,
+            &tampered_source,
+            1_400,
+        )
+        .expect_err("an observation using the wrong effective policy must be rejected");
+        assert!(
+            error
+                .iter()
+                .any(|item| item.contains("effective policy digest does not match the challenge")),
+            "unexpected error: {error:?}"
+        );
+
+        // A rejected attempt does not consume the challenge; the conformant receipt
+        // using the expected effective-policy digest must still be eligible.
+        let valid_envelope = envelope_source(&valid_receipt);
+        let valid = verify(
+            &mut guard,
+            &challenge,
+            &valid_envelope,
+            &valid_receipt,
+            1_400,
+        );
+        assert!(
+            valid.is_ok(),
+            "effective-policy mismatch must not consume the nonce: {valid:?}"
+        );
+    }
+
+    #[test]
     fn wall_and_monotonic_timestamp_fields_must_agree() {
         let receipt = receipt_source();
         let mut tampered: Value = serde_json::from_str(&receipt).expect("receipt");
