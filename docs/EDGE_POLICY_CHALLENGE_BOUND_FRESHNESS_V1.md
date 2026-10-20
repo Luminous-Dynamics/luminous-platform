@@ -10,10 +10,10 @@ This addition is a separate verification layer. It does not change the v1 receip
 
 ## Protocol
 
-1. The verifier prepares a challenge with a cryptographically secure random 32-byte nonce, a unique challenge ID, issued/expiry timestamps, a maximum receipt-age bound, policy generation, corpus SHA-256, approved-policy SHA-256, and target token.
+1. The verifier prepares a challenge with a cryptographically secure random 32-byte nonce, a unique challenge ID, issued/expiry timestamps, a maximum receipt-age bound, policy generation, corpus SHA-256, approved-policy SHA-256, expected effective-policy SHA-256, and target token. Issue it only after reading back the intended effective policy, but before probing it.
 2. An authorized probe runner performs its normal test and produces the existing v1 receipt.
 3. The runner (or a trusted wrapper) returns a freshness envelope containing the same challenge ID and nonce, run ID, policy generation, start/completion timestamps, and SHA-256 of the exact receipt bytes.
-4. The verifier checks schema validity, challenge/envelope/receipt bindings, exact corpus bytes, exact receipt bytes, target and policy generation, challenge expiry, run interval, maximum receipt age, and that each observation timestamp lies within that run interval.
+4. The verifier checks schema validity, challenge/envelope/receipt bindings, exact corpus bytes, exact receipt bytes, target, policy generation, and every observation's effective-policy digest, plus challenge expiry, run interval, maximum receipt age, and that each observation timestamp lies within that run interval.
 5. It invokes ordinary corpus reconciliation for the exact supplied corpus and receipt bytes. The freshness nonce is consumed only if the receipt is fresh **and** normal reconciliation is conformant.
 6. A caller that promotes a policy must persist the consumed nonce transactionally with the promotion decision. The library's in-memory guard is only an executable contract/test helper.
 
@@ -24,7 +24,7 @@ This addition is a separate verification layer. It does not change the v1 receip
 - Reuse of a nonce already consumed by this guard instance.
 - Challenge not yet issued or already expired, challenge lifetime above one hour, or receipt age above the challenge's explicit limit (itself capped at one hour).
 - Envelope run ID or policy generation different from the receipt/challenge.
-- A receipt for a different corpus, approved policy digest, or target token.
+- A receipt for a different corpus, approved policy digest, effective installed-policy digest, or target token.
 - Synthetic fixtures, control-plane acknowledgements, and other non-dataplane sources in this freshness path.
 - Out-of-window observation timestamps, invalid run interval, or backward monotonic trial order.
 - Any receipt that fails normal frozen-corpus reconciliation.
@@ -56,7 +56,7 @@ The tests in this module exercise deterministic correctness and replay controls,
 - Stale receipt rejected.
 - Envelope challenge ID/nonce/run ID/policy generation bound across objects.
 - Exact receipt bytes and corpus bytes bound with SHA-256.
-- Wrong target/policy/corpus and out-of-range observation timestamps rejected.
+- Wrong target/policy/corpus/effective-policy digest and out-of-range observation timestamps rejected.
 - Synthetic fixtures and non-dataplane evidence rejected by this layer.
 - A failed attempt must not consume the nonce; a valid retry should still be accepted.
 
