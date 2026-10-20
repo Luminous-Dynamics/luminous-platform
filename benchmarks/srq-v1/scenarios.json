@@ -2,7 +2,7 @@
   "profile_id": "SRQ-1",
   "schema_version": 1,
   "qualification_status": "proposed_not_executed",
-  "description": "Cross-layer sovereign boot, update, operations, evidence, and recovery adversarial scenario corpus. This file defines test intent; it is not execution evidence.",
+  "description": "Cross-layer sovereign boot, update, operations, evidence, and recovery adversarial scenario corpus. Scenario definitions and observed tier coverage are recorded here; exact execution evidence lives in separate source-bound result receipts. This file is not itself execution evidence.",
   "scenarios": [
     {
       "id": "BOOT-001",
