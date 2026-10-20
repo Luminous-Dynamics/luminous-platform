@@ -614,6 +614,24 @@ mod tests {
     }
 
     #[test]
+    fn effective_policy_digest_must_match_challenge() {
+        let receipt = receipt_source();
+        let mut changed: Value = serde_json::from_str(&receipt).expect("receipt");
+        changed["observations"][0]["effective_policy_sha256"] =
+            json!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        let changed = changed.to_string();
+        let mut guard = ChallengeReplayGuard::new();
+        let error = verify(
+            &mut guard,
+            &challenge_source(),
+            &envelope_source(&changed),
+            &changed,
+            1_400,
+        ).expect_err("changed effective policy must be rejected");
+        assert!(error.iter().any(|e| e.contains("effective policy digest")));
+    }
+
+    #[test]
     fn wall_and_monotonic_timestamp_fields_must_agree() {
         let receipt = receipt_source();
         let mut tampered: Value = serde_json::from_str(&receipt).expect("receipt");
