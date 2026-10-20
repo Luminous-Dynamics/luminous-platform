@@ -44,6 +44,7 @@ const REVOKE_POLICY: &str = r#"flush chain inet luminous_session_lab input
 add rule inet luminous_session_lab input iifname "lo" accept
 add rule inet luminous_session_lab input ip saddr 198.18.1.1 tcp dport 8080 drop
 add rule inet luminous_session_lab input ct state established,related accept
+add rule inet luminous_session_lab input tcp dport 8082 accept
 "#;
 
 #[derive(Clone, Copy, Debug)]
