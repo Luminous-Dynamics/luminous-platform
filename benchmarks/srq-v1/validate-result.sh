@@ -5,18 +5,46 @@ script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 schema="$script_dir/result-receipt-v1.schema.json"
 corpus="$script_dir/scenarios.json"
 allow_fixtures=false
+evidence_root=""
 receipt=""
 
-if [[ "${1:-}" == "--allow-fixtures" ]]; then
-  allow_fixtures=true
-  shift
-fi
-if [[ $# -ne 1 ]]; then
-  echo "Usage: $0 [--allow-fixtures] <result-receipt.json>" >&2
+usage() {
+  echo "Usage: $0 [--allow-fixtures] [--evidence-root DIR] <result-receipt.json>" >&2
+}
+
+while (($#)); do
+  case "$1" in
+    --allow-fixtures)
+      allow_fixtures=true
+      shift
+      ;;
+    --evidence-root)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        usage
+        exit 2
+      fi
+      evidence_root="$2"
+      shift 2
+      ;;
+    -*)
+      usage
+      exit 2
+      ;;
+    *)
+      if [[ -n "$receipt" ]]; then
+        usage
+        exit 2
+      fi
+      receipt="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$receipt" ]]; then
+  usage
   exit 2
 fi
-receipt="$1"
-
 if ! command -v jq >/dev/null 2>&1; then
   echo "BLOCKED: jq is required; no receipt validation result was produced." >&2
   exit 2
@@ -74,6 +102,8 @@ jq -e '
 
 scenario="$(jq -r '.scenario_id' "$receipt")"
 fixture="$(jq -r '.fixture' "$receipt")"
+status="$(jq -r '.status' "$receipt")"
+
 if ! jq -e --arg scenario "$scenario" 'any(.scenarios[]; .id == $scenario)' "$corpus" >/dev/null; then
   echo "FAIL: receipt references scenario '$scenario', which is not present in the SRQ-1 corpus." >&2
   exit 1
@@ -82,11 +112,44 @@ if [[ "$fixture" == "true" && "$allow_fixtures" != "true" ]]; then
   echo "FAIL: fixture=true receipts are examples, not qualification evidence; --allow-fixtures is for tests only." >&2
   exit 1
 fi
+if [[ "$status" == "PASS" && "$fixture" == "false" && -z "$evidence_root" ]]; then
+  echo "FAIL: non-fixture PASS receipts require --evidence-root so evidence bytes can be verified." >&2
+  exit 1
+fi
 
-status="$(jq -r '.status' "$receipt")"
+if [[ -n "$evidence_root" ]]; then
+  [[ -d "$evidence_root" ]] || { echo "FAIL: evidence root is not a directory: $evidence_root" >&2; exit 1; }
+  while IFS=$'\t' read -r artifact expected_sha; do
+    [[ -n "$artifact" ]] || continue
+    # Evidence locators must be relative and must not escape the supplied root.
+    if [[ "$artifact" == /* ]]; then
+      echo "FAIL: absolute evidence locator is not allowed: $artifact" >&2
+      exit 1
+    fi
+    IFS='/' read -r -a components <<< "$artifact"
+    for component in "${components[@]}"; do
+      if [[ "$component" == ".." || "$component" == "." || -z "$component" ]]; then
+        echo "FAIL: unsafe evidence locator: $artifact" >&2
+        exit 1
+      fi
+    done
+    file="$evidence_root/$artifact"
+    if [[ ! -f "$file" ]]; then
+      echo "FAIL: evidence artifact is missing: $artifact" >&2
+      exit 1
+    fi
+    actual_sha="$(sha256sum "$file" | cut -d ' ' -f 1)"
+    if [[ "$actual_sha" != "$expected_sha" ]]; then
+      echo "FAIL: evidence digest mismatch for $artifact (expected=$expected_sha actual=$actual_sha)" >&2
+      exit 1
+    fi
+    echo "PASS: evidence bytes verified ($artifact sha256=$actual_sha)"
+  done < <(jq -r '.evidence[]? | [.artifact, .sha256] | @tsv' "$receipt")
+fi
+
 if [[ "$fixture" == "true" ]]; then
   printf 'VALID_FIXTURE_ONLY: result receipt structure is valid (scenario=%s example_status=%s); this fixture is not qualification evidence.\n' "$scenario" "$status"
 else
   printf 'PASS: result receipt structure and status invariants are valid (scenario=%s status=%s fixture=false).\n' "$scenario" "$status"
 fi
-echo "NON-CLAIM: this reference subset validator does not authenticate artifacts, verify full JSON Schema conformance, or qualify a runtime scenario."
+echo "NON-CLAIM: this reference subset validator does not implement the full JSON Schema specification or authenticate signer/device identity, trust roots, or runtime qualification."
