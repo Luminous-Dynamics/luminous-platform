@@ -4,7 +4,7 @@
 //! It distinguishes new-session denial from explicit revocation of an established flow.
 
 use std::env;
-use std::io::{self, BufRead, BufReader, Read, Write};
+use std::io::{self, BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 use std::process::{Child, Command, ExitCode, Stdio};
 use std::thread;
@@ -16,7 +16,6 @@ use sha2::{Digest, Sha256};
 const ACK_ENV: &str = "LUMINOUS_EDGE_SESSION_LAB_ACK";
 const ACK_VALUE: &str = "EPHEMERAL_NAMESPACES_ONLY";
 const SERVER_ADDR: &str = "198.18.1.2:8080";
-const CLIENT_ADDR: &str = "198.18.1.1";
 const POLICY_TABLE: &str = "table inet luminous_session_lab";
 const ESTABLISHED_RULE: &str = "ct state established,related accept";
 const REVOKE_RULE: &str = "ip saddr 198.18.1.1 tcp dport 8080 drop";
