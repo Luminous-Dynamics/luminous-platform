@@ -8,23 +8,24 @@ A new-flow allow/deny matrix does not establish what happens to an already-estab
 
 This lab deliberately distinguishes three outcomes instead of conflating them:
 
-| Case | Policy transition | Existing TCP session | New TCP session |
-|---|---|---|---|
-| ESR-001 | Initial allow policy | Must exchange a fixed positive-control line | Not evaluated |
-| ESR-002 | Remove the service-admission rule but keep generic established acceptance | Must still exchange a fixed line | Must be blocked |
-| ESR-003 | Add a source/service-specific deny before generic established acceptance | Must receive no response within the fixed timeout window | Must be blocked |
+| Case | Policy transition | Existing TCP/8080 session | New TCP/8080 session | Independent TCP/8082 path |
+|---|---|---|---|---|
+| ESR-001 | Initial allow policy | Must exchange a fixed positive-control line | Not evaluated | Must connect |
+| ESR-002 | Remove the TCP/8080 admission rule but keep generic established acceptance | Must still exchange a fixed line | Must be blocked | Must still connect |
+| ESR-003 | Add a source/service-specific deny before generic established acceptance | Must receive no response within the fixed timeout window | Must be blocked | Must still connect |
 
 The second case is not a recommendation to preserve revoked access. It is a control demonstrating that *removing permission to start a session is not necessarily revoking permission for a session already in progress*. The third case expresses explicit revocation semantics for this fixed test tuple.
 
 ## Isolation and safety envelope
 
 - Uses two temporary Linux network namespaces linked only by one veth pair.
-- Fixed IPv4 addresses `198.18.1.1/30` and `198.18.1.2/30`; fixed TCP port `8080`.
+- Fixed IPv4 addresses `198.18.1.1/30` and `198.18.1.2/30`; target TCP port `8080` plus a separate allowed positive-control service on TCP `8082`.
 - No IPv4 or IPv6 default route, bridge, NAT, external route, packet capture, or host-firewall modification.
 - Policy updates execute only inside the temporary server namespace.
 - No caller-supplied target, interface, port, command, or policy text is accepted.
 - Requires both `--confirm-session-revocation-lab` and `LUMINOUS_EDGE_SESSION_LAB_ACK=EPHEMERAL_NAMESPACES_ONLY`.
-- Effective rulesets are read back and checked for order: the explicit deny must precede the generic established-state accept.
+- Effective rulesets are read back and checked for order: the explicit deny must precede the generic established-state accept, and the independent TCP/8082 allow rule must be present in every stage.
+- A fresh TCP/8082 connection is required before and after each policy transition. If this positive control fails, the run fails instead of interpreting a broken path as successful denial of TCP/8080.
 - The runner kills child processes, removes both namespaces, and verifies that their names are absent. A force-kill or host failure can still interrupt cleanup; use disposable runners.
 - The echo payload consists only of fixed synthetic markers inside the isolated namespaces. It is not a production application test.
 
@@ -41,6 +42,7 @@ The first objective is semantic correctness, not speed.
 | New session after admission removal | Zero unintended successful connections | Required |
 | Existing session after explicit revoke | No response within the declared observation window; server stays alive | Required |
 | New session after explicit revoke | Zero unintended successful connections | Required |
+| Independent allowed path | TCP/8082 remains connectable in every stage, including after revocation of TCP/8080 | Required |
 | Rule-order safety | Effective tuple deny precedes broad established acceptance | Required |
 | Cleanup | Zero named namespaces remain after successful runs | Required |
 | Policy identity | Record SHA-256 of the effective ruleset for each stage | Required integrity check; not authentication |
@@ -65,7 +67,7 @@ The report must distinguish controller acknowledgements, policy snapshots, and i
 
 ## Remaining gaps
 
-This lab does not yet test physical APs/firewalls, UDP behavior, IPv6 session revocation, DNS/NAT64, multi-device rollout, controller partition, stale controller state, packet-loss conditions, failover, application transaction success, or rollback. Those should be separate registered cases with positive controls. The immediate next extension should add stale/replayed receipt rejection and a multi-stage rollback matrix before testing any external device.
+This lab does not yet test physical APs/firewalls, UDP behavior, IPv6 session revocation, DNS/NAT64, multi-device rollout, controller partition, stale controller state, packet-loss conditions, failover, application transaction success, or rollback. Those should be separate registered cases with positive controls. PR #87 adds a challenge-bound freshness layer, but production replay protection still needs a durable, atomic nonce ledger and authenticated evidence. The next policy-lab extension should add a multi-stage rollback matrix before testing any external device.
 
 ## Run
 
@@ -77,4 +79,4 @@ LUMINOUS_EDGE_SESSION_LAB_ACK=EPHEMERAL_NAMESPACES_ONLY \
   --confirm-session-revocation-lab
 ```
 
-The executable has fixed lab-only child modes, and the coordinator rejects arbitrary targets and policy commands. Do not run this test on a production host.
+The executable has fixed lab-only child modes, and the coordinator rejects arbitrary targets and policy commands. The TCP/8082 service is only a fixed positive control, not a second target under test. Do not run this test on a production host.
