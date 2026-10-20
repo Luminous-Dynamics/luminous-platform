@@ -75,7 +75,7 @@ jq -e '
   (.execution.environment.os == null or (.execution.environment.os | type == "string")) and
   (.execution.environment.architecture == null or (.execution.environment.architecture | type == "string")) and
   (.execution.environment.toolchain == null or (.execution.environment.toolchain | type == "string")) and
-  (.evidence | type == "array" and all(.[]; (.artifact | type == "string" and length > 0) and (.sha256 | type == "string" and test("^[0-9a-f]{64}$")) and (.kind == "log" or .kind == "receipt" or .kind == "capture" or .kind == "manifest" or .kind == "benchmark" or .kind == "other"))) and
+  (.evidence | type == "array" and all(.[]; (.artifact | type == "string" and length > 0 and test("^[A-Za-z0-9][A-Za-z0-9._/-]*$") and (startswith("/") | not) and (contains("..") | not) and (contains("//") | not)) and (.sha256 | type == "string" and test("^[0-9a-f]{64}$")) and (.kind == "log" or .kind == "receipt" or .kind == "capture" or .kind == "manifest" or .kind == "benchmark" or .kind == "other"))) and
   (.claim_ceiling == "none" or .claim_ceiling == "static_contract_only" or .claim_ceiling == "abstract_model_only" or .claim_ceiling == "qemu_guest_recovery_only" or .claim_ceiling == "physical_device_recovery_only") and
   (if .execution.tier == "static" then (.claim_ceiling == "none" or .claim_ceiling == "static_contract_only")
    elif .execution.tier == "model" then (.claim_ceiling == "none" or .claim_ceiling == "static_contract_only" or .claim_ceiling == "abstract_model_only")
