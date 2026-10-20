@@ -157,7 +157,7 @@ for attempt in $(seq 1 64); do
 done
 race_successes=0
 race_rejections=0
-for pid in "\${pids[@]}"; do
+for pid in "${pids[@]}"; do
   if wait "$pid"; then
     race_successes=$((race_successes + 1))
   else
