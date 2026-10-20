@@ -86,7 +86,8 @@ impl GenerationStore {
             .truncate(true)
             .write(true)
             .open(&temporary_pointer)?;
-        file.write_all(format!("{id}\\n").as_bytes())?;
+        file.write_all(id.as_bytes())?;
+        file.write_all(b"\n")?;
         file.sync_all()?;
         drop(file);
         fs::rename(&temporary_pointer, self.root.join("current"))?;
