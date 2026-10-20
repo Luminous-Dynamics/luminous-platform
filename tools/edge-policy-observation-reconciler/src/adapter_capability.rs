@@ -437,6 +437,41 @@ mod tests {
     }
 
     #[test]
+    fn netconf_confirmed_commit_cannot_be_mislabeled_as_explicit_rollback() {
+        let mut capabilities = netconf();
+        capabilities.rollback_semantics = RollbackSemantics::Explicit {
+            rollback_is_idempotent: true,
+            baseline_policy_recoverable: true,
+        };
+        let result = qualify_adapter(&capabilities, &policy()).expect("valid capabilities");
+        assert!(!result.automatic_rollout_eligible);
+        assert_eq!(
+            result.qualified_rollback_mode,
+            QualifiedRollbackMode::NotQualified
+        );
+        assert!(
+            result
+                .blockers
+                .iter()
+                .any(|reason| reason.contains("conflict with the declared rollback"))
+        );
+    }
+
+    #[test]
+    fn missing_independent_dataplane_probe_blocks_automatic_rollout() {
+        let mut capabilities = netconf();
+        capabilities.supports_independent_dataplane_probe = false;
+        let result = qualify_adapter(&capabilities, &policy()).expect("valid capabilities");
+        assert!(!result.automatic_rollout_eligible);
+        assert!(
+            result
+                .blockers
+                .iter()
+                .any(|reason| reason.contains("independent data-plane probing"))
+        );
+    }
+
+    #[test]
     fn gnmi_transaction_without_rollback_is_not_automatic_rollout_safe() {
         let mut capabilities = gnmi();
         capabilities.rollback_semantics = RollbackSemantics::None;
