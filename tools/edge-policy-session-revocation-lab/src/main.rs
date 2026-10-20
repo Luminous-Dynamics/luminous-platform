@@ -47,6 +47,13 @@ add rule inet luminous_session_lab input ct state established,related accept
 add rule inet luminous_session_lab input tcp dport 8082 accept
 "#;
 
+const RESTORE_POLICY: &str = r#"flush chain inet luminous_session_lab input
+add rule inet luminous_session_lab input iifname "lo" accept
+add rule inet luminous_session_lab input ct state established,related accept
+add rule inet luminous_session_lab input tcp dport 8080 accept
+add rule inet luminous_session_lab input tcp dport 8082 accept
+"#;
+
 #[derive(Clone, Copy, Debug)]
 enum PolicyStage {
     Initial,
@@ -125,6 +132,9 @@ fn validate_policy_text(stage: PolicyStage, ruleset: &str) -> Result<(), String>
                 .ok_or_else(|| "initial policy lacks the positive TCP/8080 control".to_owned())?;
             if established_at >= port_allow_at {
                 return Err("initial policy rule order is unexpected".to_owned());
+            }
+            if revoke_at.is_some() {
+                return Err("initial/restored policy must not retain a tuple-specific revocation override".to_owned());
             }
             if control_allow_at.is_none() {
                 return Err("initial policy lacks the independent TCP/8082 path control".to_owned());
@@ -566,6 +576,23 @@ fn run_lab() -> Result<ExitCode, String> {
     }
     ensure_servers_alive(&mut guard)?;
 
+    let rollback_start = Instant::now();
+    apply_nft_script(&guard.server_ns, RESTORE_POLICY)?;
+    let rollback_apply_ms = u64::try_from(rollback_start.elapsed().as_millis())
+        .map_err(|error| format!("rollback policy apply time overflow: {error}"))?;
+    let restored_policy_sha256 = effective_policy(&guard.server_ns, PolicyStage::Initial)?;
+    if restored_policy_sha256 != initial_policy_sha256 {
+        return Err(
+            "rollback did not restore the exact initial effective-policy digest".to_owned(),
+        );
+    }
+    let control_after_rollback_ms = check_control_path(&guard.client_ns, &executable)?;
+    let (new_session_blocked_after_rollback, rollback_new_session_probe_ms) =
+        check_new_session(&guard.client_ns, &executable)?;
+    if new_session_blocked_after_rollback {
+        return Err("a fresh TCP/8080 session remained blocked after approved-policy rollback".to_owned());
+    }
+
     let summary: Value = json!({
         "schema_version": "edge-policy-session-revocation-observation-v1",
         "evidence_class": "namespace_lab_observation",
@@ -615,14 +642,27 @@ fn run_lab() -> Result<ExitCode, String> {
                 "independent_control_path": "permitted",
                 "independent_control_probe_ms": control_after_explicit_revoke_ms,
                 "effective_policy_sha256": revoked_policy_sha256
+            },
+            {
+                "case_id": "ESR-004",
+                "condition": "restore_exact_approved_effective_policy_and_reprobe",
+                "expected": "approved_policy_hash_restored_new_session_permitted",
+                "approved_policy_sha256_before_change": initial_policy_sha256,
+                "effective_policy_sha256_after_rollback": restored_policy_sha256,
+                "effective_policy_digest_restored": restored_policy_sha256 == initial_policy_sha256,
+                "new_session_observed": "permitted",
+                "new_session_probe_ms": rollback_new_session_probe_ms,
+                "independent_control_path": "permitted",
+                "independent_control_probe_ms": control_after_rollback_ms
             }
         ],
         "policy_installation_ms": {
             "remove_admission_keep_established": retain_apply_ms,
             "explicit_revocation": revoke_apply_ms,
+            "restore_initial_approved_policy": rollback_apply_ms,
             "note": "local nft command duration only; not a fleet rollout or end-to-end SLA"
         },
-        "result": "all_three_semantics_checked",
+        "result": "all_three_session_semantics_and_policy_rollback_checked",
         "cleanup": "pending"
     });
     guard.cleanup()?;
@@ -848,6 +888,13 @@ mod tests {
         assert!(
             validate_policy_text(PolicyStage::ExplicitRevoke, &revoke_without_control).is_err()
         );
+    }
+
+    #[test]
+    fn initial_policy_must_not_keep_a_revocation_override() {
+        let ruleset =
+            format!("{HEADER}{REVOKE}{ESTABLISHED}{PORT_ALLOW}{CONTROL_ALLOW}{FOOTER}");
+        assert!(validate_policy_text(PolicyStage::Initial, &ruleset).is_err());
     }
 
     #[test]
