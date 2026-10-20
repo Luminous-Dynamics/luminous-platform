@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
+schema="$script_dir/result-receipt-v1.schema.json"
+receipt="${1:-$script_dir/fixtures/result-pass-static.example.json}"
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "BLOCKED: jq is required; no receipt validation result was produced." >&2
+  exit 2
+fi
+[[ -f "$schema" ]] || { echo "FAIL: result schema is missing" >&2; exit 1; }
+[[ -f "$receipt" ]] || { echo "FAIL: result receipt is missing: $receipt" >&2; exit 1; }
+
+# This is a reference semantic validator for the fields and status invariants
+# used by SRQ-1. It does not implement the complete JSON Schema specification.
+jq -e 'type == "object"' "$schema" >/dev/null
+
+jq -e '
+  .schema_version == 1 and
+  .profile_id == "SRQ-1" and
+  (.scenario_id | type == "string" and test("^[A-Z]+-[0-9]{3}$")) and
+  (.status == "PASS" or .status == "FAIL" or .status == "NOT_RUN" or .status == "BLOCKED" or .status == "NOT_APPLICABLE") and
+  (.reason | type == "string" and length > 0) and
+  (.fixture | type == "boolean") and
+  (.source.expected_source_sha | type == "string" and test("^[0-9a-f]{40}$")) and
+  ((.source.event_sha == null) or (.source.event_sha | type == "string" and test("^[0-9a-f]{40}$"))) and
+  ((.source.actual_checkout_sha == null) or (.source.actual_checkout_sha | type == "string" and test("^[0-9a-f]{40}$"))) and
+  ((.source.source_matches_expected == null) or (.source.source_matches_expected | type == "boolean")) and
+  (.execution.tier == "static" or .execution.tier == "model" or .execution.tier == "qemu" or .execution.tier == "physical") and
+  (.execution.steps_executed | type == "boolean") and
+  ((.execution.command == null) or (.execution.command | type == "string")) and
+  ((.execution.exit_code == null) or (.execution.exit_code | type == "number" and floor == .)) and
+  (.execution.environment.os == null or (.execution.environment.os | type == "string")) and
+  (.execution.environment.architecture == null or (.execution.environment.architecture | type == "string")) and
+  (.execution.environment.toolchain == null or (.execution.environment.toolchain | type == "string")) and
+  (.evidence | type == "array" and all(.[]; (.artifact | type == "string" and length > 0) and (.sha256 | type == "string" and test("^[0-9a-f]{64}$")) and (.kind == "log" or .kind == "receipt" or .kind == "capture" or .kind == "manifest" or .kind == "benchmark" or .kind == "other"))) and
+  (.claim_ceiling | type == "string" and length > 0) and
+  (.non_claims | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and
+  (if .status == "PASS" then
+     (.source.actual_checkout_sha != null) and
+     (.source.actual_checkout_sha == .source.expected_source_sha) and
+     (.source.source_matches_expected == true) and
+     (.execution.steps_executed == true) and
+     (.execution.exit_code == 0) and
+     (.evidence | length > 0)
+   elif .status == "NOT_RUN" then
+     (.source.actual_checkout_sha == null) and
+     (.source.source_matches_expected == null) and
+     (.execution.steps_executed == false) and
+     (.execution.command == null) and
+     (.execution.exit_code == null)
+   elif .status == "NOT_APPLICABLE" then
+     (.execution.steps_executed == false) and (.execution.exit_code == null)
+   else true end)
+' "$receipt" >/dev/null
+
+status="$(jq -r '.status' "$receipt")"
+scenario="$(jq -r '.scenario_id' "$receipt")"
+fixture="$(jq -r '.fixture' "$receipt")"
+printf 'PASS: result receipt structure and status invariants are valid (scenario=%s status=%s fixture=%s).\n' "$scenario" "$status" "$fixture"
+echo "NON-CLAIM: this reference subset validator does not authenticate artifacts, verify full JSON Schema conformance, or qualify a runtime scenario."
