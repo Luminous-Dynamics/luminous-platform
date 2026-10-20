@@ -337,12 +337,17 @@ mod tests {
     const B: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     const C: &str = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
     const D: &str = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
+    const NIX_DEPLOYMENT: &str =
+        "/nix/store/0123456789abcdfghijklmnpqrsvwxyz-nixos-system-demo";
+    const PRIOR_NIX_DEPLOYMENT: &str =
+        "/nix/store/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-nixos-system-previous";
 
     fn base() -> (PromotionIntent, CommittedPromotion, BootObservationChallenge, BootObservation) {
         let intent = PromotionIntent {
             decision_id: "decision-0001".into(),
             target_id: "target-jo-01".into(),
             promotion_challenge_id: "challenge-promote-01".into(),
+            deployment_id: NIX_DEPLOYMENT.into(),
             previous_generation: 41,
             next_generation: 42,
             approved_policy_digest: A.into(),
@@ -354,6 +359,7 @@ mod tests {
             decision_id: "decision-0001".into(),
             target_id: "target-jo-01".into(),
             consumed_challenge_id: "challenge-promote-01".into(),
+            deployment_id: NIX_DEPLOYMENT.into(),
             generation: 42,
             approved_policy_digest: A.into(),
             effective_policy_digest: B.into(),
@@ -365,6 +371,7 @@ mod tests {
             target_id: "target-jo-01".into(),
             decision_id: "decision-0001".into(),
             expected_generation: 42,
+            expected_deployment_id: NIX_DEPLOYMENT.into(),
             expected_effective_policy_digest: B.into(),
         };
         let boot = BootObservation {
@@ -372,6 +379,8 @@ mod tests {
             decision_id: "decision-0001".into(),
             observation_challenge_id: "challenge-boot-01".into(),
             boot_instance_id: "boot-epoch-0042".into(),
+            booted_deployment_id: NIX_DEPLOYMENT.into(),
+            current_userspace_deployment_id: NIX_DEPLOYMENT.into(),
             generation: 42,
             effective_policy_digest: B.into(),
             artifact_digest: C.into(),
@@ -569,34 +578,39 @@ mod tests {
             let mut changed_boot = boot.clone();
             let token = format!("mut-{i}");
             let digest = format!("{:064x}", i + 1);
-            match i % 28 {
+            match i % 33 {
                 0 => changed_intent.target_id = token,
                 1 => changed_intent.decision_id = token,
                 2 => changed_intent.promotion_challenge_id = token,
-                3 => changed_intent.previous_generation = u64::MAX,
-                4 => changed_intent.next_generation = 43 + i,
-                5 => changed_intent.approved_policy_digest = digest,
-                6 => changed_intent.effective_policy_digest = digest,
-                7 => changed_intent.artifact_digest = digest,
-                8 => changed_intent.corpus_digest = digest,
-                9 => changed_durable.decision_id = token,
-                10 => changed_durable.target_id = token,
-                11 => changed_durable.consumed_challenge_id = token,
-                12 => changed_durable.generation = 1_000 + i,
-                13 => changed_durable.approved_policy_digest = digest,
-                14 => changed_durable.effective_policy_digest = digest,
-                15 => changed_durable.artifact_digest = digest,
-                16 => changed_durable.corpus_digest = digest,
-                17 => changed_challenge.challenge_id = token,
-                18 => changed_challenge.target_id = token,
-                19 => changed_challenge.decision_id = token,
-                20 => changed_challenge.expected_generation = 1_000 + i,
-                21 => changed_challenge.expected_effective_policy_digest = digest,
-                22 => changed_boot.target_id = token,
-                23 => changed_boot.decision_id = token,
-                24 => changed_boot.observation_challenge_id = token,
-                25 => changed_boot.generation = 1_000 + i,
-                26 => changed_boot.effective_policy_digest = digest,
+                3 => changed_intent.deployment_id = token,
+                4 => changed_intent.previous_generation = u64::MAX,
+                5 => changed_intent.next_generation = 43 + i,
+                6 => changed_intent.approved_policy_digest = digest,
+                7 => changed_intent.effective_policy_digest = digest,
+                8 => changed_intent.artifact_digest = digest,
+                9 => changed_intent.corpus_digest = digest,
+                10 => changed_durable.decision_id = token,
+                11 => changed_durable.target_id = token,
+                12 => changed_durable.consumed_challenge_id = token,
+                13 => changed_durable.deployment_id = token,
+                14 => changed_durable.generation = 1_000 + i,
+                15 => changed_durable.approved_policy_digest = digest,
+                16 => changed_durable.effective_policy_digest = digest,
+                17 => changed_durable.artifact_digest = digest,
+                18 => changed_durable.corpus_digest = digest,
+                19 => changed_challenge.challenge_id = token,
+                20 => changed_challenge.target_id = token,
+                21 => changed_challenge.decision_id = token,
+                22 => changed_challenge.expected_generation = 1_000 + i,
+                23 => changed_challenge.expected_deployment_id = token,
+                24 => changed_challenge.expected_effective_policy_digest = digest,
+                25 => changed_boot.target_id = token,
+                26 => changed_boot.decision_id = token,
+                27 => changed_boot.observation_challenge_id = token,
+                28 => changed_boot.booted_deployment_id = token,
+                29 => changed_boot.current_userspace_deployment_id = token,
+                30 => changed_boot.generation = 1_000 + i,
+                31 => changed_boot.effective_policy_digest = digest,
                 _ => changed_boot.artifact_digest = digest,
             }
             assert!(
@@ -610,6 +624,45 @@ mod tests {
                 "cross-layer mutation {i} unexpectedly reconciled"
             );
         }
+    }
+
+    #[test]
+    fn old_booted_system_is_rejected_even_when_abstract_generation_counter_matches() {
+        let (intent, durable, challenge, mut boot) = base();
+        boot.booted_deployment_id = PRIOR_NIX_DEPLOYMENT.into();
+        boot.current_userspace_deployment_id = NIX_DEPLOYMENT.into();
+        assert!(matches!(
+            reconcile(&intent, Some(&durable), Some(&challenge), Some(&boot)),
+            Reconciliation::Blocked(faults)
+                if faults.contains(&ReconciliationFault::BootedDeploymentMismatch)
+        ));
+    }
+
+    #[test]
+    fn live_current_system_switch_does_not_substitute_for_the_booted_system() {
+        let (intent, durable, challenge, mut boot) = base();
+        boot.booted_deployment_id = NIX_DEPLOYMENT.into();
+        boot.current_userspace_deployment_id = PRIOR_NIX_DEPLOYMENT.into();
+        assert!(matches!(
+            reconcile(&intent, Some(&durable), Some(&challenge), Some(&boot)),
+            Reconciliation::Blocked(faults)
+                if faults.contains(&ReconciliationFault::CurrentUserspaceDeploymentMismatch)
+        ));
+    }
+
+    #[test]
+    fn deployment_identity_syntax_is_checked_without_confusing_path_with_digest() {
+        assert!(valid_deployment_id(NIX_DEPLOYMENT));
+        assert!(valid_deployment_id(D)); // OSTree deployment checksum shape
+        assert!(!valid_deployment_id("/nix/store/not-a-real-store-path"));
+        assert!(!valid_deployment_id("../foreign-generation"));
+        let (mut intent, durable, challenge, boot) = base();
+        intent.deployment_id = "../foreign-generation".into();
+        assert!(matches!(
+            reconcile(&intent, Some(&durable), Some(&challenge), Some(&boot)),
+            Reconciliation::Blocked(faults)
+                if faults.contains(&ReconciliationFault::InvalidDeploymentId("intent.deployment_id"))
+        ));
     }
 
     #[test]
