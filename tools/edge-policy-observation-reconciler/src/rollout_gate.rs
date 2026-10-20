@@ -84,7 +84,9 @@ pub enum RolloutGateDecision {
     Complete,
 }
 
-/// Qualify every planned target's device adapter before authorizing any wave.
+/// Canonical public gate: qualify every planned target's device adapter before
+/// authorizing any wave. The lower-level evidence-only gate is private so
+/// callers cannot bypass the adapter preflight.
 ///
 /// This preflight deliberately checks future-wave targets too: a rollout must
 /// not begin when its later targets cannot satisfy the deployment's declared
@@ -173,7 +175,7 @@ pub fn authorize_next_wave_with_adapter_capabilities(
 /// started. No later wave is authorized until every target in each prior wave
 /// has fresh matching evidence, a successful independent probe, and a passed
 /// positive control.
-pub fn authorize_next_wave(
+fn authorize_next_wave(
     plan: &StagedRolloutPlan,
     observations: &[TargetRolloutObservation],
     verifier_now_unix_ms: u64,
