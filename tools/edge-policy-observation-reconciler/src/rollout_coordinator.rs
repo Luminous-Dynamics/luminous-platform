@@ -453,7 +453,10 @@ impl<'a> PolicyRolloutCoordinator<'a> {
             &pre_promotion.effective_policy_sha256,
             unix_now_ms()?,
         ) {
-            Ok(operation) => Ok(operation),
+            Ok(operation) => Ok(RolloutOutcome {
+                operation,
+                impact_report,
+            }),
             Err(error) => Err(self.with_rollback_result(
                 &mut lease,
                 request,
@@ -767,7 +770,7 @@ mod tests {
     use super::{
         AdapterCapabilities, ApplyAcknowledgement, IndependentPolicyProbe, PolicyDeviceAdapter,
         PolicyDeviceLease, PolicyRolloutCoordinator, PolicySnapshot, ProbeOutput, RolloutRequest,
-        RolloutOutcome, validate_snapshot,
+        validate_snapshot,
     };
     use crate::impact_gate::{PolicyPreflightVector, PredictedOutcome, PredictedPolicyCase};
     use crate::promotion_journal::{PromotionJournal, PromotionSpec, PromotionState};
@@ -1228,6 +1231,68 @@ mod tests {
     }
 
     #[test]
+    fn candidate_counterfactual_false_permit_is_rejected_before_lease_or_write() {
+        let (mut device, baseline) = FakeDevice::baseline();
+        let candidate = b"candidate-with-predicted-leak".to_vec();
+        let journal_path = new_path("impact-deny-journal");
+        let ledger_path = new_path("impact-deny-ledger");
+        let journal = PromotionJournal::open(&journal_path).expect("open journal");
+        let ledger = SqliteReplayLedger::open(&ledger_path).expect("open ledger");
+        let coordinator = PolicyRolloutCoordinator::new(&journal, &ledger);
+        let mut probe = PassingProbe {
+            baseline_digest: crate::sha256_hex(&baseline),
+            candidate_digest: crate::sha256_hex(&candidate),
+        };
+        let mut preflight = preflight_vector(&baseline, &candidate);
+        let corpus: Value = serde_json::from_str(CORPUS).expect("corpus JSON");
+        let critical_deny = corpus["cases"]
+            .as_array()
+            .expect("corpus cases")
+            .iter()
+            .find(|case| {
+                case["high_risk"].as_bool() == Some(true)
+                    && case["expected_probe_outcome"] == "blocked"
+            })
+            .expect("critical deny exists");
+        let case_id = critical_deny["case_id"].as_str().expect("case ID");
+        preflight
+            .decisions
+            .iter_mut()
+            .find(|decision| decision.case_id == case_id)
+            .expect("preflight case")
+            .candidate = PredictedOutcome::Permitted;
+
+        let error = coordinator
+            .apply_and_promote(
+                &mut device,
+                &mut probe,
+                &RolloutRequest {
+                    operation_id: "operation-impact-denied",
+                    target_token: TARGET,
+                    approved_baseline_policy: &baseline,
+                    candidate_policy: &candidate,
+                    corpus_schema_source: CORPUS_SCHEMA,
+                    corpus_source: CORPUS,
+                    preflight,
+                },
+            )
+            .expect_err("predicted unauthorized permit blocks rollout");
+        assert!(error.contains("counterfactual preflight blocked candidate before actuation"));
+        assert_eq!(device.writes, 0);
+        assert_eq!(device.lease_renewals, 0, "preflight should run before taking device lease");
+        assert!(
+            journal
+                .get("operation-impact-denied")
+                .expect("query journal")
+                .is_none()
+        );
+        drop(ledger);
+        drop(journal);
+        remove_database(&journal_path);
+        remove_database(&ledger_path);
+    }
+
+    #[test]
     fn refuses_automatic_writes_without_exclusive_target_lease() {
         let (mut device, baseline) = FakeDevice::baseline();
         device.capabilities.exclusive_target_lease = false;
@@ -1314,8 +1379,9 @@ mod tests {
                 },
             )
             .expect("coordinator uses generation three");
-        assert_eq!(operation.generation, 3);
-        assert_eq!(operation.state, PromotionState::Promoted);
+        assert_eq!(operation.operation.generation, 3);
+        assert_eq!(operation.operation.state, PromotionState::Promoted);
+        assert_eq!(operation.impact_report.cases_evaluated, preflight_vector(&baseline, &candidate).decisions.len());
         assert_eq!(device.snapshot.generation, 3);
         drop(ledger);
         drop(journal);
@@ -1353,9 +1419,10 @@ mod tests {
                 },
             )
             .expect("candidate promoted");
-        assert_eq!(operation.state, PromotionState::Promoted);
+        assert_eq!(operation.operation.state, PromotionState::Promoted);
+        assert!(operation.impact_report.promotable);
         assert_eq!(
-            operation.observed_policy_sha256.as_deref(),
+            operation.operation.observed_policy_sha256.as_deref(),
             Some(candidate_digest.as_str())
         );
         assert_eq!(device.snapshot.generation, 2);
