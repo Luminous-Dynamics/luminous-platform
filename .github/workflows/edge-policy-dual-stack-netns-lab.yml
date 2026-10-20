@@ -38,6 +38,10 @@ jobs:
           components: clippy, rustfmt
       - name: Install fixed lab utilities
         run: |
+          # These tests need only Ubuntu packages. Disable the optional
+          # Microsoft feed on this disposable runner because its 403 does not
+          # affect the required Ubuntu packages and otherwise aborts apt-get update.
+          sudo bash -c 'for source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do [ -f "$source" ] && grep -q "packages.microsoft.com" "$source" && mv "$source" "$source.disabled"; done'
           sudo apt-get update
           sudo apt-get install --yes iproute2 nftables netcat-openbsd
       - name: Check formatting
