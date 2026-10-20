@@ -432,7 +432,11 @@ pub fn build_snapshot(
         .info
         .map(parse_interface_info)
         .ok_or_else(|| vec!["iw interface-info output is required".to_owned()])?;
-    if interface_radio.get("interface_type").and_then(Value::as_str) != Some("AP") {
+    if interface_radio
+        .get("interface_type")
+        .and_then(Value::as_str)
+        != Some("AP")
+    {
         return Err(vec![
             "refusing to emit AP snapshot because the interface mode is not confirmed as AP"
                 .to_owned(),
@@ -529,8 +533,13 @@ mod tests {
                 ..Default::default()
             },
             statuses(),
-        ).expect_err("client-mode interface must not claim AP observation");
-        assert!(error.iter().any(|message| message.contains("mode is not confirmed as AP")));
+        )
+        .expect_err("client-mode interface must not claim AP observation");
+        assert!(
+            error
+                .iter()
+                .any(|message| message.contains("mode is not confirmed as AP"))
+        );
     }
 
     #[test]
