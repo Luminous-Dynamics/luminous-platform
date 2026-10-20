@@ -286,7 +286,10 @@ impl PromotionJournal {
             )
             .map_err(|error| format!("cannot inspect target generation history: {error}"))?;
         let persisted_generation = persisted_generation
-            .map(|value| u64::try_from(value).map_err(|error| format!("invalid persisted generation: {error}")))
+            .map(|value| {
+                u64::try_from(value)
+                    .map_err(|error| format!("invalid persisted generation: {error}"))
+            })
             .transpose()?
             .unwrap_or(0);
         observed_device_generation
