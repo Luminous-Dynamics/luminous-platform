@@ -12,6 +12,9 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
 
+use super::impact_gate::{
+    PolicyImpactReport, PolicyPreflightVector, evaluate_policy_impact,
+};
 use super::promotion_journal::{
     PromotionJournal, PromotionOperation, PromotionSpec, PromotionState, PromotionVerificationInput,
 };
@@ -129,10 +132,21 @@ pub struct RolloutRequest<'a> {
     pub candidate_policy: &'a [u8],
     pub corpus_schema_source: &'a str,
     pub corpus_source: &'a str,
+    /// Full simulator/differential result, bound to target, exact policy bytes,
+    /// and the exact frozen corpus before any external actuation.
+    pub preflight: PolicyPreflightVector,
 }
 
-/// One-target coordinator. The target lease is held for the full apply → probe →
-/// promote or rollback lifecycle; adapters without this guarantee are refused.
+/// Successful result joins durable promotion with the counterfactual report
+/// that admitted this exact target, baseline, candidate and frozen corpus.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RolloutOutcome {
+    pub operation: PromotionOperation,
+    pub impact_report: PolicyImpactReport,
+}
+
+/// One-target coordinator. Counterfactual preflight runs before a lease is
+/// acquired, and the lease then spans apply → probe → promote or rollback.
 #[derive(Debug)]
 pub struct PolicyRolloutCoordinator<'a> {
     journal: &'a PromotionJournal,
@@ -185,24 +199,44 @@ impl<'a> PolicyRolloutCoordinator<'a> {
         device: &mut D,
         probe: &mut P,
         request: &RolloutRequest<'_>,
-    ) -> Result<PromotionOperation, String>
+    ) -> Result<RolloutOutcome, String>
     where
         D: PolicyDeviceAdapter,
         P: IndependentPolicyProbe,
     {
         validate_identifier(request.operation_id, "operation_id")?;
         validate_target_token(request.target_token)?;
-        let mut lease = device.acquire_target_lease(request.target_token)?;
-        require_safe_capabilities(lease.capabilities())?;
-        lease
-            .renew()
-            .map_err(|error| format!("cannot establish exclusive target lease: {error}"))?;
 
+        // Counterfactual preflight is a hard gate and runs before even acquiring
+        // a device lease. It is predictions, not a replacement for live probes.
         let baseline_digest = sha256_hex(request.approved_baseline_policy);
         let candidate_digest = sha256_hex(request.candidate_policy);
         if baseline_digest == candidate_digest {
             return Err("candidate policy is identical to the approved baseline".to_owned());
         }
+        let impact_report = evaluate_policy_impact(
+            request.corpus_schema_source,
+            request.corpus_source,
+            request.target_token,
+            &baseline_digest,
+            &candidate_digest,
+            &request.preflight,
+        )
+        .map_err(|errors| format!("counterfactual preflight rejected: {}", errors.join("; ")))?;
+        if !impact_report.promotable {
+            return Err(format!(
+                "counterfactual preflight blocked candidate before actuation: {} candidate mismatches, {} candidate-unknown predictions, {} high-risk false permits",
+                impact_report.candidate_mismatch_case_ids.len(),
+                impact_report.candidate_unknown_case_ids.len(),
+                impact_report.high_risk_false_permit_case_ids.len()
+            ));
+        }
+
+        let mut lease = device.acquire_target_lease(request.target_token)?;
+        require_safe_capabilities(lease.capabilities())?;
+        lease
+            .renew()
+            .map_err(|error| format!("cannot establish exclusive target lease: {error}"))?;
 
         let baseline = lease.read_effective_policy()?;
         validate_snapshot(&baseline)?;
