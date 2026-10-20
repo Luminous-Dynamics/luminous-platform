@@ -10,13 +10,13 @@ A device command is not a policy outcome. A reported success is not readback. Re
 
 The lifecycle is:
 
-`Prepared → ApplyIntent → Applied → Verified → Promoted`
+`Prepared → ApplyIntent → Applied → Verified → Promoted` (or `Prepared → Abandoned` before any actuation)
 
 Rollback has its own explicit path:
 
 `ApplyIntent | Applied | Verified → RollbackIntent → RolledBack`
 
-- **Prepared:** immutable target, generation, baseline digest, and candidate digest are durably recorded.
+- **Prepared:** immutable target, generation, baseline digest, and candidate digest are durably recorded. An operation may transition to terminal **Abandoned** only while it is still Prepared; once ApplyIntent is recorded, real device state must be inspected instead of assuming no actuation happened.
 - **ApplyIntent:** the intent is committed before the external apply command. A crash here leaves the real device state uncertain.
 - **Applied:** a live effective-policy readback exactly matches the candidate digest. A controller acknowledgement cannot make this transition.
 - **Verified:** a caller that has completed conformance reconciliation, freshness validation, and durable nonce consumption records an independent probe bound to the target token, policy generation, candidate digest, and receipt digest.
@@ -24,7 +24,7 @@ Rollback has its own explicit path:
 - **RollbackIntent:** rollback is durably requested before issuing external rollback.
 - **RolledBack:** a live readback exactly matches the original baseline digest.
 
-Only `Promoted` and `RolledBack` are terminal. A target may have only one non-terminal operation, and a policy generation cannot be reused for that target. A new operation must use a strictly higher generation than any previous attempt.
+`Promoted`, `RolledBack`, and `Abandoned` are terminal. `Abandoned` is not a rollback claim: it proves only that the journal abandoned the attempt before the durable ApplyIntent stage. A target may have only one non-terminal operation, and a policy generation cannot be reused for that target. A new operation must use a strictly higher generation than any previous attempt.
 
 ## Crash and restart behavior
 
