@@ -678,7 +678,11 @@ mod tests {
                 1_400,
             )
             .expect_err("replay after verifier restart must be rejected");
-            assert!(duplicate.iter().any(|item| item.contains("already been consumed")));
+            assert!(
+                duplicate
+                    .iter()
+                    .any(|item| item.contains("already been consumed"))
+            );
         }
         let _ = std::fs::remove_file(&path);
         let _ = std::fs::remove_file(path.with_extension("sqlite-wal"));
