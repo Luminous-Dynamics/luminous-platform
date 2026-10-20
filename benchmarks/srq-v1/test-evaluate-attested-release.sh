@@ -11,6 +11,7 @@ archive="$tmp/srq-evidence-bundle.tar.gz"
 out="$tmp/output"
 source_sha="0123456789abcdef0123456789abcdef01234567"
 workflow_ref="Luminous-Dynamics/luminous-platform/.github/workflows/srq-v1.yml@refs/heads/main"
+workflow_sha="2222222222222222222222222222222222222222"
 run_id="12345"
 run_attempt="1"
 
@@ -104,7 +105,7 @@ jq -n \
   --arg repo "Luminous-Dynamics/luminous-platform" \
   --arg workflow_path ".github/workflows/srq-v1.yml" \
   --arg workflow_ref "$workflow_ref" \
-  --arg workflow_sha "2222222222222222222222222222222222222222" \
+  --arg workflow_sha "$workflow_sha" \
   --arg event_name "workflow_dispatch" \
   --arg run_id "$run_id" \
   --arg run_attempt "$run_attempt" \
@@ -176,6 +177,7 @@ PATH="$tmp/bin:$PATH" FAKE_GH_MODE=pass \
     --expected-source-sha "$source_sha" \
     --expected-source-ref refs/heads/main \
     --expected-workflow-ref "$workflow_ref" \
+    --expected-workflow-sha "$workflow_sha" \
     --expected-run-id "$run_id" \
     --expected-run-attempt "$run_attempt" \
     --output-envelope "$out/envelope.json" \
@@ -200,6 +202,7 @@ if PATH="$tmp/bin:$PATH" FAKE_GH_MODE=reject \
     --expected-source-sha "$source_sha" \
     --expected-source-ref refs/heads/main \
     --expected-workflow-ref "$workflow_ref" \
+    --expected-workflow-sha "$workflow_sha" \
     --expected-run-id "$run_id" \
     --expected-run-attempt "$run_attempt" \
     --output-envelope "$out/rejected-envelope.json" \
