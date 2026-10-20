@@ -217,6 +217,13 @@ reject_p99="$(percentile_ns "$rejected_latency" 99)"
 winner_ns="$(awk 'NR == 1 { print $1 }' "$committed_latency")"
 printf 'race_latency_ns all_p50=%s all_p95=%s all_p99=%s rejected_p50=%s rejected_p95=%s rejected_p99=%s winner=%s\n' \
   "$all_p50" "$all_p95" "$all_p99" "$reject_p50" "$reject_p95" "$reject_p99" "$winner_ns"
+
+# Emit each raw per-contender outcome/elapsed time into the preserved log.
+# The stderr/stdout SQL errors are also retained per attempt in the raw CI log.
+for attempt in $(seq 1 64); do
+  log="$tmp/race-$attempt.log"
+  awk -v attempt="$attempt" '$1 == "race_result" { printf "race_trial=%02d outcome=%s latency_ns=%s\n", attempt, $2, $3 }' "$log"
+done
 printf 'host_os=%s architecture=%s filesystem=%s\n' "$(uname -sr)" "$(uname -m)" "$(stat -f -c %T "$tmp")"
 
 # Publish enough execution identity to aid later signed-bundle correlation.
