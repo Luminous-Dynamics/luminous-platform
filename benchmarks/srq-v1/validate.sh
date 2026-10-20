@@ -3,6 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 corpus="${1:-$script_dir/scenarios.json}"
+baselines="${2:-$script_dir/industry-baselines.tsv}"
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "BLOCKED: jq is required to validate the scenario corpus; no qualification result was produced." >&2
@@ -11,6 +12,10 @@ fi
 
 if [[ ! -f "$corpus" ]]; then
   echo "FAIL: scenario corpus not found: $corpus" >&2
+  exit 1
+fi
+if [[ ! -f "$baselines" ]]; then
+  echo "FAIL: industry baseline matrix not found: $baselines" >&2
   exit 1
 fi
 
@@ -34,8 +39,46 @@ jq -e '
   )
 ' "$corpus" >/dev/null
 
+awk -F '\t' '
+  NR == 1 {
+    if (NF != 5 || $1 != "baseline" || $2 != "baseline_scope" || $3 != "SRQ_comparison" || $4 != "measured_outputs" || $5 != "claim_boundary") {
+      print "FAIL: industry baseline header must contain the five SRQ v1 columns" > "/dev/stderr"
+      bad = 1
+    }
+    next
+  }
+  {
+    rows++
+    if (NF != 5) {
+      printf "FAIL: baseline row %d has %d columns; expected 5\n", NR, NF > "/dev/stderr"
+      bad = 1
+    }
+    for (i = 1; i <= 5; i++) {
+      if ($i == "") {
+        printf "FAIL: baseline row %d has an empty column %d\n", NR, i > "/dev/stderr"
+        bad = 1
+      }
+    }
+    if ($1 in seen) {
+      printf "FAIL: duplicate baseline name on row %d: %s\n", NR, $1 > "/dev/stderr"
+      bad = 1
+    }
+    seen[$1] = 1
+  }
+  END {
+    if (NR < 9 || rows < 8) {
+      print "FAIL: industry baseline matrix must contain at least eight data rows" > "/dev/stderr"
+      bad = 1
+    }
+    if (bad) exit 1
+    printf "PASS: industry baseline matrix structure is valid (%d baselines).\n", rows
+  }
+' "$baselines"
+
 count="$(jq '.scenarios | length' "$corpus")"
 gates="$(jq '[.scenarios[] | select(.release_gate == true)] | length' "$corpus")"
 digest="$(sha256sum "$corpus" | cut -d ' ' -f 1)"
+baseline_digest="$(sha256sum "$baselines" | cut -d ' ' -f 1)"
 echo "PASS: SRQ-1 corpus structure is valid ($count scenarios; $gates release gates; sha256=$digest)."
-echo "NON-CLAIM: no scenario was executed; this is not a runtime or security qualification."
+echo "PASS: industry-baselines.tsv sha256=$baseline_digest."
+echo "NON-CLAIM: no runtime scenario was executed; this is not a runtime or security qualification."
