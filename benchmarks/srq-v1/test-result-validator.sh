@@ -43,10 +43,12 @@ expect_reject pass-no-evidence "$pass_fixture" '.evidence = []'
 expect_reject pass-invalid-evidence-digest "$pass_fixture" '.evidence[0].sha256 = "not-a-digest"'
 expect_reject unknown-status "$pass_fixture" '.status = "QUEUED"'
 expect_reject empty-non-claims "$pass_fixture" '.non_claims = []'
+expect_reject pass-elevated-claim-ceiling "$pass_fixture" '.claim_ceiling = "qemu_guest_recovery_only"'
+expect_reject pass-unknown-claim-ceiling "$pass_fixture" '.claim_ceiling = "security_qualified"'
 expect_reject unknown-scenario "$pass_fixture" '.scenario_id = "ZZZ-999"'
 expect_reject not-run-with-steps "$not_run_fixture" '.execution.steps_executed = true'
 expect_reject not-run-with-exit-code "$not_run_fixture" '.execution.exit_code = 0'
 expect_reject not-run-with-checkout "$not_run_fixture" '.source.actual_checkout_sha = .source.expected_source_sha'
 
-echo "PASS: 12 SRQ result-receipt negative controls were rejected, plus default rejection of fixture evidence."
+echo "PASS: 14 SRQ result-receipt negative controls were rejected, plus default rejection of fixture evidence."
 echo "NON-CLAIM: these examples test receipt-state invariants only; they do not execute or qualify the referenced scenarios."
