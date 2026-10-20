@@ -40,6 +40,7 @@ expect_reject pass-head-match-false "$pass_fixture" '.source.source_matches_expe
 expect_reject pass-no-steps "$pass_fixture" '.execution.steps_executed = false'
 expect_reject pass-nonzero-exit "$pass_fixture" '.execution.exit_code = 1'
 expect_reject pass-no-evidence "$pass_fixture" '.evidence = []'
+expect_reject pass-without-evidence-root "$pass_fixture" '.fixture = false'
 expect_reject pass-invalid-evidence-digest "$pass_fixture" '.evidence[0].sha256 = "not-a-digest"'
 expect_reject unknown-status "$pass_fixture" '.status = "QUEUED"'
 expect_reject empty-non-claims "$pass_fixture" '.non_claims = []'
@@ -50,5 +51,33 @@ expect_reject not-run-with-steps "$not_run_fixture" '.execution.steps_executed =
 expect_reject not-run-with-exit-code "$not_run_fixture" '.execution.exit_code = 0'
 expect_reject not-run-with-checkout "$not_run_fixture" '.source.actual_checkout_sha = .source.expected_source_sha'
 
-echo "PASS: 14 SRQ result-receipt negative controls were rejected, plus default rejection of fixture evidence."
-echo "NON-CLAIM: these examples test receipt-state invariants only; they do not execute or qualify the referenced scenarios."
+# Exercise byte-level evidence verification against a real temporary artifact.
+evidence_root="$tmpdir/evidence-root"
+mkdir -p "$evidence_root/fixtures"
+printf 'synthetic evidence bytes\\n' > "$evidence_root/fixtures/srq-static-validator.log"
+matching_sha="$(sha256sum "$evidence_root/fixtures/srq-static-validator.log" | cut -d ' ' -f 1)"
+jq --arg digest "$matching_sha" '.evidence[0].sha256 = $digest' "$pass_fixture" > "$tmpdir/evidence-matching.json"
+bash "$validator" --allow-fixtures --evidence-root "$evidence_root" "$tmpdir/evidence-matching.json"
+echo "PASS: result receipt verified evidence bytes against the recorded SHA-256"
+
+expect_evidence_reject() {
+  local label="$1"
+  local filter="$2"
+  local mutated="$tmpdir/evidence-$label.json"
+  local output="$tmpdir/evidence-$label.out"
+
+  jq "$filter" "$tmpdir/evidence-matching.json" > "$mutated"
+  if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" "$mutated" >"$output" 2>&1; then
+    echo "FAIL: evidence verifier accepted negative control '$label'" >&2
+    cat "$output" >&2
+    exit 1
+  fi
+  echo "PASS: evidence verification negative control rejected ($label)"
+}
+
+expect_evidence_reject digest-mismatch '.evidence[0].sha256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"'
+expect_evidence_reject missing-artifact '.evidence[0].artifact = "fixtures/missing.log"'
+expect_evidence_reject unsafe-locator '.evidence[0].artifact = "../outside.log"'
+
+echo "PASS: 18 SRQ result-receipt negative controls were rejected, plus default rejection of fixture evidence."
+echo "NON-CLAIM: these examples test receipt-state and artifact-digest invariants only; they do not authenticate signer/device identity or qualify runtime scenarios."
