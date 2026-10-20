@@ -51,7 +51,7 @@ The first objective is semantic correctness, not speed.
 | Policy identity | Record SHA-256 of the effective ruleset for each stage | Required integrity check; not authentication |
 | Replication | At least 30 randomized paired trials per qualified kernel/ruleset revision; report every failure | Proposed target |
 | Revocation delay | Report distribution from policy update to observed application cutoff; use p50/p95/p99 and the declared timeout, not a single mean | Proposed measurement |
-| Rollback | Restore the exact pre-change effective-policy digest; verify target TCP/8080 admission and independent TCP/8082 control | Implemented in this PR; live confirmation pending |
+| Rollback | Restore the exact pre-change effective-policy digest; verify target TCP/8080 admission and independent TCP/8082 control | One exact-head virtual namespace run passed; repeat qualification still required |
 
 Do not claim “zero false permits” from a tiny fixed matrix as a universal security result. Report the case denominator, kernel version, nftables version, number of trials, all mismatches, and whether a trial was inconclusive. An inaccessible endpoint, dead listener, or failed positive control invalidates the corresponding denial result.
 
