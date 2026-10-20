@@ -10,6 +10,7 @@ on:
       - "tools/srq-process-kill-model/**"
       - "docs/SOVEREIGN_RECOVERY_QUALIFICATION_V1.md"
       - "docs/SRQ_PROVENANCE_ATTESTATION_V1.md"
+      - "docs/SRQ_PROCESS_KILL_MODEL_V1.md"
   workflow_dispatch:
 
 permissions:
