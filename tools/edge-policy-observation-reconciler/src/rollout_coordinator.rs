@@ -767,8 +767,9 @@ mod tests {
     use super::{
         AdapterCapabilities, ApplyAcknowledgement, IndependentPolicyProbe, PolicyDeviceAdapter,
         PolicyDeviceLease, PolicyRolloutCoordinator, PolicySnapshot, ProbeOutput, RolloutRequest,
-        validate_snapshot,
+        RolloutOutcome, validate_snapshot,
     };
+    use crate::impact_gate::{PolicyPreflightVector, PredictedOutcome, PredictedPolicyCase};
     use crate::promotion_journal::{PromotionJournal, PromotionSpec, PromotionState};
     use crate::replay_ledger::SqliteReplayLedger;
     use serde_json::{Value, json};
@@ -800,6 +801,36 @@ mod tests {
         let _ = std::fs::remove_file(path);
         let _ = std::fs::remove_file(path.with_extension("sqlite-wal"));
         let _ = std::fs::remove_file(path.with_extension("sqlite-shm"));
+    }
+
+    fn preflight_vector(baseline: &[u8], candidate: &[u8]) -> PolicyPreflightVector {
+        let corpus: Value = serde_json::from_str(CORPUS).expect("corpus JSON");
+        let decisions = corpus["cases"]
+            .as_array()
+            .expect("corpus cases")
+            .iter()
+            .map(|case| {
+                let expected = match case["expected_probe_outcome"].as_str().expect("expected outcome") {
+                    "permitted" => PredictedOutcome::Permitted,
+                    "blocked" => PredictedOutcome::Blocked,
+                    unexpected => panic!("unsupported corpus outcome {unexpected:?}"),
+                };
+                PredictedPolicyCase {
+                    case_id: case["case_id"].as_str().expect("case ID").to_owned(),
+                    baseline: expected,
+                    candidate: expected,
+                }
+            })
+            .collect();
+        PolicyPreflightVector {
+            target_token: TARGET.to_owned(),
+            baseline_policy_sha256: crate::sha256_hex(baseline),
+            candidate_policy_sha256: crate::sha256_hex(candidate),
+            corpus_sha256: crate::sha256_hex(CORPUS.as_bytes()),
+            simulator_id: "test-counterfactual-simulator".to_owned(),
+            simulator_version: "1.0-test".to_owned(),
+            decisions,
+        }
     }
 
     #[derive(Debug)]
@@ -1022,6 +1053,7 @@ mod tests {
                 candidate_policy: &candidate,
                 corpus_schema_source: CORPUS_SCHEMA,
                 corpus_source: CORPUS,
+                    preflight: preflight_vector(&baseline, &candidate),
             },
         );
         assert!(
@@ -1068,6 +1100,7 @@ mod tests {
                     candidate_policy: &candidate,
                     corpus_schema_source: CORPUS_SCHEMA,
                     corpus_source: CORPUS,
+                    preflight: preflight_vector(&baseline, &candidate),
                 },
             )
             .expect_err("lost apply acknowledgement");
@@ -1109,6 +1142,7 @@ mod tests {
                     candidate_policy: &candidate,
                     corpus_schema_source: CORPUS_SCHEMA,
                     corpus_source: CORPUS,
+                    preflight: preflight_vector(&baseline, &candidate),
                 },
             )
             .expect_err("probe outage blocks promotion");
@@ -1152,6 +1186,7 @@ mod tests {
                     candidate_policy: &candidate,
                     corpus_schema_source: CORPUS_SCHEMA,
                     corpus_source: CORPUS,
+                    preflight: preflight_vector(&baseline, &candidate),
                 },
             )
             .expect_err("unrecognized readback blocks promotion");
@@ -1217,6 +1252,7 @@ mod tests {
                     candidate_policy: &candidate,
                     corpus_schema_source: CORPUS_SCHEMA,
                     corpus_source: CORPUS,
+                    preflight: preflight_vector(&baseline, &candidate),
                 },
             )
             .expect_err("unsafe adapter rejected before writes");
@@ -1274,6 +1310,7 @@ mod tests {
                     candidate_policy: &candidate,
                     corpus_schema_source: CORPUS_SCHEMA,
                     corpus_source: CORPUS,
+                    preflight: preflight_vector(&baseline, &candidate),
                 },
             )
             .expect("coordinator uses generation three");
@@ -1312,6 +1349,7 @@ mod tests {
                     candidate_policy: &candidate,
                     corpus_schema_source: CORPUS_SCHEMA,
                     corpus_source: CORPUS,
+                    preflight: preflight_vector(&baseline, &candidate),
                 },
             )
             .expect("candidate promoted");
@@ -1352,6 +1390,7 @@ mod tests {
                 candidate_policy: &candidate,
                 corpus_schema_source: CORPUS_SCHEMA,
                 corpus_source: CORPUS,
+                    preflight: preflight_vector(&baseline, &candidate),
             },
         );
         assert!(result.is_err());
