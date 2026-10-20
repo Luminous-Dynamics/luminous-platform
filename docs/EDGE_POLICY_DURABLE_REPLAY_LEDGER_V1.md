@@ -38,11 +38,12 @@ The module tests cover:
 
 1. First consumption succeeds; second use is rejected.
 2. Replay remains rejected after closing and reopening the database.
-3. Two separate connections racing on one nonce produce exactly one successful insert.
-4. Invalid nonces and in-memory databases fail closed.
-5. A database with a changed table schema is rejected.
-6. Stored data contains only the digest, not the original nonce.
-7. End-to-end freshness verification commits the nonce before returning and rejects the same receipt after a simulated verifier restart.
+3. Two connections racing on one nonce produce exactly one successful insert.
+4. Two separate processes released against the same nonce produce exactly one successful insert.
+5. Invalid nonces and in-memory databases fail closed.
+6. A database with a changed table schema is rejected.
+7. Stored data contains only the digest, not the original nonce.
+8. End-to-end freshness verification commits the nonce before returning and rejects the same receipt after a simulated verifier restart.
 
 These deterministic tests are not a crash-consistency campaign. Future qualification should add process-kill tests during the write/commit boundary, filesystem/SQLite fault injection, lock timeout and corruption tests, and a concurrent multi-process stress run over at least 100,000 challenges.
 
