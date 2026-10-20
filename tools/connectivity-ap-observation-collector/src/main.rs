@@ -116,7 +116,10 @@ fn run() -> Result<(), String> {
         .clone()
         .ok_or_else(|| "iw interface info is unavailable; refusing AP collection".to_owned())?;
     if parse_interface_info(&info_text)["interface_type"] != "AP" {
-        return Err("interface mode is not AP; refusing to label these counters as AP observations".to_owned());
+        return Err(
+            "interface mode is not AP; refusing to label these counters as AP observations"
+                .to_owned(),
+        );
     }
 
     let station = capture("iw", &["dev", interface, "station", "dump"]);
