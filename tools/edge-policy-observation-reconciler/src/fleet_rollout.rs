@@ -225,17 +225,13 @@ fn validate_digest(value: &str, label: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub(crate) fn digest_plan(
-    waves: &[RolloutWave],
-    constraints: RolloutConstraints,
-) -> String {
+pub(crate) fn digest_plan(waves: &[RolloutWave], constraints: RolloutConstraints) -> String {
     use std::fmt::Write as _;
     let mut canonical = String::from("luminous-edge-fleet-rollout-plan-v1\n");
     writeln!(
         &mut canonical,
         "constraints|{}|{}",
-        constraints.max_batch_size,
-        constraints.max_targets_per_failure_domain
+        constraints.max_batch_size, constraints.max_targets_per_failure_domain
     )
     .expect("writing to String cannot fail");
     for wave in waves {
