@@ -15,6 +15,7 @@ on:
       - "docs/SRQ_SQLITE_TRANSACTION_BASELINE_V1.md"
       - "docs/SRQ_BENCHMARK_COMPARISON_V1.md"
       - "docs/SRQ_BOOT_RECONCILIATION_V1.md"
+      - "docs/SRQ_BOOT_OBSERVATION_ADAPTER_V1.md"
   workflow_dispatch:
 
 permissions:
