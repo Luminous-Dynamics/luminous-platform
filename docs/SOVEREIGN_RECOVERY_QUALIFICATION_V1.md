@@ -190,4 +190,4 @@ This is **model-tier structural evidence only**. The boot observation is not col
 
 
 
-The immutable deployment-ID extension was added after source `c2c679ea4b55c6430e1542734a3c59180d238e8e` was tested. It is not yet qualified by an exact-head workflow run. The new tests require old `/run/booted-system` with a newer `/run/current-system` to remain Blocked, even when an abstract logical generation counter matches.
+The immutable deployment-ID extension passed exact-head [workflow run 39470466328](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39470466328) on `59d6774ed3d3e67b2be7327aa06b1788b9d3aa5b`, with 21 Rust tests passing. New negatives require an old `/run/booted-system` with a newer `/run/current-system` to remain Blocked, and independently reject the wrong immutable deployment identity in the durable decision or post-commit challenge. This is model-tier evidence: the actual NixOS observation has not yet been collected and authenticated in QEMU.
