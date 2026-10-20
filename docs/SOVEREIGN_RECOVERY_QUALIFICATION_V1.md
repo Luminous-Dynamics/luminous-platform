@@ -53,6 +53,22 @@ Execute the corpus in ordered tiers and label each result:
 
 Each receipt must bind at least the scenario/corpus digest, source commit, actual build/checkout commit, artifact and relevant metadata digests, test tier and environment, observed pre/post generation, raw test outcome, timing distribution, evidence artifact hashes, and explicit non-claims. Missing evidence is recorded as missing. Do not silently substitute a PR merge SHA for the reviewed head SHA.
 
+## Result receipts: one schema, five honest outcomes
+
+`benchmarks/srq-v1/result-receipt-v1.schema.json` defines a versioned record for one scenario observation. It keeps four different identities separate: expected source SHA, workflow/event SHA, actual checked-out source SHA, and artifact digest. The runner must not silently relabel one as another.
+
+| Status | Meaning | Minimum decision rule |
+|---|---|---|
+| `PASS` | The declared check actually ran and met its specific acceptance criteria | Expected source equals actual checkout; execution is recorded; exit code is zero; at least one hash-linked artifact exists |
+| `FAIL` | The check ran and its acceptance criteria were not met | Preserve the failure reason and available evidence; do not convert a failed test into success because artifacts uploaded |
+| `NOT_RUN` | The scenario did not execute | Actual checkout SHA remains null; execution and exit code remain unasserted/null |
+| `BLOCKED` | A prerequisite prevented a valid determination | Record the missing prerequisite and what did/did not execute; never treat the blocker as a pass |
+| `NOT_APPLICABLE` | A documented reason makes this scenario inapplicable for this specific target | Explicit reason required; this does not satisfy another required release gate |
+
+The companion `validate-result.sh` checks SRQ's core status/provenance invariants, and the example fixtures plus negative controls prove that a mismatched source head, a claimed pass without evidence, invalid digest shape, or a `NOT_RUN` record with executed steps is rejected. This is intentionally a reference-subset validator—not a full JSON Schema engine, artifact authenticator, or runtime qualification tool.
+
+**Do not aggregate statuses into a single green score.** One required `FAIL`, `NOT_RUN`, or `BLOCKED` keeps the affected release gate unqualified. `NOT_APPLICABLE` needs scope-owner justification and cannot be used to make a failed or missing test disappear.
+
 ## Proposed benchmark gates
 
 These are **qualification targets**, not achieved measurements.
