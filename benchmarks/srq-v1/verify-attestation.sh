@@ -60,6 +60,7 @@ if ! verification_json="$(gh attestation verify "$artifact" \
   --repo "$trusted_repo" \
   --signer-workflow "$trusted_workflow" \
   --cert-oidc-issuer "$trusted_oidc_issuer" \
+  --deny-self-hosted-runners \
   --predicate-type "$trusted_predicate_type" \
   --source-digest "$expected_source_sha" \
   --source-ref "$expected_source_ref" \
