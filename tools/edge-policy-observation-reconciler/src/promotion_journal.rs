@@ -1572,7 +1572,10 @@ mod tests {
         let executable = std::env::current_exe().expect("current test executable");
         let status = Command::new(executable)
             .arg("child_process_exits_after_durable_apply_intent")
-            .env("LUMINOUS_PROMOTION_CRASH_TEST_DB", path.to_string_lossy().as_ref())
+            .env(
+                "LUMINOUS_PROMOTION_CRASH_TEST_DB",
+                path.to_string_lossy().as_ref(),
+            )
             .status()
             .expect("launch child process");
         assert_eq!(
@@ -1582,7 +1585,9 @@ mod tests {
         );
 
         let recovered = PromotionJournal::open(&path).expect("reopen after child exit");
-        let operations = recovered.list_recoverable().expect("list recoverable state");
+        let operations = recovered
+            .list_recoverable()
+            .expect("list recoverable state");
         assert_eq!(operations.len(), 1);
         assert_eq!(operations[0].operation.state, PromotionState::ApplyIntent);
         assert_eq!(
