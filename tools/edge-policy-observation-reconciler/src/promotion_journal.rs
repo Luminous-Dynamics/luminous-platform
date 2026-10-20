@@ -446,10 +446,10 @@ impl PromotionJournal {
             .map_err(|error| vec![format!("cannot parse verification challenge: {error}")])?;
         let envelope: serde_json::Value = serde_json::from_str(envelope_source)
             .map_err(|error| vec![format!("cannot parse freshness envelope: {error}")])?;
-        let challenge_id = json_string_field(&challenge, "/challenge_id", "challenge.challenge_id")?
-            .to_owned();
-        let target_token = json_string_field(&challenge, "/target_token", "challenge.target_token")?
-            .to_owned();
+        let challenge_id =
+            json_string_field(&challenge, "/challenge_id", "challenge.challenge_id")?.to_owned();
+        let target_token =
+            json_string_field(&challenge, "/target_token", "challenge.target_token")?.to_owned();
         let policy_generation = json_integer_field(
             &challenge,
             "/policy_generation",
@@ -1263,8 +1263,7 @@ mod tests {
             "target_token": "target-policy-lab"
         })
         .to_string();
-        let receipt_value: Value =
-            serde_json::from_str(&receipt_source).expect("receipt JSON");
+        let receipt_value: Value = serde_json::from_str(&receipt_source).expect("receipt JSON");
         let envelope_source = json!({
             "schema_version": "1.0.0",
             "challenge_id": "challenge-policy-0001",
@@ -1294,14 +1293,16 @@ mod tests {
         let journal_path = path();
         let ledger_path = journal_path.with_file_name(format!(
             "{}-ledger.sqlite",
-            journal_path.file_name().expect("journal filename").to_string_lossy()
+            journal_path
+                .file_name()
+                .expect("journal filename")
+                .to_string_lossy()
         ));
         let journal = PromotionJournal::open(&journal_path).expect("open journal");
         let ledger = SqliteReplayLedger::open(&ledger_path).expect("open replay ledger");
         prepared_applied(&journal);
-        let (challenge, envelope, receipt) = freshness_sources(
-            "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-        );
+        let (challenge, envelope, receipt) =
+            freshness_sources("cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc");
 
         let (report, permit) = journal
             .verify_and_record_evidence(
