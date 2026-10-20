@@ -99,14 +99,68 @@ jobs:
 
           bash benchmarks/srq-v1/validate-result.sh --evidence-root "$RUNNER_TEMP" "$model_receipt"
 
-      - name: Preserve activation model evidence
+      - name: Run atomic challenge-promotion model
+        shell: bash
+        run: |
+          set -euo pipefail
+          model_log="$RUNNER_TEMP/srq-challenge-promotion-model-test.log"
+          model_receipt="$RUNNER_TEMP/srq-evidence-003-model-result.json"
+          command='cargo test --manifest-path tools/srq-challenge-promotion-model/Cargo.toml --locked'
+          cargo test --manifest-path tools/srq-challenge-promotion-model/Cargo.toml --locked 2>&1 | tee "$model_log"
+
+          actual_head="$(git rev-parse HEAD)"
+          evidence_sha="$(sha256sum "$model_log" | cut -d ' ' -f 1)"
+          jq -n \
+            --arg expected "$SRQ_EXPECTED_SOURCE_SHA" \
+            --arg event "$SRQ_EVENT_SHA" \
+            --arg actual "$actual_head" \
+            --arg command "$command" \
+            --arg os "$(uname -sr)" \
+            --arg architecture "$(uname -m)" \
+            --arg toolchain "$(rustc --version)" \
+            --arg evidence_sha "$evidence_sha" \
+            '{
+              schema_version: 1,
+              profile_id: "SRQ-1",
+              scenario_id: "EVIDENCE-003",
+              status: "PASS",
+              reason: "The Linux filesystem model serialized 64 concurrent attempts so exactly one consumed the challenge and promoted the next policy generation; 100 injected process-interruption trials preserved the previous or fully promoted state.",
+              source: {
+                expected_source_sha: $expected,
+                event_sha: $event,
+                actual_checkout_sha: $actual,
+                source_matches_expected: ($expected == $actual)
+              },
+              execution: {
+                tier: "model",
+                steps_executed: true,
+                command: $command,
+                exit_code: 0,
+                environment: {os: $os, architecture: $architecture, toolchain: $toolchain}
+              },
+              evidence: [{artifact: "srq-challenge-promotion-model-test.log", sha256: $evidence_sha, kind: "log"}],
+              claim_ceiling: "abstract_model_only",
+              non_claims: [
+                "This is a filesystem-backed contract model, not the production durable promotion database or policy gate.",
+                "Linux flock serialization was tested with concurrent workers using separate open file descriptions in one runner; cross-host or distributed locking is not qualified.",
+                "Normal process-interruption tests on the runner filesystem are not equivalent to sudden physical power loss.",
+                "No signer/device identity, trusted time, TUF metadata verification, TPM, firmware root of trust, QEMU or physical-device behavior is qualified."
+              ],
+              fixture: false
+            }' > "$model_receipt"
+
+          bash benchmarks/srq-v1/validate-result.sh --evidence-root "$RUNNER_TEMP" "$model_receipt"
+
+      - name: Preserve model evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: srq-activation-model-evidence
+          name: srq-model-evidence
           path: |
             ${{ runner.temp }}/srq-recovery-model-test.log
             ${{ runner.temp }}/srq-update-004-model-result.json
+            ${{ runner.temp }}/srq-challenge-promotion-model-test.log
+            ${{ runner.temp }}/srq-evidence-003-model-result.json
           if-no-files-found: ignore
           retention-days: 14
 
