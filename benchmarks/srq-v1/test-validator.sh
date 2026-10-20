@@ -4,10 +4,11 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 validator="$script_dir/validate.sh"
 corpus="$script_dir/scenarios.json"
+baselines="$script_dir/industry-baselines.tsv"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-bash "$validator" "$corpus"
+bash "$validator" "$corpus" "$baselines"
 
 expect_reject() {
   local label="$1"
@@ -16,7 +17,7 @@ expect_reject() {
   local output="$tmpdir/$label.out"
 
   jq "$filter" "$corpus" > "$mutated"
-  if bash "$validator" "$mutated" >"$output" 2>&1; then
+  if bash "$validator" "$mutated" "$baselines" >"$output" 2>&1; then
     echo "FAIL: validator accepted negative control '$label'" >&2
     cat "$output" >&2
     exit 1
@@ -35,5 +36,25 @@ expect_reject changed-schema-version '.schema_version = 2'
 expect_reject false-corpus-status '.qualification_status = "passed"'
 expect_reject truncated-corpus '.scenarios = []'
 
-echo "PASS: 10 SRQ-1 negative controls were rejected."
-echo "NON-CLAIM: these tests validate corpus safeguards, not the runtime scenarios."
+expect_baseline_reject() {
+  local label="$1"
+  local awk_program="$2"
+  local mutated="$tmpdir/baseline-$label.tsv"
+  local output="$tmpdir/baseline-$label.out"
+
+  awk -F '\t' -v OFS='\t' "$awk_program" "$baselines" > "$mutated"
+  if bash "$validator" "$corpus" "$mutated" >"$output" 2>&1; then
+    echo "FAIL: validator accepted baseline negative control '$label'" >&2
+    cat "$output" >&2
+    exit 1
+  fi
+  echo "PASS: baseline negative control rejected ($label)"
+}
+
+expect_baseline_reject missing-column 'NR == 3 { $5 = "" } 1'
+expect_baseline_reject wrong-column-count 'NR == 3 { $5 = ""; NF = 4 } 1'
+expect_baseline_reject duplicate-name 'NR == 3 { $1 = "NixOS generations" } 1'
+expect_baseline_reject truncated-matrix 'NR <= 6 { print }'
+
+echo "PASS: 10 corpus and 4 baseline negative controls were rejected."
+echo "NON-CLAIM: these tests validate specification safeguards, not the runtime scenarios."
