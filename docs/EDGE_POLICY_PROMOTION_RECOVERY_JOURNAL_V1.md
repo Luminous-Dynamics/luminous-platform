@@ -19,7 +19,7 @@ Rollback has its own explicit path:
 - **Prepared:** immutable target, generation, baseline digest, and candidate digest are durably recorded.
 - **ApplyIntent:** the intent is committed before the external apply command. A crash here leaves the real device state uncertain.
 - **Applied:** a live effective-policy readback exactly matches the candidate digest. A controller acknowledgement cannot make this transition.
-- **Verified:** a caller that has completed conformance reconciliation, freshness validation, and durable nonce consumption records an independent probe bound to the candidate digest and receipt digest.
+- **Verified:** a caller that has completed conformance reconciliation, freshness validation, and durable nonce consumption records an independent probe bound to the target token, policy generation, candidate digest, and receipt digest.
 - **Promoted:** a still-live, process-local permit is presented, evidence has not expired, and a second effective-policy readback still matches the candidate digest.
 - **RollbackIntent:** rollback is durably requested before issuing external rollback.
 - **RolledBack:** a live readback exactly matches the original baseline digest.
