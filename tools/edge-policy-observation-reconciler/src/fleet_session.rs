@@ -1507,15 +1507,28 @@ mod tests {
         plan: &crate::fleet_rollout::FleetRolloutPlan,
         index: usize,
     ) {
+        let wave_observations = observations(&plan.waves[index]);
         let decision = journal
             .evaluate_and_record_wave(
                 &plan.plan_sha256,
                 index,
-                &observations(&plan.waves[index]),
+                &wave_observations,
                 130 + index as u64,
             )
             .expect("evaluate wave");
         assert_eq!(decision.decision, WaveDecision::Continue);
+        assert_eq!(
+            journal
+                .evaluate_and_record_wave(
+                    &plan.plan_sha256,
+                    index,
+                    &wave_observations,
+                    131 + index as u64,
+                )
+                .expect("idempotent evaluate")
+                .decision,
+            WaveDecision::Continue
+        );
         for target in &plan.waves[index].targets {
             journal
                 .record_target_promoted(
@@ -1526,10 +1539,25 @@ mod tests {
                     140 + index as u64,
                 )
                 .expect("record target promoted");
+            journal
+                .record_target_promoted(
+                    &plan.plan_sha256,
+                    index,
+                    &target.target_token,
+                    CANDIDATE,
+                    141 + index as u64,
+                )
+                .expect("idempotent promotion record");
         }
-        journal
+        let completed = journal
             .complete_wave(&plan.plan_sha256, index, 150 + index as u64)
             .expect("complete wave");
+        assert_eq!(
+            journal
+                .complete_wave(&plan.plan_sha256, index, 151 + index as u64)
+                .expect("idempotent completion"),
+            completed
+        );
     }
 
     #[test]
@@ -1697,6 +1725,91 @@ mod tests {
                 .state,
             FleetSessionState::Halted
         );
+        drop(journal);
+        remove_database(&path);
+    }
+
+    #[test]
+    fn partial_rollback_retries_return_the_same_command_set() {
+        let path = path();
+        let journal = FleetSessionJournal::open(&path).expect("open");
+        let plan = plan();
+        journal.register_plan(&plan, 100).expect("register");
+        apply_wave(&journal, &plan, 0);
+        verify_and_promote_wave(&journal, &plan, 0);
+        apply_wave(&journal, &plan, 1);
+
+        let mut probe = observations(&plan.waves[1]);
+        probe[0].outcome = ProbeOutcome::Failed;
+        assert_eq!(
+            journal
+                .evaluate_and_record_wave(&plan.plan_sha256, 1, &probe, 130)
+                .expect("evaluate")
+                .decision,
+            WaveDecision::RollbackWave
+        );
+        let commands = journal
+            .request_wave_rollback(&plan.plan_sha256, 1, 131)
+            .expect("request rollback");
+        assert_eq!(commands.len(), 2);
+
+        assert!(
+            !journal
+                .record_target_rolled_back(
+                    &plan.plan_sha256,
+                    1,
+                    &commands[0].target_token,
+                    BASELINE,
+                    132,
+                )
+                .expect("first target rolled back")
+        );
+        assert_eq!(
+            journal
+                .request_wave_rollback(&plan.plan_sha256, 1, 133)
+                .expect("same complete command set after partial rollback"),
+            commands
+        );
+        assert!(
+            !journal
+                .record_target_rolled_back(
+                    &plan.plan_sha256,
+                    1,
+                    &commands[0].target_token,
+                    BASELINE,
+                    134,
+                )
+                .expect("duplicate acknowledgement is idempotent")
+        );
+        assert!(
+            journal
+                .record_target_rolled_back(
+                    &plan.plan_sha256,
+                    1,
+                    &commands[1].target_token,
+                    BASELINE,
+                    135,
+                )
+                .expect("final baseline restored")
+        );
+        assert_eq!(
+            journal
+                .request_wave_rollback(&plan.plan_sha256, 1, 136)
+                .expect("same terminal command set"),
+            commands
+        );
+        assert!(
+            journal
+                .record_target_rolled_back(
+                    &plan.plan_sha256,
+                    1,
+                    &commands[1].target_token,
+                    BASELINE,
+                    137,
+                )
+                .expect("duplicate terminal acknowledgement")
+        );
+        assert!(journal.list_recoverable_targets().expect("none pending").is_empty());
         drop(journal);
         remove_database(&path);
     }
