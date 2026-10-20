@@ -12,7 +12,7 @@ run_attempt="1"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 make_archive() {
-  local archive="$1" bad_checksum="${2:-false}" bad_supplemental="${3:-false}"
+  local archive="$1" bad_checksum="${2:-false}" bad_supplemental="${3:-none}"
   local work="$tmp/work" bundle="$tmp/work/srq-evidence-bundle"
   rm -rf "$work"
   mkdir -p "$bundle"
@@ -22,6 +22,7 @@ make_archive() {
     srq-process-kill-model-test.log \
     srq-recovery-model-test.log \
     srq-release-qualification.json \
+    srq-sqlite-promotion-reference.log \
     srq-update-004-model-result.json; do
     printf 'synthetic evidence for %s\n' "$name" > "$bundle/$name"
   done
@@ -33,17 +34,22 @@ make_archive() {
       srq-process-kill-model-test.log \
       srq-recovery-model-test.log \
       srq-release-qualification.json \
+      srq-sqlite-promotion-reference.log \
       srq-update-004-model-result.json > SHA256SUMS
   )
   if [[ "$bad_checksum" == "true" ]]; then
     printf 'tampered after hashing\n' >> "$bundle/srq-recovery-model-test.log"
   fi
-  local checksum_sha process_kill_sha manifest_process_kill_sha
+  local checksum_sha process_kill_sha sqlite_reference_sha manifest_process_kill_sha manifest_sqlite_sha
   checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
   process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
+  sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
   manifest_process_kill_sha="$process_kill_sha"
-  if [[ "$bad_supplemental" == "true" ]]; then
+  manifest_sqlite_sha="$sqlite_reference_sha"
+  if [[ "$bad_supplemental" == "process-kill" ]]; then
     manifest_process_kill_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  elif [[ "$bad_supplemental" == "sqlite" ]]; then
+    manifest_sqlite_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
   jq -n \
     --arg repo "Luminous-Dynamics/luminous-platform" \
@@ -57,6 +63,7 @@ make_archive() {
     --arg checksum_sha "$checksum_sha" \
     --arg corpus_sha "$(printf 'a%.0s' {1..64})" \
     --arg process_kill_sha "$manifest_process_kill_sha" \
+    --arg sqlite_reference_sha "$manifest_sqlite_sha" \
     '{
       schema_version: 1,
       profile_id: "SRQ-1",
@@ -83,6 +90,14 @@ make_archive() {
         status: "PASS",
         evidence_artifact: "srq-process-kill-model-test.log",
         evidence_sha256: $process_kill_sha
+      }, {
+        test_id: "SRQ-SQLITE-REFERENCE-V1",
+        scenario_id: "EVIDENCE-003",
+        execution_tier: "model",
+        claim_ceiling: "abstract_model_only",
+        status: "PASS",
+        evidence_artifact: "srq-sqlite-promotion-reference.log",
+        evidence_sha256: $sqlite_reference_sha
       }]
     }' > "$bundle/manifest.json"
   tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - -C "$tmp/work" srq-evidence-bundle \
@@ -103,7 +118,7 @@ run_verifier() {
 make_archive "$tmp/good.tar.gz"
 run_verifier "$tmp/good.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-good" > "$tmp/manifest-path"
 [[ -f "$(cat "$tmp/manifest-path")" ]] || fail "valid bundle manifest was not returned"
-echo "PASS: bundle source, workflow, run, inventory, process-kill claim ceiling and byte checksums verify"
+echo "PASS: bundle source, workflow, run, process-kill and SQLite inventories, claim ceilings and hashes verify"
 
 if run_verifier "$tmp/good.tar.gz" "1111111111111111111111111111111111111111" refs/heads/main "$tmp/extracted-wrong-source" >/dev/null 2>&1; then
   fail "wrong expected source SHA was accepted"
@@ -121,8 +136,14 @@ if run_verifier "$tmp/bad-checksum.tar.gz" "$source_sha" refs/heads/main "$tmp/e
 fi
 echo "PASS: evidence mutation fails byte verification"
 
-make_archive "$tmp/bad-supplemental.tar.gz" false true
-if run_verifier "$tmp/bad-supplemental.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-bad-supplemental" >/dev/null 2>&1; then
+make_archive "$tmp/bad-process-kill.tar.gz" false process-kill
+if run_verifier "$tmp/bad-process-kill.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-bad-process-kill" >/dev/null 2>&1; then
   fail "false process-kill evidence digest was accepted"
 fi
-echo "PASS: supplemental process-kill digest mismatch fails closed"
+echo "PASS: process-kill supplemental digest mismatch fails closed"
+
+make_archive "$tmp/bad-sqlite.tar.gz" false sqlite
+if run_verifier "$tmp/bad-sqlite.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-bad-sqlite" >/dev/null 2>&1; then
+  fail "false SQLite evidence digest was accepted"
+fi
+echo "PASS: SQLite supplemental digest mismatch fails closed"
