@@ -10,6 +10,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use rusqlite::{Connection, Error as SqlError, ErrorCode, TransactionBehavior, params};
+use serde_json::Value;
 
 const LEDGER_SCHEMA_VERSION: i64 = 1;
 const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
@@ -181,6 +182,76 @@ impl SqliteReplayLedger {
             .map_err(|error| format!("cannot configure replay ledger durability: {error}"))?;
         Ok(connection)
     }
+}
+
+/// Verify challenge freshness and ordinary conformance, then consume the nonce
+/// in the durable ledger before returning an approval-eligible result.
+///
+/// This helper refuses promotion when either verification or the persistent
+/// insert fails. It does not make the external actuation itself transactional;
+/// callers must not promote or apply the policy before this function succeeds.
+pub fn verify_and_consume_durable(
+    ledger: &SqliteReplayLedger,
+    challenge_source: &str,
+    envelope_source: &str,
+    corpus_schema_source: &str,
+    corpus_source: &str,
+    receipt_source: &str,
+    verifier_now_unix_ms: u64,
+) -> Result<Value, Vec<String>> {
+    let mut one_shot_guard = crate::freshness::ChallengeReplayGuard::new();
+    let mut report = one_shot_guard.verify_and_consume(
+        challenge_source,
+        envelope_source,
+        corpus_schema_source,
+        corpus_source,
+        receipt_source,
+        verifier_now_unix_ms,
+    )?;
+
+    let challenge: Value = serde_json::from_str(challenge_source)
+        .map_err(|error| vec![format!("cannot parse validated challenge: {error}")])?;
+    let receipt: Value = serde_json::from_str(receipt_source)
+        .map_err(|error| vec![format!("cannot parse validated receipt: {error}")])?;
+    let string_field = |value: &Value, pointer: &str, label: &str| {
+        value
+            .pointer(pointer)
+            .and_then(Value::as_str)
+            .ok_or_else(|| vec![format!("{label} must be a string")])
+    };
+    let integer_field = |value: &Value, pointer: &str, label: &str| {
+        value
+            .pointer(pointer)
+            .and_then(Value::as_u64)
+            .ok_or_else(|| vec![format!("{label} must be an unsigned integer")])
+    };
+
+    let nonce = string_field(&challenge, "/nonce", "challenge.nonce")?;
+    let challenge_id = string_field(&challenge, "/challenge_id", "challenge.challenge_id")?;
+    let receipt_hash = super::sha256_hex(receipt_source.as_bytes());
+    let policy_generation = integer_field(
+        &challenge,
+        "/policy_generation",
+        "challenge.policy_generation",
+    )?;
+    let target_token = string_field(&challenge, "/target_token", "challenge.target_token")?;
+
+    ledger
+        .consume(&ReplayConsumption {
+            nonce,
+            challenge_id,
+            consumed_at_unix_ms: verifier_now_unix_ms,
+            receipt_sha256: &receipt_hash,
+            policy_generation,
+            target_token,
+        })
+        .map_err(|error| vec![format!("durable replay rejection: {error}")])?;
+
+    // The parent verifier report was produced by a throwaway in-memory guard;
+    // replace that description so callers see the actual persistence guarantee.
+    report["replay_guard"] = Value::String("sqlite_durable_transactional_nonce_consumed".to_owned());
+    report["durable_replay_ledger"] = Value::String("commit_confirmed_before_return".to_owned());
+    Ok(report)
 }
 
 fn table_exists(connection: &Connection) -> rusqlite::Result<bool> {
