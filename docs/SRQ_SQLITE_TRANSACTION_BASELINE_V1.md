@@ -30,7 +30,7 @@ The gate compiler still reports `NOT_QUALIFIED`, 0/22 gates at qualifying tier. 
 
 On exact tested head [6338f6f31d34a5e7d0c2b0ed1b1b879ee9a0b4bd](https://github.com/Luminous-Dynamics/luminous-platform/commit/6338f6f31d34a5e7d0c2b0ed1b1b879ee9a0b4bd), [workflow run 39432653655 passed](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39432653655) with SQLite 3.45.1, WAL mode and synchronous=FULL. The four cases passed: atomic state/decision/challenge commit, stale-generation all-or-nothing rollback, duplicate challenge replay rejection, and 64 independent writer processes contending for one target/challenge with exactly one durable promotion. The final state had one decision, one challenge-consumption row, generation 1, and PRAGMA integrity_check = ok.
 
-Four CI runs now provide exploratory per-contender script elapsed-time distributions (not pure SQLite commit latency; timing includes CLI/process startup and lock waiting):
+Five CI runs now provide exploratory per-contender script elapsed-time distributions (not pure SQLite commit latency; timing includes CLI/process startup and lock waiting):
 
 | Workflow run | All-contender p50 / p95 / p99 | Sole winner elapsed |
 |---|---:|---:|
@@ -38,8 +38,9 @@ Four CI runs now provide exploratory per-contender script elapsed-time distribut
 | [39432653655](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39432653655) | 34.7 / 68.4 / 87.2 ms | 11.5 ms |
 | [39433030759](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39433030759) | 48.1 / 79.2 / 94.9 ms | 42.8 ms |
 | [39433712275](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39433712275) | 22.0 / 57.7 / 62.3 ms | 9.0 ms |
+| [39445482359](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39445482359) | 30.6 / 50.9 / 54.6 ms | 26.4 ms |
 
-The spread is a useful warning: these are small GitHub-hosted-runner smoke measurements, not a stable performance benchmark or a comparison against another updater on matched hardware. Repeated measurements on a frozen machine/storage tuple are required before drawing latency conclusions. The next benchmark should report the raw per-contender timings and repeat the 64-way race at least 30 times on a fixed host before publishing comparative percentiles.
+The spread is a useful warning: these are small GitHub-hosted-runner smoke measurements, not a stable performance benchmark or a comparison against another updater on matched hardware. Repeated measurements on a frozen machine/storage tuple are required before drawing latency conclusions. The logs include the OS/kernel, architecture and filesystem label. The timing distribution still includes CLI/process startup and lock waiting; it is not a pure transaction-latency measure. The next benchmark should repeat the 64-way race at least 30 times on fixed hardware and include a matched production-adapter run before publishing comparative percentiles.
 
 The SQLite log is now included as a digest-bound supplemental observation in the deterministic SRQ archive subject and is checked by the archive verifier and wrapper contract tests. The actual signed GitHub attestation has **not** yet been minted or verified: the trusted-main signing job is intentionally skipped on pull-request events. The reference remains a small SQL contract fixture, not the production store; it cannot satisfy or upgrade a QEMU/physical gate and does not prove kernel-crash, VM-reset or physical-power-loss behavior.
 
@@ -75,6 +76,8 @@ This is a single-database reference; it does not provide cross-host consensus or
 Compare the SQLite reference and Luminous's production adapter using the same frozen challenge set and fault schedule. Publish both the passing and rejected paths, the SQLite version/journal settings, raw logs, source/artifact digests, and crash outcomes. Do not call the reference fixture an industry win; it is the baseline against which an integration must demonstrate additional cross-layer correctness.
 
 
-## Repeated boundary campaign (awaiting exact-head result)
+## Repeated boundary campaign — passed
 
-The next harness iteration repeats each of the four real SQLite process-kill boundaries 25 times against a fresh disposable database (100 total attempts). CI requires exactly 25 explicit PASS records for each boundary, the summary line `commit_sigkill_boundaries=4 commit_sigkill_trials=100`, and all 64 raw writer-contender timing records. This is a deterministic fault-injection coverage campaign, not an estimate of a real-world failure probability. The outcome has not yet been counted as passed pending workflow run 39445344549 on its exact source head.
+[Workflow run 39445482359](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39445482359) passed on exact source head `946924dd4c821637b007a7a78aff9302eac222cb`. It executed 100 actual SQLite writer-process kills across four boundaries—25 trials each after decision insert, after challenge consumption, after target-state update but before COMMIT, and after COMMIT but before acknowledgement. The workflow required and observed 25 explicit successful recovery records for each boundary. The first three classes reopened with generation zero and no decision/consumption rows; the post-commit class reopened with exactly one full outcome discoverable by decision ID. The mismatched target/generation binding negative control also failed closed, and the 64-way contention race retained exactly one durable promotion.
+
+This is deterministic fault-injection coverage on a running Linux kernel, not a statistical estimate of the deployed failure probability. It does not exercise kernel panic, loss of page cache, VM reset, power interruption, lying device caches, cross-host coordination, or the production adapter. The aggregate release profile remains NOT_QUALIFIED, 0/22 gates at their qualifying tier; the trusted-main signing job was skipped for this pull request.
