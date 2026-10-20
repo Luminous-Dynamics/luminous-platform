@@ -55,6 +55,9 @@ jobs:
           model_receipt="$RUNNER_TEMP/srq-update-004-model-result.json"
           command='cargo test --manifest-path tools/srq-recovery-model/Cargo.toml --locked'
           cargo test --manifest-path tools/srq-recovery-model/Cargo.toml --locked 2>&1 | tee "$model_log"
+          # A green cargo exit is not enough if a required test disappears.
+          grep -Fq 'test result: ok. 7 passed; 0 failed' "$model_log"
+          grep -Fq 'tests::every_interruption_boundary_leaves_old_or_new_complete_generation ... ok' "$model_log"
 
           actual_head="$(git rev-parse HEAD)"
           evidence_sha="$(sha256sum "$model_log" | cut -d ' ' -f 1)"
@@ -107,6 +110,10 @@ jobs:
           model_receipt="$RUNNER_TEMP/srq-evidence-003-model-result.json"
           command='cargo test --manifest-path tools/srq-challenge-promotion-model/Cargo.toml --locked'
           cargo test --manifest-path tools/srq-challenge-promotion-model/Cargo.toml --locked 2>&1 | tee "$model_log"
+          # Protect the race/crash acceptance claims against accidental test deletion.
+          grep -Fq 'test result: ok. 7 passed; 0 failed' "$model_log"
+          grep -Fq 'tests::sixty_four_concurrent_attempts_for_one_challenge_commit_exactly_once ... ok' "$model_log"
+          grep -Fq 'tests::interruption_boundaries_preserve_old_or_fully_promoted_state ... ok' "$model_log"
 
           actual_head="$(git rev-parse HEAD)"
           evidence_sha="$(sha256sum "$model_log" | cut -d ' ' -f 1)"
