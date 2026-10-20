@@ -129,7 +129,7 @@ Each scenario now declares a `qualifying_tier`: the minimum execution tier whose
 `benchmarks/srq-v1/evaluate-release.sh` compiles receipt inputs into a source- and corpus-bound report:
 - It validates the frozen scenario corpus and every receipt, checks the expected release source SHA, and verifies actual evidence bytes against their recorded SHA-256.
 - It rejects duplicate receipts for the same scenario/tier rather than silently selecting the most favorable result.
-- It reports `PASS`, `FAIL`, `BLOCKED`, `NOT_RUN`, `NOT_APPLICABLE`, `INSUFFICIENT_TIER`, and `MISSING_EVIDENCE` per scenario.
+- It reports `PASS`, `FAIL`, `BLOCKED`, `NOT_RUN`, `NOT_APPLICABLE`, `INSUFFICIENT_TIER`, `INSUFFICIENT_CLAIM_CEILING`, and `MISSING_EVIDENCE` per scenario. A receipt must meet both the required execution tier and the claim ceiling for that tier.
 - The overall status is `QUALIFIED` only if every release gate has a `PASS` at its declared qualifying tier. Report mode can produce `NOT_QUALIFIED` with partial results; `--require-qualified` exits nonzero if any gate remains unmet.
 
 The CI evidence currently supplies only model-tier receipts for `UPDATE-004` and `EVIDENCE-003`. Therefore the expected profile result is deliberately `NOT_QUALIFIED`, with two insufficient-tier observations and 20 scenarios with no eligible evidence. This is correct behavior, not a CI failure. The evaluator's negative controls verify that duplicate receipts, wrong source SHAs, missing artifact bytes, and a release request with incomplete coverage are rejected.
