@@ -1788,6 +1788,12 @@ mod tests {
             .evaluate_and_record_wave(&plan.plan_sha256, 0, &probe, 130)
             .expect("evaluate");
         assert_eq!(evaluation.decision, WaveDecision::RollbackWave);
+        let recovery = journal.list_recoverable_targets().expect("rollback recovery");
+        assert_eq!(recovery.len(), 1);
+        assert_eq!(
+            recovery[0].action,
+            FleetRecoveryAction::PersistRollbackIntentAndEnforceBaseline
+        );
         let commands = journal
             .request_wave_rollback(&plan.plan_sha256, 0, 131)
             .expect("persist rollback intent");
@@ -1941,6 +1947,9 @@ mod tests {
                 .state,
             FleetSessionState::Halted
         );
+        let recovery = journal.list_recoverable_targets().expect("halted state recovery");
+        assert_eq!(recovery.len(), 1);
+        assert_eq!(recovery[0].action, FleetRecoveryAction::HaltAndReconcile);
         assert!(journal.begin_wave(&plan.plan_sha256, 1, 131).is_err());
         drop(journal);
         remove_database(&path);
