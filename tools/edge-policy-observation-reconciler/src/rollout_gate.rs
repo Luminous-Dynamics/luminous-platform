@@ -164,13 +164,15 @@ pub fn authorize_next_wave(
                     ],
                 });
             }
-            if wave_index == 0 || all_prior_waves_passed(
-                &waves,
-                &observations_by_token,
-                wave_index,
-                plan,
-                verifier_now_unix_ms,
-            ) {
+            if wave_index == 0
+                || all_prior_waves_passed(
+                    &waves,
+                    &observations_by_token,
+                    wave_index,
+                    plan,
+                    verifier_now_unix_ms,
+                )
+            {
                 return Ok(RolloutGateDecision::WaveAuthorized {
                     wave_index,
                     targets: wave_targets
@@ -181,9 +183,7 @@ pub fn authorize_next_wave(
             }
             return Ok(RolloutGateDecision::Halted {
                 wave_index,
-                reasons: vec![
-                    "prior waves have not satisfied the rollout gate".to_owned(),
-                ],
+                reasons: vec!["prior waves have not satisfied the rollout gate".to_owned()],
             });
         }
 
@@ -297,10 +297,13 @@ fn wave_failure_reasons(
 fn validate_plan(plan: &StagedRolloutPlan) -> Result<(), Vec<String>> {
     let mut errors = Vec::new();
     if !is_identifier(&plan.rollout_id) {
-        errors.push("rollout_id must be a non-empty ASCII identifier of at most 80 characters".to_owned());
+        errors.push(
+            "rollout_id must be a non-empty ASCII identifier of at most 80 characters".to_owned(),
+        );
     }
     if !is_digest(&plan.candidate_policy_sha256) {
-        errors.push("candidate_policy_sha256 must be 64 lowercase hexadecimal characters".to_owned());
+        errors
+            .push("candidate_policy_sha256 must be 64 lowercase hexadecimal characters".to_owned());
     }
     if plan.targets.is_empty() {
         errors.push("rollout plan must contain at least one target".to_owned());
@@ -319,13 +322,13 @@ fn validate_plan(plan: &StagedRolloutPlan) -> Result<(), Vec<String>> {
     let mut waves: BTreeMap<usize, Vec<&RolloutTarget>> = BTreeMap::new();
     for target in &plan.targets {
         if !is_target_token(&target.target_token) {
-            errors.push(format!(
-                "target token {:?} is invalid",
-                target.target_token
-            ));
+            errors.push(format!("target token {:?} is invalid", target.target_token));
         }
         if !target_tokens.insert(target.target_token.as_str()) {
-            errors.push(format!("duplicate planned target {:?}", target.target_token));
+            errors.push(format!(
+                "duplicate planned target {:?}",
+                target.target_token
+            ));
         }
         if target.failure_domain.trim().is_empty()
             || target.failure_domain.len() > 80
@@ -352,7 +355,9 @@ fn validate_plan(plan: &StagedRolloutPlan) -> Result<(), Vec<String>> {
         let final_wave = *waves.keys().next_back().expect("non-empty waves");
         for wave_index in 0..=final_wave {
             let Some(targets) = waves.get(&wave_index) else {
-                errors.push(format!("wave indices must be contiguous; missing wave {wave_index}"));
+                errors.push(format!(
+                    "wave indices must be contiguous; missing wave {wave_index}"
+                ));
                 continue;
             };
             if targets.len() > plan.max_targets_per_wave {
@@ -460,7 +465,14 @@ mod tests {
     }
 
     fn successful(token: &str) -> TargetRolloutObservation {
-        observation(token, TargetRolloutOutcome::Promoted, true, true, 1_000, 1_500)
+        observation(
+            token,
+            TargetRolloutOutcome::Promoted,
+            true,
+            true,
+            1_000,
+            1_500,
+        )
     }
 
     #[test]
@@ -476,10 +488,7 @@ mod tests {
 
     #[test]
     fn next_wave_requires_every_prior_target_to_have_fresh_matching_positive_evidence() {
-        let observations = vec![
-            successful("target-router-a"),
-            successful("target-router-b"),
-        ];
+        let observations = vec![successful("target-router-a"), successful("target-router-b")];
         assert_eq!(
             authorize_next_wave(&plan(), &observations, 1_100).expect("valid plan"),
             RolloutGateDecision::WaveAuthorized {
@@ -505,7 +514,11 @@ mod tests {
         failed.outcome = TargetRolloutOutcome::RolledBack;
         let observations = vec![failed, successful("target-router-b")];
         let decision = authorize_next_wave(&plan(), &observations, 1_100).expect("valid plan");
-        let RolloutGateDecision::Halted { wave_index, reasons } = decision else {
+        let RolloutGateDecision::Halted {
+            wave_index,
+            reasons,
+        } = decision
+        else {
             panic!("failed first wave must halt");
         };
         assert_eq!(wave_index, 0);
