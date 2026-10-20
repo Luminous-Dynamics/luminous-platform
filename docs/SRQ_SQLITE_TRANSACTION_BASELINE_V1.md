@@ -10,6 +10,12 @@ The reference DDL is in benchmarks/srq-v1/sqlite-promotion-reference.sql. It mod
 
 ## Required transaction contract
 
+### Current executable reference observation (2026-10-20)
+
+On source head 751c959f7b6e96d2542d546b20ea6e5f8276009c, CI ran the reference script with SQLite 3.45.1, WAL journal mode and synchronous=FULL. All four cases passed: committed state/decision/challenge together; stale-generation compare-and-swap rolls back all writes; duplicate challenge replay is rejected; and 64 independent writer processes contend on one target/challenge with exactly one durable promotion. The race then verified generation 1, one decision row, one challenge-consumption row, and PRAGMA integrity_check = ok. See [workflow run 39431318386](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39431318386).
+
+This is a small SQL contract fixture, not the production store, and it is not included in the signed SRQ evidence bundle yet. It is preserved as the separate Actions artifact srq-sqlite-reference-evidence. Its PASS does not satisfy or upgrade a QEMU/physical gate and does not prove correctness for kernel crash, VM reset or physical power loss.
+
 The production adapter should use one SQLite write transaction (BEGIN IMMEDIATE) and:
 
 1. Verify target binding, current generation, expected previous effective-policy digest, policy/corpus digests, decision identity, authorization and freshness under a well-defined trust policy.
