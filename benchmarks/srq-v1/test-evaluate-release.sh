@@ -30,6 +30,15 @@ jq -e '
 ' "$report" >/dev/null
 echo "PASS: model receipts cannot satisfy QEMU/physical qualifying tiers"
 
+# Even a receipt labelled as physical cannot satisfy that gate when its own
+# claim ceiling only promises an abstract model result.
+jq '.execution.tier = "physical"' "$1" > "$tmpdir/high-tier-low-ceiling.json"
+bash "$evaluator" --expected-source-sha "$expected" --evidence-root "$evidence_root" \
+  --output "$tmpdir/low-ceiling-report.json" "$tmpdir/high-tier-low-ceiling.json"
+jq -e 'any(.scenarios[]; .scenario_id == "UPDATE-004" and .status == "INSUFFICIENT_CLAIM_CEILING")' \
+  "$tmpdir/low-ceiling-report.json" >/dev/null
+echo "PASS: execution tier cannot override a lower claim ceiling"
+
 if bash "$evaluator" --expected-source-sha "$expected" --evidence-root "$evidence_root" \
   --output "$tmpdir/required-report.json" --require-qualified "$@" >"$tmpdir/require-qualified.out" 2>&1; then
   echo "FAIL: --require-qualified accepted an incomplete profile" >&2
