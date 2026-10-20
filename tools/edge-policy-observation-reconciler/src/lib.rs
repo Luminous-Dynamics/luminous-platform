@@ -7,6 +7,7 @@
 
 pub mod promotion_journal;
 pub mod replay_ledger;
+pub mod rollout_coordinator;
 
 pub mod freshness;
 
