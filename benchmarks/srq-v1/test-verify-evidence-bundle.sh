@@ -7,6 +7,7 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 source_sha="0123456789abcdef0123456789abcdef01234567"
 workflow_ref="Luminous-Dynamics/luminous-platform/.github/workflows/srq-v1.yml@refs/heads/main"
+workflow_sha="2222222222222222222222222222222222222222"
 run_id="12345"
 run_attempt="1"
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -55,7 +56,7 @@ make_archive() {
     --arg repo "Luminous-Dynamics/luminous-platform" \
     --arg workflow_path ".github/workflows/srq-v1.yml" \
     --arg workflow_ref "$workflow_ref" \
-    --arg workflow_sha "2222222222222222222222222222222222222222" \
+    --arg workflow_sha "$workflow_sha" \
     --arg event_name "workflow_dispatch" \
     --arg run_id "$run_id" \
     --arg run_attempt "$run_attempt" \
@@ -110,6 +111,7 @@ run_verifier() {
     --expected-source-sha "$expected_sha" \
     --expected-source-ref "$expected_ref" \
     --expected-workflow-ref "$workflow_ref" \
+    --expected-workflow-sha "$workflow_sha" \
     --expected-run-id "$run_id" \
     --expected-run-attempt "$run_attempt" \
     --extract-to "$destination"
@@ -124,6 +126,18 @@ if run_verifier "$tmp/good.tar.gz" "1111111111111111111111111111111111111111" re
   fail "wrong expected source SHA was accepted"
 fi
 echo "PASS: source-SHA mismatch fails closed"
+
+if bash "$verifier" --archive "$tmp/good.tar.gz" \
+  --expected-source-sha "$source_sha" \
+  --expected-source-ref refs/heads/main \
+  --expected-workflow-ref "$workflow_ref" \
+  --expected-workflow-sha "3333333333333333333333333333333333333333" \
+  --expected-run-id "$run_id" \
+  --expected-run-attempt "$run_attempt" \
+  --extract-to "$tmp/extracted-wrong-workflow-sha" >/dev/null 2>&1; then
+  fail "wrong expected workflow SHA was accepted"
+fi
+echo "PASS: workflow-SHA mismatch fails closed"
 
 if run_verifier "$tmp/good.tar.gz" "$source_sha" refs/heads/research "$tmp/extracted-wrong-ref" >/dev/null 2>&1; then
   fail "non-main source ref was accepted"
