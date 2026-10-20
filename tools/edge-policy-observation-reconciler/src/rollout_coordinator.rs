@@ -1121,7 +1121,10 @@ mod tests {
             crate::sha256_hex(&candidate),
             "the coordinator must not overwrite a state whose readback is ambiguous"
         );
-        assert_eq!(device.writes, 1, "only the candidate actuation was attempted");
+        assert_eq!(
+            device.writes, 1,
+            "only the candidate actuation was attempted"
+        );
         drop(ledger);
         drop(journal);
         remove_database(&journal_path);
