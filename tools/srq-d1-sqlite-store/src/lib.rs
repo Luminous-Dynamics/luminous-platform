@@ -154,7 +154,7 @@ impl SqliteD1Store {
                     .map_err(|error| format!("begin D1 schema initialization: {error}"))?;
                 tx.execute_batch(&SCHEMA[ddl_start..])
                     .map_err(|error| format!("install D1 schema: {error}"))?;
-                tx.execute_batch("PRAGMA user_version=1; PRAGMA application_id=1397905969;")
+                tx.execute_batch("PRAGMA user_version=1; PRAGMA application_id=1397903665;")
                     .map_err(|error| format!("version D1 schema: {error}"))?;
                 tx.commit()
                     .map_err(|error| format!("commit D1 schema initialization: {error}"))?;
