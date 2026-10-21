@@ -556,13 +556,6 @@ fn sqlite_version_tuple(s:&str)->Option<(u64,u64,u64)>{let mut p=s.split('.');le
 fn sql_i64(v:u64)->Result<i64,StoreError>{i64::try_from(v).map_err(|_|StoreError::InvalidInput("integer exceeds SQLite signed range"))}
 fn system_time_unix_seconds()->Result<u64,StoreError>{SystemTime::now().duration_since(UNIX_EPOCH).map(|d|d.as_secs()).map_err(|_|StoreError::Clock)}
 fn sql_err(context:&'static str)->impl FnOnce(rusqlite::Error)->StoreError{move|e|StoreError::Sqlite(format!("{context}: {e}"))}
-fn verify_schema_inventory(c:&Connection)->Result<(),StoreError>{
- let mut s=c.prepare("SELECT type,name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name").map_err(sql_err("prepare schema inventory"))?;
- let got:Vec<(String,String)>=s.query_map([],|r|Ok((r.get(0)?,r.get(1)?))).map_err(sql_err("read schema inventory"))?.collect::<Result<_,_>>().map_err(sql_err("collect schema inventory"))?;
- let want=vec![("index".to_string(),"promotion_decisions_target_generation".to_string()),("table".to_string(),"promotion_challenges".to_string()),("table".to_string(),"promotion_decisions".to_string()),("table".to_string(),"promotion_targets".to_string())];
- if got!=want{return Err(StoreError::CorruptStore(format!("schema inventory mismatch: {got:?}")));}Ok(())
-}
-
 #[cfg(test)]
 fn test_pause_at_promotion_boundary(point: &str) {
     use std::io::Write as _;
@@ -678,8 +671,8 @@ mod tests {
         let reopened=SqlitePolicyPromotionStore::open(&path).expect("reopen");
         let durable=reopened.committed_decision_for_challenge(CHALLENGE_ID).unwrap().unwrap();
         assert_eq!(durable,result);
-        let gen:i64=reopened.connection.query_row("SELECT generation FROM promotion_targets WHERE target_id=?1",params![TARGET],|r|r.get(0)).unwrap();
-        assert_eq!(gen,8);
+        let generation:i64=reopened.connection.query_row("SELECT generation FROM promotion_targets WHERE target_id=?1",params![TARGET],|r|r.get(0)).unwrap();
+        assert_eq!(generation,8);
         assert_eq!(reopened.integrity_check(),Ok(()));
         drop(reopened);let _=fs::remove_file(&path);
     }
@@ -689,8 +682,8 @@ mod tests {
         let signer=SigningKey::from_bytes(&[8u8;32]);let other=SigningKey::from_bytes(&[9u8;32]);
         let token=make_token(&challenge,now,&signer,&[]);
         assert!(matches!(store.verify_and_promote_at(&token,&trusted(&other),now),Err(StoreError::InvalidToken(_))));
-        let gen:i64=store.connection.query_row("SELECT generation FROM promotion_targets WHERE target_id=?1",params![TARGET],|r|r.get(0)).unwrap();
-        assert_eq!(gen,7);assert!(store.committed_decision_for_challenge(CHALLENGE_ID).unwrap().is_none());
+        let generation:i64=store.connection.query_row("SELECT generation FROM promotion_targets WHERE target_id=?1",params![TARGET],|r|r.get(0)).unwrap();
+        assert_eq!(generation,7);assert!(store.committed_decision_for_challenge(CHALLENGE_ID).unwrap().is_none());
         finish(&mut store,&path);
     }
     #[test]
@@ -714,8 +707,8 @@ mod tests {
         let token=make_token(&challenge,now,&signer,&[("srq_next_effective_policy_sha256",Value::Text(D0.into()))]);
         assert!(store.verify_and_promote_at(&token,&trusted(&signer),now).is_err());
         assert!(matches!(store.verify_and_promote_at(&make_token(&challenge,now,&signer,&[]),&trusted(&signer),now+60),Err(StoreError::ExpiredChallenge)));
-        let gen:i64=store.connection.query_row("SELECT generation FROM promotion_targets WHERE target_id=?1",params![TARGET],|r|r.get(0)).unwrap();
-        assert_eq!(gen,7);assert!(store.committed_decision_for_challenge(CHALLENGE_ID).unwrap().is_none());
+        let generation:i64=store.connection.query_row("SELECT generation FROM promotion_targets WHERE target_id=?1",params![TARGET],|r|r.get(0)).unwrap();
+        assert_eq!(generation,7);assert!(store.committed_decision_for_challenge(CHALLENGE_ID).unwrap().is_none());
         finish(&mut store,&path);
     }
     #[test]
