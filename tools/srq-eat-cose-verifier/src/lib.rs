@@ -94,7 +94,7 @@ pub fn verify_cose_eat(
     let sign1 = CoseSign1::from_slice(token_bytes)
         .map_err(|e| format!("COSE_Sign1 decode failed: {e}"))?;
 
-    if sign1.protected.header.alg != Some(iana::Algorithm::EdDSA) {
+    if sign1.protected.header.alg != Some(iana::Algorithm::EdDSA.into()) {
         return Err("protected COSE alg must be EdDSA".into());
     }
     if sign1.protected.header.key_id.as_slice() != trusted_key.key_id.as_slice() {
@@ -426,7 +426,7 @@ fn text_int_claim<'a>(claims: &'a ClaimMap, label: i64, name: &str) -> Result<&'
     }
 }
 
-fn bytes_claim(claims: &ClaimMap, label: i64, name: &str) -> Result<&[u8], String> {
+fn bytes_claim<'a>(claims: &'a ClaimMap, label: i64, name: &str) -> Result<&'a [u8], String> {
     use coset::cbor::value::Value;
     match int_claim(claims, label, name)? {
         Value::Bytes(value) => Ok(value),
