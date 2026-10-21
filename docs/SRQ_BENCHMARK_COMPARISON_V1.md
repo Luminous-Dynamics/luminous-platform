@@ -141,7 +141,7 @@ The test passed on exact tested code head [a66ebfc6e6e03f34d08a58e48eee07843b174
 
 SQLite's official WAL documentation records a rare WAL-reset corruption bug affecting SQLite releases through 3.51.2 and fixed in 3.51.3. The earlier SRQ reference timings used Ubuntu's system CLI 3.45.1; although the race produced one winner and passed integrity checks, those runs used a version in the documented vulnerable range. Retain them only as historical smoke observations, not as clean benchmark data.
 
-The revised workflow compiles SQLite CLI 3.54.1 from the upstream autoconf source, checks the published SHA3-256 and exact source ID, and makes both SQL reference scripts reject a different engine on PATH. The Rust D1 store also rejects linked engines below 3.51.3. Record sqlite_version(), sqlite_source_id(), journal mode, synchronous mode, host kernel and filesystem with every sample. Never combine old-version numbers with the new pinned-engine series.
+The revised workflow compiles SQLite CLI 3.54.1 from the upstream autoconf source, checks the published SHA3-256 and exact source ID, and makes both SQL reference scripts reject a different engine on PATH. The Rust D1 and policy-promotion stores accept only the upstream-documented fixed WAL-reset lines (3.44.6+, 3.50.7+, 3.51.3+, 3.53.0+) and explicitly reject the withdrawn 3.52.0 line. The store contracts also re-check expiry immediately before commit and test rollback when the authorization expires during transaction execution. Record `sqlite_version()`, `sqlite_source_id()`, journal mode, synchronous mode, host kernel and filesystem with every sample. Never combine old-version numbers with the new pinned-engine series.
 
 
 ## Policy-promotion transaction prototype (design target, not yet qualified)
