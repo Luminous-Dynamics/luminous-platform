@@ -137,11 +137,11 @@ pub fn verify_cose_eat(
         })
         .map_err(|e| format!("COSE signature verification failed: {e}"))?;
 
-    let mut payload_cursor = std::io::Cursor::new(payload);
+    let mut payload_remaining = payload;
     let value: coset::cbor::value::Value =
-        coset::cbor::de::from_reader(&mut payload_cursor)
+        coset::cbor::de::from_reader(&mut payload_remaining)
             .map_err(|e| format!("EAT claims CBOR decode failed: {e}"))?;
-    if payload_cursor.position() != payload.len() as u64 {
+    if !payload_remaining.is_empty() {
         return Err("trailing bytes after the EAT CBOR claims map are not permitted".into());
     }
     let claims = match value {
