@@ -376,7 +376,7 @@ impl SqlitePolicyPromotionStore {
             .map_err(sql_err("run SQLite integrity_check"))?;
         if integrity != "ok" { return Err(StoreError::CorruptStore(integrity)); }
         let mismatches: i64 = self.connection.query_row(
-            "SELECT count(*) FROM promotion_targets t LEFT JOIN promotion_decisions d ON d.decision_id=t.last_decision_id LEFT JOIN promotion_challenges c ON c.challenge_id=d.challenge_id WHERE (t.last_decision_id IS NULL AND t.generation>0) OR (t.last_decision_id IS NOT NULL AND (d.decision_id IS NULL OR c.consumed_decision_id!=d.decision_id OR d.target_id!=t.target_id OR d.next_generation!=t.generation))",
+            "SELECT count(*) FROM promotion_targets t LEFT JOIN promotion_decisions d ON d.decision_id=t.last_decision_id LEFT JOIN promotion_challenges c ON c.challenge_id=d.challenge_id WHERE (t.last_decision_id IS NULL AND EXISTS(SELECT 1 FROM promotion_decisions d2 WHERE d2.target_id=t.target_id AND d2.next_generation=t.generation)) OR (t.last_decision_id IS NOT NULL AND (d.decision_id IS NULL OR c.consumed_decision_id IS NULL OR c.consumed_decision_id!=d.decision_id OR d.target_id!=t.target_id OR d.next_generation!=t.generation OR d.approved_artifact_sha256!=t.approved_artifact_sha256 OR d.next_effective_policy_sha256!=t.effective_policy_sha256 OR d.corpus_sha256!=t.corpus_sha256 OR d.deployment_id!=t.deployment_id))",
             [], |row| row.get(0)
         ).map_err(sql_err("verify promotion invariants"))?;
         if mismatches != 0 { return Err(StoreError::CorruptStore(format!("{mismatches} lifecycle mismatches"))); }
@@ -385,19 +385,27 @@ impl SqlitePolicyPromotionStore {
 }
 
 fn verify_schema_inventory(connection: &Connection) -> Result<(), StoreError> {
-    let expected: Vec<(&str,&str)> = vec![
-        ("table","promotion_challenges"),
-        ("table","promotion_decisions"),
-        ("table","promotion_targets"),
-        ("index","promotion_decisions_target_generation"),
-    ];
-    let mut stmt=connection.prepare("SELECT type,name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name")
-        .map_err(sql_err("prepare schema inventory"))?;
-    let found: Vec<(String,String)> = stmt.query_map([],|row|Ok((row.get(0)?,row.get(1)?)))
-        .map_err(sql_err("query schema inventory"))?.collect::<Result<_,_>>()
-        .map_err(sql_err("collect schema inventory"))?;
-    let expected: Vec<(String,String)> = expected.into_iter().map(|(a,b)|(a.into(),b.into())).collect();
-    if found != expected { return Err(StoreError::CorruptStore(format!("schema inventory mismatch: {found:?}"))); }
+    fn objects(connection: &Connection) -> Result<Vec<(String, String, String)>, StoreError> {
+        let mut stmt = connection.prepare(
+            "SELECT type,name,sql FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY type,name"
+        ).map_err(sql_err("prepare schema SQL inventory"))?;
+        stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .map_err(sql_err("query schema SQL inventory"))?
+            .collect::<Result<_, _>>()
+            .map_err(sql_err("collect schema SQL inventory"))
+    }
+
+    let expected = Connection::open_in_memory()
+        .map_err(|error| StoreError::Sqlite(format!("create expected schema: {error}")))?;
+    let ddl_start = SCHEMA.find("CREATE TABLE IF NOT EXISTS promotion_targets")
+        .ok_or_else(|| StoreError::CorruptStore("embedded schema lacks promotion_targets".into()))?;
+    expected.execute_batch(&SCHEMA[ddl_start..])
+        .map_err(|error| StoreError::CorruptStore(format!("compile expected schema: {error}")))?;
+    let found_objects = objects(connection)?;
+    let expected_objects = objects(&expected)?;
+    if found_objects != expected_objects {
+        return Err(StoreError::CorruptStore("schema SQL differs from the embedded SRQ policy-promotion schema".into()));
+    }
     Ok(())
 }
 
@@ -505,7 +513,7 @@ fn verify_signed_authorization(token:&[u8],key:&TrustedPromotionKey)->Result<Ver
         issued_at_unix_seconds:uint("iat")?,expires_at_unix_seconds:uint("exp")?,
         envelope_sha256:sha256_hex(token),
     };
-    if !valid_identifier(&claims.challenge_id)||!valid_identifier(&claims.decision_id)||!valid_identifier(&claims.target_id)||!valid_identifier(&claims.audience)||!valid_identifier(&claims.deployment_id) {
+    if !valid_identifier(&claims.challenge_id)||!valid_identifier(&claims.decision_id)||!valid_identifier(&claims.target_id)||!valid_identifier(&claims.audience)||!valid_deployment_id(&claims.deployment_id) {
         return Err(StoreError::InvalidToken("identifier syntax invalid".into()));
     }
     if claims.next_generation!=claims.previous_generation.checked_add(1).ok_or(StoreError::InvalidInput("generation overflow"))? {
@@ -520,7 +528,7 @@ fn validate_state(s:&InitialTargetState)->Result<(),StoreError>{
     sql_i64(s.generation)?;Ok(())
 }
 fn validate_challenge_shape(c:&IssuedPromotionChallenge)->Result<(),StoreError>{
-    if !valid_identifier(&c.challenge_id)||!valid_identifier(&c.target_id)||!valid_identifier(&c.audience)||!valid_identifier(&c.decision_id)||!valid_identifier(&c.deployment_id){return Err(StoreError::InvalidInput("challenge identifier invalid"));}
+    if !valid_identifier(&c.challenge_id)||!valid_identifier(&c.target_id)||!valid_identifier(&c.audience)||!valid_identifier(&c.decision_id)||!valid_deployment_id(&c.deployment_id){return Err(StoreError::InvalidInput("challenge identifier invalid"));}
     if c.nonce.len()<16||c.nonce.len()>64{return Err(StoreError::InvalidInput("nonce must be 16..64 bytes"));}
     if c.expected_signer_key_id_hex.is_empty()||c.expected_signer_key_id_hex.len()>128||c.expected_signer_key_id_hex.bytes().any(|b|!b.is_ascii_hexdigit()||b.is_ascii_uppercase()){return Err(StoreError::InvalidInput("signer key ID must be lowercase hex"));}
     for d in [&c.previous_approved_artifact_sha256,&c.previous_effective_policy_sha256,&c.approved_artifact_sha256,&c.next_effective_policy_sha256,&c.corpus_sha256]{if !is_sha256(d){return Err(StoreError::InvalidInput("challenge digest invalid"));}}
