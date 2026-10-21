@@ -9,6 +9,7 @@ on:
       - "tools/srq-challenge-promotion-model/**"
       - "tools/srq-process-kill-model/**"
       - "tools/srq-boot-reconciliation-model/**"
+      - "tools/srq-boot-observation-adapter/**"
       - "docs/SOVEREIGN_RECOVERY_QUALIFICATION_V1.md"
       - "docs/SRQ_PROVENANCE_ATTESTATION_V1.md"
       - "docs/SRQ_PROCESS_KILL_MODEL_V1.md"
@@ -245,6 +246,18 @@ jobs:
           grep -Fq 'test tests::digest_shape_is_not_treated_as_authenticity ... ok' "$model_log"
           echo "LIMIT: structural reconciliation model only; no signature, trusted boot observation, QEMU or physical qualification."
 
+      - name: Test D0 NixOS boot observation adapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          adapter_log="$RUNNER_TEMP/srq-boot-observation-adapter-test.log"
+          cargo test --manifest-path tools/srq-boot-observation-adapter/Cargo.toml --locked -- --nocapture 2>&1 | tee "$adapter_log"
+          grep -Fq 'test result: ok. 10 passed; 0 failed' "$adapter_log"
+          grep -Fq 'test tests::live_userspace_switch_without_reboot_is_blocked ... ok' "$adapter_log"
+          grep -Fq 'test tests::observer_never_supplies_policy_artifact_or_measurement_proof ... ok' "$adapter_log"
+          echo "PASS: standalone D0 observer distinguishes booted from current deployment without claiming attestation."
+          echo "LIMIT: local diagnostics only; no promotion binding, policy/artifact measurement, target signature, TPM quote or release qualification."
+
       - name: Compile release qualification status from observed receipts
         shell: bash
         run: |
@@ -285,8 +298,7 @@ jobs:
             srq-challenge-promotion-model-test.log
             srq-evidence-003-model-result.json
             srq-boot-reconciliation-model-test.log
-            srq-challenge-promotion-model-test.log
-            srq-evidence-003-model-result.json
+            srq-boot-observation-adapter-test.log
             srq-process-kill-model-test.log
             srq-recovery-model-test.log
             srq-release-qualification.json
@@ -308,6 +320,7 @@ jobs:
           process_kill_sha="$(sha256sum "$bundle_dir/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
           sqlite_reference_sha="$(sha256sum "$bundle_dir/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
           boot_reconciliation_sha="$(sha256sum "$bundle_dir/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
+          boot_observation_adapter_sha="$(sha256sum "$bundle_dir/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
           corpus_sha="$(sha256sum benchmarks/srq-v1/scenarios.json | cut -d ' ' -f 1)"
           actual_head="$(git rev-parse HEAD)"
           test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
@@ -328,6 +341,7 @@ jobs:
             --arg process_kill_sha "$process_kill_sha" \
             --arg sqlite_reference_sha "$sqlite_reference_sha" \
             --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
+            --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" \
             '{
               schema_version: 1,
               profile_id: "SRQ-1",
@@ -370,6 +384,14 @@ jobs:
                 status: "PASS",
                 evidence_artifact: "srq-boot-reconciliation-model-test.log",
                 evidence_sha256: $boot_reconciliation_sha
+              }, {
+                test_id: "SRQ-BOOT-OBSERVATION-ADAPTER-D0-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-boot-observation-adapter-test.log",
+                evidence_sha256: $boot_observation_adapter_sha
               }]
             }' > "$bundle_dir/manifest.json"
 
@@ -389,6 +411,7 @@ jobs:
             ${{ runner.temp }}/srq-challenge-promotion-model-test.log
             ${{ runner.temp }}/srq-evidence-003-model-result.json
             ${{ runner.temp }}/srq-boot-reconciliation-model-test.log
+            ${{ runner.temp }}/srq-boot-observation-adapter-test.log
             ${{ runner.temp }}/srq-process-kill-model-test.log
             ${{ runner.temp }}/srq-sqlite-promotion-reference.log
             ${{ runner.temp }}/srq-release-qualification.json
