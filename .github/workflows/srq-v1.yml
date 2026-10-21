@@ -316,6 +316,7 @@ jobs:
           cargo test --manifest-path tools/srq-d1-sqlite-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$store_log"
           grep -Fq 'PASS: typed Rust D1 store commits once, rejects replay after reopen, and reconciles the original receipt' "$store_log"
           grep -Fq 'PASS: typed Rust D1 store rejects wrong target, expiry, schema adoption, and challenge deletion without mutation' "$store_log"
+          grep -Fq 'PASS: D1 store rejects altered trigger SQL even when trusted names are preserved' "$store_log"
           grep -Fq 'PASS: exactly one typed Rust D1 consumption across 64 independent SQLite connections' "$store_log"
           grep -Fq 'PASS: Rust SQLite adapter survived 30 actual SIGKILL trials across three transaction boundaries' "$store_log"
           test "$(grep -c '^PASS: Rust SQLite SIGKILL at ' "$store_log")" -eq 30
