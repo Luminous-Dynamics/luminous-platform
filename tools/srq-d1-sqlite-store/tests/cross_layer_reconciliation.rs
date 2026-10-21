@@ -257,12 +257,8 @@ fn run_real_lifecycle() -> (
         deployment_id: committed.deployment_id.clone(),
         previous_generation: committed.previous_generation,
         next_generation: committed.next_generation,
-        // The reconciler's older schema has both approved_policy_digest and
-        // artifact_digest; the policy store's approved artifact digest fills
-        // both fields until those schemas are normalized.
-        approved_policy_digest: committed.approved_artifact_sha256.clone(),
+        approved_artifact_digest: committed.approved_artifact_sha256.clone(),
         effective_policy_digest: committed.effective_policy_sha256.clone(),
-        artifact_digest: committed.approved_artifact_sha256.clone(),
         corpus_digest: committed.corpus_sha256.clone(),
     };
     let durable = CommittedPromotion {
@@ -271,9 +267,8 @@ fn run_real_lifecycle() -> (
         consumed_challenge_id: committed.challenge_id.clone(),
         deployment_id: committed.deployment_id.clone(),
         generation: committed.next_generation,
-        approved_policy_digest: committed.approved_artifact_sha256.clone(),
+        approved_artifact_digest: committed.approved_artifact_sha256.clone(),
         effective_policy_digest: committed.effective_policy_sha256.clone(),
-        artifact_digest: committed.approved_artifact_sha256.clone(),
         corpus_digest: committed.corpus_sha256.clone(),
     };
     let challenge = BootObservationChallenge {
