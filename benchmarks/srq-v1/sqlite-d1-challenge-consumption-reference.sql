@@ -132,6 +132,12 @@ BEGIN
     SELECT RAISE(ABORT, 'D1 challenge is already consumed or cannot be unconsumed');
 END;
 
+CREATE TRIGGER d1_challenge_cannot_be_deleted
+BEFORE DELETE ON d1_observation_challenges
+BEGIN
+    SELECT RAISE(ABORT, 'D1 challenge issuance records are append-only');
+END;
+
 CREATE TRIGGER d1_receipt_is_immutable
 BEFORE UPDATE ON d1_verified_observation_receipts
 BEGIN
