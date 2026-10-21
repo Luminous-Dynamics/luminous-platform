@@ -30,7 +30,7 @@ The **Luminous Platform** is the infrastructure and operating environment for Lu
 ┌──────────────────────▼──────────────────────────────────┐
 │                  NETWORK LAYER                          │
 │  xenia-peer · xenia-wire · mycelix mesh                 │
-└─────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────┘
 ```
 
 ## Platform Components
@@ -80,6 +80,45 @@ inputs.nixward.url         = "github:Luminous-Dynamics/nixward";
 | luminous-edge | sovereign-boot | nixward | sovereign-ops | nixpkgs |
 |---------------|----------------|---------|---------------|---------|
 | v0.1 | v0.3.4f (605735c) | main (Aug 2026) | incubating | nixos-unstable |
+
+## Government & Regulated Infrastructure
+
+Luminous Platform is being organized into a product line for secure administrative, public-service, research, regulated-enterprise and appropriate unclassified government IT. This is a product taxonomy and qualification effort—not a claim of certification or deployment authorization.
+
+- [Government-network product line v1](docs/GOVERNMENT_NETWORK_PRODUCT_LINE_V1.md)
+- [Global vendor interoperability and firmware services v1](docs/GLOBAL_VENDOR_INTEROPERABILITY_AND_FIRMWARE_SERVICES_V1.md)
+- [Vendor adapter execution contract v1](docs/VENDOR_ADAPTER_EXECUTION_CONTRACT_V1.md)
+- [First vendor adapter lab slice v1](docs/VENDOR_ADAPTER_FIRST_LAB_SLICE_V1.md)
+- [Vendor management endpoint and credential boundary v1](docs/VENDOR_MANAGEMENT_ENDPOINT_SECURITY_V1.md)
+- [Endpoint profile schema v1](schemas/vendor-management-endpoint-profile-v1.schema.json)
+- [Endpoint profile validator](tools/validate_vendor_management_endpoint_profile.py)
+- [Synthetic endpoint profile fixture](tests/fixtures/vendor-management-endpoint-profile-v1.json)
+- [Endpoint profile adversarial tests](tests/test_vendor_management_endpoint_profile.py)
+- [Endpoint approval record schema](schemas/vendor-management-endpoint-approval-v1.schema.json)
+- [Endpoint approval/profile binding validator](tools/validate_vendor_management_endpoint_approval.py)
+- [Endpoint approval trust-store schema](schemas/vendor-management-approval-trust-store-v1.schema.json)
+- [Offline Ed25519 endpoint approval verifier](tools/verify_vendor_management_endpoint_approval_signature.py)
+- [Approval signature verifier contract](docs/VENDOR_ENDPOINT_APPROVAL_SIGNATURE_VERIFICATION_V1.md)
+- Capability promotion remains blocked until exact tested-scope evidence is externally pinned and reviewed.
+- [Approval signature adversarial tests](tests/test_vendor_management_endpoint_approval_signature.py)
+- [Synthetic pending approval fixture](tests/fixtures/vendor-management-endpoint-approval-v1.json)
+- [Endpoint approval adversarial tests](tests/test_vendor_management_endpoint_approval.py)
+- [Exact-head endpoint qualification runner](tools/qualify_vendor_endpoint_contracts.py)
+- [Qualification runner contract tests](tests/test_vendor_endpoint_qualification_runner.py)
+- [Vendor adapter capability registry](security/vendor-adapter-capability-registry-v1.json)
+- [Vendor adapter capability schema](schemas/vendor-adapter-capability-registry-v1.schema.json)
+- [Vendor mutation receipt schema](schemas/vendor-operation-effect-receipt-v1.schema.json)
+- [Hardware portfolio research register v1](hardware/portfolio-v1.json)
+- [Hardware portfolio schema v1](schemas/hardware-portfolio-v1.schema.json)
+- [Single-site office/lab draft BOM](profiles/sa-single-site-office-lab-v1.json)
+- [Hardware deployment profile schema](schemas/hardware-deployment-profile-v1.schema.json)
+- [Government control evidence matrix v1](docs/GOVERNMENT_NETWORK_CONTROL_EVIDENCE_MATRIX_V1.md)
+- [Machine-readable control evidence baseline](security/control-evidence-matrix-v1.json)
+- [South African procurement and single-site execution track v1](docs/SA_PROCUREMENT_AND_SINGLE_SITE_EXECUTION_TRACK_V1.md)
+- [Control matrix schema](schemas/hardware-control-evidence-matrix-v1.schema.json)
+- [Open-hardware design package plan](docs/OPEN_HARDWARE_DESIGN_PACKAGE_PLAN_V1.md)
+
+The register explicitly separates candidate devices, upstream design/software references and unselected equipment gaps. All hardware remains unqualified until exact-model evidence is recorded. Queue status, public design files, and an OS that boots are not qualification evidence.
 
 ## License
 

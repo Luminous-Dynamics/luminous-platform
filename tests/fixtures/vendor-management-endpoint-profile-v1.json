@@ -1,0 +1,103 @@
+{
+  "schema_version": "luminous.vendor-management-endpoint-profile.v1",
+  "profile_id": "synthetic-meraki-readonly-lab",
+  "profile_revision": 1,
+  "state": "draft",
+  "as_of": "2026-10-11",
+  "adapter": {
+    "adapter_id": "cisco-meraki-dashboard",
+    "adapter_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "vendor": "Cisco Meraki",
+    "product_family": "Meraki MX"
+  },
+  "scope": {
+    "model": "synthetic-MX-fixture",
+    "hardware_revision": "synthetic-rev-1",
+    "software_version": "synthetic-fw-0.0.1",
+    "deployment_jurisdiction": {
+      "state": "unresolved",
+      "value": null,
+      "rationale": "Synthetic fixture only; no deployment jurisdiction has been assessed.",
+      "evidence_refs": []
+    },
+    "hardware_or_commercial_region": {
+      "state": "unresolved",
+      "value": null,
+      "rationale": "Synthetic fixture only; no regional SKU or entitlement claim is made.",
+      "evidence_refs": []
+    },
+    "support_jurisdiction": {
+      "state": "not_applicable",
+      "value": null,
+      "rationale": "No support contract exists for this synthetic fixture.",
+      "evidence_refs": []
+    },
+    "expected_principal_ref": "principal:synthetic-readonly",
+    "expected_tenant_or_org_ref": "scope:synthetic-org-fixture"
+  },
+  "endpoint": {
+    "kind": "vendor_cloud_api",
+    "transport": "https",
+    "host": "api.example.invalid",
+    "port": 443,
+    "api_base_path": "/api/v1"
+  },
+  "peer_verification": {
+    "method": "platform_trust_store",
+    "trust_reference": "trust:synthetic-public-ca-bundle",
+    "hostname_validation": true,
+    "minimum_tls_version": "TLSv1.2",
+    "insecure_fallback_allowed": false
+  },
+  "redirect_policy": {
+    "mode": "deny",
+    "allowed_origins": [],
+    "credential_forwarding_across_origin": false
+  },
+  "authentication": {
+    "mode": "api_token_reference",
+    "credential_reference": "secretref:synthetic-readonly-token",
+    "expected_principal_ref": "principal:synthetic-readonly",
+    "permission_scope_ref": "permission:read-only-fixture",
+    "read_only": true,
+    "mutation_enabled": false,
+    "expected_tenant_or_org_ref": "scope:synthetic-org-fixture"
+  },
+  "egress": {
+    "allowlist_policy_ref": "egress-policy:synthetic-lab-only",
+    "proxy_mode": "disabled",
+    "ambient_proxy_allowed": false,
+    "proxy_profile_ref": null
+  },
+  "limits": {
+    "connect_timeout_ms": 3000,
+    "request_timeout_ms": 10000,
+    "max_response_bytes": 1048576,
+    "max_redirects": 0,
+    "max_retries": 2,
+    "rate_limit_policy_ref": "rate-limit:synthetic-bounded-read-only"
+  },
+  "privacy": {
+    "secrets_in_profile": false,
+    "secrets_in_logs": false,
+    "raw_configuration_in_shared_dht": false,
+    "customer_personal_data_in_shared_dht": false
+  },
+  "source_refs": [
+    {
+      "url": "https://developer.cisco.com/meraki/api-v1/getting-started/",
+      "purposes": [
+        "endpoint_selection",
+        "product_api"
+      ],
+      "last_reviewed_on": "2026-10-11"
+    },
+    {
+      "url": "https://www.rfc-editor.org/rfc/rfc8040",
+      "purposes": [
+        "protocol_contract"
+      ],
+      "last_reviewed_on": "2026-10-11"
+    }
+  ]
+}
