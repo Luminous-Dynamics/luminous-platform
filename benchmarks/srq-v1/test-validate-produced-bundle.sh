@@ -288,6 +288,18 @@ if run_validator "$tmp/bad-d1-store-lock.tar.gz" "$source_sha" "$event_sha" "$wo
 fi
 echo "PASS: D1 Rust SQLite store dependency lock digest mismatch fails closed"
 
+make_archive "$tmp/bad-policy-promotion.tar.gz" false false false false false false true
+if run_validator "$tmp/bad-policy-promotion.tar.gz" "$source_sha" "$event_sha" "$workflow_sha" "$tmp/bad-policy-promotion.out" >/dev/null 2>&1; then
+  fail "policy-promotion evidence digest mismatch was accepted"
+fi
+echo "PASS: policy-promotion evidence digest mismatch fails closed"
+
+make_archive "$tmp/bad-policy-promotion-lock.tar.gz" false false false false false false false true
+if run_validator "$tmp/bad-policy-promotion-lock.tar.gz" "$source_sha" "$event_sha" "$workflow_sha" "$tmp/bad-policy-promotion-lock.out" >/dev/null 2>&1; then
+  fail "policy-promotion lock digest mismatch was accepted"
+fi
+echo "PASS: policy-promotion lock digest mismatch fails closed"
+
 make_archive "$tmp/bad-checksum.tar.gz" false true
 if run_validator "$tmp/bad-checksum.tar.gz" "$source_sha" "$event_sha" "$workflow_sha" "$tmp/bad-checksum.out" >/dev/null 2>&1; then
   fail "tampered evidence bytes were accepted"
