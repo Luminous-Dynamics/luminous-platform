@@ -173,6 +173,35 @@ pub struct PromotionPermit {
     expires_at_unix_ms: u64,
 }
 
+/// Read-only binding produced only when a live, process-local promotion permit
+/// still matches the durable journal's Verified state. It is intentionally not
+/// Clone, serializable, or publicly constructible. Callers must still account for
+/// the time-of-check/time-of-use window before external device actuation.
+#[derive(Debug)]
+pub struct VerifiedPromotionBinding {
+    operation_id: String,
+    target_token: String,
+    generation: u64,
+    baseline_policy_sha256: String,
+    candidate_policy_sha256: String,
+    challenge_id: String,
+    receipt_sha256: String,
+    observed_at_unix_ms: u64,
+    expires_at_unix_ms: u64,
+}
+
+impl VerifiedPromotionBinding {
+    pub fn operation_id(&self) -> &str { &self.operation_id }
+    pub fn target_token(&self) -> &str { &self.target_token }
+    pub fn generation(&self) -> u64 { self.generation }
+    pub fn baseline_policy_sha256(&self) -> &str { &self.baseline_policy_sha256 }
+    pub fn candidate_policy_sha256(&self) -> &str { &self.candidate_policy_sha256 }
+    pub fn challenge_id(&self) -> &str { &self.challenge_id }
+    pub fn receipt_sha256(&self) -> &str { &self.receipt_sha256 }
+    pub fn observed_at_unix_ms(&self) -> u64 { self.observed_at_unix_ms }
+    pub fn expires_at_unix_ms(&self) -> u64 { self.expires_at_unix_ms }
+}
+
 /// Inputs for the public challenge-verification and promotion-evidence gate.
 ///
 /// The strings are the exact bytes to be schema-validated and digest-bound.
@@ -814,6 +843,80 @@ impl PromotionJournal {
     pub fn get(&self, operation_id: &str) -> Result<Option<PromotionOperation>, String> {
         let connection = connect(&self.path)?;
         get_operation_conn(&connection, operation_id)
+    }
+
+    /// Validate a process-local permit against the current durable journal and
+    /// return a private-field binding for read-only fleet classification.
+    ///
+    /// This does not apply or promote a device policy. A caller must revalidate
+    /// immediately before actuation and reconcile actual device state after a
+    /// timeout; the returned binding does not eliminate external TOCTOU races.
+    pub fn validate_permit(
+        &self,
+        permit: &PromotionPermit,
+        now_unix_ms: u64,
+    ) -> Result<VerifiedPromotionBinding, String> {
+        if permit.session_id != self.session_id {
+            return Err("promotion permit belongs to a different verifier process session".to_owned());
+        }
+        if now_unix_ms > permit.expires_at_unix_ms {
+            return Err("promotion evidence expired before fleet evaluation".to_owned());
+        }
+
+        let mut connection = connect(&self.path)?;
+        let transaction = connection
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(|error| format!("cannot begin permit validation transaction: {error}"))?;
+        let operation = get_operation_conn(&transaction, &permit.operation_id)?
+            .ok_or_else(|| "promotion permit references an unknown operation".to_owned())?;
+        if operation.state != PromotionState::Verified {
+            return Err(format!("promotion permit is no longer Verified: {:?}", operation.state));
+        }
+        if operation.evidence_expires_at_unix_ms.is_none_or(|expiry| now_unix_ms > expiry)
+            || operation.evidence_observed_at_unix_ms.is_none_or(|observed| observed > now_unix_ms)
+        {
+            return Err("promotion evidence is outside its durable time window".to_owned());
+        }
+        let stored_session: Option<String> = transaction
+            .query_row(
+                "SELECT verification_session_id FROM promotion_operations WHERE operation_id = ?1;",
+                params![permit.operation_id],
+                |row| row.get(0),
+            )
+            .map_err(|error| format!("cannot read permit verification session: {error}"))?;
+        if stored_session.as_deref() != Some(self.session_id.as_str()) {
+            return Err("durable verification session does not match current process".to_owned());
+        }
+        let challenge_id = operation.challenge_id.clone()
+            .ok_or_else(|| "verified operation has no challenge ID".to_owned())?;
+        let receipt_sha256 = operation.receipt_sha256.clone()
+            .ok_or_else(|| "verified operation has no receipt digest".to_owned())?;
+        let observed_at_unix_ms = operation.evidence_observed_at_unix_ms
+            .ok_or_else(|| "verified operation has no evidence observation time".to_owned())?;
+        let expires_at_unix_ms = operation.evidence_expires_at_unix_ms
+            .ok_or_else(|| "verified operation has no evidence expiry".to_owned())?;
+        if permit.expires_at_unix_ms != expires_at_unix_ms {
+            return Err("process-local permit expiry does not match durable evidence expiry".to_owned());
+        }
+        if operation.observed_policy_sha256.as_deref()
+            != Some(operation.candidate_policy_sha256.as_str())
+        {
+            return Err("verified operation no longer reads back the candidate policy".to_owned());
+        }
+        transaction.commit()
+            .map_err(|error| format!("cannot commit permit validation transaction: {error}"))?;
+
+        Ok(VerifiedPromotionBinding {
+            operation_id: operation.operation_id,
+            target_token: operation.target_token,
+            generation: operation.generation,
+            baseline_policy_sha256: operation.baseline_policy_sha256,
+            candidate_policy_sha256: operation.candidate_policy_sha256,
+            challenge_id,
+            receipt_sha256,
+            observed_at_unix_ms,
+            expires_at_unix_ms,
+        })
     }
 
     /// Return every non-terminal operation with an explicit fail-closed
