@@ -10,3 +10,7 @@ publish = false
 rusqlite = { version = "=0.40.2", features = ["bundled"] }
 sha2 = "=0.10.9"
 srq-eat-cose-verifier = { path = "../srq-eat-cose-verifier" }
+
+[dev-dependencies]
+coset = "=0.4.2"
+ed25519-dalek = "=3.0.0"
