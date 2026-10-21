@@ -14,7 +14,7 @@ COSE signature/claim verification remains in `srq-eat-cose-verifier`. The new st
 
 ## Type-state boundary
 
-The verifier's public `ChallengeConsumer` trait now accepts `VerifiedChallengeConsumption`, not a caller-constructible `ChallengeConsumptionRequest`. The capability wraps the request in a private field and exposes read-only access for durable-store implementations. Its value is created by `verify_and_consume` only after `verify_cose_eat` succeeds, preventing ordinary external callers from assembling arbitrary field values and passing them directly through this trait boundary.
+The verifier's public `ChallengeConsumer` trait now accepts `VerifiedChallengeConsumption`, not a caller-constructible `ChallengeConsumptionRequest`. The capability wraps the request in a private field and exposes read-only access for durable-store implementations. Its value is created by `verify_and_consume` only after `verify_cose_eat` succeeds, preventing ordinary external callers from assembling arbitrary field values and passing them directly through this trait boundary. An external-crate `compile_fail` doctest checks that the private field cannot be forged from ordinary downstream code. This is compile-time API hardening, not protection against a modified verifier binary or privileged code inside the verifier crate.
 
 This is a compile-time API boundary, not a complete process-isolation or binary-integrity guarantee. Code compiled into the verifier crate can create the private wrapper, and a malicious or compromised verifier binary can still bypass the intended call path. The SQLite store still rechecks every stored challenge binding, schema identity, nonce digest and freshness bound transactionally.
 
@@ -41,7 +41,7 @@ The Rust unit suite covers:
 - 64 independent SQLite connections racing to consume one challenge;
 - actual child-process `SIGKILL` at three boundaries in the Rust adapter itself: after receipt insert (uncommitted), after challenge pointer update (uncommitted), and after commit but before acknowledgement.
 
-The SIGKILL tests use test-only fault hooks that are compiled only under `cfg(test)`. The intended invariant is old/unconsumed state for the two pre-commit kills, and one complete committed receipt for the post-commit-before-ack kill. Each trial reopens the file through a fresh `SqliteD1Store` instance and checks SQLite integrity and the receipt/challenge relationship.
+The SIGKILL tests use test-only fault hooks that are compiled only under `cfg(test)`. The intended invariant is old/unconsumed state for the two pre-commit kills, and one complete committed receipt for the post-commit-before-ack kill. Each trial reopens the file through a fresh `SqliteD1Store` instance and checks SQLite integrity and the receipt/challenge relationship. These child-process tests call the adapter's private transaction helper directly so each SQLite boundary can be interrupted deterministically; the separate `srq-eat-cose-verifier` tests exercise `verify_and_consume` against test stores. Thus API composition and storage durability have component coverage, but not yet an end-to-end signed-COSE-to-real-SQLite process-kill test.
 
 The standalone SQL script remains a second reference, including its 100 process-kill trials. Agreement between two implementations is useful, but is not an independent proof if both encode the same mistaken assumptions.
 
