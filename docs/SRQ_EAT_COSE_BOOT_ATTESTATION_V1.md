@@ -61,7 +61,7 @@ For any field with a digest-shaped representation, validate exact length and low
 
 ## Initial D1 verifier prototype (2026-10-21)
 
-The new Rust crate uses the maintained `coset` COSE implementation and Ed25519 verification rather than inventing a signature envelope. Its intended initial contract is deliberately narrow:
+The new Rust crate uses the maintained `coset` COSE implementation and Ed25519 verification rather than inventing a signature envelope. Its intended initial contract is deliberately narrow: It pins the fully specified COSE `Ed25519` algorithm identifier (-19), as defined by RFC 9864, instead of the older polymorphic `EdDSA` identifier (-8).
 
 - Accept only protected COSE `alg=EdDSA` and the key ID selected by the external trust policy; reject unprotected headers, detached payloads, unknown claims, duplicate CBOR claim keys, oversize tokens and malformed encodings.
 - Bind the EAT nonce to a verifier-created 16–64 byte nonce; require the exact challenge expiry, verifier audience, provisioned target token, decision ID, logical generation, artifact/policy/corpus digests and immutable expected deployment identity.
