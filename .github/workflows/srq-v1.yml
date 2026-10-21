@@ -361,11 +361,12 @@ jobs:
           set -euo pipefail
           promotion_log="$RUNNER_TEMP/srq-policy-promotion-store-test.log"
           cargo test --manifest-path tools/srq-policy-promotion-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$promotion_log"
-          grep -Fq 'test result: ok. 10 passed; 0 failed' "$promotion_log"
+          grep -Fq 'test result: ok. 11 passed; 0 failed' "$promotion_log"
           grep -Fq 'tests::signed_authorization_commits_decision_challenge_and_generation_atomically ... ok' "$promotion_log"
           grep -Fq 'tests::invalid_signature_does_not_consume_challenge_or_mutate_target ... ok' "$promotion_log"
           grep -Fq 'tests::replay_after_reopen_is_rejected_and_original_decision_is_recoverable ... ok' "$promotion_log"
           grep -Fq 'tests::expiry_and_wrong_target_policy_generation_digest_are_rejected_without_mutation ... ok' "$promotion_log"
+          grep -Fq 'tests::stale_previous_approved_artifact_fails_closed_without_consuming_challenge ... ok' "$promotion_log"
           grep -Fq 'tests::one_of_sixty_four_independent_connections_commits ... ok' "$promotion_log"
           grep -Fq 'tests::challenge_nonce_is_persisted_only_as_a_hash ... ok' "$promotion_log"
           grep -Fq 'tests::malformed_or_modified_schema_is_rejected_on_reopen ... ok' "$promotion_log"
