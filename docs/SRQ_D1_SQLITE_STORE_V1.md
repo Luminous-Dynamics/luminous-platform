@@ -12,6 +12,12 @@ The verifier/store composition is intended to be:
 
 COSE signature/claim verification remains in `srq-eat-cose-verifier`. The new store commits the verified observation receipt and one-time challenge pointer in the same SQLite transaction. The adapter itself does not authenticate signatures and should not be treated as a way to accept a caller-constructed `ChallengeConsumptionRequest`.
 
+## Type-state boundary
+
+The verifier's public `ChallengeConsumer` trait now accepts `VerifiedChallengeConsumption`, not a caller-constructible `ChallengeConsumptionRequest`. The capability wraps the request in a private field and exposes read-only access for durable-store implementations. Its value is created by `verify_and_consume` only after `verify_cose_eat` succeeds, preventing ordinary external callers from assembling arbitrary field values and passing them directly through this trait boundary.
+
+This is a compile-time API boundary, not a complete process-isolation or binary-integrity guarantee. Code compiled into the verifier crate can create the private wrapper, and a malicious or compromised verifier binary can still bypass the intended call path. The SQLite store still rechecks every stored challenge binding, schema identity, nonce digest and freshness bound transactionally.
+
 ## Store contract
 
 - **Explicit identity and schema fingerprint:** a genuinely empty SQLite file receives an application ID and schema version. A nonempty unversioned file, unknown version, missing/extra table/trigger, altered table or trigger SQL, or mismatched application ID is rejected; the verifier builds the expected schema using the same SQLite engine and compares each persisted schema object's SQL definition, not just its name.
