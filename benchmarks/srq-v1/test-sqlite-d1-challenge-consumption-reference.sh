@@ -246,10 +246,10 @@ command -v setsid >/dev/null 2>&1 || {
 run_d1_sigkill_case() {
   local label="$1" phase="$2" db="$3"
   local marker="$tmp/$label.marker" script="$tmp/$label.sql" pid deadline
-  local envelope boot_instance receipt_material receipt_sha
+  local envelope trial_boot_instance receipt_material receipt_sha
 
   envelope="$(digest_text "d1-sigkill-envelope-$label")"
-  boot_instance="boot-sigkill-$label"
+  trial_boot_instance="boot-sigkill-$label"
   receipt_material="$(printf '%s\n' \
     "profile=srq-eat-boot-observation-v1" \
     "challenge=$challenge_id" "target=$target_token" "audience=$audience" \
@@ -257,7 +257,7 @@ run_d1_sigkill_case() {
     "effective=$digest_b" "corpus=$digest_c" "deployment=$deployment" \
     "signer_key_id=$signer_key_id" "nonce_sha256=$nonce_sha" \
     "issued=$issued_at" "expires=$expires_at" "verifier_now=$verifier_now" \
-    "envelope_sha256=$envelope" "boot_instance_id=$boot_instance")"
+    "envelope_sha256=$envelope" "boot_instance_id=$trial_boot_instance")"
   receipt_sha="$(digest_text "$receipt_material")"
   rm -f "$marker"
 
@@ -283,7 +283,7 @@ INSERT INTO d1_verified_observation_receipts (
 ) VALUES (
   '$receipt_sha','$challenge_id','srq-eat-boot-observation-v1','$signer_key_id','$target_token',
   '$audience','$decision_id',$policy_generation,'$digest_a',
-  '$digest_b','$digest_c','$deployment','$boot_instance',
+  '$digest_b','$digest_c','$deployment','$trial_boot_instance',
   '$nonce_sha',$issued_at,$expires_at,$verifier_now,
   '$envelope',$verifier_now
 );
@@ -349,7 +349,7 @@ SQL
       || fail "post-commit kill did not preserve one D1 receipt ($label)"
     [[ "$(sqlite3 -batch "$db" "SELECT consumed_receipt_sha256 FROM d1_observation_challenges WHERE challenge_id='$challenge_id';")" == "$receipt_sha" ]] \
       || fail "post-commit kill lost the consumed-receipt pointer ($label)"
-    [[ "$(sqlite3 -batch "$db" "SELECT count(*) FROM d1_verified_observation_receipts r JOIN d1_observation_challenges c ON c.challenge_id=r.challenge_id WHERE r.receipt_sha256=c.consumed_receipt_sha256 AND r.receipt_sha256='$receipt_sha' AND r.boot_instance_id='$boot_instance';")" == "1" ]] \
+    [[ "$(sqlite3 -batch "$db" "SELECT count(*) FROM d1_verified_observation_receipts r JOIN d1_observation_challenges c ON c.challenge_id=r.challenge_id WHERE r.receipt_sha256=c.consumed_receipt_sha256 AND r.receipt_sha256='$receipt_sha' AND r.boot_instance_id='$trial_boot_instance';")" == "1" ]] \
       || fail "post-commit receipt/challenge records diverged ($label)"
     [[ "$(sqlite3 -batch "$db" 'PRAGMA integrity_check;')" == "ok" ]] \
       || fail "post-commit database integrity check failed ($label)"
