@@ -22,9 +22,10 @@ use srq_eat_cose_verifier::{
 
 const SCHEMA_VERSION: i64 = 1;
 const APPLICATION_ID: i64 = 0x5352_5131; // ASCII "SRQ1".
-/// SQLite 3.51.3 fixed the upstream WAL-reset database-corruption bug.
-/// The D1 store uses WAL with concurrent processes, so older engines are not accepted.
-const MIN_SQLITE_VERSION_FOR_WAL: (u64, u64, u64) = (3, 51, 3);
+/// Accept upstream versions documented to include the WAL-reset corruption fix:
+/// the 3.44.6, 3.50.7, 3.51.3 backports and the 3.53.0+ line. The withdrawn
+/// 3.52.0 line is deliberately rejected.
+
 const SCHEMA: &str = include_str!("../../../benchmarks/srq-v1/sqlite-d1-challenge-consumption-reference.sql");
 
 #[derive(Clone)]
@@ -99,9 +100,9 @@ impl SqliteD1Store {
             .map_err(|error| format!("read SQLite runtime version: {error}"))?;
         let parsed_version = sqlite_version_tuple(&sqlite_version)
             .ok_or_else(|| format!("SQLite runtime version is malformed: {sqlite_version}"))?;
-        if parsed_version < MIN_SQLITE_VERSION_FOR_WAL {
+        if !sqlite_version_has_wal_reset_fix(parsed_version) {
             return Err(format!(
-                "SQLite {sqlite_version} is below the SRQ WAL safety floor 3.51.3;                  upgrade the bundled engine before opening the durable D1 store"
+                "SQLite {sqlite_version} is on an unsupported or WAL-reset-unfixed release line; accepted upstream-fixed lines are 3.44.6+, 3.50.7+, 3.51.3+, and 3.53.0+"
             ));
         }
         connection
@@ -685,6 +686,17 @@ fn sqlite_version_tuple(value: &str) -> Option<(u64, u64, u64)> {
     Some((major, minor, patch))
 }
 
+fn sqlite_version_has_wal_reset_fix((major, minor, patch): (u64, u64, u64)) -> bool {
+    match (major, minor) {
+        (3, 44) => patch >= 6,
+        (3, 50) => patch >= 7,
+        (3, 51) => patch >= 3,
+        (3, 53) => true,
+        (3, minor) if minor > 53 => true,
+        _ => false,
+    }
+}
+
 fn system_time_unix_seconds() -> Result<u64, String> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -878,14 +890,17 @@ mod tests {
     }
 
     #[test]
-    fn sqlite_version_tuple_rejects_malformed_values_and_orders_numeric_components() {
+    fn sqlite_version_tuple_and_wal_reset_gate_cover_patched_backports() {
         assert_eq!(sqlite_version_tuple("3.51.3"), Some((3, 51, 3)));
         assert_eq!(sqlite_version_tuple("3.50.12"), Some((3, 50, 12)));
         assert_eq!(sqlite_version_tuple("3.51"), None);
         assert_eq!(sqlite_version_tuple("3.51.3-extra"), None);
-        assert!(sqlite_version_tuple("3.51.2").unwrap() < MIN_SQLITE_VERSION_FOR_WAL);
-        assert!(sqlite_version_tuple("3.51.3").unwrap() >= MIN_SQLITE_VERSION_FOR_WAL);
-        assert!(sqlite_version_tuple("3.53.2").unwrap() >= MIN_SQLITE_VERSION_FOR_WAL);
+        for version in ["3.44.6", "3.50.7", "3.51.3", "3.53.0", "3.53.3", "3.54.1"] {
+            assert!(sqlite_version_has_wal_reset_fix(sqlite_version_tuple(version).unwrap()), "expected supported: {version}");
+        }
+        for version in ["3.44.5", "3.45.0", "3.50.6", "3.51.2", "3.52.0", "3.52.1"] {
+            assert!(!sqlite_version_has_wal_reset_fix(sqlite_version_tuple(version).unwrap()), "expected rejected: {version}");
+        }
     }
 
     #[test]
