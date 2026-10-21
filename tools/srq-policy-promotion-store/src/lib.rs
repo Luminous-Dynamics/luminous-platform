@@ -11,7 +11,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use coset::{CborSerializable, CoseSign1, iana};
 use ed25519_dalek::{Signature, VerifyingKey};
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
-use sha2::{Digest, Sha256};
 use srq_eat_cose_verifier::{hex_encode, sha256_hex};
 
 const SCHEMA_VERSION: i64 = 1;
@@ -704,6 +703,29 @@ mod tests {
         assert_eq!(store.committed_decision_for_challenge(CHALLENGE_ID).unwrap().unwrap().next_generation,8);
         drop(store);let _=fs::remove_file(&path);
     }
+    #[test]
+    fn challenge_nonce_is_persisted_only_as_a_hash() {
+        let now=2_000_000_000;let path=temp_path("nonce-redaction");let mut store=base_store(&path);let challenge=issue(&mut store,now);
+        let (nonce_hash,): (String,) = store.connection.query_row(
+            "SELECT nonce_sha256 FROM promotion_challenges WHERE challenge_id=?1",
+            params![CHALLENGE_ID], |row| Ok((row.get(0)?,))
+        ).unwrap();
+        assert_eq!(nonce_hash, sha256_hex(&challenge.nonce));
+        assert_ne!(nonce_hash, String::from_utf8_lossy(&challenge.nonce));
+        let raw_db: Vec<u8> = fs::read(&path).unwrap();
+        assert!(!raw_db.windows(challenge.nonce.len()).any(|window| window == challenge.nonce.as_slice()));
+        finish(&mut store,&path);
+    }
+
+    #[test]
+    fn malformed_or_modified_schema_is_rejected_on_reopen() {
+        let path=temp_path("schema-tamper");let mut store=base_store(&path);
+        store.connection.execute_batch("DROP INDEX promotion_decisions_target_generation; CREATE INDEX promotion_decisions_target_generation ON promotion_decisions(target_id);").unwrap();
+        drop(store);
+        assert!(matches!(SqlitePolicyPromotionStore::open(&path),Err(StoreError::CorruptStore(_))));
+        let _=fs::remove_file(&path);let _=fs::remove_file(format!("{}-wal",path.display()));let _=fs::remove_file(format!("{}-shm",path.display()));
+    }
+
     #[test]
     fn runtime_sqlite_version_gate_rejects_known_wal_reset_bug_range() {
         assert!(sqlite_version_tuple("3.51.2").unwrap()<MIN_SQLITE_VERSION_FOR_WAL);
