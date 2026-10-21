@@ -270,7 +270,6 @@ jobs:
         run: |
           set -euo pipefail
           manifest="tools/srq-eat-cose-verifier/Cargo.toml"
-          cargo generate-lockfile --manifest-path "$manifest"
           test -s tools/srq-eat-cose-verifier/Cargo.lock
           d1_log="$RUNNER_TEMP/srq-eat-cose-verifier-test.log"
           cargo test --manifest-path "$manifest" --locked -- --nocapture 2>&1 | tee "$d1_log"
