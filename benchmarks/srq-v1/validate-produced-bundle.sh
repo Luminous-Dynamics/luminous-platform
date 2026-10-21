@@ -69,7 +69,7 @@ entries="$(tar -tzf "$archive")" || {
   echo "BLOCKED: evidence archive is unreadable." >&2
   exit 1
 }
-expected_entries=$'srq-evidence-bundle/\nsrq-evidence-bundle/SHA256SUMS\nsrq-evidence-bundle/manifest.json\nsrq-evidence-bundle/srq-boot-observation-adapter-test.log\nsrq-evidence-bundle/srq-boot-reconciliation-model-test.log\nsrq-evidence-bundle/srq-challenge-promotion-model-test.log\nsrq-evidence-bundle/srq-eat-cose-verifier-test.log\nsrq-evidence-bundle/srq-evidence-003-model-result.json\nsrq-evidence-bundle/srq-process-kill-model-test.log\nsrq-evidence-bundle/srq-recovery-model-test.log\nsrq-evidence-bundle/srq-release-qualification.json\nsrq-evidence-bundle/srq-sqlite-promotion-reference.log\nsrq-evidence-bundle/srq-update-004-model-result.json'
+expected_entries=$'srq-evidence-bundle/\nsrq-evidence-bundle/SHA256SUMS\nsrq-evidence-bundle/manifest.json\nsrq-evidence-bundle/srq-boot-observation-adapter-test.log\nsrq-evidence-bundle/srq-boot-reconciliation-model-test.log\nsrq-evidence-bundle/srq-challenge-promotion-model-test.log\nsrq-evidence-bundle/srq-eat-cose-verifier-test.log\nsrq-evidence-bundle/srq-evidence-003-model-result.json\nsrq-evidence-bundle/srq-process-kill-model-test.log\nsrq-evidence-bundle/srq-recovery-model-test.log\nsrq-evidence-bundle/srq-release-qualification.json\nsrq-evidence-bundle/srq-sqlite-d1-challenge-consumption-reference.log\nsrq-evidence-bundle/srq-sqlite-promotion-reference.log\nsrq-evidence-bundle/srq-update-004-model-result.json'
 actual_entries="$(printf '%s\n' "$entries" | LC_ALL=C sort)"
 expected_entries_sorted="$(printf '%s\n' "$expected_entries" | LC_ALL=C sort)"
 [[ "$actual_entries" == "$expected_entries_sorted" ]] || {
@@ -91,14 +91,14 @@ bundle="$tmp/extracted/srq-evidence-bundle"
 }
 
 actual_files="$(find "$bundle" -mindepth 1 -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort)"
-expected_files=$'SHA256SUMS\nmanifest.json\nsrq-boot-observation-adapter-test.log\nsrq-boot-reconciliation-model-test.log\nsrq-challenge-promotion-model-test.log\nsrq-eat-cose-verifier-test.log\nsrq-evidence-003-model-result.json\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-sqlite-promotion-reference.log\nsrq-update-004-model-result.json'
+expected_files=$'SHA256SUMS\nmanifest.json\nsrq-boot-observation-adapter-test.log\nsrq-boot-reconciliation-model-test.log\nsrq-challenge-promotion-model-test.log\nsrq-eat-cose-verifier-test.log\nsrq-evidence-003-model-result.json\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-sqlite-d1-challenge-consumption-reference.log\nsrq-sqlite-promotion-reference.log\nsrq-update-004-model-result.json'
 [[ "$actual_files" == "$expected_files" ]] || {
   echo "BLOCKED: extracted file inventory is incomplete or contains extra files." >&2
   exit 1
 }
 
 declared_files="$(awk '{print $2}' "$bundle/SHA256SUMS" | LC_ALL=C sort)"
-expected_declared_files=$'srq-boot-observation-adapter-test.log\nsrq-boot-reconciliation-model-test.log\nsrq-challenge-promotion-model-test.log\nsrq-eat-cose-verifier-test.log\nsrq-evidence-003-model-result.json\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-sqlite-promotion-reference.log\nsrq-update-004-model-result.json'
+expected_declared_files=$'srq-boot-observation-adapter-test.log\nsrq-boot-reconciliation-model-test.log\nsrq-challenge-promotion-model-test.log\nsrq-eat-cose-verifier-test.log\nsrq-evidence-003-model-result.json\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-sqlite-d1-challenge-consumption-reference.log\nsrq-sqlite-promotion-reference.log\nsrq-update-004-model-result.json'
 [[ "$declared_files" == "$expected_declared_files" ]] || {
   echo "BLOCKED: checksum manifest inventory is incomplete or duplicated." >&2
   exit 1
@@ -123,6 +123,7 @@ sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" |
 boot_reconciliation_sha="$(sha256sum "$bundle/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
 boot_observation_adapter_sha="$(sha256sum "$bundle/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
 d1_cose_verifier_sha="$(sha256sum "$bundle/srq-eat-cose-verifier-test.log" | cut -d ' ' -f 1)"
+d1_sqlite_consumer_sha="$(sha256sum "$bundle/srq-sqlite-d1-challenge-consumption-reference.log" | cut -d ' ' -f 1)"
 
 jq -e \
   --arg repository "$expected_repository" \
@@ -140,7 +141,8 @@ jq -e \
   --arg sqlite_reference_sha "$sqlite_reference_sha" \
   --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
   --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" \
-  --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" '
+  --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" \
+  --arg d1_sqlite_consumer_sha "$d1_sqlite_consumer_sha" '
     .schema_version == 1 and
     .profile_id == "SRQ-1" and
     .repository == $repository and
@@ -197,6 +199,14 @@ jq -e \
       status: "PASS",
       evidence_artifact: "srq-eat-cose-verifier-test.log",
       evidence_sha256: $d1_cose_verifier_sha
+    }, {
+      test_id: "SRQ-D1-SQLITE-CONSUMER-REFERENCE-V1",
+      scenario_id: "RECOVERY-002",
+      execution_tier: "model",
+      claim_ceiling: "abstract_model_only",
+      status: "PASS",
+      evidence_artifact: "srq-sqlite-d1-challenge-consumption-reference.log",
+      evidence_sha256: $d1_sqlite_consumer_sha
     }]
   ' "$bundle/manifest.json" >/dev/null || {
   echo "BLOCKED: archive manifest does not match caller-supplied workflow identity or evidence digests." >&2
