@@ -17,7 +17,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use rusqlite::{Connection, OptionalExtension, Transaction, TransactionBehavior, params};
 use sha2::{Digest, Sha256};
 use srq_eat_cose_verifier::{
-    ChallengeConsumptionRequest, ChallengeConsumer, PROFILE,
+    ChallengeConsumptionRequest, ChallengeConsumer, PROFILE, VerifiedChallengeConsumption,
 };
 
 const SCHEMA_VERSION: i64 = 1;
@@ -458,8 +458,8 @@ impl SqliteD1Store {
 }
 
 impl ChallengeConsumer for SqliteD1Store {
-    fn consume_once(&mut self, request: &ChallengeConsumptionRequest<'_>) -> Result<String, String> {
-        self.consume_once_inner(request, None)
+    fn consume_once(&mut self, verified: &VerifiedChallengeConsumption<'_>) -> Result<String, String> {
+        self.consume_once_inner(verified.request(), None)
     }
 }
 
