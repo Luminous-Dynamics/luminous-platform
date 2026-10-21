@@ -63,17 +63,35 @@ pub struct VerifiedObservation {
     pub non_claims: Vec<&'static str>,
 }
 
-/// Production implementations must consume the challenge exactly once in a
-/// durable transaction that binds challenge ID, nonce, decision ID and the
-/// verified envelope digest. In-memory implementations are test-only.
+/// All fields that the durable store must compare with the outstanding
+/// authorized challenge and commit record. The caller derives these values
+/// only after signature and semantic verification.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ChallengeConsumptionRequest<'a> {
+    pub challenge_id: &'a str,
+    pub nonce: &'a [u8],
+    pub decision_id: &'a str,
+    pub target_token: &'a str,
+    pub audience: &'a str,
+    pub policy_generation: u64,
+    pub approved_artifact_sha256: &'a str,
+    pub effective_policy_sha256: &'a str,
+    pub corpus_sha256: &'a str,
+    pub booted_deployment_id: &'a str,
+    pub boot_instance_id: &'a str,
+    pub challenge_issued_at_unix_seconds: u64,
+    pub challenge_expires_at_unix_seconds: u64,
+    pub envelope_sha256: &'a str,
+}
+
+/// Production implementations must validate the complete request against the
+/// outstanding target-bound challenge/decision record and atomically consume
+/// it with the verified observation receipt. They must re-check expiry using
+/// their trusted clock inside the transaction, enforce one-use semantics across
+/// process restart, and commit before returning Ok. An in-memory implementation
+/// is suitable for unit tests only, never for production/release gating.
 pub trait ChallengeConsumer {
-    fn consume_once(
-        &mut self,
-        challenge_id: &str,
-        nonce: &[u8],
-        decision_id: &str,
-        envelope_sha256: &str,
-    ) -> Result<(), String>;
+    fn consume_once(&mut self, request: &ChallengeConsumptionRequest<'_>) -> Result<(), String>;
 }
 
 /// Verify a signed response and all strict SRQ D1 claim bindings.
@@ -300,13 +318,24 @@ pub fn verify_and_consume<S: ChallengeConsumer>(
     store: &mut S,
 ) -> Result<VerifiedObservation, String> {
     let mut verified = verify_cose_eat(token_bytes, trusted_key, expected, now_unix_seconds)?;
+    let consumption = ChallengeConsumptionRequest {
+        challenge_id: &verified.challenge_id,
+        nonce: &expected.nonce,
+        decision_id: &verified.decision_id,
+        target_token: &verified.target_token,
+        audience: &verified.audience,
+        policy_generation: verified.policy_generation,
+        approved_artifact_sha256: &verified.artifact_sha256,
+        effective_policy_sha256: &verified.effective_policy_sha256,
+        corpus_sha256: &verified.corpus_sha256,
+        booted_deployment_id: &verified.deployment_id,
+        boot_instance_id: &verified.boot_instance_id,
+        challenge_issued_at_unix_seconds: expected.issued_at_unix_seconds,
+        challenge_expires_at_unix_seconds: expected.expires_at_unix_seconds,
+        envelope_sha256: &verified.envelope_sha256,
+    };
     store
-        .consume_once(
-            &verified.challenge_id,
-            &expected.nonce,
-            &verified.decision_id,
-            &verified.envelope_sha256,
-        )
+        .consume_once(&consumption)
         .map_err(|e| format!("durable challenge consumption failed: {e}"))?;
     verified.challenge_consumed = true;
     verified.release_gate_eligible = false;
@@ -693,16 +722,49 @@ mod tests {
         }
     }
 
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    struct CapturedConsumption {
+        nonce_hex: String,
+        decision_id: String,
+        target_token: String,
+        audience: String,
+        policy_generation: u64,
+        approved_artifact_sha256: String,
+        effective_policy_sha256: String,
+        corpus_sha256: String,
+        booted_deployment_id: String,
+        boot_instance_id: String,
+        challenge_issued_at_unix_seconds: u64,
+        challenge_expires_at_unix_seconds: u64,
+        envelope_sha256: String,
+    }
+
     #[derive(Default)]
     struct MemoryStore {
         consumed: std::collections::BTreeSet<String>,
+        last_request: Option<CapturedConsumption>,
     }
 
     impl ChallengeConsumer for MemoryStore {
-        fn consume_once(&mut self, challenge_id: &str, _nonce: &[u8], _decision_id: &str, _digest: &str) -> Result<(), String> {
-            if !self.consumed.insert(challenge_id.to_owned()) {
+        fn consume_once(&mut self, request: &ChallengeConsumptionRequest<'_>) -> Result<(), String> {
+            if !self.consumed.insert(request.challenge_id.to_owned()) {
                 return Err("challenge already consumed".into());
             }
+            self.last_request = Some(CapturedConsumption {
+                nonce_hex: hex_encode(request.nonce),
+                decision_id: request.decision_id.to_owned(),
+                target_token: request.target_token.to_owned(),
+                audience: request.audience.to_owned(),
+                policy_generation: request.policy_generation,
+                approved_artifact_sha256: request.approved_artifact_sha256.to_owned(),
+                effective_policy_sha256: request.effective_policy_sha256.to_owned(),
+                corpus_sha256: request.corpus_sha256.to_owned(),
+                booted_deployment_id: request.booted_deployment_id.to_owned(),
+                boot_instance_id: request.boot_instance_id.to_owned(),
+                challenge_issued_at_unix_seconds: request.challenge_issued_at_unix_seconds,
+                challenge_expires_at_unix_seconds: request.challenge_expires_at_unix_seconds,
+                envelope_sha256: request.envelope_sha256.to_owned(),
+            });
             Ok(())
         }
     }
@@ -725,6 +787,20 @@ mod tests {
         let out = verify_and_consume(&token, &f.trusted, &f.challenge, 1_200, &mut store).unwrap();
         assert!(out.challenge_consumed);
         assert!(!out.release_gate_eligible);
+        let recorded = store.last_request.as_ref().expect("store received a complete binding request");
+        assert_eq!(recorded.nonce_hex, hex_encode(&f.challenge.nonce));
+        assert_eq!(recorded.decision_id, f.challenge.decision_id);
+        assert_eq!(recorded.target_token, f.challenge.target_token);
+        assert_eq!(recorded.audience, f.challenge.audience);
+        assert_eq!(recorded.policy_generation, f.challenge.policy_generation);
+        assert_eq!(recorded.approved_artifact_sha256, f.challenge.approved_artifact_sha256);
+        assert_eq!(recorded.effective_policy_sha256, f.challenge.expected_effective_policy_sha256);
+        assert_eq!(recorded.corpus_sha256, f.challenge.corpus_sha256);
+        assert_eq!(recorded.booted_deployment_id, f.challenge.expected_deployment_id);
+        assert_eq!(recorded.boot_instance_id, "boot-instance-001");
+        assert_eq!(recorded.challenge_issued_at_unix_seconds, f.challenge.issued_at_unix_seconds);
+        assert_eq!(recorded.challenge_expires_at_unix_seconds, f.challenge.expires_at_unix_seconds);
+        assert_eq!(recorded.envelope_sha256, sha256_hex(&token));
         assert!(verify_and_consume(&token, &f.trusted, &f.challenge, 1_200, &mut store).is_err());
     }
 
@@ -900,7 +976,7 @@ mod tests {
     fn challenge_consumption_failure_never_returns_consumed_success() {
         struct RejectStore;
         impl ChallengeConsumer for RejectStore {
-            fn consume_once(&mut self, _: &str, _: &[u8], _: &str, _: &str) -> Result<(), String> {
+            fn consume_once(&mut self, _: &ChallengeConsumptionRequest<'_>) -> Result<(), String> {
                 Err("durability unavailable".into())
             }
         }
