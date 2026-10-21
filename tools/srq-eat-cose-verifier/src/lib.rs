@@ -58,9 +58,27 @@ pub struct VerifiedObservation {
     pub effective_policy_sha256: String,
     pub corpus_sha256: String,
     pub assurance_tier: &'static str,
-    pub challenge_consumed: bool,
-    pub release_gate_eligible: bool,
     pub non_claims: Vec<&'static str>,
+}
+
+/// The result of a successful ChallengeConsumer commit. This type has
+/// private fields and deliberately does not implement Serialize/Deserialize:
+/// downstream code cannot turn the durable-consumption capability into a
+/// caller-editable JSON boolean. It is still not an SRQ release-gate approval.
+#[derive(Debug, PartialEq, Eq)]
+pub struct ConsumedObservation {
+    observation: VerifiedObservation,
+    durable_receipt_sha256: String,
+}
+
+impl ConsumedObservation {
+    pub fn observation(&self) -> &VerifiedObservation {
+        &self.observation
+    }
+
+    pub fn durable_receipt_sha256(&self) -> &str {
+        &self.durable_receipt_sha256
+    }
 }
 
 /// All fields that the durable store must compare with the outstanding
@@ -68,6 +86,8 @@ pub struct VerifiedObservation {
 /// only after signature and semantic verification.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ChallengeConsumptionRequest<'a> {
+    pub profile_id: &'static str,
+    pub signer_key_id_hex: &'a str,
     pub challenge_id: &'a str,
     pub nonce: &'a [u8],
     pub decision_id: &'a str,
@@ -88,10 +108,11 @@ pub struct ChallengeConsumptionRequest<'a> {
 /// outstanding target-bound challenge/decision record and atomically consume
 /// it with the verified observation receipt. They must re-check expiry using
 /// their trusted clock inside the transaction, enforce one-use semantics across
-/// process restart, and commit before returning Ok. An in-memory implementation
-/// is suitable for unit tests only, never for production/release gating.
+/// process restart, and return the SHA-256 of the committed receipt record
+/// only after commit. An in-memory implementation is suitable for unit tests
+/// only, never for production/release gating.
 pub trait ChallengeConsumer {
-    fn consume_once(&mut self, request: &ChallengeConsumptionRequest<'_>) -> Result<(), String>;
+    fn consume_once(&mut self, request: &ChallengeConsumptionRequest<'_>) -> Result<String, String>;
 }
 
 /// Verify a signed response and all strict SRQ D1 claim bindings.
@@ -296,8 +317,6 @@ pub fn verify_cose_eat(
         effective_policy_sha256: observed_policy.to_owned(),
         corpus_sha256: corpus_sha256.to_owned(),
         assurance_tier: "D1-software-key",
-        challenge_consumed: false,
-        release_gate_eligible: false,
         non_claims: vec![
             "The software-key response does not prove privileged OS observations are truthful.",
             "No TPM quote, secure-boot measurement, hardware root-of-trust or physical recovery claim is made.",
@@ -316,9 +335,11 @@ pub fn verify_and_consume<S: ChallengeConsumer>(
     expected: &ExpectedChallenge,
     now_unix_seconds: u64,
     store: &mut S,
-) -> Result<VerifiedObservation, String> {
-    let mut verified = verify_cose_eat(token_bytes, trusted_key, expected, now_unix_seconds)?;
+) -> Result<ConsumedObservation, String> {
+    let verified = verify_cose_eat(token_bytes, trusted_key, expected, now_unix_seconds)?;
     let consumption = ChallengeConsumptionRequest {
+        profile_id: PROFILE,
+        signer_key_id_hex: &verified.key_id_hex,
         challenge_id: &verified.challenge_id,
         nonce: &expected.nonce,
         decision_id: &verified.decision_id,
@@ -334,12 +355,16 @@ pub fn verify_and_consume<S: ChallengeConsumer>(
         challenge_expires_at_unix_seconds: expected.expires_at_unix_seconds,
         envelope_sha256: &verified.envelope_sha256,
     };
-    store
+    let durable_receipt_sha256 = store
         .consume_once(&consumption)
         .map_err(|e| format!("durable challenge consumption failed: {e}"))?;
-    verified.challenge_consumed = true;
-    verified.release_gate_eligible = false;
-    Ok(verified)
+    if !is_sha256(&durable_receipt_sha256) {
+        return Err("challenge consumer returned a malformed durable receipt digest".into());
+    }
+    Ok(ConsumedObservation {
+        observation: verified,
+        durable_receipt_sha256,
+    })
 }
 
 fn validate_trust_and_challenge(
@@ -736,6 +761,8 @@ mod tests {
         boot_instance_id: String,
         challenge_issued_at_unix_seconds: u64,
         challenge_expires_at_unix_seconds: u64,
+        profile_id: String,
+        signer_key_id_hex: String,
         envelope_sha256: String,
     }
 
@@ -746,7 +773,7 @@ mod tests {
     }
 
     impl ChallengeConsumer for MemoryStore {
-        fn consume_once(&mut self, request: &ChallengeConsumptionRequest<'_>) -> Result<(), String> {
+        fn consume_once(&mut self, request: &ChallengeConsumptionRequest<'_>) -> Result<String, String> {
             if !self.consumed.insert(request.challenge_id.to_owned()) {
                 return Err("challenge already consumed".into());
             }
@@ -763,9 +790,20 @@ mod tests {
                 boot_instance_id: request.boot_instance_id.to_owned(),
                 challenge_issued_at_unix_seconds: request.challenge_issued_at_unix_seconds,
                 challenge_expires_at_unix_seconds: request.challenge_expires_at_unix_seconds,
+                profile_id: request.profile_id.to_owned(),
+                signer_key_id_hex: request.signer_key_id_hex.to_owned(),
                 envelope_sha256: request.envelope_sha256.to_owned(),
             });
-            Ok(())
+            let material = format!(
+                "{}\n{}\n{}\n{}\n{}\n{}",
+                request.profile_id,
+                request.signer_key_id_hex,
+                request.challenge_id,
+                request.decision_id,
+                request.envelope_sha256,
+                request.challenge_expires_at_unix_seconds
+            );
+            Ok(sha256_hex(material.as_bytes()))
         }
     }
 
@@ -774,8 +812,6 @@ mod tests {
         let f = Fixture::new();
         let out = verify_cose_eat(&f.signed(), &f.trusted, &f.challenge, 1_200).unwrap();
         assert_eq!(out.assurance_tier, "D1-software-key");
-        assert!(!out.challenge_consumed);
-        assert!(!out.release_gate_eligible);
         assert_eq!(out.deployment_id, NIX_DEPLOYMENT);
     }
 
@@ -784,10 +820,14 @@ mod tests {
         let f = Fixture::new();
         let token = f.signed();
         let mut store = MemoryStore::default();
-        let out = verify_and_consume(&token, &f.trusted, &f.challenge, 1_200, &mut store).unwrap();
-        assert!(out.challenge_consumed);
-        assert!(!out.release_gate_eligible);
+        let consumed = verify_and_consume(&token, &f.trusted, &f.challenge, 1_200, &mut store).unwrap();
+        assert!(is_sha256(consumed.durable_receipt_sha256()));
+        let out = consumed.observation();
+        assert_eq!(out.assurance_tier, "D1-software-key");
+        assert_eq!(out.envelope_sha256, sha256_hex(&token));
         let recorded = store.last_request.as_ref().expect("store received a complete binding request");
+        assert_eq!(recorded.profile_id, PROFILE);
+        assert_eq!(recorded.signer_key_id_hex, hex_encode(&f.trusted.key_id));
         assert_eq!(recorded.nonce_hex, hex_encode(&f.challenge.nonce));
         assert_eq!(recorded.decision_id, f.challenge.decision_id);
         assert_eq!(recorded.target_token, f.challenge.target_token);
@@ -973,10 +1013,30 @@ mod tests {
     }
 
     #[test]
+    fn malformed_receipt_digest_never_returns_consumed_capability() {
+        struct BadReceiptStore;
+        impl ChallengeConsumer for BadReceiptStore {
+            fn consume_once(&mut self, _: &ChallengeConsumptionRequest<'_>) -> Result<String, String> {
+                Ok("not-a-sha256-digest".into())
+            }
+        }
+        let f = Fixture::new();
+        let error = verify_and_consume(
+            &f.signed(),
+            &f.trusted,
+            &f.challenge,
+            1_200,
+            &mut BadReceiptStore,
+        )
+        .expect_err("malformed durable receipt digest must fail closed");
+        assert!(error.contains("malformed durable receipt digest"));
+    }
+
+    #[test]
     fn challenge_consumption_failure_never_returns_consumed_success() {
         struct RejectStore;
         impl ChallengeConsumer for RejectStore {
-            fn consume_once(&mut self, _: &ChallengeConsumptionRequest<'_>) -> Result<(), String> {
+            fn consume_once(&mut self, _: &ChallengeConsumptionRequest<'_>) -> Result<String, String> {
                 Err("durability unavailable".into())
             }
         }
