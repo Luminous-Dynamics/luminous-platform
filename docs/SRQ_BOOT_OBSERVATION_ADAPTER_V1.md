@@ -84,3 +84,22 @@ All record parsing uses fail-closed schema/field validation. No absent field is 
 ## Qualification boundary
 
 This document defines the next interface; it does not assert that an adapter, signature, TPM quote, QEMU run or physical experiment exists. The current model validates record structure only. SRQ remains `NOT_QUALIFIED` until the executable path and each scenario's declared evidence tier are satisfied.
+
+
+## D0 reference collector now implemented (2026-10-21)
+
+A dependency-free Rust command is available at `tools/srq-boot-observation-adapter/` and can be built/tested independently of the unfinished monorepo binaries:
+
+```bash
+cargo test --manifest-path tools/srq-boot-observation-adapter/Cargo.toml --locked
+cargo run --manifest-path tools/srq-boot-observation-adapter/Cargo.toml --locked -- --help
+sudo cargo run --manifest-path tools/srq-boot-observation-adapter/Cargo.toml --locked
+```
+
+The default command samples the Linux boot ID and reads the symlink targets of `/run/booted-system` and `/run/current-system`. It validates the boot-ID shape and canonical Nix store path shape, returns a stable reason-code list, and blocks when the two deployment IDs diverge. `--root` allows tests to use an isolated fixture tree without reading or modifying the host runtime.
+
+The output schema labels itself `D0-local-diagnostic`, always sets `authenticity_status=NOT_AUTHENTICATED`, leaves promotion binding and measurement as not provided, and calls the capture timestamp untrusted. Even an internally consistent observation is named `OBSERVED_CONSISTENT_DIAGNOSTIC`, never PASS or QUALIFIED. It deliberately does not infer an artifact digest from a path and does not authenticate the host.
+
+The SRQ workflow now runs its standalone tests and binds the test log into the signed evidence-bundle inventory as a supplemental `model / abstract_model_only` observation. That means the test result may be authenticated as an artifact if/when the main-branch attestation path is exercised; it does **not** turn the D0 output into trusted target evidence. The model/tool must still be integrated with a challenge-bound authenticated response (D1), or TPM/hardware-backed measurements (D2), before security-gate use.
+
+This collector is intentionally a narrow bridge, not a substitute for the missing `spore-recovery-linux` / `spore-boot-state` package or Sovereign Boot's disposable QEMU tests. It reads symlink targets, not contents of the deployed artifact, so Nix store path identity remains separate from the authorized artifact and effective-policy digests.
