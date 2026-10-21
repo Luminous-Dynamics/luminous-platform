@@ -350,7 +350,61 @@ fn actual_signed_policy_decision_and_d1_boot_receipt_reconcile_after_database_re
             if faults.contains(&ReconciliationFault::BootPolicyMismatch)
     ));
 
-    println!("PASS: actual signed policy promotion and persisted COSE D1 boot receipt reconcile; generation/deployment/decision/policy mismatches fail closed");
+    // Mutation campaign starts from records read back from both SQLite stores,
+    // not from an all-synthetic fixture. Each field is mutated independently.
+    for i in 0..10_000_u64 {
+        let mut changed_intent = intent.clone();
+        let mut changed_durable = durable.clone();
+        let mut changed_challenge = challenge.clone();
+        let mut changed_boot = boot.clone();
+        let token = format!("mut-{i}");
+        let digest = format!("{:064x}", i + 1);
+        match i % 33 {
+            0 => changed_intent.target_id = token,
+            1 => changed_intent.decision_id = token,
+            2 => changed_intent.promotion_challenge_id = token,
+            3 => changed_intent.deployment_id = token,
+            4 => changed_intent.previous_generation = u64::MAX,
+            5 => changed_intent.next_generation = 43 + i,
+            6 => changed_intent.approved_artifact_digest = digest,
+            7 => changed_intent.effective_policy_digest = digest,
+            8 => changed_intent.corpus_digest = digest,
+            9 => changed_durable.decision_id = token,
+            10 => changed_durable.target_id = token,
+            11 => changed_durable.consumed_challenge_id = token,
+            12 => changed_durable.deployment_id = token,
+            13 => changed_durable.generation = 1_000 + i,
+            14 => changed_durable.approved_artifact_digest = digest,
+            15 => changed_durable.effective_policy_digest = digest,
+            16 => changed_durable.corpus_digest = digest,
+            17 => changed_challenge.challenge_id = token,
+            18 => changed_challenge.target_id = token,
+            19 => changed_challenge.decision_id = token,
+            20 => changed_challenge.expected_generation = 1_000 + i,
+            21 => changed_challenge.expected_deployment_id = token,
+            22 => changed_challenge.expected_effective_policy_digest = digest,
+            23 => changed_boot.target_id = token,
+            24 => changed_boot.decision_id = token,
+            25 => changed_boot.observation_challenge_id = token,
+            26 => changed_boot.booted_deployment_id = token,
+            27 => changed_boot.current_userspace_deployment_id = token,
+            28 => changed_boot.generation = 1_000 + i,
+            29 => changed_boot.effective_policy_digest = digest,
+            30 => changed_boot.artifact_digest = digest,
+            31 => changed_boot.boot_instance_id = "../invalid-boot".into(),
+            _ => changed_boot.measurement_digest = "not-a-digest".into(),
+        }
+        assert!(
+            !reconcile(
+                &changed_intent,
+                Some(&changed_durable),
+                Some(&changed_challenge),
+                Some(&changed_boot),
+            ).is_consistent(),
+            "actual-store mutation {i} unexpectedly reconciled"
+        );
+    }
+    println!("PASS: actual signed policy promotion and persisted COSE D1 boot receipt reconcile; generation/deployment/decision/policy mismatches and 10,000 mutations fail closed");
     remove_db(&policy_path);
     remove_db(&boot_path);
 }
