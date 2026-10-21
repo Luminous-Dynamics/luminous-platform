@@ -67,6 +67,7 @@ jobs:
           bash -n benchmarks/srq-v1/verify-evidence-bundle.sh
           bash -n benchmarks/srq-v1/test-verify-evidence-bundle.sh
           bash -n benchmarks/srq-v1/test-sqlite-promotion-reference.sh
+          bash -n benchmarks/srq-v1/test-sqlite-d1-challenge-consumption-reference.sh
           bash -n benchmarks/srq-v1/test-evaluate-attested-release.sh
           bash -n benchmarks/srq-v1/validate-produced-bundle.sh
           bash -n benchmarks/srq-v1/test-validate-produced-bundle.sh
@@ -292,6 +293,26 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      - name: Exercise SQLite D1 challenge-consumption reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          d1_sqlite_log="$RUNNER_TEMP/srq-sqlite-d1-challenge-consumption-reference.log"
+          bash benchmarks/srq-v1/test-sqlite-d1-challenge-consumption-reference.sh 2>&1 | tee "$d1_sqlite_log"
+          grep -Fq 'PASS: D1 challenge replay after reopen is rejected without replacing the receipt' "$d1_sqlite_log"
+          grep -Fq 'PASS: exactly one durable D1 receipt across 64 independent challenge consumers' "$d1_sqlite_log"
+          grep -Fq 'PASS: 100 D1 SQLite SIGKILL trials across four transaction boundaries' "$d1_sqlite_log"
+          grep -Eq '^sqlite_version=[0-9]+[.][0-9]+([.][0-9]+)? journal_mode=wal synchronous=FULL d1_cases=20 contenders=64 process_kill_trials=100 commit_boundaries=4$' "$d1_sqlite_log"
+
+      - name: Preserve SQLite D1 challenge-consumption evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-sqlite-d1-consumption-reference
+          path: \${{ runner.temp }}/srq-sqlite-d1-challenge-consumption-reference.log
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Compile release qualification status from observed receipts
         shell: bash
         run: |
@@ -337,6 +358,7 @@ jobs:
             srq-process-kill-model-test.log
             srq-recovery-model-test.log
             srq-release-qualification.json
+            srq-sqlite-d1-challenge-consumption-reference.log
             srq-sqlite-promotion-reference.log
             srq-update-004-model-result.json
           )
@@ -357,6 +379,7 @@ jobs:
           boot_reconciliation_sha="$(sha256sum "$bundle_dir/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
           boot_observation_adapter_sha="$(sha256sum "$bundle_dir/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
           d1_cose_verifier_sha="$(sha256sum "$bundle_dir/srq-eat-cose-verifier-test.log" | cut -d ' ' -f 1)"
+          d1_sqlite_consumer_sha="$(sha256sum "$bundle_dir/srq-sqlite-d1-challenge-consumption-reference.log" | cut -d ' ' -f 1)"
           corpus_sha="$(sha256sum benchmarks/srq-v1/scenarios.json | cut -d ' ' -f 1)"
           actual_head="$(git rev-parse HEAD)"
           test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
@@ -379,6 +402,7 @@ jobs:
             --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
             --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" \
             --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" \
+            --arg d1_sqlite_consumer_sha "$d1_sqlite_consumer_sha" \
             '{
               schema_version: 1,
               profile_id: "SRQ-1",
@@ -437,6 +461,14 @@ jobs:
                 status: "PASS",
                 evidence_artifact: "srq-eat-cose-verifier-test.log",
                 evidence_sha256: $d1_cose_verifier_sha
+              }, {
+                test_id: "SRQ-D1-SQLITE-CONSUMER-REFERENCE-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-sqlite-d1-challenge-consumption-reference.log",
+                evidence_sha256: $d1_sqlite_consumer_sha
               }]
             }' > "$bundle_dir/manifest.json"
 
@@ -474,6 +506,7 @@ jobs:
             ${{ runner.temp }}/srq-boot-reconciliation-model-test.log
             ${{ runner.temp }}/srq-boot-observation-adapter-test.log
             ${{ runner.temp }}/srq-process-kill-model-test.log
+            ${{ runner.temp }}/srq-sqlite-d1-challenge-consumption-reference.log
             ${{ runner.temp }}/srq-sqlite-promotion-reference.log
             ${{ runner.temp }}/srq-release-qualification.json
           if-no-files-found: ignore
