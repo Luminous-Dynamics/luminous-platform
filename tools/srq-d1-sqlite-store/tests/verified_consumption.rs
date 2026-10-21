@@ -124,6 +124,26 @@ fn signed_cose_is_verified_then_consumed_by_real_sqlite_store_end_to_end() {
 
     let mut store = SqliteD1Store::open(&path).expect("open canonical SQLite D1 store");
     store.issue_challenge(&issued_challenge).expect("persist target-bound challenge");
+
+    // Bad signature must fail before the durable store consumes the challenge.
+    let mut bad_signature = token.clone();
+    let last = bad_signature.len() - 1;
+    bad_signature[last] ^= 1;
+    assert!(verify_and_consume(&bad_signature, &trusted, &expected, now, &mut store).is_err());
+    let probe = rusqlite::Connection::open(&path).expect("open read-only inspection connection");
+    let receipt_rows: i64 = probe.query_row(
+        "SELECT count(*) FROM d1_verified_observation_receipts WHERE challenge_id=?1",
+        [CHALLENGE_ID],
+        |row| row.get(0),
+    ).expect("count receipts after rejected signature");
+    let consumed_rows: i64 = probe.query_row(
+        "SELECT count(*) FROM d1_observation_challenges WHERE challenge_id=?1 AND consumed_receipt_sha256 IS NOT NULL",
+        [CHALLENGE_ID],
+        |row| row.get(0),
+    ).expect("count challenge consumption after rejected signature");
+    assert_eq!((receipt_rows, consumed_rows), (0, 0), "invalid signature must not mutate durable state");
+    drop(probe);
+
     let consumed = verify_and_consume(&token, &trusted, &expected, now, &mut store)
         .expect("verified COSE token must commit through the SQLite challenge consumer");
     let receipt = consumed.durable_receipt_sha256().to_owned();
@@ -146,7 +166,7 @@ fn signed_cose_is_verified_then_consumed_by_real_sqlite_store_end_to_end() {
         "a valid but already-consumed signed token must not be accepted a second time"
     );
     reopened.integrity_check().expect("SQLite integrity after replay");
-    println!("PASS: signed COSE EAT verified, durably consumed, reopened and replay-rejected through public API");
+    println!("PASS: invalid COSE signature leaves challenge unused; valid signed COSE EAT is consumed, reopened and replay-rejected through public API");
     drop(reopened);
 
     for file in [&path] {
