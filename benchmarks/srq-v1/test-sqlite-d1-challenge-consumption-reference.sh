@@ -173,6 +173,18 @@ fi
 [[ "$(sqlite3 -batch "$success_db" 'SELECT consumed_receipt_sha256 FROM d1_observation_challenges;')" == "$receipt_sha" ]] || fail "replay replaced the original receipt"
 echo "PASS: D1 challenge replay after reopen is rejected without replacing the receipt"
 
+# An unconsumed challenge is still an append-only authorization record;
+# delete/recreate must not become a way to recycle the same challenge ID/nonce.
+delete_db="$tmp/delete-challenge.sqlite"
+init_db "$delete_db"
+if sqlite3 -batch -bail "$delete_db" "DELETE FROM d1_observation_challenges WHERE challenge_id='$challenge_id';" >"$tmp/delete-challenge.out" 2>&1; then
+  fail "unconsumed D1 challenge record was deletable"
+fi
+[[ "$(sqlite3 -batch "$delete_db" "SELECT count(*) FROM d1_observation_challenges WHERE challenge_id='$challenge_id';")" == "1" ]] \
+  || fail "append-only trigger failed to preserve issued challenge"
+assert_clean_unconsumed "$delete_db"
+echo "PASS: D1 challenge issuance record cannot be deleted or recycled"
+
 # Cases 3-14: independently mutate each binding or freshness attribute.
 expect_rejected "wrong-target" "$verifier_now" "target-token-B" "$audience" "$decision_id" "$policy_generation" "$digest_a" "$digest_b" "$digest_c" "$deployment" "$signer_key_id" "$nonce_sha" "$issued_at" "$expires_at"
 expect_rejected "wrong-audience" "$verifier_now" "$target_token" "srq-verifier-B" "$decision_id" "$policy_generation" "$digest_a" "$digest_b" "$digest_c" "$deployment" "$signer_key_id" "$nonce_sha" "$issued_at" "$expires_at"
