@@ -71,7 +71,7 @@ The new Rust crate uses the maintained `coset` COSE implementation and Ed25519 v
 
 The prototype's test fixture private key is deterministic and exists only inside unit tests. It is not an operational key, a target provisioned key, a hardware key or evidence from a physical host. The trust-policy JSON and verifier-controlled challenge file must be supplied through an independently protected channel. The CLI takes an explicit verifier time argument; the target's `iat` does not establish trusted time.
 
-At this stage, the D1 test log is retained as a separate CI artifact while the code and profile are iterated. It is not yet included in the fixed signed evidence bundle, and the real main-branch attestation path has not been exercised. No release gate may consume it.
+The workflow now stages the D1 test log inside the deterministic SRQ evidence bundle as a supplemental `model` observation with the claim ceiling `cryptographic_test_fixture_only`. The produced-bundle validator, trusted-main archive verifier, archive negative-control tests and full wrapper contract test all bind the D1 log digest and reject a mismatched digest. This integration is awaiting a green exact-head run before it is called validated. The actual main-branch attestation has not been minted or verified. No release gate may consume the D1 fixture result.
 
 ## Next implementation sequence
 
