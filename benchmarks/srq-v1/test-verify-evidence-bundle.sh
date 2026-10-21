@@ -21,6 +21,8 @@ make_archive() {
     srq-boot-observation-adapter-test.log \
     srq-boot-reconciliation-model-test.log \
     srq-challenge-promotion-model-test.log \
+    srq-d1-sqlite-store-Cargo.lock \
+    srq-d1-sqlite-store-test.log \
     srq-eat-cose-verifier-test.log \
     srq-evidence-003-model-result.json \
     srq-process-kill-model-test.log \
@@ -37,6 +39,8 @@ make_archive() {
       srq-boot-observation-adapter-test.log \
       srq-boot-reconciliation-model-test.log \
       srq-challenge-promotion-model-test.log \
+      srq-d1-sqlite-store-Cargo.lock \
+      srq-d1-sqlite-store-test.log \
       srq-eat-cose-verifier-test.log \
       srq-evidence-003-model-result.json \
       srq-process-kill-model-test.log \
@@ -49,7 +53,7 @@ make_archive() {
   if [[ "$bad_checksum" == "true" ]]; then
     printf 'tampered after hashing\n' >> "$bundle/srq-recovery-model-test.log"
   fi
-  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha d1_cose_verifier_sha d1_sqlite_consumer_sha manifest_process_kill_sha manifest_sqlite_sha manifest_boot_reconciliation_sha manifest_boot_adapter_sha manifest_d1_sha manifest_d1_sqlite_sha
+  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha d1_cose_verifier_sha d1_sqlite_consumer_sha d1_sqlite_store_sha d1_sqlite_store_lock_sha manifest_process_kill_sha manifest_sqlite_sha manifest_boot_reconciliation_sha manifest_boot_adapter_sha manifest_d1_sha manifest_d1_sqlite_sha manifest_d1_sqlite_store_sha manifest_d1_sqlite_store_lock_sha
   checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
   process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
   sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
@@ -57,12 +61,16 @@ make_archive() {
   boot_observation_adapter_sha="$(sha256sum "$bundle/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
   d1_cose_verifier_sha="$(sha256sum "$bundle/srq-eat-cose-verifier-test.log" | cut -d ' ' -f 1)"
   d1_sqlite_consumer_sha="$(sha256sum "$bundle/srq-sqlite-d1-challenge-consumption-reference.log" | cut -d ' ' -f 1)"
+  d1_sqlite_store_sha="$(sha256sum "$bundle/srq-d1-sqlite-store-test.log" | cut -d ' ' -f 1)"
+  d1_sqlite_store_lock_sha="$(sha256sum "$bundle/srq-d1-sqlite-store-Cargo.lock" | cut -d ' ' -f 1)"
   manifest_process_kill_sha="$process_kill_sha"
   manifest_sqlite_sha="$sqlite_reference_sha"
   manifest_boot_reconciliation_sha="$boot_reconciliation_sha"
   manifest_boot_adapter_sha="$boot_observation_adapter_sha"
   manifest_d1_sha="$d1_cose_verifier_sha"
   manifest_d1_sqlite_sha="$d1_sqlite_consumer_sha"
+  manifest_d1_sqlite_store_sha="$d1_sqlite_store_sha"
+  manifest_d1_sqlite_store_lock_sha="$d1_sqlite_store_lock_sha"
   if [[ "$bad_supplemental" == "process-kill" ]]; then
     manifest_process_kill_sha="0000000000000000000000000000000000000000000000000000000000000000"
   elif [[ "$bad_supplemental" == "sqlite" ]]; then
@@ -75,6 +83,10 @@ make_archive() {
     manifest_d1_sha="0000000000000000000000000000000000000000000000000000000000000000"
   elif [[ "$bad_supplemental" == "d1-sqlite" ]]; then
     manifest_d1_sqlite_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  elif [[ "$bad_supplemental" == "d1-store" ]]; then
+    manifest_d1_sqlite_store_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  elif [[ "$bad_supplemental" == "d1-store-lock" ]]; then
+    manifest_d1_sqlite_store_lock_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
   jq -n \
     --arg repo "Luminous-Dynamics/luminous-platform" \
@@ -93,6 +105,8 @@ make_archive() {
     --arg boot_observation_adapter_sha "$manifest_boot_adapter_sha" \
     --arg d1_cose_verifier_sha "$manifest_d1_sha" \
     --arg d1_sqlite_consumer_sha "$manifest_d1_sqlite_sha" \
+    --arg d1_sqlite_store_sha "$manifest_d1_sqlite_store_sha" \
+    --arg d1_sqlite_store_lock_sha "$manifest_d1_sqlite_store_lock_sha" \
     '{
       schema_version: 1,
       profile_id: "SRQ-1",
@@ -111,6 +125,9 @@ make_archive() {
       },
       corpus_sha256: $corpus_sha,
       checksum_manifest_sha256: $checksum_sha,
+      dependency_lock_sha256: {
+        srq_d1_sqlite_store: $d1_sqlite_store_lock_sha
+      },
       supplemental_observations: [{
         test_id: "SRQ-PROCESS-KILL-V1",
         scenario_id: "UPDATE-004",
@@ -159,6 +176,14 @@ make_archive() {
         status: "PASS",
         evidence_artifact: "srq-sqlite-d1-challenge-consumption-reference.log",
         evidence_sha256: $d1_sqlite_consumer_sha
+      }, {
+        test_id: "SRQ-D1-SQLITE-STORE-V1",
+        scenario_id: "RECOVERY-002",
+        execution_tier: "model",
+        claim_ceiling: "abstract_model_only",
+        status: "PASS",
+        evidence_artifact: "srq-d1-sqlite-store-test.log",
+        evidence_sha256: $d1_sqlite_store_sha
       }]
     }' > "$bundle/manifest.json"
   tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - -C "$tmp/work" srq-evidence-bundle \
@@ -245,3 +270,15 @@ if run_verifier "$tmp/bad-d1-sqlite.tar.gz" "$source_sha" refs/heads/main "$tmp/
   fail "false D1 SQLite consumption reference digest was accepted"
 fi
 echo "PASS: D1 SQLite supplemental digest mismatch fails closed"
+
+make_archive "$tmp/bad-d1-store.tar.gz" false d1-store
+if run_verifier "$tmp/bad-d1-store.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-bad-d1-store" >/dev/null 2>&1; then
+  fail "false Rust D1 store evidence digest was accepted"
+fi
+echo "PASS: Rust D1 store supplemental digest mismatch fails closed"
+
+make_archive "$tmp/bad-d1-store-lock.tar.gz" false d1-store-lock
+if run_verifier "$tmp/bad-d1-store-lock.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-bad-d1-store-lock" >/dev/null 2>&1; then
+  fail "false Rust D1 store dependency lock digest was accepted"
+fi
+echo "PASS: Rust D1 store dependency lock digest mismatch fails closed"
