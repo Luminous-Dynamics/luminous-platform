@@ -18,7 +18,7 @@ run_attempt="1"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 make_archive() {
-  local archive="$1" bad_observation="${2:-false}" bad_checksum="${3:-false}" bad_d1="${4:-false}"
+  local archive="$1" bad_observation="${2:-false}" bad_checksum="${3:-false}" bad_d1="${4:-false}" bad_d1_sqlite="${5:-false}"
   local work="$tmp/work" bundle="$tmp/work/srq-evidence-bundle"
   rm -rf "$work"
   mkdir -p "$bundle"
@@ -32,6 +32,7 @@ make_archive() {
     srq-process-kill-model-test.log \
     srq-recovery-model-test.log \
     srq-release-qualification.json \
+    srq-sqlite-d1-challenge-consumption-reference.log \
     srq-sqlite-promotion-reference.log \
     srq-update-004-model-result.json; do
     printf 'synthetic artifact for %s\n' "$name" > "$bundle/$name"
@@ -53,6 +54,7 @@ make_archive() {
       srq-process-kill-model-test.log \
       srq-recovery-model-test.log \
       srq-release-qualification.json \
+      srq-sqlite-d1-challenge-consumption-reference.log \
       srq-sqlite-promotion-reference.log \
       srq-update-004-model-result.json > SHA256SUMS
   )
@@ -61,18 +63,23 @@ make_archive() {
     printf 'tampered after hashing\n' >> "$bundle/srq-recovery-model-test.log"
   fi
 
-  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha d1_cose_verifier_sha
+  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha d1_cose_verifier_sha d1_sqlite_consumer_sha manifest_d1_sqlite_sha
   checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
   process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
   sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
   boot_reconciliation_sha="$(sha256sum "$bundle/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
   boot_observation_adapter_sha="$(sha256sum "$bundle/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
   d1_cose_verifier_sha="$(sha256sum "$bundle/srq-eat-cose-verifier-test.log" | cut -d ' ' -f 1)"
+  d1_sqlite_consumer_sha="$(sha256sum "$bundle/srq-sqlite-d1-challenge-consumption-reference.log" | cut -d ' ' -f 1)"
+  manifest_d1_sqlite_sha="$d1_sqlite_consumer_sha"
   if [[ "$bad_observation" == "true" ]]; then
     boot_observation_adapter_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
   if [[ "$bad_d1" == "true" ]]; then
     d1_cose_verifier_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  fi
+  if [[ "$bad_d1_sqlite" == "true" ]]; then
+    manifest_d1_sqlite_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
 
   jq -n \
@@ -91,7 +98,8 @@ make_archive() {
     --arg sqlite_reference_sha "$sqlite_reference_sha" \
     --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
     --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" \
-    --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" '{
+    --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" \
+    --arg d1_sqlite_consumer_sha "$manifest_d1_sqlite_sha" '{
       schema_version: 1,
       profile_id: "SRQ-1",
       repository: $repository,
@@ -149,6 +157,14 @@ make_archive() {
         status: "PASS",
         evidence_artifact: "srq-eat-cose-verifier-test.log",
         evidence_sha256: $d1_cose_verifier_sha
+      }, {
+        test_id: "SRQ-D1-SQLITE-CONSUMER-REFERENCE-V1",
+        scenario_id: "RECOVERY-002",
+        execution_tier: "model",
+        claim_ceiling: "abstract_model_only",
+        status: "PASS",
+        evidence_artifact: "srq-sqlite-d1-challenge-consumption-reference.log",
+        evidence_sha256: $d1_sqlite_consumer_sha
       }]
     }' > "$bundle/manifest.json"
 
@@ -201,6 +217,12 @@ if run_validator "$tmp/bad-d1.tar.gz" "$source_sha" "$event_sha" "$workflow_sha"
   fail "D1 verifier test digest mismatch was accepted"
 fi
 echo "PASS: D1 verifier fixture digest mismatch fails closed"
+
+make_archive "$tmp/bad-d1-sqlite.tar.gz" false false false true
+if run_validator "$tmp/bad-d1-sqlite.tar.gz" "$source_sha" "$event_sha" "$workflow_sha" "$tmp/bad-d1-sqlite.out" >/dev/null 2>&1; then
+  fail "D1 SQLite reference digest mismatch was accepted"
+fi
+echo "PASS: D1 SQLite consumption digest mismatch fails closed"
 
 make_archive "$tmp/bad-checksum.tar.gz" false true
 if run_validator "$tmp/bad-checksum.tar.gz" "$source_sha" "$event_sha" "$workflow_sha" "$tmp/bad-checksum.out" >/dev/null 2>&1; then
