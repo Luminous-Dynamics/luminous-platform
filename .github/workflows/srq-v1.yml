@@ -17,6 +17,8 @@ on:
       - "docs/SRQ_BENCHMARK_COMPARISON_V1.md"
       - "docs/SRQ_BOOT_RECONCILIATION_V1.md"
       - "docs/SRQ_BOOT_OBSERVATION_ADAPTER_V1.md"
+      - "docs/SRQ_EAT_COSE_BOOT_ATTESTATION_V1.md"
+      - "schemas/srq-eat-boot-observation-v1.cddl"
   workflow_dispatch:
 
 permissions:
