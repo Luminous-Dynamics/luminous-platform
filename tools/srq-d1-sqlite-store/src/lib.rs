@@ -857,7 +857,7 @@ mod tests {
         store.issue_challenge(&challenge).expect("issue challenge");
         let envelope = "d".repeat(64);
         let mut wrong = request_for(&challenge, "boot-instance-001", &envelope);
-        wrong_target_attempt(&mut wrong);
+        wrong.target_token = "target-token-B";
         assert!(store.consume_once_inner(&wrong, Some(now)).is_err());
         assert_eq!(db_row_counts(&store, &challenge.challenge_id), (1, 0, 0));
 
@@ -878,12 +878,6 @@ mod tests {
             let _ = fs::remove_file(format!("{}-wal", cleanup.display()));
             let _ = fs::remove_file(format!("{}-shm", cleanup.display()));
         }
-    }
-
-    fn wrong_target_attempt(request: &mut ChallengeConsumptionRequest<'_>) {
-        // The request borrows an immutable target string from IssuedChallenge,
-        // so mutate the challenge field before constructing the request instead.
-        let _ = request;
     }
 
     #[test]
@@ -909,7 +903,11 @@ mod tests {
                 store.consume_once_inner(&request, Some(now)).is_ok()
             }));
         }
-        let successes = workers.into_iter().filter(|worker| worker.join().expect("join worker")).count();
+        let successes = workers
+            .into_iter()
+            .map(|worker| worker.join().expect("join worker"))
+            .filter(|success| *success)
+            .count();
         let reopened = SqliteD1Store::open(&path).expect("reopen contention DB");
         assert_eq!(successes, 1);
         assert_eq!(db_row_counts(&reopened, &challenge.challenge_id), (1, 1, 1));
