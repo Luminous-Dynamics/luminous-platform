@@ -441,6 +441,10 @@ fn validate_verified_binding(v:&VerifiedAuthorization,c:&StoredChallenge,key:&Tr
 }
 
 fn verify_signed_authorization(token:&[u8],key:&TrustedPromotionKey)->Result<VerifiedAuthorization,StoreError>{
+    if key.key_id.is_empty() || key.key_id.len() > 64
+        || !valid_identifier(&key.target_id) || !valid_identifier(&key.audience) {
+        return Err(StoreError::InvalidInput("trusted key ID/target/audience is malformed"));
+    }
     if token.is_empty()||token.len()>MAX_TOKEN_BYTES {return Err(StoreError::InvalidToken("token size invalid".into()));}
     let sign1=CoseSign1::from_slice(token).map_err(|e|StoreError::InvalidToken(format!("COSE decode: {e}")))?;
     if sign1.protected.header.alg != Some(iana::Algorithm::Ed25519.into()) {return Err(StoreError::InvalidToken("protected alg must be Ed25519".into()));}
@@ -575,7 +579,7 @@ mod tests {
         store
     }
     fn issue(store:&mut SqlitePolicyPromotionStore,now:u64)->IssuedPromotionChallenge{
-        let challenge=IssuedPromotionChallenge{challenge_id:CHALLENGE_ID.into(),target_id:TARGET.into(),audience:AUDIENCE.into(),decision_id:DECISION_ID.into(),previous_generation:7,next_generation:8,previous_effective_policy_sha256:D1.into(),approved_artifact_sha256:D2.into(),next_effective_policy_sha256:D2.into(),corpus_sha256:D3.into(),deployment_id:DEPLOYMENT.into(),expected_signer_key_id_hex:hex_encode(KEY_ID),nonce:b"0123456789abcdef-policy-nonce".to_vec(),issued_at_unix_seconds:now-1,expires_at_unix_seconds:now+60};
+        let challenge=IssuedPromotionChallenge{challenge_id:CHALLENGE_ID.into(),target_id:TARGET.into(),audience:AUDIENCE.into(),decision_id:DECISION_ID.into(),previous_generation:7,next_generation:8,previous_approved_artifact_sha256:D0.into(),previous_effective_policy_sha256:D1.into(),approved_artifact_sha256:D2.into(),next_effective_policy_sha256:D2.into(),corpus_sha256:D3.into(),deployment_id:DEPLOYMENT.into(),expected_signer_key_id_hex:hex_encode(KEY_ID),nonce:b"0123456789abcdef-policy-nonce".to_vec(),issued_at_unix_seconds:now-1,expires_at_unix_seconds:now+60};
         // Test uses a private test clock, but issuance follows the same trusted issuer checks.
         store.issue_challenge_at(&challenge,now).expect("issue challenge");
         challenge
@@ -593,6 +597,7 @@ mod tests {
             (Value::Text("srq_target_id".into()),Value::Text(challenge.target_id.clone())),
             (Value::Text("srq_previous_generation".into()),Value::Integer(challenge.previous_generation.into())),
             (Value::Text("srq_next_generation".into()),Value::Integer(challenge.next_generation.into())),
+            (Value::Text("srq_previous_approved_artifact_sha256".into()),Value::Text(challenge.previous_approved_artifact_sha256.clone())),
             (Value::Text("srq_previous_effective_policy_sha256".into()),Value::Text(challenge.previous_effective_policy_sha256.clone())),
             (Value::Text("srq_approved_artifact_sha256".into()),Value::Text(challenge.approved_artifact_sha256.clone())),
             (Value::Text("srq_next_effective_policy_sha256".into()),Value::Text(challenge.next_effective_policy_sha256.clone())),
