@@ -730,12 +730,46 @@ mod tests {
             handles.push(thread::spawn(move||{let mut store=SqlitePolicyPromotionStore::open(&path).unwrap();gate.wait();store.verify_and_promote_at(&token,&trusted,now)}));
         }
         let mut winners=0;let mut rejected=0;
-        for h in handles {match h.join().unwrap(){Ok(_)=>winners+=1,Err(StoreError::ChallengeConsumed)|Err(StoreError::StaleTargetState)|Err(StoreError::Sqlite(_))=>rejected+=1,Err(e)=>panic!("unexpected race error {e:?}")}}
+        for h in handles {
+            match h.join().unwrap() {
+                Ok(_) => winners += 1,
+                Err(StoreError::ChallengeConsumed) | Err(StoreError::StaleTargetState) => rejected += 1,
+                Err(error) => panic!("unexpected race failure (must not mask SQLite errors): {error:?}"),
+            }
+        }
         assert_eq!(winners,1);assert_eq!(rejected,63);
         let store=SqlitePolicyPromotionStore::open(&path).unwrap();store.integrity_check().unwrap();
         assert_eq!(store.committed_decision_for_challenge(CHALLENGE_ID).unwrap().unwrap().next_generation,8);
         drop(store);let _=fs::remove_file(&path);
     }
+    #[test]
+    fn stale_previous_approved_artifact_fails_closed_without_consuming_challenge() {
+        let now=2_000_000_000;
+        let path=temp_path("stale-previous-artifact");
+        let mut store=base_store(&path);
+        let challenge=issue(&mut store,now);
+        // Simulate out-of-band state drift without changing the generation. The
+        // signed authorization must not promote based on a stale prior artifact.
+        store.connection.execute(
+            "UPDATE promotion_targets SET approved_artifact_sha256=?1 WHERE target_id=?2",
+            params![D3,TARGET],
+        ).unwrap();
+        let signer=SigningKey::from_bytes(&[7u8;32]);
+        let token=make_token(&challenge,now,&signer,&[]);
+        assert_eq!(
+            store.verify_and_promote_at(&token,&trusted(&signer),now).unwrap_err(),
+            StoreError::StaleTargetState
+        );
+        assert!(store.committed_decision_for_challenge(CHALLENGE_ID).unwrap().is_none());
+        let generation:i64=store.connection.query_row(
+            "SELECT generation FROM promotion_targets WHERE target_id=?1",
+            params![TARGET],|row|row.get(0)
+        ).unwrap();
+        assert_eq!(generation,7);
+        drop(store);
+        let _=fs::remove_file(&path);let _=fs::remove_file(format!("{}-wal",path.display()));let _=fs::remove_file(format!("{}-shm",path.display()));
+    }
+
     #[test]
     fn challenge_nonce_is_persisted_only_as_a_hash() {
         let now=2_000_000_000;let path=temp_path("nonce-redaction");let mut store=base_store(&path);let challenge=issue(&mut store,now);
