@@ -842,6 +842,7 @@ mod tests {
         assert!(reopened.consume_once_inner(&replay, Some(now)).is_err(), "replay must fail");
         assert_eq!(db_row_counts(&reopened, &challenge.challenge_id), (1, 1, 1));
         reopened.integrity_check().expect("integrity check after replay");
+        println!("PASS: typed Rust D1 store commits once, rejects replay after reopen, and reconciles the original receipt");
         drop(reopened);
         let _ = fs::remove_file(&path);
         let _ = fs::remove_file(format!("{}-wal", path.display()));
@@ -865,7 +866,16 @@ mod tests {
         let request = request_for(&challenge, "boot-instance-001", &envelope);
         assert!(store.consume_once_inner(&request, Some(late)).is_err());
         assert_eq!(db_row_counts(&store, &challenge.challenge_id), (1, 0, 0));
+        assert!(
+            store.connection.execute(
+                "DELETE FROM d1_observation_challenges WHERE challenge_id=?1",
+                params![challenge.challenge_id]
+            ).is_err(),
+            "challenge issuance records must be append-only"
+        );
+        assert_eq!(db_row_counts(&store, &challenge.challenge_id), (1, 0, 0));
         store.integrity_check().expect("negative controls preserve database");
+        println!("PASS: typed Rust D1 store rejects wrong target, expiry, schema adoption, and challenge deletion without mutation");
         drop(store);
 
         let unknown_path = temporary_path("unknown-schema", "sqlite");
@@ -912,6 +922,7 @@ mod tests {
         assert_eq!(successes, 1);
         assert_eq!(db_row_counts(&reopened, &challenge.challenge_id), (1, 1, 1));
         reopened.integrity_check().expect("integrity after race");
+        println!("PASS: exactly one typed Rust D1 consumption across 64 independent SQLite connections");
         drop(reopened);
         let _ = fs::remove_file(&path);
         let _ = fs::remove_file(format!("{}-wal", path.display()));
@@ -1000,6 +1011,7 @@ mod tests {
                     assert_eq!(receipt, None, "pre-COMMIT kill must roll back receipt pointer");
                     assert_eq!(db_row_counts(&reopened, &challenge.challenge_id), (1, 0, 0));
                 }
+                println!("PASS: Rust SQLite SIGKILL at {point} trial {trial} recovered the expected complete state");
                 drop(reopened);
                 let _ = fs::remove_file(&path);
                 let _ = fs::remove_file(format!("{}-wal", path.display()));
@@ -1007,5 +1019,6 @@ mod tests {
                 let _ = fs::remove_file(&marker);
             }
         }
+        println!("PASS: Rust SQLite adapter survived 30 actual SIGKILL trials across three transaction boundaries");
     }
 }
