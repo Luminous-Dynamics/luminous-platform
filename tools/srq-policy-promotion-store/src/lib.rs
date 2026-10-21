@@ -15,7 +15,6 @@ use srq_eat_cose_verifier::{hex_encode, sha256_hex};
 
 const SCHEMA_VERSION: i64 = 1;
 const APPLICATION_ID: i64 = 0x5352_5150; // ASCII "SRQP".
-const MIN_SQLITE_VERSION_FOR_WAL: (u64, u64, u64) = (3, 51, 3);
 const PROFILE: &str = "srq-policy-promotion-v1";
 const MAX_TOKEN_BYTES: usize = 65_536;
 const MAX_PAYLOAD_BYTES: usize = 32_768;
@@ -177,9 +176,9 @@ impl SqlitePolicyPromotionStore {
             .map_err(|error| StoreError::Sqlite(format!("read SQLite version: {error}")))?;
         let parsed = sqlite_version_tuple(&version)
             .ok_or_else(|| StoreError::UnsupportedSqlite(format!("malformed version {version}")))?;
-        if parsed < MIN_SQLITE_VERSION_FOR_WAL {
+        if !sqlite_version_has_wal_reset_fix(parsed) {
             return Err(StoreError::UnsupportedSqlite(format!(
-                "SQLite {version} is below WAL safety floor 3.51.3"
+                "SQLite {version} is on an unsupported or WAL-reset-unfixed release line; accepted upstream-fixed lines are 3.44.6+, 3.50.7+, 3.51.3+, and 3.53.0+"
             )));
         }
 
@@ -553,6 +552,16 @@ fn valid_deployment_id(s:&str)->bool{
  hash.len()==32&&hash.bytes().all(|b|b.is_ascii_digit()||b"abcdfghijklmnpqrsvwxyz".contains(&b))&&!name.is_empty()&&name.bytes().all(|b|b.is_ascii_alphanumeric()||matches!(b,b'.'|b'_'|b'+'|b'-'))
 }
 fn sqlite_version_tuple(s:&str)->Option<(u64,u64,u64)>{let mut p=s.split('.');let a=p.next()?.parse().ok()?;let b=p.next()?.parse().ok()?;let c=p.next()?.parse().ok()?;if p.next().is_some(){None}else{Some((a,b,c))}}
+fn sqlite_version_has_wal_reset_fix((major,minor,patch):(u64,u64,u64))->bool{
+    match (major,minor) {
+        (3,44) => patch >= 6,
+        (3,50) => patch >= 7,
+        (3,51) => patch >= 3,
+        (3,53) => true,
+        (3,minor) if minor > 53 => true,
+        _ => false,
+    }
+}
 fn sql_i64(v:u64)->Result<i64,StoreError>{i64::try_from(v).map_err(|_|StoreError::InvalidInput("integer exceeds SQLite signed range"))}
 fn system_time_unix_seconds()->Result<u64,StoreError>{SystemTime::now().duration_since(UNIX_EPOCH).map(|d|d.as_secs()).map_err(|_|StoreError::Clock)}
 fn sql_err(context:&'static str)->impl FnOnce(rusqlite::Error)->StoreError{move|e|StoreError::Sqlite(format!("{context}: {e}"))}
@@ -882,10 +891,14 @@ mod tests {
     }
 
     #[test]
-    fn runtime_sqlite_version_gate_rejects_known_wal_reset_bug_range() {
-        assert!(sqlite_version_tuple("3.51.2").unwrap()<MIN_SQLITE_VERSION_FOR_WAL);
-        assert!(sqlite_version_tuple("3.51.3").unwrap()>=MIN_SQLITE_VERSION_FOR_WAL);
-        assert!(sqlite_version_tuple("3.54.1").unwrap()>=MIN_SQLITE_VERSION_FOR_WAL);
-        assert_eq!(sqlite_version_tuple("3.51"),None);
+    fn runtime_sqlite_version_gate_accepts_fixed_release_lines_and_rejects_unfixed_or_withdrawn_lines() {
+        for version in ["3.44.6", "3.44.99", "3.50.7", "3.50.12", "3.51.3", "3.51.99", "3.53.0", "3.53.3", "3.54.1"] {
+            assert!(sqlite_version_has_wal_reset_fix(sqlite_version_tuple(version).unwrap()), "expected supported: {version}");
+        }
+        for version in ["3.44.5", "3.45.0", "3.50.6", "3.51.2", "3.52.0", "3.52.1", "4.0.0"] {
+            assert!(!sqlite_version_has_wal_reset_fix(sqlite_version_tuple(version).unwrap()), "expected rejected: {version}");
+        }
+        assert_eq!(sqlite_version_tuple("3.51"), None);
+        assert_eq!(sqlite_version_tuple("3.51.3-extra"), None);
     }
 }
