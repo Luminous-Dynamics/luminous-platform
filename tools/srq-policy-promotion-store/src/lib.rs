@@ -721,6 +721,44 @@ mod tests {
         finish(&mut store,&path);
     }
     #[test]
+    fn challenge_expiring_before_commit_rolls_back_all_staged_rows() {
+        let now = 2_000_000_000;
+        let path = temp_path("expiry-at-commit");
+        let mut store = base_store(&path);
+        let challenge = issue(&mut store, now);
+        let signer = SigningKey::from_bytes(&[7u8; 32]);
+        let token = make_token(&challenge, now, &signer, &[]);
+        let mut clock_calls = 0;
+        let result = store.verify_and_promote_with_clock(
+            &token,
+            &trusted(&signer),
+            || {
+                clock_calls += 1;
+                if clock_calls == 1 {
+                    Ok(now)
+                } else {
+                    Ok(challenge.expires_at_unix_seconds)
+                }
+            },
+        );
+        assert_eq!(result.unwrap_err(), StoreError::ExpiredChallenge);
+        assert_eq!(clock_calls, 2, "freshness must be rechecked at commit");
+        let generation: i64 = store.connection
+            .query_row("SELECT generation FROM promotion_targets WHERE target_id=?1", params![TARGET], |row| row.get(0))
+            .unwrap();
+        let decisions: i64 = store.connection
+            .query_row("SELECT count(*) FROM promotion_decisions WHERE decision_id=?1", params![DECISION_ID], |row| row.get(0))
+            .unwrap();
+        let challenge_after = load_challenge(&store.connection, CHALLENGE_ID).unwrap().unwrap();
+        assert_eq!(generation, 7, "target generation must roll back");
+        assert_eq!(decisions, 0, "staged decision must roll back");
+        assert!(challenge_after.consumed_decision_id.is_none(), "challenge consumption must roll back");
+        assert!(store.committed_decision_for_challenge(CHALLENGE_ID).unwrap().is_none());
+        store.integrity_check().expect("store remains consistent");
+        finish(&mut store, &path);
+    }
+
+    #[test]
     fn one_of_sixty_four_independent_connections_commits() {
         const N:usize=64;
         let now=2_000_000_000;let path=temp_path("race");let mut seeded=base_store(&path);let challenge=issue(&mut seeded,now);drop(seeded);
