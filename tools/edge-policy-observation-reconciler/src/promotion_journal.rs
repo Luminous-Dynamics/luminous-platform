@@ -191,15 +191,41 @@ pub struct VerifiedPromotionBinding {
 }
 
 impl VerifiedPromotionBinding {
-    pub fn operation_id(&self) -> &str { &self.operation_id }
-    pub fn target_token(&self) -> &str { &self.target_token }
-    pub fn generation(&self) -> u64 { self.generation }
-    pub fn baseline_policy_sha256(&self) -> &str { &self.baseline_policy_sha256 }
-    pub fn candidate_policy_sha256(&self) -> &str { &self.candidate_policy_sha256 }
-    pub fn challenge_id(&self) -> &str { &self.challenge_id }
-    pub fn receipt_sha256(&self) -> &str { &self.receipt_sha256 }
-    pub fn observed_at_unix_ms(&self) -> u64 { self.observed_at_unix_ms }
-    pub fn expires_at_unix_ms(&self) -> u64 { self.expires_at_unix_ms }
+    pub fn operation_id(&self) -> &str {
+        &self.operation_id
+    }
+
+    pub fn target_token(&self) -> &str {
+        &self.target_token
+    }
+
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+
+    pub fn baseline_policy_sha256(&self) -> &str {
+        &self.baseline_policy_sha256
+    }
+
+    pub fn candidate_policy_sha256(&self) -> &str {
+        &self.candidate_policy_sha256
+    }
+
+    pub fn challenge_id(&self) -> &str {
+        &self.challenge_id
+    }
+
+    pub fn receipt_sha256(&self) -> &str {
+        &self.receipt_sha256
+    }
+
+    pub fn observed_at_unix_ms(&self) -> u64 {
+        self.observed_at_unix_ms
+    }
+
+    pub fn expires_at_unix_ms(&self) -> u64 {
+        self.expires_at_unix_ms
+    }
 }
 
 /// Inputs for the public challenge-verification and promotion-evidence gate.
