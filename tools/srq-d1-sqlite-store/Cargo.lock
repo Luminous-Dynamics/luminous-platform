@@ -500,6 +500,22 @@ dependencies = [
  "wasm-bindgen",
 ]
 
+
+[[package]]
+name = "srq-boot-reconciliation-model"
+version = "0.1.0"
+
+[[package]]
+name = "srq-policy-promotion-store"
+version = "0.1.0"
+dependencies = [
+ "coset",
+ "ed25519-dalek",
+ "rusqlite",
+ "sha2 0.10.9",
+ "srq-eat-cose-verifier",
+]
+
 [[package]]
 name = "srq-d1-sqlite-store"
 version = "0.1.0"
@@ -508,7 +524,9 @@ dependencies = [
  "ed25519-dalek",
  "rusqlite",
  "sha2 0.10.9",
+ "srq-boot-reconciliation-model",
  "srq-eat-cose-verifier",
+ "srq-policy-promotion-store",
 ]
 
 [[package]]
