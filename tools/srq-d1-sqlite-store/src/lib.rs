@@ -900,6 +900,35 @@ mod tests {
     }
 
     #[test]
+    fn altered_trigger_sql_fails_closed_even_when_name_is_preserved() {
+        let path = temporary_path("trigger-tamper", "sqlite");
+        let store = SqliteD1Store::open(&path).expect("initialize canonical D1 schema");
+        drop(store);
+
+        let attacker = Connection::open(&path).expect("open schema-tamper fixture");
+        attacker
+            .execute_batch(
+                "DROP TRIGGER d1_challenge_cannot_be_deleted;
+                 CREATE TRIGGER d1_challenge_cannot_be_deleted
+                 BEFORE DELETE ON d1_observation_challenges
+                 BEGIN SELECT 1; END;",
+            )
+            .expect("replace trigger with same-name non-enforcing trigger");
+        drop(attacker);
+
+        assert!(
+            SqliteD1Store::open(&path).is_err(),
+            "same-name trigger with altered SQL must not be accepted"
+        );
+        println!("PASS: D1 store rejects altered trigger SQL even when trusted names are preserved");
+        for cleanup in [&path] {
+            let _ = fs::remove_file(cleanup);
+            let _ = fs::remove_file(format!("{}-wal", cleanup.display()));
+            let _ = fs::remove_file(format!("{}-shm", cleanup.display()));
+        }
+    }
+
+    #[test]
     fn sixty_four_independent_connections_allow_exactly_one_consumption() {
         let now = system_time_unix_seconds().expect("clock");
         let challenge = challenge_for("challenge-contention", now);
