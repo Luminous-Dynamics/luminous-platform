@@ -25,7 +25,9 @@ Module: `tools/edge-policy-observation-reconciler/src/fleet_rollout.rs`
 - General targets are ordered deterministically and scheduled round-robin across lexicographically ordered failure domains.
 - Duplicate target tokens, a zero batch/failure-domain budget, invalid digests and unchanged candidate policies are rejected before any plan is returned.
 - A SHA-256 digest identifies the canonical plan content. It is an identity/checksum, not a signature or authorization.
-- `evaluate_wave` is a pure classifier. It does not apply, promote or rollback any device policy. The external coordinator must enforce the returned action.
+- The production module no longer exports a boolean-only `evaluate_wave` API. The former claim classifier and `FleetTargetObservation` shape are compiled only for unit tests, so production callers cannot turn `freshness_valid=true` or `nonce_durably_consumed=true` into a wave decision.
+- `validate_wave_permits(journal, wave, permits, now)` checks exactly one live `PromotionPermit` per target against the durable promotion journal: current verifier-process session, unexpired evidence, `Verified` state, target, generation, baseline/candidate policy digests, challenge ID and receipt digest. It returns a private-field, non-Clone `VerifiedWaveBindings` capability or `HaltAndReconcile`.
+- `VerifiedWaveBindings` is deliberately **not** a `Continue` decision. The module still needs a separately verified independent data-plane probe capability before it can safely classify a wave as Continue/Rollback. Caller-supplied probe flags remain claims and must not be used as production authorization. The result of this step is evidence binding, not device actuation; a TOCTOU window remains before an external side effect.
 
 The caller supplies failure-domain labels. Their truth and freshness must come from an independent inventory/topology source; this module cannot detect a mislabeled or hidden shared dependency. A future planner should support dependency graphs, correlated-service domains, and live capacity/resilience constraints rather than only the supplied domain labels.
 
@@ -39,7 +41,7 @@ The caller supplies failure-domain labels. Their truth and freshness must come f
 
 `RollbackWave` is a request to the caller, not proof that rollback happened. The caller must persist rollback intent, perform device-specific actuation, read back the effective policy and probe it independently, using the promotion journal contract.
 
-The evaluator rechecks evidence flags, but those flags are still inputs. Production must obtain the observations from the already-validated durable freshness path, not construct them from controller acknowledgements or user-provided JSON. Evidence authenticity and actual physical device independence remain outside this module.
+The previous boolean-only claim model is now confined to tests. Production code must first obtain `VerifiedWaveBindings` from the live `PromotionJournal` and its non-serializable permit. This proves the durable promotion/freshness binding under that verifier session; it does **not** authenticate the independent probe or make the later external actuation atomic. The next interface must accept a separate verified probe receipt (with its own source identity, time basis, evidence digest and positive control), then revalidate immediately before action and reconcile actual target state after any uncertain response.
 
 ## Competitive position
 
@@ -71,7 +73,7 @@ The strongest SOTA comparison requires running Luminous and the relevant incumbe
 
 ## Next gaps
 
-1. An adapter interface that couples `PromotionJournal`, `SqliteReplayLedger`, exact effective-policy readback and independent data-plane probes so callers cannot substitute synthetic evidence.
+1. Implement a separate authenticated data-plane probe capability. The new `validate_wave_permits` API binds the durable promotion part, but probe success/positive-control authenticity is intentionally still unresolved and cannot authorize `Continue`.
 2. Topology-aware failure domains and service dependency constraints sourced from versioned inventory.
 3. A rollout session journal with durable wave decisions and idempotent per-target command IDs, so a crash after a partial wave cannot be mistaken for a failed or completed wave.
 4. Process-kill and fault-injection harnesses around partial apply, promotion commit, rollback and restart; then physical-device qualification.
