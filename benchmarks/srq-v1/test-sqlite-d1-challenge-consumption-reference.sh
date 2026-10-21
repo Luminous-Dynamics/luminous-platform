@@ -73,10 +73,10 @@ attempt_consume() {
   receipt_sha="$(digest_text "$receipt_material")"
 
   sqlite3 -batch -bail "$db" <<SQL
+.output /dev/null
 PRAGMA foreign_keys=ON;
 PRAGMA busy_timeout=10000;
 PRAGMA synchronous=FULL;
-.output /dev/null
 BEGIN IMMEDIATE;
 CREATE TEMP TABLE assert_one_change(value INTEGER NOT NULL CHECK (value=1));
 INSERT INTO d1_verified_observation_receipts (
