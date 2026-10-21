@@ -263,12 +263,12 @@ pub enum ProbeOutcome {
     Inconclusive,
 }
 
-/// One verifier-produced observation for one target in one rollout wave.
-///
-/// These booleans are claims to be checked against upstream receipt verification;
-/// this module does not authenticate their producer or manufacture evidence.
+/// Synthetic claim container used only by unit tests for the pure classifier.
+/// It is deliberately absent from non-test builds: callers cannot construct
+/// freshness/nonce booleans and feed them into a production wave-decision API.
+#[cfg(test)]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct FleetTargetObservation {
+struct FleetTargetObservation {
     pub target_token: String,
     pub policy_generation: u64,
     pub effective_policy_sha256: String,
