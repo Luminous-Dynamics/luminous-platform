@@ -214,7 +214,9 @@ impl SqlitePolicyPromotionStore {
             0 if app_id == 0 && count == 0 => {
                 let tx = connection.transaction_with_behavior(TransactionBehavior::Immediate)
                     .map_err(|error| StoreError::Sqlite(format!("begin schema install: {error}")))?;
-                tx.execute_batch(SCHEMA)
+                let ddl_start = SCHEMA.find("CREATE TABLE IF NOT EXISTS promotion_targets")
+                    .ok_or_else(|| StoreError::CorruptStore("embedded schema lacks promotion_targets".into()))?;
+                tx.execute_batch(&SCHEMA[ddl_start..])
                     .map_err(|error| StoreError::Sqlite(format!("install schema: {error}")))?;
                 tx.execute_batch(&format!("PRAGMA user_version={SCHEMA_VERSION}; PRAGMA application_id={APPLICATION_ID};"))
                     .map_err(|error| StoreError::Sqlite(format!("version schema: {error}")))?;
@@ -243,29 +245,34 @@ impl SqlitePolicyPromotionStore {
     /// Trusted issuer registers a challenge before it is sent to the attester.
     /// Only a nonce digest is persisted; raw nonce never enters the database.
     pub fn issue_challenge(&mut self, challenge: &IssuedPromotionChallenge) -> Result<(), StoreError> {
-        validate_challenge_shape(challenge)?;
         let now = system_time_unix_seconds()?;
+        self.issue_challenge_at(challenge, now)
+    }
+
+    fn issue_challenge_at(&mut self, challenge: &IssuedPromotionChallenge, now: u64) -> Result<(), StoreError> {
+        validate_challenge_shape(challenge)?;
         if challenge.issued_at_unix_seconds > now || now >= challenge.expires_at_unix_seconds {
             return Err(StoreError::InvalidInput("challenge issue/expiry times are not current"));
         }
         let tx = self.connection.transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(sql_err("begin challenge issuance"))?;
-        let current: Option<(i64, String, String, String)> = tx.query_row(
-            "SELECT generation,effective_policy_sha256,corpus_sha256,deployment_id FROM promotion_targets WHERE target_id=?1",
-            params![challenge.target_id], |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?,row.get(3)?))
+        let current: Option<(i64, String, String, String, String)> = tx.query_row(
+            "SELECT generation,approved_artifact_sha256,effective_policy_sha256,corpus_sha256,deployment_id FROM promotion_targets WHERE target_id=?1",
+            params![challenge.target_id], |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?,row.get(3)?,row.get(4)?))
         ).optional().map_err(sql_err("read target during challenge issuance"))?;
-        let Some((generation, effective, corpus, deployment)) = current else {
+        let Some((generation, approved, effective, corpus, deployment)) = current else {
             return Err(StoreError::InvalidInput("target is not initialized"));
         };
         if generation != sql_i64(challenge.previous_generation)? ||
+           approved != challenge.previous_approved_artifact_sha256 ||
            effective != challenge.previous_effective_policy_sha256 ||
            corpus != challenge.corpus_sha256 ||
            deployment != challenge.deployment_id {
             return Err(StoreError::StaleTargetState);
         }
         tx.execute(
-            "INSERT INTO promotion_challenges (challenge_id,target_id,audience,decision_id,previous_generation,next_generation,previous_effective_policy_sha256,approved_artifact_sha256,next_effective_policy_sha256,corpus_sha256,deployment_id,expected_signer_key_id_hex,nonce_sha256,issued_at_unix_seconds,expires_at_unix_seconds,consumed_decision_id) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,NULL)",
-            params![challenge.challenge_id,challenge.target_id,challenge.audience,challenge.decision_id,sql_i64(challenge.previous_generation)?,sql_i64(challenge.next_generation)?,challenge.previous_effective_policy_sha256,challenge.approved_artifact_sha256,challenge.next_effective_policy_sha256,challenge.corpus_sha256,challenge.deployment_id,challenge.expected_signer_key_id_hex,sha256_hex(&challenge.nonce),sql_i64(challenge.issued_at_unix_seconds)?,sql_i64(challenge.expires_at_unix_seconds)?]
+            "INSERT INTO promotion_challenges (challenge_id,target_id,audience,decision_id,previous_generation,next_generation,previous_approved_artifact_sha256,previous_effective_policy_sha256,approved_artifact_sha256,next_effective_policy_sha256,corpus_sha256,deployment_id,expected_signer_key_id_hex,nonce_sha256,issued_at_unix_seconds,expires_at_unix_seconds,consumed_decision_id) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,NULL)",
+            params![challenge.challenge_id,challenge.target_id,challenge.audience,challenge.decision_id,sql_i64(challenge.previous_generation)?,sql_i64(challenge.next_generation)?,challenge.previous_approved_artifact_sha256,challenge.previous_effective_policy_sha256,challenge.approved_artifact_sha256,challenge.next_effective_policy_sha256,challenge.corpus_sha256,challenge.deployment_id,challenge.expected_signer_key_id_hex,sha256_hex(&challenge.nonce),sql_i64(challenge.issued_at_unix_seconds)?,sql_i64(challenge.expires_at_unix_seconds)?]
         ).map_err(sql_err("persist promotion challenge"))?;
         tx.commit().map_err(sql_err("commit challenge issuance"))
     }
@@ -294,14 +301,15 @@ impl SqlitePolicyPromotionStore {
             return Err(StoreError::ChallengeConsumed);
         }
         validate_verified_binding(&verified, &stored, trusted_key, now)?;
-        let target: Option<(i64,String,String,String)> = tx.query_row(
-            "SELECT generation,effective_policy_sha256,corpus_sha256,deployment_id FROM promotion_targets WHERE target_id=?1",
-            params![verified.target_id], |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?,row.get(3)?))
+        let target: Option<(i64,String,String,String,String)> = tx.query_row(
+            "SELECT generation,approved_artifact_sha256,effective_policy_sha256,corpus_sha256,deployment_id FROM promotion_targets WHERE target_id=?1",
+            params![verified.target_id], |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?,row.get(3)?,row.get(4)?))
         ).optional().map_err(sql_err("load target state"))?;
-        let Some((generation,effective,corpus,deployment)) = target else {
+        let Some((generation,approved,effective,corpus,deployment)) = target else {
             return Err(StoreError::CorruptStore("challenge target missing".into()));
         };
         if generation != sql_i64(verified.previous_generation)? ||
+           approved != verified.previous_approved_artifact_sha256 ||
            effective != verified.previous_effective_policy_sha256 ||
            corpus != verified.corpus_sha256 ||
            deployment != verified.deployment_id {
@@ -309,12 +317,12 @@ impl SqlitePolicyPromotionStore {
         }
         let promoted_at = now;
         tx.execute(
-            "INSERT INTO promotion_decisions (decision_id,target_id,challenge_id,previous_generation,next_generation,previous_effective_policy_sha256,approved_artifact_sha256,next_effective_policy_sha256,corpus_sha256,deployment_id,signer_key_id_hex,envelope_sha256,committed_at_unix_seconds) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)",
-            params![verified.decision_id,verified.target_id,verified.challenge_id,sql_i64(verified.previous_generation)?,sql_i64(verified.next_generation)?,verified.previous_effective_policy_sha256,verified.approved_artifact_sha256,verified.next_effective_policy_sha256,verified.corpus_sha256,verified.deployment_id,verified.signer_key_id_hex,verified.envelope_sha256,sql_i64(promoted_at)?]
+            "INSERT INTO promotion_decisions (decision_id,target_id,challenge_id,previous_generation,next_generation,previous_approved_artifact_sha256,previous_effective_policy_sha256,approved_artifact_sha256,next_effective_policy_sha256,corpus_sha256,deployment_id,signer_key_id_hex,envelope_sha256,committed_at_unix_seconds) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)",
+            params![verified.decision_id,verified.target_id,verified.challenge_id,sql_i64(verified.previous_generation)?,sql_i64(verified.next_generation)?,verified.previous_approved_artifact_sha256,verified.previous_effective_policy_sha256,verified.approved_artifact_sha256,verified.next_effective_policy_sha256,verified.corpus_sha256,verified.deployment_id,verified.signer_key_id_hex,verified.envelope_sha256,sql_i64(promoted_at)?]
         ).map_err(sql_err("insert committed decision"))?;
         let changed = tx.execute(
-            "UPDATE promotion_targets SET generation=?1,approved_artifact_sha256=?2,effective_policy_sha256=?3,corpus_sha256=?4,deployment_id=?5,last_decision_id=?6 WHERE target_id=?7 AND generation=?8 AND effective_policy_sha256=?9 AND corpus_sha256=?10 AND deployment_id=?11",
-            params![sql_i64(verified.next_generation)?,verified.approved_artifact_sha256,verified.next_effective_policy_sha256,verified.corpus_sha256,verified.deployment_id,verified.decision_id,verified.target_id,sql_i64(verified.previous_generation)?,verified.previous_effective_policy_sha256,verified.corpus_sha256,verified.deployment_id]
+            "UPDATE promotion_targets SET generation=?1,approved_artifact_sha256=?2,effective_policy_sha256=?3,corpus_sha256=?4,deployment_id=?5,last_decision_id=?6 WHERE target_id=?7 AND generation=?8 AND approved_artifact_sha256=?9 AND effective_policy_sha256=?10 AND corpus_sha256=?11 AND deployment_id=?12",
+            params![sql_i64(verified.next_generation)?,verified.approved_artifact_sha256,verified.next_effective_policy_sha256,verified.corpus_sha256,verified.deployment_id,verified.decision_id,verified.target_id,sql_i64(verified.previous_generation)?,verified.previous_approved_artifact_sha256,verified.previous_effective_policy_sha256,verified.corpus_sha256,verified.deployment_id]
         ).map_err(sql_err("compare-and-swap target generation"))?;
         if changed != 1 {
             return Err(StoreError::StaleTargetState);
@@ -333,6 +341,7 @@ impl SqlitePolicyPromotionStore {
             challenge_id: verified.challenge_id,
             previous_generation: verified.previous_generation,
             next_generation: verified.next_generation,
+            previous_approved_artifact_sha256: verified.previous_approved_artifact_sha256,
             approved_artifact_sha256: verified.approved_artifact_sha256,
             effective_policy_sha256: verified.next_effective_policy_sha256,
             corpus_sha256: verified.corpus_sha256,
