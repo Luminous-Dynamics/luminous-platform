@@ -504,6 +504,8 @@ dependencies = [
 name = "srq-d1-sqlite-store"
 version = "0.1.0"
 dependencies = [
+ "coset",
+ "ed25519-dalek",
  "rusqlite",
  "sha2 0.10.9",
  "srq-eat-cose-verifier",
