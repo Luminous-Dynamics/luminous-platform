@@ -65,6 +65,8 @@ jobs:
           bash -n benchmarks/srq-v1/evaluate-release.sh
           bash -n benchmarks/srq-v1/test-evaluate-release.sh
           bash -n benchmarks/srq-v1/install-pinned-gh.sh
+          bash -n benchmarks/srq-v1/install-pinned-sqlite.sh
+          bash -n benchmarks/srq-v1/require-pinned-sqlite.sh
           bash -n benchmarks/srq-v1/verify-attestation.sh
           bash -n benchmarks/srq-v1/test-verify-attestation.sh
           bash -n benchmarks/srq-v1/verify-evidence-bundle.sh
@@ -77,6 +79,10 @@ jobs:
           bash -n tools/srq-boot-observation-adapter/test-cli.sh
           bash -n tools/srq-eat-cose-verifier/test-cli.sh
           bash -n benchmarks/srq-v1/evaluate-attested-release.sh
+
+      - name: Install pinned SQLite CLI for WAL race reference tests
+        shell: bash
+        run: bash benchmarks/srq-v1/install-pinned-sqlite.sh
 
       - name: Run bounded filesystem activation model
         shell: bash
@@ -220,7 +226,7 @@ jobs:
           grep -Fq 'PASS: SIGKILL at after_challenge_insert rolls back all uncommitted writes' "$reference_log"
           grep -Fq 'PASS: SIGKILL before SQLite COMMIT rolls back decision, challenge and target state' "$reference_log"
           grep -Fq 'PASS: SIGKILL after SQLite COMMIT preserves one discoverable outcome by decision ID' "$reference_log"
-          grep -Eq '^sqlite_version=[0-9]+[.][0-9]+([.][0-9]+)? journal_mode=wal synchronous=FULL cases=11 process_contenders=64 commit_sigkill_boundaries=4 commit_sigkill_trials=100$' "$reference_log"
+          grep -Fq 'sqlite_version=3.54.1 journal_mode=wal synchronous=FULL cases=11 process_contenders=64 commit_sigkill_boundaries=4 commit_sigkill_trials=100' "$reference_log"
           test "$(grep -c '^race_trial=' "$reference_log")" -eq 64
           grep -Fq 'PASS: 100 SQLite SIGKILL trials across four transaction boundaries' "$reference_log"
           test "$(grep -c '^PASS: SIGKILL at after_decision_insert rolls back all uncommitted writes' "$reference_log")" -eq 25
@@ -305,7 +311,7 @@ jobs:
           grep -Fq 'PASS: D1 challenge replay after reopen is rejected without replacing the receipt' "$d1_sqlite_log"
           grep -Fq 'PASS: exactly one durable D1 receipt across 64 independent challenge consumers' "$d1_sqlite_log"
           grep -Fq 'PASS: 100 D1 SQLite SIGKILL trials across four transaction boundaries' "$d1_sqlite_log"
-          grep -Eq '^sqlite_version=[0-9]+[.][0-9]+([.][0-9]+)? journal_mode=wal synchronous=FULL d1_cases=20 contenders=64 process_kill_trials=100 commit_boundaries=4$' "$d1_sqlite_log"
+          grep -Fq 'sqlite_version=3.54.1 journal_mode=wal synchronous=FULL d1_cases=20 contenders=64 process_kill_trials=100 commit_boundaries=4' "$d1_sqlite_log"
 
       - name: Exercise typed Rust D1 SQLite ChallengeConsumer
         shell: bash
