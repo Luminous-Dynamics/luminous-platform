@@ -97,13 +97,13 @@ impl LocalState {
             return Err(WitnessError::CheckpointConflict);
         }
         if checkpoint.target_id != self.target_id
-            || checkpoint.sequence != self.sequence.saturating_add(1)
+            || self.sequence.checked_add(1) != Some(checkpoint.sequence)
             || checkpoint.previous_checkpoint_sha256 != self.checkpoint_sha256
         {
             return Err(WitnessError::StalePredecessor);
         }
         if checkpoint.previous_generation != self.generation
-            || checkpoint.generation != self.generation.saturating_add(1)
+            || self.generation.checked_add(1) != Some(checkpoint.generation)
         {
             return Err(WitnessError::InvalidGeneration);
         }
@@ -244,14 +244,14 @@ impl Witness {
             return Err(WitnessError::ExpiredAuthorization);
         }
         let tip = self.tips.get(&checkpoint.target_id).ok_or(WitnessError::UnknownTarget)?;
-        if checkpoint.sequence != tip.sequence.saturating_add(1) {
+        if tip.sequence.checked_add(1) != Some(checkpoint.sequence) {
             return Err(WitnessError::InvalidSequence);
         }
         if checkpoint.previous_checkpoint_sha256 != tip.checkpoint_sha256 {
             return Err(WitnessError::StalePredecessor);
         }
         if checkpoint.previous_generation != tip.generation
-            || checkpoint.generation != tip.generation.saturating_add(1)
+            || tip.generation.checked_add(1) != Some(checkpoint.generation)
         {
             return Err(WitnessError::InvalidGeneration);
         }
@@ -336,7 +336,7 @@ fn validate_checkpoint(checkpoint: &Checkpoint) -> Result<(), WitnessError> {
     if !valid_deployment_id(&checkpoint.deployment_id) {
         return Err(WitnessError::MalformedCheckpoint("deployment id"));
     }
-    if checkpoint.generation != checkpoint.previous_generation.saturating_add(1) {
+    if checkpoint.previous_generation.checked_add(1) != Some(checkpoint.generation) {
         return Err(WitnessError::InvalidGeneration);
     }
     if checkpoint.expires_at_unix_seconds <= checkpoint.issued_at_unix_seconds {
@@ -495,7 +495,11 @@ mod tests {
                 shared.lock().unwrap().advance_at(&next, 1_001).is_ok()
             }));
         }
-        let successes = threads.into_iter().filter(|t| t.join().unwrap()).count();
+        let successes = threads
+            .into_iter()
+            .map(|thread| thread.join().unwrap())
+            .filter(|success| *success)
+            .count();
         assert_eq!(successes, 1);
         assert_eq!(witness.lock().unwrap().tip("target-01").unwrap().sequence, 1);
     }
