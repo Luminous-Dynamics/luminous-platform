@@ -357,13 +357,14 @@ impl SqlitePolicyPromotionStore {
             .ok_or(StoreError::UnknownChallenge)?;
         let Some(decision_id) = challenge.consumed_decision_id else { return Ok(None); };
         let row = self.connection.query_row(
-            "SELECT decision_id,target_id,challenge_id,previous_generation,next_generation,approved_artifact_sha256,next_effective_policy_sha256,corpus_sha256,deployment_id,signer_key_id_hex,envelope_sha256,committed_at_unix_seconds FROM promotion_decisions WHERE decision_id=?1 AND challenge_id=?2 AND target_id=?3",
+            "SELECT d.decision_id,d.target_id,d.challenge_id,d.previous_generation,d.next_generation,d.previous_approved_artifact_sha256,d.approved_artifact_sha256,d.next_effective_policy_sha256,d.corpus_sha256,d.deployment_id,d.signer_key_id_hex,d.envelope_sha256,d.committed_at_unix_seconds FROM promotion_decisions d JOIN promotion_targets t ON t.target_id=d.target_id JOIN promotion_challenges c ON c.challenge_id=d.challenge_id AND c.target_id=d.target_id WHERE d.decision_id=?1 AND d.challenge_id=?2 AND d.target_id=?3 AND t.last_decision_id=d.decision_id AND t.generation=d.next_generation AND c.consumed_decision_id=d.decision_id",
             params![decision_id,challenge_id,challenge.target_id], |row| Ok(PromotedDecision {
                 decision_id: row.get(0)?, target_id: row.get(1)?, challenge_id: row.get(2)?,
                 previous_generation: row.get::<_,i64>(3)? as u64, next_generation: row.get::<_,i64>(4)? as u64,
-                approved_artifact_sha256: row.get(5)?, effective_policy_sha256: row.get(6)?, corpus_sha256: row.get(7)?,
-                deployment_id: row.get(8)?, signer_key_id_hex: row.get(9)?, envelope_sha256: row.get(10)?,
-                committed_at_unix_seconds: row.get::<_,i64>(11)? as u64
+                previous_approved_artifact_sha256: row.get(5)?, approved_artifact_sha256: row.get(6)?,
+                effective_policy_sha256: row.get(7)?, corpus_sha256: row.get(8)?,
+                deployment_id: row.get(9)?, signer_key_id_hex: row.get(10)?, envelope_sha256: row.get(11)?,
+                committed_at_unix_seconds: row.get::<_,i64>(12)? as u64
             })
         ).optional().map_err(sql_err("reconcile committed decision"))?;
         let Some(decision)=row else { return Err(StoreError::CorruptStore("challenge pointer has no decision row".into())); };
@@ -405,13 +406,13 @@ fn load_challenge(connection: &Connection, id: &str) -> Result<Option<StoredChal
 }
 fn load_challenge_conn(connection: &Connection,id:&str)->Result<Option<StoredChallenge>,StoreError>{
     connection.query_row(
-      "SELECT challenge_id,target_id,audience,decision_id,previous_generation,next_generation,previous_effective_policy_sha256,approved_artifact_sha256,next_effective_policy_sha256,corpus_sha256,deployment_id,expected_signer_key_id_hex,nonce_sha256,issued_at_unix_seconds,expires_at_unix_seconds,consumed_decision_id FROM promotion_challenges WHERE challenge_id=?1",
+      "SELECT challenge_id,target_id,audience,decision_id,previous_generation,next_generation,previous_approved_artifact_sha256,previous_effective_policy_sha256,approved_artifact_sha256,next_effective_policy_sha256,corpus_sha256,deployment_id,expected_signer_key_id_hex,nonce_sha256,issued_at_unix_seconds,expires_at_unix_seconds,consumed_decision_id FROM promotion_challenges WHERE challenge_id=?1",
       params![id],|r|Ok(StoredChallenge{
         challenge_id:r.get(0)?,target_id:r.get(1)?,audience:r.get(2)?,decision_id:r.get(3)?,
-        previous_generation:r.get(4)?,next_generation:r.get(5)?,previous_effective_policy_sha256:r.get(6)?,
-        approved_artifact_sha256:r.get(7)?,next_effective_policy_sha256:r.get(8)?,corpus_sha256:r.get(9)?,
-        deployment_id:r.get(10)?,expected_signer_key_id_hex:r.get(11)?,nonce_sha256:r.get(12)?,
-        issued_at_unix_seconds:r.get(13)?,expires_at_unix_seconds:r.get(14)?,consumed_decision_id:r.get(15)?
+        previous_generation:r.get(4)?,next_generation:r.get(5)?,previous_approved_artifact_sha256:r.get(6)?,
+        previous_effective_policy_sha256:r.get(7)?,approved_artifact_sha256:r.get(8)?,next_effective_policy_sha256:r.get(9)?,
+        corpus_sha256:r.get(10)?,deployment_id:r.get(11)?,expected_signer_key_id_hex:r.get(12)?,nonce_sha256:r.get(13)?,
+        issued_at_unix_seconds:r.get(14)?,expires_at_unix_seconds:r.get(15)?,consumed_decision_id:r.get(16)?
       })
     ).optional().map_err(sql_err("load stored promotion challenge"))
 }
@@ -430,6 +431,7 @@ fn validate_verified_binding(v:&VerifiedAuthorization,c:&StoredChallenge,key:&Tr
         return Err(StoreError::BindingMismatch("trusted key / verifier scope"));
     }
     if v.previous_generation != c.previous_generation as u64 || v.next_generation != c.next_generation as u64 ||
+       v.previous_approved_artifact_sha256!=c.previous_approved_artifact_sha256 ||
        v.previous_effective_policy_sha256!=c.previous_effective_policy_sha256 || v.approved_artifact_sha256!=c.approved_artifact_sha256 ||
        v.next_effective_policy_sha256!=c.next_effective_policy_sha256 || v.corpus_sha256!=c.corpus_sha256 || v.deployment_id!=c.deployment_id ||
        v.nonce_sha256!=c.nonce_sha256 || v.issued_at_unix_seconds < c.issued_at_unix_seconds as u64 || v.expires_at_unix_seconds != c.expires_at_unix_seconds as u64 {
@@ -471,7 +473,7 @@ fn verify_signed_authorization(token:&[u8],key:&TrustedPromotionKey)->Result<Ver
         };
         if known.insert(name.clone(),v).is_some(){return Err(StoreError::InvalidToken(format!("duplicate claim {name}")));}
     }
-    const REQUIRED:&[&str]=&["eat_nonce","sub","aud","exp","iat","srq_profile","srq_challenge_id","srq_decision_id","srq_target_id","srq_previous_generation","srq_next_generation","srq_previous_effective_policy_sha256","srq_approved_artifact_sha256","srq_next_effective_policy_sha256","srq_corpus_sha256","srq_deployment_id","srq_verifier_id"];
+    const REQUIRED:&[&str]=&["eat_nonce","sub","aud","exp","iat","srq_profile","srq_challenge_id","srq_decision_id","srq_target_id","srq_previous_generation","srq_next_generation","srq_previous_approved_artifact_sha256","srq_previous_effective_policy_sha256","srq_approved_artifact_sha256","srq_next_effective_policy_sha256","srq_corpus_sha256","srq_deployment_id","srq_verifier_id"];
     if known.len()!=REQUIRED.len()||REQUIRED.iter().any(|name|!known.contains_key(*name)){return Err(StoreError::InvalidToken("claim inventory mismatch".into()));}
     let text=|name:&str|->Result<String,StoreError>{match known.get(name){Some(coset::cbor::value::Value::Text(s))=>Ok(s.clone()),_=>Err(StoreError::InvalidToken(format!("{name} must be text")))}};
     let uint=|name:&str|->Result<u64,StoreError>{match known.get(name){Some(coset::cbor::value::Value::Integer(n))=>u64::try_from(*n).map_err(|_|StoreError::InvalidToken(format!("{name} must be uint"))),_=>Err(StoreError::InvalidToken(format!("{name} must be integer")))}};
@@ -489,6 +491,7 @@ fn verify_signed_authorization(token:&[u8],key:&TrustedPromotionKey)->Result<Ver
     let claims=VerifiedAuthorization{
         challenge_id:text("srq_challenge_id")?,target_id,audience,decision_id:text("srq_decision_id")?,
         previous_generation:uint("srq_previous_generation")?,next_generation:uint("srq_next_generation")?,
+        previous_approved_artifact_sha256:sha("srq_previous_approved_artifact_sha256")?,
         previous_effective_policy_sha256:sha("srq_previous_effective_policy_sha256")?,
         approved_artifact_sha256:sha("srq_approved_artifact_sha256")?,
         next_effective_policy_sha256:sha("srq_next_effective_policy_sha256")?,
@@ -516,7 +519,7 @@ fn validate_challenge_shape(c:&IssuedPromotionChallenge)->Result<(),StoreError>{
     if !valid_identifier(&c.challenge_id)||!valid_identifier(&c.target_id)||!valid_identifier(&c.audience)||!valid_identifier(&c.decision_id)||!valid_identifier(&c.deployment_id){return Err(StoreError::InvalidInput("challenge identifier invalid"));}
     if c.nonce.len()<16||c.nonce.len()>64{return Err(StoreError::InvalidInput("nonce must be 16..64 bytes"));}
     if c.expected_signer_key_id_hex.is_empty()||c.expected_signer_key_id_hex.len()>128||c.expected_signer_key_id_hex.bytes().any(|b|!b.is_ascii_hexdigit()||b.is_ascii_uppercase()){return Err(StoreError::InvalidInput("signer key ID must be lowercase hex"));}
-    for d in [&c.previous_effective_policy_sha256,&c.approved_artifact_sha256,&c.next_effective_policy_sha256,&c.corpus_sha256]{if !is_sha256(d){return Err(StoreError::InvalidInput("challenge digest invalid"));}}
+    for d in [&c.previous_approved_artifact_sha256,&c.previous_effective_policy_sha256,&c.approved_artifact_sha256,&c.next_effective_policy_sha256,&c.corpus_sha256]{if !is_sha256(d){return Err(StoreError::InvalidInput("challenge digest invalid"));}}
     if c.next_generation!=c.previous_generation.checked_add(1).ok_or(StoreError::InvalidInput("generation overflow"))?{return Err(StoreError::InvalidInput("generation must increment exactly once"));}
     if c.expires_at_unix_seconds<=c.issued_at_unix_seconds{return Err(StoreError::InvalidInput("challenge expiry must follow issue time"));}
     sql_i64(c.previous_generation)?;sql_i64(c.next_generation)?;sql_i64(c.issued_at_unix_seconds)?;sql_i64(c.expires_at_unix_seconds)?;
