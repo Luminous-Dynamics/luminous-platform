@@ -24,6 +24,12 @@ The same run retained the 64-independent-process contention result (exactly one 
 
 The gate compiler still reports `NOT_QUALIFIED`, 0/22 gates at qualifying tier. The signing job was skipped on the PR event, so these results are tested and digest-bound in the PR evidence subject contract, but do not claim that a trusted-main attestation was minted or verified. The next step is repeated fault trials per boundary and production-adapter integration.
 
+## Engine-version policy for WAL benchmarks
+
+The shell reference tests now build SQLite CLI 3.54.1 from the official sqlite-autoconf-3540100.tar.gz, verify the archive's published SHA3-256 before compiling, then verify the exact sqlite_source_id(). The test scripts fail closed if another CLI is on PATH. This replaces prior smoke measurements from the Ubuntu system CLI (SQLite 3.45.1), which falls inside SQLite's documented WAL-reset corruption-bug range (through 3.51.2). The older timing samples remain historical observations only; they are **not** part of the pinned baseline and must not be pooled with new results.
+
+The production-shaped Rust D1 store separately enforces a minimum linked SQLite version of 3.51.3 or later at startup. This avoids a silent downgrade back into the known WAL-reset-bug range. The benchmark runner is Linux x86_64; SQLite's 3.54.1 release notes describe a separate 32-bit-only heap-buffer issue, which does not affect the 64-bit reference runner. Version pinning narrows the test environment; it does not remove the need to test the actual packaged deployment and to keep dependencies patched.
+
 ## Required transaction contract
 
 ### Current executable reference observation (2026-10-20)
