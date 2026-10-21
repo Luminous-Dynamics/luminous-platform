@@ -1,6 +1,6 @@
 # SRQ-1 EAT/COSE boot-observation profile v1
 
-**Status:** protocol design / CDDL draft. No D1 signer, COSE verifier, TPM quote verifier or release-gate integration is implemented by this document.
+**Status:** protocol design / CDDL draft plus an initial Rust D1 verification prototype in `tools/srq-eat-cose-verifier/`. The prototype verifies a COSE_Sign1 Ed25519 response and challenge bindings, but it is not integrated with a durable production challenge store, a provisioned target signer, TPM quote verification, or an SRQ release gate. The initial dependency lockfile and test outcome must be reviewed before treating the prototype as reproducible or passing.
 
 ## Purpose
 
@@ -59,12 +59,28 @@ For any field with a digest-shaped representation, validate exact length and low
 9. Kill the verifier before and after challenge consumption/receipt commit. On reopen, the outcome must be uniquely reconcilable by challenge ID and decision ID.
 10. Keep raw token digest, signer/attester identity policy, verifier version, trust-bundle digest, reference-value digest, boot instance ID, source SHA and execution tier in the evidence record.
 
+## Initial D1 verifier prototype (2026-10-21)
+
+The new Rust crate uses the maintained `coset` COSE implementation and Ed25519 verification rather than inventing a signature envelope. Its intended initial contract is deliberately narrow:
+
+- Accept only protected COSE `alg=EdDSA` and the key ID selected by the external trust policy; reject unprotected headers, detached payloads, unknown claims, duplicate CBOR claim keys, oversize tokens and malformed encodings.
+- Bind the EAT nonce to a verifier-created 16–64 byte nonce; require the exact challenge expiry, verifier audience, provisioned target token, decision ID, logical generation, artifact/policy/corpus digests and immutable expected deployment identity.
+- Keep `booted_deployment_id` distinct from `current_userspace_deployment_id`; mismatch or divergent/unavailable observation is a rejection.
+- Accept only `D1-software-key`. It rejects D2 claims and non-null measurement claims; a signed assertion is not silently upgraded to hardware measurement.
+- The plain CLI output is deliberately `ENVELOPE_AND_BINDINGS_VERIFIED_NOT_REPLAY_SAFE`, `release_gate_eligible=false`. A successful signature check does not consume a nonce. A caller must invoke the verification-plus-consumption API with a durable challenge store that atomically binds challenge ID, nonce, decision ID and envelope digest.
+
+The prototype's test fixture private key is deterministic and exists only inside unit tests. It is not an operational key, a target provisioned key, a hardware key or evidence from a physical host. The trust-policy JSON and verifier-controlled challenge file must be supplied through an independently protected channel. The CLI takes an explicit verifier time argument; the target's `iat` does not establish trusted time.
+
+At this stage, the D1 test log is retained as a separate CI artifact while the code and profile are iterated. It is not yet included in the fixed signed evidence bundle, and the real main-branch attestation path has not been exercised. No release gate may consume it.
+
 ## Next implementation sequence
 
-1. Freeze and review this profile with a specific target-key provisioning model before adding signing code.
-2. Implement EAT/COSE parsing and verification with a maintained library, strict algorithm allowlist, exact signature verification, key-ID policy, nonce freshness and deterministic negative tests.
-3. Return a non-serializable typed verifier capability from the successful challenge-consume path; make rollout evaluation require that capability rather than caller-supplied freshness_valid=true or nonce_durably_consumed=true booleans.
-4. Implement the D2 TPM quote profile separately and keep its acceptance corpus separate from D1.
-5. Integrate with the rollout journal and measure actual booted state plus independent service behavior on QEMU, then on physical devices.
+1. Review the D1 verifier API and confirm compatibility with the selected EAT/COSE profile and trust policy; add cross-implementation vectors from a second COSE implementation.
+2. Commit and review the generated Cargo.lock, then require `--locked` for all verifier builds and tests.
+3. Provision a target-bound signing key and define enrolment, revocation, rotation, recovery and verifier-policy governance. Test key rollover and revoked-key rejection.
+4. Implement a durable challenge-consumption adapter as one transaction with the verifier receipt. Return an approval-eligible, non-serializable capability only after the transaction commits; never accept caller-supplied booleans as proof of freshness or consumption.
+5. Integrate the signed verifier receipt into the SRQ evidence bundle with source/schema/trust-policy digests and verifier version; keep the result D1 / software-key-only.
+6. Implement the D2 TPM quote profile separately with endorsement chain, approved PCR selection/reference values and a separate acceptance corpus.
+7. Integrate with the rollout journal and measure actual booted state plus an independent service probe on QEMU, then physical devices.
 
 **No superiority claim is made.** The hypothesis is that Luminous can tie authorization, durable promotion, observed boot state, service behavior and auditable recovery evidence together more reliably than a disconnected collection of component checks. Prove it on a matched fault corpus and fail closed on every missing claim.
