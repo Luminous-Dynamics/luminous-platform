@@ -173,6 +173,61 @@ pub struct PromotionPermit {
     expires_at_unix_ms: u64,
 }
 
+/// Read-only binding produced only when a live, process-local promotion permit
+/// still matches the durable journal's Verified state. It is intentionally not
+/// Clone, serializable, or publicly constructible. Callers must still account for
+/// the time-of-check/time-of-use window before external device actuation.
+#[derive(Debug)]
+pub struct VerifiedPromotionBinding {
+    operation_id: String,
+    target_token: String,
+    generation: u64,
+    baseline_policy_sha256: String,
+    candidate_policy_sha256: String,
+    challenge_id: String,
+    receipt_sha256: String,
+    observed_at_unix_ms: u64,
+    expires_at_unix_ms: u64,
+}
+
+impl VerifiedPromotionBinding {
+    pub fn operation_id(&self) -> &str {
+        &self.operation_id
+    }
+
+    pub fn target_token(&self) -> &str {
+        &self.target_token
+    }
+
+    pub fn generation(&self) -> u64 {
+        self.generation
+    }
+
+    pub fn baseline_policy_sha256(&self) -> &str {
+        &self.baseline_policy_sha256
+    }
+
+    pub fn candidate_policy_sha256(&self) -> &str {
+        &self.candidate_policy_sha256
+    }
+
+    pub fn challenge_id(&self) -> &str {
+        &self.challenge_id
+    }
+
+    pub fn receipt_sha256(&self) -> &str {
+        &self.receipt_sha256
+    }
+
+    pub fn observed_at_unix_ms(&self) -> u64 {
+        self.observed_at_unix_ms
+    }
+
+    pub fn expires_at_unix_ms(&self) -> u64 {
+        self.expires_at_unix_ms
+    }
+}
+
 /// Inputs for the public challenge-verification and promotion-evidence gate.
 ///
 /// The strings are the exact bytes to be schema-validated and digest-bound.
@@ -814,6 +869,80 @@ impl PromotionJournal {
     pub fn get(&self, operation_id: &str) -> Result<Option<PromotionOperation>, String> {
         let connection = connect(&self.path)?;
         get_operation_conn(&connection, operation_id)
+    }
+
+    /// Validate a process-local permit against the current durable journal and
+    /// return a private-field binding for read-only fleet classification.
+    ///
+    /// This does not apply or promote a device policy. A caller must revalidate
+    /// immediately before actuation and reconcile actual device state after a
+    /// timeout; the returned binding does not eliminate external TOCTOU races.
+    pub fn validate_permit(
+        &self,
+        permit: &PromotionPermit,
+        now_unix_ms: u64,
+    ) -> Result<VerifiedPromotionBinding, String> {
+        if permit.session_id != self.session_id {
+            return Err("promotion permit belongs to a different verifier process session".to_owned());
+        }
+        if now_unix_ms > permit.expires_at_unix_ms {
+            return Err("promotion evidence expired before fleet evaluation".to_owned());
+        }
+
+        let mut connection = connect(&self.path)?;
+        let transaction = connection
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(|error| format!("cannot begin permit validation transaction: {error}"))?;
+        let operation = get_operation_conn(&transaction, &permit.operation_id)?
+            .ok_or_else(|| "promotion permit references an unknown operation".to_owned())?;
+        if operation.state != PromotionState::Verified {
+            return Err(format!("promotion permit is no longer Verified: {:?}", operation.state));
+        }
+        if operation.evidence_expires_at_unix_ms.is_none_or(|expiry| now_unix_ms > expiry)
+            || operation.evidence_observed_at_unix_ms.is_none_or(|observed| observed > now_unix_ms)
+        {
+            return Err("promotion evidence is outside its durable time window".to_owned());
+        }
+        let stored_session: Option<String> = transaction
+            .query_row(
+                "SELECT verification_session_id FROM promotion_operations WHERE operation_id = ?1;",
+                params![permit.operation_id],
+                |row| row.get(0),
+            )
+            .map_err(|error| format!("cannot read permit verification session: {error}"))?;
+        if stored_session.as_deref() != Some(self.session_id.as_str()) {
+            return Err("durable verification session does not match current process".to_owned());
+        }
+        let challenge_id = operation.challenge_id.clone()
+            .ok_or_else(|| "verified operation has no challenge ID".to_owned())?;
+        let receipt_sha256 = operation.receipt_sha256.clone()
+            .ok_or_else(|| "verified operation has no receipt digest".to_owned())?;
+        let observed_at_unix_ms = operation.evidence_observed_at_unix_ms
+            .ok_or_else(|| "verified operation has no evidence observation time".to_owned())?;
+        let expires_at_unix_ms = operation.evidence_expires_at_unix_ms
+            .ok_or_else(|| "verified operation has no evidence expiry".to_owned())?;
+        if permit.expires_at_unix_ms != expires_at_unix_ms {
+            return Err("process-local permit expiry does not match durable evidence expiry".to_owned());
+        }
+        if operation.observed_policy_sha256.as_deref()
+            != Some(operation.candidate_policy_sha256.as_str())
+        {
+            return Err("verified operation no longer reads back the candidate policy".to_owned());
+        }
+        transaction.commit()
+            .map_err(|error| format!("cannot commit permit validation transaction: {error}"))?;
+
+        Ok(VerifiedPromotionBinding {
+            operation_id: operation.operation_id,
+            target_token: operation.target_token,
+            generation: operation.generation,
+            baseline_policy_sha256: operation.baseline_policy_sha256,
+            candidate_policy_sha256: operation.candidate_policy_sha256,
+            challenge_id,
+            receipt_sha256,
+            observed_at_unix_ms,
+            expires_at_unix_ms,
+        })
     }
 
     /// Return every non-terminal operation with an explicit fail-closed
@@ -1503,6 +1632,66 @@ mod tests {
     }
 
     #[test]
+    fn fleet_wave_binding_requires_current_permit_for_exact_target_and_policy() {
+        use crate::fleet_rollout::{
+            FleetTarget, RolloutWave, WaveDecision, validate_wave_permits,
+        };
+
+        let path = path();
+        let journal = PromotionJournal::open(&path).expect("open");
+        prepared_applied(&journal);
+        let permit = journal
+            .record_verified("operation-policy-0001", &evidence(130, 180), 150)
+            .expect("verified permit");
+        let target = FleetTarget {
+            target_token: "target-policy-lab".to_owned(),
+            failure_domain: "site-a".to_owned(),
+            generation: 1,
+            baseline_policy_sha256: BASELINE.to_owned(),
+            candidate_policy_sha256: CANDIDATE.to_owned(),
+            canary: true,
+        };
+        let wave = RolloutWave {
+            index: 0,
+            is_canary: true,
+            targets: vec![target.clone()],
+        };
+
+        let validated = validate_wave_permits(&journal, &wave, &[&permit], 155)
+            .expect("exact journal-bound permit");
+        assert_eq!(validated.wave_index(), 0);
+        assert_eq!(validated.len(), 1);
+        assert_eq!(validated.bindings()[0].target_token(), "target-policy-lab");
+        assert_eq!(validated.bindings()[0].generation(), 1);
+        assert_eq!(validated.bindings()[0].baseline_policy_sha256(), BASELINE);
+        assert_eq!(validated.bindings()[0].candidate_policy_sha256(), CANDIDATE);
+        assert_eq!(
+            validated.bindings()[0].challenge_id(),
+            "challenge-policy-0001"
+        );
+
+        let mut wrong_candidate_wave = wave.clone();
+        wrong_candidate_wave.targets[0].candidate_policy_sha256 = "d".repeat(64);
+        let mismatch = validate_wave_permits(&journal, &wrong_candidate_wave, &[&permit], 155)
+            .expect_err("wrong planned candidate");
+        assert_eq!(mismatch.decision, WaveDecision::HaltAndReconcile);
+        assert!(mismatch.reasons.iter().any(|reason| reason.contains("policy digests")));
+
+        let expired = validate_wave_permits(&journal, &wave, &[&permit], 181)
+            .expect_err("expired permit");
+        assert_eq!(expired.decision, WaveDecision::HaltAndReconcile);
+        assert!(expired.reasons.iter().any(|reason| reason.contains("expired")));
+
+        let missing = validate_wave_permits(&journal, &wave, &[], 155)
+            .expect_err("missing permit");
+        assert_eq!(missing.decision, WaveDecision::HaltAndReconcile);
+        assert!(missing.reasons.iter().any(|reason| reason.contains("permit count mismatch")));
+
+        drop(journal);
+        remove_database(&path);
+    }
+
+    #[test]
     fn reopen_invalidates_verified_evidence_and_recovery_requires_a_new_challenge() {
         let path = path();
         let journal = PromotionJournal::open(&path).expect("open");
@@ -1535,6 +1724,12 @@ mod tests {
             reopened
                 .promote(&old_permit, CANDIDATE, 160)
                 .expect_err("previous process permit is invalid")
+                .contains("different verifier process session")
+        );
+        assert!(
+            reopened
+                .validate_permit(&old_permit, 160)
+                .expect_err("previous process fleet permit is invalid")
                 .contains("different verifier process session")
         );
         let new_permit = reopened
