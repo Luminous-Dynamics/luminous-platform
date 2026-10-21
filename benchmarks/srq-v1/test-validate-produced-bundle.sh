@@ -18,7 +18,7 @@ run_attempt="1"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 make_archive() {
-  local archive="$1" bad_observation="${2:-false}" bad_checksum="${3:-false}"
+  local archive="$1" bad_observation="${2:-false}" bad_checksum="${3:-false}" bad_d1="${4:-false}"
   local work="$tmp/work" bundle="$tmp/work/srq-evidence-bundle"
   rm -rf "$work"
   mkdir -p "$bundle"
@@ -27,6 +27,7 @@ make_archive() {
     srq-boot-observation-adapter-test.log \
     srq-boot-reconciliation-model-test.log \
     srq-challenge-promotion-model-test.log \
+    srq-eat-cose-verifier-test.log \
     srq-evidence-003-model-result.json \
     srq-process-kill-model-test.log \
     srq-recovery-model-test.log \
@@ -47,6 +48,7 @@ make_archive() {
       srq-boot-observation-adapter-test.log \
       srq-boot-reconciliation-model-test.log \
       srq-challenge-promotion-model-test.log \
+      srq-eat-cose-verifier-test.log \
       srq-evidence-003-model-result.json \
       srq-process-kill-model-test.log \
       srq-recovery-model-test.log \
@@ -59,14 +61,18 @@ make_archive() {
     printf 'tampered after hashing\n' >> "$bundle/srq-recovery-model-test.log"
   fi
 
-  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha
+  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha d1_cose_verifier_sha
   checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
   process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
   sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
   boot_reconciliation_sha="$(sha256sum "$bundle/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
   boot_observation_adapter_sha="$(sha256sum "$bundle/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
+  d1_cose_verifier_sha="$(sha256sum "$bundle/srq-eat-cose-verifier-test.log" | cut -d ' ' -f 1)"
   if [[ "$bad_observation" == "true" ]]; then
     boot_observation_adapter_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  fi
+  if [[ "$bad_d1" == "true" ]]; then
+    d1_cose_verifier_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
 
   jq -n \
@@ -84,7 +90,8 @@ make_archive() {
     --arg process_kill_sha "$process_kill_sha" \
     --arg sqlite_reference_sha "$sqlite_reference_sha" \
     --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
-    --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" '{
+    --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" \
+    --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" '{
       schema_version: 1,
       profile_id: "SRQ-1",
       repository: $repository,
@@ -134,6 +141,14 @@ make_archive() {
         status: "PASS",
         evidence_artifact: "srq-boot-observation-adapter-test.log",
         evidence_sha256: $boot_observation_adapter_sha
+      }, {
+        test_id: "SRQ-D1-COSE-VERIFY-V1",
+        scenario_id: "RECOVERY-002",
+        execution_tier: "model",
+        claim_ceiling: "cryptographic_test_fixture_only",
+        status: "PASS",
+        evidence_artifact: "srq-eat-cose-verifier-test.log",
+        evidence_sha256: $d1_cose_verifier_sha
       }]
     }' > "$bundle/manifest.json"
 
@@ -180,6 +195,12 @@ if run_validator "$tmp/bad-observation.tar.gz" "$source_sha" "$event_sha" "$work
   fail "supplemental observation digest mismatch was accepted"
 fi
 echo "PASS: D0 observer digest mismatch fails closed"
+
+make_archive "$tmp/bad-d1.tar.gz" false false true
+if run_validator "$tmp/bad-d1.tar.gz" "$source_sha" "$event_sha" "$workflow_sha" "$tmp/bad-d1.out" >/dev/null 2>&1; then
+  fail "D1 verifier test digest mismatch was accepted"
+fi
+echo "PASS: D1 verifier fixture digest mismatch fails closed"
 
 make_archive "$tmp/bad-checksum.tar.gz" false true
 if run_validator "$tmp/bad-checksum.tar.gz" "$source_sha" "$event_sha" "$workflow_sha" "$tmp/bad-checksum.out" >/dev/null 2>&1; then
