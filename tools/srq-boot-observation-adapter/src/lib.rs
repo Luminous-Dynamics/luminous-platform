@@ -274,10 +274,10 @@ mod tests {
         assert_eq!(observation.status, CONSISTENT);
         assert!(observation.reason_codes.is_empty());
         let json = observation.to_json();
-        assert!(json.contains("\\"authenticity_status\\": \\"NOT_AUTHENTICATED\\""));
-        assert!(json.contains("\\"evidence_tier\\": \\"D0-local-diagnostic\\""));
-        assert!(json.contains("\\"signature_status\\": \\"NOT_AUTHENTICATED\\""));
-        assert!(!json.contains("\\"release_pass\\""));
+        assert!(json.contains("\"authenticity_status\": \"NOT_AUTHENTICATED\""));
+        assert!(json.contains("\"evidence_tier\": \"D0-local-diagnostic\""));
+        assert!(json.contains("\"signature_status\": \"NOT_AUTHENTICATED\""));
+        assert!(!json.contains("\"release_pass\""));
         assert!(!json.contains("PASS"));
     }
 
@@ -352,9 +352,9 @@ mod tests {
     fn observer_never_supplies_policy_artifact_or_measurement_proof() {
         let fixture = Fixture::new();
         let json = fixture.observe().to_json();
-        assert!(json.contains("\\"promotion_binding_status\\": \\"NOT_PROVIDED\\""));
-        assert!(json.contains("\\"measurement_status\\": \\"NOT_MEASURED\\""));
-        assert!(json.contains("\\"captured_at_unix_ms_untrusted\\""));
+        assert!(json.contains("\"promotion_binding_status\": \"NOT_PROVIDED\""));
+        assert!(json.contains("\"measurement_status\": \"NOT_MEASURED\""));
+        assert!(json.contains("\"captured_at_unix_ms_untrusted\""));
     }
 
     #[test]
