@@ -9,6 +9,7 @@ command -v sqlite3 >/dev/null 2>&1 || {
   echo "BLOCKED: sqlite3 CLI is required for the D1 challenge-consumption reference." >&2
   exit 2
 }
+bash benchmarks/srq-v1/require-pinned-sqlite.sh
 [[ -f "$schema" ]] || { echo "FAIL: D1 reference schema is missing." >&2; exit 1; }
 
 readonly challenge_id="d1-observation-0001"
