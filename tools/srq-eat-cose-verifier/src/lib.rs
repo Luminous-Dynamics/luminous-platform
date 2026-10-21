@@ -94,7 +94,7 @@ pub fn verify_cose_eat(
     let sign1 = CoseSign1::from_slice(token_bytes)
         .map_err(|e| format!("COSE_Sign1 decode failed: {e}"))?;
 
-    if sign1.protected.header.alg != Some(iana::Algorithm::EdDSA.into()) {
+    if sign1.protected.header.alg != Some(iana::Algorithm::Ed25519.into()) {
         return Err("protected COSE alg must be EdDSA".into());
     }
     if sign1.protected.header.key_id.as_slice() != trusted_key.key_id.as_slice() {
@@ -656,7 +656,7 @@ mod tests {
             CoseSign1Builder::new()
                 .protected(
                     HeaderBuilder::new()
-                        .algorithm(iana::Algorithm::EdDSA)
+                        .algorithm(iana::Algorithm::Ed25519)
                         .key_id(self.trusted.key_id.clone())
                         .build(),
                 )
