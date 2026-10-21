@@ -1606,6 +1606,66 @@ mod tests {
     }
 
     #[test]
+    fn fleet_wave_binding_requires_current_permit_for_exact_target_and_policy() {
+        use crate::fleet_rollout::{
+            FleetTarget, RolloutWave, WaveDecision, validate_wave_permits,
+        };
+
+        let path = path();
+        let journal = PromotionJournal::open(&path).expect("open");
+        prepared_applied(&journal);
+        let permit = journal
+            .record_verified("operation-policy-0001", &evidence(130, 180), 150)
+            .expect("verified permit");
+        let target = FleetTarget {
+            target_token: "target-policy-lab".to_owned(),
+            failure_domain: "site-a".to_owned(),
+            generation: 1,
+            baseline_policy_sha256: BASELINE.to_owned(),
+            candidate_policy_sha256: CANDIDATE.to_owned(),
+            canary: true,
+        };
+        let wave = RolloutWave {
+            index: 0,
+            is_canary: true,
+            targets: vec![target.clone()],
+        };
+
+        let validated = validate_wave_permits(&journal, &wave, &[&permit], 155)
+            .expect("exact journal-bound permit");
+        assert_eq!(validated.wave_index(), 0);
+        assert_eq!(validated.len(), 1);
+        assert_eq!(validated.bindings()[0].target_token(), "target-policy-lab");
+        assert_eq!(validated.bindings()[0].generation(), 1);
+        assert_eq!(validated.bindings()[0].baseline_policy_sha256(), BASELINE);
+        assert_eq!(validated.bindings()[0].candidate_policy_sha256(), CANDIDATE);
+        assert_eq!(
+            validated.bindings()[0].challenge_id(),
+            "challenge-policy-0001"
+        );
+
+        let mut wrong_candidate_wave = wave.clone();
+        wrong_candidate_wave.targets[0].candidate_policy_sha256 = "d".repeat(64);
+        let mismatch = validate_wave_permits(&journal, &wrong_candidate_wave, &[&permit], 155)
+            .expect_err("wrong planned candidate");
+        assert_eq!(mismatch.decision, WaveDecision::HaltAndReconcile);
+        assert!(mismatch.reasons.iter().any(|reason| reason.contains("policy digests")));
+
+        let expired = validate_wave_permits(&journal, &wave, &[&permit], 181)
+            .expect_err("expired permit");
+        assert_eq!(expired.decision, WaveDecision::HaltAndReconcile);
+        assert!(expired.reasons.iter().any(|reason| reason.contains("expired")));
+
+        let missing = validate_wave_permits(&journal, &wave, &[], 155)
+            .expect_err("missing permit");
+        assert_eq!(missing.decision, WaveDecision::HaltAndReconcile);
+        assert!(missing.reasons.iter().any(|reason| reason.contains("permit count mismatch")));
+
+        drop(journal);
+        remove_database(&path);
+    }
+
+    #[test]
     fn reopen_invalidates_verified_evidence_and_recovery_requires_a_new_challenge() {
         let path = path();
         let journal = PromotionJournal::open(&path).expect("open");
@@ -1638,6 +1698,12 @@ mod tests {
             reopened
                 .promote(&old_permit, CANDIDATE, 160)
                 .expect_err("previous process permit is invalid")
+                .contains("different verifier process session")
+        );
+        assert!(
+            reopened
+                .validate_permit(&old_permit, 160)
+                .expect_err("previous process fleet permit is invalid")
                 .contains("different verifier process session")
         );
         let new_permit = reopened
