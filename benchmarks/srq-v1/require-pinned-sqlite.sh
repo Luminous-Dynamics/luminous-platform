@@ -19,3 +19,4 @@ source_id="$(sqlite3 :memory: 'SELECT sqlite_source_id();')"
   exit 2
 }
 printf 'PASS: reference SQLite is pinned: %s\n' "$version_line"
+printf 'SQLite source ID: %s\n' "$source_id"
