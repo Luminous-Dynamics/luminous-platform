@@ -23,6 +23,7 @@ printf 'synthetic recovery-model evidence; contract test only\n' > "$bundle/srq-
 printf 'synthetic process-kill observation; model-tier only\n' > "$bundle/srq-process-kill-model-test.log"
 printf 'synthetic COSE verifier test; deterministic fixture only\n' > "$bundle/srq-eat-cose-verifier-test.log"
 printf 'synthetic SQLite promotion reference; model-tier only\n' > "$bundle/srq-sqlite-promotion-reference.log"
+printf 'synthetic D1 SQLite consumption reference; model-tier only\\n' > "$bundle/srq-sqlite-d1-challenge-consumption-reference.log"
 printf 'synthetic boot-reconciliation observation; model-tier only\n' > "$bundle/srq-boot-reconciliation-model-test.log"
 printf 'synthetic D0 adapter self-test; model-tier only\n' > "$bundle/srq-boot-observation-adapter-test.log"
 printf 'synthetic challenge-model evidence; contract test only\n' > "$bundle/srq-challenge-promotion-model-test.log"
@@ -34,6 +35,7 @@ sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" |
 boot_reconciliation_sha="$(sha256sum "$bundle/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
 boot_observation_adapter_sha="$(sha256sum "$bundle/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
 d1_cose_verifier_sha="$(sha256sum "$bundle/srq-eat-cose-verifier-test.log" | cut -d ' ' -f 1)"
+d1_sqlite_consumer_sha="$(sha256sum "$bundle/srq-sqlite-d1-challenge-consumption-reference.log" | cut -d ' ' -f 1)"
 
 make_receipt() {
   local scenario="$1" log="$2" log_sha="$3" destination="$4" command="$5"
@@ -105,6 +107,7 @@ jq -e '.overall_status == "NOT_QUALIFIED" and .summary.passed_at_qualifying_tier
     srq-process-kill-model-test.log \
     srq-recovery-model-test.log \
     srq-release-qualification.json \
+    srq-sqlite-d1-challenge-consumption-reference.log \
     srq-sqlite-promotion-reference.log \
     srq-update-004-model-result.json > SHA256SUMS
 )
@@ -126,6 +129,7 @@ jq -n \
   --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
   --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" \
   --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" \
+  --arg d1_sqlite_consumer_sha "$d1_sqlite_consumer_sha" \
   '{
     schema_version: 1,
     profile_id: "SRQ-1",
@@ -184,6 +188,14 @@ jq -n \
       status: "PASS",
       evidence_artifact: "srq-eat-cose-verifier-test.log",
       evidence_sha256: $d1_cose_verifier_sha
+    }, {
+      test_id: "SRQ-D1-SQLITE-CONSUMER-REFERENCE-V1",
+      scenario_id: "RECOVERY-002",
+      execution_tier: "model",
+      claim_ceiling: "abstract_model_only",
+      status: "PASS",
+      evidence_artifact: "srq-sqlite-d1-challenge-consumption-reference.log",
+      evidence_sha256: $d1_sqlite_consumer_sha
     }]
   }' > "$bundle/manifest.json"
 
