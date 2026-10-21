@@ -66,6 +66,32 @@ impl std::fmt::Debug for IssuedChallenge {
     }
 }
 
+/// Committed boot-observation receipt reconstructed from SQLite. This
+/// omits the raw nonce and exposes only its digest. It is data for
+/// reconciliation, not proof of hardware measurement or release qualification.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CommittedD1Observation {
+    pub receipt_sha256: String,
+    pub challenge_id: String,
+    pub profile_id: String,
+    pub signer_key_id_hex: String,
+    pub target_token: String,
+    pub audience: String,
+    pub decision_id: String,
+    pub policy_generation: u64,
+    pub approved_artifact_sha256: String,
+    pub effective_policy_sha256: String,
+    pub corpus_sha256: String,
+    pub deployment_id: String,
+    pub boot_instance_id: String,
+    pub nonce_sha256: String,
+    pub challenge_issued_at_unix_seconds: u64,
+    pub challenge_expires_at_unix_seconds: u64,
+    pub verifier_now_unix_seconds: u64,
+    pub envelope_sha256: String,
+    pub committed_at_unix_seconds: u64,
+}
+
 pub struct SqliteD1Store {
     connection: Connection,
 }
