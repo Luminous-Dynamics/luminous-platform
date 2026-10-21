@@ -878,8 +878,8 @@ mod tests {
             .expect("read SQLite source ID");
         let parsed = sqlite_version_tuple(&runtime_version).expect("parse SQLite runtime version");
         assert!(
-            parsed >= MIN_SQLITE_VERSION_FOR_WAL,
-            "D1 store must reject SQLite versions with the known WAL-reset bug: {runtime_version}"
+            sqlite_version_has_wal_reset_fix(parsed),
+            "D1 store runtime must use an upstream-fixed WAL-reset release line: {runtime_version}"
         );
         assert!(!source_id.trim().is_empty(), "SQLite source ID must be reportable");
         println!("PASS: D1 Rust SQLite runtime is above WAL safety floor: version={runtime_version} source_id={source_id}");
