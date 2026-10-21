@@ -8,6 +8,7 @@
 #![forbid(unsafe_code)]
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use super::promotion_journal::{PromotionJournal, PromotionPermit, VerifiedPromotionBinding};
 
 /// Target and policy identity needed to plan one rollout operation.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -301,10 +302,132 @@ pub struct WaveEvaluation {
     pub reasons: Vec<String>,
 }
 
+/// Opaque, non-serializable proof that all targets in one planned wave have
+/// live promotion permits bound to the exact target, generation, baseline and
+/// candidate policy digest. This is not itself a rollout decision and carries no
+/// proof that an independent data-plane probe was authentic or successful.
+#[derive(Debug)]
+pub struct VerifiedWaveBindings {
+    wave_index: usize,
+    bindings: Vec<VerifiedPromotionBinding>,
+}
+
+impl VerifiedWaveBindings {
+    pub fn wave_index(&self) -> usize {
+        self.wave_index
+    }
+
+    pub fn len(&self) -> usize {
+        self.bindings.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.bindings.is_empty()
+    }
+
+    pub fn bindings(&self) -> &[VerifiedPromotionBinding] {
+        &self.bindings
+    }
+}
+
+/// Check the durable, process-local promotion capabilities before a coordinator
+/// can begin a wave. Every target must have exactly one current permit matching
+/// the plan. This function intentionally does not return Continue/Rollback:
+/// independent probe verification is a separate required capability, and raw
+/// caller-supplied booleans must not authorize actuation.
+pub fn validate_wave_permits(
+    journal: &PromotionJournal,
+    wave: &RolloutWave,
+    permits: &[&PromotionPermit],
+    now_unix_ms: u64,
+) -> Result<VerifiedWaveBindings, WaveEvaluation> {
+    let halted = |reason: String| WaveEvaluation {
+        wave_index: wave.index,
+        decision: WaveDecision::HaltAndReconcile,
+        passed_targets: Vec::new(),
+        failed_targets: Vec::new(),
+        reasons: vec![reason],
+    };
+    if wave.targets.is_empty() {
+        return Err(halted("cannot validate permits for an empty wave".to_owned()));
+    }
+    if permits.len() != wave.targets.len() {
+        return Err(halted(format!(
+            "permit count mismatch: expected {}, received {}",
+            wave.targets.len(),
+            permits.len()
+        )));
+    }
+
+    let mut expected = BTreeMap::new();
+    for target in &wave.targets {
+        if expected.insert(target.target_token.as_str(), target).is_some() {
+            return Err(halted(format!(
+                "wave contains duplicate target token {:?}",
+                target.target_token
+            )));
+        }
+        if let Err(error) = validate_target(target) {
+            return Err(halted(format!(
+                "planned target {:?} is invalid: {error}",
+                target.target_token
+            )));
+        }
+    }
+
+    let mut seen = BTreeSet::new();
+    let mut bindings = Vec::with_capacity(permits.len());
+    for permit in permits {
+        let binding = match journal.validate_permit(permit, now_unix_ms) {
+            Ok(binding) => binding,
+            Err(error) => return Err(halted(format!("promotion permit rejected: {error}"))),
+        };
+        let token = binding.target_token();
+        let Some(target) = expected.get(token).copied() else {
+            return Err(halted(format!(
+                "promotion permit references target {token:?} outside this wave"
+            )));
+        };
+        if !seen.insert(token.to_owned()) {
+            return Err(halted(format!(
+                "duplicate promotion permit for target {token:?}"
+            )));
+        }
+        if binding.generation() != target.generation
+            || binding.baseline_policy_sha256() != target.baseline_policy_sha256
+            || binding.candidate_policy_sha256() != target.candidate_policy_sha256
+        {
+            return Err(halted(format!(
+                "promotion permit for target {token:?} does not match the wave's generation and policy digests"
+            )));
+        }
+        bindings.push(binding);
+    }
+
+    if seen.len() != expected.len() {
+        let missing = expected
+            .keys()
+            .filter(|token| !seen.contains(**token))
+            .copied()
+            .collect::<Vec<_>>();
+        return Err(halted(format!(
+            "wave has no validated promotion permit for target(s): {}",
+            missing.join(", ")
+        )));
+    }
+
+    bindings.sort_by(|left, right| left.target_token().cmp(right.target_token()));
+    Ok(VerifiedWaveBindings {
+        wave_index: wave.index,
+        bindings,
+    })
+}
+
 /// Evaluate a wave's observations. The caller must only supply observations
 /// after the durable freshness/conformance gate; the explicit fields are checked
 /// again here to fail closed on broken orchestration or incomplete evidence.
-pub fn evaluate_wave(
+#[cfg(test)]
+fn evaluate_wave_claims(
     wave: &RolloutWave,
     observations: &[FleetTargetObservation],
 ) -> WaveEvaluation {
@@ -616,7 +739,7 @@ mod tests {
         let plan = plan_rollout(&targets(), constraints()).expect("plan");
         let wave = &plan.waves[0];
         let observations: Vec<_> = wave.targets.iter().map(pass_observation).collect();
-        let evaluation = evaluate_wave(wave, &observations);
+        let evaluation = evaluate_wave_claims(wave, &observations);
         assert_eq!(evaluation.decision, WaveDecision::Continue);
         assert_eq!(evaluation.passed_targets, vec!["target-canary"]);
         assert!(evaluation.reasons.is_empty());
@@ -628,7 +751,7 @@ mod tests {
         let wave = &plan.waves[1];
         let mut observations: Vec<_> = wave.targets.iter().map(pass_observation).collect();
         observations[0].outcome = ProbeOutcome::Failed;
-        let evaluation = evaluate_wave(wave, &observations);
+        let evaluation = evaluate_wave_claims(wave, &observations);
         assert_eq!(evaluation.decision, WaveDecision::RollbackWave);
         assert_eq!(evaluation.failed_targets.len(), 1);
         assert_eq!(evaluation.passed_targets.len(), wave.targets.len() - 1);
@@ -640,13 +763,13 @@ mod tests {
         let wave = &plan.waves[1];
         let complete: Vec<_> = wave.targets.iter().map(pass_observation).collect();
 
-        let missing = evaluate_wave(wave, &complete[..complete.len() - 1]);
+        let missing = evaluate_wave_claims(wave, &complete[..complete.len() - 1]);
         assert_eq!(missing.decision, WaveDecision::HaltAndReconcile);
 
         let mut duplicate = complete.clone();
         duplicate.push(complete[0].clone());
         assert_eq!(
-            evaluate_wave(wave, &duplicate).decision,
+            evaluate_wave_claims(wave, &duplicate).decision,
             WaveDecision::HaltAndReconcile
         );
 
@@ -655,7 +778,7 @@ mod tests {
         unknown.target_token = "target-unexpected".to_owned();
         unexpected.push(unknown);
         assert_eq!(
-            evaluate_wave(wave, &unexpected).decision,
+            evaluate_wave_claims(wave, &unexpected).decision,
             WaveDecision::HaltAndReconcile
         );
     }
@@ -674,7 +797,7 @@ mod tests {
                 4 => observations[0].effective_policy_sha256 = BASELINE.to_owned(),
                 _ => unreachable!(),
             }
-            let evaluation = evaluate_wave(wave, &observations);
+            let evaluation = evaluate_wave_claims(wave, &observations);
             assert_eq!(
                 evaluation.decision,
                 WaveDecision::HaltAndReconcile,
@@ -690,14 +813,14 @@ mod tests {
         let mut generation: Vec<_> = wave.targets.iter().map(pass_observation).collect();
         generation[0].policy_generation += 1;
         assert_eq!(
-            evaluate_wave(wave, &generation).decision,
+            evaluate_wave_claims(wave, &generation).decision,
             WaveDecision::HaltAndReconcile
         );
 
         let mut inconclusive: Vec<_> = wave.targets.iter().map(pass_observation).collect();
         inconclusive[0].outcome = ProbeOutcome::Inconclusive;
         assert_eq!(
-            evaluate_wave(wave, &inconclusive).decision,
+            evaluate_wave_claims(wave, &inconclusive).decision,
             WaveDecision::HaltAndReconcile
         );
     }
@@ -709,7 +832,7 @@ mod tests {
         let mut observations: Vec<_> = wave.targets.iter().map(pass_observation).collect();
         observations[0].outcome = ProbeOutcome::Failed;
         observations[0].positive_control_passed = false;
-        let evaluation = evaluate_wave(wave, &observations);
+        let evaluation = evaluate_wave_claims(wave, &observations);
         assert_eq!(evaluation.decision, WaveDecision::HaltAndReconcile);
         assert_ne!(evaluation.decision, WaveDecision::RollbackWave);
     }
