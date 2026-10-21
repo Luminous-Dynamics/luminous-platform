@@ -418,7 +418,7 @@ fn uint_int_claim(claims: &ClaimMap, label: i64, name: &str) -> Result<u64, Stri
     }
 }
 
-fn text_int_claim(claims: &ClaimMap, label: i64, name: &str) -> Result<&str, String> {
+fn text_int_claim<'a>(claims: &'a ClaimMap, label: i64, name: &str) -> Result<&'a str, String> {
     use coset::cbor::value::Value;
     match int_claim(claims, label, name)? {
         Value::Text(value) => Ok(value),
@@ -434,7 +434,7 @@ fn bytes_claim(claims: &ClaimMap, label: i64, name: &str) -> Result<&[u8], Strin
     }
 }
 
-fn text_claim(claims: &ClaimMap, name: &str) -> Result<&str, String> {
+fn text_claim<'a>(claims: &'a ClaimMap, name: &str) -> Result<&'a str, String> {
     use coset::cbor::value::Value;
     match text_key_claim(claims, name)? {
         Value::Text(value) => Ok(value),
