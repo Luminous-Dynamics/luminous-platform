@@ -21,9 +21,8 @@ pub struct PromotionIntent {
     pub deployment_id: String,
     pub previous_generation: u64,
     pub next_generation: u64,
-    pub approved_policy_digest: String,
+    pub approved_artifact_digest: String,
     pub effective_policy_digest: String,
-    pub artifact_digest: String,
     pub corpus_digest: String,
 }
 
@@ -34,9 +33,8 @@ pub struct CommittedPromotion {
     pub consumed_challenge_id: String,
     pub deployment_id: String,
     pub generation: u64,
-    pub approved_policy_digest: String,
+    pub approved_artifact_digest: String,
     pub effective_policy_digest: String,
-    pub artifact_digest: String,
     pub corpus_digest: String,
 }
 
@@ -83,9 +81,8 @@ pub enum ReconciliationFault {
     DurableChallengeMismatch,
     DurableGenerationMismatch,
     DurableDeploymentMismatch,
-    DurableApprovedPolicyMismatch,
+    DurableApprovedArtifactMismatch,
     DurableEffectivePolicyMismatch,
-    DurableArtifactMismatch,
     DurableCorpusMismatch,
     BootChallengeTargetMismatch,
     BootChallengeDecisionMismatch,
@@ -186,9 +183,8 @@ fn validate_intent(intent: &PromotionIntent) -> Vec<ReconciliationFault> {
         }
     }
     for (value, field) in [
-        (intent.approved_policy_digest.as_str(), "intent.approved_policy_digest"),
+        (intent.approved_artifact_digest.as_str(), "intent.approved_artifact_digest"),
         (intent.effective_policy_digest.as_str(), "intent.effective_policy_digest"),
-        (intent.artifact_digest.as_str(), "intent.artifact_digest"),
         (intent.corpus_digest.as_str(), "intent.corpus_digest"),
     ] {
         if !valid_digest(value) {
@@ -219,9 +215,8 @@ fn validate_durable(
         faults.push(ReconciliationFault::InvalidDeploymentId("durable.deployment_id"));
     }
     for (value, field) in [
-        (durable.approved_policy_digest.as_str(), "durable.approved_policy_digest"),
+        (durable.approved_artifact_digest.as_str(), "durable.approved_artifact_digest"),
         (durable.effective_policy_digest.as_str(), "durable.effective_policy_digest"),
-        (durable.artifact_digest.as_str(), "durable.artifact_digest"),
         (durable.corpus_digest.as_str(), "durable.corpus_digest"),
     ] {
         if !valid_digest(value) {
@@ -243,14 +238,11 @@ fn validate_durable(
     if durable.deployment_id != intent.deployment_id {
         faults.push(ReconciliationFault::DurableDeploymentMismatch);
     }
-    if durable.approved_policy_digest != intent.approved_policy_digest {
-        faults.push(ReconciliationFault::DurableApprovedPolicyMismatch);
+    if durable.approved_artifact_digest != intent.approved_artifact_digest {
+        faults.push(ReconciliationFault::DurableApprovedArtifactMismatch);
     }
     if durable.effective_policy_digest != intent.effective_policy_digest {
         faults.push(ReconciliationFault::DurableEffectivePolicyMismatch);
-    }
-    if durable.artifact_digest != intent.artifact_digest {
-        faults.push(ReconciliationFault::DurableArtifactMismatch);
     }
     if durable.corpus_digest != intent.corpus_digest {
         faults.push(ReconciliationFault::DurableCorpusMismatch);
@@ -355,7 +347,7 @@ fn validate_boot(
     {
         faults.push(ReconciliationFault::BootPolicyMismatch);
     }
-    if boot.artifact_digest != intent.artifact_digest {
+    if boot.artifact_digest != intent.approved_artifact_digest {
         faults.push(ReconciliationFault::BootArtifactMismatch);
     }
 }
@@ -420,9 +412,8 @@ mod tests {
             deployment_id: NIX_DEPLOYMENT.into(),
             previous_generation: 41,
             next_generation: 42,
-            approved_policy_digest: A.into(),
+            approved_artifact_digest: C.into(),
             effective_policy_digest: B.into(),
-            artifact_digest: C.into(),
             corpus_digest: D.into(),
         };
         let durable = CommittedPromotion {
@@ -431,9 +422,8 @@ mod tests {
             consumed_challenge_id: "challenge-promote-01".into(),
             deployment_id: NIX_DEPLOYMENT.into(),
             generation: 42,
-            approved_policy_digest: A.into(),
+            approved_artifact_digest: C.into(),
             effective_policy_digest: B.into(),
-            artifact_digest: C.into(),
             corpus_digest: D.into(),
         };
         let challenge = BootObservationChallenge {
@@ -531,13 +521,13 @@ mod tests {
     fn policy_artifact_and_corpus_must_match_across_intent_and_durable_state() {
         let (intent, mut durable, challenge, boot) = base();
         durable.effective_policy_digest = A.into();
-        durable.artifact_digest = D.into();
+        durable.approved_artifact_digest = D.into();
         durable.corpus_digest = C.into();
         assert!(matches!(
             reconcile(&intent, Some(&durable), Some(&challenge), Some(&boot)),
             Reconciliation::Blocked(faults)
                 if faults.contains(&ReconciliationFault::DurableEffectivePolicyMismatch)
-                    && faults.contains(&ReconciliationFault::DurableArtifactMismatch)
+                    && faults.contains(&ReconciliationFault::DurableApprovedArtifactMismatch)
                     && faults.contains(&ReconciliationFault::DurableCorpusMismatch)
         ));
     }
@@ -608,12 +598,12 @@ mod tests {
     fn malformed_identifiers_and_digests_never_reconcile() {
         let (mut intent, durable, challenge, boot) = base();
         intent.target_id = "../foreign-target".into();
-        intent.artifact_digest = "not-a-digest".into();
+        intent.approved_artifact_digest = "not-a-digest".into();
         assert!(matches!(
             reconcile(&intent, Some(&durable), Some(&challenge), Some(&boot)),
             Reconciliation::Blocked(faults)
                 if faults.contains(&ReconciliationFault::InvalidIdentifier("intent.target_id"))
-                    && faults.contains(&ReconciliationFault::InvalidDigest("intent.artifact_digest"))
+                    && faults.contains(&ReconciliationFault::InvalidDigest("intent.approved_artifact_digest"))
         ));
     }
 
@@ -648,39 +638,37 @@ mod tests {
             let mut changed_boot = boot.clone();
             let token = format!("mut-{i}");
             let digest = format!("{:064x}", i + 1);
-            match i % 33 {
+            match i % 31 {
                 0 => changed_intent.target_id = token,
                 1 => changed_intent.decision_id = token,
                 2 => changed_intent.promotion_challenge_id = token,
                 3 => changed_intent.deployment_id = token,
                 4 => changed_intent.previous_generation = u64::MAX,
                 5 => changed_intent.next_generation = 43 + i,
-                6 => changed_intent.approved_policy_digest = digest,
+                6 => changed_intent.approved_artifact_digest = digest,
                 7 => changed_intent.effective_policy_digest = digest,
-                8 => changed_intent.artifact_digest = digest,
-                9 => changed_intent.corpus_digest = digest,
-                10 => changed_durable.decision_id = token,
-                11 => changed_durable.target_id = token,
-                12 => changed_durable.consumed_challenge_id = token,
-                13 => changed_durable.deployment_id = token,
-                14 => changed_durable.generation = 1_000 + i,
-                15 => changed_durable.approved_policy_digest = digest,
-                16 => changed_durable.effective_policy_digest = digest,
-                17 => changed_durable.artifact_digest = digest,
-                18 => changed_durable.corpus_digest = digest,
-                19 => changed_challenge.challenge_id = token,
-                20 => changed_challenge.target_id = token,
-                21 => changed_challenge.decision_id = token,
-                22 => changed_challenge.expected_generation = 1_000 + i,
-                23 => changed_challenge.expected_deployment_id = token,
-                24 => changed_challenge.expected_effective_policy_digest = digest,
-                25 => changed_boot.target_id = token,
-                26 => changed_boot.decision_id = token,
-                27 => changed_boot.observation_challenge_id = token,
-                28 => changed_boot.booted_deployment_id = token,
-                29 => changed_boot.current_userspace_deployment_id = token,
-                30 => changed_boot.generation = 1_000 + i,
-                31 => changed_boot.effective_policy_digest = digest,
+                8 => changed_intent.corpus_digest = digest,
+                9 => changed_durable.decision_id = token,
+                10 => changed_durable.target_id = token,
+                11 => changed_durable.consumed_challenge_id = token,
+                12 => changed_durable.deployment_id = token,
+                13 => changed_durable.generation = 1_000 + i,
+                14 => changed_durable.approved_artifact_digest = digest,
+                15 => changed_durable.effective_policy_digest = digest,
+                16 => changed_durable.corpus_digest = digest,
+                17 => changed_challenge.challenge_id = token,
+                18 => changed_challenge.target_id = token,
+                19 => changed_challenge.decision_id = token,
+                20 => changed_challenge.expected_generation = 1_000 + i,
+                21 => changed_challenge.expected_deployment_id = token,
+                22 => changed_challenge.expected_effective_policy_digest = digest,
+                23 => changed_boot.target_id = token,
+                24 => changed_boot.decision_id = token,
+                25 => changed_boot.observation_challenge_id = token,
+                26 => changed_boot.booted_deployment_id = token,
+                27 => changed_boot.current_userspace_deployment_id = token,
+                28 => changed_boot.generation = 1_000 + i,
+                29 => changed_boot.effective_policy_digest = digest,
                 _ => changed_boot.artifact_digest = digest,
             }
             assert!(
