@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn previous_booted_path_is_not_replaced_by_the_expected_current_path() {
         let fixture = Fixture::new();
-        fs::remove_file(fixture.root.join("run/booted-system")).unwrap();
+        fs::remove_file(fixture.root.join("run/current-system")).unwrap();
         symlink(STORE_B, fixture.root.join("run/current-system")).unwrap();
         let observation = fixture.observe();
         assert_eq!(observation.booted_deployment_id.as_deref(), Some(STORE_A));
