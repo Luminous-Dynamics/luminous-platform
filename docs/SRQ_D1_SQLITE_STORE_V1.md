@@ -33,6 +33,8 @@ The canonical database schema is shared with the D1 SQL reference; it does not c
 
 ## Executable checks
 
+The suite now also has an external-crate integration test at `tools/srq-d1-sqlite-store/tests/verified_consumption.rs`. It constructs a real Ed25519-signed COSE/EAT payload using the public API, registers the exact target-bound challenge, calls `verify_and_consume` with the SQLite adapter, and reopens the committed receipt. Before the valid token, it mutates a signed token byte and requires signature failure to leave both the receipt and consumed-challenge counts at zero. After success, it proves replay is rejected through the same public API. This is stronger composition coverage than the unit-test store mocks, but remains software-key/model evidence and not measured boot or hardware attestation.
+
 The Rust unit suite covers:
 - commit, reopen and receipt-pointer reconciliation;
 - replay after reopen;
