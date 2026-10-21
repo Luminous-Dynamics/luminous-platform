@@ -1,0 +1,14 @@
+[package]
+name = "srq-policy-promotion-store"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[dependencies]
+rusqlite = { version = "=0.40.2", features = ["bundled"] }
+sha2 = "=0.10.9"
+srq-eat-cose-verifier = { path = "../srq-eat-cose-verifier" }
+coset = "=0.4.2"
+ed25519-dalek = "=3.0.0"
