@@ -45,6 +45,10 @@ done
   echo "BLOCKED: expected source or workflow ref is empty." >&2
   exit 2
 }
+[[ "$workflow_ref" == "$expected_repository/$expected_workflow_path@$source_ref" ]] || {
+  echo "BLOCKED: workflow ref does not match the caller-supplied source ref and workflow path." >&2
+  exit 2
+}
 [[ "$event_name" =~ ^[a-z_]+$ ]] || {
   echo "BLOCKED: workflow event name is malformed." >&2
   exit 2
