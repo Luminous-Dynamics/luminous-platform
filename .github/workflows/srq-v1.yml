@@ -67,6 +67,7 @@ jobs:
           bash -n benchmarks/srq-v1/test-evaluate-attested-release.sh
           bash -n benchmarks/srq-v1/validate-produced-bundle.sh
           bash -n benchmarks/srq-v1/test-validate-produced-bundle.sh
+          bash -n tools/srq-boot-observation-adapter/test-cli.sh
           bash -n benchmarks/srq-v1/evaluate-attested-release.sh
 
       - name: Run bounded filesystem activation model
@@ -259,6 +260,7 @@ jobs:
           grep -Fq 'test tests::observer_never_supplies_policy_artifact_or_measurement_proof ... ok' "$adapter_log"
           echo "PASS: standalone D0 observer distinguishes booted from current deployment without claiming attestation."
           echo "LIMIT: local diagnostics only; no promotion binding, policy/artifact measurement, target signature, TPM quote or release qualification."
+          bash tools/srq-boot-observation-adapter/test-cli.sh 2>&1 | tee -a "$adapter_log"
 
       - name: Compile release qualification status from observed receipts
         shell: bash
