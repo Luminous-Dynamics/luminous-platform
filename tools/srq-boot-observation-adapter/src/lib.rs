@@ -102,27 +102,25 @@ impl Observation {
             .unwrap_or_else(|| "null".to_owned());
 
         format!(
-            concat!(
-                "{{\n",
-                "  \"schema\": {},\n",
-                "  \"evidence_tier\": {},\n",
-                "  \"authenticity_status\": {},\n",
-                "  \"status\": {},\n",
-                "  \"boot_id\": {},\n",
-                "  \"booted_deployment_id\": {},\n",
-                "  \"current_userspace_deployment_id\": {},\n",
-                "  \"promotion_binding_status\": \"NOT_PROVIDED\",\n",
-                "  \"measurement_status\": \"NOT_MEASURED\",\n",
-                "  \"signature_status\": \"NOT_AUTHENTICATED\",\n",
-                "  \"source_paths\": {{\n",
-                "    \"boot_id\": \"/proc/sys/kernel/random/boot_id\",\n",
-                "    \"booted_deployment\": \"/run/booted-system (readlink target; not a filesystem measurement)\",\n",
-                "    \"current_userspace_deployment\": \"/run/current-system (readlink target; not a filesystem measurement)\"\n",
-                "  }},\n",
-                "  \"reason_codes\": [{}],\n",
-                "  \"captured_at_unix_ms_untrusted\": {}\n",
-                "}}\n"
-            ),
+            r#"{{
+  "schema": {},
+  "evidence_tier": {},
+  "authenticity_status": {},
+  "status": {},
+  "boot_id": {},
+  "booted_deployment_id": {},
+  "current_userspace_deployment_id": {},
+  "promotion_binding_status": "NOT_PROVIDED",
+  "measurement_status": "NOT_MEASURED",
+  "signature_status": "NOT_AUTHENTICATED",
+  "source_paths": {{
+    "boot_id": "/proc/sys/kernel/random/boot_id",
+    "booted_deployment": "/run/booted-system (readlink target; not a filesystem measurement)",
+    "current_userspace_deployment": "/run/current-system (readlink target; not a filesystem measurement)"
+  }},
+  "reason_codes": [{}],
+  "captured_at_unix_ms_untrusted": {}
+}}"#,
             json_string(SCHEMA),
             json_string(EVIDENCE_TIER),
             json_string(AUTHENTICITY),
