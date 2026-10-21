@@ -373,6 +373,8 @@ jobs:
           grep -Fq 'tests::runtime_sqlite_version_gate_rejects_known_wal_reset_bug_range ... ok' "$promotion_log"
           grep -Fq 'tests::actual_sigkill_at_sql_boundaries_rolls_back_before_commit_and_recovers_after_commit ... ok' "$promotion_log"
           grep -Fq 'PASS: policy promotion survived 80 actual SIGKILL trials across four SQL boundaries' "$promotion_log"
+          cp -- tools/srq-policy-promotion-store/Cargo.lock "$RUNNER_TEMP/srq-policy-promotion-store-Cargo.lock"
+          sha256sum "$RUNNER_TEMP/srq-policy-promotion-store-Cargo.lock"
           test "$(grep -c '^PASS: policy promotion SIGKILL at after_decision_insert ' "$promotion_log")" -eq 20
           test "$(grep -c '^PASS: policy promotion SIGKILL at after_target_update ' "$promotion_log")" -eq 20
           test "$(grep -c '^PASS: policy promotion SIGKILL at after_challenge_consume ' "$promotion_log")" -eq 20
@@ -433,6 +435,8 @@ jobs:
             srq-d1-sqlite-store-test.log
             srq-eat-cose-verifier-test.log
             srq-evidence-003-model-result.json
+            srq-policy-promotion-store-Cargo.lock
+            srq-policy-promotion-store-test.log
             srq-process-kill-model-test.log
             srq-recovery-model-test.log
             srq-release-qualification.json
@@ -452,6 +456,8 @@ jobs:
             sha256sum --check --strict SHA256SUMS
           )
           checksum_sha="$(sha256sum "$bundle_dir/SHA256SUMS" | cut -d ' ' -f 1)"
+          policy_promotion_sha="$(sha256sum "$bundle_dir/srq-policy-promotion-store-test.log" | cut -d ' ' -f 1)"
+          policy_promotion_lock_sha="$(sha256sum "$bundle_dir/srq-policy-promotion-store-Cargo.lock" | cut -d ' ' -f 1)"
           process_kill_sha="$(sha256sum "$bundle_dir/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
           sqlite_reference_sha="$(sha256sum "$bundle_dir/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
           boot_reconciliation_sha="$(sha256sum "$bundle_dir/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
@@ -477,6 +483,8 @@ jobs:
             --arg actual "$actual_head" \
             --arg corpus_sha "$corpus_sha" \
             --arg checksum_sha "$checksum_sha" \
+            --arg policy_promotion_sha "$policy_promotion_sha" \
+            --arg policy_promotion_lock_sha "$policy_promotion_lock_sha" \
             --arg process_kill_sha "$process_kill_sha" \
             --arg sqlite_reference_sha "$sqlite_reference_sha" \
             --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
@@ -504,9 +512,18 @@ jobs:
               corpus_sha256: $corpus_sha,
               checksum_manifest_sha256: $checksum_sha,
               dependency_lock_sha256: {
-                srq_d1_sqlite_store: $d1_sqlite_store_lock_sha
+                srq_d1_sqlite_store: $d1_sqlite_store_lock_sha,
+                srq_policy_promotion_store: $policy_promotion_lock_sha
               },
               supplemental_observations: [{
+                test_id: "SRQ-POLICY-PROMOTION-STORE-V1",
+                scenario_id: "UPDATE-004",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-policy-promotion-store-test.log",
+                evidence_sha256: $policy_promotion_sha
+              }, {
                 test_id: "SRQ-PROCESS-KILL-V1",
                 scenario_id: "UPDATE-004",
                 execution_tier: "model",
@@ -600,6 +617,8 @@ jobs:
             ${{ runner.temp }}/srq-d1-sqlite-store-Cargo.lock
             ${{ runner.temp }}/srq-boot-reconciliation-model-test.log
             ${{ runner.temp }}/srq-boot-observation-adapter-test.log
+            ${{ runner.temp }}/srq-policy-promotion-store-test.log
+            ${{ runner.temp }}/srq-policy-promotion-store-Cargo.lock
             ${{ runner.temp }}/srq-process-kill-model-test.log
             ${{ runner.temp }}/srq-sqlite-d1-challenge-consumption-reference.log
             ${{ runner.temp }}/srq-sqlite-promotion-reference.log
