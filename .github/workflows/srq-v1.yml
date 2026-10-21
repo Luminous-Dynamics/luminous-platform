@@ -273,7 +273,7 @@ jobs:
           test -s tools/srq-eat-cose-verifier/Cargo.lock
           d1_log="$RUNNER_TEMP/srq-eat-cose-verifier-test.log"
           cargo test --manifest-path "$manifest" --locked -- --nocapture 2>&1 | tee "$d1_log"
-          grep -Fq 'test result: ok. 15 passed; 0 failed' "$d1_log"
+          grep -Fq 'test result: ok. 16 passed; 0 failed' "$d1_log"
           cargo run --manifest-path "$manifest" --locked -- --help 2>&1 | tee -a "$d1_log"
           grep -Fq 'D1 does not claim TPM, secure-boot measurement or physical qualification.' "$d1_log"
           sha256sum tools/srq-eat-cose-verifier/Cargo.lock
