@@ -28,6 +28,9 @@ CREATE TABLE IF NOT EXISTS promotion_challenges (
     decision_id TEXT NOT NULL UNIQUE,
     previous_generation INTEGER NOT NULL CHECK (previous_generation >= 0),
     next_generation INTEGER NOT NULL CHECK (next_generation = previous_generation + 1),
+    previous_approved_artifact_sha256 TEXT NOT NULL
+        CHECK (length(previous_approved_artifact_sha256) = 64
+               AND previous_approved_artifact_sha256 NOT GLOB '*[^0-9a-f]*'),
     previous_effective_policy_sha256 TEXT NOT NULL
         CHECK (length(previous_effective_policy_sha256) = 64
                AND previous_effective_policy_sha256 NOT GLOB '*[^0-9a-f]*'),
@@ -57,6 +60,9 @@ CREATE TABLE IF NOT EXISTS promotion_decisions (
     challenge_id TEXT NOT NULL UNIQUE,
     previous_generation INTEGER NOT NULL CHECK (previous_generation >= 0),
     next_generation INTEGER NOT NULL CHECK (next_generation = previous_generation + 1),
+    previous_approved_artifact_sha256 TEXT NOT NULL
+        CHECK (length(previous_approved_artifact_sha256) = 64
+               AND previous_approved_artifact_sha256 NOT GLOB '*[^0-9a-f]*'),
     previous_effective_policy_sha256 TEXT NOT NULL
         CHECK (length(previous_effective_policy_sha256) = 64
                AND previous_effective_policy_sha256 NOT GLOB '*[^0-9a-f]*'),
