@@ -124,3 +124,14 @@ The tested matrix and remaining tiers are:
 | Wrong target binding between decision and consumption | SQL constraint failure; no rows or generation changes survive |
 
 These are process-kill tests on a running kernel. They do not establish kernel-crash, VM-reset, physical-power-loss durability or the production adapter's behavior. The workflow's zero-failure outcomes demonstrate deterministic fault-point coverage, not an estimate of field failure probability.
+
+
+## Verifier-to-store composition gate
+
+A new external-crate integration test (`tools/srq-d1-sqlite-store/tests/verified_consumption.rs`) now creates a real Ed25519-signed COSE/EAT observation and calls the public `verify_and_consume` API with `SqliteD1Store`. It checks that:
+- a mutated signature fails and leaves both durable receipt and consumed-challenge counts at zero;
+- the valid signed token consumes the registered target-bound challenge once;
+- the exact receipt survives a fresh store reopen and integrity checks;
+- replay of the same valid token is rejected after reopen.
+
+This test is intended to show the end-to-end state transition that unit tests with an in-memory ChallengeConsumer cannot establish. The test has been committed, but its newest exact-head workflow is not yet complete as of this protocol edit; do not claim it passed until the latest run confirms the log assertion. Even after it passes, the result remains software-key/model-tier evidence and does not qualify D2 hardware measurement, secure boot, TPM, or power-loss durability.
