@@ -135,3 +135,10 @@ A new external-crate integration test (`tools/srq-d1-sqlite-store/tests/verified
 - replay of the same valid token is rejected after reopen.
 
 The test passed on exact tested code head [a66ebfc6e6e03f34d08a58e48eee07843b1742d4](https://github.com/Luminous-Dynamics/luminous-platform/commit/a66ebfc6e6e03f34d08a58e48eee07843b1742d4) in [workflow run 39645017004](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39645017004). The latest documentation-only head [ab790de72f86f11566118559ac8309ebc3e4856f](https://github.com/Luminous-Dynamics/luminous-platform/commit/ab790de72f86f11566118559ac8309ebc3e4856f) also passed in [run 39645077549](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/39645077549). Both runs preserve the NOT_QUALIFIED (0/22) outcome and skip real signing on pull-request events. This test remains software-key/model-tier evidence and does not qualify D2 hardware measurement, secure boot, TPM, or power-loss durability.
+
+
+## Database-engine version is part of the benchmark tuple
+
+SQLite's official WAL documentation records a rare WAL-reset corruption bug affecting SQLite releases through 3.51.2 and fixed in 3.51.3. The earlier SRQ reference timings used Ubuntu's system CLI 3.45.1; although the race produced one winner and passed integrity checks, those runs used a version in the documented vulnerable range. Retain them only as historical smoke observations, not as clean benchmark data.
+
+The revised workflow compiles SQLite CLI 3.54.1 from the upstream autoconf source, checks the published SHA3-256 and exact source ID, and makes both SQL reference scripts reject a different engine on PATH. The Rust D1 store also rejects linked engines below 3.51.3. Record sqlite_version(), sqlite_source_id(), journal mode, synchronous mode, host kernel and filesystem with every sample. Never combine old-version numbers with the new pinned-engine series.
