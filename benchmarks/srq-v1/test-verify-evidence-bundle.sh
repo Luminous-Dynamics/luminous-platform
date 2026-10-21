@@ -18,6 +18,7 @@ make_archive() {
   rm -rf "$work"
   mkdir -p "$bundle"
   for name in \
+    srq-boot-observation-adapter-test.log \
     srq-boot-reconciliation-model-test.log \
     srq-challenge-promotion-model-test.log \
     srq-evidence-003-model-result.json \
@@ -31,6 +32,7 @@ make_archive() {
   (
     cd "$bundle"
     sha256sum \
+      srq-boot-observation-adapter-test.log \
       srq-boot-reconciliation-model-test.log \
       srq-challenge-promotion-model-test.log \
       srq-evidence-003-model-result.json \
@@ -43,20 +45,24 @@ make_archive() {
   if [[ "$bad_checksum" == "true" ]]; then
     printf 'tampered after hashing\n' >> "$bundle/srq-recovery-model-test.log"
   fi
-  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha manifest_process_kill_sha manifest_sqlite_sha manifest_boot_reconciliation_sha
+  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha manifest_process_kill_sha manifest_sqlite_sha manifest_boot_reconciliation_sha manifest_boot_adapter_sha
   checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
   process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
   sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
   boot_reconciliation_sha="$(sha256sum "$bundle/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
+  boot_observation_adapter_sha="$(sha256sum "$bundle/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
   manifest_process_kill_sha="$process_kill_sha"
   manifest_sqlite_sha="$sqlite_reference_sha"
   manifest_boot_reconciliation_sha="$boot_reconciliation_sha"
+  manifest_boot_adapter_sha="$boot_observation_adapter_sha"
   if [[ "$bad_supplemental" == "process-kill" ]]; then
     manifest_process_kill_sha="0000000000000000000000000000000000000000000000000000000000000000"
   elif [[ "$bad_supplemental" == "sqlite" ]]; then
     manifest_sqlite_sha="0000000000000000000000000000000000000000000000000000000000000000"
   elif [[ "$bad_supplemental" == "boot" ]]; then
     manifest_boot_reconciliation_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  elif [[ "$bad_supplemental" == "boot-adapter" ]]; then
+    manifest_boot_adapter_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
   jq -n \
     --arg repo "Luminous-Dynamics/luminous-platform" \
@@ -72,6 +78,7 @@ make_archive() {
     --arg process_kill_sha "$manifest_process_kill_sha" \
     --arg sqlite_reference_sha "$manifest_sqlite_sha" \
     --arg boot_reconciliation_sha "$manifest_boot_reconciliation_sha" \
+    --arg boot_observation_adapter_sha "$manifest_boot_adapter_sha" \
     '{
       schema_version: 1,
       profile_id: "SRQ-1",
@@ -114,6 +121,14 @@ make_archive() {
         status: "PASS",
         evidence_artifact: "srq-boot-reconciliation-model-test.log",
         evidence_sha256: $boot_reconciliation_sha
+      }, {
+        test_id: "SRQ-BOOT-OBSERVATION-ADAPTER-D0-V1",
+        scenario_id: "RECOVERY-002",
+        execution_tier: "model",
+        claim_ceiling: "abstract_model_only",
+        status: "PASS",
+        evidence_artifact: "srq-boot-observation-adapter-test.log",
+        evidence_sha256: $boot_observation_adapter_sha
       }]
     }' > "$bundle/manifest.json"
   tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - -C "$tmp/work" srq-evidence-bundle \
@@ -135,7 +150,7 @@ run_verifier() {
 make_archive "$tmp/good.tar.gz"
 run_verifier "$tmp/good.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-good" > "$tmp/manifest-path"
 [[ -f "$(cat "$tmp/manifest-path")" ]] || fail "valid bundle manifest was not returned"
-echo "PASS: bundle source, workflow, run, process-kill, SQLite and boot-reconciliation inventories, claim ceilings and hashes verify"
+echo "PASS: bundle source, workflow, run, process-kill, SQLite, boot-reconciliation and D0 adapter inventories, claim ceilings and hashes verify"
 
 if run_verifier "$tmp/good.tar.gz" "1111111111111111111111111111111111111111" refs/heads/main "$tmp/extracted-wrong-source" >/dev/null 2>&1; then
   fail "wrong expected source SHA was accepted"
@@ -182,3 +197,9 @@ if run_verifier "$tmp/bad-boot.tar.gz" "$source_sha" refs/heads/main "$tmp/extra
   fail "false boot-reconciliation evidence digest was accepted"
 fi
 echo "PASS: boot-reconciliation supplemental digest mismatch fails closed"
+
+make_archive "$tmp/bad-boot-adapter.tar.gz" false boot-adapter
+if run_verifier "$tmp/bad-boot-adapter.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-bad-boot-adapter" >/dev/null 2>&1; then
+  fail "false D0 boot-observation adapter digest was accepted"
+fi
+echo "PASS: D0 boot-observation supplemental digest mismatch fails closed"
