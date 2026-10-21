@@ -137,9 +137,13 @@ pub fn verify_cose_eat(
         })
         .map_err(|e| format!("COSE signature verification failed: {e}"))?;
 
+    let mut payload_cursor = std::io::Cursor::new(payload);
     let value: coset::cbor::value::Value =
-        coset::cbor::de::from_reader(payload)
+        coset::cbor::de::from_reader(&mut payload_cursor)
             .map_err(|e| format!("EAT claims CBOR decode failed: {e}"))?;
+    if payload_cursor.position() != payload.len() as u64 {
+        return Err("trailing bytes after the EAT CBOR claims map are not permitted".into());
+    }
     let claims = match value {
         coset::cbor::value::Value::Map(entries) => entries,
         _ => return Err("EAT claims payload must be a CBOR map".into()),
@@ -661,6 +665,10 @@ mod tests {
             let mut payload = Vec::new();
             coset::cbor::ser::into_writer(&Value::Map(claims.to_vec()), &mut payload)
                 .expect("serialize claims");
+            self.token_with_raw_payload(payload, algorithm)
+        }
+
+        fn token_with_raw_payload(&self, payload: Vec<u8>, algorithm: iana::Algorithm) -> Vec<u8> {
             CoseSign1Builder::new()
                 .protected(
                     HeaderBuilder::new()
@@ -727,6 +735,19 @@ mod tests {
         let last = token.len() - 1;
         token[last] ^= 1;
         assert!(verify_cose_eat(&token, &f.trusted, &f.challenge, 1_200).is_err());
+    }
+
+    #[test]
+    fn trailing_bytes_after_the_signed_eat_claims_map_are_rejected() {
+        let f = Fixture::new();
+        let mut payload = Vec::new();
+        coset::cbor::ser::into_writer(&Value::Map(f.claims.clone()), &mut payload)
+            .expect("serialize claims");
+        payload.push(0x00);
+        let token = f.token_with_raw_payload(payload, iana::Algorithm::Ed25519);
+        assert!(verify_cose_eat(&token, &f.trusted, &f.challenge, 1_200)
+            .expect_err("trailing bytes must reject")
+            .contains("trailing bytes"));
     }
 
     #[test]
