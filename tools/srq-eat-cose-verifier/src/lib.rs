@@ -104,15 +104,33 @@ pub struct ChallengeConsumptionRequest<'a> {
     pub envelope_sha256: &'a str,
 }
 
-/// Production implementations must validate the complete request against the
-/// outstanding target-bound challenge/decision record and atomically consume
-/// it with the verified observation receipt. They must re-check expiry using
-/// their trusted clock inside the transaction, enforce one-use semantics across
-/// process restart, and return the SHA-256 of the committed receipt record
-/// only after commit. An in-memory implementation is suitable for unit tests
-/// only, never for production/release gating.
+/// Type-state capability created by this verifier crate only after strict
+/// EAT/COSE signature and claim verification succeeds. Its inner request is
+/// private so external crates cannot construct a "verified" request by filling
+/// in fields themselves. Durable-store implementations may inspect the request
+/// but should accept only this capability through the ChallengeConsumer trait.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct VerifiedChallengeConsumption<'a> {
+    request: ChallengeConsumptionRequest<'a>,
+}
+
+impl<'a> VerifiedChallengeConsumption<'a> {
+    /// Read the verified bindings that a durable consumer must compare against
+    /// the outstanding target-bound challenge and decision record.
+    pub fn request(&self) -> &ChallengeConsumptionRequest<'a> {
+        &self.request
+    }
+}
+
+/// Production implementations must validate the complete verified request
+/// against the outstanding target-bound challenge/decision record and atomically
+/// consume it with the verified observation receipt. They must re-check expiry
+/// using their configured clock inside the transaction, enforce one-use semantics
+/// across process restart, and return the SHA-256 of the committed receipt record
+/// only after commit. An in-memory implementation is suitable for unit tests only,
+/// never for production/release gating.
 pub trait ChallengeConsumer {
-    fn consume_once(&mut self, request: &ChallengeConsumptionRequest<'_>) -> Result<String, String>;
+    fn consume_once(&mut self, verified: &VerifiedChallengeConsumption<'_>) -> Result<String, String>;
 }
 
 /// Verify a signed response and all strict SRQ D1 claim bindings.
@@ -355,8 +373,11 @@ pub fn verify_and_consume<S: ChallengeConsumer>(
         challenge_expires_at_unix_seconds: expected.expires_at_unix_seconds,
         envelope_sha256: &verified.envelope_sha256,
     };
+    let verified_consumption = VerifiedChallengeConsumption {
+        request: consumption,
+    };
     let durable_receipt_sha256 = store
-        .consume_once(&consumption)
+        .consume_once(&verified_consumption)
         .map_err(|e| format!("durable challenge consumption failed: {e}"))?;
     if !is_sha256(&durable_receipt_sha256) {
         return Err("challenge consumer returned a malformed durable receipt digest".into());
@@ -773,7 +794,8 @@ mod tests {
     }
 
     impl ChallengeConsumer for MemoryStore {
-        fn consume_once(&mut self, request: &ChallengeConsumptionRequest<'_>) -> Result<String, String> {
+        fn consume_once(&mut self, verified: &VerifiedChallengeConsumption<'_>) -> Result<String, String> {
+            let request = verified.request();
             if !self.consumed.insert(request.challenge_id.to_owned()) {
                 return Err("challenge already consumed".into());
             }
@@ -1029,7 +1051,7 @@ mod tests {
     fn malformed_receipt_digest_never_returns_consumed_capability() {
         struct BadReceiptStore;
         impl ChallengeConsumer for BadReceiptStore {
-            fn consume_once(&mut self, _: &ChallengeConsumptionRequest<'_>) -> Result<String, String> {
+            fn consume_once(&mut self, _: &VerifiedChallengeConsumption<'_>) -> Result<String, String> {
                 Ok("not-a-sha256-digest".into())
             }
         }
@@ -1049,7 +1071,7 @@ mod tests {
     fn challenge_consumption_failure_never_returns_consumed_success() {
         struct RejectStore;
         impl ChallengeConsumer for RejectStore {
-            fn consume_once(&mut self, _: &ChallengeConsumptionRequest<'_>) -> Result<String, String> {
+            fn consume_once(&mut self, _: &VerifiedChallengeConsumption<'_>) -> Result<String, String> {
                 Err("durability unavailable".into())
             }
         }
