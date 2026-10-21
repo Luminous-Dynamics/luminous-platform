@@ -329,6 +329,7 @@ jobs:
             srq-boot-observation-adapter-test.log
             srq-boot-reconciliation-model-test.log
             srq-challenge-promotion-model-test.log
+            srq-eat-cose-verifier-test.log
             srq-evidence-003-model-result.json
             srq-process-kill-model-test.log
             srq-recovery-model-test.log
@@ -352,6 +353,7 @@ jobs:
           sqlite_reference_sha="$(sha256sum "$bundle_dir/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
           boot_reconciliation_sha="$(sha256sum "$bundle_dir/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
           boot_observation_adapter_sha="$(sha256sum "$bundle_dir/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
+          d1_cose_verifier_sha="$(sha256sum "$bundle_dir/srq-eat-cose-verifier-test.log" | cut -d ' ' -f 1)"
           corpus_sha="$(sha256sum benchmarks/srq-v1/scenarios.json | cut -d ' ' -f 1)"
           actual_head="$(git rev-parse HEAD)"
           test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
@@ -373,6 +375,7 @@ jobs:
             --arg sqlite_reference_sha "$sqlite_reference_sha" \
             --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
             --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" \
+            --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" \
             '{
               schema_version: 1,
               profile_id: "SRQ-1",
@@ -423,6 +426,14 @@ jobs:
                 status: "PASS",
                 evidence_artifact: "srq-boot-observation-adapter-test.log",
                 evidence_sha256: $boot_observation_adapter_sha
+              }, {
+                test_id: "SRQ-D1-COSE-VERIFY-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "cryptographic_test_fixture_only",
+                status: "PASS",
+                evidence_artifact: "srq-eat-cose-verifier-test.log",
+                evidence_sha256: $d1_cose_verifier_sha
               }]
             }' > "$bundle_dir/manifest.json"
 
@@ -456,6 +467,7 @@ jobs:
             ${{ runner.temp }}/srq-update-004-model-result.json
             ${{ runner.temp }}/srq-challenge-promotion-model-test.log
             ${{ runner.temp }}/srq-evidence-003-model-result.json
+            ${{ runner.temp }}/srq-eat-cose-verifier-test.log
             ${{ runner.temp }}/srq-boot-reconciliation-model-test.log
             ${{ runner.temp }}/srq-boot-observation-adapter-test.log
             ${{ runner.temp }}/srq-process-kill-model-test.log
