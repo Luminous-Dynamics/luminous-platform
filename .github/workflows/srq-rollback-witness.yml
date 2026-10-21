@@ -1,0 +1,51 @@
+name: SRQ rollback-witness state machine
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/srq-rollback-witness.yml"
+      - "tools/srq-rollback-witness-model/**"
+      - "docs/SRQ_EXTERNAL_ROLLBACK_WITNESS_V1.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rollback-witness-model:
+    name: Test external anti-rollback state machine
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out reviewed source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install pinned Rust toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.96.0 --profile minimal
+          rustc +1.96.0 --version
+
+      - name: Test rollback detection, CAS, idempotency and recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          test_log="$RUNNER_TEMP/srq-rollback-witness-model.log"
+          cargo +1.96.0 test \
+            --manifest-path tools/srq-rollback-witness-model/Cargo.toml \
+            --locked -- --nocapture 2>&1 | tee "$test_log"
+          grep -Fq 'test result: ok. 8 passed; 0 failed' "$test_log"
+          grep -Fq 'test tests::restored_local_database_is_detected_against_newer_independent_witness ... ok' "$test_log"
+          grep -Fq 'test tests::witness_commit_before_local_finalize_recovers_same_decision_idempotently ... ok' "$test_log"
+          grep -Fq 'test tests::exactly_one_of_64_distinct_decisions_wins_same_predecessor_cas ... ok' "$test_log"
+          grep -Fq 'test tests::identical_local_and_witness_rollback_domains_are_not_an_independent_anchor ... ok' "$test_log"
+
+      - name: Preserve model-only execution record
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-rollback-witness-model-evidence
+          path: ${{ runner.temp }}/srq-rollback-witness-model.log
+          if-no-files-found: ignore
+          retention-days: 14
