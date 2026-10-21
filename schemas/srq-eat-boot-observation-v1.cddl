@@ -1,0 +1,47 @@
+; SRQ-1 EAT/COSE boot-observation profile v1 (draft)
+; This is a CDDL shape draft only. COSE_Sign1 and EAT standard claims follow
+; RFC 9052 and RFC 9711. Semantic profile validation is stricter than generic EAT.
+
+; The COSE_Sign1 envelope is:
+; [
+;   protected: bstr,     ; deterministic CBOR map including alg and key id policy
+;   unprotected: { * int => any },
+;   payload: bstr,       ; deterministic CBOR encoding of srq-eat-boot-claims
+;   signature: bstr
+; ]
+;
+; Verifier policy must require an allowed algorithm and a configured key id.
+; The claims payload is authenticated by the COSE signature; never accept the
+; same claims supplied without a valid COSE envelope.
+
+srq-eat-boot-claims = {
+  ; RFC 9711 EAT nonce claim. Profile policy requires >=128 bits of fresh
+  ; entropy, a single-use verifier challenge, and durable consume-before-return.
+  10 => bstr .size (16..64),
+
+  ; CWT registered claims. sub is a verifier-scoped target token, not a global
+  ; hardware serial. aud is the intended verifier/relying-party audience.
+  2 => tstr,                     ; sub
+  3 => tstr / [ + tstr ],        ; aud
+  4 => uint,                     ; exp (must match verifier challenge expiry policy)
+  6 => uint,                     ; iat (diagnostic; not trusted by itself)
+
+  ; SRQ private claims. CDDL enforces representation; verifier logic checks
+  ; digest syntax, exact expected values, policy semantics and target bindings.
+  "srq_profile" => "srq-eat-boot-observation-v1",
+  "srq_challenge_id" => tstr,
+  "srq_decision_id" => tstr,
+  "srq_target_token" => tstr,
+  "srq_policy_generation" => uint,
+  "srq_approved_artifact_sha256" => tstr,
+  "srq_expected_effective_policy_sha256" => tstr,
+  "srq_observed_effective_policy_sha256" => tstr,
+  "srq_corpus_sha256" => tstr,
+  "srq_boot_instance_id" => tstr,
+  "srq_booted_deployment_id" => tstr / null,
+  "srq_current_userspace_deployment_id" => tstr / null,
+  "srq_observation_status" => "consistent" / "divergent" / "unavailable",
+  "srq_assurance_tier" => "D1-software-key" / "D2-hardware-measured",
+  "srq_measurement_profile" => tstr / null,
+  "srq_measurement_digest" => tstr / null
+}
