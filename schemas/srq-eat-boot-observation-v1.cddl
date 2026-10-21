@@ -41,6 +41,7 @@ srq-eat-boot-claims = {
   "srq_observed_effective_policy_sha256" => tstr,
   "srq_corpus_sha256" => tstr,
   "srq_boot_instance_id" => tstr,
+  "srq_expected_deployment_id" => tstr,
   "srq_booted_deployment_id" => tstr / null,
   "srq_current_userspace_deployment_id" => tstr / null,
   "srq_observation_status" => "consistent" / "divergent" / "unavailable",
