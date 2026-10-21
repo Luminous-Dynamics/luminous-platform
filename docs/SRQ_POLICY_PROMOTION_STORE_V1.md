@@ -33,6 +33,20 @@ After a process dies after commit but before the caller receives the acknowledge
 - Exact schema SQL inventory is checked on every open. Unknown database identity, unexpected schema objects or altered table/index SQL fail closed.
 - The raw challenge nonce is never persisted; only its SHA-256 digest is stored.
 
+## Actual process-termination fault schedule added
+
+The crate's test-only writer hooks are placed after these SQL operations, but before commit:
+
+1. Decision row inserted.
+2. Target generation compare-and-swap completed.
+3. Challenge-consumption pointer updated.
+
+A fourth hook pauses immediately after the transaction commits but before the method returns its acknowledgement. The parent test launches a separate Rust test-harness process, waits for a synced marker, sends Linux SIGKILL, reopens the same SQLite database, runs integrity and lifecycle checks, and reconciles the decision ID.
+
+The test intends 20 repetitions at each of the four boundaries (80 child-process SIGKILL trials). For the three pre-commit boundaries, it requires generation 7, no committed decision and an unconsumed challenge. For the post-commit/pre-ack boundary, it requires generation 8, exactly one recoverable decision and one consumed challenge. This is a live-kernel process termination test—not a kernel panic, VM reset, power interruption, or storage-controller durability test.
+
+CI now also attempts to preserve the model test log and exact Cargo.lock as supplemental evidence in the fixed-inventory archive. The archive manifest labels the observation model / abstract_model_only; it is not a qualifying receipt. The current newest workflow is queued, so the 11-test suite and its 80 SIGKILL trials are not yet confirmed passing on the latest branch head.
+
 ## Tests and next gates
 
 The unit/integration suite tests signed authorization, invalid signature without mutation, replay after reopen and original-decision reconciliation, expiry, mismatched target/generation/digest, a 64-connection race with exactly one commit, schema tampering, nonce minimization and SQLite version parsing.
