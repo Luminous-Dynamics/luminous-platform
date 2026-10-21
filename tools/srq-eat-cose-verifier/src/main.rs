@@ -1,6 +1,7 @@
 use std::env;
 use std::fs;
 use std::process::ExitCode;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::Serialize;
 use srq_eat_cose_verifier::{
@@ -18,7 +19,7 @@ struct CliResult<'a> {
 }
 
 fn usage() {
-    eprintln!("Usage: srq-eat-cose-verify --token FILE --trust-policy JSON --challenge JSON --now-epoch UNIX_SECONDS");
+    eprintln!("Usage: srq-eat-cose-verify --token FILE --trust-policy JSON --challenge JSON");
     eprintln!("Checks D1 EAT/COSE Ed25519 signature and verifier-bound claims.");
     eprintln!("Output is not replay-safe until a durable challenge store consumes the nonce.");
     eprintln!("D1 does not claim TPM, secure-boot measurement or physical qualification.");
@@ -36,17 +37,12 @@ fn run() -> Result<(), String> {
     let mut token_path = None;
     let mut trust_path = None;
     let mut challenge_path = None;
-    let mut now = None;
     let mut args = env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--token" => token_path = args.next(),
             "--trust-policy" => trust_path = args.next(),
             "--challenge" => challenge_path = args.next(),
-            "--now-epoch" => {
-                let value = args.next().ok_or("--now-epoch requires a value")?;
-                now = Some(value.parse::<u64>().map_err(|_| "--now-epoch must be an unsigned integer")?);
-            }
             "--help" | "-h" => {
                 usage();
                 return Ok(());
@@ -58,7 +54,12 @@ fn run() -> Result<(), String> {
     let token_path = token_path.ok_or("missing --token")?;
     let trust_path = trust_path.ok_or("missing --trust-policy")?;
     let challenge_path = challenge_path.ok_or("missing --challenge")?;
-    let now = now.ok_or("missing --now-epoch; provide verifier-controlled time")?;
+    // Never accept verifier time from CLI arguments: callers must not be able
+    // to make an expired challenge appear fresh by choosing a future timestamp.
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|_| "system clock is before the Unix epoch")?
+        .as_secs();
 
     let token = read_limited(&token_path, srq_eat_cose_verifier::MAX_TOKEN_BYTES)?;
     let trust_bytes = read_limited(&trust_path, 16 * 1024)?;
