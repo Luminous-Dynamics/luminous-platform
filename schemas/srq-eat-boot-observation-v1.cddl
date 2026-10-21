@@ -10,7 +10,8 @@
 ;   signature: bstr
 ; ]
 ;
-; Verifier policy must require an allowed algorithm and a configured key id.
+; Verifier policy pins COSE alg=-19 (Ed25519, RFC 9864), not polymorphic
+; EdDSA alg=-8. The protected header must contain the configured kid.
 ; The claims payload is authenticated by the COSE signature; never accept the
 ; same claims supplied without a valid COSE envelope.
 
