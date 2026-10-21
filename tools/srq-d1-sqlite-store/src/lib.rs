@@ -22,6 +22,9 @@ use srq_eat_cose_verifier::{
 
 const SCHEMA_VERSION: i64 = 1;
 const APPLICATION_ID: i64 = 0x5352_5131; // ASCII "SRQ1".
+/// SQLite 3.51.3 fixed the upstream WAL-reset database-corruption bug.
+/// The D1 store uses WAL with concurrent processes, so older engines are not accepted.
+const MIN_SQLITE_VERSION_FOR_WAL: (u64, u64, u64) = (3, 51, 3);
 const SCHEMA: &str = include_str!("../../../benchmarks/srq-v1/sqlite-d1-challenge-consumption-reference.sql");
 
 #[derive(Clone)]
@@ -91,6 +94,16 @@ impl SqliteD1Store {
     pub fn open(path: impl AsRef<Path>) -> Result<Self, String> {
         let mut connection =
             Connection::open(path).map_err(|error| format!("open D1 store: {error}"))?;
+        let sqlite_version: String = connection
+            .query_row("SELECT sqlite_version()", [], |row| row.get(0))
+            .map_err(|error| format!("read SQLite runtime version: {error}"))?;
+        let parsed_version = sqlite_version_tuple(&sqlite_version)
+            .ok_or_else(|| format!("SQLite runtime version is malformed: {sqlite_version}"))?;
+        if parsed_version < MIN_SQLITE_VERSION_FOR_WAL {
+            return Err(format!(
+                "SQLite {sqlite_version} is below the SRQ WAL safety floor 3.51.3;                  upgrade the bundled engine before opening the durable D1 store"
+            ));
+        }
         connection
             .busy_timeout(Duration::from_secs(10))
             .map_err(|error| format!("set SQLite busy timeout: {error}"))?;
@@ -661,6 +674,17 @@ fn receipt_digest(
     sha256_hex(fields.join("\n").as_bytes())
 }
 
+fn sqlite_version_tuple(value: &str) -> Option<(u64, u64, u64)> {
+    let mut parts = value.split('.');
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts.next()?.parse().ok()?;
+    let patch = parts.next()?.parse().ok()?;
+    if parts.next().is_some() {
+        return None;
+    }
+    Some((major, minor, patch))
+}
+
 fn system_time_unix_seconds() -> Result<u64, String> {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -828,6 +852,40 @@ mod tests {
             |row| row.get(0),
         ).expect("challenge count");
         (challenges, receipts, consumed)
+    }
+
+    #[test]
+    fn runtime_sqlite_is_above_the_upstream_wal_reset_bug_floor() {
+        let path = temporary_path("runtime-version", "sqlite");
+        let store = SqliteD1Store::open(&path).expect("open patched SQLite");
+        let runtime_version: String = store.connection
+            .query_row("SELECT sqlite_version()", [], |row| row.get(0))
+            .expect("read SQLite version");
+        let source_id: String = store.connection
+            .query_row("SELECT sqlite_source_id()", [], |row| row.get(0))
+            .expect("read SQLite source ID");
+        let parsed = sqlite_version_tuple(&runtime_version).expect("parse SQLite runtime version");
+        assert!(
+            parsed >= MIN_SQLITE_VERSION_FOR_WAL,
+            "D1 store must reject SQLite versions with the known WAL-reset bug: {runtime_version}"
+        );
+        assert!(!source_id.trim().is_empty(), "SQLite source ID must be reportable");
+        println!("PASS: D1 Rust SQLite runtime is above WAL safety floor: version={runtime_version} source_id={source_id}");
+        drop(store);
+        let _ = fs::remove_file(&path);
+        let _ = fs::remove_file(format!("{}-wal", path.display()));
+        let _ = fs::remove_file(format!("{}-shm", path.display()));
+    }
+
+    #[test]
+    fn sqlite_version_tuple_rejects_malformed_values_and_orders_numeric_components() {
+        assert_eq!(sqlite_version_tuple("3.51.3"), Some((3, 51, 3)));
+        assert_eq!(sqlite_version_tuple("3.50.12"), Some((3, 50, 12)));
+        assert_eq!(sqlite_version_tuple("3.51"), None);
+        assert_eq!(sqlite_version_tuple("3.51.3-extra"), None);
+        assert!(sqlite_version_tuple("3.51.2").unwrap() < MIN_SQLITE_VERSION_FOR_WAL);
+        assert!(sqlite_version_tuple("3.51.3").unwrap() >= MIN_SQLITE_VERSION_FOR_WAL);
+        assert!(sqlite_version_tuple("3.53.2").unwrap() >= MIN_SQLITE_VERSION_FOR_WAL);
     }
 
     #[test]
