@@ -340,6 +340,20 @@ impl SqliteD1Store {
         request: &ChallengeConsumptionRequest<'_>,
         test_now_override: Option<u64>,
     ) -> Result<String, String> {
+        self.consume_once_with_clock(request, || match test_now_override {
+            Some(value) => Ok(value),
+            None => system_time_unix_seconds(),
+        })
+    }
+
+    fn consume_once_with_clock<F>(
+        &mut self,
+        request: &ChallengeConsumptionRequest<'_>,
+        mut clock: F,
+    ) -> Result<String, String>
+    where
+        F: FnMut() -> Result<u64, String>,
+    {
         validate_request_shape(request)?;
         let generation =
             to_sqlite_integer(request.policy_generation, "policy generation")?;
@@ -361,10 +375,7 @@ impl SqliteD1Store {
             .connection
             .transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(|error| format!("begin D1 consumption transaction: {error}"))?;
-        let now = match test_now_override {
-            Some(value) => value,
-            None => system_time_unix_seconds()?,
-        };
+        let now = clock()?;
         let now_sql = to_sqlite_integer(now, "verifier time")?;
         let stored = load_challenge(&tx, request.challenge_id)?;
 
@@ -462,6 +473,17 @@ impl SqliteD1Store {
         }
         #[cfg(test)]
         test_pause_at_commit_point("after_challenge_update_before_commit");
+
+        // Recheck challenge freshness after all staged database writes. If the
+        // authorization expired while SQLite was doing the work, returning
+        // drops this transaction and rolls back both the receipt and the
+        // one-use challenge update.
+        let commit_now = clock()?;
+        if commit_now < request.challenge_issued_at_unix_seconds
+            || commit_now >= request.challenge_expires_at_unix_seconds
+        {
+            return Err("D1 challenge expired before transaction commit".into());
+        }
 
         tx.commit()
             .map_err(|error| format!("commit D1 receipt/challenge transaction: {error}"))?;
@@ -929,6 +951,37 @@ mod tests {
         let _ = fs::remove_file(&path);
         let _ = fs::remove_file(format!("{}-wal", path.display()));
         let _ = fs::remove_file(format!("{}-shm", path.display()));
+    }
+
+    #[test]
+    fn challenge_expiring_before_commit_rolls_back_receipt_and_consumption() {
+        let now = 2_000_000_000;
+        let challenge = challenge_for("challenge-expiry-at-commit", now);
+        let path = temporary_path("expiry-at-commit", "sqlite");
+        let mut store = SqliteD1Store::open(&path).expect("open expiry store");
+        store.issue_challenge(&challenge).expect("issue challenge");
+        let envelope = "d".repeat(64);
+        let request = request_for(&challenge, "boot-instance-commit-expiry", &envelope);
+        let mut clock_calls = 0;
+        let result = store.consume_once_with_clock(&request, || {
+            clock_calls += 1;
+            if clock_calls == 1 {
+                Ok(now)
+            } else {
+                Ok(challenge.expires_at_unix_seconds)
+            }
+        });
+        assert!(result.is_err(), "expiry at commit boundary must reject");
+        assert_eq!(clock_calls, 2, "store must recheck time at commit");
+        assert_eq!(db_row_counts(&store, &challenge.challenge_id), (1, 0, 0));
+        store.integrity_check().expect("database remains consistent");
+        println!("PASS: D1 challenge expiring during transaction rolls back receipt and consumption");
+        drop(store);
+        for cleanup in [&path] {
+            let _ = fs::remove_file(cleanup);
+            let _ = fs::remove_file(format!("{}-wal", cleanup.display()));
+            let _ = fs::remove_file(format!("{}-shm", cleanup.display()));
+        }
     }
 
     #[test]
