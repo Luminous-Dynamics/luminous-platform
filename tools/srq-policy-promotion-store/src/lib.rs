@@ -39,6 +39,7 @@ pub struct IssuedPromotionChallenge {
     pub decision_id: String,
     pub previous_generation: u64,
     pub next_generation: u64,
+    pub previous_approved_artifact_sha256: String,
     pub previous_effective_policy_sha256: String,
     pub approved_artifact_sha256: String,
     pub next_effective_policy_sha256: String,
@@ -59,6 +60,7 @@ impl std::fmt::Debug for IssuedPromotionChallenge {
             .field("decision_id", &self.decision_id)
             .field("previous_generation", &self.previous_generation)
             .field("next_generation", &self.next_generation)
+            .field("previous_approved_artifact_sha256", &self.previous_approved_artifact_sha256)
             .field("approved_artifact_sha256", &self.approved_artifact_sha256)
             .field("next_effective_policy_sha256", &self.next_effective_policy_sha256)
             .field("deployment_id", &self.deployment_id)
@@ -86,6 +88,7 @@ pub struct PromotedDecision {
     pub challenge_id: String,
     pub previous_generation: u64,
     pub next_generation: u64,
+    pub previous_approved_artifact_sha256: String,
     pub approved_artifact_sha256: String,
     pub effective_policy_sha256: String,
     pub corpus_sha256: String,
@@ -125,6 +128,7 @@ struct StoredChallenge {
     decision_id: String,
     previous_generation: i64,
     next_generation: i64,
+    previous_approved_artifact_sha256: String,
     previous_effective_policy_sha256: String,
     approved_artifact_sha256: String,
     next_effective_policy_sha256: String,
@@ -146,6 +150,7 @@ struct VerifiedAuthorization {
     decision_id: String,
     previous_generation: u64,
     next_generation: u64,
+    previous_approved_artifact_sha256: String,
     previous_effective_policy_sha256: String,
     approved_artifact_sha256: String,
     next_effective_policy_sha256: String,
