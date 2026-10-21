@@ -280,17 +280,30 @@ impl SqlitePolicyPromotionStore {
         token: &[u8],
         trusted_key: &TrustedPromotionKey,
     ) -> Result<PromotedDecision, StoreError> {
-        let now = system_time_unix_seconds()?;
-        self.verify_and_promote_at(token, trusted_key, now)
+        self.verify_and_promote_with_clock(token, trusted_key, system_time_unix_seconds)
     }
 
+    #[cfg(test)]
     fn verify_and_promote_at(
         &mut self,
         token: &[u8],
         trusted_key: &TrustedPromotionKey,
         now: u64,
     ) -> Result<PromotedDecision, StoreError> {
+        self.verify_and_promote_with_clock(token, trusted_key, || Ok(now))
+    }
+
+    fn verify_and_promote_with_clock<F>(
+        &mut self,
+        token: &[u8],
+        trusted_key: &TrustedPromotionKey,
+        mut clock: F,
+    ) -> Result<PromotedDecision, StoreError>
+    where
+        F: FnMut() -> Result<u64, StoreError>,
+    {
         let verified = verify_signed_authorization(token, trusted_key)?;
+        let now = clock()?;
         let tx = self.connection.transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(sql_err("begin promotion transaction"))?;
         let stored = load_challenge(&tx, &verified.challenge_id)?
@@ -338,9 +351,29 @@ impl SqlitePolicyPromotionStore {
         }
         #[cfg(test)]
         test_pause_at_promotion_boundary("after_challenge_consume");
+
+        // Recheck freshness at the commit boundary: signature verification and
+        // SQLite lock acquisition may have consumed the remaining validity
+        // window. Returning here drops the transaction, rolling back the
+        // decision, target generation and challenge consumption together.
+        let commit_now = clock()?;
+        if commit_now < stored.issued_at_unix_seconds as u64
+            || commit_now < verified.issued_at_unix_seconds
+            || commit_now >= stored.expires_at_unix_seconds as u64
+        {
+            return Err(StoreError::ExpiredChallenge);
+        }
+        let timestamp_changed = tx.execute(
+            "UPDATE promotion_decisions SET committed_at_unix_seconds=?1 WHERE decision_id=?2",
+            params![sql_i64(commit_now)?, verified.decision_id],
+        ).map_err(sql_err("stamp promotion at commit boundary"))?;
+        if timestamp_changed != 1 {
+            return Err(StoreError::CorruptStore("promotion decision disappeared before commit".into()));
+        }
         tx.commit().map_err(sql_err("commit promotion transaction"))?;
         #[cfg(test)]
         test_pause_at_promotion_boundary("after_commit_before_ack");
+        let promoted_at = commit_now;
         Ok(PromotedDecision {
             decision_id: verified.decision_id,
             target_id: verified.target_id,
