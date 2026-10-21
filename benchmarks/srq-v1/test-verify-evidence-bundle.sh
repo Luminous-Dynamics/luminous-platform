@@ -21,6 +21,7 @@ make_archive() {
     srq-boot-observation-adapter-test.log \
     srq-boot-reconciliation-model-test.log \
     srq-challenge-promotion-model-test.log \
+    srq-eat-cose-verifier-test.log \
     srq-evidence-003-model-result.json \
     srq-process-kill-model-test.log \
     srq-recovery-model-test.log \
@@ -35,6 +36,7 @@ make_archive() {
       srq-boot-observation-adapter-test.log \
       srq-boot-reconciliation-model-test.log \
       srq-challenge-promotion-model-test.log \
+      srq-eat-cose-verifier-test.log \
       srq-evidence-003-model-result.json \
       srq-process-kill-model-test.log \
       srq-recovery-model-test.log \
@@ -45,16 +47,18 @@ make_archive() {
   if [[ "$bad_checksum" == "true" ]]; then
     printf 'tampered after hashing\n' >> "$bundle/srq-recovery-model-test.log"
   fi
-  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha manifest_process_kill_sha manifest_sqlite_sha manifest_boot_reconciliation_sha manifest_boot_adapter_sha
+  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha d1_cose_verifier_sha manifest_process_kill_sha manifest_sqlite_sha manifest_boot_reconciliation_sha manifest_boot_adapter_sha manifest_d1_sha
   checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
   process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
   sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
   boot_reconciliation_sha="$(sha256sum "$bundle/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
   boot_observation_adapter_sha="$(sha256sum "$bundle/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
+  d1_cose_verifier_sha="$(sha256sum "$bundle/srq-eat-cose-verifier-test.log" | cut -d ' ' -f 1)"
   manifest_process_kill_sha="$process_kill_sha"
   manifest_sqlite_sha="$sqlite_reference_sha"
   manifest_boot_reconciliation_sha="$boot_reconciliation_sha"
   manifest_boot_adapter_sha="$boot_observation_adapter_sha"
+  manifest_d1_sha="$d1_cose_verifier_sha"
   if [[ "$bad_supplemental" == "process-kill" ]]; then
     manifest_process_kill_sha="0000000000000000000000000000000000000000000000000000000000000000"
   elif [[ "$bad_supplemental" == "sqlite" ]]; then
@@ -63,6 +67,8 @@ make_archive() {
     manifest_boot_reconciliation_sha="0000000000000000000000000000000000000000000000000000000000000000"
   elif [[ "$bad_supplemental" == "boot-adapter" ]]; then
     manifest_boot_adapter_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  elif [[ "$bad_supplemental" == "d1" ]]; then
+    manifest_d1_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
   jq -n \
     --arg repo "Luminous-Dynamics/luminous-platform" \
@@ -79,6 +85,7 @@ make_archive() {
     --arg sqlite_reference_sha "$manifest_sqlite_sha" \
     --arg boot_reconciliation_sha "$manifest_boot_reconciliation_sha" \
     --arg boot_observation_adapter_sha "$manifest_boot_adapter_sha" \
+    --arg d1_cose_verifier_sha "$manifest_d1_sha" \
     '{
       schema_version: 1,
       profile_id: "SRQ-1",
@@ -129,6 +136,14 @@ make_archive() {
         status: "PASS",
         evidence_artifact: "srq-boot-observation-adapter-test.log",
         evidence_sha256: $boot_observation_adapter_sha
+      }, {
+        test_id: "SRQ-D1-COSE-VERIFY-V1",
+        scenario_id: "RECOVERY-002",
+        execution_tier: "model",
+        claim_ceiling: "cryptographic_test_fixture_only",
+        status: "PASS",
+        evidence_artifact: "srq-eat-cose-verifier-test.log",
+        evidence_sha256: $d1_cose_verifier_sha
       }]
     }' > "$bundle/manifest.json"
   tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - -C "$tmp/work" srq-evidence-bundle \
@@ -150,7 +165,7 @@ run_verifier() {
 make_archive "$tmp/good.tar.gz"
 run_verifier "$tmp/good.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-good" > "$tmp/manifest-path"
 [[ -f "$(cat "$tmp/manifest-path")" ]] || fail "valid bundle manifest was not returned"
-echo "PASS: bundle source, workflow, run, process-kill, SQLite, boot-reconciliation and D0 adapter inventories, claim ceilings and hashes verify"
+echo "PASS: bundle source, workflow, run, process-kill, SQLite, boot-reconciliation, D0 and D1 inventories, claim ceilings and hashes verify"
 
 if run_verifier "$tmp/good.tar.gz" "1111111111111111111111111111111111111111" refs/heads/main "$tmp/extracted-wrong-source" >/dev/null 2>&1; then
   fail "wrong expected source SHA was accepted"
@@ -203,3 +218,9 @@ if run_verifier "$tmp/bad-boot-adapter.tar.gz" "$source_sha" refs/heads/main "$t
   fail "false D0 boot-observation adapter digest was accepted"
 fi
 echo "PASS: D0 boot-observation supplemental digest mismatch fails closed"
+
+make_archive "$tmp/bad-d1.tar.gz" false d1
+if run_verifier "$tmp/bad-d1.tar.gz" "$source_sha" refs/heads/main "$tmp/extracted-bad-d1" >/dev/null 2>&1; then
+  fail "false D1 verifier evidence digest was accepted"
+fi
+echo "PASS: D1 cryptographic-fixture digest mismatch fails closed"
