@@ -233,5 +233,5 @@ rejections="$(grep -h -c 'outcome=rejected' "$tmp"/d1-race-*.out | awk '{sum += 
 echo "PASS: exactly one durable D1 receipt across 64 independent challenge consumers"
 
 sqlite_version="$(sqlite3 --version | awk '{print $1}')"
-printf 'sqlite_version=%s journal_mode=%s synchronous=FULL d1_cases=15 contenders=64\\n' \
+printf 'sqlite_version=%s journal_mode=%s synchronous=FULL d1_cases=16 contenders=64\\n' \
   "$sqlite_version" "$(sqlite3 -batch "$success_db" 'PRAGMA journal_mode;')"
