@@ -888,7 +888,7 @@ mod tests {
         drop(store);
 
         let unknown_path = temporary_path("unknown-schema", "sqlite");
-        let mut unknown = Connection::open(&unknown_path).expect("create unversioned DB");
+        let unknown = Connection::open(&unknown_path).expect("create unversioned DB");
         unknown.execute_batch("CREATE TABLE unrelated(value TEXT);").unwrap();
         drop(unknown);
         assert!(SqliteD1Store::open(&unknown_path).is_err(), "must not adopt unversioned tables");
@@ -986,7 +986,12 @@ mod tests {
         let envelope = "f".repeat(64);
         let request = request_for(&challenge, "boot-instance-kill", &envelope);
         let _ = point;
-        let _ = store.consume_once(&request).expect("consume should reach injected kill point");
+        // This worker tests the SQLite transaction boundaries themselves. The
+        // production trait boundary only accepts a verifier-issued capability;
+        // verify_and_consume is tested separately in the verifier crate.
+        let _ = store
+            .consume_once_inner(&request, None)
+            .expect("consume should reach injected kill point");
         panic!("worker crossed its configured kill point unexpectedly");
     }
 
