@@ -198,10 +198,14 @@ fn run_real_lifecycle() -> (
     let policy_token = signed_policy_authorization(&promotion, now, &policy_key);
     policy_store.verify_and_promote(&policy_token, &policy_trust)
         .expect("actual signed policy promotion");
+    policy_store.integrity_check().expect("policy store integrity before close");
+    drop(policy_store);
+    let policy_store = SqlitePolicyPromotionStore::open(&policy_path)
+        .expect("reopen policy-promotion database after commit");
     let committed = policy_store.committed_decision_for_challenge(PROMOTION_CHALLENGE)
-        .expect("read committed decision")
-        .expect("promotion must reconcile after commit");
-    policy_store.integrity_check().expect("policy store integrity");
+        .expect("read committed decision after reopen")
+        .expect("promotion must reconcile after commit and reopen");
+    policy_store.integrity_check().expect("policy store integrity after reopen");
 
     let mut boot_store = SqliteD1Store::open(&boot_path)
         .expect("open actual D1 boot-observation SQLite store");
@@ -245,10 +249,14 @@ fn run_real_lifecycle() -> (
     let boot_token = signed_boot_observation(now, expires, &boot_key);
     verify_and_consume(&boot_token, &trusted_boot_key, &expected_boot, now, &mut boot_store)
         .expect("verify and durably consume actual signed boot observation");
+    boot_store.integrity_check().expect("boot store integrity before close");
+    drop(boot_store);
+    let boot_store = SqliteD1Store::open(&boot_path)
+        .expect("reopen D1 observation database after commit");
     let receipt = boot_store.committed_observation_for_challenge(BOOT_CHALLENGE)
-        .expect("read back committed observation")
-        .expect("persisted boot observation must be present");
-    boot_store.integrity_check().expect("boot store integrity");
+        .expect("read back committed observation after reopen")
+        .expect("persisted boot observation must be present after reopen");
+    boot_store.integrity_check().expect("boot store integrity after reopen");
 
     let intent = PromotionIntent {
         decision_id: committed.decision_id.clone(),
