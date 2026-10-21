@@ -24,17 +24,6 @@ const SCHEMA_VERSION: i64 = 1;
 const APPLICATION_ID: i64 = 0x5352_5131; // ASCII "SRQ1".
 const SCHEMA: &str = include_str!("../../../benchmarks/srq-v1/sqlite-d1-challenge-consumption-reference.sql");
 
-const EXPECTED_SCHEMA_OBJECTS: &[(&str, &str)] = &[
-    ("table", "d1_observation_challenges"),
-    ("table", "d1_verified_observation_receipts"),
-    ("trigger", "d1_challenge_binding_is_immutable"),
-    ("trigger", "d1_challenge_cannot_be_deleted"),
-    ("trigger", "d1_challenge_consumed_once"),
-    ("trigger", "d1_receipt_cannot_be_deleted"),
-    ("trigger", "d1_receipt_is_immutable"),
-    ("trigger", "d1_receipt_must_match_fresh_challenge"),
-];
-
 #[derive(Clone)]
 pub struct IssuedChallenge {
     pub challenge_id: String,
@@ -474,31 +463,51 @@ impl ChallengeConsumer for SqliteD1Store {
     }
 }
 
-fn verify_schema_inventory(connection: &Connection) -> Result<(), String> {
+fn schema_objects(connection: &Connection) -> Result<Vec<(String, String, String)>, String> {
     let mut statement = connection
         .prepare(
-            "SELECT type,name FROM sqlite_master \
+            "SELECT type,name,sql FROM sqlite_master \
              WHERE type IN ('table','trigger','view') AND name NOT LIKE 'sqlite_%' \
              ORDER BY type,name",
         )
-        .map_err(|error| format!("prepare D1 schema check: {error}"))?;
+        .map_err(|error| format!("prepare D1 schema fingerprint: {error}"))?;
     let rows = statement
-        .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))
-        .map_err(|error| format!("query D1 schema objects: {error}"))?;
-    let mut actual = Vec::new();
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        })
+        .map_err(|error| format!("query D1 schema fingerprint: {error}"))?;
+    let mut objects = Vec::new();
     for row in rows {
-        actual.push(row.map_err(|error| format!("read D1 schema object: {error}"))?);
+        objects.push(row.map_err(|error| format!("read D1 schema fingerprint: {error}"))?);
     }
-    let expected: Vec<(String, String)> = EXPECTED_SCHEMA_OBJECTS
-        .iter()
-        .map(|(kind, name)| ((*kind).to_owned(), (*name).to_owned()))
-        .collect();
+    Ok(objects)
+}
+
+fn verify_schema_inventory(connection: &Connection) -> Result<(), String> {
+    // Compare the persisted SQL definitions—not merely the object names—with
+    // the canonical schema parsed by the exact same SQLite library. This
+    // rejects a dropped/re-created trigger that keeps the trusted name but
+    // weakens its enforcement. A schema change requires a versioned migration.
+    let ddl_start = SCHEMA
+        .find("CREATE TABLE d1_observation_challenges")
+        .ok_or("embedded D1 schema is missing the challenge table")?;
+    let canonical = Connection::open_in_memory()
+        .map_err(|error| format!("open canonical D1 schema connection: {error}"))?;
+    canonical
+        .execute_batch(&SCHEMA[ddl_start..])
+        .map_err(|error| format!("materialize canonical D1 schema: {error}"))?;
+
+    let actual = schema_objects(connection)?;
+    let expected = schema_objects(&canonical)?;
     if actual != expected {
-        return Err("D1 schema object inventory is missing, altered, or unexpected".into());
+        return Err("D1 schema SQL differs from the canonical versioned schema".into());
     }
     Ok(())
 }
-
 fn load_challenge(
     tx: &Transaction<'_>,
     challenge_id: &str,
