@@ -109,6 +109,13 @@ pub struct ChallengeConsumptionRequest<'a> {
 /// private so external crates cannot construct a "verified" request by filling
 /// in fields themselves. Durable-store implementations may inspect the request
 /// but should accept only this capability through the ChallengeConsumer trait.
+///
+/// Its private field is verified by an external-crate compile-fail doctest:
+///
+/// ```compile_fail
+/// use srq_eat_cose_verifier::VerifiedChallengeConsumption;
+/// let _forged = VerifiedChallengeConsumption { request: panic!() };
+/// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VerifiedChallengeConsumption<'a> {
     request: ChallengeConsumptionRequest<'a>,
