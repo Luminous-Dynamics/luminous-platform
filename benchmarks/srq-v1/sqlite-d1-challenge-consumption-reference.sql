@@ -22,6 +22,9 @@ CREATE TABLE d1_observation_challenges (
         CHECK (length(corpus_sha256) = 64
                AND corpus_sha256 NOT GLOB '*[^0-9a-f]*'),
     expected_deployment_id TEXT NOT NULL,
+    expected_signer_key_id_hex TEXT NOT NULL
+        CHECK (length(expected_signer_key_id_hex) > 0
+               AND expected_signer_key_id_hex NOT GLOB '*[^0-9a-f]*'),
     nonce_sha256 TEXT NOT NULL
         CHECK (length(nonce_sha256) = 64
                AND nonce_sha256 NOT GLOB '*[^0-9a-f]*'),
@@ -88,6 +91,7 @@ WHEN NOT EXISTS (
        AND c.effective_policy_sha256 = NEW.effective_policy_sha256
        AND c.corpus_sha256 = NEW.corpus_sha256
        AND c.expected_deployment_id = NEW.deployment_id
+       AND c.expected_signer_key_id_hex = NEW.signer_key_id_hex
        AND c.nonce_sha256 = NEW.nonce_sha256
        AND c.issued_at_unix_seconds = NEW.challenge_issued_at_unix_seconds
        AND c.expires_at_unix_seconds = NEW.challenge_expires_at_unix_seconds
@@ -111,6 +115,7 @@ WHEN OLD.challenge_id IS NOT NEW.challenge_id
   OR OLD.effective_policy_sha256 IS NOT NEW.effective_policy_sha256
   OR OLD.corpus_sha256 IS NOT NEW.corpus_sha256
   OR OLD.expected_deployment_id IS NOT NEW.expected_deployment_id
+  OR OLD.expected_signer_key_id_hex IS NOT NEW.expected_signer_key_id_hex
   OR OLD.nonce_sha256 IS NOT NEW.nonce_sha256
   OR OLD.issued_at_unix_seconds IS NOT NEW.issued_at_unix_seconds
   OR OLD.expires_at_unix_seconds IS NOT NEW.expires_at_unix_seconds
