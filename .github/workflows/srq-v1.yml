@@ -10,6 +10,7 @@ on:
       - "tools/srq-process-kill-model/**"
       - "tools/srq-boot-reconciliation-model/**"
       - "tools/srq-boot-observation-adapter/**"
+      - "tools/srq-eat-cose-verifier/**"
       - "docs/SOVEREIGN_RECOVERY_QUALIFICATION_V1.md"
       - "docs/SRQ_PROVENANCE_ATTESTATION_V1.md"
       - "docs/SRQ_PROCESS_KILL_MODEL_V1.md"
@@ -263,6 +264,31 @@ jobs:
           echo "PASS: standalone D0 observer distinguishes booted from current deployment without claiming attestation."
           echo "LIMIT: local diagnostics only; no promotion binding, policy/artifact measurement, target signature, TPM quote or release qualification."
           bash tools/srq-boot-observation-adapter/test-cli.sh 2>&1 | tee -a "$adapter_log"
+
+      - name: Bootstrap pinned D1 COSE verifier dependencies and test
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest="tools/srq-eat-cose-verifier/Cargo.toml"
+          cargo generate-lockfile --manifest-path "$manifest"
+          test -s tools/srq-eat-cose-verifier/Cargo.lock
+          d1_log="$RUNNER_TEMP/srq-eat-cose-verifier-test.log"
+          cargo test --manifest-path "$manifest" --locked -- --nocapture 2>&1 | tee "$d1_log"
+          grep -Fq 'test result: ok. 14 passed; 0 failed' "$d1_log"
+          cargo run --manifest-path "$manifest" --locked -- --help 2>&1 | tee -a "$d1_log"
+          grep -Fq 'D1 does not claim TPM, secure-boot measurement or physical qualification.' "$d1_log"
+          sha256sum tools/srq-eat-cose-verifier/Cargo.lock
+
+      - name: Preserve D1 COSE verifier bootstrap evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-eat-cose-bootstrap-v1
+          path: |
+            tools/srq-eat-cose-verifier/Cargo.lock
+            ${{ runner.temp }}/srq-eat-cose-verifier-test.log
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Compile release qualification status from observed receipts
         shell: bash
