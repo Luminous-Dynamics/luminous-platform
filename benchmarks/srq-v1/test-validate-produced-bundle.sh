@@ -18,7 +18,7 @@ run_attempt="1"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 make_archive() {
-  local archive="$1" bad_observation="${2:-false}" bad_checksum="${3:-false}" bad_d1="${4:-false}" bad_d1_sqlite="${5:-false}" bad_d1_store="${6:-false}" bad_d1_store_lock="${7:-false}"
+  local archive="$1" bad_observation="${2:-false}" bad_checksum="${3:-false}" bad_d1="${4:-false}" bad_d1_sqlite="${5:-false}" bad_d1_store="${6:-false}" bad_d1_store_lock="${7:-false}" bad_policy_promotion="${8:-false}" bad_policy_promotion_lock="${9:-false}"
   local work="$tmp/work" bundle="$tmp/work/srq-evidence-bundle"
   rm -rf "$work"
   mkdir -p "$bundle"
@@ -29,6 +29,8 @@ make_archive() {
     srq-challenge-promotion-model-test.log \
     srq-d1-sqlite-store-Cargo.lock \
     srq-d1-sqlite-store-test.log \
+    srq-policy-promotion-store-Cargo.lock \
+    srq-policy-promotion-store-test.log \
     srq-eat-cose-verifier-test.log \
     srq-evidence-003-model-result.json \
     srq-process-kill-model-test.log \
@@ -53,6 +55,8 @@ make_archive() {
       srq-challenge-promotion-model-test.log \
       srq-d1-sqlite-store-Cargo.lock \
       srq-d1-sqlite-store-test.log \
+      srq-policy-promotion-store-Cargo.lock \
+      srq-policy-promotion-store-test.log \
       srq-eat-cose-verifier-test.log \
       srq-evidence-003-model-result.json \
       srq-process-kill-model-test.log \
@@ -67,7 +71,7 @@ make_archive() {
     printf 'tampered after hashing\n' >> "$bundle/srq-recovery-model-test.log"
   fi
 
-  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha d1_cose_verifier_sha d1_sqlite_consumer_sha d1_sqlite_store_sha d1_sqlite_store_lock_sha manifest_d1_sqlite_sha manifest_d1_sqlite_store_sha manifest_d1_sqlite_store_lock_sha
+  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha d1_cose_verifier_sha d1_sqlite_consumer_sha d1_sqlite_store_sha d1_sqlite_store_lock_sha manifest_d1_sqlite_sha manifest_d1_sqlite_store_sha manifest_d1_sqlite_store_lock_sha manifest_policy_promotion_sha manifest_policy_promotion_lock_sha
   checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
   process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
   sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
@@ -77,9 +81,13 @@ make_archive() {
   d1_sqlite_consumer_sha="$(sha256sum "$bundle/srq-sqlite-d1-challenge-consumption-reference.log" | cut -d ' ' -f 1)"
   d1_sqlite_store_sha="$(sha256sum "$bundle/srq-d1-sqlite-store-test.log" | cut -d ' ' -f 1)"
   d1_sqlite_store_lock_sha="$(sha256sum "$bundle/srq-d1-sqlite-store-Cargo.lock" | cut -d ' ' -f 1)"
+policy_promotion_sha="$(sha256sum "$bundle/srq-policy-promotion-store-test.log" | cut -d ' ' -f 1)"
+policy_promotion_lock_sha="$(sha256sum "$bundle/srq-policy-promotion-store-Cargo.lock" | cut -d ' ' -f 1)"
   manifest_d1_sqlite_sha="$d1_sqlite_consumer_sha"
   manifest_d1_sqlite_store_sha="$d1_sqlite_store_sha"
   manifest_d1_sqlite_store_lock_sha="$d1_sqlite_store_lock_sha"
+  manifest_policy_promotion_sha="$policy_promotion_sha"
+  manifest_policy_promotion_lock_sha="$policy_promotion_lock_sha"
   if [[ "$bad_observation" == "true" ]]; then
     boot_observation_adapter_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
@@ -94,6 +102,12 @@ make_archive() {
   fi
   if [[ "$bad_d1_store_lock" == "true" ]]; then
     manifest_d1_sqlite_store_lock_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  fi
+  if [[ "$bad_policy_promotion" == "true" ]]; then
+    manifest_policy_promotion_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  fi
+  if [[ "$bad_policy_promotion_lock" == "true" ]]; then
+    manifest_policy_promotion_lock_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
 
   jq -n \
@@ -115,7 +129,9 @@ make_archive() {
     --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" \
     --arg d1_sqlite_consumer_sha "$manifest_d1_sqlite_sha" \
     --arg d1_sqlite_store_sha "$manifest_d1_sqlite_store_sha" \
-    --arg d1_sqlite_store_lock_sha "$manifest_d1_sqlite_store_lock_sha" '{
+    --arg d1_sqlite_store_lock_sha "$manifest_d1_sqlite_store_lock_sha" \
+    --arg policy_promotion_sha "$manifest_policy_promotion_sha" \
+    --arg policy_promotion_lock_sha "$manifest_policy_promotion_lock_sha" '{
       schema_version: 1,
       profile_id: "SRQ-1",
       repository: $repository,
@@ -134,9 +150,18 @@ make_archive() {
       corpus_sha256: $corpus_sha,
       checksum_manifest_sha256: $checksum_sha,
       dependency_lock_sha256: {
-        srq_d1_sqlite_store: $d1_sqlite_store_lock_sha
+        srq_d1_sqlite_store: $d1_sqlite_store_lock_sha,
+        srq_policy_promotion_store: $policy_promotion_lock_sha
       },
       supplemental_observations: [{
+        test_id: "SRQ-POLICY-PROMOTION-STORE-V1",
+        scenario_id: "UPDATE-004",
+        execution_tier: "model",
+        claim_ceiling: "abstract_model_only",
+        status: "PASS",
+        evidence_artifact: "srq-policy-promotion-store-test.log",
+        evidence_sha256: $policy_promotion_sha
+      }, {
         test_id: "SRQ-PROCESS-KILL-V1",
         scenario_id: "UPDATE-004",
         execution_tier: "model",
