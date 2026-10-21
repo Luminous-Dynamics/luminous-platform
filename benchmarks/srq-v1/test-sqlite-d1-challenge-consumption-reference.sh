@@ -76,6 +76,7 @@ attempt_consume() {
 PRAGMA foreign_keys=ON;
 PRAGMA busy_timeout=10000;
 PRAGMA synchronous=FULL;
+.output /dev/null
 BEGIN IMMEDIATE;
 CREATE TEMP TABLE assert_one_change(value INTEGER NOT NULL CHECK (value=1));
 INSERT INTO d1_verified_observation_receipts (
@@ -113,6 +114,7 @@ UPDATE d1_observation_challenges
    AND $now < expires_at_unix_seconds;
 INSERT INTO assert_one_change SELECT changes();
 COMMIT;
+.output stdout
 SELECT '$receipt_sha';
 SQL
 }
@@ -153,7 +155,7 @@ receipt_sha="$(attempt_consume "$success_db" "$verifier_now" "$target_token" "$a
   "$decision_id" "$policy_generation" "$digest_a" "$digest_b" "$digest_c" \
   "$deployment" "$signer_key_id" "$nonce_sha" "$issued_at" "$expires_at" \
   "$success_envelope" "$boot_instance" "$challenge_id")"
-[[ "$receipt_sha" =~ ^[0-9a-f]{64}$ ]] || fail "successful transaction did not return a receipt digest"
+[[ "$receipt_sha" =~ ^[0-9a-f]{64}$ ]] || fail "successful transaction did not return a receipt digest (captured output: $(printf %q "$receipt_sha"))"
 [[ "$(sqlite3 -batch "$success_db" 'SELECT count(*) FROM d1_verified_observation_receipts;')" == "1" ]] || fail "success did not persist one receipt"
 [[ "$(sqlite3 -batch "$success_db" 'SELECT consumed_receipt_sha256 FROM d1_observation_challenges;')" == "$receipt_sha" ]] || fail "challenge did not point to the committed receipt"
 [[ "$(sqlite3 -batch "$success_db" 'SELECT count(*) FROM d1_verified_observation_receipts r JOIN d1_observation_challenges c ON c.challenge_id=r.challenge_id WHERE r.receipt_sha256=c.consumed_receipt_sha256;')" == "1" ]] || fail "receipt and challenge consumption are inconsistent after reopen"
