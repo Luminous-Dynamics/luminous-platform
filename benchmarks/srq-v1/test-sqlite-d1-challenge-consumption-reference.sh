@@ -232,6 +232,147 @@ rejections="$(grep -h -c 'outcome=rejected' "$tmp"/d1-race-*.out | awk '{sum += 
 [[ "$(sqlite3 -batch "$race_db" 'PRAGMA integrity_check;')" == "ok" ]] || fail "D1 race failed integrity_check"
 echo "PASS: exactly one durable D1 receipt across 64 independent challenge consumers"
 
+
+# Cases 17-20: terminate an independent SQLite CLI process at four commit
+# boundaries, 25 fresh-database repetitions each. SIGKILL is real userspace
+# process death on a running kernel; it is not a kernel crash or power-loss test.
+command -v setsid >/dev/null 2>&1 || {
+  echo "BLOCKED: setsid is required for D1 transaction-boundary tests." >&2
+  exit 2
+}
+
+run_d1_sigkill_case() {
+  local label="$1" phase="$2" db="$3"
+  local marker="$tmp/$label.marker" script="$tmp/$label.sql" pid deadline
+  local envelope boot_instance receipt_material receipt_sha
+
+  envelope="$(digest_text "d1-sigkill-envelope-$label")"
+  boot_instance="boot-sigkill-$label"
+  receipt_material="$(printf '%s\n' \
+    "profile=srq-eat-boot-observation-v1" \
+    "challenge=$challenge_id" "target=$target_token" "audience=$audience" \
+    "decision=$decision_id" "generation=$policy_generation" "approved=$digest_a" \
+    "effective=$digest_b" "corpus=$digest_c" "deployment=$deployment" \
+    "signer_key_id=$signer_key_id" "nonce_sha256=$nonce_sha" \
+    "issued=$issued_at" "expires=$expires_at" "verifier_now=$verifier_now" \
+    "envelope_sha256=$envelope" "boot_instance_id=$boot_instance")"
+  receipt_sha="$(digest_text "$receipt_material")"
+  rm -f "$marker"
+
+  {
+    cat <<SQL
+PRAGMA foreign_keys=ON;
+PRAGMA busy_timeout=10000;
+PRAGMA synchronous=FULL;
+BEGIN IMMEDIATE;
+SQL
+    if [[ "$phase" == "after_begin" ]]; then
+      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
+    fi
+
+    cat <<SQL
+INSERT INTO d1_verified_observation_receipts (
+  receipt_sha256,challenge_id,profile_id,signer_key_id_hex,target_token,
+  audience,decision_id,policy_generation,approved_artifact_sha256,
+  effective_policy_sha256,corpus_sha256,deployment_id,boot_instance_id,
+  nonce_sha256,challenge_issued_at_unix_seconds,
+  challenge_expires_at_unix_seconds,verifier_now_unix_seconds,
+  envelope_sha256,committed_at_unix_seconds
+) VALUES (
+  '$receipt_sha','$challenge_id','srq-eat-boot-observation-v1','$signer_key_id','$target_token',
+  '$audience','$decision_id',$policy_generation,'$digest_a',
+  '$digest_b','$digest_c','$deployment','$boot_instance',
+  '$nonce_sha',$issued_at,$expires_at,$verifier_now,
+  '$envelope',$verifier_now
+);
+SQL
+    if [[ "$phase" == "after_receipt_insert" ]]; then
+      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
+    fi
+
+    cat <<SQL
+CREATE TEMP TABLE assert_one_change(value INTEGER NOT NULL CHECK(value=1));
+UPDATE d1_observation_challenges
+   SET consumed_receipt_sha256='$receipt_sha'
+ WHERE challenge_id='$challenge_id'
+   AND target_token='$target_token'
+   AND audience='$audience'
+   AND decision_id='$decision_id'
+   AND policy_generation=$policy_generation
+   AND approved_artifact_sha256='$digest_a'
+   AND effective_policy_sha256='$digest_b'
+   AND corpus_sha256='$digest_c'
+   AND expected_deployment_id='$deployment'
+   AND expected_signer_key_id_hex='$signer_key_id'
+   AND nonce_sha256='$nonce_sha'
+   AND issued_at_unix_seconds=$issued_at
+   AND expires_at_unix_seconds=$expires_at
+   AND required_assurance_tier='D1'
+   AND consumed_receipt_sha256 IS NULL
+   AND $verifier_now >= issued_at_unix_seconds
+   AND $verifier_now < expires_at_unix_seconds;
+INSERT INTO assert_one_change SELECT changes();
+SQL
+    if [[ "$phase" == "before_commit" ]]; then
+      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
+    fi
+    printf 'COMMIT;\n'
+    if [[ "$phase" == "after_commit" ]]; then
+      printf ".shell sh -c 'touch %s; exec sleep 60'\n" "$marker"
+    fi
+  } > "$script"
+
+  setsid sqlite3 -batch -bail "$db" < "$script" > "$tmp/$label.sqlite.log" 2>&1 &
+  pid="$!"
+  deadline=$((SECONDS + 10))
+  while [[ ! -f "$marker" ]]; do
+    if ! kill -0 "$pid" 2>/dev/null; then
+      cat "$tmp/$label.sqlite.log" >&2
+      fail "D1 SQLite process exited before kill checkpoint ($label)"
+    fi
+    if ((SECONDS >= deadline)); then
+      kill -KILL -- "-$pid" 2>/dev/null || true
+      fail "D1 SQLite process did not reach kill checkpoint ($label)"
+    fi
+    sleep 0.01
+  done
+
+  kill -KILL -- "-$pid" || fail "failed to SIGKILL D1 SQLite process group ($label)"
+  if wait "$pid"; then
+    fail "D1 SQLite worker exited successfully rather than being killed ($label)"
+  fi
+
+  if [[ "$phase" == "after_commit" ]]; then
+    [[ "$(sqlite3 -batch "$db" 'SELECT count(*) FROM d1_verified_observation_receipts;')" == "1" ]] \
+      || fail "post-commit kill did not preserve one D1 receipt ($label)"
+    [[ "$(sqlite3 -batch "$db" "SELECT consumed_receipt_sha256 FROM d1_observation_challenges WHERE challenge_id='$challenge_id';")" == "$receipt_sha" ]] \
+      || fail "post-commit kill lost the consumed-receipt pointer ($label)"
+    [[ "$(sqlite3 -batch "$db" "SELECT count(*) FROM d1_verified_observation_receipts r JOIN d1_observation_challenges c ON c.challenge_id=r.challenge_id WHERE r.receipt_sha256=c.consumed_receipt_sha256 AND r.receipt_sha256='$receipt_sha' AND r.boot_instance_id='$boot_instance';")" == "1" ]] \
+      || fail "post-commit receipt/challenge records diverged ($label)"
+    [[ "$(sqlite3 -batch "$db" 'PRAGMA integrity_check;')" == "ok" ]] \
+      || fail "post-commit database integrity check failed ($label)"
+    echo "PASS: D1 SIGKILL after COMMIT preserves the one receipt and consumed challenge"
+  else
+    [[ "$(sqlite3 -batch "$db" 'SELECT count(*) FROM d1_verified_observation_receipts;')" == "0" ]] \
+      || fail "pre-commit kill persisted a D1 receipt ($label)"
+    [[ -z "$(sqlite3 -batch "$db" "SELECT coalesce(consumed_receipt_sha256,'') FROM d1_observation_challenges WHERE challenge_id='$challenge_id';")" ]] \
+      || fail "pre-commit kill left the challenge consumed ($label)"
+    [[ "$(sqlite3 -batch "$db" 'PRAGMA integrity_check;')" == "ok" ]] \
+      || fail "pre-commit database integrity check failed ($label)"
+    echo "PASS: D1 SIGKILL before COMMIT rolls back receipt and challenge consumption"
+  fi
+}
+
+for phase in after_begin after_receipt_insert before_commit after_commit; do
+  for trial in $(seq 1 25); do
+    label="d1-$phase-$trial"
+    case_db="$tmp/$label.sqlite"
+    init_db "$case_db"
+    run_d1_sigkill_case "$label" "$phase" "$case_db"
+  done
+done
+echo "PASS: 100 D1 SQLite SIGKILL trials across four transaction boundaries"
+
 sqlite_version="$(sqlite3 --version | awk '{print $1}')"
-printf 'sqlite_version=%s journal_mode=%s synchronous=FULL d1_cases=16 contenders=64\\n' \
+printf 'sqlite_version=%s journal_mode=%s synchronous=FULL d1_cases=20 contenders=64 process_kill_trials=100 commit_boundaries=4\n' \
   "$sqlite_version" "$(sqlite3 -batch "$success_db" 'PRAGMA journal_mode;')"
