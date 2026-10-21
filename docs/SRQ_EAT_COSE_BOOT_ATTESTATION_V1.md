@@ -1,6 +1,6 @@
 # SRQ-1 EAT/COSE boot-observation profile v1
 
-**Status:** protocol design / CDDL draft plus an initial Rust D1 verification prototype in `tools/srq-eat-cose-verifier/`. The prototype verifies a COSE_Sign1 Ed25519 response and challenge bindings, but it is not integrated with a durable production challenge store, a provisioned target signer, TPM quote verification, or an SRQ release gate. The initial dependency lockfile and test outcome must be reviewed before treating the prototype as reproducible or passing.
+**Status:** protocol design / CDDL draft plus an initial Rust D1 verification prototype in `tools/srq-eat-cose-verifier/`. The prototype verifies a COSE_Sign1 Ed25519 response and challenge bindings, and now exposes a non-serializable post-consumption result type for a supplied store contract. It is still not integrated with a durable production challenge store, a provisioned target signer, TPM quote verification, or an SRQ release gate. The initial dependency lockfile and test outcome must be reviewed before treating the prototype as reproducible or passing.
 
 ## Purpose
 
@@ -67,7 +67,9 @@ The new Rust crate uses the maintained `coset` COSE implementation and Ed25519 v
 - Bind the EAT nonce to a verifier-created 16–64 byte nonce; require the exact challenge expiry, verifier audience, provisioned target token, decision ID, logical generation, artifact/policy/corpus digests and immutable expected deployment identity.
 - Keep `booted_deployment_id` distinct from `current_userspace_deployment_id`; mismatch or divergent/unavailable observation is a rejection.
 - Accept only `D1-software-key`. It rejects D2 claims and non-null measurement claims; a signed assertion is not silently upgraded to hardware measurement.
-- The plain CLI output is deliberately `ENVELOPE_AND_BINDINGS_VERIFIED_NOT_REPLAY_SAFE`, `release_gate_eligible=false`. A successful signature check does not consume a nonce. A caller must invoke the verification-plus-consumption API with a durable challenge store that atomically binds challenge ID, nonce, decision ID and envelope digest.
+- The plain CLI output is deliberately `ENVELOPE_AND_BINDINGS_VERIFIED_NOT_REPLAY_SAFE`. `VerifiedObservation` contains no editable replay-safe or release-eligible boolean. A successful signature check alone does not consume a nonce.
+- `verify_and_consume` now returns a separate `ConsumedObservation` with private fields and no Serde serialization implementation, and only after the configured `ChallengeConsumer` commits and returns a syntactically valid SHA-256 receipt digest. The store request carries the complete target/audience/key/profile/challenge/decision/generation/artifact/policy/corpus/deployment/boot-instance/validity/envelope tuple.
+- The unit-only in-memory store computes its synthetic receipt digest over that complete tuple so tests exercise the binding contract. That digest is **not** evidence of durable persistence. A real store must validate the full request against the persisted pending challenge/decision, re-check expiry using its trusted time source inside the transaction, atomically consume the nonce and commit the receipt, then return the digest of the receipt bytes actually persisted. A fake consumer that returns a digest is not production proof.
 
 The prototype's test fixture private key is deterministic and exists only inside unit tests. It is not an operational key, a target provisioned key, a hardware key or evidence from a physical host. The trust-policy JSON and verifier-controlled challenge file must be supplied through an independently protected channel. The CLI takes an explicit verifier time argument; the target's `iat` does not establish trusted time.
 
