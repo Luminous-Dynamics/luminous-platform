@@ -112,7 +112,7 @@ pub struct ChallengeConsumptionRequest<'a> {
 ///
 /// Its private field is verified by an external-crate compile-fail doctest:
 ///
-/// ```compile_fail
+/// ```compile_fail,E0451
 /// use srq_eat_cose_verifier::VerifiedChallengeConsumption;
 /// let _forged = VerifiedChallengeConsumption { request: panic!() };
 /// ```
