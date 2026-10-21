@@ -22,6 +22,7 @@ on:
       - "docs/SRQ_BOOT_RECONCILIATION_V1.md"
       - "docs/SRQ_BOOT_OBSERVATION_ADAPTER_V1.md"
       - "docs/SRQ_EAT_COSE_BOOT_ATTESTATION_V1.md"
+      - "docs/SRQ_D2_TPM_APPRAISAL_V1.md"
       - "schemas/srq-eat-boot-observation-v1.cddl"
   workflow_dispatch:
 
