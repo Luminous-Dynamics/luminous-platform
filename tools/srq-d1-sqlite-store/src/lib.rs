@@ -904,7 +904,7 @@ mod tests {
             "D1 store runtime must use an upstream-fixed WAL-reset release line: {runtime_version}"
         );
         assert!(!source_id.trim().is_empty(), "SQLite source ID must be reportable");
-        println!("PASS: D1 Rust SQLite runtime is above WAL safety floor: version={runtime_version} source_id={source_id}");
+        println!("PASS: D1 Rust SQLite runtime uses upstream-fixed WAL-reset line: version={runtime_version} source_id={source_id}");
         drop(store);
         let _ = fs::remove_file(&path);
         let _ = fs::remove_file(format!("{}-wal", path.display()));
