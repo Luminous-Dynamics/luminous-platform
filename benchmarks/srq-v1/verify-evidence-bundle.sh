@@ -31,7 +31,7 @@ if [[ -n "$(find "$extract_to" -mindepth 1 -print -quit)" ]]; then echo "BLOCKED
 command -v tar >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 && command -v sha256sum >/dev/null 2>&1 || { echo "BLOCKED: tar, jq and sha256sum are required." >&2; exit 2; }
 
 entries="$(tar -tzf "$archive")" || { echo "BLOCKED: evidence archive is unreadable." >&2; exit 1; }
-expected_entries=$'srq-evidence-bundle/\nsrq-evidence-bundle/SHA256SUMS\nsrq-evidence-bundle/manifest.json\nsrq-evidence-bundle/srq-boot-observation-adapter-test.log\nsrq-evidence-bundle/srq-boot-reconciliation-model-test.log\nsrq-evidence-bundle/srq-challenge-promotion-model-test.log\nsrq-evidence-bundle/srq-d1-sqlite-store-Cargo.lock\nsrq-evidence-bundle/srq-d1-sqlite-store-test.log\nsrq-evidence-bundle/srq-eat-cose-verifier-test.log\nsrq-evidence-bundle/srq-evidence-003-model-result.json\nsrq-evidence-bundle/srq-process-kill-model-test.log\nsrq-evidence-bundle/srq-recovery-model-test.log\nsrq-evidence-bundle/srq-release-qualification.json\nsrq-evidence-bundle/srq-sqlite-d1-challenge-consumption-reference.log\nsrq-evidence-bundle/srq-sqlite-promotion-reference.log\nsrq-evidence-bundle/srq-update-004-model-result.json'
+expected_entries=$'srq-evidence-bundle/\nsrq-evidence-bundle/SHA256SUMS\nsrq-evidence-bundle/manifest.json\nsrq-evidence-bundle/srq-boot-observation-adapter-test.log\nsrq-evidence-bundle/srq-boot-reconciliation-model-test.log\nsrq-evidence-bundle/srq-challenge-promotion-model-test.log\nsrq-evidence-bundle/srq-d1-sqlite-store-Cargo.lock\nsrq-evidence-bundle/srq-d1-sqlite-store-test.log\nsrq-evidence-bundle/srq-eat-cose-verifier-test.log\nsrq-evidence-bundle/srq-evidence-003-model-result.json\nsrq-evidence-bundle/srq-policy-promotion-store-Cargo.lock\nsrq-evidence-bundle/srq-policy-promotion-store-test.log\nsrq-evidence-bundle/srq-process-kill-model-test.log\nsrq-evidence-bundle/srq-recovery-model-test.log\nsrq-evidence-bundle/srq-release-qualification.json\nsrq-evidence-bundle/srq-sqlite-d1-challenge-consumption-reference.log\nsrq-evidence-bundle/srq-sqlite-promotion-reference.log\nsrq-evidence-bundle/srq-update-004-model-result.json'
 actual_entries="$(printf '%s\n' "$entries" | LC_ALL=C sort)"
 expected_entries_sorted="$(printf '%s\n' "$expected_entries" | LC_ALL=C sort)"
 [[ "$actual_entries" == "$expected_entries_sorted" ]] || { echo "BLOCKED: archive contents do not match the fixed evidence inventory." >&2; exit 1; }
@@ -42,11 +42,11 @@ bundle_dir="$extract_to/srq-evidence-bundle"
 link_found="$(find "$bundle_dir" -type l -print -quit)"
 [[ -z "$link_found" ]] || { echo "BLOCKED: symbolic links are not permitted." >&2; exit 1; }
 actual_files="$(find "$bundle_dir" -mindepth 1 -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort)"
-expected_files=$'SHA256SUMS\nmanifest.json\nsrq-boot-observation-adapter-test.log\nsrq-boot-reconciliation-model-test.log\nsrq-challenge-promotion-model-test.log\nsrq-d1-sqlite-store-Cargo.lock\nsrq-d1-sqlite-store-test.log\nsrq-eat-cose-verifier-test.log\nsrq-evidence-003-model-result.json\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-sqlite-d1-challenge-consumption-reference.log\nsrq-sqlite-promotion-reference.log\nsrq-update-004-model-result.json'
+expected_files=$'SHA256SUMS\nmanifest.json\nsrq-boot-observation-adapter-test.log\nsrq-boot-reconciliation-model-test.log\nsrq-challenge-promotion-model-test.log\nsrq-d1-sqlite-store-Cargo.lock\nsrq-d1-sqlite-store-test.log\nsrq-eat-cose-verifier-test.log\nsrq-evidence-003-model-result.json\nsrq-policy-promotion-store-Cargo.lock\nsrq-policy-promotion-store-test.log\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-sqlite-d1-challenge-consumption-reference.log\nsrq-sqlite-promotion-reference.log\nsrq-update-004-model-result.json'
 [[ "$actual_files" == "$expected_files" ]] || { echo "BLOCKED: extracted file inventory is invalid." >&2; exit 1; }
 
 declared_files="$(awk '{print $2}' "$bundle_dir/SHA256SUMS" | LC_ALL=C sort)"
-expected_declared_files=$'srq-boot-observation-adapter-test.log\nsrq-boot-reconciliation-model-test.log\nsrq-challenge-promotion-model-test.log\nsrq-d1-sqlite-store-Cargo.lock\nsrq-d1-sqlite-store-test.log\nsrq-eat-cose-verifier-test.log\nsrq-evidence-003-model-result.json\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-sqlite-d1-challenge-consumption-reference.log\nsrq-sqlite-promotion-reference.log\nsrq-update-004-model-result.json'
+expected_declared_files=$'srq-boot-observation-adapter-test.log\nsrq-boot-reconciliation-model-test.log\nsrq-challenge-promotion-model-test.log\nsrq-d1-sqlite-store-Cargo.lock\nsrq-d1-sqlite-store-test.log\nsrq-eat-cose-verifier-test.log\nsrq-evidence-003-model-result.json\nsrq-policy-promotion-store-Cargo.lock\nsrq-policy-promotion-store-test.log\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-sqlite-d1-challenge-consumption-reference.log\nsrq-sqlite-promotion-reference.log\nsrq-update-004-model-result.json'
 [[ "$declared_files" == "$expected_declared_files" ]] || { echo "BLOCKED: checksum manifest references unexpected paths." >&2; exit 1; }
 while IFS= read -r line; do
   [[ "$line" =~ ^[0-9a-f]{64}\ \ [A-Za-z0-9._-]+$ ]] || { echo "BLOCKED: checksum manifest syntax is invalid." >&2; exit 1; }
@@ -63,6 +63,8 @@ d1_cose_verifier_sha="$(sha256sum "$bundle_dir/srq-eat-cose-verifier-test.log" |
 d1_sqlite_consumer_sha="$(sha256sum "$bundle_dir/srq-sqlite-d1-challenge-consumption-reference.log" | cut -d ' ' -f 1)"
 d1_sqlite_store_sha="$(sha256sum "$bundle_dir/srq-d1-sqlite-store-test.log" | cut -d ' ' -f 1)"
 d1_sqlite_store_lock_sha="$(sha256sum "$bundle_dir/srq-d1-sqlite-store-Cargo.lock" | cut -d ' ' -f 1)"
+policy_promotion_sha="$(sha256sum "$bundle_dir/srq-policy-promotion-store-test.log" | cut -d ' ' -f 1)"
+policy_promotion_lock_sha="$(sha256sum "$bundle_dir/srq-policy-promotion-store-Cargo.lock" | cut -d ' ' -f 1)"
 jq -e \
   --arg source_sha "$expected_source_sha" \
   --arg source_ref "$expected_source_ref" \
@@ -80,7 +82,9 @@ jq -e \
   --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" \
   --arg d1_sqlite_consumer_sha "$d1_sqlite_consumer_sha" \
   --arg d1_sqlite_store_sha "$d1_sqlite_store_sha" \
-  --arg d1_sqlite_store_lock_sha "$d1_sqlite_store_lock_sha" '
+  --arg d1_sqlite_store_lock_sha "$d1_sqlite_store_lock_sha" \
+  --arg policy_promotion_sha "$policy_promotion_sha" \
+  --arg policy_promotion_lock_sha "$policy_promotion_lock_sha" '
     .schema_version == 1 and
     .profile_id == "SRQ-1" and
     .repository == $repo and
@@ -98,7 +102,16 @@ jq -e \
     (.corpus_sha256 | test("^[0-9a-f]{64}$")) and
     .checksum_manifest_sha256 == $checksum_sha and
     .dependency_lock_sha256.srq_d1_sqlite_store == $d1_sqlite_store_lock_sha and
+    .dependency_lock_sha256.srq_policy_promotion_store == $policy_promotion_lock_sha and
     .supplemental_observations == [{
+      test_id: "SRQ-POLICY-PROMOTION-STORE-V1",
+      scenario_id: "UPDATE-004",
+      execution_tier: "model",
+      claim_ceiling: "abstract_model_only",
+      status: "PASS",
+      evidence_artifact: "srq-policy-promotion-store-test.log",
+      evidence_sha256: $policy_promotion_sha
+    }, {
       test_id: "SRQ-PROCESS-KILL-V1",
       scenario_id: "UPDATE-004",
       execution_tier: "model",
