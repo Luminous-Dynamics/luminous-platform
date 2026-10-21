@@ -10,6 +10,7 @@ command -v sqlite3 >/dev/null 2>&1 || {
   echo "BLOCKED: sqlite3 CLI is required for the SQLite reference experiment." >&2
   exit 2
 }
+bash "$script_dir/require-pinned-sqlite.sh"
 [[ -f "$schema" ]] || { echo "FAIL: reference schema is missing." >&2; exit 1; }
 
 readonly a="$(printf 'a%.0s' {1..64})"
