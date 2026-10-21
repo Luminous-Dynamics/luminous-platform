@@ -95,7 +95,7 @@ pub fn verify_cose_eat(
         .map_err(|e| format!("COSE_Sign1 decode failed: {e}"))?;
 
     if sign1.protected.header.alg != Some(iana::Algorithm::Ed25519.into()) {
-        return Err("protected COSE alg must be EdDSA".into());
+        return Err("protected COSE alg must be Ed25519 (-19)".into());
     }
     if sign1.protected.header.key_id.as_slice() != trusted_key.key_id.as_slice() {
         return Err("protected COSE kid is not the selected trusted key".into());
@@ -650,13 +650,21 @@ mod tests {
         }
 
         fn token_for(&self, claims: &[(Value, Value)]) -> Vec<u8> {
+            self.token_for_with_algorithm(claims, iana::Algorithm::Ed25519)
+        }
+
+        fn token_for_with_algorithm(
+            &self,
+            claims: &[(Value, Value)],
+            algorithm: iana::Algorithm,
+        ) -> Vec<u8> {
             let mut payload = Vec::new();
             coset::cbor::ser::into_writer(&Value::Map(claims.to_vec()), &mut payload)
                 .expect("serialize claims");
             CoseSign1Builder::new()
                 .protected(
                     HeaderBuilder::new()
-                        .algorithm(iana::Algorithm::Ed25519)
+                        .algorithm(algorithm)
                         .key_id(self.trusted.key_id.clone())
                         .build(),
                 )
@@ -670,11 +678,6 @@ mod tests {
         fn set_text(&mut self, name: &str, value: &str) {
             let entry = self.claims.iter_mut().find(|(key, _)| *key == Value::Text(name.into())).unwrap();
             entry.1 = Value::Text(value.into());
-        }
-
-        fn set_uint(&mut self, name: &str, value: u64) {
-            let entry = self.claims.iter_mut().find(|(key, _)| *key == Value::Text(name.into())).unwrap();
-            entry.1 = Value::Integer(value.into());
         }
 
         fn signed(&self) -> Vec<u8> {
@@ -723,6 +726,13 @@ mod tests {
         let mut token = f.signed();
         let last = token.len() - 1;
         token[last] ^= 1;
+        assert!(verify_cose_eat(&token, &f.trusted, &f.challenge, 1_200).is_err());
+    }
+
+    #[test]
+    fn deprecated_polymorphic_eddsa_algorithm_is_rejected() {
+        let f = Fixture::new();
+        let token = f.token_for_with_algorithm(&f.claims, iana::Algorithm::EdDSA);
         assert!(verify_cose_eat(&token, &f.trusted, &f.challenge, 1_200).is_err());
     }
 
