@@ -1,0 +1,46 @@
+# SRQ durable policy-promotion store prototype v1
+
+**Status: research prototype; not integrated with the deployed updater.** This crate demonstrates the missing transaction boundary from issue #91. It does not qualify the production release path.
+
+## Invariant being enforced
+
+For one target and one freshly issued challenge, the following state transition is one SQLite transaction:
+
+- record one signed decision ID and the signer key ID;
+- consume the challenge, which is bound to target, audience, decision, expiry and a SHA-256 of its random nonce;
+- compare-and-swap the current generation and previous approved-artifact/effective-policy/corpus/deployment identity;
+- advance the target to exactly the next generation with the newly approved artifact/policy and persist the decision pointer.
+
+The only public mutation method is `verify_and_promote(token, trusted_key)`. The internal verified-authorization type is private. It is created only after strict COSE_Sign1/Ed25519 verification and exact claim-inventory checks. Caller-provided fields alone cannot instantiate the trusted authorization record or call a separate public “promote verified fields” method.
+
+## Transaction order
+
+1. Verify the COSE signature and strict signed claim profile.
+2. Begin `BEGIN IMMEDIATE`, which serializes local SQLite writers.
+3. Re-read the challenge and target state; reject expired, consumed or stale inputs.
+4. Check every signed binding against the persisted challenge and exact previous target state.
+5. Insert a decision row.
+6. Compare-and-swap the target state from previous generation, previous approved artifact, previous effective policy, corpus and immutable deployment.
+7. Set the challenge's consumed-decision pointer exactly once.
+8. Commit. Any earlier error drops the SQLite transaction and rolls back all changes.
+
+After a process dies after commit but before the caller receives the acknowledgement, `committed_decision_for_challenge` reconciles the challenge pointer, decision row and active target state. It does not permit replay. `integrity_check` also runs SQLite's structural check and validates the lifecycle binding invariants.
+
+## Storage policy
+
+- Local SQLite file, WAL mode, `synchronous=FULL`, foreign keys enabled, 10-second bounded busy timeout.
+- Startup rejects runtimes older than SQLite 3.51.3, where the documented WAL-reset corruption bug was fixed. The bundled `rusqlite 0.40.2` / `libsqlite3-sys 0.38.2` source currently corresponds to SQLite 3.53.2; CI records the runtime version. This is a floor for a known defect, not a claim of zero bugs.
+- Exact schema SQL inventory is checked on every open. Unknown database identity, unexpected schema objects or altered table/index SQL fail closed.
+- The raw challenge nonce is never persisted; only its SHA-256 digest is stored.
+
+## Tests and next gates
+
+The unit/integration suite tests signed authorization, invalid signature without mutation, replay after reopen and original-decision reconciliation, expiry, mismatched target/generation/digest, a 64-connection race with exactly one commit, schema tampering, nonce minimization and SQLite version parsing.
+
+The next production acceptance step is to call the transaction at the actual policy-promotion boundary, not from a parallel demo endpoint. Then add process termination at every SQL boundary (including commit-before-ack), repeat concurrency/fault trials, and compare the deployed adapter to this reference on a matched fault schedule. QEMU reset, storage failure and physical power interruption remain separate tiers.
+
+## Trust and qualification boundaries
+
+This prototype's `TrustedPromotionKey` is configuration supplied by a trusted caller; durable signer provisioning and key rotation are not implemented here. The challenge issuer must authenticate the deployment/policy intent before issuing a nonce. The code trusts local wall-clock time, and local SQLite does not provide distributed transactions or cross-host locks. A privileged attacker who can rewrite application binaries or the database can subvert a software-only store. It does not provide TPM quotes, measured boot, D2 reference-value appraisal, firmware root-of-trust or proof that the promoted deployment actually booted.
+
+The store's `Consistent`/committed output is not release qualification. SRQ remains `NOT_QUALIFIED` until the real updater integration and every required gate's declared QEMU/physical tier passes. Related work: [issue #91](https://github.com/Luminous-Dynamics/luminous-platform/issues/91), [matched benchmark issue #94](https://github.com/Luminous-Dynamics/luminous-platform/issues/94), and [D2 TPM appraisal design](SRQ_D2_TPM_APPRAISAL_V1.md).
