@@ -399,6 +399,351 @@ jobs:
           tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
             -cf - -C "$RUNNER_TEMP" srq-evidence-bundle | gzip -n > "$archive"
           sha256sum "$archive"
+          # Validate the actual archive on PR runs too; fixture-only tests cannot
+          # catch a malformed production bundle when the main-only signer is skipped.
+          check_root="$RUNNER_TEMP/srq-archive-self-check"
+          rm -rf "$check_root"
+          mkdir -m 700 "$check_root"
+          entries="$(tar -tzf "$archive")"
+          expected_entries=
+      - name: Preserve model evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-model-evidence
+          path: |
+            ${{ runner.temp }}/srq-recovery-model-test.log
+            ${{ runner.temp }}/srq-update-004-model-result.json
+            ${{ runner.temp }}/srq-challenge-promotion-model-test.log
+            ${{ runner.temp }}/srq-evidence-003-model-result.json
+            ${{ runner.temp }}/srq-boot-reconciliation-model-test.log
+            ${{ runner.temp }}/srq-boot-observation-adapter-test.log
+            ${{ runner.temp }}/srq-process-kill-model-test.log
+            ${{ runner.temp }}/srq-sqlite-promotion-reference.log
+            ${{ runner.temp }}/srq-release-qualification.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Publish attestation subject
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-evidence-attestation-subject
+          path: ${{ runner.temp }}/srq-evidence-bundle.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Validate the frozen SRQ-1 corpus
+        run: bash benchmarks/srq-v1/validate.sh
+
+      - name: Exercise validator negative controls
+        run: bash benchmarks/srq-v1/test-validator.sh
+
+      - name: Validate PASS and NOT_RUN result receipt examples
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/validate-result.sh --allow-fixtures benchmarks/srq-v1/fixtures/result-pass-static.example.json
+          bash benchmarks/srq-v1/validate-result.sh --allow-fixtures benchmarks/srq-v1/fixtures/result-not-run.example.json
+
+      - name: Exercise result receipt negative controls
+        run: bash benchmarks/srq-v1/test-result-validator.sh
+
+      - name: Exercise authenticated provenance verifier contracts
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/test-verify-attestation.sh
+          bash benchmarks/srq-v1/test-verify-evidence-bundle.sh
+          bash benchmarks/srq-v1/test-evaluate-attested-release.sh
+
+
+  attest-model-evidence:
+    name: Sign and verify trusted-main SRQ evidence
+    # PR events—including same-repo PRs—never receive the OIDC/attestation write permissions.
+    # A manual run of the protected main branch is the only accepted provenance producer.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: validate-corpus
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out trusted workflow and verification policy
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Download exact-run evidence subject
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: srq-evidence-attestation-subject
+          path: ${{ runner.temp }}/srq-attest-input
+
+      - name: Install pinned GitHub CLI verifier
+        shell: bash
+        run: bash benchmarks/srq-v1/install-pinned-gh.sh
+
+      - name: Validate bundle identity before signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/verify-evidence-bundle.sh \
+            --archive "$RUNNER_TEMP/srq-attest-input/srq-evidence-bundle.tar.gz" \
+            --expected-source-sha "$GITHUB_SHA" \
+            --expected-source-ref "$GITHUB_REF" \
+            --expected-workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --expected-workflow-sha "$GITHUB_WORKFLOW_SHA" \
+            --expected-run-id "$GITHUB_RUN_ID" \
+            --expected-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --extract-to "$RUNNER_TEMP/srq-pre-sign-validated"
+
+      - name: Create signed SLSA provenance for the evidence bundle
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/srq-attest-input/srq-evidence-bundle.tar.gz
+
+      - name: Verify signature, signer, ref, source and artifact digest before evaluation
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/evaluate-attested-release.sh \
+            --archive "$RUNNER_TEMP/srq-attest-input/srq-evidence-bundle.tar.gz" \
+            --expected-source-sha "$GITHUB_SHA" \
+            --expected-source-ref "$GITHUB_REF" \
+            --expected-workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --expected-workflow-sha "$GITHUB_WORKFLOW_SHA" \
+            --expected-run-id "$GITHUB_RUN_ID" \
+            --expected-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --output-envelope "$RUNNER_TEMP/srq-attested-evaluation-envelope.json" \
+            --output-report "$RUNNER_TEMP/srq-attested-release-evaluation.json" \
+            --output-verification "$RUNNER_TEMP/srq-attestation-verification.json"
+
+      - name: Preserve verified provenance and evaluation records
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-attested-evidence-verification
+          path: |
+            ${{ runner.temp }}/srq-attested-evaluation-envelope.json
+            ${{ runner.temp }}/srq-attested-release-evaluation.json
+            ${{ runner.temp }}/srq-attestation-verification.json
+          if-no-files-found: error
+          retention-days: 30
+srq-evidence-bundle/\nsrq-evidence-bundle/SHA256SUMS\nsrq-evidence-bundle/manifest.json\nsrq-evidence-bundle/srq-boot-observation-adapter-test.log\nsrq-evidence-bundle/srq-boot-reconciliation-model-test.log\nsrq-evidence-bundle/srq-challenge-promotion-model-test.log\nsrq-evidence-bundle/srq-evidence-003-model-result.json\nsrq-evidence-bundle/srq-process-kill-model-test.log\nsrq-evidence-bundle/srq-recovery-model-test.log\nsrq-evidence-bundle/srq-release-qualification.json\nsrq-evidence-bundle/srq-sqlite-promotion-reference.log\nsrq-evidence-bundle/srq-update-004-model-result.json'
+          actual_entries="$(printf '%s\n' "$entries" | LC_ALL=C sort)"
+          expected_entries_sorted="$(printf '%s\n' "$expected_entries" | LC_ALL=C sort)"
+          [[ "$actual_entries" == "$expected_entries_sorted" ]] || {
+            echo "FAIL: produced evidence archive inventory differs from frozen SRQ bundle profile." >&2
+            diff -u <(printf '%s\n' "$expected_entries_sorted") <(printf '%s\n' "$actual_entries") || true
+            exit 1
+          }
+
+          tar --no-same-owner --no-same-permissions -xzf "$archive" -C "$check_root"
+          checked_bundle="$check_root/srq-evidence-bundle"
+          [[ -d "$checked_bundle" && ! -L "$checked_bundle" ]]
+          [[ -z "$(find "$checked_bundle" -type l -print -quit)" ]]
+          (cd "$checked_bundle" && sha256sum --check --strict SHA256SUMS)
+
+          declared_files="$(awk '{print $2}' "$checked_bundle/SHA256SUMS" | LC_ALL=C sort)"
+          expected_declared_files=
+      - name: Preserve model evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-model-evidence
+          path: |
+            ${{ runner.temp }}/srq-recovery-model-test.log
+            ${{ runner.temp }}/srq-update-004-model-result.json
+            ${{ runner.temp }}/srq-challenge-promotion-model-test.log
+            ${{ runner.temp }}/srq-evidence-003-model-result.json
+            ${{ runner.temp }}/srq-boot-reconciliation-model-test.log
+            ${{ runner.temp }}/srq-boot-observation-adapter-test.log
+            ${{ runner.temp }}/srq-process-kill-model-test.log
+            ${{ runner.temp }}/srq-sqlite-promotion-reference.log
+            ${{ runner.temp }}/srq-release-qualification.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Publish attestation subject
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-evidence-attestation-subject
+          path: ${{ runner.temp }}/srq-evidence-bundle.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Validate the frozen SRQ-1 corpus
+        run: bash benchmarks/srq-v1/validate.sh
+
+      - name: Exercise validator negative controls
+        run: bash benchmarks/srq-v1/test-validator.sh
+
+      - name: Validate PASS and NOT_RUN result receipt examples
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/validate-result.sh --allow-fixtures benchmarks/srq-v1/fixtures/result-pass-static.example.json
+          bash benchmarks/srq-v1/validate-result.sh --allow-fixtures benchmarks/srq-v1/fixtures/result-not-run.example.json
+
+      - name: Exercise result receipt negative controls
+        run: bash benchmarks/srq-v1/test-result-validator.sh
+
+      - name: Exercise authenticated provenance verifier contracts
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/test-verify-attestation.sh
+          bash benchmarks/srq-v1/test-verify-evidence-bundle.sh
+          bash benchmarks/srq-v1/test-evaluate-attested-release.sh
+
+
+  attest-model-evidence:
+    name: Sign and verify trusted-main SRQ evidence
+    # PR events—including same-repo PRs—never receive the OIDC/attestation write permissions.
+    # A manual run of the protected main branch is the only accepted provenance producer.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: validate-corpus
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out trusted workflow and verification policy
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Download exact-run evidence subject
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: srq-evidence-attestation-subject
+          path: ${{ runner.temp }}/srq-attest-input
+
+      - name: Install pinned GitHub CLI verifier
+        shell: bash
+        run: bash benchmarks/srq-v1/install-pinned-gh.sh
+
+      - name: Validate bundle identity before signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/verify-evidence-bundle.sh \
+            --archive "$RUNNER_TEMP/srq-attest-input/srq-evidence-bundle.tar.gz" \
+            --expected-source-sha "$GITHUB_SHA" \
+            --expected-source-ref "$GITHUB_REF" \
+            --expected-workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --expected-workflow-sha "$GITHUB_WORKFLOW_SHA" \
+            --expected-run-id "$GITHUB_RUN_ID" \
+            --expected-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --extract-to "$RUNNER_TEMP/srq-pre-sign-validated"
+
+      - name: Create signed SLSA provenance for the evidence bundle
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/srq-attest-input/srq-evidence-bundle.tar.gz
+
+      - name: Verify signature, signer, ref, source and artifact digest before evaluation
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/evaluate-attested-release.sh \
+            --archive "$RUNNER_TEMP/srq-attest-input/srq-evidence-bundle.tar.gz" \
+            --expected-source-sha "$GITHUB_SHA" \
+            --expected-source-ref "$GITHUB_REF" \
+            --expected-workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --expected-workflow-sha "$GITHUB_WORKFLOW_SHA" \
+            --expected-run-id "$GITHUB_RUN_ID" \
+            --expected-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --output-envelope "$RUNNER_TEMP/srq-attested-evaluation-envelope.json" \
+            --output-report "$RUNNER_TEMP/srq-attested-release-evaluation.json" \
+            --output-verification "$RUNNER_TEMP/srq-attestation-verification.json"
+
+      - name: Preserve verified provenance and evaluation records
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-attested-evidence-verification
+          path: |
+            ${{ runner.temp }}/srq-attested-evaluation-envelope.json
+            ${{ runner.temp }}/srq-attested-release-evaluation.json
+            ${{ runner.temp }}/srq-attestation-verification.json
+          if-no-files-found: error
+          retention-days: 30
+srq-boot-observation-adapter-test.log\nsrq-boot-reconciliation-model-test.log\nsrq-challenge-promotion-model-test.log\nsrq-evidence-003-model-result.json\nsrq-process-kill-model-test.log\nsrq-recovery-model-test.log\nsrq-release-qualification.json\nsrq-sqlite-promotion-reference.log\nsrq-update-004-model-result.json'
+          [[ "$declared_files" == "$expected_declared_files" ]] || {
+            echo "FAIL: produced evidence checksum inventory is incomplete or duplicated." >&2
+            exit 1
+          }
+
+          checked_manifest_sha="$(sha256sum "$checked_bundle/SHA256SUMS" | cut -d ' ' -f 1)"
+          jq -e \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg workflow_path ".github/workflows/srq-v1.yml" \
+            --arg workflow_ref "$GITHUB_WORKFLOW_REF" \
+            --arg workflow_sha "$GITHUB_WORKFLOW_SHA" \
+            --arg event_name "$GITHUB_EVENT_NAME" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg source_sha "$SRQ_EXPECTED_SOURCE_SHA" \
+            --arg event_sha "$SRQ_EVENT_SHA" \
+            --arg checksum_sha "$checked_manifest_sha" \
+            --arg process_kill_sha "$process_kill_sha" \
+            --arg sqlite_reference_sha "$sqlite_reference_sha" \
+            --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
+            --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" '
+              .schema_version == 1 and
+              .profile_id == "SRQ-1" and
+              .repository == $repository and
+              .workflow_path == $workflow_path and
+              .workflow_ref == $workflow_ref and
+              .workflow_sha == $workflow_sha and
+              .event_name == $event_name and
+              .run_id == $run_id and
+              .run_attempt == $run_attempt and
+              .source.expected_source_sha == $source_sha and
+              .source.event_sha == $event_sha and
+              .source.actual_checkout_sha == $source_sha and
+              .source.source_matches_expected == true and
+              .checksum_manifest_sha256 == $checksum_sha and
+              .supplemental_observations == [{
+                test_id: "SRQ-PROCESS-KILL-V1",
+                scenario_id: "UPDATE-004",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-process-kill-model-test.log",
+                evidence_sha256: $process_kill_sha
+              }, {
+                test_id: "SRQ-SQLITE-REFERENCE-V1",
+                scenario_id: "EVIDENCE-003",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-sqlite-promotion-reference.log",
+                evidence_sha256: $sqlite_reference_sha
+              }, {
+                test_id: "SRQ-BOOT-RECONCILIATION-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-boot-reconciliation-model-test.log",
+                evidence_sha256: $boot_reconciliation_sha
+              }, {
+                test_id: "SRQ-BOOT-OBSERVATION-ADAPTER-D0-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-boot-observation-adapter-test.log",
+                evidence_sha256: $boot_observation_adapter_sha
+              }]
+            ' "$checked_bundle/manifest.json" >/dev/null
+          echo "PASS: actual produced evidence archive inventory, checksums, source, workflow and supplemental claims verified."
 
       - name: Preserve model evidence
         if: always()
