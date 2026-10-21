@@ -15,8 +15,11 @@
 ; same claims supplied without a valid COSE envelope.
 
 srq-eat-boot-claims = {
-  ; RFC 9711 EAT nonce claim. Profile policy requires >=128 bits of fresh
-  ; entropy, a single-use verifier challenge, and durable consume-before-return.
+  ; RFC 9711 registers the EAT nonce claim with CWT integer key 10
+  ; (the JSON claim name is "eat_nonce"). This file defines the CBOR claims set,
+  ; so the integer key is required. The profile tightens the RFC minimum from
+  ; 8 bytes / 64 bits of entropy to at least 16 bytes / 128 bits, with durable
+  ; single-use challenge consumption before returning an approval-eligible result.
   10 => bstr .size (16..64),
 
   ; CWT registered claims. sub is a verifier-scoped target token, not a global
