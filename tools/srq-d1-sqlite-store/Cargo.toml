@@ -14,3 +14,5 @@ srq-eat-cose-verifier = { path = "../srq-eat-cose-verifier" }
 [dev-dependencies]
 coset = "=0.4.2"
 ed25519-dalek = "=3.0.0"
+srq-boot-reconciliation-model = { path = "../srq-boot-reconciliation-model" }
+srq-policy-promotion-store = { path = "../srq-policy-promotion-store" }
