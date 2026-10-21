@@ -325,6 +325,7 @@ jobs:
           grep -Fq 'PASS: D1 store rejects altered trigger SQL even when trusted names are preserved' "$store_log"
           grep -Fq 'PASS: exactly one typed Rust D1 consumption across 64 independent SQLite connections' "$store_log"
           grep -Fq 'PASS: Rust SQLite adapter survived 30 actual SIGKILL trials across three transaction boundaries' "$store_log"
+          grep -Fq 'PASS: D1 Rust SQLite runtime is above WAL safety floor: version=' "$store_log"
           grep -Fq 'PASS: invalid COSE signature leaves challenge unused; valid signed COSE EAT is consumed, reopened and replay-rejected through public API' "$store_log"
           test "$(grep -c '^PASS: Rust SQLite SIGKILL at ' "$store_log")" -eq 30
           test -s tools/srq-d1-sqlite-store/Cargo.lock
