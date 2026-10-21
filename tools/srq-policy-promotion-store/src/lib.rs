@@ -303,9 +303,10 @@ impl SqlitePolicyPromotionStore {
         F: FnMut() -> Result<u64, StoreError>,
     {
         let verified = verify_signed_authorization(token, trusted_key)?;
-        let now = clock()?;
         let tx = self.connection.transaction_with_behavior(TransactionBehavior::Immediate)
             .map_err(sql_err("begin promotion transaction"))?;
+        // Sample time only after acquiring the SQLite writer reservation.
+        let now = clock()?;
         let stored = load_challenge(&tx, &verified.challenge_id)?
             .ok_or(StoreError::UnknownChallenge)?;
         if stored.consumed_decision_id.is_some() {
