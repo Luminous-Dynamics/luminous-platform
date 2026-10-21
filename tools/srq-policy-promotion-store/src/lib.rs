@@ -319,6 +319,8 @@ impl SqlitePolicyPromotionStore {
             "INSERT INTO promotion_decisions (decision_id,target_id,challenge_id,previous_generation,next_generation,previous_approved_artifact_sha256,previous_effective_policy_sha256,approved_artifact_sha256,next_effective_policy_sha256,corpus_sha256,deployment_id,signer_key_id_hex,envelope_sha256,committed_at_unix_seconds) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14)",
             params![verified.decision_id,verified.target_id,verified.challenge_id,sql_i64(verified.previous_generation)?,sql_i64(verified.next_generation)?,verified.previous_approved_artifact_sha256,verified.previous_effective_policy_sha256,verified.approved_artifact_sha256,verified.next_effective_policy_sha256,verified.corpus_sha256,verified.deployment_id,verified.signer_key_id_hex,verified.envelope_sha256,sql_i64(promoted_at)?]
         ).map_err(sql_err("insert committed decision"))?;
+        #[cfg(test)]
+        test_pause_at_promotion_boundary("after_decision_insert");
         let changed = tx.execute(
             "UPDATE promotion_targets SET generation=?1,approved_artifact_sha256=?2,effective_policy_sha256=?3,corpus_sha256=?4,deployment_id=?5,last_decision_id=?6 WHERE target_id=?7 AND generation=?8 AND approved_artifact_sha256=?9 AND effective_policy_sha256=?10 AND corpus_sha256=?11 AND deployment_id=?12",
             params![sql_i64(verified.next_generation)?,verified.approved_artifact_sha256,verified.next_effective_policy_sha256,verified.corpus_sha256,verified.deployment_id,verified.decision_id,verified.target_id,sql_i64(verified.previous_generation)?,verified.previous_approved_artifact_sha256,verified.previous_effective_policy_sha256,verified.corpus_sha256,verified.deployment_id]
@@ -326,6 +328,8 @@ impl SqlitePolicyPromotionStore {
         if changed != 1 {
             return Err(StoreError::StaleTargetState);
         }
+        #[cfg(test)]
+        test_pause_at_promotion_boundary("after_target_update");
         let consumed = tx.execute(
             "UPDATE promotion_challenges SET consumed_decision_id=?1 WHERE challenge_id=?2 AND target_id=?3 AND consumed_decision_id IS NULL",
             params![verified.decision_id,verified.challenge_id,verified.target_id]
@@ -333,7 +337,11 @@ impl SqlitePolicyPromotionStore {
         if consumed != 1 {
             return Err(StoreError::ChallengeConsumed);
         }
+        #[cfg(test)]
+        test_pause_at_promotion_boundary("after_challenge_consume");
         tx.commit().map_err(sql_err("commit promotion transaction"))?;
+        #[cfg(test)]
+        test_pause_at_promotion_boundary("after_commit_before_ack");
         Ok(PromotedDecision {
             decision_id: verified.decision_id,
             target_id: verified.target_id,
@@ -556,6 +564,28 @@ fn verify_schema_inventory(c:&Connection)->Result<(),StoreError>{
 }
 
 #[cfg(test)]
+fn test_pause_at_promotion_boundary(point: &str) {
+    use std::io::Write as _;
+
+    if std::env::var("SRQ_POLICY_PROMOTION_KILL_POINT").ok().as_deref() != Some(point) {
+        return;
+    }
+    let marker = std::env::var_os("SRQ_POLICY_PROMOTION_KILL_MARKER")
+        .expect("SIGKILL test must provide a marker path");
+    let mut file = std::fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(marker)
+        .expect("create promotion SIGKILL marker");
+    writeln!(file, "{point}").expect("write promotion SIGKILL marker");
+    file.sync_all().expect("sync promotion SIGKILL marker");
+    drop(file);
+    loop {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use coset::{cbor::value::Value, CoseSign1Builder, HeaderBuilder};
@@ -585,8 +615,11 @@ mod tests {
         store.initialize_target(&InitialTargetState{target_id:TARGET.into(),generation:7,approved_artifact_sha256:D0.into(),effective_policy_sha256:D1.into(),corpus_sha256:D3.into(),deployment_id:DEPLOYMENT.into()}).expect("seed target");
         store
     }
+    fn challenge_fixture(now:u64)->IssuedPromotionChallenge{
+        IssuedPromotionChallenge{challenge_id:CHALLENGE_ID.into(),target_id:TARGET.into(),audience:AUDIENCE.into(),decision_id:DECISION_ID.into(),previous_generation:7,next_generation:8,previous_approved_artifact_sha256:D0.into(),previous_effective_policy_sha256:D1.into(),approved_artifact_sha256:D2.into(),next_effective_policy_sha256:D2.into(),corpus_sha256:D3.into(),deployment_id:DEPLOYMENT.into(),expected_signer_key_id_hex:hex_encode(KEY_ID),nonce:b"0123456789abcdef-policy-nonce".to_vec(),issued_at_unix_seconds:now-1,expires_at_unix_seconds:now+60}
+    }
     fn issue(store:&mut SqlitePolicyPromotionStore,now:u64)->IssuedPromotionChallenge{
-        let challenge=IssuedPromotionChallenge{challenge_id:CHALLENGE_ID.into(),target_id:TARGET.into(),audience:AUDIENCE.into(),decision_id:DECISION_ID.into(),previous_generation:7,next_generation:8,previous_approved_artifact_sha256:D0.into(),previous_effective_policy_sha256:D1.into(),approved_artifact_sha256:D2.into(),next_effective_policy_sha256:D2.into(),corpus_sha256:D3.into(),deployment_id:DEPLOYMENT.into(),expected_signer_key_id_hex:hex_encode(KEY_ID),nonce:b"0123456789abcdef-policy-nonce".to_vec(),issued_at_unix_seconds:now-1,expires_at_unix_seconds:now+60};
+        let challenge=challenge_fixture(now);
         // Test uses a private test clock, but issuance follows the same trusted issuer checks.
         store.issue_challenge_at(&challenge,now).expect("issue challenge");
         challenge
@@ -724,6 +757,101 @@ mod tests {
         drop(store);
         assert!(matches!(SqlitePolicyPromotionStore::open(&path),Err(StoreError::CorruptStore(_))));
         let _=fs::remove_file(&path);let _=fs::remove_file(format!("{}-wal",path.display()));let _=fs::remove_file(format!("{}-shm",path.display()));
+    }
+
+    #[test]
+    fn policy_promotion_sigkill_worker_entry() {
+        let Ok(database_path) = std::env::var("SRQ_POLICY_PROMOTION_WORKER_DB") else {
+            return;
+        };
+        let point = std::env::var("SRQ_POLICY_PROMOTION_KILL_POINT").expect("kill point");
+        let now = std::env::var("SRQ_POLICY_PROMOTION_NOW").expect("test now").parse::<u64>().expect("u64 now");
+        let challenge = challenge_fixture(now);
+        let signing = SigningKey::from_bytes(&[7u8;32]);
+        let token = make_token(&challenge, now, &signing, &[]);
+        let mut store = SqlitePolicyPromotionStore::open(database_path).expect("open worker store");
+        let _ = store.verify_and_promote_at(&token, &trusted(&signing), now)
+            .expect("promotion should reach injected kill boundary");
+        panic!("worker crossed configured SIGKILL boundary {point} unexpectedly");
+    }
+
+    #[test]
+    fn actual_sigkill_at_sql_boundaries_rolls_back_before_commit_and_recovers_after_commit() {
+        const POINTS: [(&str, bool); 4] = [
+            ("after_decision_insert", false),
+            ("after_target_update", false),
+            ("after_challenge_consume", false),
+            ("after_commit_before_ack", true),
+        ];
+        const TRIALS_PER_POINT: usize = 20;
+        let executable = std::env::current_exe().expect("current test executable");
+        for (point, should_be_committed) in POINTS {
+            for trial in 0..TRIALS_PER_POINT {
+                let now = system_time_unix_seconds().expect("clock");
+                let path = temp_path(&format!("kill-{point}-{trial}"));
+                let marker = temp_path(&format!("mark-{point}-{trial}"));
+                let mut seed = base_store(&path);
+                let challenge = issue(&mut seed, now);
+                drop(seed);
+
+                let mut child = std::process::Command::new(&executable)
+                    .args(["--exact", "tests::policy_promotion_sigkill_worker_entry", "--nocapture"])
+                    .env("SRQ_POLICY_PROMOTION_WORKER_DB", &path)
+                    .env("SRQ_POLICY_PROMOTION_KILL_POINT", point)
+                    .env("SRQ_POLICY_PROMOTION_KILL_MARKER", &marker)
+                    .env("SRQ_POLICY_PROMOTION_NOW", now.to_string())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn()
+                    .expect("spawn transaction worker");
+
+                let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+                while !marker.exists() {
+                    if let Some(status) = child.try_wait().expect("inspect child") {
+                        panic!("worker exited before {point}: {status}");
+                    }
+                    assert!(std::time::Instant::now() < deadline, "worker did not reach {point}");
+                    std::thread::sleep(std::time::Duration::from_millis(5));
+                }
+                let child_pid = child.id().to_string();
+                let kill_status = std::process::Command::new("kill")
+                    .args(["-KILL", child_pid.as_str()])
+                    .status()
+                    .expect("invoke Linux kill");
+                assert!(kill_status.success(), "SIGKILL failed at {point}");
+                let status = child.wait().expect("wait for killed worker");
+                assert!(!status.success(), "worker must terminate at {point}");
+
+                let reopened = SqlitePolicyPromotionStore::open(&path).expect("reopen after SIGKILL");
+                reopened.integrity_check().expect("integrity after SIGKILL");
+                let decision = reopened.committed_decision_for_challenge(&challenge.challenge_id)
+                    .expect("reconcile after SIGKILL");
+                let generation: i64 = reopened.connection.query_row(
+                    "SELECT generation FROM promotion_targets WHERE target_id=?1",
+                    params![TARGET], |row| row.get(0)
+                ).expect("read generation after SIGKILL");
+                if should_be_committed {
+                    assert_eq!(generation, 8, "post-commit kill must keep generation 8");
+                    assert_eq!(decision.as_ref().map(|d| d.decision_id.as_str()), Some(DECISION_ID));
+                    assert_eq!(decision.as_ref().unwrap().next_generation, 8);
+                } else {
+                    assert_eq!(generation, 7, "pre-commit kill must roll back generation");
+                    assert_eq!(decision, None, "pre-commit kill must not expose a committed decision");
+                    let consumed: Option<String> = reopened.connection.query_row(
+                        "SELECT consumed_decision_id FROM promotion_challenges WHERE challenge_id=?1",
+                        params![CHALLENGE_ID], |row| row.get(0)
+                    ).expect("read challenge consumption");
+                    assert_eq!(consumed, None);
+                }
+                println!("PASS: policy promotion SIGKILL at {point} trial {trial} recovered expected state");
+                drop(reopened);
+                let _ = fs::remove_file(&path);
+                let _ = fs::remove_file(format!("{}-wal", path.display()));
+                let _ = fs::remove_file(format!("{}-shm", path.display()));
+                let _ = fs::remove_file(&marker);
+            }
+        }
+        println!("PASS: policy promotion survived 80 actual SIGKILL trials across four SQL boundaries");
     }
 
     #[test]
