@@ -11,11 +11,13 @@ on:
       - "tools/srq-boot-reconciliation-model/**"
       - "tools/srq-boot-observation-adapter/**"
       - "tools/srq-eat-cose-verifier/**"
+      - "tools/srq-d1-sqlite-store/**"
       - "docs/SOVEREIGN_RECOVERY_QUALIFICATION_V1.md"
       - "docs/SRQ_PROVENANCE_ATTESTATION_V1.md"
       - "docs/SRQ_PROCESS_KILL_MODEL_V1.md"
       - "docs/SRQ_SQLITE_TRANSACTION_BASELINE_V1.md"
       - "docs/SRQ_D1_SQLITE_CONSUMPTION_REFERENCE_V1.md"
+      - "docs/SRQ_D1_SQLITE_STORE_V1.md"
       - "docs/SRQ_BENCHMARK_COMPARISON_V1.md"
       - "docs/SRQ_BOOT_RECONCILIATION_V1.md"
       - "docs/SRQ_BOOT_OBSERVATION_ADAPTER_V1.md"
@@ -33,7 +35,7 @@ env:
 jobs:
   validate-corpus:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Check out exact source head
         # Immutable commit pin for actions/checkout v4.
@@ -305,6 +307,32 @@ jobs:
           grep -Fq 'PASS: 100 D1 SQLite SIGKILL trials across four transaction boundaries' "$d1_sqlite_log"
           grep -Eq '^sqlite_version=[0-9]+[.][0-9]+([.][0-9]+)? journal_mode=wal synchronous=FULL d1_cases=20 contenders=64 process_kill_trials=100 commit_boundaries=4$' "$d1_sqlite_log"
 
+      - name: Exercise typed Rust D1 SQLite ChallengeConsumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          store_log="$RUNNER_TEMP/srq-d1-sqlite-store-test.log"
+          cargo test --manifest-path tools/srq-d1-sqlite-store/Cargo.toml -- --nocapture 2>&1 | tee "$store_log"
+          grep -Fq 'PASS: typed Rust D1 store commits once, rejects replay after reopen, and reconciles the original receipt' "$store_log"
+          grep -Fq 'PASS: typed Rust D1 store rejects wrong target, expiry, schema adoption, and challenge deletion without mutation' "$store_log"
+          grep -Fq 'PASS: exactly one typed Rust D1 consumption across 64 independent SQLite connections' "$store_log"
+          grep -Fq 'PASS: Rust SQLite adapter survived 30 actual SIGKILL trials across three transaction boundaries' "$store_log"
+          test "$(grep -c '^PASS: Rust SQLite SIGKILL at ' "$store_log")" -eq 30
+          test -s tools/srq-d1-sqlite-store/Cargo.lock
+          cp -- tools/srq-d1-sqlite-store/Cargo.lock "$RUNNER_TEMP/srq-d1-sqlite-store-Cargo.lock"
+          sha256sum "$RUNNER_TEMP/srq-d1-sqlite-store-Cargo.lock"
+
+      - name: Preserve typed Rust D1 SQLite store evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-d1-sqlite-store-evidence
+          path: |
+            ${{ runner.temp }}/srq-d1-sqlite-store-test.log
+            ${{ runner.temp }}/srq-d1-sqlite-store-Cargo.lock
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Preserve SQLite D1 challenge-consumption evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -354,6 +382,8 @@ jobs:
             srq-boot-observation-adapter-test.log
             srq-boot-reconciliation-model-test.log
             srq-challenge-promotion-model-test.log
+            srq-d1-sqlite-store-Cargo.lock
+            srq-d1-sqlite-store-test.log
             srq-eat-cose-verifier-test.log
             srq-evidence-003-model-result.json
             srq-process-kill-model-test.log
@@ -381,6 +411,8 @@ jobs:
           boot_observation_adapter_sha="$(sha256sum "$bundle_dir/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
           d1_cose_verifier_sha="$(sha256sum "$bundle_dir/srq-eat-cose-verifier-test.log" | cut -d ' ' -f 1)"
           d1_sqlite_consumer_sha="$(sha256sum "$bundle_dir/srq-sqlite-d1-challenge-consumption-reference.log" | cut -d ' ' -f 1)"
+          d1_sqlite_store_sha="$(sha256sum "$bundle_dir/srq-d1-sqlite-store-test.log" | cut -d ' ' -f 1)"
+          d1_sqlite_store_lock_sha="$(sha256sum "$bundle_dir/srq-d1-sqlite-store-Cargo.lock" | cut -d ' ' -f 1)"
           corpus_sha="$(sha256sum benchmarks/srq-v1/scenarios.json | cut -d ' ' -f 1)"
           actual_head="$(git rev-parse HEAD)"
           test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
@@ -404,6 +436,8 @@ jobs:
             --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" \
             --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" \
             --arg d1_sqlite_consumer_sha "$d1_sqlite_consumer_sha" \
+            --arg d1_sqlite_store_sha "$d1_sqlite_store_sha" \
+            --arg d1_sqlite_store_lock_sha "$d1_sqlite_store_lock_sha" \
             '{
               schema_version: 1,
               profile_id: "SRQ-1",
@@ -422,6 +456,9 @@ jobs:
               },
               corpus_sha256: $corpus_sha,
               checksum_manifest_sha256: $checksum_sha,
+              dependency_lock_sha256: {
+                srq_d1_sqlite_store: $d1_sqlite_store_lock_sha
+              },
               supplemental_observations: [{
                 test_id: "SRQ-PROCESS-KILL-V1",
                 scenario_id: "UPDATE-004",
@@ -470,6 +507,14 @@ jobs:
                 status: "PASS",
                 evidence_artifact: "srq-sqlite-d1-challenge-consumption-reference.log",
                 evidence_sha256: $d1_sqlite_consumer_sha
+              }, {
+                test_id: "SRQ-D1-SQLITE-STORE-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-d1-sqlite-store-test.log",
+                evidence_sha256: $d1_sqlite_store_sha
               }]
             }' > "$bundle_dir/manifest.json"
 
@@ -504,6 +549,8 @@ jobs:
             ${{ runner.temp }}/srq-challenge-promotion-model-test.log
             ${{ runner.temp }}/srq-evidence-003-model-result.json
             ${{ runner.temp }}/srq-eat-cose-verifier-test.log
+            ${{ runner.temp }}/srq-d1-sqlite-store-test.log
+            ${{ runner.temp }}/srq-d1-sqlite-store-Cargo.lock
             ${{ runner.temp }}/srq-boot-reconciliation-model-test.log
             ${{ runner.temp }}/srq-boot-observation-adapter-test.log
             ${{ runner.temp }}/srq-process-kill-model-test.log
