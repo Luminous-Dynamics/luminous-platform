@@ -2,7 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use coset::{cbor::value::Value, iana, CborSerializable, CoseSign1Builder, HeaderBuilder};
+use coset::{cbor::value::Value, iana, CoseSign1Builder, HeaderBuilder};
 use ed25519_dalek::{Signer, SigningKey};
 use srq_boot_reconciliation_model::{
     reconcile, BootObservation, BootObservationChallenge, CommittedPromotion, PromotionIntent,
