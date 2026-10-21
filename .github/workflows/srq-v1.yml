@@ -312,7 +312,8 @@ jobs:
         run: |
           set -euo pipefail
           store_log="$RUNNER_TEMP/srq-d1-sqlite-store-test.log"
-          cargo test --manifest-path tools/srq-d1-sqlite-store/Cargo.toml -- --nocapture 2>&1 | tee "$store_log"
+          test -s tools/srq-d1-sqlite-store/Cargo.lock
+          cargo test --manifest-path tools/srq-d1-sqlite-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$store_log"
           grep -Fq 'PASS: typed Rust D1 store commits once, rejects replay after reopen, and reconciles the original receipt' "$store_log"
           grep -Fq 'PASS: typed Rust D1 store rejects wrong target, expiry, schema adoption, and challenge deletion without mutation' "$store_log"
           grep -Fq 'PASS: exactly one typed Rust D1 consumption across 64 independent SQLite connections' "$store_log"
