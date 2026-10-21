@@ -77,3 +77,23 @@ Initial goals (not yet achieved):
 ## Claim ceiling
 
 This design does not make a software-key D1 boot report equivalent to TPM/measured boot, and does not itself prove physical power-loss safety. Any claim must name the exact external witness implementation and its trust boundary. Until a real witness is integrated, SRQ must state plainly that **whole-database rollback is not currently prevented by the local SQLite challenge ledger alone**.
+
+
+## Reference state machine added to the research branch
+
+The dependency-free Rust model lives at `tools/srq-rollback-witness-model/`; an isolated workflow tests it without changing the core SRQ qualification profile. Its scenarios cover:
+
+- restoration of only the local database while the witness remains advanced;
+- witness commit followed by a lost acknowledgement and idempotent recovery;
+- prepared-local-intent before witness advance (explicitly not success);
+- unavailable witness preventing a new advance;
+- expiry at the witness commit boundary;
+- 64 competing, distinct decisions against one checkpoint predecessor (exactly one wins);
+- stale predecessor, skipped sequence, wrong target and conflicting decision reuse;
+- restoring both local and witness state together, which the model intentionally shows as undetectable when there is no third independent anchor;
+- mismatched witness receipt preventing local finalization.
+
+This is a reference state machine, **not** the production witness. It uses digest-shaped test values and assumes the checkpoint's cryptographic evidence has already been verified; it does not compute canonical checkpoint hashes, persist an external receipt, prevent its own process/database rollback, implement network consensus, use a TPM counter, or qualify hardware/VM/power-loss behavior. The explicit test where both rollback domains are restored is important: a witness stored in the same disk image does not solve the problem.
+
+The separate workflow is [`.github/workflows/srq-rollback-witness.yml`](../.github/workflows/srq-rollback-witness.yml). Its run is independent development evidence for this model only and is not part of the current 22-gate SRQ signed evidence bundle. The integration remains a proposal until a real witness adapter is implemented with durable idempotency, independently protected monotonic state and restart/reconciliation tests.
+
