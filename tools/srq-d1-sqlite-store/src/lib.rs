@@ -298,6 +298,105 @@ impl SqliteD1Store {
 
     /// Run SQLite's structural and foreign-key integrity checks and verify the
     /// challenge-to-receipt one-to-one invariant explicitly.
+    /// Re-read a committed D1 observation from SQLite for cross-layer
+    /// reconciliation instead of rebuilding it from in-memory request fields.
+    /// A receipt that no longer matches its issued challenge fails closed.
+    pub fn committed_observation_for_challenge(
+        &self,
+        challenge_id: &str,
+    ) -> Result<Option<CommittedD1Observation>, String> {
+        let Some(receipt_sha256) = self.committed_receipt_for_challenge(challenge_id)? else {
+            return Ok(None);
+        };
+        let matching_rows: i64 = self.connection.query_row(
+            "SELECT count(*)
+               FROM d1_observation_challenges c
+               JOIN d1_verified_observation_receipts r
+                 ON r.receipt_sha256=c.consumed_receipt_sha256
+                AND r.challenge_id=c.challenge_id
+              WHERE c.challenge_id=?1 AND r.receipt_sha256=?2
+                AND c.required_assurance_tier='D1'
+                AND r.target_token=c.target_token AND r.audience=c.audience
+                AND r.decision_id=c.decision_id
+                AND r.policy_generation=c.policy_generation
+                AND r.approved_artifact_sha256=c.approved_artifact_sha256
+                AND r.effective_policy_sha256=c.effective_policy_sha256
+                AND r.corpus_sha256=c.corpus_sha256
+                AND r.deployment_id=c.expected_deployment_id
+                AND r.signer_key_id_hex=c.expected_signer_key_id_hex
+                AND r.nonce_sha256=c.nonce_sha256
+                AND r.challenge_issued_at_unix_seconds=c.issued_at_unix_seconds
+                AND r.challenge_expires_at_unix_seconds=c.expires_at_unix_seconds
+                AND r.verifier_now_unix_seconds>=c.issued_at_unix_seconds
+                AND r.verifier_now_unix_seconds<c.expires_at_unix_seconds",
+            params![challenge_id, receipt_sha256],
+            |row| row.get(0),
+        ).map_err(|error| format!("verify durable D1 receipt bindings: {error}"))?;
+        if matching_rows != 1 {
+            return Err("committed D1 receipt does not match exactly one issued challenge".into());
+        }
+
+        let row = self.connection.query_row(
+            "SELECT receipt_sha256,challenge_id,profile_id,signer_key_id_hex,
+                    target_token,audience,decision_id,policy_generation,
+                    approved_artifact_sha256,effective_policy_sha256,corpus_sha256,
+                    deployment_id,boot_instance_id,nonce_sha256,
+                    challenge_issued_at_unix_seconds,challenge_expires_at_unix_seconds,
+                    verifier_now_unix_seconds,envelope_sha256,committed_at_unix_seconds
+               FROM d1_verified_observation_receipts
+              WHERE challenge_id=?1 AND receipt_sha256=?2",
+            params![challenge_id, receipt_sha256],
+            |row| Ok((
+                row.get::<_, String>(0)?, row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?, row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?, row.get::<_, String>(5)?,
+                row.get::<_, String>(6)?, row.get::<_, i64>(7)?,
+                row.get::<_, String>(8)?, row.get::<_, String>(9)?,
+                row.get::<_, String>(10)?, row.get::<_, String>(11)?,
+                row.get::<_, String>(12)?, row.get::<_, String>(13)?,
+                row.get::<_, i64>(14)?, row.get::<_, i64>(15)?,
+                row.get::<_, i64>(16)?, row.get::<_, String>(17)?,
+                row.get::<_, i64>(18)?,
+            )),
+        ).optional().map_err(|error| format!("read durable D1 receipt record: {error}"))?;
+        let Some((
+            receipt_sha256, challenge_id, profile_id, signer_key_id_hex,
+            target_token, audience, decision_id, generation,
+            approved_artifact_sha256, effective_policy_sha256, corpus_sha256,
+            deployment_id, boot_instance_id, nonce_sha256, issued, expires,
+            verifier_now, envelope_sha256, committed,
+        )) = row else {
+            return Err("committed D1 receipt pointer is missing its record".into());
+        };
+        if profile_id != PROFILE {
+            return Err("durable D1 receipt has an unexpected profile".into());
+        }
+        let as_u64 = |value: i64, label: &str| {
+            u64::try_from(value).map_err(|_| format!("stored D1 {label} is outside unsigned range"))
+        };
+        Ok(Some(CommittedD1Observation {
+            receipt_sha256,
+            challenge_id,
+            profile_id,
+            signer_key_id_hex,
+            target_token,
+            audience,
+            decision_id,
+            policy_generation: as_u64(generation, "generation")?,
+            approved_artifact_sha256,
+            effective_policy_sha256,
+            corpus_sha256,
+            deployment_id,
+            boot_instance_id,
+            nonce_sha256,
+            challenge_issued_at_unix_seconds: as_u64(issued, "issue time")?,
+            challenge_expires_at_unix_seconds: as_u64(expires, "expiry time")?,
+            verifier_now_unix_seconds: as_u64(verifier_now, "verifier time")?,
+            envelope_sha256,
+            committed_at_unix_seconds: as_u64(committed, "commit time")?,
+        }))
+    }
+
     pub fn integrity_check(&self) -> Result<(), String> {
         let mut statement = self
             .connection
