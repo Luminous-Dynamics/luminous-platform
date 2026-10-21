@@ -794,15 +794,28 @@ mod tests {
                 signer_key_id_hex: request.signer_key_id_hex.to_owned(),
                 envelope_sha256: request.envelope_sha256.to_owned(),
             });
-            let material = format!(
-                "{}\n{}\n{}\n{}\n{}\n{}",
-                request.profile_id,
-                request.signer_key_id_hex,
-                request.challenge_id,
-                request.decision_id,
-                request.envelope_sha256,
-                request.challenge_expires_at_unix_seconds
-            );
+            // Deterministic unit-test receipt over the whole request tuple.
+            // Production stores must hash the bytes of the receipt actually
+            // durably committed, not reproduce this in-memory fixture.
+            let material = [
+                request.profile_id.to_owned(),
+                request.signer_key_id_hex.to_owned(),
+                hex_encode(request.nonce),
+                request.challenge_id.to_owned(),
+                request.decision_id.to_owned(),
+                request.target_token.to_owned(),
+                request.audience.to_owned(),
+                request.policy_generation.to_string(),
+                request.approved_artifact_sha256.to_owned(),
+                request.effective_policy_sha256.to_owned(),
+                request.corpus_sha256.to_owned(),
+                request.booted_deployment_id.to_owned(),
+                request.boot_instance_id.to_owned(),
+                request.challenge_issued_at_unix_seconds.to_string(),
+                request.challenge_expires_at_unix_seconds.to_string(),
+                request.envelope_sha256.to_owned(),
+            ]
+            .join("\n");
             Ok(sha256_hex(material.as_bytes()))
         }
     }
