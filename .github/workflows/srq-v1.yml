@@ -12,6 +12,7 @@ on:
       - "tools/srq-boot-observation-adapter/**"
       - "tools/srq-eat-cose-verifier/**"
       - "tools/srq-d1-sqlite-store/**"
+      - "tools/srq-policy-promotion-store/**"
       - "docs/SOVEREIGN_RECOVERY_QUALIFICATION_V1.md"
       - "docs/SRQ_PROVENANCE_ATTESTATION_V1.md"
       - "docs/SRQ_PROCESS_KILL_MODEL_V1.md"
@@ -23,6 +24,7 @@ on:
       - "docs/SRQ_BOOT_OBSERVATION_ADAPTER_V1.md"
       - "docs/SRQ_EAT_COSE_BOOT_ATTESTATION_V1.md"
       - "docs/SRQ_D2_TPM_APPRAISAL_V1.md"
+      - "docs/SRQ_POLICY_PROMOTION_STORE_V1.md"
       - "schemas/srq-eat-boot-observation-v1.cddl"
   workflow_dispatch:
 
@@ -352,6 +354,33 @@ jobs:
           path: \${{ runner.temp }}/srq-sqlite-d1-challenge-consumption-reference.log
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Exercise atomic signed policy-promotion store prototype
+        shell: bash
+        run: |
+          set -euo pipefail
+          promotion_log="$RUNNER_TEMP/srq-policy-promotion-store-test.log"
+          cargo test --manifest-path tools/srq-policy-promotion-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$promotion_log"
+          grep -Fq 'test result: ok. 8 passed; 0 failed' "$promotion_log"
+          grep -Fq 'tests::signed_authorization_commits_decision_challenge_and_generation_atomically ... ok' "$promotion_log"
+          grep -Fq 'tests::invalid_signature_does_not_consume_challenge_or_mutate_target ... ok' "$promotion_log"
+          grep -Fq 'tests::replay_after_reopen_is_rejected_and_original_decision_is_recoverable ... ok' "$promotion_log"
+          grep -Fq 'tests::expiry_and_wrong_target_policy_generation_digest_are_rejected_without_mutation ... ok' "$promotion_log"
+          grep -Fq 'tests::one_of_sixty_four_independent_connections_commits ... ok' "$promotion_log"
+          grep -Fq 'tests::challenge_nonce_is_persisted_only_as_a_hash ... ok' "$promotion_log"
+          grep -Fq 'tests::malformed_or_modified_schema_is_rejected_on_reopen ... ok' "$promotion_log"
+          grep -Fq 'tests::runtime_sqlite_version_gate_rejects_known_wal_reset_bug_range ... ok' "$promotion_log"
+
+      - name: Preserve policy promotion prototype evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-policy-promotion-store-evidence
+          path: |
+            ${{ runner.temp }}/srq-policy-promotion-store-test.log
+            tools/srq-policy-promotion-store/Cargo.lock
+          if-no-files-found: ignore
+          retention-days: 30
 
       - name: Compile release qualification status from observed receipts
         shell: bash
