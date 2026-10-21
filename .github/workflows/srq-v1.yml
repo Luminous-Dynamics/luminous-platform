@@ -71,6 +71,7 @@ jobs:
           bash -n benchmarks/srq-v1/validate-produced-bundle.sh
           bash -n benchmarks/srq-v1/test-validate-produced-bundle.sh
           bash -n tools/srq-boot-observation-adapter/test-cli.sh
+          bash -n tools/srq-eat-cose-verifier/test-cli.sh
           bash -n benchmarks/srq-v1/evaluate-attested-release.sh
 
       - name: Run bounded filesystem activation model
@@ -276,6 +277,8 @@ jobs:
           grep -Fq 'test result: ok. 17 passed; 0 failed' "$d1_log"
           cargo run --manifest-path "$manifest" --locked -- --help 2>&1 | tee -a "$d1_log"
           grep -Fq 'D1 does not claim TPM, secure-boot measurement or physical qualification.' "$d1_log"
+          bash tools/srq-eat-cose-verifier/test-cli.sh 2>&1 | tee -a "$d1_log"
+          grep -Fq 'PASS: CLI rejects caller-supplied future time before reading inputs' "$d1_log"
           sha256sum tools/srq-eat-cose-verifier/Cargo.lock
 
       - name: Preserve D1 COSE verifier bootstrap evidence
