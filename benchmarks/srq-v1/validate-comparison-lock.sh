@@ -4,14 +4,18 @@ script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 registry="$script_dir/industry-baseline-candidates-v1.json"
 schema="$script_dir/comparison-lock-v1.schema.json"
 allow_fixtures=false
+evidence_root=""
 lock=""
-usage() { echo "Usage: $0 [--allow-fixtures] [--registry PATH] <comparison-lock.json>" >&2; }
+usage() { echo "Usage: $0 [--allow-fixtures] [--registry PATH] [--evidence-root DIR] <comparison-lock.json>" >&2; }
 while (($#)); do
   case "$1" in
     --allow-fixtures) allow_fixtures=true; shift ;;
     --registry)
       if [[ $# -lt 2 || -z "$2" ]]; then usage; exit 2; fi
       registry="$2"; shift 2 ;;
+    --evidence-root)
+      if [[ $# -lt 2 || -z "$2" ]]; then usage; exit 2; fi
+      evidence_root="$2"; shift 2 ;;
     -*) usage; exit 2 ;;
     *)
       if [[ -n "$lock" ]]; then usage; exit 2; fi
@@ -41,6 +45,7 @@ jq -e '
   (.corpus_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
   (.fault_schedule_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
   (.outcome_oracle_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+  (.artifacts as $a | type == "object" and all(["benchmark_artifact","configuration","corpus","fault_schedule","outcome_oracle"][]; . as $key | ($a[$key] | type == "string" and length > 0 and test("^[A-Za-z0-9][A-Za-z0-9._/-]*$") and (startswith("/") | not) and (contains("..") | not) and (contains("//") | not)))) and
   (.platform as $p | type == "object" and all(["os_image","architecture","kernel","filesystem","storage_class","runner_class"][]; . as $key | ($p[$key] | type == "string" and length > 0))) and
   (.scope | type == "object" and (.included | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)) and (.excluded | type == "array" and length > 0 and all(.[]; type == "string" and length > 0)))
 ' "$lock" >/dev/null
@@ -74,6 +79,40 @@ if ! jq -e --arg id "$baseline_id" --slurpfile lock "$lock" '
   echo "FAIL: baseline is unknown, unpinned, protocol-only, scope-blocked, or does not match the frozen registry identity." >&2
   exit 1
 fi
+if [[ "$fixture" == "false" ]]; then
+  [[ -n "$evidence_root" && -d "$evidence_root" ]] || {
+    echo "BLOCKED: non-fixture comparison locks require --evidence-root to verify input bytes." >&2
+    exit 2
+  }
+  while IFS=
+printf 'VALID_LOCK_ONLY: baseline_id=%s baseline_version=%s lock_sha256=%s fixture=%s\n' "$baseline_id" "$(jq -r '.baseline_version' "$lock")" "$lock_sha" "$fixture"
+echo "NON-CLAIM: lock structure and registry binding do not prove that comparator artifacts were executed or that the baseline is secure."
+\t' read -r artifact expected_sha; do
+    [[ -n "$artifact" ]] || continue
+    if [[ "$artifact" == /* || "$artifact" == *".."* || "$artifact" == *"//"* ]]; then
+      echo "FAIL: unsafe lock artifact locator: $artifact" >&2
+      exit 1
+    fi
+    file="$evidence_root/$artifact"
+    [[ -f "$file" ]] || {
+      echo "FAIL: locked comparison input is missing: $artifact" >&2
+      exit 1
+    }
+    actual_sha="$(sha256sum "$file" | cut -d ' ' -f 1)"
+    [[ "$actual_sha" == "$expected_sha" ]] || {
+      echo "FAIL: locked input digest mismatch for $artifact (expected=$expected_sha actual=$actual_sha)." >&2
+      exit 1
+    }
+    printf 'PASS: comparison lock input verified (%s sha256=%s)\n' "$artifact" "$actual_sha"
+  done < <(jq -r '[
+    [.artifacts.benchmark_artifact,.benchmark_artifact_sha256],
+    [.artifacts.configuration,.configuration_sha256],
+    [.artifacts.corpus,.corpus_sha256],
+    [.artifacts.fault_schedule,.fault_schedule_sha256],
+    [.artifacts.outcome_oracle,.outcome_oracle_sha256]
+  ][] | @tsv' "$lock")
+fi
+
 lock_sha="$(sha256sum "$lock" | cut -d ' ' -f 1)"
 printf 'VALID_LOCK_ONLY: baseline_id=%s baseline_version=%s lock_sha256=%s fixture=%s\n' "$baseline_id" "$(jq -r '.baseline_version' "$lock")" "$lock_sha" "$fixture"
 echo "NON-CLAIM: lock structure and registry binding do not prove that comparator artifacts were executed or that the baseline is secure."

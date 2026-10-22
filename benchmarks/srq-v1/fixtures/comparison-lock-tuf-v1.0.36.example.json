@@ -34,5 +34,12 @@
       "physical recovery",
       "comparative performance claims"
     ]
+  },
+  "artifacts": {
+    "benchmark_artifact": "fixtures/comparison-lock-artifacts/benchmark.bin",
+    "configuration": "fixtures/comparison-lock-artifacts/config.json",
+    "corpus": "fixtures/comparison-lock-artifacts/corpus.json",
+    "fault_schedule": "fixtures/comparison-lock-artifacts/fault-schedule.json",
+    "outcome_oracle": "fixtures/comparison-lock-artifacts/oracle.bin"
   }
 }

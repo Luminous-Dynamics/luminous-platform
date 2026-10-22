@@ -19,6 +19,7 @@
     "corpus_sha256",
     "fault_schedule_sha256",
     "outcome_oracle_sha256",
+    "artifacts",
     "platform",
     "scope"
   ],
@@ -161,6 +162,39 @@
             "type": "string",
             "minLength": 1
           }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "benchmark_artifact",
+        "configuration",
+        "corpus",
+        "fault_schedule",
+        "outcome_oracle"
+      ],
+      "properties": {
+        "benchmark_artifact": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+        },
+        "configuration": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+        },
+        "corpus": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+        },
+        "fault_schedule": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+        },
+        "outcome_oracle": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
         }
       }
     }
