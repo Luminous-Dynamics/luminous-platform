@@ -721,10 +721,20 @@ jobs:
           set -euo pipefail
           log="$RUNNER_TEMP/srq-comparison-attestation-store-test.log"
           cargo test --manifest-path tools/srq-comparison-attestation-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$log"
-          grep -Fq 'test result: ok. 17 passed; 0 failed' "$log"
-          for test_name in valid_envelope_is_consumed_once_and_receipt_survives_reopen tampered_signature_does_not_consume_challenge signed_statement_cannot_omit_declared_artifact_subject signed_predicate_cannot_substitute_artifact_manifest_digest unknown_predicate_key_cannot_replace_required_non_claims_field unknown_run_receipt_key_is_rejected_even_when_required_fields_match mutated_subject_bytes_fail_without_consuming_challenge wrong_public_key_fingerprint_is_rejected valid_signature_with_wrong_dsse_key_id_is_rejected envelope_challenge_must_match_issuer_record overstated_structural_comparability_claim_is_rejected fixture_evidence_is_not_appraised_as_real_comparison returned_receipt_timestamp_matches_durable_row_when_clock_advances expiration_at_commit_boundary_rolls_back_receipt_and_challenge symlink_subject_cannot_escape_evidence_root sixty_four_independent_connections_commit_exactly_one_appraisal unknown_nonempty_database_is_rejected_without_adoption; do
+          grep -Fq 'test result: ok. 19 passed; 0 failed' "$log"
+          grep -Fq 'PASS: comparison envelope store survived 30 actual SIGKILL trials across three SQL boundaries' "$log"
+          for test_name in valid_envelope_is_consumed_once_and_receipt_survives_reopen tampered_signature_does_not_consume_challenge signed_statement_cannot_omit_declared_artifact_subject signed_predicate_cannot_substitute_artifact_manifest_digest unknown_predicate_key_cannot_replace_required_non_claims_field unknown_run_receipt_key_is_rejected_even_when_required_fields_match comparison_appraisal_sigkill_worker_entry comparison_appraisal_survives_actual_sigkill_at_sql_boundaries mutated_subject_bytes_fail_without_consuming_challenge wrong_public_key_fingerprint_is_rejected valid_signature_with_wrong_dsse_key_id_is_rejected envelope_challenge_must_match_issuer_record overstated_structural_comparability_claim_is_rejected fixture_evidence_is_not_appraised_as_real_comparison returned_receipt_timestamp_matches_durable_row_when_clock_advances expiration_at_commit_boundary_rolls_back_receipt_and_challenge symlink_subject_cannot_escape_evidence_root sixty_four_independent_connections_commit_exactly_one_appraisal unknown_nonempty_database_is_rejected_without_adoption; do
             grep -Fq "$test_name ... ok" "$log"
           done
+
+      - name: Preserve comparison appraisal crash evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-comparison-attestation-store-evidence
+          path: ${{ runner.temp }}/srq-comparison-attestation-store-test.log
+          if-no-files-found: ignore
+          retention-days: 30
 
       - name: Validate PASS and NOT_RUN result receipt examples
         run: |

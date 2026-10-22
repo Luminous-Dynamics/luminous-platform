@@ -10,6 +10,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io::Read as _;
+#[cfg(test)]
+use std::io::Write as _;
 use std::path::{Component, Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -284,6 +286,7 @@ impl SqliteComparisonAttestationStore {
                 stored.run_challenge_sha256,
             ],
         ).map_err(|e| format!("insert immutable comparison appraisal receipt: {e}"))?;
+        test_pause_at_appraisal_boundary("after_receipt_insert");
         let changed = tx.execute(
             "UPDATE srq_comparison_challenges SET consumed_receipt_sha256=?1
               WHERE challenge_id=?2 AND consumed_receipt_sha256 IS NULL",
@@ -292,9 +295,11 @@ impl SqliteComparisonAttestationStore {
         if changed != 1 {
             return Err("comparison challenge compare-and-swap did not update exactly one row".into());
         }
+        test_pause_at_appraisal_boundary("after_challenge_update_before_commit");
         let commit_now = clock()?;
         validate_fresh(&locked, commit_now)?;
         tx.commit().map_err(|e| format!("commit comparison appraisal: {e}"))?;
+        test_pause_at_appraisal_boundary("after_commit_before_ack");
         Ok(ConsumedComparisonEnvelope {
             receipt_sha256: envelope_sha256,
             payload_sha256,
@@ -594,6 +599,28 @@ fn has_exact_keys(object: &serde_json::Map<String, Value>, expected: &[&str]) ->
     actual == expected
 }
 
+#[cfg(test)]
+fn test_pause_at_appraisal_boundary(point: &str) {
+    if std::env::var("SRQ_COMPARISON_STORE_KILL_POINT").ok().as_deref() != Some(point) {
+        return;
+    }
+    let marker = std::env::var_os("SRQ_COMPARISON_STORE_KILL_MARKER")
+        .expect("SIGKILL test must provide a marker path");
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(marker)
+        .expect("create SIGKILL readiness marker");
+    file.write_all(format!("{point}\n").as_bytes()).expect("write SIGKILL readiness marker");
+    file.sync_all().expect("sync SIGKILL readiness marker");
+    loop {
+        std::thread::sleep(std::time::Duration::from_secs(60));
+    }
+}
+
+#[cfg(not(test))]
+fn test_pause_at_appraisal_boundary(_point: &str) {}
+
 fn validate_challenge(challenge: &IssuedComparisonChallenge) -> Result<(), String> {
     if !valid_identifier(&challenge.challenge_id) {
         return Err("comparison challenge ID is malformed".into());
@@ -820,6 +847,8 @@ mod tests {
     use serde_json::json;
     use std::sync::{Arc, Barrier, atomic::{AtomicU64, Ordering}};
     use std::thread;
+    use std::process::{Command, Stdio};
+    use std::time::{Duration, Instant};
 
     static NEXT_TEMP: AtomicU64 = AtomicU64::new(0);
 
@@ -1054,6 +1083,107 @@ mod tests {
             "an unknown predicate field must not substitute for a required v1 field even when the count is unchanged"
         );
         assert_eq!(store.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap(), None);
+    }
+
+    #[test]
+    fn comparison_appraisal_sigkill_worker_entry() {
+        let Ok(database_path) = std::env::var("SRQ_COMPARISON_STORE_WORKER_DB") else {
+            return;
+        };
+        let evidence_root = std::env::var("SRQ_COMPARISON_STORE_EVIDENCE_ROOT").expect("evidence root");
+        let envelope_path = std::env::var("SRQ_COMPARISON_STORE_ENVELOPE").expect("envelope path");
+        let public_key_path = std::env::var("SRQ_COMPARISON_STORE_PUBLIC_KEY").expect("public key path");
+        let challenge_id = std::env::var("SRQ_COMPARISON_STORE_CHALLENGE_ID").expect("challenge ID");
+        let _point = std::env::var("SRQ_COMPARISON_STORE_KILL_POINT").expect("kill point");
+        let envelope = fs::read(envelope_path).expect("read signed envelope");
+        let public_key_bytes = fs::read(public_key_path).expect("read trusted public key");
+        let public_key: [u8; 32] = public_key_bytes.try_into().expect("trusted public key must be 32 bytes");
+        let mut store = SqliteComparisonAttestationStore::open(database_path).expect("open appraisal worker store");
+        let _ = store.consume_envelope(&challenge_id, &envelope, &public_key, evidence_root)
+            .expect("appraisal must reach the configured SIGKILL boundary");
+        panic!("worker unexpectedly crossed its SIGKILL boundary");
+    }
+
+    #[test]
+    fn comparison_appraisal_survives_actual_sigkill_at_sql_boundaries() {
+        const POINTS: [(&str, bool); 3] = [
+            ("after_receipt_insert", false),
+            ("after_challenge_update_before_commit", false),
+            ("after_commit_before_ack", true),
+        ];
+        const TRIALS_PER_POINT: usize = 10;
+        let executable = std::env::current_exe().expect("current test executable");
+        for (point, should_be_committed) in POINTS {
+            for trial in 0..TRIALS_PER_POINT {
+                let label = format!("kill-{point}-{trial}");
+                let f = fixture(&label);
+                let envelope_path = f._temp.path().join("signed-envelope.json");
+                let public_key_path = f._temp.path().join("trusted-public-key.bin");
+                let marker = f._temp.path().join("kill-ready.marker");
+                fs::write(&envelope_path, &f.envelope).expect("write signed envelope for worker");
+                fs::write(&public_key_path, f.public_key).expect("write trusted public key for worker");
+
+                let mut seed = SqliteComparisonAttestationStore::open(&f.db_path).expect("open seed store");
+                seed.issue_challenge(&f.challenge).expect("issue verifier challenge");
+                drop(seed);
+
+                let mut child = Command::new(&executable)
+                    .args(["--exact", "tests::comparison_appraisal_sigkill_worker_entry", "--nocapture"])
+                    .env("SRQ_COMPARISON_STORE_WORKER_DB", &f.db_path)
+                    .env("SRQ_COMPARISON_STORE_EVIDENCE_ROOT", &f.root)
+                    .env("SRQ_COMPARISON_STORE_ENVELOPE", &envelope_path)
+                    .env("SRQ_COMPARISON_STORE_PUBLIC_KEY", &public_key_path)
+                    .env("SRQ_COMPARISON_STORE_CHALLENGE_ID", &f.challenge.challenge_id)
+                    .env("SRQ_COMPARISON_STORE_KILL_POINT", point)
+                    .env("SRQ_COMPARISON_STORE_KILL_MARKER", &marker)
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn()
+                    .expect("spawn SQLite appraisal worker");
+
+                let deadline = Instant::now() + Duration::from_secs(10);
+                while !marker.exists() {
+                    if let Some(status) = child.try_wait().expect("inspect appraisal worker") {
+                        panic!("appraisal worker exited before {point}: {status}");
+                    }
+                    assert!(Instant::now() < deadline, "appraisal worker did not reach {point}");
+                    thread::sleep(Duration::from_millis(5));
+                }
+                let pid = child.id().to_string();
+                let kill_status = Command::new("kill")
+                    .args(["-KILL", pid.as_str()])
+                    .status()
+                    .expect("invoke Linux SIGKILL");
+                assert!(kill_status.success(), "SIGKILL failed at {point}");
+                let status = child.wait().expect("wait for killed appraisal worker");
+                assert!(!status.success(), "worker must not return normally at {point}");
+
+                let reopened = SqliteComparisonAttestationStore::open(&f.db_path).expect("reopen appraisal store");
+                reopened.integrity_check().expect("integrity after SIGKILL");
+                let receipt = reopened.committed_receipt_for_challenge(&f.challenge.challenge_id)
+                    .expect("read committed appraisal after SIGKILL");
+                let (consumed_sha, envelope_rows): (Option<String>, i64) = reopened.connection.query_row(
+                    "SELECT c.consumed_receipt_sha256,
+                            (SELECT count(*) FROM srq_comparison_envelopes e WHERE e.challenge_id=c.challenge_id)
+                       FROM srq_comparison_challenges c WHERE c.challenge_id=?1",
+                    params![f.challenge.challenge_id],
+                    |row| Ok((row.get(0)?, row.get(1)?)),
+                ).expect("inspect post-kill durable state");
+
+                if should_be_committed {
+                    let receipt = receipt.expect("post-COMMIT kill must preserve receipt");
+                    assert_eq!(consumed_sha.as_deref(), Some(receipt.receipt_sha256.as_str()));
+                    assert_eq!(envelope_rows, 1, "post-COMMIT must preserve exactly one envelope receipt");
+                } else {
+                    assert!(receipt.is_none(), "pre-COMMIT kill must leave no committed receipt");
+                    assert_eq!(consumed_sha, None, "pre-COMMIT kill must leave challenge unconsumed");
+                    assert_eq!(envelope_rows, 0, "pre-COMMIT kill must roll back the inserted receipt");
+                }
+                println!("PASS: comparison appraisal SIGKILL at {point} trial {trial} recovered the expected complete state");
+                drop(reopened);
+            }
+        }
+        println!("PASS: comparison envelope store survived 30 actual SIGKILL trials across three SQL boundaries");
     }
 
     #[test]
