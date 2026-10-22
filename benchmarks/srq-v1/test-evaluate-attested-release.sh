@@ -30,6 +30,8 @@ printf 'synthetic typed Rust D1 store test; model-tier only\n' > "$bundle/srq-d1
 printf 'synthetic signed promotion-store test; model-tier only\n' > "$bundle/srq-policy-promotion-store-test.log"
 printf 'synthetic promotion-store Cargo lock; test fixture only\n' > "$bundle/srq-policy-promotion-store-Cargo.lock"
 printf 'synthetic D1 Cargo lock; deterministic test fixture only\n' > "$bundle/srq-d1-sqlite-store-Cargo.lock"
+printf 'synthetic shared SQLite runtime policy tests; model-tier only\n' > "$bundle/srq-sqlite-runtime-policy-test.log"
+printf 'synthetic shared SQLite runtime policy Cargo lock; fixture only\n' > "$bundle/srq-sqlite-runtime-policy-Cargo.lock"
 printf 'synthetic challenge-model evidence; contract test only\n' > "$bundle/srq-challenge-promotion-model-test.log"
 
 recovery_sha="$(sha256sum "$bundle/srq-recovery-model-test.log" | cut -d ' ' -f 1)"
