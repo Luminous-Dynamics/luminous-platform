@@ -175,3 +175,53 @@ fn signed_cose_is_verified_then_consumed_by_real_sqlite_store_end_to_end() {
         let _ = fs::remove_file(format!("{}-shm", file.display()));
     }
 }
+
+
+#[test]
+fn refusing_foreign_database_does_not_change_its_journal_mode_or_rows() {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("clock")
+        .as_nanos();
+    let path = std::env::temp_dir().join(format!(
+        "srq-d1-foreign-db-{}-{nonce}.sqlite",
+        std::process::id()
+    ));
+
+    {
+        let connection = rusqlite::Connection::open(&path).expect("create foreign database");
+        let mode: String = connection
+            .query_row("PRAGMA journal_mode=DELETE", [], |row| row.get(0))
+            .expect("set foreign database to DELETE mode");
+        assert_eq!(mode.to_ascii_lowercase(), "delete");
+        connection.execute_batch(
+            "CREATE TABLE foreign_payload(id INTEGER PRIMARY KEY, value TEXT NOT NULL);
+             INSERT INTO foreign_payload(id, value) VALUES (1, 'must-remain');"
+        ).expect("write foreign payload");
+    }
+
+    assert!(
+        SqliteD1Store::open(&path).is_err(),
+        "D1 store must reject a nonempty unowned schema"
+    );
+
+    {
+        let connection = rusqlite::Connection::open(&path).expect("reopen foreign database");
+        let mode: String = connection
+            .query_row("PRAGMA journal_mode", [], |row| row.get(0))
+            .expect("read foreign database journal mode");
+        assert_eq!(
+            mode.to_ascii_lowercase(),
+            "delete",
+            "rejecting the foreign database must not persistently change journal mode"
+        );
+        let value: String = connection
+            .query_row("SELECT value FROM foreign_payload WHERE id=1", [], |row| row.get(0))
+            .expect("read original foreign payload");
+        assert_eq!(value, "must-remain");
+    }
+
+    let _ = fs::remove_file(&path);
+    let _ = fs::remove_file(format!("{}-wal", path.display()));
+    let _ = fs::remove_file(format!("{}-shm", path.display()));
+}
