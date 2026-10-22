@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/srq/comparison-statement-v1.schema.json",
+  "title": "SRQ in-toto comparison statement v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["_type", "subject", "predicateType", "predicate"],
+  "properties": {
+    "_type": {"const": "https://in-toto.io/Statement/v1"},
+    "subject": {
+      "type": "array", "minItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "digest"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"},
+          "digest": {"type": "object", "additionalProperties": false, "required": ["sha256"],
+            "properties": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}
+        }
+      }
+    },
+    "predicateType": {"const": "https://luminousdynamics.io/attestations/srq-matched-comparison/v1"},
+    "predicate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "profile_id", "evidence_status", "run_challenge", "comparison_lock_path", "comparison_run_path", "comparison_lock_sha256", "comparison_run_sha256", "baseline_id", "source", "environment", "pairing", "artifacts", "non_claims"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "profile_id": {"const": "SRQ-MATCHED-COMPARISON-ATTESTATION-V1"},
+        "evidence_status": {"enum": ["fixture_only", "submitted_for_appraisal"]},
+        "run_challenge": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "comparison_lock_path": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"},
+        "comparison_run_path": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"},
+        "comparison_lock_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "comparison_run_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "baseline_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]{1,80}$"},
+        "source": {"type": "object"},
+        "environment": {"type": "object"},
+        "pairing": {"type": "object"},
+        "artifacts": {"type": "object"},
+        "non_claims": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "claim_ceiling": {"const": "artifact_integrity_and_structural_comparability_only"}
+      }
+    }
+  }
+}

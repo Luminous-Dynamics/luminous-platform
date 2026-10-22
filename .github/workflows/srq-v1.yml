@@ -707,6 +707,13 @@ jobs:
           bash -n benchmarks/srq-v1/validate-comparison-run.sh
           bash -n benchmarks/srq-v1/test-comparison-run.sh
           bash benchmarks/srq-v1/test-comparison-run.sh
+      - name: Exercise in-toto statement and DSSE comparison envelope
+        run: |
+          bash -n benchmarks/srq-v1/build-comparison-statement.sh
+          bash -n benchmarks/srq-v1/create-comparison-envelope.sh
+          bash -n benchmarks/srq-v1/verify-comparison-envelope.sh
+          bash -n benchmarks/srq-v1/test-comparison-envelope.sh
+          bash benchmarks/srq-v1/test-comparison-envelope.sh
 
       - name: Validate PASS and NOT_RUN result receipt examples
         run: |

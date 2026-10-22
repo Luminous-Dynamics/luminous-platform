@@ -66,6 +66,17 @@ The matched-run receipt now binds separate per-arm execution-events and recovery
 
 The validator now supports Ed25519 verification for every event against separate injector and observer public keys plus expected key IDs supplied as CLI arguments, external to the evidence bundle. A per-run 256-bit challenge is carried by the receipt, observations, and signed events, preventing signed records for one challenge from being silently relabeled as another run. It rejects a missing/partial key policy, role/key-ID mismatch, identical role keys, malformed signatures, or failed signature verification for non-fixture runs. A trusted verifier must still issue challenges and remember consumed challenge IDs to prevent whole-receipt replay. The fixture test generates temporary Ed25519 keys and exercises signature verification and signature-tampering rejection; those ephemeral keys are test material, not trust anchors for a real deployment. A qualification-grade setup must provision the trusted keys from a protected policy source, bind signatures to an unpredictable run/trial challenge, ensure the observer measures actual post-restart state, enforce freshness, and retain raw captures. A public key embedded solely inside the evidence bundle is not a trust anchor.
 
+## Portable comparison attestation envelope v1
+
+The comparison evidence can now be expressed as an in-toto Statement v1 and signed using the DSSE envelope format. The statement's subjects bind the exact comparison lock, comparison-run receipt, fault schedule, both trial sets, both signed event ledgers, and both recovery-observation ledgers by SHA-256. The predicate carries the run challenge, baseline/source identity, platform tuple, pairing protocol, and an explicit claim ceiling of artifact integrity and structural comparability only.
+
+Workflow tools:
+- \`build-comparison-statement.sh\`: after the matched-run validator succeeds, builds a canonical in-toto Statement from paths confined to an evidence root and verifies each subject digest against the bytes on disk.
+- \`create-comparison-envelope.sh\`: signs the canonical statement payload using DSSE pre-authentication encoding (PAE), with a caller-supplied Ed25519 private key and key ID.
+- \`verify-comparison-envelope.sh\`: validates the DSSE envelope, signature against an externally supplied public key/key ID, in-toto statement profile, all subject bytes, and receipt/lock/challenge identity bindings.
+
+The signing key and verification trust policy are external to the evidence bundle. The synthetic test generates temporary keys only to exercise the format and negative controls; those keys are not production trust anchors. A valid envelope proves that a specific key signed a statement and that the named files match their digests. It does not prove the fault actually fired, establish observer independence, appraise attested runtime truth, or qualify release safety. The format intentionally follows the in-toto separation of predicate, statement, and authentication envelope while retaining a narrow SRQ-specific predicate.
+
 ## Matched fault-injection methodology
 
 For every comparison, publish these inputs before running:
