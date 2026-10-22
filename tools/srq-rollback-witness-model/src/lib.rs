@@ -64,6 +64,7 @@ pub enum Reconciliation {
     LocalStateRollbackDetected,
     LocalStateAheadOfWitness,
     SameSequenceConflict,
+    PreparedCheckpointConflict,
     WitnessUnavailable,
     UnknownTarget,
 }
@@ -301,11 +302,27 @@ pub fn reconcile(local: &LocalState, witness: &Witness) -> Reconciliation {
     }
     if local.sequence < tip.sequence {
         if let Some(prepared) = local.prepared() {
-            if prepared.sequence == tip.sequence
-                && prepared.checkpoint_sha256 == tip.checkpoint_sha256
-                && prepared.decision_id == tip.decision_id.as_deref().unwrap_or_default()
-            {
-                return Reconciliation::WitnessCommittedNeedsLocalFinalize;
+            if prepared.sequence == tip.sequence {
+                // A digest-shaped field is not proof that all stored payload fields
+                // match. Recovery is permitted only when the entire prepared
+                // checkpoint equals the witness's persisted committed checkpoint.
+                let committed = match witness.checkpoint_for_decision(
+                    &local.target_id,
+                    &prepared.decision_id,
+                ) {
+                    Ok(checkpoint) => checkpoint,
+                    Err(WitnessError::Unavailable) => return Reconciliation::WitnessUnavailable,
+                    Err(WitnessError::UnknownTarget) => return Reconciliation::UnknownTarget,
+                    Err(_) => return Reconciliation::UnknownTarget,
+                };
+                if committed == Some(prepared)
+                    && prepared.checkpoint_sha256 == tip.checkpoint_sha256
+                    && prepared.generation == tip.generation
+                    && tip.decision_id.as_deref() == Some(prepared.decision_id.as_str())
+                {
+                    return Reconciliation::WitnessCommittedNeedsLocalFinalize;
+                }
+                return Reconciliation::PreparedCheckpointConflict;
             }
         }
         return Reconciliation::LocalStateRollbackDetected;
@@ -493,6 +510,26 @@ mod tests {
         assert_eq!(receipt, retried);
         local.finalize(&retried).unwrap();
         assert_eq!(reconcile(&local, &witness), Reconciliation::Consistent);
+    }
+
+    #[test]
+    fn changed_prepared_payload_with_same_digest_is_not_misclassified_as_recoverable() {
+        let (mut witness, mut local) = initialized();
+        let next = checkpoint("target-01", 1, GENESIS, ARTIFACT, 41, 1_000, "decision-prepared-tamper");
+        local.prepare(next.clone()).unwrap();
+        witness.advance_at(&next, 1_001).unwrap();
+
+        // Simulate a restored/malformed prepared row with the same digest-shaped
+        // string and decision ID, but altered semantic payload. The witness has
+        // committed the original full checkpoint. A matching prefix must not be
+        // enough to authorize local finalization after restart.
+        local.prepared.as_mut().unwrap().deployment_id =
+            "/nix/store/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbnixos-system-tampered".into();
+
+        assert_eq!(reconcile(&local, &witness), Reconciliation::PreparedCheckpointConflict);
+        assert_ne!(reconcile(&local, &witness), Reconciliation::WitnessCommittedNeedsLocalFinalize);
+        assert_eq!(witness.tip("target-01").unwrap().generation, 42);
+        assert_eq!(local.generation, 41);
     }
 
     #[test]
