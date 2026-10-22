@@ -32,6 +32,15 @@ expect_reject missing-input-digest '.fault_schedule_sha256 = null'
 expect_reject empty-excluded-scope '.scope.excluded = []'
 expect_reject blocked-ostree-baseline '.baseline_id = "ostree-v2026.4" | .baseline_version = "v2026.4" | .baseline_source.resolved_commit_sha = "4f4445a8912f70c604fa84a057a8f4e904e35a24"'
 expect_reject broken-artifact-digest '.benchmark_artifact_sha256 = "not-a-digest"'
+# A lock cannot be reused for a different SRQ source head.
+jq '.fixture = false' "$fixture" > "$tmpdir/nonfixture-wrong-source.json"
+if SRQ_EXPECTED_SOURCE_SHA="2222222222222222222222222222222222222222" bash "$validator" "$tmpdir/nonfixture-wrong-source.json" >"$tmpdir/wrong-source.out" 2>&1; then
+  echo "FAIL: comparison lock accepted a mismatched SRQ source SHA" >&2
+  cat "$tmpdir/wrong-source.out" >&2
+  exit 1
+fi
+echo "PASS: comparison lock rejected mismatched SRQ source SHA"
+
 # Verify a non-fixture lock against actual input bytes under the evidence root.
 evidence_root="$tmpdir/evidence"
 mkdir -p "$evidence_root/fixtures/comparison-lock-artifacts"
@@ -60,5 +69,5 @@ if SRQ_EXPECTED_SOURCE_SHA="$source_sha" bash "$validator" --evidence-root "$evi
   exit 1
 fi
 echo "PASS: non-fixture comparison lock rejected mutated material bytes"
-echo "PASS: 7 comparison-lock negative controls were rejected, and locked material bytes were verified."
+echo "PASS: 7 malformed-lock controls, source-SHA mismatch, and locked material byte-integrity controls were rejected/verified."
 echo "NON-CLAIM: these tests validate lock structure and registry correspondence only, not an executed baseline comparison."
