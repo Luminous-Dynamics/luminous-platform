@@ -6,7 +6,7 @@
 
 A single local SQLite database is vulnerable to whole-store rollback unless its monotonic root lives outside that rollback domain. A single remote witness gives an attacker a single availability and integrity target. The next protocol step is a quorum of independent witnesses.
 
-For Byzantine tolerance f, require n >= 3f+1 members and q = 2f+1 distinct votes for a checkpoint. With n=4, f=1, q=3, any two quorums of size 3 overlap in at least 2 witnesses. Under the explicit assumption that at most one witness is Byzantine and an honest witness never signs two different checkpoints for the same target/sequence, a conflicting pair of certificates cannot both form: at least one honest member lies in the intersection and refuses the second vote.
+For Byzantine tolerance f, require n >= 3f+1 members and q = n-f distinct votes for a checkpoint. At the minimum n=3f+1, q equals 2f+1. For larger committees the model keeps q=n-f so the intersection bound remains at least f+1. With n=4, f=1, q=3, any two quorums of size 3 overlap in at least 2 witnesses. Under the explicit assumption that at most one witness is Byzantine and an honest witness never signs two different checkpoints for the same target/sequence, a conflicting pair of certificates cannot both form: at least one honest member lies in the intersection and refuses the second vote.
 
 This is a safety property, not an availability guarantee. A quorum can be unavailable; the protocol must fail closed rather than promote locally when it cannot obtain the required certificate.
 
@@ -19,7 +19,7 @@ The checkpoint digest must itself be computed by a canonical encoding over every
 ## What is tested
 
 The Rust model checks:
-- invalid membership settings and 3f+1 / 2f+1 thresholds;
+- invalid membership settings and the n >= 3f+1 / q = n-f threshold rule, including a larger-committee regression check;
 - insufficient quorums, duplicate and untrusted voter IDs, mismatched votes;
 - sequence/predecessor/target/freshness failures;
 - idempotent honest votes and per-height non-equivocation;
