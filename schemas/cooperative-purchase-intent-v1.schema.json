@@ -1,0 +1,610 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous:cooperative-purchase-intent:v1",
+  "title": "Luminous Cooperative Purchase Intent v1",
+  "description": "Proposed declaration contract separating non-binding demand from binding purchase commitments. Validation does not authenticate a buyer, verify a mandate, establish legal authority, reserve stock, or submit an order.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "metadata",
+    "buyer",
+    "demand",
+    "sharing",
+    "limitations"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous.cooperative-purchase-intent/v1"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intent_id",
+        "revision",
+        "state",
+        "created_at",
+        "updated_at",
+        "expires_at"
+      ],
+      "properties": {
+        "intent_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "description": "Bounded to the interoperable RFC 8785/JCS safe-integer range because revision is included in signed/hash-bound canonical scope."
+        },
+        "state": {
+          "enum": [
+            "draft",
+            "non_binding_interest",
+            "quote_request",
+            "binding_order",
+            "cancelled",
+            "expired"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 256,
+          "description": "Required for a binding order; identifies this single action attempt and prevents duplicate submission."
+        },
+        "request_correlation_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "buyer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "buyer_party_id",
+        "buyer_legal_entity_id",
+        "buyer_country_code"
+      ],
+      "properties": {
+        "buyer_party_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 240,
+          "description": "Platform party reference; not proof of legal identity."
+        },
+        "buyer_legal_entity_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 240,
+          "description": "The entity that would be contractually responsible for the order."
+        },
+        "buyer_country_code": {
+          "$ref": "#/$defs/countryCode"
+        },
+        "buyer_site_id": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "local_cooperative_id": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "agent_mandate_ref": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "demand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "product_reference",
+        "requested_quantity",
+        "requested_unit_code",
+        "requested_unit_code_system",
+        "destination_country_code",
+        "substitution_policy"
+      ],
+      "properties": {
+        "product_reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scheme",
+            "value"
+          ],
+          "properties": {
+            "scheme": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "format": "uri"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "offer_specification_sha256": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{64}$"
+            }
+          }
+        },
+        "requested_quantity": {
+          "$ref": "#/$defs/decimalString"
+        },
+        "requested_unit_code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "requested_unit_code_system": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "format": "uri"
+        },
+        "destination_country_code": {
+          "$ref": "#/$defs/countryCode"
+        },
+        "destination_region": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Only share the granularity explicitly consented to; do not require a precise address for quote discovery."
+        },
+        "delivery_window_start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "delivery_window_end": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "substitution_policy": {
+          "enum": [
+            "none_without_consent",
+            "buyer_must_approve",
+            "preauthorized_equivalents"
+          ]
+        },
+        "buyer_notes": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "sharing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "purpose",
+        "recipient_scope",
+        "recipients",
+        "shareable_fields",
+        "consent"
+      ],
+      "properties": {
+        "purpose": {
+          "enum": [
+            "supplier_quote",
+            "cooperative_demand_aggregation",
+            "logistics_quote"
+          ]
+        },
+        "recipient_scope": {
+          "enum": [
+            "named_supplier_only",
+            "named_cooperative_operators",
+            "approved_supplier_set"
+          ]
+        },
+        "shareable_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "product_reference",
+              "aggregate_quantity",
+              "destination_country",
+              "destination_region",
+              "delivery_window",
+              "buyer_contact_via_platform"
+            ]
+          }
+        },
+        "consent": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "consent_id",
+            "granted_by",
+            "granted_at",
+            "expires_at",
+            "revocable",
+            "evidence_reference",
+            "evidence_sha256",
+            "scope_sha256"
+          ],
+          "properties": {
+            "consent_id": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 240
+            },
+            "granted_by": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            },
+            "granted_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "revocable": {
+              "const": true
+            },
+            "evidence_reference": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "evidence_sha256": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{64}$"
+            },
+            "scope_sha256": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{64}$",
+              "description": "SHA-256 over the RFC 8785 canonical consent-scope projection; validated by the semantic validator."
+            }
+          }
+        },
+        "recipients": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "description": "Explicit participant/organization identifiers that may receive the selected fields; a scope label alone does not identify a recipient."
+        }
+      }
+    },
+    "accepted_offer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offer_id",
+        "revision",
+        "offer_sha256",
+        "accepted_total",
+        "accepted_at",
+        "offer_expires_at"
+      ],
+      "properties": {
+        "offer_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 240
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991,
+          "description": "Bounded to the interoperable RFC 8785/JCS safe-integer range because offer revision is included in signed/hash-bound canonical scope."
+        },
+        "offer_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "accepted_total": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "amount",
+            "currency"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/$defs/decimalString"
+            },
+            "currency": {
+              "$ref": "#/$defs/currencyCode"
+            }
+          }
+        },
+        "accepted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "offer_expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "commercial_terms_reference": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authority_id",
+        "actor_party_id",
+        "buyer_legal_entity_id",
+        "action",
+        "scope_sha256",
+        "maximum_total",
+        "authorized_at",
+        "expires_at",
+        "evidence_reference",
+        "evidence_sha256",
+        "signature_reference",
+        "single_use"
+      ],
+      "properties": {
+        "authority_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "actor_party_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "buyer_legal_entity_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "action": {
+          "const": "place_order"
+        },
+        "scope_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$",
+          "description": "Digest of the canonical exact order scope authorized, including buyer, offer revision/digest, quantity, unit and maximum total."
+        },
+        "maximum_total": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "amount",
+            "currency"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/$defs/decimalString"
+            },
+            "currency": {
+              "$ref": "#/$defs/currencyCode"
+            }
+          }
+        },
+        "authorized_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidence_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "evidence_sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "signature_reference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "single_use": {
+          "const": true
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "state"
+            ],
+            "properties": {
+              "state": {
+                "const": "binding_order"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "accepted_offer",
+          "authorization"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "idempotency_key"
+            ]
+          },
+          "demand": {
+            "properties": {
+              "product_reference": {
+                "required": [
+                  "offer_specification_sha256"
+                ],
+                "description": "A binding order must pin the immutable product specification digest; non-binding interest may omit it while the buyer is still exploring products."
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "state"
+            ],
+            "properties": {
+              "state": {
+                "const": "binding_order"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "authorization": {
+            "properties": {
+              "single_use": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "metadata"
+        ],
+        "properties": {
+          "metadata": {
+            "required": [
+              "state"
+            ],
+            "properties": {
+              "state": {
+                "enum": [
+                  "draft",
+                  "non_binding_interest",
+                  "quote_request"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "accepted_offer"
+              ]
+            },
+            {
+              "required": [
+                "authorization"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "sharing"
+        ],
+        "properties": {
+          "sharing": {
+            "required": [
+              "recipient_scope"
+            ],
+            "properties": {
+              "recipient_scope": {
+                "const": "named_supplier_only"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sharing": {
+            "properties": {
+              "recipients": {
+                "minItems": 1,
+                "maxItems": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "decimalString": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$",
+      "description": "Exact non-negative decimal string; no binary floating-point amounts."
+    },
+    "currencyCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$",
+      "description": "Syntactic ISO 4217-style shape only; current code-list membership requires a maintained external registry."
+    },
+    "countryCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "Syntactic ISO 3166-1 alpha-2 shape only; current code-list membership requires a maintained external registry."
+    }
+  }
+}

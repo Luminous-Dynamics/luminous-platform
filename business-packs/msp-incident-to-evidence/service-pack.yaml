@@ -1,0 +1,84 @@
+schema: luminous.business-service-pack/v1
+metadata:
+  id: luminous.msp-incident-to-evidence
+  version: 0.1.0
+  status: proposed
+  license: AGPL-3.0-or-later
+  description: Manual-first, source-linked incident review and evidence handoff for small MSPs.
+
+customer:
+  primary: small-managed-service-provider
+  suitable_for:
+    - independent-it-consultant
+    - small-msp
+    - regional-it-services-partner
+  not_suitable_for:
+    - autonomous-production-remediation
+    - incident-response-without-separate-scope
+    - compliance-certification
+    - unqualified-critical-infrastructure-control
+
+offer:
+  id: msp-incident-to-evidence-baseline
+  delivery_mode:
+    - manual
+    - synthetic-prototype
+  recurring: false
+  default_scope:
+    customer_organizations: 1
+    selected_incidents_or_operational_risks: 1
+    production_writes: false
+    privileged_remote_actions: false
+  required_agreements:
+    - signed-or-approved-scope
+    - customer-data-handling-instructions
+    - acceptance-criteria
+    - named-customer-contact
+
+inputs:
+  allowed:
+    - customer-approved-export
+    - customer-screen-shared-review
+    - customer-provided-incident-reference
+    - source-linked-evidence-reference
+  prohibited:
+    - passwords
+    - api-tokens
+    - private-keys
+    - recovery-codes
+    - unrestricted-personal-data-dumps
+  reject_or_quarantine:
+    - unknown-tenant-mapping
+    - unknown-resource-mapping
+    - conflicting-source-identity
+    - stale-or-ambiguous-revision
+
+deliverables:
+  - scoped-incident-summary
+  - source-and-observation-register
+  - verified-facts-vs-assertions
+  - owner-and-due-date-register
+  - acceptance-evidence-request
+  - explicit-limitations-and-unproven-items
+  - customer-handoff
+
+prohibited_claims:
+  - automated-incident-remediation
+  - ransomware-immunity
+  - independent-certification
+  - regulatory-compliance-certification
+  - qualified-live-psa-integration
+
+acceptance:
+  - selected-records-match-customer-approved-sources
+  - every-finding-has-source-or-is-labelled-assertion
+  - tenant-and-resource-mapping-is-explicit
+  - unknown-and-conflicting-items-are-visible
+  - secrets-are-not-included-in-deliverables
+  - unresolved-items-have-owner-or-explicit-no-owner-status
+  - evidence-strength-and-limitations-are-stated
+
+qualification:
+  runtime_qualification: not-evaluated
+  connector_qualification: not-implemented-by-this-pack
+  customer_specific_approval_required: true
