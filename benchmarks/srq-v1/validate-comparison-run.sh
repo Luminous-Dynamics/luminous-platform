@@ -100,7 +100,7 @@ fi
 
 key_argument_count=0
 for key_arg in "$injector_public_key" "$injector_key_id" "$observer_public_key" "$observer_key_id"; do
-  [[ -n "$key_arg" ]] && ((key_argument_count+=1))
+  if [[ -n "$key_arg" ]]; then key_argument_count=$((key_argument_count + 1)); fi
 done
 if [[ "$key_argument_count" != "0" && "$key_argument_count" != "4" ]]; then
   usage
@@ -247,10 +247,6 @@ srq_events="$(resolve_artifact srq_events)"
 baseline_observations="$(resolve_artifact baseline_observations)"
 srq_observations="$(resolve_artifact srq_observations)"
 
-if [[ "$key_argument_count" == "4" ]]; then
-  verify_event_signatures "baseline" "$baseline_events"
-  verify_event_signatures "SRQ" "$srq_events"
-fi
 
 
 verify_event_signatures() {
@@ -287,6 +283,11 @@ verify_event_signatures() {
   done < <(jq -c '.events[]' "$events")
   rm -rf "$signature_tmp"
 }
+if [[ "$key_argument_count" == "4" ]]; then
+  verify_event_signatures "baseline" "$baseline_events"
+  verify_event_signatures "SRQ" "$srq_events"
+fi
+
 validate_observations() {
   local label="$1" trials="$2" observations="$3"
   if ! jq -e --slurpfile trials "$trials" '
