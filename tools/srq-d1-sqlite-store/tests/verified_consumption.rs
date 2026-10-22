@@ -273,3 +273,32 @@ fn refusing_spoofed_d1_schema_identity_does_not_change_journal_mode() {
     let _ = fs::remove_file(format!("{}-shm", path.display()));
     println!("PASS: D1 exact schema verification rejects spoofed identity before journal mutation");
 }
+
+
+#[test]
+fn refusing_empty_database_with_spoofed_d1_identity_does_not_change_journal_mode() {
+    let nonce = SystemTime::now().duration_since(UNIX_EPOCH).expect("clock").as_nanos();
+    let path = std::env::temp_dir().join(format!("srq-d1-empty-spoofed-{}-{nonce}.sqlite", std::process::id()));
+    {
+        let connection = rusqlite::Connection::open(&path).expect("create empty spoofed database");
+        let mode: String = connection.query_row("PRAGMA journal_mode=DELETE", [], |row| row.get(0)).expect("set DELETE mode");
+        assert_eq!(mode.to_ascii_lowercase(), "delete");
+        connection.execute_batch("PRAGMA user_version=1; PRAGMA application_id=1397903665;").expect("write spoofed D1 ownership markers");
+    }
+    assert!(SqliteD1Store::open(&path).is_err(), "reject versioned empty database before changing journal mode");
+    {
+        let connection = rusqlite::Connection::open(&path).expect("reopen empty spoofed database");
+        let mode: String = connection.query_row("PRAGMA journal_mode", [], |row| row.get(0)).expect("read journal mode");
+        assert_eq!(mode.to_ascii_lowercase(), "delete");
+        let user_version: i64 = connection.query_row("PRAGMA user_version", [], |row| row.get(0)).expect("read user_version");
+        let application_id: i64 = connection.query_row("PRAGMA application_id", [], |row| row.get(0)).expect("read application_id");
+        let count: i64 = connection.query_row("SELECT count(*) FROM sqlite_master WHERE type IN ('table','trigger','view') AND name NOT LIKE 'sqlite_%'", [], |row| row.get(0)).expect("count schema objects");
+        assert_eq!(user_version, 1);
+        assert_eq!(application_id, 1397903665);
+        assert_eq!(count, 0);
+    }
+    let _ = fs::remove_file(&path);
+    let _ = fs::remove_file(format!("{}-wal", path.display()));
+    let _ = fs::remove_file(format!("{}-shm", path.display()));
+    println!("PASS: empty spoofed D1 schema identity was rejected without journal mutation");
+}
