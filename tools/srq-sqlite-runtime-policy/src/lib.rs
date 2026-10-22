@@ -45,7 +45,7 @@ pub fn is_supported_sqlite_version_tuple((major, minor, patch): (u64, u64, u64))
         (3, 52) => false, // withdrawn release line
         (3, 53) => patch >= 4, // reject known defects in 3.53.0-3.53.3
         (3, 54) => patch >= 1, // reject 3.54.0 across architectures
-        (3, newer_minor) if newer_minor > 54 => true,
+        // New minor/major lines require an explicit upstream review and policy change.
         _ => false,
     }
 }
@@ -64,8 +64,6 @@ mod tests {
             "3.53.99",
             "3.54.1",
             "3.54.9",
-            "3.55.0",
-            "3.56.0",
         ] {
             assert!(
                 is_supported_sqlite_version(version),
@@ -87,6 +85,8 @@ mod tests {
             "3.53.2",
             "3.53.3",
             "3.54.0",
+            "3.55.0",
+            "3.56.0",
             "4.0.0",
         ] {
             assert!(
