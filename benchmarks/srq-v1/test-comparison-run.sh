@@ -139,6 +139,34 @@ jq -n --slurpfile lock "$lock" --arg run_challenge "$run_challenge" --arg lock_s
 ' > "$receipt"
 
 bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$observer_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt"
+
+# Exercise the portable statement/envelope path on the matched-run fixture itself.
+cp "$lock" "$evidence_root/comparison-lock.json"
+cp "$receipt" "$evidence_root/comparison-run.json"
+statement="$tmpdir/comparison-statement.json"
+envelope="$tmpdir/comparison-envelope.json"
+attestor_private="$tmpdir/attestor-private.pem"
+attestor_public="$tmpdir/attestor-public.pem"
+attestor_key_id="fixture-srq-attestor-v1"
+openssl genpkey -algorithm Ed25519 -out "$attestor_private"
+openssl pkey -in "$attestor_private" -pubout -out "$attestor_public"
+bash "$script_dir/build-comparison-statement.sh" \
+  --evidence-root "$evidence_root" \
+  --comparison-lock-path comparison-lock.json \
+  --comparison-run-path comparison-run.json \
+  --output "$statement"
+bash "$script_dir/create-comparison-envelope.sh" \
+  --statement "$statement" \
+  --private-key "$attestor_private" \
+  --key-id "$attestor_key_id" \
+  --output "$envelope"
+bash "$script_dir/verify-comparison-envelope.sh" \
+  --public-key "$attestor_public" \
+  --expected-key-id "$attestor_key_id" \
+  --evidence-root "$evidence_root" \
+  "$envelope"
+echo "PASS: matched-run receipt exported as a signed, subject-bound in-toto/DSSE envelope"
+
 if bash "$validator" --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt" >"$tmpdir/fixture-default.out" 2>&1; then
   echo "FAIL: fixture run receipt accepted without --allow-fixtures" >&2; exit 1
 fi
