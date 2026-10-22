@@ -1057,6 +1057,31 @@ mod tests {
     }
 
     #[test]
+    fn unknown_run_receipt_key_is_rejected_even_when_required_fields_match() {
+        let f = fixture("unknown-run-key");
+        let mut store = opened(&f);
+        let mut run: Value = serde_json::from_slice(&fs::read(f.root.join("comparison-run.json")).unwrap()).unwrap();
+        run["unreviewed_extension"] = Value::Bool(true);
+        let run_bytes = serde_json::to_vec(&run).unwrap();
+        fs::write(f.root.join("comparison-run.json"), &run_bytes).unwrap();
+        let run_sha = sha256_hex(&run_bytes);
+
+        let mut statement = f.statement.clone();
+        statement["predicate"]["comparison_run_sha256"] = Value::String(run_sha.clone());
+        for subject in statement["subject"].as_array_mut().unwrap() {
+            if subject["name"] == "comparison-run.json" {
+                subject["digest"]["sha256"] = Value::String(run_sha.clone());
+            }
+        }
+        let envelope = sign_statement(&f.signing_key, &statement);
+        assert!(
+            store.consume_envelope(&f.challenge.challenge_id, &envelope, &f.public_key, &f.root).is_err(),
+            "the v1 run receipt must reject unknown fields even with a valid signature and refreshed digests"
+        );
+        assert_eq!(store.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap(), None);
+    }
+
+    #[test]
     fn mutated_subject_bytes_fail_without_consuming_challenge() {
         let f = fixture("mutated-bytes");
         let mut store = opened(&f);
