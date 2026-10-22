@@ -187,6 +187,25 @@ impl SqlitePolicyPromotionStore {
             )));
         }
 
+        // Reject unknown or foreign databases before changing persistent journal mode.
+        let user_version: i64 = connection.query_row("PRAGMA user_version", [], |row| row.get(0))
+            .map_err(|error| StoreError::Sqlite(format!("read schema version: {error}")))?;
+        let app_id: i64 = connection.query_row("PRAGMA application_id", [], |row| row.get(0))
+            .map_err(|error| StoreError::Sqlite(format!("read application ID: {error}")))?;
+        let count: i64 = connection.query_row(
+            "SELECT count(*) FROM sqlite_master WHERE type IN ('table','index','trigger','view') AND name NOT LIKE 'sqlite_%'",
+            [], |row| row.get(0)
+        ).map_err(|error| StoreError::Sqlite(format!("inspect schema: {error}")))?;
+        let initialize_schema = match user_version {
+            0 if app_id == 0 && count == 0 => true,
+            SCHEMA_VERSION if app_id == APPLICATION_ID && count > 0 => false,
+            _ => {
+                return Err(StoreError::CorruptStore(format!(
+                    "refusing unknown/nonempty schema identity before journal changes (application_id={app_id}, user_version={user_version}, objects={count})"
+                )));
+            }
+        };
+
         let journal_mode: String = connection.query_row("PRAGMA journal_mode=WAL", [], |row| row.get(0))
             .map_err(|error| StoreError::Sqlite(format!("enable WAL: {error}")))?;
         if !journal_mode.eq_ignore_ascii_case("wal") {
@@ -204,31 +223,16 @@ impl SqlitePolicyPromotionStore {
             return Err(StoreError::UnsupportedSqlite("WAL/FULL/foreign keys are not active".into()));
         }
 
-        let user_version: i64 = connection.query_row("PRAGMA user_version", [], |row| row.get(0))
-            .map_err(|error| StoreError::Sqlite(format!("read schema version: {error}")))?;
-        let app_id: i64 = connection.query_row("PRAGMA application_id", [], |row| row.get(0))
-            .map_err(|error| StoreError::Sqlite(format!("read application ID: {error}")))?;
-        let count: i64 = connection.query_row(
-            "SELECT count(*) FROM sqlite_master WHERE type IN ('table','index','trigger','view') AND name NOT LIKE 'sqlite_%'",
-            [], |row| row.get(0)
-        ).map_err(|error| StoreError::Sqlite(format!("inspect schema: {error}")))?;
-
-        match user_version {
-            0 if app_id == 0 && count == 0 => {
-                let tx = connection.transaction_with_behavior(TransactionBehavior::Immediate)
-                    .map_err(|error| StoreError::Sqlite(format!("begin schema install: {error}")))?;
-                let ddl_start = SCHEMA.find("CREATE TABLE IF NOT EXISTS promotion_targets")
-                    .ok_or_else(|| StoreError::CorruptStore("embedded schema lacks promotion_targets".into()))?;
-                tx.execute_batch(&SCHEMA[ddl_start..])
-                    .map_err(|error| StoreError::Sqlite(format!("install schema: {error}")))?;
-                tx.execute_batch(&format!("PRAGMA user_version={SCHEMA_VERSION}; PRAGMA application_id={APPLICATION_ID};"))
-                    .map_err(|error| StoreError::Sqlite(format!("version schema: {error}")))?;
-                tx.commit().map_err(|error| StoreError::Sqlite(format!("commit schema: {error}")))?;
-            }
-            SCHEMA_VERSION if app_id == APPLICATION_ID => {}
-            _ => return Err(StoreError::CorruptStore(format!(
-                "unknown/nonempty schema identity (application_id={app_id}, user_version={user_version}, objects={count})"
-            ))),
+        if initialize_schema {
+            let tx = connection.transaction_with_behavior(TransactionBehavior::Immediate)
+                .map_err(|error| StoreError::Sqlite(format!("begin schema install: {error}")))?;
+            let ddl_start = SCHEMA.find("CREATE TABLE IF NOT EXISTS promotion_targets")
+                .ok_or_else(|| StoreError::CorruptStore("embedded schema lacks promotion_targets".into()))?;
+            tx.execute_batch(&SCHEMA[ddl_start..])
+                .map_err(|error| StoreError::Sqlite(format!("install schema: {error}")))?;
+            tx.execute_batch(&format!("PRAGMA user_version={SCHEMA_VERSION}; PRAGMA application_id={APPLICATION_ID};"))
+                .map_err(|error| StoreError::Sqlite(format!("version schema: {error}")))?;
+            tx.commit().map_err(|error| StoreError::Sqlite(format!("commit schema: {error}")))?;
         }
         verify_schema_inventory(&connection)?;
         Ok(Self { connection })
