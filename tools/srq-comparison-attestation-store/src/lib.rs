@@ -433,7 +433,12 @@ fn validate_statement(statement: &Value, challenge: &StoredChallenge, evidence_r
         return Err("unexpected in-toto statement type, predicate type or fields".into());
     }
     let predicate = statement["predicate"].as_object().ok_or("comparison predicate must be an object")?;
-    if predicate.len() != 15
+    if !has_exact_keys(predicate, &[
+        "schema_version", "profile_id", "evidence_status", "run_challenge",
+        "comparison_lock_path", "comparison_run_path", "comparison_lock_sha256",
+        "comparison_run_sha256", "baseline_id", "source", "environment", "pairing",
+        "artifacts", "non_claims", "claim_ceiling",
+    ])
         || statement["predicate"]["schema_version"].as_u64() != Some(1)
         || statement["predicate"]["profile_id"].as_str() != Some(PROFILE_ID)
         || statement["predicate"]["evidence_status"].as_str() != Some("submitted_for_appraisal")
@@ -470,6 +475,33 @@ fn validate_statement(statement: &Value, challenge: &StoredChallenge, evidence_r
     }
     let lock: Value = serde_json::from_slice(&lock_bytes).map_err(|e| format!("parse comparison lock: {e}"))?;
     let run: Value = serde_json::from_slice(&run_bytes).map_err(|e| format!("parse comparison receipt: {e}"))?;
+    let run_object = run.as_object().ok_or("comparison run receipt must be an object")?;
+    if !has_exact_keys(run_object, &[
+        "schema_version", "profile_id", "fixture", "run_challenge", "comparison_lock",
+        "source", "environment", "pairing", "artifacts", "non_claims",
+    ]) {
+        return Err("comparison run receipt has missing or unknown v1 fields".into());
+    }
+    let comparison_lock = run["comparison_lock"].as_object().ok_or("run comparison_lock must be an object")?;
+    let source = run["source"].as_object().ok_or("run source must be an object")?;
+    let environment = run["environment"].as_object().ok_or("run environment must be an object")?;
+    let pairing = run["pairing"].as_object().ok_or("run pairing must be an object")?;
+    let non_claims = run["non_claims"].as_array().ok_or("run non_claims must be an array")?;
+    if !has_exact_keys(comparison_lock, &["baseline_id", "lock_sha256"])
+        || !has_exact_keys(source, &["expected_srq_source_sha", "actual_srq_checkout_sha", "baseline_source"])
+        || !source["baseline_source"].is_object()
+        || !has_exact_keys(environment, &["os_image", "architecture", "kernel", "filesystem", "storage_class", "runner_class"])
+        || !environment.values().all(|v| v.as_str().is_some_and(|s| !s.trim().is_empty()))
+        || !has_exact_keys(pairing, &["protocol", "minimum_paired_trials", "order_policy", "order_seed"])
+        || !pairing["protocol"].as_str().is_some_and(|s| !s.trim().is_empty())
+        || !pairing["order_policy"].as_str().is_some_and(|s| !s.trim().is_empty())
+        || !pairing["minimum_paired_trials"].as_u64().is_some_and(|n| n > 0)
+        || pairing["order_seed"].as_u64().is_none()
+        || non_claims.is_empty()
+        || !non_claims.iter().all(|v| v.as_str().is_some_and(|s| !s.trim().is_empty()))
+    {
+        return Err("comparison run receipt violates the exact v1 nested field contract".into());
+    }
     if lock["fixture"].as_bool() != Some(false)
         || run["fixture"].as_bool() != Some(false)
         || lock["baseline_id"].as_str() != Some(challenge.baseline_id.as_str())
@@ -502,6 +534,10 @@ fn validate_statement(statement: &Value, challenge: &StoredChallenge, evidence_r
     expected.insert(run_path.to_string());
     let mut artifact_digests = BTreeMap::new();
     for artifact in artifacts.values() {
+        let artifact_object = artifact.as_object().ok_or("artifact entry must be an object")?;
+        if !has_exact_keys(artifact_object, &["path", "sha256"]) {
+            return Err("artifact entry has missing or unknown fields".into());
+        }
         let path = artifact["path"].as_str().ok_or("artifact path must be a string")?;
         validate_relative_path(path)?;
         let digest = artifact["sha256"].as_str().ok_or("artifact digest must be a string")?;
@@ -550,6 +586,12 @@ fn validate_statement(statement: &Value, challenge: &StoredChallenge, evidence_r
         return Err("lock/run subject digest differs from predicate digest binding".into());
     }
     Ok(())
+}
+
+fn has_exact_keys(object: &serde_json::Map<String, Value>, expected: &[&str]) -> bool {
+    let expected: BTreeSet<&str> = expected.iter().copied().collect();
+    let actual: BTreeSet<&str> = object.keys().map(String::as_str).collect();
+    actual == expected
 }
 
 fn validate_challenge(challenge: &IssuedComparisonChallenge) -> Result<(), String> {
@@ -984,6 +1026,33 @@ mod tests {
         statement["predicate"]["artifacts"]["trial_data"]["sha256"] = Value::String("0".repeat(64));
         let envelope = sign_statement(&f.signing_key, &statement);
         assert!(store.consume_envelope(&f.challenge.challenge_id, &envelope, &f.public_key, &f.root).is_err());
+        assert_eq!(store.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap(), None);
+    }
+
+    #[test]
+    fn unknown_predicate_key_cannot_replace_required_non_claims_field() {
+        let f = fixture("unknown-predicate-key");
+        let mut store = opened(&f);
+        let mut run: Value = serde_json::from_slice(&fs::read(f.root.join("comparison-run.json")).unwrap()).unwrap();
+        run.as_object_mut().unwrap().remove("non_claims");
+        let run_bytes = serde_json::to_vec(&run).unwrap();
+        fs::write(f.root.join("comparison-run.json"), &run_bytes).unwrap();
+        let run_sha = sha256_hex(&run_bytes);
+
+        let mut statement = f.statement.clone();
+        statement["predicate"].as_object_mut().unwrap().remove("non_claims");
+        statement["predicate"]["unexpected_extension"] = Value::String("must-not-replace-v1-field".into());
+        statement["predicate"]["comparison_run_sha256"] = Value::String(run_sha.clone());
+        for subject in statement["subject"].as_array_mut().unwrap() {
+            if subject["name"] == "comparison-run.json" {
+                subject["digest"]["sha256"] = Value::String(run_sha.clone());
+            }
+        }
+        let envelope = sign_statement(&f.signing_key, &statement);
+        assert!(
+            store.consume_envelope(&f.challenge.challenge_id, &envelope, &f.public_key, &f.root).is_err(),
+            "an unknown predicate field must not substitute for a required v1 field even when the count is unchanged"
+        );
         assert_eq!(store.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap(), None);
     }
 
