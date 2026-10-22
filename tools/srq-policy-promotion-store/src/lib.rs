@@ -1007,6 +1007,43 @@ mod tests {
     }
 
     #[test]
+    fn refusing_foreign_database_does_not_change_journal_mode_or_payload() {
+        let path = temp_path("foreign-schema-no-mutation");
+        {
+            let connection = Connection::open(&path).expect("create foreign database");
+            let mode: String = connection
+                .query_row("PRAGMA journal_mode=DELETE", [], |row| row.get(0))
+                .expect("set foreign database to DELETE mode");
+            assert_eq!(mode.to_ascii_lowercase(), "delete");
+            connection.execute_batch(
+                "CREATE TABLE foreign_payload(id INTEGER PRIMARY KEY, value TEXT NOT NULL);
+                 INSERT INTO foreign_payload(id, value) VALUES (1, 'must-remain');",
+            ).expect("write foreign payload");
+        }
+
+        assert!(
+            SqlitePolicyPromotionStore::open(&path).is_err(),
+            "policy store must reject a nonempty unowned schema"
+        );
+        {
+            let connection = Connection::open(&path).expect("reopen foreign database");
+            let mode: String = connection
+                .query_row("PRAGMA journal_mode", [], |row| row.get(0))
+                .expect("read foreign journal mode");
+            assert_eq!(mode.to_ascii_lowercase(), "delete");
+            let value: String = connection
+                .query_row("SELECT value FROM foreign_payload WHERE id=1", [], |row| row.get(0))
+                .expect("read original foreign payload");
+            assert_eq!(value, "must-remain");
+        }
+
+        let _ = fs::remove_file(&path);
+        let _ = fs::remove_file(format!("{}-wal", path.display()));
+        let _ = fs::remove_file(format!("{}-shm", path.display()));
+        println!("PASS: refusing foreign policy database preserved journal mode and payload");
+    }
+
+    #[test]
     fn runtime_sqlite_version_gate_accepts_fixed_release_lines_and_rejects_unfixed_or_withdrawn_lines() {
         for version in ["3.44.6", "3.44.99", "3.50.7", "3.50.12", "3.51.3", "3.51.99", "3.53.0", "3.53.3", "3.54.1"] {
             assert!(sqlite_version_has_wal_reset_fix(sqlite_version_tuple(version).unwrap()), "expected supported: {version}");
