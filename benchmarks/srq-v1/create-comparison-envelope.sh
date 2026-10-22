@@ -20,7 +20,7 @@ done
 command -v jq >/dev/null 2>&1 || { echo "BLOCKED: jq is required." >&2; exit 2; }
 command -v openssl >/dev/null 2>&1 || { echo "BLOCKED: openssl is required." >&2; exit 2; }
 command -v base64 >/dev/null 2>&1 || { echo "BLOCKED: base64 is required." >&2; exit 2; }
-openssl pkey -in "$private_key" -text -noout 2>/dev/null | grep -q "ED25519 Private-Key" || fail "attestor signing key is not Ed25519"
+openssl pkey -in "$private_key" -text -noout 2>/dev/null | grep "ED25519 Private-Key" >/dev/null || fail "attestor signing key is not Ed25519"
 jq -e '
   ._type == "https://in-toto.io/Statement/v1" and
   .predicateType == "https://luminousdynamics.io/attestations/srq-matched-comparison/v1" and

@@ -82,8 +82,11 @@ if bash "$verifier" --public-key "$public" --expected-key-id "$key_id" --evidenc
 fi
 echo "PASS: non-fixture appraisal requires verifier-issued challenge"
 expected_challenge="$(jq -r '.run_challenge' "$nonfixture_root/comparison-run.json")"
-wrong_challenge="$(openssl rand -hex 32)"
-if [[ "$wrong_challenge" == "$expected_challenge" ]]; then wrong_challenge="$(printf '%064d' 1)"; fi
+if [[ "${expected_challenge:0:1}" == "0" ]]; then
+  wrong_challenge="1${expected_challenge:1}"
+else
+  wrong_challenge="0${expected_challenge:1}"
+fi
 if bash "$verifier" --public-key "$public" --expected-key-id "$key_id" --expected-run-challenge "$wrong_challenge" --evidence-root "$nonfixture_root" "$nonfixture_envelope" >"$tmpdir/wrong-challenge.out" 2>&1; then
   echo "FAIL: non-fixture envelope accepted with wrong verifier-issued challenge" >&2; exit 1
 fi

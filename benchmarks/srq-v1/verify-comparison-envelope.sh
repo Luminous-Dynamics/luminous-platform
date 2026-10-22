@@ -22,7 +22,7 @@ done
 command -v jq >/dev/null 2>&1 || { echo "BLOCKED: jq is required." >&2; exit 2; }
 command -v openssl >/dev/null 2>&1 || { echo "BLOCKED: openssl is required." >&2; exit 2; }
 command -v base64 >/dev/null 2>&1 || { echo "BLOCKED: base64 is required." >&2; exit 2; }
-openssl pkey -pubin -in "$public_key" -text -noout 2>/dev/null | grep -q "ED25519 Public-Key" || fail "attestor trust key is not Ed25519"
+openssl pkey -pubin -in "$public_key" -text -noout 2>/dev/null | grep "ED25519 Public-Key" >/dev/null || fail "attestor trust key is not Ed25519"
 jq -e --arg kid "$expected_key_id" '
   type == "object" and .payloadType == "application/vnd.in-toto+json" and
   (.payload | type == "string" and length > 0) and
