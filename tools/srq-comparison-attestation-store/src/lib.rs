@@ -51,6 +51,7 @@ pub struct ConsumedComparisonEnvelope {
     pub baseline_id: String,
     pub srq_source_sha: String,
     pub subject_count: u64,
+    pub run_challenge_sha256: String,
     pub consumed_at_unix_seconds: u64,
 }
 
@@ -167,7 +168,7 @@ impl SqliteComparisonAttestationStore {
         }
         let receipt = self.connection.query_row(
             "SELECT r.receipt_sha256,r.payload_sha256,r.challenge_id,r.key_id,r.baseline_id,
-                    r.srq_source_sha,r.subject_count,r.consumed_at_unix_seconds
+                    r.srq_source_sha,r.subject_count,r.consumed_at_unix_seconds,r.run_challenge_sha256
                FROM srq_comparison_challenges c
                JOIN srq_comparison_envelopes r ON r.receipt_sha256=c.consumed_receipt_sha256
               WHERE c.challenge_id=?1 AND r.challenge_id=c.challenge_id",
@@ -181,6 +182,7 @@ impl SqliteComparisonAttestationStore {
                 srq_source_sha: row.get(5)?,
                 subject_count: row.get::<_, i64>(6)? as u64,
                 consumed_at_unix_seconds: row.get::<_, i64>(7)? as u64,
+                run_challenge_sha256: row.get(8)?,
             })
         ).optional().map_err(|e| format!("read committed comparison receipt: {e}"))?;
         Ok(receipt)
@@ -266,8 +268,8 @@ impl SqliteComparisonAttestationStore {
         tx.execute(
             "INSERT INTO srq_comparison_envelopes
              (receipt_sha256,challenge_id,payload_sha256,key_id,public_key_sha256,
-              baseline_id,srq_source_sha,subject_count,consumed_at_unix_seconds)
-             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+              baseline_id,srq_source_sha,subject_count,consumed_at_unix_seconds,run_challenge_sha256)
+             VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
             params![
                 envelope_sha256, challenge_id, payload_sha256, key_id, public_key_sha256,
                 baseline_id, srq_source_sha, i64::try_from(subject_count).map_err(|_| "subject count overflows SQLite")?,
@@ -293,6 +295,7 @@ impl SqliteComparisonAttestationStore {
             baseline_id,
             srq_source_sha,
             subject_count: subject_count as u64,
+            run_challenge_sha256: stored.run_challenge_sha256.clone(),
             consumed_at_unix_seconds: commit_now,
         })
     }
@@ -929,7 +932,6 @@ mod tests {
     fn signed_predicate_cannot_substitute_artifact_manifest_digest() {
         let f = fixture("manifest-digest");
         let mut store = opened(&f);
-        f.statement.clone();
         let mut statement = f.statement.clone();
         statement["predicate"]["artifacts"]["trial_data"]["sha256"] = Value::String("0".repeat(64));
         let envelope = sign_statement(&f.signing_key, &statement);
@@ -981,7 +983,7 @@ mod tests {
         let f = fixture("expires-at-commit");
         let mut store = opened(&f);
         let expires = f.challenge.expires_at_unix_seconds;
-        let mut times = vec![expires - 1, expires - 1, expires].into_iter();
+        let mut times = vec![expires - 1, expires - 1, expires - 1, expires].into_iter();
         let result = store.consume_with_clock(
             &f.challenge.challenge_id, &f.envelope, &f.public_key, &f.root,
             || Ok(times.next().unwrap())

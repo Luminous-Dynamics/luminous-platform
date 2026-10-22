@@ -34,7 +34,9 @@ CREATE TABLE srq_comparison_envelopes (
     srq_source_sha TEXT NOT NULL
         CHECK (length(srq_source_sha) = 40 AND srq_source_sha NOT GLOB '*[^0-9a-f]*'),
     subject_count INTEGER NOT NULL CHECK (subject_count >= 3),
-    consumed_at_unix_seconds INTEGER NOT NULL CHECK (consumed_at_unix_seconds >= 0)
+    consumed_at_unix_seconds INTEGER NOT NULL CHECK (consumed_at_unix_seconds >= 0),
+    run_challenge_sha256 TEXT NOT NULL
+        CHECK (length(run_challenge_sha256) = 64 AND run_challenge_sha256 NOT GLOB '*[^0-9a-f]*')
 ) WITHOUT ROWID;
 
 CREATE TRIGGER srq_comparison_receipt_must_match_fresh_challenge
@@ -42,9 +44,7 @@ BEFORE INSERT ON srq_comparison_envelopes
 WHEN NOT EXISTS (
     SELECT 1 FROM srq_comparison_challenges AS c
      WHERE c.challenge_id = NEW.challenge_id
-       AND c.run_challenge_sha256 = (
-           SELECT run_challenge_sha256 FROM srq_comparison_challenges WHERE challenge_id = NEW.challenge_id
-       )
+       AND c.run_challenge_sha256 = NEW.run_challenge_sha256
        AND c.expected_key_id = NEW.key_id
        AND c.expected_public_key_sha256 = NEW.public_key_sha256
        AND c.baseline_id = NEW.baseline_id
