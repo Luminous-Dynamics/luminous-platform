@@ -51,9 +51,36 @@ source_id="$("$sqlite_bin" :memory: 'SELECT sqlite_source_id();')"
   exit 2
 }
 
+# Rust store crates link to this maintained SQLite engine instead of using the
+# older SQLite source bundled in rusqlite. Refuse to continue unless pkg-config
+# resolves both headers and libraries from this exact pinned install prefix.
+readonly pkgconfig_dir="$prefix/lib/pkgconfig"
+readonly library_dir="$prefix/lib"
+[[ -f "$pkgconfig_dir/sqlite3.pc" ]] || {
+  echo "BLOCKED: pinned SQLite install lacks sqlite3.pc." >&2
+  exit 2
+}
+actual_pkgconfig_version="$(PKG_CONFIG_PATH="$pkgconfig_dir" pkg-config --modversion sqlite3)"
+[[ "$actual_pkgconfig_version" == "$version" ]] || {
+  echo "BLOCKED: pkg-config resolved unexpected SQLite version: $actual_pkgconfig_version" >&2
+  exit 2
+}
+actual_pkgconfig_libdir="$(PKG_CONFIG_PATH="$pkgconfig_dir" pkg-config --variable=libdir sqlite3)"
+[[ "$actual_pkgconfig_libdir" == "$library_dir" ]] || {
+  echo "BLOCKED: SQLite pkg-config library path escaped the pinned prefix: $actual_pkgconfig_libdir" >&2
+  exit 2
+}
+
 if [[ -n "${GITHUB_PATH:-}" ]]; then
   printf '%s\n' "$prefix/bin" >> "$GITHUB_PATH"
 fi
+if [[ -n "${GITHUB_ENV:-}" ]]; then
+  printf 'PKG_CONFIG_PATH=%s\n' "$pkgconfig_dir" >> "$GITHUB_ENV"
+  printf 'LD_LIBRARY_PATH=%s\n' "$library_dir" >> "$GITHUB_ENV"
+  printf 'LIBRARY_PATH=%s\n' "$library_dir" >> "$GITHUB_ENV"
+fi
 printf 'Pinned SQLite CLI: %s\n' "$version_line"
+printf 'Pinned SQLite PKG_CONFIG_PATH: %s\n' "$pkgconfig_dir"
+printf 'Pinned SQLite library directory: %s\n' "$library_dir"
 printf 'SQLite source ID: %s\n' "$source_id"
 printf 'SQLite archive SHA3-256: %s\n' "$actual_sha3_256"
