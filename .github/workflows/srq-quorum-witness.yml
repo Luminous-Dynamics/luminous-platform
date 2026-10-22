@@ -33,8 +33,9 @@ jobs:
           set -euo pipefail
           log="$RUNNER_TEMP/srq-quorum-witness-model.log"
           cargo +1.96.0 test --manifest-path tools/srq-quorum-witness-model/Cargo.toml --locked -- --nocapture 2>&1 | tee "$log"
-          grep -Fq 'test result: ok. 9 passed; 0 failed' "$log"
+          grep -Fq 'test result: ok. 10 passed; 0 failed' "$log"
           grep -Fq 'test tests::conflicting_certificates_cannot_both_reach_quorum_with_one_byzantine_witness ... ok' "$log"
           grep -Fq 'test tests::all_three_of_four_quorums_intersect_in_at_least_f_plus_one_members ... ok' "$log"
           grep -Fq 'test tests::honest_witness_is_idempotent_and_refuses_equivocation ... ok' "$log"
+          grep -Fq 'test tests::restoring_witness_memory_can_erase_its_vote_and_is_not_durable_anti_equivocation ... ok' "$log"
           echo "LIMIT: protocol model only; no signatures, live witness service, durable anti-rollback or physical qualification."
