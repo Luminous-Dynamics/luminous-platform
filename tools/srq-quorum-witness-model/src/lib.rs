@@ -81,9 +81,13 @@ impl QuorumPolicy {
             if !valid_identifier(&member) {
                 return Err(QuorumError::InvalidIdentifier("witness id"));
             }
-            trusted.insert(member);
+            if !trusted.insert(member) {
+                // Duplicate configuration entries must not silently shrink the committee.
+                return Err(QuorumError::InvalidMembership);
+            }
         }
-        // Byzantine quorum intersection needs n >= 3f + 1 and q = 2f + 1.
+        // Require n >= 3f + 1. The q = n - f threshold guarantees any two quorums
+        // intersect in at least n - 2f >= f + 1 members; at least one is honest.
         if trusted.len() < max_byzantine.saturating_mul(3).saturating_add(1) {
             return Err(QuorumError::InvalidMembership);
         }
@@ -297,6 +301,44 @@ mod tests {
         assert_eq!(policy().quorum_size(), 3);
         let larger = QuorumPolicy::new(["w1", "w2", "w3", "w4", "w5"], 1).unwrap();
         assert_eq!(larger.quorum_size(), 4, "larger committees must preserve quorum intersection");
+    }
+
+    #[test]
+    fn duplicate_policy_members_are_rejected_instead_of_silently_shrinking_committee() {
+        assert_eq!(
+            QuorumPolicy::new(["w1", "w2", "w3", "w4", "w4"], 1),
+            Err(QuorumError::InvalidMembership)
+        );
+    }
+
+    #[test]
+    fn every_admissible_small_committee_preserves_quorum_intersection() {
+        // Exhaustively check every quorum pair for all n/f combinations up to n=12.
+        // For n >= 3f+1, q=n-f implies |Q1 ∩ Q2| >= 2q-n = n-2f >= f+1.
+        for n in 4usize..=12 {
+            for f in 1usize..=((n - 1) / 3) {
+                let members: Vec<String> = (0..n).map(|i| format!("w{i}")).collect();
+                let p = QuorumPolicy::new(members.iter().cloned(), f).unwrap();
+                assert_eq!(p.quorum_size(), n - f);
+
+                let limit = 1usize << n;
+                let quorums: Vec<usize> = (0..limit)
+                    .filter(|mask| mask.count_ones() as usize == p.quorum_size())
+                    .collect();
+                assert!(!quorums.is_empty());
+
+                for left in &quorums {
+                    for right in &quorums {
+                        let intersection = (*left & *right).count_ones() as usize;
+                        assert!(
+                            intersection >= f + 1,
+                            "n={n}, f={f}, q={}, left={left:#b}, right={right:#b}, intersection={intersection}",
+                            p.quorum_size()
+                        );
+                    }
+                }
+            }
+        }
     }
 
     #[test]

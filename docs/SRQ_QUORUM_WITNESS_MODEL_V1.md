@@ -19,12 +19,12 @@ The checkpoint digest must itself be computed by a canonical encoding over every
 ## What is tested
 
 The Rust model checks:
-- invalid membership settings and the n >= 3f+1 / q = n-f threshold rule, including a larger-committee regression check;
+- invalid membership settings (including duplicate witness IDs), the n >= 3f+1 / q = n-f threshold rule, and exhaustive quorum-pair intersection checks for all admissible n/f pairs through n=12;
 - insufficient quorums, duplicate and untrusted voter IDs, mismatched votes;
 - sequence/predecessor/target/freshness failures;
 - idempotent honest votes and per-height non-equivocation;
 - inability to form two conflicting 3-of-4 certificates with one equivocator and three honest modeled members;
-- quorum-intersection lower bound for every pair of 3-of-4 subsets;
+- quorum-intersection lower bound for every pair of valid quorums across all admissible committee/fault-bound combinations with 4 <= n <= 12;
 - per-target separation and rejection of a conflicting certificate after local commit.
 
 ## Benchmark and production path
