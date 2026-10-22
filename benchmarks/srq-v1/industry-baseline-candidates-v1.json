@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "profile_id": "SRQ-INDUSTRY-BASELINE-CANDIDATES-V1",
+  "status": "candidate_registry_only_not_execution_lock",
+  "as_of_date": "2026-10-22",
+  "purpose": "Reproducible comparator selection. This registry is not execution evidence and is not a per-run lock.",
+  "required_per_run_fields": [
+    "baseline_id",
+    "baseline_version_or_document_revision",
+    "source_commit_sha_or_release_digest",
+    "executable_or_fixture_digest",
+    "configuration_digest",
+    "corpus_sha256",
+    "fault_schedule_sha256",
+    "platform_tuple",
+    "excluded_scope",
+    "raw_artifact_digests"
+  ],
+  "missing_run_lock_disposition": "NOT_COMPARABLE",
+  "baselines": [
+    {
+      "id": "nixos-generations",
+      "baseline": "NixOS generations",
+      "comparison_state": "run_pin_required",
+      "source": {
+        "kind": "manual_and_runtime_generation",
+        "version_or_id": null,
+        "release_tag": null,
+        "tag_object_sha": null,
+        "resolved_commit_sha": null,
+        "reference_url": "https://nixos.org/manual/nixos/stable/"
+      },
+      "security_caveats": ["Before comparison, bind the exact nixpkgs flake.lock, NixOS build/store path, bootloader configuration, and recovery fixture."]
+    },
+    {
+      "id": "ostree-v2026.4",
+      "baseline": "OSTree atomic deployments (v2026.4)",
+      "comparison_state": "blocked_pending_scope_review",
+      "source": {
+        "kind": "git_release",
+        "version_or_id": "v2026.4",
+        "release_tag": "v2026.4",
+        "tag_object_sha": "9ef72f7794d0ce514fe230d4cd6bdb2604ae8d1b",
+        "resolved_commit_sha": "4f4445a8912f70c604fa84a057a8f4e904e35a24",
+        "tag_signature_verified": false,
+        "reference_url": "https://github.com/ostreedev/ostree/blob/v2026.4/docs/atomic-upgrades.md"
+      },
+      "security_caveats": ["Release notes state the 512 MiB static-delta part cap was dropped and GHSA-7cgc-gp99-6jmm was reopened pending an exact-size replacement. Do not treat this as an eligible hostile-static-delta baseline without an explicit mitigation/scope decision."]
+    },
+    {
+      "id": "systemd-sysupdate-v261.4",
+      "baseline": "systemd-sysupdate (v261.4)",
+      "comparison_state": "pinned_reference_not_executed",
+      "source": {
+        "kind": "git_release",
+        "version_or_id": "v261.4",
+        "release_tag": "v261.4",
+        "tag_object_sha": "cdb0bdf35ec9116eae891aeaefec220e46d87903",
+        "resolved_commit_sha": "f408418369c8d20f9025b39c03f4ece2a0ee7041",
+        "tag_signature_verified": true,
+        "reference_url": "https://github.com/systemd/systemd/blob/v261.4/man/systemd-sysupdate.xml"
+      },
+      "security_caveats": ["Exact OS build, deployment layout, configuration, and fault schedule still need to be pinned per run."]
+    },
+    {
+      "id": "tuf-spec-v1.0.36",
+      "baseline": "The Update Framework (TUF v1.0.36)",
+      "comparison_state": "pinned_reference_not_executed",
+      "source": {
+        "kind": "git_spec_release",
+        "version_or_id": "v1.0.36",
+        "release_tag": "v1.0.36",
+        "tag_object_sha": "59e601ed29c0d2e497264ae8b31c11b8ef07df1e",
+        "resolved_commit_sha": "59e601ed29c0d2e497264ae8b31c11b8ef07df1e",
+        "tag_signature_verified": true,
+        "reference_url": "https://github.com/theupdateframework/specification/blob/v1.0.36/tuf-spec.md"
+      },
+      "security_caveats": ["Upstream working specification advertises 1.0.37 while the release listing shows v1.0.36 as latest stable tag; do not conflate a working-branch state with a released baseline."]
+    },
+    {
+      "id": "sqlite-reference-v3.54.1",
+      "baseline": "SQLite policy promotion reference (3.54.1)",
+      "comparison_state": "pinned_reference_not_executed",
+      "source": {
+        "kind": "official_autoconf_archive",
+        "version_or_id": "3.54.1",
+        "archive_url": "https://www.sqlite.org/2026/sqlite-autoconf-3540100.tar.gz",
+        "archive_sha3_256": "b6ced585c750916b1052667239a12c25a7ff34e7f06e1e6e01ecb0427657d9c4",
+        "sqlite_source_id": "2026-10-16 14:45:20 555e07ef33f69a0957d24d8e555b702464a131d6f1607f4c3c1e4551e8e6ca76",
+        "reference_url": "https://www.sqlite.org/wal.html"
+      },
+      "security_caveats": ["The run must verify both the archive SHA3-256 and runtime sqlite_source_id(); a version string alone is insufficient."]
+    },
+    {
+      "id": "slsa-in-toto-v1.2",
+      "baseline": "SLSA/in-toto",
+      "comparison_state": "protocol_reference_only",
+      "source": {
+        "kind": "specification",
+        "version_or_id": "SLSA specification v1.2",
+        "reference_url": "https://slsa.dev/spec/v1.2/"
+      },
+      "security_caveats": ["Pin verifier/tool versions, builder identity, workflow identity, and predicate requirements for each execution."]
+    },
+    {
+      "id": "rfc9334",
+      "baseline": "IETF RFC 9334 RATS",
+      "comparison_state": "protocol_reference_only",
+      "source": {
+        "kind": "rfc",
+        "version_or_id": "RFC 9334",
+        "reference_url": "https://www.rfc-editor.org/rfc/rfc9334.html"
+      },
+      "security_caveats": ["RFC architecture reference only; freeze concrete attestation profile, freshness policy, and trust anchors before implementation comparison."]
+    },
+    {
+      "id": "keylime",
+      "baseline": "Keylime",
+      "comparison_state": "run_pin_required",
+      "source": {
+        "kind": "software_and_hardware_stack",
+        "version_or_id": null,
+        "release_tag": null,
+        "resolved_commit_sha": null,
+        "reference_url": "https://keylime.readthedocs.io/en/stable/"
+      },
+      "security_caveats": ["Hardware adapter is not implemented/qualified here. Freeze agent/verifier versions, TPM, firmware, reference-value policy, and hardware tuple before execution."]
+    },
+    {
+      "id": "batfish",
+      "baseline": "Batfish differential reachability",
+      "comparison_state": "run_pin_required",
+      "source": {
+        "kind": "software_and_test_corpus",
+        "version_or_id": null,
+        "release_tag": null,
+        "resolved_commit_sha": null,
+        "reference_url": "https://batfish.readthedocs.io/en/latest/notebooks/differentialQuestions.html"
+      },
+      "security_caveats": ["Pin exact Batfish distribution/container digest, network snapshot digest, question set, and configuration before comparison."]
+    },
+    {
+      "id": "nist-sp-800-193",
+      "baseline": "NIST SP 800-193",
+      "comparison_state": "protocol_reference_only",
+      "source": {
+        "kind": "published_standard",
+        "version_or_id": "NIST SP 800-193 final",
+        "reference_url": "https://csrc.nist.gov/pubs/sp/800/193/final"
+      },
+      "security_caveats": ["The document is a control/reference profile; only identified physical firmware/hardware execution can establish firmware resilience."]
+    },
+    {
+      "id": "cis-benchmarks",
+      "baseline": "CIS Benchmarks",
+      "comparison_state": "run_pin_required",
+      "source": {
+        "kind": "versioned_configuration_baseline",
+        "version_or_id": null,
+        "reference_url": "https://www.cisecurity.org/cis-benchmarks"
+      },
+      "security_caveats": ["Select exact CIS benchmark product/version, applicable controls, and exception set before calculating coverage."]
+    }
+  ]
+}
