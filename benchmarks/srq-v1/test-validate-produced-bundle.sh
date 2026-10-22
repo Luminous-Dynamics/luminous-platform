@@ -18,7 +18,7 @@ run_attempt="1"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 make_archive() {
-  local archive="$1" bad_observation="${2:-false}" bad_checksum="${3:-false}" bad_d1="${4:-false}" bad_d1_sqlite="${5:-false}" bad_d1_store="${6:-false}" bad_d1_store_lock="${7:-false}" bad_policy_promotion="${8:-false}" bad_policy_promotion_lock="${9:-false}"
+  local archive="$1" bad_observation="${2:-false}" bad_checksum="${3:-false}" bad_d1="${4:-false}" bad_d1_sqlite="${5:-false}" bad_d1_store="${6:-false}" bad_d1_store_lock="${7:-false}" bad_policy_promotion="${8:-false}" bad_policy_promotion_lock="${9:-false}" bad_runtime_policy="${10:-false}" bad_runtime_policy_lock="${11:-false}"
   local work="$tmp/work" bundle="$tmp/work/srq-evidence-bundle"
   rm -rf "$work"
   mkdir -p "$bundle"
@@ -38,6 +38,8 @@ make_archive() {
     srq-release-qualification.json \
     srq-sqlite-d1-challenge-consumption-reference.log \
     srq-sqlite-promotion-reference.log \
+    srq-sqlite-runtime-policy-Cargo.lock \
+    srq-sqlite-runtime-policy-test.log \
     srq-update-004-model-result.json; do
     printf 'synthetic artifact for %s\n' "$name" > "$bundle/$name"
   done
@@ -64,6 +66,8 @@ make_archive() {
       srq-release-qualification.json \
       srq-sqlite-d1-challenge-consumption-reference.log \
       srq-sqlite-promotion-reference.log \
+      srq-sqlite-runtime-policy-Cargo.lock \
+      srq-sqlite-runtime-policy-test.log \
       srq-update-004-model-result.json > SHA256SUMS
   )
 
@@ -71,7 +75,7 @@ make_archive() {
     printf 'tampered after hashing\n' >> "$bundle/srq-recovery-model-test.log"
   fi
 
-  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha d1_cose_verifier_sha d1_sqlite_consumer_sha d1_sqlite_store_sha d1_sqlite_store_lock_sha manifest_d1_sqlite_sha manifest_d1_sqlite_store_sha manifest_d1_sqlite_store_lock_sha manifest_policy_promotion_sha manifest_policy_promotion_lock_sha
+  local checksum_sha process_kill_sha sqlite_reference_sha boot_reconciliation_sha boot_observation_adapter_sha d1_cose_verifier_sha d1_sqlite_consumer_sha d1_sqlite_store_sha d1_sqlite_store_lock_sha manifest_d1_sqlite_sha manifest_d1_sqlite_store_sha manifest_d1_sqlite_store_lock_sha manifest_policy_promotion_sha manifest_policy_promotion_lock_sha runtime_policy_sha runtime_policy_lock_sha manifest_runtime_policy_sha manifest_runtime_policy_lock_sha
   checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
   process_kill_sha="$(sha256sum "$bundle/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
   sqlite_reference_sha="$(sha256sum "$bundle/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
@@ -83,11 +87,15 @@ make_archive() {
   d1_sqlite_store_lock_sha="$(sha256sum "$bundle/srq-d1-sqlite-store-Cargo.lock" | cut -d ' ' -f 1)"
 policy_promotion_sha="$(sha256sum "$bundle/srq-policy-promotion-store-test.log" | cut -d ' ' -f 1)"
 policy_promotion_lock_sha="$(sha256sum "$bundle/srq-policy-promotion-store-Cargo.lock" | cut -d ' ' -f 1)"
+runtime_policy_sha="$(sha256sum "$bundle/srq-sqlite-runtime-policy-test.log" | cut -d ' ' -f 1)"
+runtime_policy_lock_sha="$(sha256sum "$bundle/srq-sqlite-runtime-policy-Cargo.lock" | cut -d ' ' -f 1)"
   manifest_d1_sqlite_sha="$d1_sqlite_consumer_sha"
   manifest_d1_sqlite_store_sha="$d1_sqlite_store_sha"
   manifest_d1_sqlite_store_lock_sha="$d1_sqlite_store_lock_sha"
   manifest_policy_promotion_sha="$policy_promotion_sha"
   manifest_policy_promotion_lock_sha="$policy_promotion_lock_sha"
+  manifest_runtime_policy_sha="$runtime_policy_sha"
+  manifest_runtime_policy_lock_sha="$runtime_policy_lock_sha"
   if [[ "$bad_observation" == "true" ]]; then
     boot_observation_adapter_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
@@ -108,6 +116,12 @@ policy_promotion_lock_sha="$(sha256sum "$bundle/srq-policy-promotion-store-Cargo
   fi
   if [[ "$bad_policy_promotion_lock" == "true" ]]; then
     manifest_policy_promotion_lock_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  fi
+  if [[ "$bad_runtime_policy" == "true" ]]; then
+    manifest_runtime_policy_sha="0000000000000000000000000000000000000000000000000000000000000000"
+  fi
+  if [[ "$bad_runtime_policy_lock" == "true" ]]; then
+    manifest_runtime_policy_lock_sha="0000000000000000000000000000000000000000000000000000000000000000"
   fi
 
   jq -n \
@@ -131,7 +145,9 @@ policy_promotion_lock_sha="$(sha256sum "$bundle/srq-policy-promotion-store-Cargo
     --arg d1_sqlite_store_sha "$manifest_d1_sqlite_store_sha" \
     --arg d1_sqlite_store_lock_sha "$manifest_d1_sqlite_store_lock_sha" \
     --arg policy_promotion_sha "$manifest_policy_promotion_sha" \
-    --arg policy_promotion_lock_sha "$manifest_policy_promotion_lock_sha" '{
+    --arg policy_promotion_lock_sha "$manifest_policy_promotion_lock_sha" \
+    --arg runtime_policy_sha "$manifest_runtime_policy_sha" \
+    --arg runtime_policy_lock_sha "$manifest_runtime_policy_lock_sha" '{
       schema_version: 1,
       profile_id: "SRQ-1",
       repository: $repository,
@@ -151,7 +167,8 @@ policy_promotion_lock_sha="$(sha256sum "$bundle/srq-policy-promotion-store-Cargo
       checksum_manifest_sha256: $checksum_sha,
       dependency_lock_sha256: {
         srq_d1_sqlite_store: $d1_sqlite_store_lock_sha,
-        srq_policy_promotion_store: $policy_promotion_lock_sha
+        srq_policy_promotion_store: $policy_promotion_lock_sha,
+        srq_sqlite_runtime_policy: $runtime_policy_lock_sha
       },
       supplemental_observations: [{
         test_id: "SRQ-POLICY-PROMOTION-STORE-V1",
@@ -217,6 +234,14 @@ policy_promotion_lock_sha="$(sha256sum "$bundle/srq-policy-promotion-store-Cargo
         status: "PASS",
         evidence_artifact: "srq-d1-sqlite-store-test.log",
         evidence_sha256: $d1_sqlite_store_sha
+      }, {
+        test_id: "SRQ-SQLITE-RUNTIME-POLICY-V1",
+        scenario_id: "EVIDENCE-003",
+        execution_tier: "model",
+        claim_ceiling: "abstract_model_only",
+        status: "PASS",
+        evidence_artifact: "srq-sqlite-runtime-policy-test.log",
+        evidence_sha256: $runtime_policy_sha
       }]
     }' > "$bundle/manifest.json"
 
@@ -299,6 +324,18 @@ if run_validator "$tmp/bad-policy-promotion-lock.tar.gz" "$source_sha" "$event_s
   fail "policy-promotion lock digest mismatch was accepted"
 fi
 echo "PASS: policy-promotion lock digest mismatch fails closed"
+
+make_archive "$tmp/bad-runtime-policy.tar.gz" false false false false false false false false true
+if run_validator "$tmp/bad-runtime-policy.tar.gz" "$source_sha" "$event_sha" "$workflow_sha" "$tmp/bad-runtime-policy.out" >/dev/null 2>&1; then
+  fail "shared SQLite runtime policy evidence digest mismatch was accepted"
+fi
+echo "PASS: shared SQLite runtime policy evidence digest mismatch fails closed"
+
+make_archive "$tmp/bad-runtime-policy-lock.tar.gz" false false false false false false false false false true
+if run_validator "$tmp/bad-runtime-policy-lock.tar.gz" "$source_sha" "$event_sha" "$workflow_sha" "$tmp/bad-runtime-policy-lock.out" >/dev/null 2>&1; then
+  fail "shared SQLite runtime policy dependency lock mismatch was accepted"
+fi
+echo "PASS: shared SQLite runtime policy dependency lock mismatch fails closed"
 
 make_archive "$tmp/bad-checksum.tar.gz" false true
 if run_validator "$tmp/bad-checksum.tar.gz" "$source_sha" "$event_sha" "$workflow_sha" "$tmp/bad-checksum.out" >/dev/null 2>&1; then
