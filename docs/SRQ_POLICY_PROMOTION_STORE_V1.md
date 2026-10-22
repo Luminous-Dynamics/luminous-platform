@@ -29,7 +29,7 @@ After a process dies after commit but before the caller receives the acknowledge
 ## Storage policy
 
 - Local SQLite file, WAL mode, `synchronous=FULL`, foreign keys enabled, 10-second bounded busy timeout.
-- Startup rejects runtimes older than SQLite 3.51.3, where the documented WAL-reset corruption bug was fixed. The bundled `rusqlite 0.40.2` / `libsqlite3-sys 0.38.2` source currently corresponds to SQLite 3.53.2; CI records the runtime version. This is a floor for a known defect, not a claim of zero bugs.
+- The store no longer enables `rusqlite`'s bundled SQLite source. It links through `pkg-config` to the maintained system SQLite library, and the CI installer builds SQLite 3.54.1 from a SHA3-256-pinned upstream archive, verifies the exact source ID, and exports the library/pkg-config paths before Rust compilation. Startup rejects SQLite 3.53.0–3.53.3 and 3.54.0 as well as withdrawn 3.52.x; it retains explicit known-fixed backport floors (3.44.6, 3.50.7, 3.51.3) and later patched lines (3.53.4+, 3.54.1+). This rejects known-buggy releases without claiming that any version is defect-free.
 - Exact schema SQL inventory is checked on every open. Unknown database identity, unexpected schema objects or altered table/index SQL fail closed.
 - The raw challenge nonce is never persisted; only its SHA-256 digest is stored.
 
