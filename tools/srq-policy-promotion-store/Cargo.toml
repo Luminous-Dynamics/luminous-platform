@@ -7,7 +7,7 @@ license = "AGPL-3.0-or-later"
 publish = false
 
 [dependencies]
-rusqlite = { version = "=0.40.2", features = ["bundled"] }
+rusqlite = "=0.40.2"
 sha2 = "=0.10.9"
 srq-eat-cose-verifier = { path = "../srq-eat-cose-verifier" }
 coset = "=0.4.2"
