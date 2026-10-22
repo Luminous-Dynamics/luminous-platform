@@ -266,7 +266,7 @@ mod tests {
     const A: &str = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     const B: &str = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
     const C: &str = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
-    const D: &str = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    const D: &str = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
     const DEPLOYMENT: &str = "/nix/store/0123456789abcdfghijklmnpqrsvwxyz-srq-quorum-model";
 
     fn policy() -> QuorumPolicy { QuorumPolicy::new(["w1", "w2", "w3", "w4"], 1).unwrap() }
