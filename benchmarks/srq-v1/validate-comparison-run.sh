@@ -211,8 +211,8 @@ srq_observations="$(resolve_artifact srq_observations)"
 validate_observations() {
   local label="$1" trials="$2" observations="$3"
   if ! jq -e --slurpfile trials "$trials" '
-    type == "object" and .schema_version == 1 and
     (.observations) as $obs |
+    type == "object" and .schema_version == 1 and
     ($obs | type == "array" and length == ($trials[0].trials | length)) and
     (($obs | map(.trial_id) | length) == ($obs | map(.trial_id) | unique | length)) and
     (($obs | map(.observation_id) | length) == ($obs | map(.observation_id) | unique | length)) and
@@ -237,8 +237,8 @@ validate_observations() {
 validate_execution_witness() {
   local label="$1" trials="$2" events="$3" observations="$4"
   if ! jq -e --slurpfile trials "$trials" --slurpfile observations "$observations" --slurpfile schedule "$fault_schedule" '
-    type == "object" and .schema_version == 1 and
     (.events) as $events |
+    type == "object" and .schema_version == 1 and
     ($events | type == "array" and length == (($trials[0].trials | length) * 2)) and
     (($events | map(.event_id) | length) == ($events | map(.event_id) | unique | length)) and
     all($events[];
@@ -251,14 +251,15 @@ validate_execution_witness() {
       any($trials[0].trials[]; .trial_id == $event.trial_id)) and
     all($trials[0].trials[];
       . as $t |
-      ([$observations[0].observations[] | select(.trial_id == $t.trial_id)] | length == 1) and
-      ([$schedule[0].faults[] | select(.fault_id == $t.fault_id and .input_sha256 == $t.input_sha256)] | length == 1) and
+      ([$observations[0].observations[] | select(.trial_id == $t.trial_id)] | length == 1) as $observation_count |
       ([$observations[0].observations[] | select(.trial_id == $t.trial_id)][0]) as $o |
+      ([$schedule[0].faults[] | select(.fault_id == $t.fault_id and .input_sha256 == $t.input_sha256)] | length == 1) as $schedule_count |
       ([$schedule[0].faults[] | select(.fault_id == $t.fault_id and .input_sha256 == $t.input_sha256)][0]) as $f |
+      ([$events[] | select(.event_id == $t.fault_event_id)] | length == 1) as $inject_count |
+      ([$events[] | select(.event_id == $t.observation_event_id)] | length == 1) as $observe_count |
       ([$events[] | select(.event_id == $t.fault_event_id)][0]) as $inject |
       ([$events[] | select(.event_id == $t.observation_event_id)][0]) as $observe |
-      ([$events[] | select(.event_id == $t.fault_event_id)] | length == 1) and
-      ([$events[] | select(.event_id == $t.observation_event_id)] | length == 1) and
+      ($observation_count == 1 and $schedule_count == 1 and $inject_count == 1 and $observe_count == 1) and
       $inject.trial_id == $t.trial_id and $inject.fault_id == $t.fault_id and
       $inject.input_sha256 == $t.input_sha256 and $inject.event_kind == "fault_injection" and
       $inject.source_role == "fault_injector" and $inject.trigger_confirmed == true and
