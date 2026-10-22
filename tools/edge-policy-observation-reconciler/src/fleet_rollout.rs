@@ -50,6 +50,7 @@ pub struct RolloutWave {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FleetRolloutPlan {
     pub schema_version: &'static str,
+    pub constraints: RolloutConstraints,
     pub waves: Vec<RolloutWave>,
     pub plan_sha256: String,
 }
@@ -157,15 +158,16 @@ pub fn plan_rollout(
         });
     }
 
-    let plan_sha256 = digest_plan(&waves);
+    let plan_sha256 = digest_plan(&waves, constraints);
     Ok(FleetRolloutPlan {
         schema_version: "1.0.0",
+        constraints,
         waves,
         plan_sha256,
     })
 }
 
-fn validate_target(target: &FleetTarget) -> Result<(), String> {
+pub(crate) fn validate_target(target: &FleetTarget) -> Result<(), String> {
     if !valid_target_token(&target.target_token) {
         return Err(format!(
             "target token {:?} does not match target- plus lowercase ASCII letters, digits, and hyphens",
@@ -224,8 +226,15 @@ fn validate_digest(value: &str, label: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn digest_plan(waves: &[RolloutWave]) -> String {
+pub(crate) fn digest_plan(waves: &[RolloutWave], constraints: RolloutConstraints) -> String {
+    use std::fmt::Write as _;
     let mut canonical = String::from("luminous-edge-fleet-rollout-plan-v1\n");
+    writeln!(
+        &mut canonical,
+        "constraints|{}|{}",
+        constraints.max_batch_size, constraints.max_targets_per_failure_domain
+    )
+    .expect("writing to String cannot fail");
     for wave in waves {
         use std::fmt::Write as _;
         writeln!(

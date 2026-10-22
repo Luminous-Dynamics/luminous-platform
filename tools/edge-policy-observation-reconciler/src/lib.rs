@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 
 pub mod fleet_rollout;
+pub mod fleet_session;
 pub mod promotion_journal;
 pub mod replay_ledger;
 
