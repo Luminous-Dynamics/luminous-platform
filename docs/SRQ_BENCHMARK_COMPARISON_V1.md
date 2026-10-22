@@ -77,6 +77,10 @@ Workflow tools:
 
 The signing key and verification trust policy are external to the evidence bundle. The synthetic test generates temporary keys only to exercise the format and negative controls; those keys are not production trust anchors. A valid envelope proves that a specific key signed a statement and that the named files match their digests. It does not prove the fault actually fired, establish observer independence, appraise attested runtime truth, or qualify release safety. The format intentionally follows the in-toto separation of predicate, statement, and authentication envelope while retaining a narrow SRQ-specific predicate.
 
+**Closed-world attestation invariant (2026-10-22).** The verifier now requires the subject-name set to equal the comparison lock, the matched-run receipt, and every artifact path declared by that receipt. It cross-checks the predicate's artifact manifest, source identity, environment, pairing rules and non-claims against the hashed receipt; checks that `evidence_status` agrees with the receipt's fixture bit; and checks that the lock's fixture bit and source SHA agree with the run. The signer rejects a non-Ed25519 private key instead of emitting an envelope that the Ed25519 verifier can never accept.
+
+New negative controls deliberately sign malformed statements with the *correct* synthetic test key: one omits a receipt-declared artifact from `subject`, and one changes a predicate artifact digest while leaving the hashed receipt intact. Both must still fail appraisal; RSA signing-key input must also be rejected. These complement wrong-key, altered-signature and mutated-subject-byte controls. This is a coverage/integrity contract, not a claim that the injector really triggered, the observer is independent, or the runtime state is truthful. In RATS terms, signature and evidence parsing are inputs to a distinct verifier appraisal and relying-party policy decision, not substitutes for them ([RFC 9334](https://www.rfc-editor.org/rfc/rfc9334.html)).
+
 ## Matched fault-injection methodology
 
 For every comparison, publish these inputs before running:
