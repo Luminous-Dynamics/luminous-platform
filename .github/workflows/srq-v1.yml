@@ -26,6 +26,7 @@ on:
       - "docs/SRQ_EAT_COSE_BOOT_ATTESTATION_V1.md"
       - "docs/SRQ_D2_TPM_APPRAISAL_V1.md"
       - "docs/SRQ_POLICY_PROMOTION_STORE_V1.md"
+      - "docs/SRQ_SQLITE_RUNTIME_POLICY_V1.md"
       - "schemas/srq-eat-boot-observation-v1.cddl"
   workflow_dispatch:
 
