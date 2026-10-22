@@ -78,6 +78,8 @@ if [[ -n "${GITHUB_ENV:-}" ]]; then
   printf 'PKG_CONFIG_PATH=%s\n' "$pkgconfig_dir" >> "$GITHUB_ENV"
   printf 'LD_LIBRARY_PATH=%s\n' "$library_dir" >> "$GITHUB_ENV"
   printf 'LIBRARY_PATH=%s\n' "$library_dir" >> "$GITHUB_ENV"
+  printf 'SRQ_EXPECTED_SQLITE_VERSION=%s\n' "$version" >> "$GITHUB_ENV"
+  printf 'SRQ_EXPECTED_SQLITE_SOURCE_ID=%s\n' "$expected_source_id" >> "$GITHUB_ENV"
 fi
 printf 'Pinned SQLite CLI: %s\n' "$version_line"
 printf 'Pinned SQLite PKG_CONFIG_PATH: %s\n' "$pkgconfig_dir"
