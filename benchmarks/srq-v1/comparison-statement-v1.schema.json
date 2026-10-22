@@ -22,7 +22,7 @@
     "predicateType": {"const": "https://luminousdynamics.io/attestations/srq-matched-comparison/v1"},
     "predicate": {
       "type": "object", "additionalProperties": false,
-      "required": ["schema_version", "profile_id", "evidence_status", "run_challenge", "comparison_lock_path", "comparison_run_path", "comparison_lock_sha256", "comparison_run_sha256", "baseline_id", "source", "environment", "pairing", "artifacts", "non_claims"],
+      "required": ["schema_version", "profile_id", "evidence_status", "run_challenge", "comparison_lock_path", "comparison_run_path", "comparison_lock_sha256", "comparison_run_sha256", "baseline_id", "source", "environment", "pairing", "artifacts", "non_claims", "claim_ceiling"],
       "properties": {
         "schema_version": {"const": 1},
         "profile_id": {"const": "SRQ-MATCHED-COMPARISON-ATTESTATION-V1"},

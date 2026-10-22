@@ -97,7 +97,7 @@ jq -cnS --slurpfile run "$run_file" --slurpfile lock "$lock_file" --slurpfile su
   --arg lock_path "$lock_path" --arg run_path "$run_path" --arg lock_sha "$lock_sha" --arg run_sha "$run_sha" '
   {
     _type:"https://in-toto.io/Statement/v1",
-    subject:$subjects[0],
+    subject:$subjects,
     predicateType:"https://luminousdynamics.io/attestations/srq-matched-comparison/v1",
     predicate:{
       schema_version:1,
