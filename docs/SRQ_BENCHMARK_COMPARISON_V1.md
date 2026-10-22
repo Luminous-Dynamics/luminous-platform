@@ -31,7 +31,7 @@ Reference links:
 
 ## Baseline version lock and security eligibility (2026-10-22)
 
-A comparison is not reproducible if its standards/spec pages float to `main` or `latest`, and "newest" does not mean "eligible for every threat class". Before interpreting any comparison, record a baseline lock containing the exact upstream release/tag, resolved commit SHA, build/toolchain, configuration, artifact digest, OS/kernel/storage tuple, fault corpus digest, and excluded threat classes. The lock digest must be copied into each run receipt; absent baseline-lock identity means `NOT_COMPARABLE`, not a performance win or loss.
+A comparison is not reproducible if its standards/spec pages float to `main` or `latest`, and "newest" does not mean "eligible for every threat class". `benchmarks/srq-v1/industry-baseline-candidates-v1.json` records candidate selections and known caveats, and the corpus validator checks it against the TSV matrix. It is not a per-run lock or execution evidence. Before interpreting a comparison, a separate run lock must bind the exact upstream release/tag and resolved commit SHA (or official archive digest), build/toolchain, configuration, artifact digest, OS/kernel/storage tuple, fault corpus digest, fault schedule and excluded threat classes. The lock digest must be copied into each comparative run receipt; absent baseline-lock identity means `NOT_COMPARABLE`, not a performance win or loss. The current receipt schema does not yet enforce a comparative-lock digest, so that integration remains an explicit open gate.
 
 The upstream sources checked on 2026-10-22 identify these candidate baselines:
 
