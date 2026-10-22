@@ -135,6 +135,32 @@ impl SqliteD1Store {
             .busy_timeout(Duration::from_secs(10))
             .map_err(|error| format!("set SQLite busy timeout: {error}"))?;
 
+        // Inspect ownership/version before changing persistent journal mode.
+        // Opening an unrelated database must reject before mutating its journal.
+        let user_version: i64 = connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))
+            .map_err(|error| format!("read D1 schema version: {error}"))?;
+        let application_id: i64 = connection
+            .query_row("PRAGMA application_id", [], |row| row.get(0))
+            .map_err(|error| format!("read D1 application ID: {error}"))?;
+        let object_count: i64 = connection
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE type IN ('table','trigger','view') AND name NOT LIKE 'sqlite_%'",
+                [],
+                |row| row.get(0),
+            )
+            .map_err(|error| format!("inspect D1 database objects: {error}"))?;
+        let initialize_schema = match user_version {
+            0 if object_count == 0 && application_id == 0 => true,
+            SCHEMA_VERSION if application_id == APPLICATION_ID => false,
+            _ => {
+                return Err(format!(
+                    "refusing unknown/nonempty schema identity (application_id={application_id}, user_version={user_version}, objects={object_count})"
+                ));
+            }
+        };
+
+
         let journal_mode: String = connection
             .query_row("PRAGMA journal_mode=WAL", [], |row| row.get(0))
             .map_err(|error| format!("set SQLite WAL mode: {error}"))?;
@@ -158,47 +184,20 @@ impl SqliteD1Store {
             return Err("SQLite connection did not enforce WAL/FULL/foreign-key policy".into());
         }
 
-        let user_version: i64 = connection
-            .query_row("PRAGMA user_version", [], |row| row.get(0))
-            .map_err(|error| format!("read D1 schema version: {error}"))?;
-        let application_id: i64 = connection
-            .query_row("PRAGMA application_id", [], |row| row.get(0))
-            .map_err(|error| format!("read D1 application ID: {error}"))?;
-        let object_count: i64 = connection
-            .query_row(
-                "SELECT count(*) FROM sqlite_master \
-                 WHERE type IN ('table','trigger','view') AND name NOT LIKE 'sqlite_%'",
-                [],
-                |row| row.get(0),
-            )
-            .map_err(|error| format!("inspect D1 database objects: {error}"))?;
 
-        match user_version {
-            0 if object_count == 0 && application_id == 0 => {
-                let ddl_start = SCHEMA
-                    .find("CREATE TABLE d1_observation_challenges")
-                    .ok_or("embedded D1 schema is missing the challenge table")?;
-                let tx = connection
-                    .transaction_with_behavior(TransactionBehavior::Immediate)
-                    .map_err(|error| format!("begin D1 schema initialization: {error}"))?;
-                tx.execute_batch(&SCHEMA[ddl_start..])
-                    .map_err(|error| format!("install D1 schema: {error}"))?;
-                tx.execute_batch("PRAGMA user_version=1; PRAGMA application_id=1397903665;")
-                    .map_err(|error| format!("version D1 schema: {error}"))?;
-                tx.commit()
-                    .map_err(|error| format!("commit D1 schema initialization: {error}"))?;
-            }
-            SCHEMA_VERSION if application_id == APPLICATION_ID => {}
-            0 => {
-                return Err(
-                    "refusing to initialize a nonempty or unowned unversioned D1 database".into(),
-                );
-            }
-            _ => {
-                return Err(format!(
-                    "unsupported D1 database identity/version (application_id={application_id}, user_version={user_version})"
-                ));
-            }
+        if initialize_schema {
+            let ddl_start = SCHEMA
+                .find("CREATE TABLE d1_observation_challenges")
+                .ok_or("embedded D1 schema is missing the challenge table")?;
+            let tx = connection
+                .transaction_with_behavior(TransactionBehavior::Immediate)
+                .map_err(|error| format!("begin D1 schema initialization: {error}"))?;
+            tx.execute_batch(&SCHEMA[ddl_start..])
+                .map_err(|error| format!("install D1 schema: {error}"))?;
+            tx.execute_batch("PRAGMA user_version=1; PRAGMA application_id=1397903665;")
+                .map_err(|error| format!("version D1 schema: {error}"))?;
+            tx.commit()
+                .map_err(|error| format!("commit D1 schema initialization: {error}"))?;
         }
 
         verify_schema_inventory(&connection)?;
