@@ -66,3 +66,10 @@ The adapter does not provide:
 3. Run the same seeded target/policy/nonce/expiry mutation corpus against the Rust adapter and SQL reference; preserve false accepts/rejects and raw seeds.
 4. Test durable store unavailability and schema/trigger tampering negative controls, then separately qualify the existing policy-promotion store and boot-observation reconciliation.
 5. Only after the integration is real, run VM reset and controlled power-loss experiments on disposable infrastructure. Never treat live-kernel `SIGKILL` as a power-loss surrogate.
+
+
+## Schema rejection is non-mutating
+
+The D1 adapter now checks SQLite `user_version`, `application_id`, and a nonzero schema-object inventory before switching journal mode. Only a truly empty, unowned database may enter the initialization path; a known-version database with no objects is also rejected as inconsistent. The new negative control opens a foreign database containing a row, requires adapter rejection, then reopens it and verifies that both the persistent journal mode (`DELETE`) and payload are unchanged.
+
+This matters because rejecting an unknown database after `PRAGMA journal_mode=WAL` has already changed it is not strictly read-only failure. The regression tests both the error and the absence of persistent side effects. It does not test filesystem power loss, privileged tampering or production service integration.
