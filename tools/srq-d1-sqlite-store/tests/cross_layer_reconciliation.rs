@@ -183,8 +183,18 @@ fn run_real_lifecycle() -> (
     // Close the only connection so committed WAL pages are checkpointed before
     // making an intentionally stale but internally consistent SQLite snapshot.
     drop(policy_store);
-    fs::copy(&policy_path, &policy_backup_path)
-        .expect("snapshot the generation-41 policy store before promotion");
+    {
+        let snapshot_connection = rusqlite::Connection::open(&policy_path)
+            .expect("open policy snapshot for an explicit WAL checkpoint");
+        let (busy, _log_frames, _checkpointed_frames): (i64, i64, i64) = snapshot_connection
+            .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })
+            .expect("checkpoint generation-41 policy snapshot before copying");
+        assert_eq!(busy, 0, "policy snapshot must be checkpointed before file copy");
+        fs::copy(&policy_path, &policy_backup_path)
+            .expect("snapshot the generation-41 policy store before promotion");
+    }
     let mut policy_store = SqlitePolicyPromotionStore::open(&policy_path)
         .expect("reopen policy store after generation-41 snapshot");
 
@@ -461,7 +471,7 @@ fn actual_signed_policy_decision_and_d1_boot_receipt_reconcile_after_database_re
 
 #[test]
 fn restoring_actual_sqlite_policy_snapshot_is_detected_by_independent_witness_state() {
-    let (intent, durable, challenge, _boot, policy_path, boot_path, policy_backup_path) =
+    let (intent, durable, _challenge, _boot, policy_path, boot_path, policy_backup_path) =
         run_real_lifecycle();
 
     let genesis_checkpoint_sha256 = sha256_hex(format!(
