@@ -1050,6 +1050,45 @@ mod tests {
     }
 
     #[test]
+    fn refusing_spoofed_schema_identity_does_not_change_journal_mode() {
+        let path = temp_path("spoofed-schema-no-mutation");
+        {
+            let connection = Connection::open(&path).expect("create spoofed database");
+            let mode: String = connection
+                .query_row("PRAGMA journal_mode=DELETE", [], |row| row.get(0))
+                .expect("set spoofed database to DELETE mode");
+            assert_eq!(mode.to_ascii_lowercase(), "delete");
+            connection.execute_batch(
+                "PRAGMA user_version=1;
+                 PRAGMA application_id=0x53525150;
+                 CREATE TABLE foreign_payload(id INTEGER PRIMARY KEY, value TEXT NOT NULL);
+                 INSERT INTO foreign_payload(id, value) VALUES (1, 'still-here');",
+            ).expect("write spoofed schema identity and payload");
+        }
+
+        assert!(
+            SqlitePolicyPromotionStore::open(&path).is_err(),
+            "policy adapter must compare canonical SQL rather than trusting version/application ID"
+        );
+        {
+            let connection = Connection::open(&path).expect("reopen spoofed database");
+            let mode: String = connection
+                .query_row("PRAGMA journal_mode", [], |row| row.get(0))
+                .expect("read spoofed database journal mode");
+            assert_eq!(mode.to_ascii_lowercase(), "delete");
+            let value: String = connection
+                .query_row("SELECT value FROM foreign_payload WHERE id=1", [], |row| row.get(0))
+                .expect("read spoofed database payload");
+            assert_eq!(value, "still-here");
+        }
+
+        let _ = fs::remove_file(&path);
+        let _ = fs::remove_file(format!("{}-wal", path.display()));
+        let _ = fs::remove_file(format!("{}-shm", path.display()));
+        println!("PASS: policy exact schema verification rejects spoofed identity before journal mutation");
+    }
+
+    #[test]
     fn runtime_sqlite_version_gate_accepts_fixed_release_lines_and_rejects_unfixed_or_withdrawn_lines() {
         for version in ["3.44.6", "3.44.99", "3.50.7", "3.50.12", "3.51.3", "3.51.99", "3.53.0", "3.53.3", "3.54.1"] {
             assert!(sqlite_version_has_wal_reset_fix(sqlite_version_tuple(version).unwrap()), "expected supported: {version}");
