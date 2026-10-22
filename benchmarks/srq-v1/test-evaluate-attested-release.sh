@@ -46,6 +46,8 @@ d1_sqlite_store_sha="$(sha256sum "$bundle/srq-d1-sqlite-store-test.log" | cut -d
 d1_sqlite_store_lock_sha="$(sha256sum "$bundle/srq-d1-sqlite-store-Cargo.lock" | cut -d ' ' -f 1)"
 policy_promotion_sha="$(sha256sum "$bundle/srq-policy-promotion-store-test.log" | cut -d ' ' -f 1)"
 policy_promotion_lock_sha="$(sha256sum "$bundle/srq-policy-promotion-store-Cargo.lock" | cut -d ' ' -f 1)"
+runtime_policy_sha="$(sha256sum "$bundle/srq-sqlite-runtime-policy-test.log" | cut -d ' ' -f 1)"
+runtime_policy_lock_sha="$(sha256sum "$bundle/srq-sqlite-runtime-policy-Cargo.lock" | cut -d ' ' -f 1)"
 
 make_receipt() {
   local scenario="$1" log="$2" log_sha="$3" destination="$4" command="$5"
@@ -123,6 +125,8 @@ jq -e '.overall_status == "NOT_QUALIFIED" and .summary.passed_at_qualifying_tier
     srq-release-qualification.json \
     srq-sqlite-d1-challenge-consumption-reference.log \
     srq-sqlite-promotion-reference.log \
+    srq-sqlite-runtime-policy-Cargo.lock \
+    srq-sqlite-runtime-policy-test.log \
     srq-update-004-model-result.json > SHA256SUMS
 )
 checksum_sha="$(sha256sum "$bundle/SHA256SUMS" | cut -d ' ' -f 1)"
