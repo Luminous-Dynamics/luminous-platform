@@ -58,3 +58,10 @@ The next production acceptance step is to call the transaction at the actual pol
 This prototype's `TrustedPromotionKey` is configuration supplied by a trusted caller; durable signer provisioning and key rotation are not implemented here. The challenge issuer must authenticate the deployment/policy intent before issuing a nonce. The code trusts local wall-clock time, and local SQLite does not provide distributed transactions or cross-host locks. A privileged attacker who can rewrite application binaries or the database can subvert a software-only store. It does not provide TPM quotes, measured boot, D2 reference-value appraisal, firmware root-of-trust or proof that the promoted deployment actually booted.
 
 The store's `Consistent`/committed output is not release qualification. SRQ remains `NOT_QUALIFIED` until the real updater integration and every required gate's declared QEMU/physical tier passes. Related work: [issue #91](https://github.com/Luminous-Dynamics/luminous-platform/issues/91), [matched benchmark issue #94](https://github.com/Luminous-Dynamics/luminous-platform/issues/94), and [D2 TPM appraisal design](SRQ_D2_TPM_APPRAISAL_V1.md).
+
+
+## Unknown-schema open must not mutate the database
+
+The policy-promotion adapter now inspects the SQLite schema identity and object inventory before switching the persistent journal mode. It rejects nonempty unowned databases, unknown versions, mismatched application IDs, and version-tagged databases with no schema objects before making persistent mode changes. A new regression test checks both the rejection and preservation of the foreign database's `DELETE` journal mode and existing row.
+
+The preflight is intentionally not treated as schema authentication: after the database proves it is the expected SRQ store, the adapter still configures WAL/`synchronous=FULL` and compares actual table/index/trigger SQL against the canonical embedded schema.
