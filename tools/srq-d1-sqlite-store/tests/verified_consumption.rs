@@ -224,4 +224,5 @@ fn refusing_foreign_database_does_not_change_its_journal_mode_or_rows() {
     let _ = fs::remove_file(&path);
     let _ = fs::remove_file(format!("{}-wal", path.display()));
     let _ = fs::remove_file(format!("{}-shm", path.display()));
+    println!("PASS: refusing foreign D1 database preserved journal mode and payload");
 }
