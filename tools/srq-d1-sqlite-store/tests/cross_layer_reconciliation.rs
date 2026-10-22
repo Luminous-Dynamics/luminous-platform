@@ -233,6 +233,13 @@ fn run_real_lifecycle() -> (
     let committed = policy_store.committed_decision_for_challenge(PROMOTION_CHALLENGE)
         .expect("read committed decision after reopen")
         .expect("promotion must reconcile after commit and reopen");
+    let promoted_state = policy_store.target_state(TARGET)
+        .expect("read current policy target after reopen")
+        .expect("current policy target must exist");
+    assert_eq!(promoted_state.generation, 42);
+    assert_eq!(promoted_state.approved_artifact_sha256, NEXT_ARTIFACT);
+    assert_eq!(promoted_state.effective_policy_sha256, NEXT_EFFECTIVE);
+    assert_eq!(promoted_state.deployment_id, NEXT_DEPLOYMENT);
     policy_store.integrity_check().expect("policy store integrity after reopen");
 
     let mut boot_store = SqliteD1Store::open(&boot_path)
