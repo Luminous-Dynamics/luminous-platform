@@ -44,7 +44,7 @@ command -v sha256sum >/dev/null 2>&1 || { echo "BLOCKED: sha256sum is required; 
 [[ -x "$lock_validator" || -f "$lock_validator" ]] || { echo "FAIL: comparison-lock validator is missing" >&2; exit 1; }
 
 # This is a semantic subset validator, not a complete JSON Schema implementation.
-jq -e 'type == "object"' "$schema" >/dev/null
+jq -e 'type == "object"' "$schema" "$events_schema" "$observations_schema" >/dev/null
 if ! jq -e '
   type == "object" and .schema_version == 1 and .profile_id == "SRQ-MATCHED-COMPARISON-RUN-V1" and
   (.fixture | type == "boolean") and
@@ -212,10 +212,11 @@ validate_observations() {
   local label="$1" trials="$2" observations="$3"
   if ! jq -e --slurpfile trials "$trials" '
     type == "object" and .schema_version == 1 and
-    (.observations | type == "array" and length == ($trials[0].trials | length)) and
-    (([.observations[].trial_id] | length) == ([.observations[].trial_id] | unique | length)) and
-    (([.observations[].observation_id] | length) == ([.observations[].observation_id] | unique | length)) and
-    all(.observations[];
+    (.observations) as $obs |
+    ($obs | type == "array" and length == ($trials[0].trials | length)) and
+    (($obs | map(.trial_id) | length) == ($obs | map(.trial_id) | unique | length)) and
+    (($obs | map(.observation_id) | length) == ($obs | map(.observation_id) | unique | length)) and
+    all($obs[];
       (.observation_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.trial_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.fault_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
@@ -225,7 +226,7 @@ validate_observations() {
       (.observer_id | type == "string" and length > 0) and
       (.state_digest_sha256 | type == "string" and test("^[0-9a-f]{64}$"))) and
     all($trials[0].trials[];
-      . as $t | any(.observations[];
+      . as $t | any($obs[];
         .trial_id == $t.trial_id and .fault_id == $t.fault_id and
         .input_sha256 == $t.input_sha256 and .outcome == $t.outcome and
         .observation_id == ("obs-" + $t.trial_id)))
@@ -233,30 +234,31 @@ validate_observations() {
     not_comparable "$label recovery-observation ledger is malformed or does not match the full raw-trial set"
   fi
 }
-
 validate_execution_witness() {
   local label="$1" trials="$2" events="$3" observations="$4"
   if ! jq -e --slurpfile trials "$trials" --slurpfile observations "$observations" --slurpfile schedule "$fault_schedule" '
     type == "object" and .schema_version == 1 and
-    (.events | type == "array" and length == (($trials[0].trials | length) * 2)) and
-    (([.events[].event_id] | length) == ([.events[].event_id] | unique | length)) and
-    all(.events[];
+    (.events) as $events |
+    ($events | type == "array" and length == (($trials[0].trials | length) * 2)) and
+    (($events | map(.event_id) | length) == ($events | map(.event_id) | unique | length)) and
+    all($events[];
+      . as $event |
       (.event_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.trial_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.fault_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.input_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
       (.monotonic_ns | type == "number" and floor == . and . > 0) and
-      any($trials[0].trials[]; .trial_id == input.trial_id)) and
+      any($trials[0].trials[]; .trial_id == $event.trial_id)) and
     all($trials[0].trials[];
       . as $t |
       ([$observations[0].observations[] | select(.trial_id == $t.trial_id)] | length == 1) and
       ([$schedule[0].faults[] | select(.fault_id == $t.fault_id and .input_sha256 == $t.input_sha256)] | length == 1) and
       ([$observations[0].observations[] | select(.trial_id == $t.trial_id)][0]) as $o |
       ([$schedule[0].faults[] | select(.fault_id == $t.fault_id and .input_sha256 == $t.input_sha256)][0]) as $f |
-      ([$events[] | select(.event_id == $t.fault_event_id)] | length == 1) and
-      ([$events[] | select(.event_id == $t.observation_event_id)] | length == 1) and
       ([$events[] | select(.event_id == $t.fault_event_id)][0]) as $inject |
       ([$events[] | select(.event_id == $t.observation_event_id)][0]) as $observe |
+      ([$events[] | select(.event_id == $t.fault_event_id)] | length == 1) and
+      ([$events[] | select(.event_id == $t.observation_event_id)] | length == 1) and
       $inject.trial_id == $t.trial_id and $inject.fault_id == $t.fault_id and
       $inject.input_sha256 == $t.input_sha256 and $inject.event_kind == "fault_injection" and
       $inject.source_role == "fault_injector" and $inject.trigger_confirmed == true and
@@ -271,7 +273,6 @@ validate_execution_witness() {
     not_comparable "$label execution witness does not prove a matching trigger-plus-post-restart observation for every trial"
   fi
 }
-
 validate_observations "baseline" "$baseline_trials" "$baseline_observations"
 validate_observations "SRQ" "$srq_trials" "$srq_observations"
 validate_execution_witness "baseline" "$baseline_trials" "$baseline_events" "$baseline_observations"

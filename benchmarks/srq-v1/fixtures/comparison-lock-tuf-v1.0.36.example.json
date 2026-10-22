@@ -14,7 +14,7 @@
   "benchmark_artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "configuration_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
   "corpus_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-  "fault_schedule_sha256": "73e8ddfc67acbfed87cdb8cf835534efb612b39f72d71b55a8045a2788b25056",
+  "fault_schedule_sha256": "4ca5f08ce46ce51d4915f935715ad244a6014c5343f3db05a9cfecd730b9d568",
   "outcome_oracle_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
   "platform": {
     "os_image": "ubuntu-24.04-fixture",

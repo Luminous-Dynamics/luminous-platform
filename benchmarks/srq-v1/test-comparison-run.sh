@@ -43,7 +43,7 @@ jq -n '{
     {trial_id:("trial-"+($i|tostring)),fault_id:$fault,input_sha256:$input,
      duration_ns:(9000000 + $i*1500),
      outcome:(if $i == 4 then "recoverable_blocked" else "old_complete" end),
-     execution_order:(if ($i % 2) == 0 then "srq_first" else "baseline_first" end),fault_event_id:("srq-inject-"+($i|tostring)),observation_event_id:("srq-observe-"+($i|tostring))}]
+     execution_order:(if ($i % 2) == 0 then "baseline_first" else "srq_first" end),fault_event_id:("srq-inject-"+($i|tostring)),observation_event_id:("srq-observe-"+($i|tostring))}]
 }' > "$srq_trials"
 
 write_observation_ledger() {
