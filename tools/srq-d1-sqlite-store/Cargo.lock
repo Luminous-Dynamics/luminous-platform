@@ -516,6 +516,7 @@ dependencies = [
  "srq-eat-cose-verifier",
  "srq-policy-promotion-store",
  "srq-rollback-witness-model",
+ "srq-sqlite-runtime-policy",
 ]
 
 [[package]]
@@ -542,7 +543,12 @@ dependencies = [
  "rusqlite",
  "sha2 0.10.9",
  "srq-eat-cose-verifier",
+ "srq-sqlite-runtime-policy",
 ]
+
+[[package]]
+name = "srq-sqlite-runtime-policy"
+version = "0.1.0"
 
 [[package]]
 name = "subtle"
