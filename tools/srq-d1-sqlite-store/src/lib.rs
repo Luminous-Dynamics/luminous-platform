@@ -159,7 +159,11 @@ impl SqliteD1Store {
                 ));
             }
         };
-
+        if !initialize_schema {
+            // Schema ownership metadata can be copied or forged. Compare every
+            // canonical SQL object before WAL mode can mutate the database file.
+            verify_schema_inventory(&connection)?;
+        }
 
         let journal_mode: String = connection
             .query_row("PRAGMA journal_mode=WAL", [], |row| row.get(0))
