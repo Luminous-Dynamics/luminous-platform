@@ -12,6 +12,7 @@ observer_private_key="$tmpdir/observer-private.pem"
 observer_public_key="$tmpdir/observer-public.pem"
 injector_key_id="fixture-injector-ed25519-v1"
 observer_key_id="fixture-observer-ed25519-v1"
+run_challenge="$(openssl rand -hex 32)"
 openssl genpkey -algorithm Ed25519 -out "$injector_private_key"
 openssl pkey -in "$injector_private_key" -pubout -out "$injector_public_key"
 openssl genpkey -algorithm Ed25519 -out "$observer_private_key"
@@ -61,11 +62,11 @@ write_observation_ledger() {
   local arm="$1" trials="$2" out="$3" state_digest
   if [[ "$arm" == "baseline" ]]; then state_digest="dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
   else state_digest="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; fi
-  jq --arg digest "$state_digest" --slurpfile trials "$trials" '
+  jq --arg digest "$state_digest" --arg challenge "$run_challenge" --slurpfile trials "$trials" '
     {schema_version:1,observations:[
       $trials[0].trials[] as $t |
       {observation_id:("obs-"+$t.trial_id),trial_id:$t.trial_id,fault_id:$t.fault_id,
-       input_sha256:$t.input_sha256,outcome:$t.outcome,post_restart:true,
+       input_sha256:$t.input_sha256,run_challenge:$challenge,outcome:$t.outcome,post_restart:true,
        observer_id:"fixture-independent-observer",state_digest_sha256:$digest}
     ]}
   ' > "$out"
@@ -94,16 +95,16 @@ write_event_ledger() {
   local arm="$1" trials="$2" observations="$3" out="$4" digest
   if [[ "$arm" == "baseline" ]]; then digest="dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
   else digest="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; fi
-  jq --arg arm "$arm" --arg digest "$digest" --slurpfile trials "$trials" '
+  jq --arg arm "$arm" --arg digest "$digest" --arg challenge "$run_challenge" --slurpfile trials "$trials" '
     {schema_version:1,events:(
       [$trials[0].trials[] as $t |
        {event_id:$t.fault_event_id,trial_id:$t.trial_id,fault_id:$t.fault_id,
-        input_sha256:$t.input_sha256,event_kind:"fault_injection",source_role:"fault_injector",
+        input_sha256:$t.input_sha256,run_challenge:$challenge,event_kind:"fault_injection",source_role:"fault_injector",
         monotonic_ns:(100000 + (($t.trial_id|ltrimstr("trial-")|tonumber)*1000)),
         mechanism:"sigkill",trigger_confirmed:true}] +
       [$trials[0].trials[] as $t |
        {event_id:$t.observation_event_id,trial_id:$t.trial_id,fault_id:$t.fault_id,
-        input_sha256:$t.input_sha256,event_kind:"post_restart_observation",source_role:"independent_observer",
+        input_sha256:$t.input_sha256,run_challenge:$challenge,event_kind:"post_restart_observation",source_role:"independent_observer",
         monotonic_ns:(1000000 + (($t.trial_id|ltrimstr("trial-")|tonumber)*1000)),
         observation_id:("obs-"+$t.trial_id),post_restart:true,outcome:$t.outcome,state_digest_sha256:$digest}]
     )}
@@ -127,8 +128,8 @@ srq_observations_sha="$(sha256sum "$srq_observations" | cut -d ' ' -f 1)"
 lock_sha="$(sha256sum "$lock" | cut -d ' ' -f 1)"
 baseline_sha="$(sha256sum "$baseline_trials" | cut -d ' ' -f 1)"
 srq_sha="$(sha256sum "$srq_trials" | cut -d ' ' -f 1)"
-jq -n --slurpfile lock "$lock" --arg lock_sha "$lock_sha" --arg baseline_sha "$baseline_sha" --arg srq_sha "$srq_sha" --arg schedule_sha "$schedule_sha" --arg schedule_path "$locked_schedule_path" --arg be_sha "$baseline_events_sha" --arg se_sha "$srq_events_sha" --arg bo_sha "$baseline_observations_sha" --arg so_sha "$srq_observations_sha" '
-  {schema_version:1,profile_id:"SRQ-MATCHED-COMPARISON-RUN-V1",fixture:true,
+jq -n --slurpfile lock "$lock" --arg run_challenge "$run_challenge" --arg lock_sha "$lock_sha" --arg baseline_sha "$baseline_sha" --arg srq_sha "$srq_sha" --arg schedule_sha "$schedule_sha" --arg schedule_path "$locked_schedule_path" --arg be_sha "$baseline_events_sha" --arg se_sha "$srq_events_sha" --arg bo_sha "$baseline_observations_sha" --arg so_sha "$srq_observations_sha" '
+  {schema_version:1,profile_id:"SRQ-MATCHED-COMPARISON-RUN-V1",fixture:true,run_challenge:$run_challenge,
    comparison_lock:{baseline_id:$lock[0].baseline_id,lock_sha256:$lock_sha},
    source:{expected_srq_source_sha:$lock[0].srq_source_sha,actual_srq_checkout_sha:$lock[0].srq_source_sha,baseline_source:$lock[0].baseline_source},
    environment:$lock[0].platform,
@@ -161,6 +162,7 @@ expect_reject_receipt broken-baseline-artifact-sha '.artifacts.baseline_trials.s
 expect_reject_receipt unsafe-trial-path '.artifacts.baseline_trials.path = "../baseline-trials.json"'
 expect_reject_receipt minimum-below-five '.pairing.minimum_paired_trials = 4'
 expect_reject_receipt wrong-fixture-flag '.fixture = false'
+expect_reject_receipt wrong-run-challenge '.run_challenge = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"'
 
 mutate_baseline_and_expect_reject() {
   local label="$1" filter="$2" modified="$tmpdir/$1-trials.json" bad_receipt="$tmpdir/$1-receipt.json" out="$tmpdir/$1.out"
@@ -256,6 +258,10 @@ mutate_witness_signature_reject() {
   echo "PASS: signed-witness negative control rejected (signature tampering)"
 }
 mutate_witness_signature_reject
+if bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$injector_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt" >"$tmpdir/same-key-id.out" 2>&1; then
+  echo "FAIL: duplicate injector/observer key IDs were accepted" >&2; exit 1
+fi
+echo "PASS: duplicate role key IDs rejected"
 
 mutate_witness_reject missing-injector-event baseline_events '.events |= map(select(.event_kind != "fault_injection" or .trial_id != "trial-0"))'
 mutate_witness_reject unconfirmed-injector baseline_events '.events |= map(if .event_kind == "fault_injection" and .trial_id == "trial-0" then .trigger_confirmed = false else . end)'

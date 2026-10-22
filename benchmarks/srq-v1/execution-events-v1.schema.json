@@ -12,12 +12,13 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["event_id", "trial_id", "fault_id", "input_sha256", "event_kind", "source_role", "monotonic_ns", "key_id", "signature_b64"],
+        "required": ["event_id", "trial_id", "fault_id", "input_sha256", "run_challenge", "event_kind", "source_role", "monotonic_ns", "key_id", "signature_b64"],
         "properties": {
           "event_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
           "trial_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
           "fault_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
           "input_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "run_challenge": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "event_kind": {"enum": ["fault_injection", "post_restart_observation"]},
           "source_role": {"enum": ["fault_injector", "independent_observer"]},
           "monotonic_ns": {"type": "integer", "minimum": 1},

@@ -12,12 +12,13 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["observation_id", "trial_id", "fault_id", "input_sha256", "outcome", "post_restart", "observer_id", "state_digest_sha256"],
+        "required": ["observation_id", "trial_id", "fault_id", "input_sha256", "run_challenge", "outcome", "post_restart", "observer_id", "state_digest_sha256"],
         "properties": {
           "observation_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
           "trial_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
           "fault_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
           "input_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "run_challenge": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "outcome": {"enum": ["old_complete", "new_complete", "recoverable_blocked", "state_lost", "state_inconsistent", "unavailable_unobserved", "unauthorized_accept", "replay_accept", "hybrid_state", "unclassified_fault"]},
           "post_restart": {"const": true},
           "observer_id": {"type": "string", "minLength": 1},

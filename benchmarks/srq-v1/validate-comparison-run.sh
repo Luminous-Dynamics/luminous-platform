@@ -64,6 +64,7 @@ jq -e 'type == "object"' "$schema" "$events_schema" "$observations_schema" >/dev
 if ! jq -e '
   type == "object" and .schema_version == 1 and .profile_id == "SRQ-MATCHED-COMPARISON-RUN-V1" and
   (.fixture | type == "boolean") and
+  (.run_challenge | type == "string" and test("^[0-9a-f]{64}$")) and
   (.comparison_lock | type == "object" and
     (.baseline_id | type == "string" and test("^[a-z0-9][a-z0-9.-]{1,80}$")) and
     (.lock_sha256 | type == "string" and test("^[0-9a-f]{64}$"))) and
@@ -90,6 +91,7 @@ if ! jq -e '
 fi
 
 fixture="$(jq -r '.fixture' "$receipt")"
+run_challenge="$(jq -r '.run_challenge' "$receipt")"
 lock_fixture="$(jq -r '.fixture' "$comparison_lock")"
 if [[ "$fixture" != "$lock_fixture" ]]; then
   not_comparable "run receipt fixture flag differs from the supplied lock's fixture flag"
@@ -290,7 +292,7 @@ fi
 
 validate_observations() {
   local label="$1" trials="$2" observations="$3"
-  if ! jq -e --slurpfile trials "$trials" '
+  if ! jq -e --arg challenge "$run_challenge" --slurpfile trials "$trials" '
     (.observations) as $obs |
     type == "object" and .schema_version == 1 and
     ($obs | type == "array" and length == ($trials[0].trials | length)) and
@@ -301,6 +303,7 @@ validate_observations() {
       (.trial_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.fault_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.input_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+      .run_challenge == $challenge and
       (.outcome == "old_complete" or .outcome == "new_complete" or .outcome == "recoverable_blocked" or .outcome == "state_lost" or .outcome == "state_inconsistent" or .outcome == "unavailable_unobserved" or .outcome == "unauthorized_accept" or .outcome == "replay_accept" or .outcome == "hybrid_state" or .outcome == "unclassified_fault") and
       .post_restart == true and
       (.observer_id | type == "string" and length > 0) and
@@ -316,7 +319,7 @@ validate_observations() {
 }
 validate_execution_witness() {
   local label="$1" trials="$2" events="$3" observations="$4"
-  if ! jq -e --slurpfile trials "$trials" --slurpfile observations "$observations" --slurpfile schedule "$fault_schedule" '
+  if ! jq -e --arg challenge "$run_challenge" --slurpfile trials "$trials" --slurpfile observations "$observations" --slurpfile schedule "$fault_schedule" '
     (.events) as $events |
     type == "object" and .schema_version == 1 and
     ($events | type == "array" and length == (($trials[0].trials | length) * 2)) and
@@ -327,6 +330,7 @@ validate_execution_witness() {
       (.trial_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.fault_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.input_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+      .run_challenge == $challenge and
       (.monotonic_ns | type == "number" and floor == . and . > 0) and
       (.key_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.signature_b64 | type == "string" and test("^[A-Za-z0-9+/]{86}==$")) and
@@ -367,4 +371,4 @@ if [[ "$fixture" == "true" ]]; then
 else
   printf 'STRUCTURALLY_COMPARABLE: paired-trial contract is valid (baseline=%s, trials=%s, lock_sha256=%s).\n' "$(jq -r '.comparison_lock.baseline_id' "$receipt")" "$paired_count" "$actual_lock_sha"
 fi
-echo "NON-CLAIM: this validator checks byte integrity, pinned identities, platform equality, and paired trial keys. It does not authenticate signer/device identity, prove that randomized order was executed, prove complete corpus coverage, establish statistical significance, or show a safety/performance win or release qualification."
+echo "NON-CLAIM: Ed25519 signatures are checked against caller-supplied public keys, but the validator does not establish how those keys were trusted or prove that the injector fired / the device state was truthfully observed. Freshness and replay prevention across runs require a trusted verifier to issue and track run challenges. This is not a safety/performance win or release qualification."

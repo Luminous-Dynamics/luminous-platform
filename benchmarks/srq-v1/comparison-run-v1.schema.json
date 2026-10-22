@@ -5,11 +5,12 @@
   "description": "A digest-bound declaration that baseline and SRQ trial artifacts are paired on the same locked inputs. Structural comparability is not a performance, safety, or qualification result.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "profile_id", "fixture", "comparison_lock", "source", "environment", "pairing", "artifacts", "non_claims"],
+  "required": ["schema_version", "profile_id", "fixture", "run_challenge", "comparison_lock", "source", "environment", "pairing", "artifacts", "non_claims"],
   "properties": {
     "schema_version": {"const": 1},
     "profile_id": {"const": "SRQ-MATCHED-COMPARISON-RUN-V1"},
     "fixture": {"type": "boolean"},
+    "run_challenge": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "comparison_lock": {
       "type": "object", "additionalProperties": false,
       "required": ["baseline_id", "lock_sha256"],
