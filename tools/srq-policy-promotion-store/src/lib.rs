@@ -181,9 +181,9 @@ impl SqlitePolicyPromotionStore {
             .map_err(|error| StoreError::Sqlite(format!("read SQLite version: {error}")))?;
         let parsed = sqlite_version_tuple(&version)
             .ok_or_else(|| StoreError::UnsupportedSqlite(format!("malformed version {version}")))?;
-        if !sqlite_version_has_wal_reset_fix(parsed) {
+        if !sqlite_version_is_supported(parsed) {
             return Err(StoreError::UnsupportedSqlite(format!(
-                "SQLite {version} is on an unsupported or WAL-reset-unfixed release line; accepted upstream-fixed lines are 3.44.6+, 3.50.7+, 3.51.3+, and 3.53.0+"
+                "SQLite {version} is outside the supported release policy; require 3.44.6+, 3.50.7+, 3.51.3+, 3.53.4+, or 3.54.1+ (3.54.0 and withdrawn 3.52.x are rejected)"
             )));
         }
 
@@ -636,13 +636,15 @@ fn valid_deployment_id(s:&str)->bool{
  hash.len()==32&&hash.bytes().all(|b|b.is_ascii_digit()||b"abcdfghijklmnpqrsvwxyz".contains(&b))&&!name.is_empty()&&name.bytes().all(|b|b.is_ascii_alphanumeric()||matches!(b,b'.'|b'_'|b'+'|b'-'))
 }
 fn sqlite_version_tuple(s:&str)->Option<(u64,u64,u64)>{let mut p=s.split('.');let a=p.next()?.parse().ok()?;let b=p.next()?.parse().ok()?;let c=p.next()?.parse().ok()?;if p.next().is_some(){None}else{Some((a,b,c))}}
-fn sqlite_version_has_wal_reset_fix((major,minor,patch):(u64,u64,u64))->bool{
+fn sqlite_version_is_supported((major,minor,patch):(u64,u64,u64))->bool{
     match (major,minor) {
         (3,44) => patch >= 6,
         (3,50) => patch >= 7,
         (3,51) => patch >= 3,
-        (3,53) => true,
-        (3,minor) if minor > 53 => true,
+        (3,52) => false, // withdrawn release line
+        (3,53) => patch >= 4, // SQLite 3.53.0-3 contain later upstream defects
+        (3,54) => patch >= 1, // reject 3.54.0 across architectures
+        (3,minor) if minor > 54 => true,
         _ => false,
     }
 }
@@ -1117,12 +1119,12 @@ mod tests {
     }
 
     #[test]
-    fn runtime_sqlite_version_gate_accepts_fixed_release_lines_and_rejects_unfixed_or_withdrawn_lines() {
-        for version in ["3.44.6", "3.44.99", "3.50.7", "3.50.12", "3.51.3", "3.51.99", "3.53.0", "3.53.3", "3.54.1"] {
-            assert!(sqlite_version_has_wal_reset_fix(sqlite_version_tuple(version).unwrap()), "expected supported: {version}");
+    fn runtime_sqlite_release_policy_accepts_patched_lines_and_rejects_known_bad_releases() {
+        for version in ["3.44.6", "3.44.99", "3.50.7", "3.50.12", "3.51.3", "3.51.99", "3.53.4", "3.53.99", "3.54.1", "3.54.9", "3.55.0"] {
+            assert!(sqlite_version_is_supported(sqlite_version_tuple(version).unwrap()), "expected supported: {version}");
         }
-        for version in ["3.44.5", "3.45.0", "3.50.6", "3.51.2", "3.52.0", "3.52.1", "4.0.0"] {
-            assert!(!sqlite_version_has_wal_reset_fix(sqlite_version_tuple(version).unwrap()), "expected rejected: {version}");
+        for version in ["3.44.5", "3.45.0", "3.50.6", "3.51.2", "3.52.0", "3.52.1", "3.53.0", "3.53.1", "3.53.2", "3.53.3", "3.54.0", "4.0.0"] {
+            assert!(!sqlite_version_is_supported(sqlite_version_tuple(version).unwrap()), "expected rejected: {version}");
         }
         assert_eq!(sqlite_version_tuple("3.51"), None);
         assert_eq!(sqlite_version_tuple("3.51.3-extra"), None);
