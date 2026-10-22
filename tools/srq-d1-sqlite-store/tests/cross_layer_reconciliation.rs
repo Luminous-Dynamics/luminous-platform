@@ -10,7 +10,11 @@ use srq_boot_reconciliation_model::{
 };
 use srq_d1_sqlite_store::{CommittedD1Observation, IssuedChallenge, SqliteD1Store};
 use srq_eat_cose_verifier::{
-    hex_encode, verify_and_consume, ExpectedChallenge, TrustedKey, PROFILE as D1_PROFILE,
+    hex_encode, sha256_hex, verify_and_consume, ExpectedChallenge, TrustedKey, PROFILE as D1_PROFILE,
+};
+use srq_rollback_witness_model::{
+    reconcile as reconcile_witness, Checkpoint, LocalState, Reconciliation as WitnessReconciliation,
+    Witness,
 };
 use srq_policy_promotion_store::{
     InitialTargetState, IssuedPromotionChallenge, SqlitePolicyPromotionStore, TrustedPromotionKey,
@@ -44,10 +48,13 @@ fn now_seconds() -> u64 {
 }
 
 fn db_path(label: &str) -> PathBuf {
+    let unique_nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("system clock after Unix epoch")
+        .as_nanos();
     std::env::temp_dir().join(format!(
-        "srq-cross-layer-{label}-{}-{}.sqlite",
+        "srq-cross-layer-{label}-{}-{unique_nanos}.sqlite",
         std::process::id(),
-        now_seconds()
     ))
 }
 
@@ -152,12 +159,14 @@ fn run_real_lifecycle() -> (
     BootObservation,
     PathBuf,
     PathBuf,
+    PathBuf,
 ) {
     let now = now_seconds();
     let expires = now + 3_600;
     let policy_key = SigningKey::from_bytes(&[17_u8; 32]);
     let boot_key = SigningKey::from_bytes(&[23_u8; 32]);
     let policy_path = db_path("policy");
+    let policy_backup_path = db_path("policy-generation-41-backup");
     let boot_path = db_path("boot");
 
     let mut policy_store = SqlitePolicyPromotionStore::open(&policy_path)
@@ -170,6 +179,15 @@ fn run_real_lifecycle() -> (
         corpus_sha256: CORPUS.into(),
         deployment_id: PREVIOUS_DEPLOYMENT.into(),
     }).expect("initialize policy target");
+    policy_store.integrity_check().expect("policy store integrity before snapshot backup");
+    // Close the only connection so committed WAL pages are checkpointed before
+    // making an intentionally stale but internally consistent SQLite snapshot.
+    drop(policy_store);
+    fs::copy(&policy_path, &policy_backup_path)
+        .expect("snapshot the generation-41 policy store before promotion");
+    let mut policy_store = SqlitePolicyPromotionStore::open(&policy_path)
+        .expect("reopen policy store after generation-41 snapshot");
+
     let promotion = IssuedPromotionChallenge {
         challenge_id: PROMOTION_CHALLENGE.into(),
         target_id: TARGET.into(),
@@ -291,7 +309,15 @@ fn run_real_lifecycle() -> (
 
     drop(boot_store);
     drop(policy_store);
-    (intent, durable, challenge, boot, policy_path, boot_path)
+    (
+        intent,
+        durable,
+        challenge,
+        boot,
+        policy_path,
+        boot_path,
+        policy_backup_path,
+    )
 }
 
 fn boot_record(receipt: &CommittedD1Observation) -> BootObservation {
@@ -310,9 +336,32 @@ fn boot_record(receipt: &CommittedD1Observation) -> BootObservation {
     }
 }
 
+fn canonical_witness_checkpoint_digest(checkpoint: &Checkpoint) -> String {
+    // Stable test encoding. A production witness protocol must specify and
+    // verify its own canonical serialization before accepting a signed receipt.
+    let canonical = format!(
+        "srq-external-rollback-witness-v1\nschema=1\ntarget_id={}\nsequence={}\nprevious_checkpoint_sha256={}\ndecision_id={}\nchallenge_id={}\nprevious_generation={}\ngeneration={}\ndeployment_id={}\napproved_artifact_sha256={}\neffective_policy_sha256={}\ncorpus_sha256={}\nissued_at_unix_seconds={}\nexpires_at_unix_seconds={}\n",
+        checkpoint.target_id,
+        checkpoint.sequence,
+        checkpoint.previous_checkpoint_sha256,
+        checkpoint.decision_id,
+        checkpoint.challenge_id,
+        checkpoint.previous_generation,
+        checkpoint.generation,
+        checkpoint.deployment_id,
+        checkpoint.approved_artifact_sha256,
+        checkpoint.effective_policy_sha256,
+        checkpoint.corpus_sha256,
+        checkpoint.issued_at_unix_seconds,
+        checkpoint.expires_at_unix_seconds,
+    );
+    sha256_hex(canonical.as_bytes())
+}
+
 #[test]
 fn actual_signed_policy_decision_and_d1_boot_receipt_reconcile_after_database_reopen() {
-    let (intent, durable, challenge, boot, policy_path, boot_path) = run_real_lifecycle();
+    let (intent, durable, challenge, boot, policy_path, boot_path, policy_backup_path) =
+        run_real_lifecycle();
     assert_eq!(
         reconcile(&intent, Some(&durable), Some(&challenge), Some(&boot)),
         Reconciliation::Consistent
@@ -407,4 +456,98 @@ fn actual_signed_policy_decision_and_d1_boot_receipt_reconcile_after_database_re
     println!("PASS: actual signed policy promotion and persisted COSE D1 boot receipt reconcile; generation/deployment/decision/policy mismatches and 10,000 mutations fail closed");
     remove_db(&policy_path);
     remove_db(&boot_path);
+    remove_db(&policy_backup_path);
+}
+
+#[test]
+fn restoring_actual_sqlite_policy_snapshot_is_detected_by_independent_witness_state() {
+    let (intent, durable, challenge, _boot, policy_path, boot_path, policy_backup_path) =
+        run_real_lifecycle();
+
+    let genesis_checkpoint_sha256 = sha256_hex(format!(
+        "srq-external-rollback-witness-genesis-v1\ntarget_id={}\ngeneration={}\napproved_artifact_sha256={}\neffective_policy_sha256={}\ncorpus_sha256={}\ndeployment_id={}\n",
+        intent.target_id,
+        intent.previous_generation,
+        PREVIOUS_APPROVED,
+        PREVIOUS_EFFECTIVE,
+        CORPUS,
+        PREVIOUS_DEPLOYMENT,
+    ).as_bytes());
+
+    let mut witness = Witness::new();
+    let genesis_tip = witness.initialize_target(
+        &intent.target_id,
+        &genesis_checkpoint_sha256,
+        intent.previous_generation,
+    ).expect("initialize independent witness at generation 41");
+    let mut witness_local = LocalState::from_genesis(&genesis_tip);
+
+    let issued_at = now_seconds();
+    let mut checkpoint = Checkpoint {
+        target_id: intent.target_id.clone(),
+        sequence: 1,
+        previous_checkpoint_sha256: genesis_checkpoint_sha256,
+        checkpoint_sha256: String::new(),
+        decision_id: durable.decision_id.clone(),
+        challenge_id: intent.promotion_challenge_id.clone(),
+        previous_generation: intent.previous_generation,
+        generation: durable.generation,
+        deployment_id: durable.deployment_id.clone(),
+        approved_artifact_sha256: durable.approved_artifact_digest.clone(),
+        effective_policy_sha256: durable.effective_policy_digest.clone(),
+        corpus_sha256: durable.corpus_digest.clone(),
+        issued_at_unix_seconds: issued_at,
+        expires_at_unix_seconds: issued_at + 3_600,
+    };
+    checkpoint.checkpoint_sha256 = canonical_witness_checkpoint_digest(&checkpoint);
+
+    witness_local.prepare(checkpoint.clone())
+        .expect("prepare the checkpoint that binds to durable signed promotion");
+    let witness_receipt = witness.advance_at(&checkpoint, issued_at + 1)
+        .expect("external witness model advances to committed generation 42");
+    witness_local.finalize(&witness_receipt)
+        .expect("finalize local checkpoint after witness commit");
+    assert_eq!(reconcile_witness(&witness_local, &witness), WitnessReconciliation::Consistent);
+
+    // Remove all live SQLite files, then restore the exact generation-41
+    // snapshot made before the real signed policy promotion. This snapshot is
+    // internally consistent; integrity_check alone cannot identify rollback.
+    remove_db(&policy_path);
+    fs::copy(&policy_backup_path, &policy_path)
+        .expect("restore the pre-promotion generation-41 SQLite snapshot");
+    let restored_store = SqlitePolicyPromotionStore::open(&policy_path)
+        .expect("open restored but internally consistent SQLite snapshot");
+    let restored = restored_store.target_state(TARGET)
+        .expect("read restored target state")
+        .expect("restored target must still exist");
+    assert_eq!(restored.generation, 41);
+    assert_eq!(restored.approved_artifact_sha256, PREVIOUS_APPROVED);
+    assert_eq!(restored.effective_policy_sha256, PREVIOUS_EFFECTIVE);
+    assert_eq!(restored.deployment_id, PREVIOUS_DEPLOYMENT);
+    assert!(
+        restored_store.committed_decision_for_challenge(PROMOTION_CHALLENGE)
+            .expect("query restored decision ledger")
+            .is_none(),
+        "pre-promotion snapshot should not contain the later committed decision"
+    );
+    restored_store.integrity_check()
+        .expect("old database remains internally consistent after restore");
+    drop(restored_store);
+
+    // The local trust record restored with the database is generation 41 /
+    // witness sequence 0. The independent witness still records sequence 1 /
+    // generation 42, so reconciliation must detect rollback despite SQLite OK.
+    let restored_local_state = LocalState::from_genesis(&genesis_tip);
+    assert_eq!(
+        reconcile_witness(&restored_local_state, &witness),
+        WitnessReconciliation::LocalStateRollbackDetected,
+        "a valid old SQLite snapshot must not be accepted as current after a witness advance"
+    );
+    println!(
+        "PASS: restored generation-41 SQLite snapshot passes integrity_check but is detected as rollback against independent witness sequence 1"
+    );
+
+    remove_db(&policy_path);
+    remove_db(&boot_path);
+    remove_db(&policy_backup_path);
 }
