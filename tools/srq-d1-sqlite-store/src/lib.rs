@@ -202,9 +202,9 @@ impl SqliteD1Store {
                 .map_err(|error| format!("version D1 schema: {error}"))?;
             tx.commit()
                 .map_err(|error| format!("commit D1 schema initialization: {error}"))?;
+            verify_schema_inventory(&connection)?;
         }
 
-        verify_schema_inventory(&connection)?;
         Ok(Self { connection })
     }
 
