@@ -1036,6 +1036,12 @@ mod tests {
             "D1 store runtime must satisfy supported SQLite release policy: {runtime_version}"
         );
         assert!(!source_id.trim().is_empty(), "SQLite source ID must be reportable");
+        if let Ok(expected_version) = std::env::var("SRQ_EXPECTED_SQLITE_VERSION") {
+            assert_eq!(runtime_version, expected_version, "Rust D1 adapter must use the pinned SQLite runtime");
+        }
+        if let Ok(expected_source_id) = std::env::var("SRQ_EXPECTED_SQLITE_SOURCE_ID") {
+            assert_eq!(source_id, expected_source_id, "Rust D1 adapter must use the exact SHA3-pinned SQLite source");
+        }
         println!("PASS: D1 Rust SQLite runtime satisfies release policy: version={runtime_version} source_id={source_id}");
         drop(store);
         let _ = fs::remove_file(&path);
