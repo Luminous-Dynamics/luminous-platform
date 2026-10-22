@@ -81,6 +81,18 @@ The signing key and verification trust policy are external to the evidence bundl
 
 New negative controls deliberately sign malformed statements with the *correct* synthetic test key: one omits a receipt-declared artifact from `subject`, and one changes a predicate artifact digest while leaving the hashed receipt intact. Both must still fail appraisal; RSA signing-key input must also be rejected. These complement wrong-key, altered-signature and mutated-subject-byte controls. This is a coverage/integrity contract, not a claim that the injector really triggered, the observer is independent, or the runtime state is truthful. In RATS terms, signature and evidence parsing are inputs to a distinct verifier appraisal and relying-party policy decision, not substitutes for them ([RFC 9334](https://www.rfc-editor.org/rfc/rfc9334.html)).
 
+## Durable one-use appraisal for comparison envelopes (implementation added 2026-10-22)
+
+The new `tools/srq-comparison-attestation-store/` Rust crate closes the gap between verifying a signed comparison statement and preventing that same run challenge from being accepted twice. It is a separate store rather than an in-memory boolean or a shell-only convention.
+
+- The trusted issuer registers a challenge ID, SHA-256 of the external 256-bit run challenge, expected Ed25519 key ID and public-key fingerprint, baseline ID, expected SRQ source SHA, and validity interval. The raw challenge is not persisted.
+- The store independently verifies the DSSE Ed25519 signature and canonical in-toto payload, accepts only non-fixture appraisals, checks the signed run/lock identity, and hashes every subject file under a confined evidence root.
+- The subject list must exactly cover the comparison lock, matched-run receipt, and every declared artifact. Duplicate/colliding paths, path traversal/symlink escapes, omitted subjects, mismatched manifest digests, wrong keys, stale challenges and unknown DB schemas fail closed.
+- Only after cryptographic and evidence validation does the store enter `BEGIN IMMEDIATE`; it re-reads freshness and consumption state, then inserts the immutable receipt and marks the challenge consumed in the same transaction. Expiry is checked again at the commit boundary. A post-COMMIT restart can retrieve the committed receipt by challenge ID, but cannot consume it again.
+- The schema uses the shared fixed-SQLite release policy, WAL/`synchronous=FULL`, foreign keys, exact schema-inventory checking, and immutable challenge/receipt triggers. A 64-connection race is included as a regression target.
+
+The test suite contains 11 targeted tests, including valid consume/reopen/replay, invalid signature, signed missing-subject and altered-manifest cases, byte mutation, wrong key, challenge mismatch, fixture refusal, expiry at commit and 64-way contention. **Implementation is now committed to the PR branch; its new integrated test suite has not yet been confirmed by an exact-head CI pass.** Even if these tests pass, the store is single-host SQLite software-key appraisal. It does not supply trusted issuer key management, a protected clock, a distributed replay registry, TPM/measured-boot verification or physical recovery qualification. The aggregate SRQ result remains `NOT_QUALIFIED` until its declared release gates have qualifying evidence.
+
 ## Matched fault-injection methodology
 
 For every comparison, publish these inputs before running:
