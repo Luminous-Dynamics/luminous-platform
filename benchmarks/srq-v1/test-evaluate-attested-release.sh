@@ -152,6 +152,8 @@ jq -n \
   --arg d1_sqlite_store_lock_sha "$d1_sqlite_store_lock_sha" \
   --arg policy_promotion_sha "$policy_promotion_sha" \
   --arg policy_promotion_lock_sha "$policy_promotion_lock_sha" \
+  --arg runtime_policy_sha "$runtime_policy_sha" \
+  --arg runtime_policy_lock_sha "$runtime_policy_lock_sha" \
   '{
     schema_version: 1,
     profile_id: "SRQ-1",
@@ -172,7 +174,8 @@ jq -n \
     checksum_manifest_sha256: $checksum_sha,
     dependency_lock_sha256: {
       srq_d1_sqlite_store: $d1_sqlite_store_lock_sha,
-      srq_policy_promotion_store: $policy_promotion_lock_sha
+      srq_policy_promotion_store: $policy_promotion_lock_sha,
+      srq_sqlite_runtime_policy: $runtime_policy_lock_sha
     },
     supplemental_observations: [{
       test_id: "SRQ-POLICY-PROMOTION-STORE-V1",
@@ -238,6 +241,14 @@ jq -n \
       status: "PASS",
       evidence_artifact: "srq-d1-sqlite-store-test.log",
       evidence_sha256: $d1_sqlite_store_sha
+    }, {
+      test_id: "SRQ-SQLITE-RUNTIME-POLICY-V1",
+      scenario_id: "EVIDENCE-003",
+      execution_tier: "model",
+      claim_ceiling: "abstract_model_only",
+      status: "PASS",
+      evidence_artifact: "srq-sqlite-runtime-policy-test.log",
+      evidence_sha256: $runtime_policy_sha
     }]
   }' > "$bundle/manifest.json"
 
