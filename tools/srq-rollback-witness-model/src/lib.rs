@@ -164,6 +164,9 @@ impl Witness {
         genesis_digest: &str,
         generation: u64,
     ) -> Result<WitnessTip, WitnessError> {
+        if !self.available {
+            return Err(WitnessError::Unavailable);
+        }
         if !valid_identifier(target_id) {
             return Err(WitnessError::MalformedCheckpoint("target id"));
         }
@@ -413,6 +416,23 @@ mod tests {
         let mut witness = Witness::new();
         let tip = witness.initialize_target("target-01", GENESIS, 41).unwrap();
         (witness, LocalState::from_genesis(&tip))
+    }
+
+    #[test]
+    fn witness_unavailability_blocks_genesis_initialization_without_mutation() {
+        let mut witness = Witness::new();
+        witness.set_available(false);
+
+        assert_eq!(
+            witness.initialize_target("target-01", GENESIS, 41),
+            Err(WitnessError::Unavailable)
+        );
+
+        witness.set_available(true);
+        assert!(matches!(
+            witness.tip("target-01"),
+            Err(WitnessError::UnknownTarget)
+        ));
     }
 
     #[test]
