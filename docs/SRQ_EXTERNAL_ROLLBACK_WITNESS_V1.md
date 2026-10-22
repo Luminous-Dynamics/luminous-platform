@@ -17,6 +17,10 @@ References:
 - RFC 9334 RATS freshness architecture: https://www.rfc-editor.org/rfc/rfc9334.html
 - SQLite WAL mode and the WAL-reset bug caveat: https://www.sqlite.org/wal.html
 
+## Genesis and outage behavior
+
+Provisioning a target's genesis checkpoint is itself a trust-establishment operation, not a local convenience. The reference state machine now refuses genesis initialization while the witness is marked unavailable and confirms that no target was created by the rejected attempt. A production witness must likewise fail closed during first enrollment: target identity and the genesis digest must be authenticated by a separately authorized provisioning workflow. Do not let an outage silently create a fresh sequence-zero anchor, because that would make a restored or replaced target appear newly enrolled.
+
 ## Anchor contract
 
 Maintain a monotonic checkpoint for each target in a failure/rollback domain that is independent of the SQLite database being protected. A checkpoint binds at least:
