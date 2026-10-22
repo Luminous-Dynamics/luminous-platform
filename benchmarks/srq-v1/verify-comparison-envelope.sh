@@ -53,7 +53,7 @@ jq -e '
   .predicate.profile_id == "SRQ-MATCHED-COMPARISON-ATTESTATION-V1" and
   (.predicate.evidence_status == "fixture_only" or .predicate.evidence_status == "submitted_for_appraisal") and
   (.predicate.run_challenge | type == "string" and test("^[0-9a-f]{64}$")) and
-  .predicate.claim_ceiling == "artifact_integrity_and_structural_comparability_only" and
+  .predicate.claim_ceiling == "artifact_integrity_and_receipt_binding_only" and
   (.subject | type == "array" and length >= 2) and
   (([.subject[].name] | length) == ([.subject[].name] | unique | length)) and
   all(.subject[];

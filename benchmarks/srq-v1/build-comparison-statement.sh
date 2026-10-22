@@ -114,14 +114,14 @@ jq -cnS --slurpfile run "$run_file" --slurpfile lock "$lock_file" --slurpfile su
       pairing:$run[0].pairing,
       artifacts:$run[0].artifacts,
       non_claims:$run[0].non_claims,
-      claim_ceiling:"artifact_integrity_and_structural_comparability_only"
+      claim_ceiling:"artifact_integrity_and_receipt_binding_only"
     }
   }
 ' > "$output"
 jq -e --slurpfile schema "$script_dir/comparison-statement-v1.schema.json" '
   ._type == "https://in-toto.io/Statement/v1" and
   .predicateType == "https://luminousdynamics.io/attestations/srq-matched-comparison/v1" and
-  .predicate.claim_ceiling == "artifact_integrity_and_structural_comparability_only" and
+  .predicate.claim_ceiling == "artifact_integrity_and_receipt_binding_only" and
   (.subject | type == "array" and length >= 2)
 ' "$output" >/dev/null || fail "generated statement failed its semantic check"
 printf 'STATEMENT_BUILT: subject_count=%s evidence_status=%s\n' "$(jq -r '.subject | length' "$output")" "$(jq -r '.predicate.evidence_status' "$output")"

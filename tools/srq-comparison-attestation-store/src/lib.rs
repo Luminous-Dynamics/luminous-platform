@@ -26,7 +26,7 @@ const PAYLOAD_TYPE: &str = "application/vnd.in-toto+json";
 const STATEMENT_TYPE: &str = "https://in-toto.io/Statement/v1";
 const PREDICATE_TYPE: &str = "https://luminousdynamics.io/attestations/srq-matched-comparison/v1";
 const PROFILE_ID: &str = "SRQ-MATCHED-COMPARISON-ATTESTATION-V1";
-const CLAIM_CEILING: &str = "artifact_integrity_and_structural_comparability_only";
+const CLAIM_CEILING: &str = "artifact_integrity_and_receipt_binding_only";
 const MAX_ENVELOPE_BYTES: usize = 16 * 1024 * 1024;
 const MAX_RECEIPT_BYTES: u64 = 16 * 1024 * 1024;
 
@@ -1011,6 +1011,18 @@ mod tests {
         let mut store = SqliteComparisonAttestationStore::open(&f.db_path).unwrap();
         store.issue_challenge(&f.challenge).unwrap();
         assert!(store.consume_envelope(&f.challenge.challenge_id, &f.envelope, &f.public_key, &f.root).is_err());
+        assert_eq!(store.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap(), None);
+    }
+
+    #[test]
+    fn overstated_structural_comparability_claim_is_rejected() {
+        let f = fixture("overstated-claim");
+        let mut store = opened(&f);
+        let mut statement = f.statement.clone();
+        statement["predicate"]["claim_ceiling"] =
+            Value::String("artifact_integrity_and_structural_comparability_only".into());
+        let envelope = sign_statement(&f.signing_key, &statement);
+        assert!(store.consume_envelope(&f.challenge.challenge_id, &envelope, &f.public_key, &f.root).is_err());
         assert_eq!(store.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap(), None);
     }
 
