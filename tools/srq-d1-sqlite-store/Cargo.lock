@@ -515,6 +515,7 @@ dependencies = [
  "srq-boot-reconciliation-model",
  "srq-eat-cose-verifier",
  "srq-policy-promotion-store",
+ "srq-rollback-witness-model",
 ]
 
 [[package]]
@@ -527,6 +528,10 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
 ]
+
+[[package]]
+name = "srq-rollback-witness-model"
+version = "0.1.0"
 
 [[package]]
 name = "srq-policy-promotion-store"
