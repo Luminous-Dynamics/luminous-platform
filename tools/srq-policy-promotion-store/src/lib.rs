@@ -12,6 +12,7 @@ use coset::{CborSerializable, CoseSign1, iana};
 use ed25519_dalek::{Signature, VerifyingKey};
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 use srq_eat_cose_verifier::{hex_encode, sha256_hex};
+use srq_sqlite_runtime_policy::is_supported_sqlite_version;
 
 const SCHEMA_VERSION: i64 = 1;
 const APPLICATION_ID: i64 = 0x5352_5150; // ASCII "SRQP".
@@ -179,9 +180,7 @@ impl SqlitePolicyPromotionStore {
 
         let version: String = connection.query_row("SELECT sqlite_version()", [], |row| row.get(0))
             .map_err(|error| StoreError::Sqlite(format!("read SQLite version: {error}")))?;
-        let parsed = sqlite_version_tuple(&version)
-            .ok_or_else(|| StoreError::UnsupportedSqlite(format!("malformed version {version}")))?;
-        if !sqlite_version_is_supported(parsed) {
+        if !is_supported_sqlite_version(&version) {
             return Err(StoreError::UnsupportedSqlite(format!(
                 "SQLite {version} is outside the supported release policy; require 3.44.6+, 3.50.7+, 3.51.3+, 3.53.4+, or 3.54.1+ (3.54.0 and withdrawn 3.52.x are rejected)"
             )));
@@ -634,19 +633,6 @@ fn valid_deployment_id(s:&str)->bool{
  let Some(rest)=s.strip_prefix("/nix/store/") else{return false;};
  let Some((hash,name))=rest.split_once('-') else{return false;};
  hash.len()==32&&hash.bytes().all(|b|b.is_ascii_digit()||b"abcdfghijklmnpqrsvwxyz".contains(&b))&&!name.is_empty()&&name.bytes().all(|b|b.is_ascii_alphanumeric()||matches!(b,b'.'|b'_'|b'+'|b'-'))
-}
-fn sqlite_version_tuple(s:&str)->Option<(u64,u64,u64)>{let mut p=s.split('.');let a=p.next()?.parse().ok()?;let b=p.next()?.parse().ok()?;let c=p.next()?.parse().ok()?;if p.next().is_some(){None}else{Some((a,b,c))}}
-fn sqlite_version_is_supported((major,minor,patch):(u64,u64,u64))->bool{
-    match (major,minor) {
-        (3,44) => patch >= 6,
-        (3,50) => patch >= 7,
-        (3,51) => patch >= 3,
-        (3,52) => false, // withdrawn release line
-        (3,53) => patch >= 4, // SQLite 3.53.0-3 contain later upstream defects
-        (3,54) => patch >= 1, // reject 3.54.0 across architectures
-        (3,minor) if minor > 54 => true,
-        _ => false,
-    }
 }
 fn sql_i64(v:u64)->Result<i64,StoreError>{i64::try_from(v).map_err(|_|StoreError::InvalidInput("integer exceeds SQLite signed range"))}
 fn system_time_unix_seconds()->Result<u64,StoreError>{SystemTime::now().duration_since(UNIX_EPOCH).map(|d|d.as_secs()).map_err(|_|StoreError::Clock)}
@@ -1118,17 +1104,6 @@ mod tests {
         println!("PASS: empty spoofed policy schema identity was rejected without journal mutation");
     }
 
-    #[test]
-    fn runtime_sqlite_release_policy_accepts_patched_lines_and_rejects_known_bad_releases() {
-        for version in ["3.44.6", "3.44.99", "3.50.7", "3.50.12", "3.51.3", "3.51.99", "3.53.4", "3.53.99", "3.54.1", "3.54.9", "3.55.0"] {
-            assert!(sqlite_version_is_supported(sqlite_version_tuple(version).unwrap()), "expected supported: {version}");
-        }
-        for version in ["3.44.5", "3.45.0", "3.50.6", "3.51.2", "3.52.0", "3.52.1", "3.53.0", "3.53.1", "3.53.2", "3.53.3", "3.54.0", "4.0.0"] {
-            assert!(!sqlite_version_is_supported(sqlite_version_tuple(version).unwrap()), "expected rejected: {version}");
-        }
-        assert_eq!(sqlite_version_tuple("3.51"), None);
-        assert_eq!(sqlite_version_tuple("3.51.3-extra"), None);
-    }
     #[test]
     fn runtime_sqlite_source_id_matches_pinned_ci_source_when_configured() {
         let connection = Connection::open_in_memory().expect("open SQLite runtime probe");
