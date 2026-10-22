@@ -59,10 +59,11 @@
     },
     "artifacts": {
       "type": "object", "additionalProperties": false,
-      "required": ["baseline_trials", "srq_trials"],
+      "required": ["baseline_trials", "srq_trials", "fault_schedule"],
       "properties": {
         "baseline_trials": {"$ref": "#/$defs/evidence_artifact"},
-        "srq_trials": {"$ref": "#/$defs/evidence_artifact"}
+        "srq_trials": {"$ref": "#/$defs/evidence_artifact"},
+        "fault_schedule": {"$ref": "#/$defs/evidence_artifact"}
       }
     },
     "non_claims": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}

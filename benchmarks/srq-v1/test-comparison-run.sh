@@ -8,23 +8,53 @@ trap 'rm -rf "$tmpdir"' EXIT
 [[ -f "$lock" ]] || { echo "FAIL: comparison-lock fixture is missing" >&2; exit 1; }
 mkdir -p "$tmpdir/evidence"
 evidence_root="$tmpdir/evidence"
+schedule_src="$script_dir/fixtures/comparison-lock-artifacts/fault-schedule.json"
+locked_schedule_path="$(jq -r '.artifacts.fault_schedule' "$lock")"
+mkdir -p "$evidence_root/$(dirname "$locked_schedule_path")"
+cp "$schedule_src" "$evidence_root/$locked_schedule_path"
+schedule_sha="$(sha256sum "$evidence_root/$locked_schedule_path" | cut -d ' ' -f 1)"
 baseline_trials="$evidence_root/baseline-trials.json"
 srq_trials="$evidence_root/srq-trials.json"
 receipt="$tmpdir/comparison-run.json"
 input_sha="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-jq -n --arg input "$input_sha" '{schema_version:1,trials:[range(0;5) as $i | {trial_id:("trial-"+($i|tostring)),fault_id:"sigkill-after-decision",input_sha256:$input,duration_ns:(10000000 + $i*1000),outcome:"old_complete",execution_order:(if ($i % 2) == 0 then "baseline_first" else "srq_first" end)}]}' > "$baseline_trials"
-jq -n --arg input "$input_sha" '{schema_version:1,trials:[range(0;5) as $i | {trial_id:("trial-"+($i|tostring)),fault_id:"sigkill-after-decision",input_sha256:$input,duration_ns:(9000000 + $i*1500),outcome:(if $i == 4 then "recoverable_blocked" else "old_complete" end),execution_order:(if ($i % 2) == 0 then "baseline_first" else "srq_first" end)}]}' > "$srq_trials"
+jq -n '{
+  schema_version:1,
+  trials:[range(0;15) as $i |
+    (if ($i / 5 | floor) == 0 then "commit-before-ack"
+     elif ($i / 5 | floor) == 1 then "sigkill-after-decision"
+     else "sigkill-before-commit" end) as $fault |
+    (if $fault == "commit-before-ack" then "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     elif $fault == "sigkill-after-decision" then "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     else "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" end) as $input |
+    {trial_id:("trial-"+($i|tostring)),fault_id:$fault,input_sha256:$input,
+     duration_ns:(10000000 + $i*1000),outcome:"old_complete",
+     execution_order:(if ($i % 2) == 0 then "baseline_first" else "srq_first" end)}]
+}' > "$baseline_trials"
+jq -n '{
+  schema_version:1,
+  trials:[range(0;15) as $i |
+    (if ($i / 5 | floor) == 0 then "commit-before-ack"
+     elif ($i / 5 | floor) == 1 then "sigkill-after-decision"
+     else "sigkill-before-commit" end) as $fault |
+    (if $fault == "commit-before-ack" then "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+     elif $fault == "sigkill-after-decision" then "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     else "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" end) as $input |
+    {trial_id:("trial-"+($i|tostring)),fault_id:$fault,input_sha256:$input,
+     duration_ns:(9000000 + $i*1500),
+     outcome:(if $i == 4 then "recoverable_blocked" else "old_complete" end),
+     execution_order:(if ($i % 2) == 0 then "baseline_first" else "srq_first" end)}]
+}' > "$srq_trials"
 lock_sha="$(sha256sum "$lock" | cut -d ' ' -f 1)"
 baseline_sha="$(sha256sum "$baseline_trials" | cut -d ' ' -f 1)"
 srq_sha="$(sha256sum "$srq_trials" | cut -d ' ' -f 1)"
-jq -n --slurpfile lock "$lock" --arg lock_sha "$lock_sha" --arg baseline_sha "$baseline_sha" --arg srq_sha "$srq_sha" '
+jq -n --slurpfile lock "$lock" --arg lock_sha "$lock_sha" --arg baseline_sha "$baseline_sha" --arg srq_sha "$srq_sha" --arg schedule_sha "$schedule_sha" --arg schedule_path "$locked_schedule_path" '
   {schema_version:1,profile_id:"SRQ-MATCHED-COMPARISON-RUN-V1",fixture:true,
    comparison_lock:{baseline_id:$lock[0].baseline_id,lock_sha256:$lock_sha},
    source:{expected_srq_source_sha:$lock[0].srq_source_sha,actual_srq_checkout_sha:$lock[0].srq_source_sha,baseline_source:$lock[0].baseline_source},
    environment:$lock[0].platform,
    pairing:{protocol:"paired_fault_trials_v1",minimum_paired_trials:5,order_policy:"randomized_per_pair",order_seed:42},
-   artifacts:{baseline_trials:{path:"baseline-trials.json",sha256:$baseline_sha},srq_trials:{path:"srq-trials.json",sha256:$srq_sha}},
+   artifacts:{baseline_trials:{path:"baseline-trials.json",sha256:$baseline_sha},srq_trials:{path:"srq-trials.json",sha256:$srq_sha},fault_schedule:{path:$schedule_path,sha256:$schedule_sha}},
    non_claims:["Synthetic fixture only.","Structural comparability is not a safety or performance win."]}
 ' > "$receipt"
 
@@ -95,6 +125,26 @@ make_srq_variant_reject mismatched-order '.trials[0].execution_order = "srq_firs
 make_srq_variant_reject missing-paired-trial '.trials = .trials[0:4]'
 
 # Recorded digest must be checked against actual raw bytes.
+# Both arms can agree and still omit a predeclared fault; coverage is checked against the locked schedule.
+make_both_arms_reject() {
+  local label="$1" filter="$2"
+  local b="$evidence_root/$label-baseline-trials.json" s="$evidence_root/$label-srq-trials.json"
+  local br="$tmpdir/$label-receipt.json" out="$tmpdir/$label.out" bd sd
+  jq "$filter" "$baseline_trials" > "$b"
+  jq "$filter" "$srq_trials" > "$s"
+  bd="$(sha256sum "$b" | cut -d ' ' -f 1)"
+  sd="$(sha256sum "$s" | cut -d ' ' -f 1)"
+  jq --arg bp "$(basename "$b")" --arg bd "$bd" --arg sp "$(basename "$s")" --arg sd "$sd"     '.artifacts.baseline_trials={path:$bp,sha256:$bd} | .artifacts.srq_trials={path:$sp,sha256:$sd}' "$receipt" > "$br"
+  if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$br" >"$out" 2>&1; then
+    echo "FAIL: matched-run validator accepted schedule coverage defect '$label'" >&2; cat "$out" >&2; exit 1
+  fi
+  echo "PASS: locked fault schedule coverage rejected ($label)"
+}
+make_both_arms_reject missing-scheduled-fault '.trials |= map(select(.fault_id != "sigkill-before-commit"))'
+make_both_arms_reject unknown-fault '.trials[0].fault_id = "unregistered-fault"'
+make_both_arms_reject wrong-scheduled-input '.trials[0].input_sha256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"'
+make_both_arms_reject underrepresented-fault '.trials[0].fault_id = "sigkill-after-decision" | .trials[0].input_sha256 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"'
+
 printf '\n' >> "$baseline_trials"
 if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt" >"$tmpdir/mutated-bytes.out" 2>&1; then
   echo "FAIL: matched-run validator accepted a mutated trial artifact" >&2; exit 1

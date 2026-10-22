@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "profile_id": "SRQ-FAULT-SCHEDULE-V1",
+  "faults": [
+    {
+      "fault_id": "commit-before-ack",
+      "input_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "minimum_trials": 5
+    },
+    {
+      "fault_id": "sigkill-after-decision",
+      "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "minimum_trials": 5
+    },
+    {
+      "fault_id": "sigkill-before-commit",
+      "input_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "minimum_trials": 5
+    }
+  ]
+}

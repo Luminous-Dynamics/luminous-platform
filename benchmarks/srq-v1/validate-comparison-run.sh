@@ -62,7 +62,7 @@ if ! jq -e '
     .order_policy == "randomized_per_pair" and
     (.order_seed | type == "number" and floor == . and . >= 0)) and
   (.artifacts as $artifacts | ($artifacts | type == "object") and
-    all(["baseline_trials","srq_trials"][]; . as $k |
+    all(["baseline_trials","srq_trials","fault_schedule"][]; . as $k |
       ($artifacts[$k] | type == "object" and
         (.path | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._/-]*$") and (startswith("/") | not) and (contains("..") | not) and (contains("//") | not)) and
         (.sha256 | type == "string" and test("^[0-9a-f]{64}$"))))) and
@@ -155,6 +155,47 @@ if ! jq -e --slurpfile baseline "$baseline_trials" --slurpfile srq "$srq_trials"
 ' "$receipt" >/dev/null; then
   not_comparable "baseline and SRQ do not have identical paired trial IDs, fault IDs, input digests, and recorded execution order"
 fi
+
+fault_schedule="$(resolve_artifact fault_schedule)"
+locked_schedule_path="$(jq -r '.artifacts.fault_schedule' "$comparison_lock")"
+locked_schedule_sha="$(jq -r '.fault_schedule_sha256' "$comparison_lock")"
+receipt_schedule_path="$(jq -r '.artifacts.fault_schedule.path' "$receipt")"
+receipt_schedule_sha="$(jq -r '.artifacts.fault_schedule.sha256' "$receipt")"
+[[ "$receipt_schedule_path" == "$locked_schedule_path" ]] || not_comparable "trial receipt does not point to the fault schedule pinned by the comparison lock"
+[[ "$receipt_schedule_sha" == "$locked_schedule_sha" ]] || not_comparable "trial receipt fault-schedule digest differs from the comparison lock"
+actual_schedule_sha="$(sha256sum "$fault_schedule" | cut -d ' ' -f 1)"
+[[ "$actual_schedule_sha" == "$locked_schedule_sha" ]] || not_comparable "fault schedule bytes differ from the comparison lock"
+
+# The schedule is the predeclared denominator. Pairing two arms that both omit a fault is not coverage.
+if ! jq -e '
+  type == "object" and .schema_version == 1 and .profile_id == "SRQ-FAULT-SCHEDULE-V1" and
+  (.faults | type == "array" and length > 0) and
+  (([.faults[].fault_id] | length) == ([.faults[].fault_id] | unique | length)) and
+  all(.faults[];
+    (.fault_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
+    (.input_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+    (.minimum_trials | type == "number" and floor == . and . >= 1))
+' "$fault_schedule" >/dev/null; then
+  not_comparable "locked fault schedule is malformed or has duplicate fault IDs"
+fi
+
+check_schedule_coverage() {
+  local label="$1" trials="$2"
+  if ! jq -e --slurpfile schedule "$fault_schedule" '
+    .trials as $trials |
+    all($trials[];
+      . as $trial |
+      any($schedule[0].faults[];
+        .fault_id == $trial.fault_id and .input_sha256 == $trial.input_sha256)) and
+    all($schedule[0].faults[];
+      . as $fault |
+      ([$trials[] | select(.fault_id == $fault.fault_id and .input_sha256 == $fault.input_sha256)] | length) >= $fault.minimum_trials)
+  ' "$trials" >/dev/null; then
+    not_comparable "$label trial set does not cover every locked fault/input pair at its required repetition count"
+  fi
+}
+check_schedule_coverage "baseline" "$baseline_trials"
+check_schedule_coverage "SRQ" "$srq_trials"
 
 paired_count="$(jq -r --slurpfile baseline "$baseline_trials" '. as $r | $baseline[0].trials | length' "$receipt")"
 if [[ "$fixture" == "true" ]]; then
