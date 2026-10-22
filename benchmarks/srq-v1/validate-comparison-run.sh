@@ -259,7 +259,7 @@ validate_execution_witness() {
       ([$events[] | select(.event_id == $t.observation_event_id)] | length == 1) as $observe_count |
       ([$events[] | select(.event_id == $t.fault_event_id)][0]) as $inject |
       ([$events[] | select(.event_id == $t.observation_event_id)][0]) as $observe |
-      ($observation_count == 1 and $schedule_count == 1 and $inject_count == 1 and $observe_count == 1) and
+      ($observation_count and $schedule_count and $inject_count and $observe_count) and
       $inject.trial_id == $t.trial_id and $inject.fault_id == $t.fault_id and
       $inject.input_sha256 == $t.input_sha256 and $inject.event_kind == "fault_injection" and
       $inject.source_role == "fault_injector" and $inject.trigger_confirmed == true and
