@@ -10,9 +10,13 @@ allow_fixtures=false
 evidence_root=""
 comparison_lock=""
 receipt=""
+injector_public_key=""
+injector_key_id=""
+observer_public_key=""
+observer_key_id=""
 
 usage() {
-  echo "Usage: $0 [--allow-fixtures] --evidence-root DIR --comparison-lock LOCK.json <comparison-run.json>" >&2
+  echo "Usage: $0 [--allow-fixtures] --evidence-root DIR --comparison-lock LOCK.json [--injector-public-key KEY.pem --injector-key-id ID --observer-public-key KEY.pem --observer-key-id ID] <comparison-run.json>" >&2
 }
 not_comparable() {
   echo "NOT_COMPARABLE: $*" >&2
@@ -27,6 +31,18 @@ while (($#)); do
     --comparison-lock)
       if [[ $# -lt 2 || -z "$2" ]]; then usage; exit 2; fi
       comparison_lock="$2"; shift 2 ;;
+    --injector-public-key)
+      if [[ $# -lt 2 || -z "$2" ]]; then usage; exit 2; fi
+      injector_public_key="$2"; shift 2 ;;
+    --injector-key-id)
+      if [[ $# -lt 2 || -z "$2" ]]; then usage; exit 2; fi
+      injector_key_id="$2"; shift 2 ;;
+    --observer-public-key)
+      if [[ $# -lt 2 || -z "$2" ]]; then usage; exit 2; fi
+      observer_public_key="$2"; shift 2 ;;
+    --observer-key-id)
+      if [[ $# -lt 2 || -z "$2" ]]; then usage; exit 2; fi
+      observer_key_id="$2"; shift 2 ;;
     -*) usage; exit 2 ;;
     *)
       if [[ -n "$receipt" ]]; then usage; exit 2; fi
@@ -80,6 +96,29 @@ if [[ "$fixture" != "$lock_fixture" ]]; then
 fi
 if [[ "$fixture" == "true" && "$allow_fixtures" != "true" ]]; then
   not_comparable "fixture run receipts are examples, not benchmark evidence; --allow-fixtures is test-only"
+fi
+
+key_argument_count=0
+for key_arg in "$injector_public_key" "$injector_key_id" "$observer_public_key" "$observer_key_id"; do
+  [[ -n "$key_arg" ]] && ((key_argument_count+=1))
+done
+if [[ "$key_argument_count" != "0" && "$key_argument_count" != "4" ]]; then
+  usage
+  exit 2
+fi
+if [[ "$fixture" == "false" && "$key_argument_count" != "4" ]]; then
+  not_comparable "non-fixture comparison requires out-of-bundle injector and observer public keys and key IDs"
+fi
+if [[ "$key_argument_count" == "4" ]]; then
+  command -v openssl >/dev/null 2>&1 || { echo "BLOCKED: openssl is required to authenticate execution witnesses." >&2; exit 2; }
+  command -v base64 >/dev/null 2>&1 || { echo "BLOCKED: base64 is required to authenticate execution witnesses." >&2; exit 2; }
+  [[ -f "$injector_public_key" && -f "$observer_public_key" ]] || not_comparable "trusted execution-witness public key is missing"
+  [[ "$injector_key_id" =~ ^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$ && "$observer_key_id" =~ ^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$ ]] || not_comparable "trusted key ID has an invalid format"
+  openssl pkey -pubin -in "$injector_public_key" -text -noout 2>/dev/null | grep -q "ED25519 Public-Key" || not_comparable "injector trust key is not Ed25519"
+  openssl pkey -pubin -in "$observer_public_key" -text -noout 2>/dev/null | grep -q "ED25519 Public-Key" || not_comparable "observer trust key is not Ed25519"
+  injector_fingerprint="$(openssl pkey -pubin -in "$injector_public_key" -outform DER 2>/dev/null | sha256sum | cut -d ' ' -f 1)"
+  observer_fingerprint="$(openssl pkey -pubin -in "$observer_public_key" -outform DER 2>/dev/null | sha256sum | cut -d ' ' -f 1)"
+  [[ "$injector_fingerprint" != "$observer_fingerprint" ]] || not_comparable "injector and observer must use distinct trusted public keys"
 fi
 
 # Validate the lock itself before comparing its exact bytes and frozen identities.
@@ -208,6 +247,46 @@ srq_events="$(resolve_artifact srq_events)"
 baseline_observations="$(resolve_artifact baseline_observations)"
 srq_observations="$(resolve_artifact srq_observations)"
 
+if [[ "$key_argument_count" == "4" ]]; then
+  verify_event_signatures "baseline" "$baseline_events"
+  verify_event_signatures "SRQ" "$srq_events"
+fi
+
+
+verify_event_signatures() {
+  local label="$1" events="$2" row role key_id expected_key_id key payload_file signature_file signature
+  local signature_tmp
+  signature_tmp="$(mktemp -d)"
+  while IFS= read -r row; do
+    role="$(jq -r '.source_role // empty' <<< "$row")"
+    case "$role" in
+      fault_injector) key="$injector_public_key"; expected_key_id="$injector_key_id" ;;
+      independent_observer) key="$observer_public_key"; expected_key_id="$observer_key_id" ;;
+      *) rm -rf "$signature_tmp"; not_comparable "$label witness uses an unknown source role" ;;
+    esac
+    key_id="$(jq -r '.key_id // empty' <<< "$row")"
+    [[ "$key_id" == "$expected_key_id" ]] || {
+      rm -rf "$signature_tmp"
+      not_comparable "$label witness key ID is not the externally pinned key for its role"
+    }
+    signature="$(jq -r '.signature_b64 // empty' <<< "$row")"
+    payload_file="$signature_tmp/payload.json"
+    signature_file="$signature_tmp/signature.bin"
+    printf '%s\n' "$row" | jq -cS 'del(.signature_b64)' > "$payload_file" || {
+      rm -rf "$signature_tmp"; not_comparable "$label witness cannot be canonicalized"
+    }
+    printf '%s' "$signature" | base64 --decode > "$signature_file" 2>/dev/null || {
+      rm -rf "$signature_tmp"; not_comparable "$label witness signature is not valid base64"
+    }
+    [[ "$(wc -c < "$signature_file" | tr -d ' ')" == "64" ]] || {
+      rm -rf "$signature_tmp"; not_comparable "$label witness signature length is not Ed25519-sized"
+    }
+    openssl pkeyutl -verify -pubin -inkey "$key" -rawin -in "$payload_file" -sigfile "$signature_file" >/dev/null 2>&1 || {
+      rm -rf "$signature_tmp"; not_comparable "$label witness signature failed verification"
+    }
+  done < <(jq -c '.events[]' "$events")
+  rm -rf "$signature_tmp"
+}
 validate_observations() {
   local label="$1" trials="$2" observations="$3"
   if ! jq -e --slurpfile trials "$trials" '
@@ -248,6 +327,8 @@ validate_execution_witness() {
       (.fault_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
       (.input_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
       (.monotonic_ns | type == "number" and floor == . and . > 0) and
+      (.key_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
+      (.signature_b64 | type == "string" and test("^[A-Za-z0-9+/]{86}==$")) and
       any($trials[0].trials[]; .trial_id == $event.trial_id)) and
     all($trials[0].trials[];
       . as $t |

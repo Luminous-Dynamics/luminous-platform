@@ -5,6 +5,17 @@ validator="$script_dir/validate-comparison-run.sh"
 lock="$script_dir/fixtures/comparison-lock-tuf-v1.0.36.example.json"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
+command -v openssl >/dev/null 2>&1 || { echo "BLOCKED: openssl is required for witness signature tests." >&2; exit 2; }
+injector_private_key="$tmpdir/injector-private.pem"
+injector_public_key="$tmpdir/injector-public.pem"
+observer_private_key="$tmpdir/observer-private.pem"
+observer_public_key="$tmpdir/observer-public.pem"
+injector_key_id="fixture-injector-ed25519-v1"
+observer_key_id="fixture-observer-ed25519-v1"
+openssl genpkey -algorithm Ed25519 -out "$injector_private_key"
+openssl pkey -in "$injector_private_key" -pubout -out "$injector_public_key"
+openssl genpkey -algorithm Ed25519 -out "$observer_private_key"
+openssl pkey -in "$observer_private_key" -pubout -out "$observer_public_key"
 [[ -f "$lock" ]] || { echo "FAIL: comparison-lock fixture is missing" >&2; exit 1; }
 mkdir -p "$tmpdir/evidence"
 evidence_root="$tmpdir/evidence"
@@ -59,6 +70,26 @@ write_observation_ledger() {
     ]}
   ' > "$out"
 }
+sign_event_ledger() {
+  local source="$1" destination="$2" rows="$tmpdir/signed-events.ndjson"
+  local row role key key_id payload_file signature_file signature
+  : > "$rows"
+  while IFS= read -r row; do
+    role="$(jq -r '.source_role // empty' <<< "$row")"
+    case "$role" in
+      fault_injector) key="$injector_private_key"; key_id="$injector_key_id" ;;
+      independent_observer) key="$observer_private_key"; key_id="$observer_key_id" ;;
+      *) echo "FAIL: test fixture contains an unknown event role" >&2; return 1 ;;
+    esac
+    payload_file="$tmpdir/sign-payload.json"
+    signature_file="$tmpdir/signature.bin"
+    printf '%s\n' "$row" | jq -cS --arg kid "$key_id" 'del(.signature_b64,.key_id) + {key_id:$kid}' > "$payload_file"
+    openssl pkeyutl -sign -inkey "$key" -rawin -in "$payload_file" -out "$signature_file"
+    signature="$(base64 -w0 < "$signature_file")"
+    jq -c --arg kid "$key_id" --arg sig "$signature" 'del(.signature_b64,.key_id) + {key_id:$kid,signature_b64:$sig}' <<< "$row" >> "$rows"
+  done < <(jq -c '.events[]' "$source")
+  jq -s '{schema_version:1,events:.}' "$rows" > "$destination"
+}
 write_event_ledger() {
   local arm="$1" trials="$2" observations="$3" out="$4" digest
   if [[ "$arm" == "baseline" ]]; then digest="dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
@@ -76,7 +107,9 @@ write_event_ledger() {
         monotonic_ns:(1000000 + (($t.trial_id|ltrimstr("trial-")|tonumber)*1000)),
         observation_id:("obs-"+$t.trial_id),post_restart:true,outcome:$t.outcome,state_digest_sha256:$digest}]
     )}
-  ' > "$out"
+  ' > "$out.unsigned"
+  sign_event_ledger "$out.unsigned" "$out"
+  rm -f "$out.unsigned"
 }
 baseline_observations="$evidence_root/baseline-observations.json"
 srq_observations="$evidence_root/srq-observations.json"
@@ -104,7 +137,7 @@ jq -n --slurpfile lock "$lock" --arg lock_sha "$lock_sha" --arg baseline_sha "$b
    non_claims:["Synthetic fixture only.","Structural comparability is not a safety or performance win."]}
 ' > "$receipt"
 
-bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt"
+bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$observer_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt"
 if bash "$validator" --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt" >"$tmpdir/fixture-default.out" 2>&1; then
   echo "FAIL: fixture run receipt accepted without --allow-fixtures" >&2; exit 1
 fi
@@ -113,7 +146,7 @@ echo "PASS: fixture comparison run rejected by default"
 expect_reject_receipt() {
   local label="$1" filter="$2" mutated="$tmpdir/$1.json" out="$tmpdir/$1.out"
   jq "$filter" "$receipt" > "$mutated"
-  if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$mutated" >"$out" 2>&1; then
+  if bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$observer_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$mutated" >"$out" 2>&1; then
     echo "FAIL: matched-run validator accepted negative control '$label'" >&2; cat "$out" >&2; exit 1
   fi
   echo "PASS: matched-run negative control rejected ($label)"
@@ -137,14 +170,14 @@ mutate_baseline_and_expect_reject() {
   jq --arg path "$modified" --arg digest "$digest" '.artifacts.baseline_trials.path=$path | .artifacts.baseline_trials.sha256=$digest' "$receipt" > "$bad_receipt"
   # The absolute path is rejected before the digest check; for all other variants the test artifact must be under the evidence root.
   if [[ "$label" == "unsafe-absolute-path" ]]; then
-    if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$bad_receipt" >"$out" 2>&1; then echo "FAIL: unsafe absolute path was accepted" >&2; exit 1; fi
+    if bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$observer_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$bad_receipt" >"$out" 2>&1; then echo "FAIL: unsafe absolute path was accepted" >&2; exit 1; fi
     echo "PASS: matched-run negative control rejected ($label)"
     return
   fi
   local rel="$label-trials.json"
   cp "$modified" "$evidence_root/$rel"
   jq --arg path "$rel" '.artifacts.baseline_trials.path=$path' "$bad_receipt" > "$tmpdir/$label-receipt-relative.json"
-  if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$tmpdir/$label-receipt-relative.json" >"$out" 2>&1; then
+  if bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$observer_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$tmpdir/$label-receipt-relative.json" >"$out" 2>&1; then
     echo "FAIL: matched-run validator accepted trial negative control '$label'" >&2; cat "$out" >&2; exit 1
   fi
   echo "PASS: matched-run negative control rejected ($label)"
@@ -160,7 +193,7 @@ make_srq_variant_reject() {
   jq "$filter" "$srq_trials" > "$modified"
   digest="$(sha256sum "$modified" | cut -d ' ' -f 1)"
   jq --arg path "$(basename "$modified")" --arg digest "$digest" '.artifacts.srq_trials.path=$path | .artifacts.srq_trials.sha256=$digest' "$receipt" > "$bad_receipt"
-  if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$bad_receipt" >"$out" 2>&1; then
+  if bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$observer_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$bad_receipt" >"$out" 2>&1; then
     echo "FAIL: matched-run validator accepted pairing defect '$label'" >&2; cat "$out" >&2; exit 1
   fi
   echo "PASS: matched-run pairing defect rejected ($label)"
@@ -181,7 +214,7 @@ make_both_arms_reject() {
   bd="$(sha256sum "$b" | cut -d ' ' -f 1)"
   sd="$(sha256sum "$s" | cut -d ' ' -f 1)"
   jq --arg bp "$(basename "$b")" --arg bd "$bd" --arg sp "$(basename "$s")" --arg sd "$sd"     '.artifacts.baseline_trials={path:$bp,sha256:$bd} | .artifacts.srq_trials={path:$sp,sha256:$sd}' "$receipt" > "$br"
-  if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$br" >"$out" 2>&1; then
+  if bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$observer_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$br" >"$out" 2>&1; then
     echo "FAIL: matched-run validator accepted schedule coverage defect '$label'" >&2; cat "$out" >&2; exit 1
   fi
   echo "PASS: locked fault schedule coverage rejected ($label)"
@@ -198,16 +231,32 @@ mutate_witness_reject() {
   source_path="$(jq -r --arg key "$artifact_key" '.artifacts[$key].path' "$receipt")"
   target_file="$evidence_root/$label.json"
   jq "$filter" "$evidence_root/$source_path" > "$target_file"
+  if [[ "$artifact_key" == *_events ]]; then
+    sign_event_ledger "$target_file" "$target_file.signed"
+    mv "$target_file.signed" "$target_file"
+  fi
   digest="$(sha256sum "$target_file" | cut -d ' ' -f 1)"
   receipt_variant="$tmpdir/$label-receipt.json"
   jq --arg key "$artifact_key" --arg path "$label.json" --arg digest "$digest" \
     '.artifacts[$key].path=$path | .artifacts[$key].sha256=$digest' "$receipt" > "$receipt_variant"
   out="$tmpdir/$label.out"
-  if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt_variant" >"$out" 2>&1; then
+  if bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$observer_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt_variant" >"$out" 2>&1; then
     echo "FAIL: execution-witness validator accepted negative control '$label'" >&2; cat "$out" >&2; exit 1
   fi
   echo "PASS: execution-witness negative control rejected ($label)"
 }
+mutate_witness_signature_reject() {
+  local target_file="$evidence_root/tampered-signature.json" bad_receipt="$tmpdir/tampered-signature-receipt.json" digest out="$tmpdir/tampered-signature.out"
+  jq '.events[0].signature_b64 = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="' "$baseline_events" > "$target_file"
+  digest="$(sha256sum "$target_file" | cut -d ' ' -f 1)"
+  jq --arg path "tampered-signature.json" --arg digest "$digest" '.artifacts.baseline_events.path=$path | .artifacts.baseline_events.sha256=$digest' "$receipt" > "$bad_receipt"
+  if bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$observer_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$bad_receipt" >"$out" 2>&1; then
+    echo "FAIL: invalid witness signature was accepted" >&2; cat "$out" >&2; exit 1
+  fi
+  echo "PASS: signed-witness negative control rejected (signature tampering)"
+}
+mutate_witness_signature_reject
+
 mutate_witness_reject missing-injector-event baseline_events '.events |= map(select(.event_kind != "fault_injection" or .trial_id != "trial-0"))'
 mutate_witness_reject unconfirmed-injector baseline_events '.events |= map(if .event_kind == "fault_injection" and .trial_id == "trial-0" then .trigger_confirmed = false else . end)'
 mutate_witness_reject observer-before-trigger baseline_events '.events |= map(if .event_kind == "post_restart_observation" and .trial_id == "trial-0" then .monotonic_ns = 1 else . end)'
@@ -217,7 +266,7 @@ mutate_witness_reject observation-not-after-restart baseline_observations '.obse
 mutate_witness_reject missing-observation baseline_observations '.observations |= map(select(.trial_id != "trial-0"))'
 
 printf '\n' >> "$baseline_trials"
-if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt" >"$tmpdir/mutated-bytes.out" 2>&1; then
+if bash "$validator" --allow-fixtures --injector-public-key "$injector_public_key" --injector-key-id "$injector_key_id" --observer-public-key "$observer_public_key" --observer-key-id "$observer_key_id" --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt" >"$tmpdir/mutated-bytes.out" 2>&1; then
   echo "FAIL: matched-run validator accepted a mutated trial artifact" >&2; exit 1
 fi
 echo "PASS: matched-run validator rejected mutated raw trial bytes"

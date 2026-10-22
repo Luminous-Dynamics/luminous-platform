@@ -12,7 +12,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["event_id", "trial_id", "fault_id", "input_sha256", "event_kind", "source_role", "monotonic_ns"],
+        "required": ["event_id", "trial_id", "fault_id", "input_sha256", "event_kind", "source_role", "monotonic_ns", "key_id", "signature_b64"],
         "properties": {
           "event_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
           "trial_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
@@ -21,6 +21,8 @@
           "event_kind": {"enum": ["fault_injection", "post_restart_observation"]},
           "source_role": {"enum": ["fault_injector", "independent_observer"]},
           "monotonic_ns": {"type": "integer", "minimum": 1},
+          "key_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
+          "signature_b64": {"type": "string", "pattern": "^[A-Za-z0-9+/]{86}==$"},
           "mechanism": {"enum": ["function_return", "sigkill", "qemu_reset", "kernel_panic", "physical_power_cut"]},
           "trigger_confirmed": {"type": "boolean"},
           "post_restart": {"type": "boolean"},
