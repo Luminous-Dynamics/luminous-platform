@@ -65,6 +65,32 @@ if bash "$verifier" --public-key "$public" --expected-key-id "$key_id" --evidenc
 fi
 echo "PASS: signed statement with altered artifact manifest rejected"
 
+# Non-fixture appraisal must match a challenge supplied from outside the evidence bundle.
+# This prevents the bundle itself from deciding what freshness nonce the verifier expected.
+nonfixture_root="$tmpdir/nonfixture-evidence"
+mkdir -p "$nonfixture_root"
+cp "$root/trial-data.json" "$nonfixture_root/trial-data.json"
+jq '.fixture = false' "$root/comparison-lock.json" > "$nonfixture_root/comparison-lock.json"
+nonfixture_lock_sha="$(sha256sum "$nonfixture_root/comparison-lock.json" | cut -d ' ' -f 1)"
+jq --arg lock_sha "$nonfixture_lock_sha" '.fixture = false | .comparison_lock.lock_sha256 = $lock_sha' "$root/comparison-run.json" > "$nonfixture_root/comparison-run.json"
+nonfixture_statement="$tmpdir/nonfixture-statement.json"
+nonfixture_envelope="$tmpdir/nonfixture-envelope.json"
+bash "$builder" --evidence-root "$nonfixture_root" --comparison-lock-path comparison-lock.json --comparison-run-path comparison-run.json --output "$nonfixture_statement"
+bash "$signer" --statement "$nonfixture_statement" --private-key "$private" --key-id "$key_id" --output "$nonfixture_envelope"
+if bash "$verifier" --public-key "$public" --expected-key-id "$key_id" --evidence-root "$nonfixture_root" "$nonfixture_envelope" >"$tmpdir/missing-challenge.out" 2>&1; then
+  echo "FAIL: non-fixture envelope accepted without verifier-issued challenge" >&2; exit 1
+fi
+echo "PASS: non-fixture appraisal requires verifier-issued challenge"
+expected_challenge="$(jq -r '.run_challenge' "$nonfixture_root/comparison-run.json")"
+wrong_challenge="$(openssl rand -hex 32)"
+if [[ "$wrong_challenge" == "$expected_challenge" ]]; then wrong_challenge="$(printf '%064d' 1)"; fi
+if bash "$verifier" --public-key "$public" --expected-key-id "$key_id" --expected-run-challenge "$wrong_challenge" --evidence-root "$nonfixture_root" "$nonfixture_envelope" >"$tmpdir/wrong-challenge.out" 2>&1; then
+  echo "FAIL: non-fixture envelope accepted with wrong verifier-issued challenge" >&2; exit 1
+fi
+echo "PASS: wrong verifier-issued challenge rejected"
+bash "$verifier" --public-key "$public" --expected-key-id "$key_id" --expected-run-challenge "$expected_challenge" --evidence-root "$nonfixture_root" "$nonfixture_envelope"
+echo "PASS: exact externally supplied challenge accepted"
+
 # A non-Ed25519 private key must be rejected by the signer rather than producing an envelope
 # that downstream Ed25519-only verification will inevitably reject.
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$tmpdir/rsa-private.pem" 2>/dev/null

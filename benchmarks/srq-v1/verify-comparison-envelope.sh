@@ -2,15 +2,17 @@
 set -euo pipefail
 public_key=""
 expected_key_id=""
+expected_run_challenge=""
 evidence_root=""
 envelope=""
-usage() { echo "Usage: $0 --public-key KEY.pem --expected-key-id ID --evidence-root DIR ENVELOPE.json" >&2; }
+usage() { echo "Usage: $0 --public-key KEY.pem --expected-key-id ID [--expected-run-challenge HEX64] --evidence-root DIR ENVELOPE.json" >&2; }
 fail() { echo "NOT_VERIFIED: $*" >&2; exit 1; }
 safe_relative() { local p="$1"; [[ "$p" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ && "$p" != *".."* && "$p" != *"//"* ]]; }
 while (($#)); do
   case "$1" in
     --public-key) [[ $# -ge 2 ]] || { usage; exit 2; }; public_key="$2"; shift 2 ;;
     --expected-key-id) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_key_id="$2"; shift 2 ;;
+    --expected-run-challenge) [[ $# -ge 2 ]] || { usage; exit 2; }; expected_run_challenge="$2"; shift 2 ;;
     --evidence-root) [[ $# -ge 2 ]] || { usage; exit 2; }; evidence_root="$2"; shift 2 ;;
     -*) usage; exit 2 ;;
     *) [[ -z "$envelope" ]] || { usage; exit 2; }; envelope="$1"; shift ;;
@@ -58,6 +60,18 @@ jq -e '
     (.name | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._/-]*$") and (contains("..") | not) and (contains("//") | not)) and
     (.digest.sha256 | type == "string" and test("^[0-9a-f]{64}$")))
 ' "$payload_file" >/dev/null || fail "statement failed semantic profile checks"
+
+evidence_status="$(jq -r '.predicate.evidence_status' "$payload_file")"
+statement_challenge="$(jq -r '.predicate.run_challenge' "$payload_file")"
+if [[ -n "$expected_run_challenge" && ! "$expected_run_challenge" =~ ^[0-9a-f]{64}$ ]]; then
+  fail "expected run challenge must be 256-bit lowercase hexadecimal"
+fi
+if [[ "$evidence_status" == "submitted_for_appraisal" ]]; then
+  [[ "$expected_run_challenge" =~ ^[0-9a-f]{64}$ ]] || fail "non-fixture appraisal requires an externally issued expected run challenge"
+fi
+if [[ -n "$expected_run_challenge" && "$statement_challenge" != "$expected_run_challenge" ]]; then
+  fail "statement run challenge differs from verifier-issued expected challenge"
+fi
 
 root_real="$(realpath -e "$evidence_root")"
 while IFS= read -r relative; do
