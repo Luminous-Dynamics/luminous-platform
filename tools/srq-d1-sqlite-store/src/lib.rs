@@ -152,7 +152,7 @@ impl SqliteD1Store {
             .map_err(|error| format!("inspect D1 database objects: {error}"))?;
         let initialize_schema = match user_version {
             0 if object_count == 0 && application_id == 0 => true,
-            SCHEMA_VERSION if application_id == APPLICATION_ID => false,
+            SCHEMA_VERSION if application_id == APPLICATION_ID && object_count > 0 => false,
             _ => {
                 return Err(format!(
                     "refusing unknown/nonempty schema identity (application_id={application_id}, user_version={user_version}, objects={object_count})"
