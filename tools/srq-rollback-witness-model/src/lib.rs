@@ -585,6 +585,59 @@ mod tests {
     }
 
     #[test]
+    fn one_hundred_thousand_deterministic_two_field_mutations_never_authorize_recovery() {
+        let (mut witness, mut local) = initialized();
+        let original = checkpoint(
+            "target-01",
+            1,
+            GENESIS,
+            ARTIFACT,
+            41,
+            1_000,
+            "decision-100k-mutations",
+        );
+        local.prepare(original.clone()).unwrap();
+        witness.advance_at(&original, 1_001).unwrap();
+
+        // Each trial changes deployment_id plus one additional checkpoint field.
+        // Cycle through all other fields, producing reproducible multi-field
+        // corruption without relying on a pseudo-random generator or fixture seed.
+        for case_id in 0..100_000u64 {
+            let mut candidate = original.clone();
+            candidate.deployment_id = format!("mutated-deployment-{case_id}");
+            match case_id % 13 {
+                0 => candidate.target_id = format!("mutated-target-{case_id}"),
+                1 => candidate.sequence = candidate.sequence.saturating_add(1),
+                2 => candidate.previous_checkpoint_sha256 = POLICY.to_owned(),
+                3 => candidate.checkpoint_sha256 = CORPUS.to_owned(),
+                4 => candidate.decision_id = format!("mutated-decision-{case_id}"),
+                5 => candidate.challenge_id = format!("mutated-challenge-{case_id}"),
+                6 => candidate.previous_generation = 40,
+                7 => candidate.generation = 43,
+                8 => candidate.approved_artifact_sha256 = POLICY.to_owned(),
+                9 => candidate.effective_policy_sha256 = ARTIFACT.to_owned(),
+                10 => candidate.corpus_sha256 = ARTIFACT.to_owned(),
+                11 => candidate.issued_at_unix_seconds = 1_001,
+                12 => candidate.expires_at_unix_seconds = 1_031,
+                _ => unreachable!("modulo 13 always produces 0..=12"),
+            }
+            local.prepared = Some(candidate);
+            assert_ne!(
+                reconcile(&local, &witness),
+                Reconciliation::WitnessCommittedNeedsLocalFinalize,
+                "mutated case {case_id} was incorrectly treated as safe recovery"
+            );
+        }
+
+        local.prepared = Some(original);
+        assert_eq!(
+            reconcile(&local, &witness),
+            Reconciliation::WitnessCommittedNeedsLocalFinalize,
+            "the exact checkpoint must remain recoverable after the mutation campaign"
+        );
+    }
+
+    #[test]
     fn two_phase_ordering_never_calls_local_prepare_a_success() {
         let (mut witness, mut local) = initialized();
         let next = checkpoint("target-01", 1, GENESIS, ARTIFACT, 41, 1_000, "decision-3");
