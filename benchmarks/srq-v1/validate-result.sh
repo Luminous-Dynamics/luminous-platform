@@ -77,6 +77,8 @@ jq -e '
   (.status == "PASS" or .status == "FAIL" or .status == "NOT_RUN" or .status == "BLOCKED" or .status == "NOT_APPLICABLE") and
   (.reason | type == "string" and length > 0) and
   (.fixture | type == "boolean") and
+  ((.comparison_mode == null) or .comparison_mode == "matched_baseline_v1") and
+  ((has("comparison_lock")) == (.comparison_mode == "matched_baseline_v1")) and
   ((has("comparison_lock") | not) or
     (.comparison_lock | type == "object" and
       (.baseline_id | type == "string" and test("^[a-z0-9][a-z0-9-]{1,80}$")) and
@@ -140,10 +142,19 @@ if [[ "$has_comparison_lock" == "false" && -n "$comparison_lock" ]]; then
   exit 1
 fi
 if [[ -n "$comparison_lock" ]]; then
-  if [[ "$allow_fixtures" == "true" ]]; then
+  lock_fixture="$(jq -r '.fixture' "$comparison_lock")"
+  if [[ "$lock_fixture" == "true" ]]; then
+    if [[ "$allow_fixtures" != "true" ]]; then
+      echo "FAIL: fixture comparison locks require --allow-fixtures." >&2
+      exit 1
+    fi
     bash "$script_dir/validate-comparison-lock.sh" --allow-fixtures "$comparison_lock"
   else
-    bash "$script_dir/validate-comparison-lock.sh" "$comparison_lock"
+    [[ -n "$evidence_root" ]] || {
+      echo "FAIL: non-fixture comparative receipts require --evidence-root to verify lock input bytes." >&2
+      exit 1
+    }
+    bash "$script_dir/validate-comparison-lock.sh" --evidence-root "$evidence_root" "$comparison_lock"
   fi
   expected_lock_sha="$(jq -r '.comparison_lock.lock_sha256' "$receipt")"
   actual_lock_sha="$(sha256sum "$comparison_lock" | cut -d ' ' -f 1)"

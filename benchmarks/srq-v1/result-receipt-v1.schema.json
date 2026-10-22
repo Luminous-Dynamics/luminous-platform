@@ -218,6 +218,13 @@
           "pattern": "^[0-9a-f]{64}$"
         }
       }
+    },
+    "comparison_mode": {
+      "type": "string",
+      "enum": [
+        "matched_baseline_v1"
+      ],
+      "description": "Declares that this receipt is part of a matched industry comparison; requires a comparison_lock binding."
     }
   },
   "allOf": [
@@ -446,6 +453,35 @@
             ]
           }
         }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "comparison_mode"
+        ],
+        "properties": {
+          "comparison_mode": {
+            "const": "matched_baseline_v1"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "comparison_lock"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "comparison_lock"
+        ]
+      },
+      "then": {
+        "required": [
+          "comparison_mode"
+        ]
       }
     }
   ]

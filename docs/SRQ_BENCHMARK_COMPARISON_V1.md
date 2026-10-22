@@ -44,9 +44,9 @@ These are source-review observations and baseline-selection rules, not executed 
 
 ## Machine-enforced per-run comparison lock v1
 
-A baseline registry is only a selection catalog. A comparative scenario receipt must carry an explicit `comparison_lock` with `baseline_id` and SHA-256 of the exact lock-file bytes. When this field is present, `validate-result.sh` requires the lock file, invokes the lock validator, verifies its bytes, requires its baseline ID to match, and binds the receipt's expected and observed SRQ source to the locked SRQ commit.
+A baseline registry is only a selection catalog. A comparative scenario receipt must set `comparison_mode: matched_baseline_v1` and carry an explicit `comparison_lock` with `baseline_id` and SHA-256 of the exact lock-file bytes. The schema and semantic validator require these fields together. `validate-result.sh` invokes the lock validator, verifies exact lock bytes, requires the baseline ID to match, and binds the receipt's expected and observed SRQ source to the locked SRQ commit.
 
-The lock pins the baseline's resolved upstream commit or official source-archive SHA3-256 (including SQLite `sqlite_source_id()` when relevant), exact SRQ source SHA, benchmark artifact, configuration, corpus, fault schedule, outcome-oracle digests, OS/platform/storage/runner tuple, and included/excluded threat scope.
+The lock pins the baseline's resolved upstream commit or official source-archive SHA3-256 (including SQLite `sqlite_source_id()` when relevant), exact SRQ source SHA, benchmark artifact, configuration, corpus, fault schedule, outcome-oracle digests, OS/platform/storage/runner tuple, and included/excluded threat scope. Non-fixture locks also name all five input artifacts relative to an evidence root; the validator re-hashes those actual files before accepting the lock.
 
 Only registry entries marked `pinned_reference_not_executed` can be locked for a comparison. Moving, unknown, unpinned, protocol-only or scope-blocked baselines fail closed. OSTree v2026.4 must not be used for hostile static-delta comparisons until its caveat is resolved or the scope is explicitly reviewed and registered as eligible.
 

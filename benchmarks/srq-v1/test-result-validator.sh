@@ -84,7 +84,7 @@ expect_evidence_reject unsafe-locator '.evidence[0].artifact = "../outside.log"'
 # Comparative receipts must bind the exact lock bytes and source/baseline identity.
 lock_sha="$(sha256sum "$comparison_lock_fixture" | cut -d ' ' -f 1)"
 jq --arg baseline "tuf-spec-v1.0.36" --arg lock_sha "$lock_sha" \
-  '. + {comparison_lock: {baseline_id: $baseline, lock_sha256: $lock_sha}}' \
+  '. + {comparison_mode: "matched_baseline_v1", comparison_lock: {baseline_id: $baseline, lock_sha256: $lock_sha}}' \
   "$pass_fixture" > "$tmpdir/comparison-valid.json"
 bash "$validator" --allow-fixtures --comparison-lock "$comparison_lock_fixture" "$tmpdir/comparison-valid.json"
 
@@ -104,6 +104,7 @@ expect_comparison_reject() {
 expect_comparison_reject wrong-lock-digest '.comparison_lock.lock_sha256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"'
 expect_comparison_reject wrong-baseline '.comparison_lock.baseline_id = "systemd-sysupdate-v261.4"'
 expect_comparison_reject missing-lock-binding 'del(.comparison_lock)'
+expect_comparison_reject missing-comparison-mode 'del(.comparison_mode)'
 
 if bash "$validator" --allow-fixtures "$tmpdir/comparison-valid.json" >"$tmpdir/comparison-no-lock.out" 2>&1; then
   echo "FAIL: comparative receipt accepted without checking its lock file" >&2
@@ -112,5 +113,5 @@ if bash "$validator" --allow-fixtures "$tmpdir/comparison-valid.json" >"$tmpdir/
 fi
 echo "PASS: comparative receipt rejected when lock file was not provided"
 
-echo "PASS: 18 SRQ result-receipt negative controls plus 4 comparative-lock negative controls were rejected, plus default rejection of fixture evidence."
+echo "PASS: 18 SRQ result-receipt negative controls plus 5 comparative-lock negative controls were rejected, plus default rejection of fixture evidence."
 echo "NON-CLAIM: these examples test receipt-state and artifact-digest invariants only; they do not authenticate signer/device identity or qualify runtime scenarios."
