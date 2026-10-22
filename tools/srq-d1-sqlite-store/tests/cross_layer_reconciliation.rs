@@ -186,12 +186,16 @@ fn run_real_lifecycle() -> (
     {
         let snapshot_connection = rusqlite::Connection::open(&policy_path)
             .expect("open policy snapshot for an explicit WAL checkpoint");
-        let (busy, _log_frames, _checkpointed_frames): (i64, i64, i64) = snapshot_connection
+        let (busy, log_frames, checkpointed_frames): (i64, i64, i64) = snapshot_connection
             .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
                 Ok((row.get(0)?, row.get(1)?, row.get(2)?))
             })
             .expect("checkpoint generation-41 policy snapshot before copying");
-        assert_eq!(busy, 0, "policy snapshot must be checkpointed before file copy");
+        assert_eq!(busy, 0, "policy snapshot must not have a busy checkpoint");
+        assert_eq!(
+            checkpointed_frames, log_frames,
+            "all WAL frames must be checkpointed before copying the database file"
+        );
         fs::copy(&policy_path, &policy_backup_path)
             .expect("snapshot the generation-41 policy store before promotion");
     }
