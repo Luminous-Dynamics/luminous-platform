@@ -234,8 +234,12 @@ impl Witness {
         validate_checkpoint(checkpoint)?;
         let key = (checkpoint.target_id.clone(), checkpoint.decision_id.clone());
         if let Some(existing) = self.receipts.get(&key) {
+            let committed_checkpoint = self
+                .history
+                .get(&(checkpoint.target_id.clone(), existing.sequence));
             if existing.checkpoint_sha256 == checkpoint.checkpoint_sha256
                 && existing.sequence == checkpoint.sequence
+                && committed_checkpoint == Some(checkpoint)
             {
                 return Ok(existing.clone());
             }
@@ -454,6 +458,28 @@ mod tests {
             Ok(_) // exact same decision is idempotent; not a second witness advance
         ));
         assert_eq!(witness.tip("target-01").unwrap().sequence, 1);
+    }
+
+    #[test]
+    fn same_digest_retry_with_changed_checkpoint_fields_is_rejected() {
+        let (mut witness, _local) = initialized();
+        let original = checkpoint("target-01", 1, GENESIS, ARTIFACT, 41, 1_000, "decision-same");
+        witness.advance_at(&original, 1_001).unwrap();
+
+        // Deliberately reuse the digest to model a caller that fails to recompute
+        // or authenticate its checkpoint payload. Idempotency must require exact
+        // equality with the persisted checkpoint, not just the supplied digest.
+        let mut changed = original.clone();
+        changed.deployment_id = "/nix/store/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbnixos-system-other".into();
+        assert_eq!(
+            witness.advance_at(&changed, 1_002),
+            Err(WitnessError::DecisionReuseConflict)
+        );
+        assert_eq!(witness.tip("target-01").unwrap().sequence, 1);
+        assert_eq!(
+            witness.checkpoint_for_decision("target-01", "decision-same").unwrap(),
+            Some(&original)
+        );
     }
 
     #[test]
