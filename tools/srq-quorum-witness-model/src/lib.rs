@@ -92,7 +92,10 @@ impl QuorumPolicy {
 
     pub fn member_count(&self) -> usize { self.members.len() }
     pub fn max_byzantine(&self) -> usize { self.max_byzantine }
-    pub fn quorum_size(&self) -> usize { self.max_byzantine.saturating_mul(2).saturating_add(1) }
+    /// Require all but at most f members to vote. For the minimum-size
+    /// committee n = 3f + 1 this equals 2f + 1; for larger committees it
+    /// preserves an intersection of at least f + 1 members.
+    pub fn quorum_size(&self) -> usize { self.members.len().saturating_sub(self.max_byzantine) }
     pub fn is_trusted(&self, witness_id: &str) -> bool { self.members.contains(witness_id) }
 }
 
@@ -292,6 +295,8 @@ mod tests {
     fn policy_requires_three_f_plus_one_members() {
         assert_eq!(QuorumPolicy::new(["a", "b", "c"], 1), Err(QuorumError::InvalidMembership));
         assert_eq!(policy().quorum_size(), 3);
+        let larger = QuorumPolicy::new(["w1", "w2", "w3", "w4", "w5"], 1).unwrap();
+        assert_eq!(larger.quorum_size(), 4, "larger committees must preserve quorum intersection");
     }
 
     #[test]
