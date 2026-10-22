@@ -367,7 +367,7 @@ jobs:
           set -euo pipefail
           promotion_log="$RUNNER_TEMP/srq-policy-promotion-store-test.log"
           cargo test --manifest-path tools/srq-policy-promotion-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$promotion_log"
-          grep -Fq 'test result: ok. 15 passed; 0 failed' "$promotion_log"
+          grep -Fq 'test result: ok. 16 passed; 0 failed' "$promotion_log"
           grep -Fq 'tests::refusing_foreign_database_does_not_change_journal_mode_or_payload ... ok' "$promotion_log"
           grep -Fq 'tests::refusing_spoofed_schema_identity_does_not_change_journal_mode ... ok' "$promotion_log"
           grep -Fq 'tests::refusing_empty_spoofed_schema_identity_does_not_change_journal_mode ... ok' "$promotion_log"
@@ -384,6 +384,8 @@ jobs:
           grep -Fq 'tests::challenge_nonce_is_persisted_only_as_a_hash ... ok' "$promotion_log"
           grep -Fq 'tests::malformed_or_modified_schema_is_rejected_on_reopen ... ok' "$promotion_log"
           grep -Fq 'tests::runtime_sqlite_release_policy_accepts_patched_lines_and_rejects_known_bad_releases ... ok' "$promotion_log"
+          grep -Fq 'tests::runtime_sqlite_source_id_matches_pinned_ci_source_when_configured ... ok' "$promotion_log"
+          grep -Fq 'PASS: policy-promotion Rust SQLite runtime verified: version=' "$promotion_log"
           grep -Fq 'tests::actual_sigkill_at_sql_boundaries_rolls_back_before_commit_and_recovers_after_commit ... ok' "$promotion_log"
           grep -Fq 'PASS: policy promotion survived 80 actual SIGKILL trials across four SQL boundaries' "$promotion_log"
           cp -- tools/srq-policy-promotion-store/Cargo.lock "$RUNNER_TEMP/srq-policy-promotion-store-Cargo.lock"
