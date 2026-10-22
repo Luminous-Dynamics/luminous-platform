@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "profile_id": "SRQ-1",
+  "scenario_id": "BOOT-001",
+  "status": "PASS",
+  "reason": "Fixture-only example: hypothetical successful static validation for a real SRQ-1 scenario ID.",
+  "source": {
+    "expected_source_sha": "1111111111111111111111111111111111111111",
+    "event_sha": "2222222222222222222222222222222222222222",
+    "actual_checkout_sha": "1111111111111111111111111111111111111111",
+    "source_matches_expected": true
+  },
+  "execution": {
+    "tier": "static",
+    "steps_executed": true,
+    "command": "bash benchmarks/srq-v1/validate.sh",
+    "exit_code": 0,
+    "environment": {
+      "os": "ubuntu-24.04",
+      "architecture": "x86_64",
+      "toolchain": "bash+jq"
+    }
+  },
+  "evidence": [
+    {
+      "artifact": "fixtures/srq-static-validator.log",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "kind": "log"
+    }
+  ],
+  "claim_ceiling": "static_contract_only",
+  "non_claims": [
+    "This is a synthetic fixture, not a production execution receipt.",
+    "No runtime scenario or host recovery was executed.",
+    "This does not establish signer identity, device identity, measured boot, or security qualification."
+  ],
+  "fixture": true
+}

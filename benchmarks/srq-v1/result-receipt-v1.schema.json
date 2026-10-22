@@ -1,0 +1,488 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/srq-result-v1.schema.json",
+  "title": "SRQ-1 Qualification Result Receipt v1",
+  "description": "Machine-readable record of a single SRQ-1 scenario execution. A receipt records observations and claim limits; it is not itself proof that the observed host state is authentic.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "scenario_id",
+    "status",
+    "reason",
+    "source",
+    "execution",
+    "evidence",
+    "claim_ceiling",
+    "non_claims",
+    "fixture"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "profile_id": {
+      "const": "SRQ-1"
+    },
+    "scenario_id": {
+      "type": "string",
+      "pattern": "^[A-Z]+-[0-9]{3}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_RUN",
+        "BLOCKED",
+        "NOT_APPLICABLE"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_source_sha",
+        "event_sha",
+        "actual_checkout_sha",
+        "source_matches_expected"
+      ],
+      "properties": {
+        "expected_source_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "event_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "actual_checkout_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "source_matches_expected": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tier",
+        "steps_executed",
+        "command",
+        "exit_code",
+        "environment"
+      ],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": [
+            "static",
+            "model",
+            "qemu",
+            "physical"
+          ]
+        },
+        "steps_executed": {
+          "type": "boolean"
+        },
+        "command": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "exit_code": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "os",
+            "architecture",
+            "toolchain"
+          ],
+          "properties": {
+            "os": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "architecture": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "toolchain": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact",
+          "sha256",
+          "kind"
+        ],
+        "properties": {
+          "artifact": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "log",
+              "receipt",
+              "capture",
+              "manifest",
+              "benchmark",
+              "other"
+            ]
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "type": "string",
+      "enum": [
+        "none",
+        "static_contract_only",
+        "abstract_model_only",
+        "qemu_guest_recovery_only",
+        "physical_device_recovery_only"
+      ]
+    },
+    "non_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "fixture": {
+      "type": "boolean"
+    },
+    "comparison_lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Required whenever this scenario receipt is used as an industry/comparator run. The validator verifies exact lock bytes and source binding.",
+      "required": [
+        "baseline_id",
+        "lock_sha256"
+      ],
+      "properties": {
+        "baseline_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{1,80}$"
+        },
+        "lock_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "comparison_mode": {
+      "type": "string",
+      "enum": [
+        "matched_baseline_v1"
+      ],
+      "description": "Declares that this receipt is part of a matched industry comparison; requires a comparison_lock binding."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "PASS"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "actual_checkout_sha": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{40}$"
+              },
+              "source_matches_expected": {
+                "const": true
+              }
+            }
+          },
+          "execution": {
+            "properties": {
+              "steps_executed": {
+                "const": true
+              },
+              "exit_code": {
+                "const": 0
+              }
+            }
+          },
+          "evidence": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "NOT_RUN"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "properties": {
+              "actual_checkout_sha": {
+                "type": "null"
+              },
+              "source_matches_expected": {
+                "type": "null"
+              }
+            }
+          },
+          "execution": {
+            "properties": {
+              "steps_executed": {
+                "const": false
+              },
+              "command": {
+                "type": "null"
+              },
+              "exit_code": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "NOT_APPLICABLE"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "execution": {
+            "properties": {
+              "steps_executed": {
+                "const": false
+              },
+              "exit_code": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "execution"
+        ],
+        "properties": {
+          "execution": {
+            "required": [
+              "tier"
+            ],
+            "properties": {
+              "tier": {
+                "const": "static"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim_ceiling": {
+            "enum": [
+              "none",
+              "static_contract_only"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "execution"
+        ],
+        "properties": {
+          "execution": {
+            "required": [
+              "tier"
+            ],
+            "properties": {
+              "tier": {
+                "const": "model"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim_ceiling": {
+            "enum": [
+              "none",
+              "static_contract_only",
+              "abstract_model_only"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "execution"
+        ],
+        "properties": {
+          "execution": {
+            "required": [
+              "tier"
+            ],
+            "properties": {
+              "tier": {
+                "const": "qemu"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim_ceiling": {
+            "enum": [
+              "none",
+              "static_contract_only",
+              "abstract_model_only",
+              "qemu_guest_recovery_only"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "execution"
+        ],
+        "properties": {
+          "execution": {
+            "required": [
+              "tier"
+            ],
+            "properties": {
+              "tier": {
+                "const": "physical"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "claim_ceiling": {
+            "enum": [
+              "none",
+              "static_contract_only",
+              "abstract_model_only",
+              "qemu_guest_recovery_only",
+              "physical_device_recovery_only"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "comparison_mode"
+        ],
+        "properties": {
+          "comparison_mode": {
+            "const": "matched_baseline_v1"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "comparison_lock"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "comparison_lock"
+        ]
+      },
+      "then": {
+        "required": [
+          "comparison_mode"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,832 @@
+name: SRQ-1 corpus contract
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/srq-v1.yml"
+      - "benchmarks/srq-v1/**"
+      - "tools/srq-recovery-model/**"
+      - "tools/srq-challenge-promotion-model/**"
+      - "tools/srq-process-kill-model/**"
+      - "tools/srq-boot-reconciliation-model/**"
+      - "tools/srq-boot-observation-adapter/**"
+      - "tools/srq-eat-cose-verifier/**"
+      - "tools/srq-d1-sqlite-store/**"
+      - "tools/srq-policy-promotion-store/**"
+      - "tools/srq-sqlite-runtime-policy/**"
+      - "docs/SOVEREIGN_RECOVERY_QUALIFICATION_V1.md"
+      - "docs/SRQ_PROVENANCE_ATTESTATION_V1.md"
+      - "docs/SRQ_PROCESS_KILL_MODEL_V1.md"
+      - "docs/SRQ_SQLITE_TRANSACTION_BASELINE_V1.md"
+      - "docs/SRQ_D1_SQLITE_CONSUMPTION_REFERENCE_V1.md"
+      - "docs/SRQ_D1_SQLITE_STORE_V1.md"
+      - "docs/SRQ_BENCHMARK_COMPARISON_V1.md"
+      - "docs/SRQ_BOOT_RECONCILIATION_V1.md"
+      - "docs/SRQ_BOOT_OBSERVATION_ADAPTER_V1.md"
+      - "docs/SRQ_EAT_COSE_BOOT_ATTESTATION_V1.md"
+      - "docs/SRQ_D2_TPM_APPRAISAL_V1.md"
+      - "docs/SRQ_POLICY_PROMOTION_STORE_V1.md"
+      - "docs/SRQ_SQLITE_RUNTIME_POLICY_V1.md"
+      - "schemas/srq-eat-boot-observation-v1.cddl"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SRQ_EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  SRQ_EVENT_SHA: ${{ github.sha }}
+
+jobs:
+  validate-corpus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact source head
+        # Immutable commit pin for actions/checkout v4.
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Record exact-head provenance
+        run: |
+          set -euo pipefail
+          actual_head="$(git rev-parse HEAD)"
+          printf 'expected_source_sha=%s event_sha=%s actual_checkout_head=%s\n' "$SRQ_EXPECTED_SOURCE_SHA" "$SRQ_EVENT_SHA" "$actual_head"
+          test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
+
+      - name: Install pinned Rust toolchain for the dependency-free model
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.96.0
+
+      - name: Validate shell syntax
+        run: |
+          set -euo pipefail
+          bash -n benchmarks/srq-v1/validate.sh
+          bash -n benchmarks/srq-v1/test-validator.sh
+          bash -n benchmarks/srq-v1/validate-comparison-lock.sh
+          bash -n benchmarks/srq-v1/test-comparison-lock.sh
+          bash -n benchmarks/srq-v1/validate-result.sh
+          bash -n benchmarks/srq-v1/test-result-validator.sh
+          bash -n benchmarks/srq-v1/evaluate-release.sh
+          bash -n benchmarks/srq-v1/test-evaluate-release.sh
+          bash -n benchmarks/srq-v1/install-pinned-gh.sh
+          bash -n benchmarks/srq-v1/install-pinned-sqlite.sh
+          bash -n benchmarks/srq-v1/require-pinned-sqlite.sh
+          bash -n benchmarks/srq-v1/verify-attestation.sh
+          bash -n benchmarks/srq-v1/test-verify-attestation.sh
+          bash -n benchmarks/srq-v1/verify-evidence-bundle.sh
+          bash -n benchmarks/srq-v1/test-verify-evidence-bundle.sh
+          bash -n benchmarks/srq-v1/test-sqlite-promotion-reference.sh
+          bash -n benchmarks/srq-v1/test-sqlite-d1-challenge-consumption-reference.sh
+          bash -n benchmarks/srq-v1/test-evaluate-attested-release.sh
+          bash -n benchmarks/srq-v1/validate-produced-bundle.sh
+          bash -n benchmarks/srq-v1/test-validate-produced-bundle.sh
+          bash -n tools/srq-boot-observation-adapter/test-cli.sh
+          bash -n tools/srq-eat-cose-verifier/test-cli.sh
+          bash -n benchmarks/srq-v1/evaluate-attested-release.sh
+
+      - name: Install pinned SQLite CLI for WAL race reference tests
+        shell: bash
+        run: bash benchmarks/srq-v1/install-pinned-sqlite.sh
+
+      - name: Test shared SQLite runtime release policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          policy_log="$RUNNER_TEMP/srq-sqlite-runtime-policy-test.log"
+          cargo test --manifest-path tools/srq-sqlite-runtime-policy/Cargo.toml --locked -- --nocapture 2>&1 | tee "$policy_log"
+          grep -Fq 'test result: ok. 3 passed; 0 failed' "$policy_log"
+          grep -Fq 'tests::accepts_upstream_fixed_backports_and_patched_release_lines ... ok' "$policy_log"
+          grep -Fq 'tests::rejects_known_buggy_withdrawn_and_unpatched_release_lines ... ok' "$policy_log"
+          grep -Fq 'tests::malformed_or_incomplete_versions_fail_closed ... ok' "$policy_log"
+          cp -- tools/srq-sqlite-runtime-policy/Cargo.lock "$RUNNER_TEMP/srq-sqlite-runtime-policy-Cargo.lock"
+          sha256sum "$RUNNER_TEMP/srq-sqlite-runtime-policy-Cargo.lock"
+
+      - name: Preserve shared SQLite runtime policy evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-sqlite-runtime-policy-evidence
+          path: |
+            ${{ runner.temp }}/srq-sqlite-runtime-policy-test.log
+            ${{ runner.temp }}/srq-sqlite-runtime-policy-Cargo.lock
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Run bounded filesystem activation model
+        shell: bash
+        run: |
+          set -euo pipefail
+          model_log="$RUNNER_TEMP/srq-recovery-model-test.log"
+          model_receipt="$RUNNER_TEMP/srq-update-004-model-result.json"
+          command='cargo test --manifest-path tools/srq-recovery-model/Cargo.toml --locked'
+          cargo test --manifest-path tools/srq-recovery-model/Cargo.toml --locked 2>&1 | tee "$model_log"
+          # A green cargo exit is not enough if a required test disappears.
+          grep -Fq 'test result: ok. 7 passed; 0 failed' "$model_log"
+          grep -Fq 'tests::every_interruption_boundary_leaves_old_or_new_complete_generation ... ok' "$model_log"
+
+          actual_head="$(git rev-parse HEAD)"
+          evidence_sha="$(sha256sum "$model_log" | cut -d ' ' -f 1)"
+          jq -n \
+            --arg expected "$SRQ_EXPECTED_SOURCE_SHA" \
+            --arg event "$SRQ_EVENT_SHA" \
+            --arg actual "$actual_head" \
+            --arg command "$command" \
+            --arg os "$(uname -sr)" \
+            --arg architecture "$(uname -m)" \
+            --arg toolchain "$(rustc --version)" \
+            --arg evidence_sha "$evidence_sha" \
+            '{
+              schema_version: 1,
+              profile_id: "SRQ-1",
+              scenario_id: "UPDATE-004",
+              status: "PASS",
+              reason: "The filesystem-backed model kept the previous or next complete generation across 100 injected checkpoint-return simulations at each of five activation boundaries (500 trials total). These are not process-kill or physical power-cut tests.",
+              source: {
+                expected_source_sha: $expected,
+                event_sha: $event,
+                actual_checkout_sha: $actual,
+                source_matches_expected: ($expected == $actual)
+              },
+              execution: {
+                tier: "model",
+                steps_executed: true,
+                command: $command,
+                exit_code: 0,
+                environment: {os: $os, architecture: $architecture, toolchain: $toolchain}
+              },
+              evidence: [{artifact: "srq-recovery-model-test.log", sha256: $evidence_sha, kind: "log"}],
+              claim_ceiling: "abstract_model_only",
+              non_claims: [
+                "This is a filesystem-backed abstract model with synthetic generation payloads, not a production updater or bootloader.",
+                "Checkpoint returns followed by reopen do not kill a process mid-syscall and are not equivalent to physical sudden-power-loss testing.",
+                "No TUF signature policy, artifact provenance, signer/device identity, firmware root of trust, or TPM evidence is qualified.",
+                "QEMU and physical activation scenarios remain unexecuted."
+              ],
+              fixture: false
+            }' > "$model_receipt"
+
+          bash benchmarks/srq-v1/validate-result.sh --evidence-root "$RUNNER_TEMP" "$model_receipt"
+
+      - name: Run atomic challenge-promotion model
+        shell: bash
+        run: |
+          set -euo pipefail
+          model_log="$RUNNER_TEMP/srq-challenge-promotion-model-test.log"
+          model_receipt="$RUNNER_TEMP/srq-evidence-003-model-result.json"
+          command='cargo test --manifest-path tools/srq-challenge-promotion-model/Cargo.toml --locked'
+          cargo test --manifest-path tools/srq-challenge-promotion-model/Cargo.toml --locked 2>&1 | tee "$model_log"
+          # Protect the race/crash acceptance claims against accidental test deletion.
+          grep -Fq 'test result: ok. 9 passed; 0 failed' "$model_log"
+          grep -Fq 'tests::sixty_four_concurrent_attempts_for_one_challenge_commit_exactly_once ... ok' "$model_log"
+          grep -Fq 'tests::eight_independent_processes_share_one_challenge_commit ... ok' "$model_log"
+          grep -Fq 'tests::interruption_boundaries_preserve_old_or_fully_promoted_state ... ok' "$model_log"
+
+          actual_head="$(git rev-parse HEAD)"
+          evidence_sha="$(sha256sum "$model_log" | cut -d ' ' -f 1)"
+          jq -n \
+            --arg expected "$SRQ_EXPECTED_SOURCE_SHA" \
+            --arg event "$SRQ_EVENT_SHA" \
+            --arg actual "$actual_head" \
+            --arg command "$command" \
+            --arg os "$(uname -sr)" \
+            --arg architecture "$(uname -m)" \
+            --arg toolchain "$(rustc --version)" \
+            --arg evidence_sha "$evidence_sha" \
+            '{
+              schema_version: 1,
+              profile_id: "SRQ-1",
+              scenario_id: "EVIDENCE-003",
+              status: "PASS",
+              reason: "The Linux filesystem model serialized 64 concurrent worker threads and eight independent same-host processes so exactly one attempt consumed the challenge and promoted the next policy generation; 100 injected early-return checkpoint simulations preserved the previous or fully promoted state. These are not process-kill or physical power-cut tests.",
+              source: {
+                expected_source_sha: $expected,
+                event_sha: $event,
+                actual_checkout_sha: $actual,
+                source_matches_expected: ($expected == $actual)
+              },
+              execution: {
+                tier: "model",
+                steps_executed: true,
+                command: $command,
+                exit_code: 0,
+                environment: {os: $os, architecture: $architecture, toolchain: $toolchain}
+              },
+              evidence: [{artifact: "srq-challenge-promotion-model-test.log", sha256: $evidence_sha, kind: "log"}],
+              claim_ceiling: "abstract_model_only",
+              non_claims: [
+                "This is a filesystem-backed contract model, not the production durable promotion database or policy gate.",
+                "Linux flock serialization was tested with concurrent worker threads and separate child processes on one runner; cross-host or distributed locking is not qualified.",
+                "Injected early returns on the runner filesystem do not emulate a process kill, kernel crash, or sudden physical power loss.",
+                "No signer/device identity, trusted time, TUF metadata verification, TPM, firmware root of trust, QEMU or physical-device behavior is qualified."
+              ],
+              fixture: false
+            }' > "$model_receipt"
+
+          bash benchmarks/srq-v1/validate-result.sh --evidence-root "$RUNNER_TEMP" "$model_receipt"
+
+      - name: Exercise real process-kill recovery at persistence boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          model_log="$RUNNER_TEMP/srq-process-kill-model-test.log"
+          cargo test --manifest-path tools/srq-process-kill-model/Cargo.toml --locked -- --nocapture 2>&1 | tee "$model_log"
+          grep -Fq 'test result: ok. 3 passed; 0 failed' "$model_log"
+          for checkpoint in after_temp_create during_temp_write after_temp_sync after_rename after_dir_sync; do
+            grep -Fq "PASS: SIGKILL at $checkpoint recovered generation" "$model_log"
+          done
+          echo "PASS: child-process SIGKILL recovery model completed five persistence-boundary trials."
+          echo "LIMIT: live-kernel process-kill test; not a kernel crash or physical power-loss test."
+
+      - name: Exercise SQLite promotion transaction reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          reference_log="$RUNNER_TEMP/srq-sqlite-promotion-reference.log"
+          bash benchmarks/srq-v1/test-sqlite-promotion-reference.sh 2>&1 | tee "$reference_log"
+          grep -Fq 'PASS: successful SQLite reference transaction commits policy, decision and challenge together' "$reference_log"
+          grep -Fq 'PASS: stale-generation assertion rolls back policy, decision and challenge writes' "$reference_log"
+          grep -Fq 'PASS: duplicate challenge replay is rejected with no partial state' "$reference_log"
+          grep -Fq 'PASS: mismatched target/generation challenge binding fails closed without partial state' "$reference_log"
+          grep -Fq 'PASS: mismatched consumed generation fails closed without partial state' "$reference_log"
+          grep -Fq 'PASS: active state cannot reference a decision at a different generation' "$reference_log"
+          grep -Fq 'PASS: exactly one durable promotion across 64 independent writer processes' "$reference_log"
+          grep -Fq 'PASS: SIGKILL at after_decision_insert rolls back all uncommitted writes' "$reference_log"
+          grep -Fq 'PASS: SIGKILL at after_challenge_insert rolls back all uncommitted writes' "$reference_log"
+          grep -Fq 'PASS: SIGKILL before SQLite COMMIT rolls back decision, challenge and target state' "$reference_log"
+          grep -Fq 'PASS: SIGKILL after SQLite COMMIT preserves one discoverable outcome by decision ID' "$reference_log"
+          grep -Fq 'sqlite_version=3.54.1 journal_mode=wal synchronous=FULL cases=11 process_contenders=64 commit_sigkill_boundaries=4 commit_sigkill_trials=100' "$reference_log"
+          test "$(grep -c '^race_trial=' "$reference_log")" -eq 64
+          grep -Fq 'PASS: 100 SQLite SIGKILL trials across four transaction boundaries' "$reference_log"
+          test "$(grep -c '^PASS: SIGKILL at after_decision_insert rolls back all uncommitted writes' "$reference_log")" -eq 25
+          test "$(grep -c '^PASS: SIGKILL at after_challenge_insert rolls back all uncommitted writes' "$reference_log")" -eq 25
+          test "$(grep -c '^PASS: SIGKILL before SQLite COMMIT rolls back decision, challenge and target state' "$reference_log")" -eq 25
+          test "$(grep -c '^PASS: SIGKILL after SQLite COMMIT preserves one discoverable outcome by decision ID' "$reference_log")" -eq 25
+
+      - name: Preserve SQLite baseline evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-sqlite-reference-evidence
+          path: ${{ runner.temp }}/srq-sqlite-promotion-reference.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Exercise decision-to-boot reconciliation model
+        shell: bash
+        run: |
+          set -euo pipefail
+          model_log="$RUNNER_TEMP/srq-boot-reconciliation-model-test.log"
+          cargo test --manifest-path tools/srq-boot-reconciliation-model/Cargo.toml --locked -- --nocapture 2>&1 | tee "$model_log"
+          grep -Fq 'test result: ok. 21 passed; 0 failed' "$model_log"
+          grep -Fq 'test tests::ten_thousand_deterministic_single_field_mutations_never_reconcile ... ok' "$model_log"
+          grep -Fq 'test tests::one_hundred_thousand_cross_layer_mutations_never_reconcile ... ok' "$model_log"
+          grep -Fq 'test tests::old_booted_system_is_rejected_even_when_abstract_generation_counter_matches ... ok' "$model_log"
+          grep -Fq 'test tests::live_current_system_switch_does_not_substitute_for_the_booted_system ... ok' "$model_log"
+          grep -Fq 'test tests::deployment_identity_syntax_is_checked_without_confusing_path_with_digest ... ok' "$model_log"
+          grep -Fq 'test tests::durable_decision_must_bind_the_exact_immutable_deployment ... ok' "$model_log"
+          grep -Fq 'test tests::post_commit_challenge_must_name_the_authorized_immutable_deployment ... ok' "$model_log"
+          echo "PASS: 100,000 deterministic cross-layer mutations rejected structural success"
+          echo "PASS: immutable deployment identities and current-vs-booted paths are fail-closed"
+          grep -Fq 'test tests::missing_post_commit_challenge_is_pending_not_success ... ok' "$model_log"
+          grep -Fq 'test tests::digest_shape_is_not_treated_as_authenticity ... ok' "$model_log"
+          echo "LIMIT: structural reconciliation model only; no signature, trusted boot observation, QEMU or physical qualification."
+
+      - name: Test D0 NixOS boot observation adapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          adapter_log="$RUNNER_TEMP/srq-boot-observation-adapter-test.log"
+          cargo test --manifest-path tools/srq-boot-observation-adapter/Cargo.toml --locked -- --nocapture 2>&1 | tee "$adapter_log"
+          grep -Fq 'test result: ok. 10 passed; 0 failed' "$adapter_log"
+          grep -Fq 'test tests::live_userspace_switch_without_reboot_is_blocked ... ok' "$adapter_log"
+          grep -Fq 'test tests::observer_never_supplies_policy_artifact_or_measurement_proof ... ok' "$adapter_log"
+          echo "PASS: standalone D0 observer distinguishes booted from current deployment without claiming attestation."
+          echo "LIMIT: local diagnostics only; no promotion binding, policy/artifact measurement, target signature, TPM quote or release qualification."
+          bash tools/srq-boot-observation-adapter/test-cli.sh 2>&1 | tee -a "$adapter_log"
+
+      - name: Bootstrap pinned D1 COSE verifier dependencies and test
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest="tools/srq-eat-cose-verifier/Cargo.toml"
+          test -s tools/srq-eat-cose-verifier/Cargo.lock
+          d1_log="$RUNNER_TEMP/srq-eat-cose-verifier-test.log"
+          cargo test --manifest-path "$manifest" --locked -- --nocapture 2>&1 | tee "$d1_log"
+          grep -Fq 'test result: ok. 17 passed; 0 failed' "$d1_log"
+          cargo run --manifest-path "$manifest" --locked -- --help 2>&1 | tee -a "$d1_log"
+          grep -Fq 'D1 does not claim TPM, secure-boot measurement or physical qualification.' "$d1_log"
+          bash tools/srq-eat-cose-verifier/test-cli.sh 2>&1 | tee -a "$d1_log"
+          grep -Fq 'PASS: CLI rejects caller-supplied future time before reading inputs' "$d1_log"
+          sha256sum tools/srq-eat-cose-verifier/Cargo.lock
+
+      - name: Preserve D1 COSE verifier bootstrap evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-eat-cose-bootstrap-v1
+          path: |
+            tools/srq-eat-cose-verifier/Cargo.lock
+            ${{ runner.temp }}/srq-eat-cose-verifier-test.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Exercise SQLite D1 challenge-consumption reference
+        shell: bash
+        run: |
+          set -euo pipefail
+          d1_sqlite_log="$RUNNER_TEMP/srq-sqlite-d1-challenge-consumption-reference.log"
+          bash benchmarks/srq-v1/test-sqlite-d1-challenge-consumption-reference.sh 2>&1 | tee "$d1_sqlite_log"
+          grep -Fq 'PASS: D1 challenge replay after reopen is rejected without replacing the receipt' "$d1_sqlite_log"
+          grep -Fq 'PASS: exactly one durable D1 receipt across 64 independent challenge consumers' "$d1_sqlite_log"
+          grep -Fq 'PASS: 100 D1 SQLite SIGKILL trials across four transaction boundaries' "$d1_sqlite_log"
+          grep -Fq 'sqlite_version=3.54.1 journal_mode=wal synchronous=FULL d1_cases=20 contenders=64 process_kill_trials=100 commit_boundaries=4' "$d1_sqlite_log"
+
+      - name: Exercise typed Rust D1 SQLite ChallengeConsumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          store_log="$RUNNER_TEMP/srq-d1-sqlite-store-test.log"
+          test -s tools/srq-d1-sqlite-store/Cargo.lock
+          cargo test --manifest-path tools/srq-d1-sqlite-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$store_log"
+          grep -Fq 'PASS: typed Rust D1 store commits once, rejects replay after reopen, and reconciles the original receipt' "$store_log"
+          grep -Fq 'PASS: typed Rust D1 store rejects wrong target, expiry, schema adoption, and challenge deletion without mutation' "$store_log"
+          grep -Fq 'PASS: D1 challenge expiring during transaction rolls back receipt and consumption' "$store_log"
+          grep -Fq 'PASS: D1 store rejects altered trigger SQL even when trusted names are preserved' "$store_log"
+          grep -Fq 'PASS: exactly one typed Rust D1 consumption across 64 independent SQLite connections' "$store_log"
+          grep -Fq 'PASS: actual signed policy promotion and persisted COSE D1 boot receipt reconcile; generation/deployment/decision/policy mismatches and 10,000 mutations fail closed' "$store_log"
+          grep -Fq 'PASS: refusing foreign D1 database preserved journal mode and payload' "$store_log"
+          grep -Fq 'PASS: D1 exact schema verification rejects spoofed identity before journal mutation' "$store_log"
+          grep -Fq 'PASS: empty spoofed D1 schema identity was rejected without journal mutation' "$store_log"
+          grep -Fq 'PASS: restored generation-41 SQLite snapshot passes integrity_check but is detected as rollback against independent witness sequence 1' "$store_log"
+          grep -Fq 'PASS: Rust SQLite adapter survived 30 actual SIGKILL trials across three transaction boundaries' "$store_log"
+          grep -Fq 'PASS: D1 Rust SQLite runtime satisfies release policy: version=' "$store_log"
+          grep -Fq 'PASS: invalid COSE signature leaves challenge unused; valid signed COSE EAT is consumed, reopened and replay-rejected through public API' "$store_log"
+          test "$(grep -c '^PASS: Rust SQLite SIGKILL at ' "$store_log")" -eq 30
+          test -s tools/srq-d1-sqlite-store/Cargo.lock
+          cp -- tools/srq-d1-sqlite-store/Cargo.lock "$RUNNER_TEMP/srq-d1-sqlite-store-Cargo.lock"
+          sha256sum "$RUNNER_TEMP/srq-d1-sqlite-store-Cargo.lock"
+
+      - name: Preserve typed Rust D1 SQLite store evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-d1-sqlite-store-evidence
+          path: |
+            ${{ runner.temp }}/srq-d1-sqlite-store-test.log
+            ${{ runner.temp }}/srq-d1-sqlite-store-Cargo.lock
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Preserve SQLite D1 challenge-consumption evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-sqlite-d1-consumption-reference
+          path: \${{ runner.temp }}/srq-sqlite-d1-challenge-consumption-reference.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Exercise atomic signed policy-promotion store prototype
+        shell: bash
+        run: |
+          set -euo pipefail
+          promotion_log="$RUNNER_TEMP/srq-policy-promotion-store-test.log"
+          cargo test --manifest-path tools/srq-policy-promotion-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$promotion_log"
+          grep -Fq 'test result: ok. 15 passed; 0 failed' "$promotion_log"
+          grep -Fq 'tests::refusing_foreign_database_does_not_change_journal_mode_or_payload ... ok' "$promotion_log"
+          grep -Fq 'tests::refusing_spoofed_schema_identity_does_not_change_journal_mode ... ok' "$promotion_log"
+          grep -Fq 'tests::refusing_empty_spoofed_schema_identity_does_not_change_journal_mode ... ok' "$promotion_log"
+          grep -Fq 'PASS: refusing foreign policy database preserved journal mode and payload' "$promotion_log"
+          grep -Fq 'PASS: policy exact schema verification rejects spoofed identity before journal mutation' "$promotion_log"
+          grep -Fq 'PASS: empty spoofed policy schema identity was rejected without journal mutation' "$promotion_log"
+          grep -Fq 'tests::signed_authorization_commits_decision_challenge_and_generation_atomically ... ok' "$promotion_log"
+          grep -Fq 'tests::invalid_signature_does_not_consume_challenge_or_mutate_target ... ok' "$promotion_log"
+          grep -Fq 'tests::replay_after_reopen_is_rejected_and_original_decision_is_recoverable ... ok' "$promotion_log"
+          grep -Fq 'tests::expiry_and_wrong_target_policy_generation_digest_are_rejected_without_mutation ... ok' "$promotion_log"
+          grep -Fq 'tests::challenge_expiring_before_commit_rolls_back_all_staged_rows ... ok' "$promotion_log"
+          grep -Fq 'tests::stale_previous_approved_artifact_fails_closed_without_consuming_challenge ... ok' "$promotion_log"
+          grep -Fq 'tests::one_of_sixty_four_independent_connections_commits ... ok' "$promotion_log"
+          grep -Fq 'tests::challenge_nonce_is_persisted_only_as_a_hash ... ok' "$promotion_log"
+          grep -Fq 'tests::malformed_or_modified_schema_is_rejected_on_reopen ... ok' "$promotion_log"
+          grep -Fq 'tests::runtime_sqlite_release_policy_accepts_patched_lines_and_rejects_known_bad_releases ... ok' "$promotion_log"
+          grep -Fq 'tests::runtime_sqlite_source_id_matches_pinned_ci_source_when_configured ... ok' "$promotion_log"
+          grep -Fq 'PASS: policy-promotion Rust SQLite runtime verified: version=' "$promotion_log"
+          grep -Fq 'tests::actual_sigkill_at_sql_boundaries_rolls_back_before_commit_and_recovers_after_commit ... ok' "$promotion_log"
+          grep -Fq 'PASS: policy promotion survived 80 actual SIGKILL trials across four SQL boundaries' "$promotion_log"
+          cp -- tools/srq-policy-promotion-store/Cargo.lock "$RUNNER_TEMP/srq-policy-promotion-store-Cargo.lock"
+          sha256sum "$RUNNER_TEMP/srq-policy-promotion-store-Cargo.lock"
+          test "$(grep -c '^PASS: policy promotion SIGKILL at after_decision_insert ' "$promotion_log")" -eq 20
+          test "$(grep -c '^PASS: policy promotion SIGKILL at after_target_update ' "$promotion_log")" -eq 20
+          test "$(grep -c '^PASS: policy promotion SIGKILL at after_challenge_consume ' "$promotion_log")" -eq 20
+          test "$(grep -c '^PASS: policy promotion SIGKILL at after_commit_before_ack ' "$promotion_log")" -eq 20
+
+      - name: Preserve policy promotion prototype evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-policy-promotion-store-evidence
+          path: |
+            ${{ runner.temp }}/srq-policy-promotion-store-test.log
+            tools/srq-policy-promotion-store/Cargo.lock
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Compile release qualification status from observed receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/srq-release-qualification.json"
+          bash benchmarks/srq-v1/evaluate-release.sh \
+            --expected-source-sha "$SRQ_EXPECTED_SOURCE_SHA" \
+            --evidence-root "$RUNNER_TEMP" \
+            --output "$report" \
+            "$RUNNER_TEMP/srq-update-004-model-result.json" \
+            "$RUNNER_TEMP/srq-evidence-003-model-result.json"
+
+          jq -e '
+            .profile_id == "SRQ-1" and
+            .expected_source_sha == env.SRQ_EXPECTED_SOURCE_SHA and
+            .overall_status == "NOT_QUALIFIED" and
+            .summary.total_release_gates == 22 and
+            .summary.passed_at_qualifying_tier == 0 and
+            .summary.insufficient_tier == 2 and
+            .summary.missing_evidence == 20
+          ' "$report" >/dev/null
+
+          bash benchmarks/srq-v1/test-evaluate-release.sh \
+            "$SRQ_EXPECTED_SOURCE_SHA" "$RUNNER_TEMP" \
+            "$RUNNER_TEMP/srq-update-004-model-result.json" \
+            "$RUNNER_TEMP/srq-evidence-003-model-result.json"
+
+      - name: Assemble deterministic SRQ evidence bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle_dir="$RUNNER_TEMP/srq-evidence-bundle"
+          archive="$RUNNER_TEMP/srq-evidence-bundle.tar.gz"
+          rm -rf "$bundle_dir" "$archive"
+          mkdir -m 700 "$bundle_dir"
+
+          evidence_names=(
+            srq-boot-observation-adapter-test.log
+            srq-boot-reconciliation-model-test.log
+            srq-challenge-promotion-model-test.log
+            srq-d1-sqlite-store-Cargo.lock
+            srq-d1-sqlite-store-test.log
+            srq-eat-cose-verifier-test.log
+            srq-evidence-003-model-result.json
+            srq-policy-promotion-store-Cargo.lock
+            srq-policy-promotion-store-test.log
+            srq-process-kill-model-test.log
+            srq-recovery-model-test.log
+            srq-release-qualification.json
+            srq-sqlite-d1-challenge-consumption-reference.log
+            srq-sqlite-promotion-reference.log
+            srq-sqlite-runtime-policy-Cargo.lock
+            srq-sqlite-runtime-policy-test.log
+            srq-update-004-model-result.json
+          )
+          for name in "${evidence_names[@]}"; do
+            source_file="$RUNNER_TEMP/$name"
+            test -f "$source_file"
+            cp -- "$source_file" "$bundle_dir/$name"
+          done
+
+          (
+            cd "$bundle_dir"
+            sha256sum "${evidence_names[@]}" > SHA256SUMS
+            sha256sum --check --strict SHA256SUMS
+          )
+          checksum_sha="$(sha256sum "$bundle_dir/SHA256SUMS" | cut -d ' ' -f 1)"
+          policy_promotion_sha="$(sha256sum "$bundle_dir/srq-policy-promotion-store-test.log" | cut -d ' ' -f 1)"
+          policy_promotion_lock_sha="$(sha256sum "$bundle_dir/srq-policy-promotion-store-Cargo.lock" | cut -d ' ' -f 1)"
+          process_kill_sha="$(sha256sum "$bundle_dir/srq-process-kill-model-test.log" | cut -d ' ' -f 1)"
+          sqlite_reference_sha="$(sha256sum "$bundle_dir/srq-sqlite-promotion-reference.log" | cut -d ' ' -f 1)"
+          runtime_policy_sha="$(sha256sum "$bundle_dir/srq-sqlite-runtime-policy-test.log" | cut -d ' ' -f 1)"
+          runtime_policy_lock_sha="$(sha256sum "$bundle_dir/srq-sqlite-runtime-policy-Cargo.lock" | cut -d ' ' -f 1)"
+          boot_reconciliation_sha="$(sha256sum "$bundle_dir/srq-boot-reconciliation-model-test.log" | cut -d ' ' -f 1)"
+          boot_observation_adapter_sha="$(sha256sum "$bundle_dir/srq-boot-observation-adapter-test.log" | cut -d ' ' -f 1)"
+          d1_cose_verifier_sha="$(sha256sum "$bundle_dir/srq-eat-cose-verifier-test.log" | cut -d ' ' -f 1)"
+          d1_sqlite_consumer_sha="$(sha256sum "$bundle_dir/srq-sqlite-d1-challenge-consumption-reference.log" | cut -d ' ' -f 1)"
+          d1_sqlite_store_sha="$(sha256sum "$bundle_dir/srq-d1-sqlite-store-test.log" | cut -d ' ' -f 1)"
+          d1_sqlite_store_lock_sha="$(sha256sum "$bundle_dir/srq-d1-sqlite-store-Cargo.lock" | cut -d ' ' -f 1)"
+          corpus_sha="$(sha256sum benchmarks/srq-v1/scenarios.json | cut -d ' ' -f 1)"
+          actual_head="$(git rev-parse HEAD)"
+          test "$actual_head" = "$SRQ_EXPECTED_SOURCE_SHA"
+
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg workflow_path ".github/workflows/srq-v1.yml" \
+            --arg workflow_ref "$GITHUB_WORKFLOW_REF" \
+            --arg workflow_sha "$GITHUB_WORKFLOW_SHA" \
+            --arg event_name "$GITHUB_EVENT_NAME" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg run_attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg expected "$SRQ_EXPECTED_SOURCE_SHA" \
+            --arg event "$SRQ_EVENT_SHA" \
+            --arg actual "$actual_head" \
+            --arg corpus_sha "$corpus_sha" \
+            --arg checksum_sha "$checksum_sha" \
+            --arg policy_promotion_sha "$policy_promotion_sha" \
+            --arg policy_promotion_lock_sha "$policy_promotion_lock_sha" \
+            --arg process_kill_sha "$process_kill_sha" \
+            --arg sqlite_reference_sha "$sqlite_reference_sha" \
+            --arg runtime_policy_sha "$runtime_policy_sha" \
+            --arg runtime_policy_lock_sha "$runtime_policy_lock_sha" \
+            --arg boot_reconciliation_sha "$boot_reconciliation_sha" \
+            --arg boot_observation_adapter_sha "$boot_observation_adapter_sha" \
+            --arg d1_cose_verifier_sha "$d1_cose_verifier_sha" \
+            --arg d1_sqlite_consumer_sha "$d1_sqlite_consumer_sha" \
+            --arg d1_sqlite_store_sha "$d1_sqlite_store_sha" \
+            --arg d1_sqlite_store_lock_sha "$d1_sqlite_store_lock_sha" \
+            '{
+              schema_version: 1,
+              profile_id: "SRQ-1",
+              repository: $repository,
+              workflow_path: $workflow_path,
+              workflow_ref: $workflow_ref,
+              workflow_sha: $workflow_sha,
+              event_name: $event_name,
+              run_id: $run_id,
+              run_attempt: $run_attempt,
+              source: {
+                expected_source_sha: $expected,
+                event_sha: $event,
+                actual_checkout_sha: $actual,
+                source_matches_expected: ($expected == $actual)
+              },
+              corpus_sha256: $corpus_sha,
+              checksum_manifest_sha256: $checksum_sha,
+              dependency_lock_sha256: {
+                srq_d1_sqlite_store: $d1_sqlite_store_lock_sha,
+                srq_policy_promotion_store: $policy_promotion_lock_sha,
+                srq_sqlite_runtime_policy: $runtime_policy_lock_sha
+              },
+              supplemental_observations: [{
+                test_id: "SRQ-POLICY-PROMOTION-STORE-V1",
+                scenario_id: "UPDATE-004",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-policy-promotion-store-test.log",
+                evidence_sha256: $policy_promotion_sha
+              }, {
+                test_id: "SRQ-PROCESS-KILL-V1",
+                scenario_id: "UPDATE-004",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-process-kill-model-test.log",
+                evidence_sha256: $process_kill_sha
+              }, {
+                test_id: "SRQ-SQLITE-REFERENCE-V1",
+                scenario_id: "EVIDENCE-003",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-sqlite-promotion-reference.log",
+                evidence_sha256: $sqlite_reference_sha
+              }, {
+                test_id: "SRQ-BOOT-RECONCILIATION-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-boot-reconciliation-model-test.log",
+                evidence_sha256: $boot_reconciliation_sha
+              }, {
+                test_id: "SRQ-BOOT-OBSERVATION-ADAPTER-D0-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-boot-observation-adapter-test.log",
+                evidence_sha256: $boot_observation_adapter_sha
+              }, {
+                test_id: "SRQ-D1-COSE-VERIFY-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "cryptographic_test_fixture_only",
+                status: "PASS",
+                evidence_artifact: "srq-eat-cose-verifier-test.log",
+                evidence_sha256: $d1_cose_verifier_sha
+              }, {
+                test_id: "SRQ-D1-SQLITE-CONSUMER-REFERENCE-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-sqlite-d1-challenge-consumption-reference.log",
+                evidence_sha256: $d1_sqlite_consumer_sha
+              }, {
+                test_id: "SRQ-D1-SQLITE-STORE-V1",
+                scenario_id: "RECOVERY-002",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-d1-sqlite-store-test.log",
+                evidence_sha256: $d1_sqlite_store_sha
+              }, {
+                test_id: "SRQ-SQLITE-RUNTIME-POLICY-V1",
+                scenario_id: "EVIDENCE-003",
+                execution_tier: "model",
+                claim_ceiling: "abstract_model_only",
+                status: "PASS",
+                evidence_artifact: "srq-sqlite-runtime-policy-test.log",
+                evidence_sha256: $runtime_policy_sha
+              }]
+            }' > "$bundle_dir/manifest.json"
+
+          # GNU tar + gzip -n make archive metadata deterministic for byte-level comparison.
+          tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner \
+            -cf - -C "$RUNNER_TEMP" srq-evidence-bundle | gzip -n > "$archive"
+          sha256sum "$archive"
+
+      - name: Validate the produced archive on every event
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/validate-produced-bundle.sh \
+            --archive "$RUNNER_TEMP/srq-evidence-bundle.tar.gz" \
+            --expected-source-sha "$SRQ_EXPECTED_SOURCE_SHA" \
+            --expected-event-sha "$SRQ_EVENT_SHA" \
+            --expected-source-ref "$GITHUB_REF" \
+            --expected-workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --expected-workflow-sha "$GITHUB_WORKFLOW_SHA" \
+            --expected-event-name "$GITHUB_EVENT_NAME" \
+            --expected-run-id "$GITHUB_RUN_ID" \
+            --expected-run-attempt "$GITHUB_RUN_ATTEMPT"
+
+      - name: Preserve model evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-model-evidence
+          path: |
+            ${{ runner.temp }}/srq-recovery-model-test.log
+            ${{ runner.temp }}/srq-update-004-model-result.json
+            ${{ runner.temp }}/srq-challenge-promotion-model-test.log
+            ${{ runner.temp }}/srq-evidence-003-model-result.json
+            ${{ runner.temp }}/srq-eat-cose-verifier-test.log
+            ${{ runner.temp }}/srq-d1-sqlite-store-test.log
+            ${{ runner.temp }}/srq-d1-sqlite-store-Cargo.lock
+            ${{ runner.temp }}/srq-boot-reconciliation-model-test.log
+            ${{ runner.temp }}/srq-boot-observation-adapter-test.log
+            ${{ runner.temp }}/srq-policy-promotion-store-test.log
+            ${{ runner.temp }}/srq-policy-promotion-store-Cargo.lock
+            ${{ runner.temp }}/srq-process-kill-model-test.log
+            ${{ runner.temp }}/srq-sqlite-d1-challenge-consumption-reference.log
+            ${{ runner.temp }}/srq-sqlite-promotion-reference.log
+            ${{ runner.temp }}/srq-sqlite-runtime-policy-test.log
+            ${{ runner.temp }}/srq-sqlite-runtime-policy-Cargo.lock
+            ${{ runner.temp }}/srq-release-qualification.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Publish attestation subject
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-evidence-attestation-subject
+          path: ${{ runner.temp }}/srq-evidence-bundle.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Validate the frozen SRQ-1 corpus
+        run: bash benchmarks/srq-v1/validate.sh
+
+      - name: Exercise validator negative controls
+        run: bash benchmarks/srq-v1/test-validator.sh
+
+      - name: Exercise per-run comparison-lock negative controls
+        run: bash benchmarks/srq-v1/test-comparison-lock.sh
+      - name: Exercise matched baseline comparison-run contract
+        run: |
+          bash -n benchmarks/srq-v1/validate-comparison-run.sh
+          bash -n benchmarks/srq-v1/test-comparison-run.sh
+          bash benchmarks/srq-v1/test-comparison-run.sh
+      - name: Exercise in-toto statement and DSSE comparison envelope
+        run: |
+          bash -n benchmarks/srq-v1/build-comparison-statement.sh
+          bash -n benchmarks/srq-v1/create-comparison-envelope.sh
+          bash -n benchmarks/srq-v1/verify-comparison-envelope.sh
+          bash -n benchmarks/srq-v1/test-comparison-envelope.sh
+          bash benchmarks/srq-v1/test-comparison-envelope.sh
+
+      - name: Test durable single-use comparison-envelope appraisal
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/srq-comparison-attestation-store-test.log"
+          cargo test --manifest-path tools/srq-comparison-attestation-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$log"
+          grep -Fq 'test result: ok. 19 passed; 0 failed' "$log"
+          grep -Fq 'PASS: comparison envelope store survived 30 actual SIGKILL trials across three SQL boundaries' "$log"
+          for test_name in valid_envelope_is_consumed_once_and_receipt_survives_reopen tampered_signature_does_not_consume_challenge signed_statement_cannot_omit_declared_artifact_subject signed_predicate_cannot_substitute_artifact_manifest_digest unknown_predicate_key_cannot_replace_required_non_claims_field unknown_run_receipt_key_is_rejected_even_when_required_fields_match comparison_appraisal_sigkill_worker_entry comparison_appraisal_survives_actual_sigkill_at_sql_boundaries mutated_subject_bytes_fail_without_consuming_challenge wrong_public_key_fingerprint_is_rejected valid_signature_with_wrong_dsse_key_id_is_rejected envelope_challenge_must_match_issuer_record overstated_structural_comparability_claim_is_rejected fixture_evidence_is_not_appraised_as_real_comparison returned_receipt_timestamp_matches_durable_row_when_clock_advances expiration_at_commit_boundary_rolls_back_receipt_and_challenge symlink_subject_cannot_escape_evidence_root sixty_four_independent_connections_commit_exactly_one_appraisal unknown_nonempty_database_is_rejected_without_adoption; do
+            grep -Fq "$test_name ... ok" "$log"
+          done
+
+      - name: Preserve comparison appraisal crash evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-comparison-attestation-store-evidence
+          path: ${{ runner.temp }}/srq-comparison-attestation-store-test.log
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Validate PASS and NOT_RUN result receipt examples
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/validate-result.sh --allow-fixtures benchmarks/srq-v1/fixtures/result-pass-static.example.json
+          bash benchmarks/srq-v1/validate-result.sh --allow-fixtures benchmarks/srq-v1/fixtures/result-not-run.example.json
+
+      - name: Exercise result receipt negative controls
+        run: bash benchmarks/srq-v1/test-result-validator.sh
+
+      - name: Exercise authenticated provenance verifier contracts
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/test-verify-attestation.sh
+          bash benchmarks/srq-v1/test-verify-evidence-bundle.sh
+          bash benchmarks/srq-v1/test-evaluate-attested-release.sh
+          bash benchmarks/srq-v1/test-validate-produced-bundle.sh
+
+
+  attest-model-evidence:
+    name: Sign and verify trusted-main SRQ evidence
+    # PR events—including same-repo PRs—never receive the OIDC/attestation write permissions.
+    # A manual run of the protected main branch is the only accepted provenance producer.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: validate-corpus
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out trusted workflow and verification policy
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Download exact-run evidence subject
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: srq-evidence-attestation-subject
+          path: ${{ runner.temp }}/srq-attest-input
+
+      - name: Install pinned GitHub CLI verifier
+        shell: bash
+        run: bash benchmarks/srq-v1/install-pinned-gh.sh
+
+      - name: Validate bundle identity before signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/verify-evidence-bundle.sh \
+            --archive "$RUNNER_TEMP/srq-attest-input/srq-evidence-bundle.tar.gz" \
+            --expected-source-sha "$GITHUB_SHA" \
+            --expected-source-ref "$GITHUB_REF" \
+            --expected-workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --expected-workflow-sha "$GITHUB_WORKFLOW_SHA" \
+            --expected-run-id "$GITHUB_RUN_ID" \
+            --expected-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --extract-to "$RUNNER_TEMP/srq-pre-sign-validated"
+
+      - name: Create signed SLSA provenance for the evidence bundle
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: ${{ runner.temp }}/srq-attest-input/srq-evidence-bundle.tar.gz
+
+      - name: Verify signature, signer, ref, source and artifact digest before evaluation
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash benchmarks/srq-v1/evaluate-attested-release.sh \
+            --archive "$RUNNER_TEMP/srq-attest-input/srq-evidence-bundle.tar.gz" \
+            --expected-source-sha "$GITHUB_SHA" \
+            --expected-source-ref "$GITHUB_REF" \
+            --expected-workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --expected-workflow-sha "$GITHUB_WORKFLOW_SHA" \
+            --expected-run-id "$GITHUB_RUN_ID" \
+            --expected-run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --output-envelope "$RUNNER_TEMP/srq-attested-evaluation-envelope.json" \
+            --output-report "$RUNNER_TEMP/srq-attested-release-evaluation.json" \
+            --output-verification "$RUNNER_TEMP/srq-attestation-verification.json"
+
+      - name: Preserve verified provenance and evaluation records
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-attested-evidence-verification
+          path: |
+            ${{ runner.temp }}/srq-attested-evaluation-envelope.json
+            ${{ runner.temp }}/srq-attested-release-evaluation.json
+            ${{ runner.temp }}/srq-attestation-verification.json
+          if-no-files-found: error
+          retention-days: 30

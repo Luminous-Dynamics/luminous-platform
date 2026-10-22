@@ -1,0 +1,542 @@
+{
+  "profile_id": "SRQ-1",
+  "schema_version": 1,
+  "qualification_status": "proposed_not_executed",
+  "description": "Cross-layer sovereign boot, update, operations, evidence, and recovery adversarial scenario corpus. Scenario definitions and observed tier coverage are recorded here; exact execution evidence lives in separate source-bound result receipts. This file is not itself execution evidence.",
+  "scenarios": [
+    {
+      "id": "BOOT-001",
+      "surface": "sovereign-boot",
+      "severity": "release_gate",
+      "fault_injection": "Renderer executable is missing, disabled, or exits before it opens DRM.",
+      "expected_state": "Host boot and recovery remain reachable; renderer availability is non-authoritative.",
+      "forbidden_outcomes": [
+        "Boot or recovery target depends on the renderer.",
+        "The renderer's absence is reported as a security failure of the host."
+      ],
+      "required_evidence": [
+        "QEMU systemd target reachability receipt",
+        "Exact source/build commits",
+        "Renderer-disabled run log"
+      ],
+      "execution_tiers": [
+        "static",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "BOOT-002",
+      "surface": "sovereign-boot",
+      "severity": "release_gate",
+      "fault_injection": "Renderer crashes or ignores the handoff stop request.",
+      "expected_state": "Display-manager handoff completes or falls back safely; recovery remains available.",
+      "forbidden_outcomes": [
+        "Login/recovery blocked indefinitely.",
+        "DRM ownership reported released without observation."
+      ],
+      "required_evidence": [
+        "QEMU handoff trace",
+        "Measured stop-request-to-DRM-release latency distribution",
+        "Service and kernel logs"
+      ],
+      "execution_tiers": [
+        "qemu",
+        "physical"
+      ],
+      "release_gate": true,
+      "target": "Existing issue #9 proposes QEMU p95 DRM-release latency <= 750 ms; physical results must be separate.",
+      "status": "proposed_not_executed",
+      "qualifying_tier": "physical"
+    },
+    {
+      "id": "BOOT-003",
+      "surface": "sovereign-boot",
+      "severity": "release_gate",
+      "fault_injection": "Reduced-motion mode starts at different elapsed times or receives changing simulation time.",
+      "expected_state": "Reduced mode immediately produces deterministic still output for the same inputs.",
+      "forbidden_outcomes": [
+        "Animation begins before static frame availability.",
+        "Elapsed-time changes alter Reduced-mode pixels."
+      ],
+      "required_evidence": [
+        "Same-seed frame hashes",
+        "First-frame capture",
+        "Per-theme Reduced-mode audit"
+      ],
+      "execution_tiers": [
+        "static",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "BOOT-004",
+      "surface": "sovereign-boot",
+      "severity": "release_gate",
+      "fault_injection": "Renderer attempts unsupported or unexpected network activity.",
+      "expected_state": "Boot renderer has no IP-network dependency or remote-asset requirement.",
+      "forbidden_outcomes": [
+        "Renderer network access becomes necessary for boot/recovery.",
+        "Unexpected IP socket activity is hidden from the receipt."
+      ],
+      "required_evidence": [
+        "Service sandbox inspection",
+        "Network namespace/socket-denial test",
+        "Rendered output with network unavailable"
+      ],
+      "execution_tiers": [
+        "static",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "OPS-001",
+      "surface": "sovereign-ops",
+      "severity": "release_gate",
+      "fault_injection": "An operational intent has no valid explicit operator-authorization receipt or references another target/generation.",
+      "expected_state": "Intent remains a proposal; no host mutation is authorized.",
+      "forbidden_outcomes": [
+        "Missing approval interpreted as approval.",
+        "Target or generation mismatch is ignored."
+      ],
+      "required_evidence": [
+        "Authorization decision trace",
+        "Before/after generation IDs",
+        "Negative-control receipt"
+      ],
+      "execution_tiers": [
+        "static",
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "OPS-002",
+      "surface": "sovereign-ops",
+      "severity": "release_gate",
+      "fault_injection": "Proof generation or threshold signing is unavailable.",
+      "expected_state": "The operation returns an explicit unavailable/error state or an explicitly unsigned observation.",
+      "forbidden_outcomes": [
+        "Placeholder bytes or a fixed digest are labelled proof.",
+        "Unsigned pulses are labelled authenticated."
+      ],
+      "required_evidence": [
+        "Error-path test output",
+        "Serialized output fixture",
+        "Independent verifier rejection"
+      ],
+      "execution_tiers": [
+        "static",
+        "model"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "model"
+    },
+    {
+      "id": "UPDATE-001",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "Downloaded or staged artifact bytes do not match the digest in authorized metadata.",
+      "expected_state": "Artifact is rejected before activation; current known-good state remains addressable.",
+      "forbidden_outcomes": [
+        "Artifact is activated after digest mismatch.",
+        "A transport success substitutes for artifact verification."
+      ],
+      "required_evidence": [
+        "Fixture and expected digest",
+        "Verifier output",
+        "Before/after generation IDs"
+      ],
+      "execution_tiers": [
+        "static",
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "UPDATE-002",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "An update offers a generation older than the locally recorded trusted generation.",
+      "expected_state": "Rollback is rejected unless a separate explicit recovery authorization path permits it and records the reason.",
+      "forbidden_outcomes": [
+        "Silent downgrade.",
+        "A numeric generation alone is treated as a signed authorization."
+      ],
+      "required_evidence": [
+        "Prior trusted generation state",
+        "Update metadata",
+        "Decision receipt"
+      ],
+      "execution_tiers": [
+        "static",
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "UPDATE-003",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "Update metadata is expired, frozen, fast-forwarded, or mixed across inconsistent snapshots.",
+      "expected_state": "Update promotion stops and the specific metadata failure is observable.",
+      "forbidden_outcomes": [
+        "Expired metadata accepted as current.",
+        "Mixed metadata accepted as one release.",
+        "Missing metadata reported as verified success."
+      ],
+      "required_evidence": [
+        "Versioned metadata corpus",
+        "Fault classification",
+        "Verifier output"
+      ],
+      "execution_tiers": [
+        "static",
+        "model"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "model"
+    },
+    {
+      "id": "UPDATE-004",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "Power loss or process termination occurs at each activation transaction boundary.",
+      "expected_state": "After restart, the system selects either the prior complete generation or the new complete generation.",
+      "forbidden_outcomes": [
+        "Hybrid generation treated as valid.",
+        "Partially written state reported as committed.",
+        "Rollback target disappears before new generation is usable."
+      ],
+      "required_evidence": [
+        "Checkpoint inventory",
+        "Power-cut simulation results",
+        "Filesystem and generation state hashes"
+      ],
+      "execution_tiers": [
+        "model",
+        "qemu",
+        "physical"
+      ],
+      "release_gate": true,
+      "status": "partial_model_pass_not_qualified",
+      "observed_tiers": [
+        "model"
+      ],
+      "qualifying_tier": "physical"
+    },
+    {
+      "id": "EVIDENCE-001",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "A stale, expired, replayed, or wrong-target challenge-bound receipt is submitted for promotion.",
+      "expected_state": "Receipt is rejected and promotion is denied.",
+      "forbidden_outcomes": [
+        "Replay accepted.",
+        "Expired challenge accepted.",
+        "Receipt from a different target, policy digest, or generation accepted."
+      ],
+      "required_evidence": [
+        "Frozen adversarial fixture digest",
+        "Challenge and envelope bindings",
+        "Promotion decision trace"
+      ],
+      "execution_tiers": [
+        "static",
+        "model"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "model"
+    },
+    {
+      "id": "EVIDENCE-002",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "Verifier process restarts after a challenge nonce has been consumed.",
+      "expected_state": "Durably consumed challenge cannot be replayed after restart.",
+      "forbidden_outcomes": [
+        "In-memory-only replay guard described as restart-safe.",
+        "Nonce state lost while associated promotion remains committed."
+      ],
+      "required_evidence": [
+        "Durable ledger snapshot",
+        "Restart/crash-recovery trace",
+        "Replay rejection"
+      ],
+      "execution_tiers": [
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "EVIDENCE-003",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "Multiple workers concurrently attempt to consume the same challenge and promote the same target.",
+      "expected_state": "Exactly one transaction succeeds; challenge consumption and promotion decision are atomic.",
+      "forbidden_outcomes": [
+        "Two successful promotions consume the same challenge.",
+        "Nonce consumed without a committed decision, or decision committed without nonce consumption."
+      ],
+      "required_evidence": [
+        "Concurrency test configuration",
+        "Accepted/rejected transaction receipts",
+        "Post-test durable ledger state"
+      ],
+      "execution_tiers": [
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "partial_model_pass_not_qualified",
+      "observed_tiers": [
+        "model"
+      ],
+      "target": "Model-only target: exactly one of 64 concurrent worker threads and exactly one of 8 independent same-host worker processes may commit the same challenge; restart and five interruption checkpoints must show either old/unconsumed or new/consumed state. Cross-host store semantics and QEMU/production integration remain open.",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "EVIDENCE-004",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "Receipt JSON is semantically reserialized or one byte is changed after its digest envelope is created.",
+      "expected_state": "Exact-byte digest mismatch is rejected.",
+      "forbidden_outcomes": [
+        "Parsed-object equivalence silently substitutes for exact-byte binding.",
+        "Hash consistency is misrepresented as signer or device authentication."
+      ],
+      "required_evidence": [
+        "Original and mutated byte digests",
+        "Verifier output",
+        "Explicit claim-ceiling field"
+      ],
+      "execution_tiers": [
+        "static",
+        "model"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "model"
+    },
+    {
+      "id": "RECOVERY-001",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "Network is unavailable but a locally stored known-good artifact and its trust metadata remain valid.",
+      "expected_state": "Recovery uses only verified local inputs and records offline mode.",
+      "forbidden_outcomes": [
+        "Recovery silently downloads remote code.",
+        "Offline capability is claimed without proving the local artifact's authorization."
+      ],
+      "required_evidence": [
+        "Network-disabled recovery trace",
+        "Artifact and metadata digests",
+        "Resulting generation identity"
+      ],
+      "execution_tiers": [
+        "model",
+        "qemu",
+        "physical"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "physical"
+    },
+    {
+      "id": "RECOVERY-002",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "Network is unavailable and no authorized recovery artifact can be verified.",
+      "expected_state": "System enters an explicit degraded/maintenance state without activating unverified code.",
+      "forbidden_outcomes": [
+        "Unverified artifact activated to improve availability.",
+        "Unknown recovery state presented as successful recovery."
+      ],
+      "required_evidence": [
+        "Missing-artifact fixture",
+        "Decision and operator-facing status",
+        "Confirmation that no activation occurred"
+      ],
+      "execution_tiers": [
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "RECOVERY-003",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "Lifecycle receipt is missing, malformed, truncated, or has an invalid digest.",
+      "expected_state": "Receipt is treated as untrusted; evidence is reconstructed or the system reports not qualified.",
+      "forbidden_outcomes": [
+        "Missing evidence becomes a default PASS.",
+        "Malformed receipt partially authorizes a transition."
+      ],
+      "required_evidence": [
+        "Receipt mutation corpus",
+        "Parser/verifier result",
+        "Final status enum"
+      ],
+      "execution_tiers": [
+        "static",
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "RECOVERY-004",
+      "surface": "luminous-platform",
+      "severity": "release_gate",
+      "fault_injection": "Receipt clock moves backward, disagrees with verifier time, or provides only self-asserted timestamps.",
+      "expected_state": "Freshness is not established without the verifier's permitted time source and valid bounds.",
+      "forbidden_outcomes": [
+        "Receipt timestamp used as the sole current-time authority.",
+        "Clock uncertainty collapsed into verified currentness."
+      ],
+      "required_evidence": [
+        "Clock-skew cases",
+        "Verifier clock input record",
+        "Freshness decision"
+      ],
+      "execution_tiers": [
+        "static",
+        "model"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "model"
+    },
+    {
+      "id": "FLEET-001",
+      "surface": "sovereign-ops",
+      "severity": "release_gate",
+      "fault_injection": "Some targets are unreachable or fail verification while other targets succeed.",
+      "expected_state": "Per-target statuses and partial progress are preserved; aggregate status reflects every in-scope target.",
+      "forbidden_outcomes": [
+        "One success masks another target's failure.",
+        "Unreachable target is counted as compliant.",
+        "Retry overwrites the original failure evidence."
+      ],
+      "required_evidence": [
+        "Per-target status table",
+        "Fleet scope digest",
+        "Partial-progress/retry trace"
+      ],
+      "execution_tiers": [
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "CI-001",
+      "surface": "all",
+      "severity": "release_gate",
+      "fault_injection": "Required qualification lane is queued, blocked, missing an artifact, or ran on a different source head.",
+      "expected_state": "Qualification status is NOT_RUN or BLOCKED until exact-head evidence is available and checked.",
+      "forbidden_outcomes": [
+        "Queued/in-progress interpreted as PASS.",
+        "Missing artifact interpreted as successful evidence.",
+        "Event SHA substituted silently for actual checkout HEAD."
+      ],
+      "required_evidence": [
+        "PR/event/head/checkout SHA values",
+        "Workflow status and step execution",
+        "Receipt artifact digest or explicit absence"
+      ],
+      "execution_tiers": [
+        "static",
+        "model",
+        "qemu",
+        "physical"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "qualifying_tier": "static"
+    },
+    {
+      "id": "OPS-003",
+      "surface": "all",
+      "severity": "release_gate",
+      "fault_injection": "A required check is NOT_RUN or BLOCKED, and the operator console receives incomplete or stale evidence.",
+      "expected_state": "The interface preserves the exact status, gives the reason and safe next step, and makes no positive compliance claim.",
+      "forbidden_outcomes": [
+        "NOT_RUN or BLOCKED rendered as PASS/green-compliant.",
+        "Status color is the only distinction without an accessible text label.",
+        "The operator cannot determine whether a scenario ran or what is needed next."
+      ],
+      "required_evidence": [
+        "Injected state/status fixtures for PASS, FAIL, NOT_RUN, BLOCKED, and NOT_APPLICABLE",
+        "Rendered UI capture and accessible-name/status assertions",
+        "Blinded operator interpretation record with wrong-status counts and time-to-next-safe-action"
+      ],
+      "execution_tiers": [
+        "static",
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "target": "Proposed usability gate: at least 95% correct classification over a blinded scenario set and zero NOT_RUN-as-PASS misclassifications; measure cohort, task time, and confidence instead of assuming usability.",
+      "qualifying_tier": "qemu"
+    },
+    {
+      "id": "OPS-004",
+      "surface": "sovereign-ops",
+      "severity": "release_gate",
+      "fault_injection": "An operator previews a high-impact action then cancels, closes the preview, or presents stale/target-mismatched authorization.",
+      "expected_state": "No mutation occurs until current, target-bound, explicit authorization is validated; cancellation leaves the target generation unchanged.",
+      "forbidden_outcomes": [
+        "Preview implies that the action has been submitted or completed.",
+        "Cancelled operation continues in the background.",
+        "Stale consent or approval for another target/generation is reused."
+      ],
+      "required_evidence": [
+        "Before/after target-generation identity",
+        "Action dispatch/decision audit log",
+        "UI preview/cancel interaction trace and keyboard-only run",
+        "Negative controls for stale authorization and target mismatch"
+      ],
+      "execution_tiers": [
+        "static",
+        "model",
+        "qemu"
+      ],
+      "release_gate": true,
+      "status": "proposed_not_executed",
+      "target": "Proposed hard safety gate: zero mutations after cancellation or without current authorization; do not average any violation against usability or latency.",
+      "qualifying_tier": "qemu"
+    }
+  ]
+}
