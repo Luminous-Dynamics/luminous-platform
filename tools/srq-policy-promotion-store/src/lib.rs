@@ -79,6 +79,11 @@ pub struct InitialTargetState {
     pub deployment_id: String,
 }
 
+/// Reconstructed current policy state read from the durable promotion store.
+/// Kept separate by name from the bootstrap input to make reconciliation calls
+/// explicit, while sharing the same validated field contract.
+pub type TargetPolicyState = InitialTargetState;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PromotedDecision {
     pub decision_id: String,
@@ -238,6 +243,41 @@ impl SqlitePolicyPromotionStore {
             params![state.target_id, sql_i64(state.generation)?, state.approved_artifact_sha256, state.effective_policy_sha256, state.corpus_sha256, state.deployment_id],
         ).map_err(sql_err("initialize target"))?;
         tx.commit().map_err(sql_err("commit target initialization"))
+    }
+
+    /// Read the current committed target state after reopening or reconciling
+    /// a promotion. This is a local-store observation; anti-rollback must still
+    /// be checked against the independently configured witness.
+    pub fn target_state(&self, target_id: &str) -> Result<Option<TargetPolicyState>, StoreError> {
+        if !valid_identifier(target_id) {
+            return Err(StoreError::InvalidInput("target identifier invalid"));
+        }
+        let stored: Option<(i64, String, String, String, String)> = self.connection
+            .query_row(
+                "SELECT generation,approved_artifact_sha256,effective_policy_sha256,corpus_sha256,deployment_id \
+                 FROM promotion_targets WHERE target_id=?1",
+                params![target_id],
+                |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?,row.get(3)?,row.get(4)?)),
+            )
+            .optional()
+            .map_err(sql_err("read target policy state"))?;
+        let Some((generation, approved_artifact_sha256, effective_policy_sha256, corpus_sha256, deployment_id)) = stored else {
+            return Ok(None);
+        };
+        let generation = u64::try_from(generation)
+            .map_err(|_| StoreError::CorruptStore("persisted target generation is negative".into()))?;
+        let state = TargetPolicyState {
+            target_id: target_id.to_owned(),
+            generation,
+            approved_artifact_sha256,
+            effective_policy_sha256,
+            corpus_sha256,
+            deployment_id,
+        };
+        validate_state(&state).map_err(|error| {
+            StoreError::CorruptStore(format!("persisted target state is invalid: {error}"))
+        })?;
+        Ok(Some(state))
     }
 
     /// Trusted issuer registers a challenge before it is sent to the attester.
