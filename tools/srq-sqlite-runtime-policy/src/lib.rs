@@ -26,6 +26,12 @@ pub fn parse_sqlite_version(value: &str) -> Option<(u64, u64, u64)> {
     if parts.next().is_some() {
         return None;
     }
+    // Accept only the canonical spelling returned by SQLite itself. Leading
+    // signs, whitespace, zero-padding and other alternate numeric spellings
+    // must not accidentally pass a policy comparison.
+    if format!("{major}.{minor}.{patch}") != value {
+        return None;
+    }
     Some((major, minor, patch))
 }
 
@@ -98,7 +104,7 @@ mod tests {
 
     #[test]
     fn malformed_or_incomplete_versions_fail_closed() {
-        for version in ["", "3", "3.51", "3..3", "3.51.3-extra", "3.54.1.2", "v3.54.1"] {
+        for version in ["", "3", "3.51", "3..3", "3.51.3-extra", "3.54.1.2", "v3.54.1", " 3.54.1", "3.54.1 ", "+3.54.1", "03.54.1"] {
             assert!(
                 !is_supported_sqlite_version(version),
                 "malformed SQLite version must be rejected: {version}"
