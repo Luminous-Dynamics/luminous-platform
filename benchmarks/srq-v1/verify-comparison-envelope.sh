@@ -88,6 +88,35 @@ jq -e --arg challenge "$(jq -r '.predicate.run_challenge' "$payload_file")" \
 jq -e --arg baseline "$(jq -r '.predicate.baseline_id' "$payload_file")" '
   .baseline_id == $baseline
 ' "$lock_file" >/dev/null || fail "lock baseline identity does not match statement predicate"
+jq -e --slurpfile run "$run_file" --slurpfile lock "$lock_file" '
+  .predicate.artifacts == $run[0].artifacts and
+  .predicate.source == $run[0].source and
+  .predicate.environment == $run[0].environment and
+  .predicate.pairing == $run[0].pairing and
+  .predicate.non_claims == $run[0].non_claims and
+  .predicate.evidence_status == (if $run[0].fixture then "fixture_only" else "submitted_for_appraisal" end) and
+  $lock[0].fixture == $run[0].fixture and
+  $lock[0].srq_source_sha == $run[0].source.actual_srq_checkout_sha
+' "$payload_file" >/dev/null || fail "statement metadata or evidence status disagrees with bound receipt/lock"
+
+# The subject inventory is a closed set: exactly the lock, run receipt and all artifacts
+# declared by that receipt. A valid signature cannot make an omitted artifact disappear.
+expected_subjects="$tmpdir/expected-subjects.txt"
+actual_subjects="$tmpdir/actual-subjects.txt"
+{
+  printf '%s\n' "$lock_path" "$run_path"
+  jq -r '.artifacts[] | .path' "$run_file"
+} | LC_ALL=C sort -u > "$expected_subjects"
+jq -r '.subject[].name' "$payload_file" | LC_ALL=C sort -u > "$actual_subjects"
+cmp -s "$expected_subjects" "$actual_subjects" || fail "statement subject inventory does not exactly cover lock, run receipt and declared artifacts"
+
+while IFS= "$expected_key_id" "$(jq -r '.subject | length' "$payload_file")" "$(jq -r '.predicate.evidence_status' "$payload_file")"
+echo "NON-CLAIM: DSSE signature and subject-byte integrity do not appraise the truth of runtime observations or establish release qualification."
+\t' read -r artifact_path expected_digest; do
+  [[ -n "$artifact_path" && -n "$expected_digest" ]] || fail "malformed artifact manifest entry"
+  subject_digest="$(jq -r --arg p "$artifact_path" '[.subject[] | select(.name == $p) | .digest.sha256] | if length == 1 then .[0] else empty end' "$payload_file")"
+  [[ "$subject_digest" == "$expected_digest" ]] || fail "artifact manifest digest disagrees with in-toto subject: $artifact_path"
+done < <(jq -r '.artifacts[] | [.path,.sha256] | @tsv' "$run_file")
 
 printf 'DSSE_VERIFIED: key_id=%s subject_count=%s evidence_status=%s\n' "$expected_key_id" "$(jq -r '.subject | length' "$payload_file")" "$(jq -r '.predicate.evidence_status' "$payload_file")"
 echo "NON-CLAIM: DSSE signature and subject-byte integrity do not appraise the truth of runtime observations or establish release qualification."

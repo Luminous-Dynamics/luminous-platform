@@ -47,6 +47,32 @@ bash "$signer" --statement "$statement" --private-key "$private" --key-id "$key_
 bash "$verifier" --public-key "$public" --expected-key-id "$key_id" --evidence-root "$root" "$envelope"
 echo "PASS: DSSE envelope verified by externally supplied public key"
 
+# Negative control: the run receipt declares trial-data.json, so a newly signed
+# statement that omits that subject must fail even though its remaining hashes verify.
+jq '.subject |= map(select(.name != "trial-data.json"))' "$statement" > "$tmpdir/missing-subject.json"
+bash "$signer" --statement "$tmpdir/missing-subject.json" --private-key "$private" --key-id "$key_id" --output "$tmpdir/missing-subject-envelope.json"
+if bash "$verifier" --public-key "$public" --expected-key-id "$key_id" --evidence-root "$root" "$tmpdir/missing-subject-envelope.json" >"$tmpdir/missing-subject.out" 2>&1; then
+  echo "FAIL: signed statement with an omitted declared artifact was accepted" >&2; exit 1
+fi
+echo "PASS: signed statement with missing artifact subject rejected"
+
+# Negative control: predicate metadata may not substitute a different artifact digest
+# than the immutable run receipt carries.
+jq '.predicate.artifacts.trial_data.sha256 = ("0" * 64)' "$statement" > "$tmpdir/altered-manifest.json"
+bash "$signer" --statement "$tmpdir/altered-manifest.json" --private-key "$private" --key-id "$key_id" --output "$tmpdir/altered-manifest-envelope.json"
+if bash "$verifier" --public-key "$public" --expected-key-id "$key_id" --evidence-root "$root" "$tmpdir/altered-manifest-envelope.json" >"$tmpdir/altered-manifest.out" 2>&1; then
+  echo "FAIL: signed statement with an altered artifact manifest was accepted" >&2; exit 1
+fi
+echo "PASS: signed statement with altered artifact manifest rejected"
+
+# A non-Ed25519 private key must be rejected by the signer rather than producing an envelope
+# that downstream Ed25519-only verification will inevitably reject.
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$tmpdir/rsa-private.pem" 2>/dev/null
+if bash "$signer" --statement "$statement" --private-key "$tmpdir/rsa-private.pem" --key-id "$key_id" --output "$tmpdir/rsa-envelope.json" >"$tmpdir/rsa-signer.out" 2>&1; then
+  echo "FAIL: signer accepted an RSA private key" >&2; exit 1
+fi
+echo "PASS: non-Ed25519 signing key rejected"
+
 if bash "$verifier" --public-key "$wrong_public" --expected-key-id "$key_id" --evidence-root "$root" "$envelope" >"$tmpdir/wrong-key.out" 2>&1; then
   echo "FAIL: envelope accepted under the wrong key" >&2; exit 1
 fi
