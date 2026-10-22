@@ -78,6 +78,12 @@ Initial goals (not yet achieved):
 - At least 1,000 VM restore/reset trials with all outcomes classified; hardware power loss is a separate evidence tier.
 - Report p50/p95/p99 for witness CAS, local prepare/finalize, recovery and end-to-end time; also report witness availability, stale/offline time and operational recovery cost.
 
+## Cross-layer rollback experiment (software/model tier)
+
+The D1 SQLite integration test now snapshots the real policy database after generation-41 initialization, explicitly checkpoints the WAL, performs the signed promotion to generation 42, persists and reads back the D1 COSE boot receipt, then restores the earlier SQLite file. The restored database is internally valid and `PRAGMA integrity_check` succeeds; its target state and decision ledger are nevertheless stale. The separate in-memory witness state remains at checkpoint sequence 1/generation 42, and reconciliation must return `LocalStateRollbackDetected`.
+
+This closes an important gap between two separate toy models: the local rollback input is now an actual copied SQLite database built by the policy-store crate, not a hand-constructed `LocalState`. It is still a test of the witness state machine in memory, **not** an independently durable remote witness or a production anti-rollback service. It does not prove resilience if both the SQLite file and witness state are restored together, or if the witness signing key/service is compromised. The new `target_state()` read API validates the persisted state before a caller builds a reconciliation input; it does not itself provide anti-rollback.
+
 ## Claim ceiling
 
 This design does not make a software-key D1 boot report equivalent to TPM/measured boot, and does not itself prove physical power-loss safety. Any claim must name the exact external witness implementation and its trust boundary. Until a real witness is integrated, SRQ must state plainly that **whole-database rollback is not currently prevented by the local SQLite challenge ledger alone**.
