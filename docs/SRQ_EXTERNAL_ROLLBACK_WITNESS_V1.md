@@ -84,6 +84,12 @@ The D1 SQLite integration test now snapshots the real policy database after gene
 
 This closes an important gap between two separate toy models: the local rollback input is now an actual copied SQLite database built by the policy-store crate, not a hand-constructed `LocalState`. It is still a test of the witness state machine in memory, **not** an independently durable remote witness or a production anti-rollback service. It does not prove resilience if both the SQLite file and witness state are restored together, or if the witness signing key/service is compromised. The new `target_state()` read API validates the persisted state before a caller builds a reconciliation input; it does not itself provide anti-rollback.
 
+## Recovery-classification oracle (2026-10-22)
+
+When local state is behind the external witness, `WitnessCommittedNeedsLocalFinalize` is allowed only if the full prepared checkpoint equals the witness's stored checkpoint for that exact target and decision, and its sequence, digest and generation match the current witness tip. Matching only the caller-provided digest-shaped string and decision ID is insufficient. Payload disagreement is `PreparedCheckpointConflict`; ambiguous state remains blocked.
+
+The regression suite now mutates each of the 14 checkpoint fields individually. Every mutation must be denied the safe-recovery classification, while the unmodified committed checkpoint remains recoverable. This is a targeted single-field mutation set, not exhaustive multi-field fuzzing and not proof that the supplied checkpoint digest was cryptographically computed from canonical bytes. The canonical encoding/hash and authenticated receipt verifier remain separate production requirements.
+
 ## Claim ceiling
 
 This design does not make a software-key D1 boot report equivalent to TPM/measured boot, and does not itself prove physical power-loss safety. Any claim must name the exact external witness implementation and its trust boundary. Until a real witness is integrated, SRQ must state plainly that **whole-database rollback is not currently prevented by the local SQLite challenge ledger alone**.
