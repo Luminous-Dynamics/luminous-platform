@@ -271,6 +271,7 @@ impl SqliteComparisonAttestationStore {
             return Err("comparison challenge bindings changed during appraisal".into());
         }
 
+        let receipt_time = clock()?;
         tx.execute(
             "INSERT INTO srq_comparison_envelopes
              (receipt_sha256,challenge_id,payload_sha256,key_id,public_key_sha256,
@@ -279,7 +280,7 @@ impl SqliteComparisonAttestationStore {
             params![
                 envelope_sha256, challenge_id, payload_sha256, key_id, public_key_sha256,
                 baseline_id, srq_source_sha, i64::try_from(subject_count).map_err(|_| "subject count overflows SQLite")?,
-                sql_i64(clock()?)?,
+                sql_i64(receipt_time)?,
                 stored.run_challenge_sha256,
             ],
         ).map_err(|e| format!("insert immutable comparison appraisal receipt: {e}"))?;
@@ -303,7 +304,7 @@ impl SqliteComparisonAttestationStore {
             srq_source_sha,
             subject_count: subject_count as u64,
             run_challenge_sha256: stored.run_challenge_sha256.clone(),
-            consumed_at_unix_seconds: commit_now,
+            consumed_at_unix_seconds: receipt_time,
         })
     }
 }
@@ -1035,6 +1036,24 @@ mod tests {
         let envelope = sign_statement(&f.signing_key, &statement);
         assert!(store.consume_envelope(&f.challenge.challenge_id, &envelope, &f.public_key, &f.root).is_err());
         assert_eq!(store.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap(), None);
+    }
+
+    #[test]
+    fn returned_receipt_timestamp_matches_durable_row_when_clock_advances() {
+        let f = fixture("receipt-time");
+        let mut store = opened(&f);
+        let start = unix_now().unwrap();
+        let mut times = vec![start, start + 1, start + 2, start + 3].into_iter();
+        let accepted = store.consume_with_clock(
+            &f.challenge.challenge_id, &f.envelope, &f.public_key, &f.root,
+            || Ok(times.next().unwrap())
+        ).unwrap();
+        assert_eq!(accepted.consumed_at_unix_seconds, start + 2);
+        drop(store);
+
+        let reopened = SqliteComparisonAttestationStore::open(&f.db_path).unwrap();
+        let durable = reopened.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap().unwrap();
+        assert_eq!(durable, accepted);
     }
 
     #[test]
