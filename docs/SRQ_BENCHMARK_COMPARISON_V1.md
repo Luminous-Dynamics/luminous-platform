@@ -68,7 +68,7 @@ The validator now supports Ed25519 verification for every event against separate
 
 ## Portable comparison attestation envelope v1
 
-The comparison evidence can now be expressed as an in-toto Statement v1 and signed using the DSSE envelope format. The statement's subjects bind the exact comparison lock, comparison-run receipt, fault schedule, both trial sets, both signed event ledgers, and both recovery-observation ledgers by SHA-256. The predicate carries the run challenge, baseline/source identity, platform tuple, pairing protocol, and an explicit claim ceiling of artifact integrity and structural comparability only.
+The comparison evidence can now be expressed as an in-toto Statement v1 and signed using the DSSE envelope format. The statement's subjects bind the exact comparison lock, comparison-run receipt, fault schedule, both trial sets, both signed event ledgers, and both recovery-observation ledgers by SHA-256. The predicate carries the run challenge, baseline/source identity, platform tuple, pairing protocol, and a deliberately narrow claim ceiling of signed artifact integrity and receipt binding only. Full matched-trial structural comparability is a separate validator gate; a signature does not establish it.
 
 Workflow tools:
 - \`build-comparison-statement.sh\`: after the matched-run validator succeeds, builds a canonical in-toto Statement from paths confined to an evidence root and verifies each subject digest against the bytes on disk.

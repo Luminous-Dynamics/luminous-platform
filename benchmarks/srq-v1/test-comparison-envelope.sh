@@ -36,6 +36,7 @@ jq -e '
   ._type == "https://in-toto.io/Statement/v1" and
   .predicateType == "https://luminousdynamics.io/attestations/srq-matched-comparison/v1" and
   .predicate.evidence_status == "fixture_only" and
+  .predicate.claim_ceiling == "artifact_integrity_and_receipt_binding_only" and
   (.subject | length == 3)
 ' "$statement" >/dev/null
 echo "PASS: portable in-toto statement binds run, lock and trial artifact"
