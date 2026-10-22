@@ -35,10 +35,11 @@ jobs:
           cargo +1.96.0 test \
             --manifest-path tools/srq-rollback-witness-model/Cargo.toml \
             --locked -- --nocapture 2>&1 | tee "$test_log"
-          grep -Fq 'test result: ok. 12 passed; 0 failed' "$test_log"
+          grep -Fq 'test result: ok. 13 passed; 0 failed' "$test_log"
           grep -Fq 'test tests::witness_unavailability_blocks_genesis_initialization_without_mutation ... ok' "$test_log"
           grep -Fq 'test tests::same_digest_retry_with_changed_checkpoint_fields_is_rejected ... ok' "$test_log"
           grep -Fq 'test tests::changed_prepared_payload_with_same_digest_is_not_misclassified_as_recoverable ... ok' "$test_log"
+          grep -Fq 'test tests::every_checkpoint_field_mutation_blocks_recovery_classification ... ok' "$test_log"
           grep -Fq 'test tests::restored_local_database_is_detected_against_newer_independent_witness ... ok' "$test_log"
           grep -Fq 'test tests::witness_commit_before_local_finalize_recovers_same_decision_idempotently ... ok' "$test_log"
           grep -Fq 'test tests::exactly_one_of_64_distinct_decisions_wins_same_predecessor_cas ... ok' "$test_log"

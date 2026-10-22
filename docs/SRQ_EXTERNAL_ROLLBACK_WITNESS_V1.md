@@ -101,7 +101,7 @@ The dependency-free Rust model lives at `tools/srq-rollback-witness-model/`; an 
 - 64 competing, distinct decisions against one checkpoint predecessor (exactly one wins);
 - stale predecessor, skipped sequence, wrong target and conflicting decision reuse;
 - restoring both local and witness state together, which the model intentionally shows as undetectable when there is no third independent anchor;
-- mismatched witness receipt preventing local finalization; altered prepared payload with an unchanged digest-shaped field must be classified as `PreparedCheckpointConflict`, never as safe recovery.
+- mismatched witness receipt preventing local finalization; altered prepared payload with an unchanged digest-shaped field must be classified as `PreparedCheckpointConflict`, never as safe recovery. A deterministic 14-field mutation regression test requires every changed target, sequence, predecessor, digest, decision, challenge, generation, deployment, artifact, policy, corpus, or freshness field to block the safe-recovery classification, while the exact committed checkpoint remains recoverable.
 
 This is a reference state machine, **not** the production witness. It uses digest-shaped test values and assumes the checkpoint's cryptographic evidence has already been verified; it does not compute canonical checkpoint hashes, persist an external receipt, prevent its own process/database rollback, implement network consensus, use a TPM counter, or qualify hardware/VM/power-loss behavior. The explicit test where both rollback domains are restored is important: a witness stored in the same disk image does not solve the problem.
 

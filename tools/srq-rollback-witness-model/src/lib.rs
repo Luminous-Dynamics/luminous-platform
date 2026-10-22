@@ -533,6 +533,58 @@ mod tests {
     }
 
     #[test]
+    fn every_checkpoint_field_mutation_blocks_recovery_classification() {
+        let (mut witness, mut local) = initialized();
+        let next = checkpoint("target-01", 1, GENESIS, ARTIFACT, 41, 1_000, "decision-field-mutations");
+        local.prepare(next.clone()).unwrap();
+        witness.advance_at(&next, 1_001).unwrap();
+
+        // Model damaged/restored prepared-row fields while preserving the
+        // checkpoint digest-shaped value for all other field mutations.
+        // The recovery classifier must compare the full committed payload.
+        let mut mutations: Vec<Checkpoint> = Vec::new();
+        macro_rules! mutation {
+            ($field:ident, $value:expr) => {{
+                let mut candidate = next.clone();
+                candidate.$field = $value;
+                mutations.push(candidate);
+            }};
+        }
+
+        mutation!(target_id, "target-other".to_owned());
+        mutation!(sequence, 2);
+        mutation!(previous_checkpoint_sha256, POLICY.to_owned());
+        mutation!(checkpoint_sha256, CORPUS.to_owned());
+        mutation!(decision_id, "decision-other".to_owned());
+        mutation!(challenge_id, "challenge-other".to_owned());
+        mutation!(previous_generation, 40);
+        mutation!(generation, 43);
+        mutation!(deployment_id, "/nix/store/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbnixos-system-other".to_owned());
+        mutation!(approved_artifact_sha256, POLICY.to_owned());
+        mutation!(effective_policy_sha256, ARTIFACT.to_owned());
+        mutation!(corpus_sha256, ARTIFACT.to_owned());
+        mutation!(issued_at_unix_seconds, 1_002);
+        mutation!(expires_at_unix_seconds, 1_032);
+
+        assert_eq!(mutations.len(), 14);
+        for (index, candidate) in mutations.into_iter().enumerate() {
+            local.prepared = Some(candidate);
+            assert_ne!(
+                reconcile(&local, &witness),
+                Reconciliation::WitnessCommittedNeedsLocalFinalize,
+                "field mutation {index} was incorrectly treated as safe recovery"
+            );
+        }
+
+        local.prepared = Some(next);
+        assert_eq!(
+            reconcile(&local, &witness),
+            Reconciliation::WitnessCommittedNeedsLocalFinalize,
+            "the exact witness-committed checkpoint must remain recoverable"
+        );
+    }
+
+    #[test]
     fn two_phase_ordering_never_calls_local_prepare_a_success() {
         let (mut witness, mut local) = initialized();
         let next = checkpoint("target-01", 1, GENESIS, ARTIFACT, 41, 1_000, "decision-3");
