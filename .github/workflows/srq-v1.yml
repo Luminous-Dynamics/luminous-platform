@@ -721,8 +721,8 @@ jobs:
           set -euo pipefail
           log="$RUNNER_TEMP/srq-comparison-attestation-store-test.log"
           cargo test --manifest-path tools/srq-comparison-attestation-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$log"
-          grep -Fq 'test result: ok. 12 passed; 0 failed' "$log"
-          for test_name in valid_envelope_is_consumed_once_and_receipt_survives_reopen tampered_signature_does_not_consume_challenge signed_statement_cannot_omit_declared_artifact_subject signed_predicate_cannot_substitute_artifact_manifest_digest mutated_subject_bytes_fail_without_consuming_challenge wrong_public_key_fingerprint_is_rejected envelope_challenge_must_match_issuer_record fixture_evidence_is_not_appraised_as_real_comparison expiration_at_commit_boundary_rolls_back_receipt_and_challenge symlink_subject_cannot_escape_evidence_root sixty_four_independent_connections_commit_exactly_one_appraisal unknown_nonempty_database_is_rejected_without_adoption; do
+          grep -Fq 'test result: ok. 13 passed; 0 failed' "$log"
+          for test_name in valid_envelope_is_consumed_once_and_receipt_survives_reopen tampered_signature_does_not_consume_challenge signed_statement_cannot_omit_declared_artifact_subject signed_predicate_cannot_substitute_artifact_manifest_digest mutated_subject_bytes_fail_without_consuming_challenge wrong_public_key_fingerprint_is_rejected valid_signature_with_wrong_dsse_key_id_is_rejected envelope_challenge_must_match_issuer_record fixture_evidence_is_not_appraised_as_real_comparison expiration_at_commit_boundary_rolls_back_receipt_and_challenge symlink_subject_cannot_escape_evidence_root sixty_four_independent_connections_commit_exactly_one_appraisal unknown_nonempty_database_is_rejected_without_adoption; do
             grep -Fq "$test_name ... ok" "$log"
           done
 

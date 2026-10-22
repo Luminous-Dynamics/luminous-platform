@@ -952,6 +952,19 @@ mod tests {
     }
 
     #[test]
+    fn valid_signature_with_wrong_dsse_key_id_is_rejected() {
+        let f = fixture("wrong-key-id");
+        let mut store = opened(&f);
+        let mut envelope: Value = serde_json::from_slice(&f.envelope).unwrap();
+        // DSSE keyid is a key-lookup hint, not part of PAE. The verifier must
+        // still bind it to the key ID issued by the trusted challenge policy.
+        envelope["signatures"][0]["keyid"] = Value::String("untrusted-attestor-v1".into());
+        let altered = serde_json::to_vec(&envelope).unwrap();
+        assert!(store.consume_envelope(&f.challenge.challenge_id, &altered, &f.public_key, &f.root).is_err());
+        assert_eq!(store.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap(), None);
+    }
+
+    #[test]
     fn signed_statement_cannot_omit_declared_artifact_subject() {
         let f = fixture("missing-subject");
         let mut store = opened(&f);
