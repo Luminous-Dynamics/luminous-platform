@@ -379,6 +379,22 @@ mod tests {
                 assert!(intersection >= 2, "quorum intersection too small: {left:?} vs {right:?}");
             }
         }
+
+        // The policy permits larger committees too. For n=5, f=1, q=n-f=4;
+        // every pair of 4-of-5 quorums must still intersect in at least f+1.
+        let five_members = ["a", "b", "c", "d", "e"];
+        let four_of_five: Vec<Vec<&str>> = (0..five_members.len())
+            .map(|omitted| five_members.iter().enumerate()
+                .filter_map(|(index, id)| (index != omitted).then_some(*id))
+                .collect())
+            .collect();
+        assert_eq!(four_of_five.len(), 5);
+        for left in &four_of_five {
+            for right in &four_of_five {
+                let intersection = left.iter().filter(|id| right.contains(id)).count();
+                assert!(intersection >= 2, "larger-committee quorum intersection too small: {left:?} vs {right:?}");
+            }
+        }
     }
 
     #[test]
