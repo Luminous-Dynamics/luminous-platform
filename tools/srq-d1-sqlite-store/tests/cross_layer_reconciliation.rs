@@ -196,6 +196,7 @@ fn run_real_lifecycle() -> (
             checkpointed_frames, log_frames,
             "all WAL frames must be checkpointed before copying the database file"
         );
+        drop(snapshot_connection);
         fs::copy(&policy_path, &policy_backup_path)
             .expect("snapshot the generation-41 policy store before promotion");
     }
