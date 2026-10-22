@@ -31,7 +31,7 @@ Reference links:
 
 ## Baseline version lock and security eligibility (2026-10-22)
 
-A comparison is not reproducible if its standards/spec pages float to `main` or `latest`, and "newest" does not mean "eligible for every threat class". `benchmarks/srq-v1/industry-baseline-candidates-v1.json` records candidate selections and known caveats, and the corpus validator checks it against the TSV matrix. It is not a per-run lock or execution evidence. Before interpreting a comparison, a separate run lock must bind the exact upstream release/tag and resolved commit SHA (or official archive digest), build/toolchain, configuration, artifact digest, OS/kernel/storage tuple, fault corpus digest, fault schedule and excluded threat classes. The lock digest must be copied into each comparative run receipt; absent baseline-lock identity means `NOT_COMPARABLE`, not a performance win or loss. The current receipt schema does not yet enforce a comparative-lock digest, so that integration remains an explicit open gate.
+A comparison is not reproducible if its standards/spec pages float to `main` or `latest`, and "newest" does not mean "eligible for every threat class". `benchmarks/srq-v1/industry-baseline-candidates-v1.json` records candidate selections and known caveats, and the corpus validator checks it against the TSV matrix. It is not a per-run lock or execution evidence. Before interpreting a comparison, a separate run lock must bind the exact upstream release/tag and resolved commit SHA (or official archive digest), build/toolchain, configuration, artifact digest, OS/kernel/storage tuple, fault corpus digest, fault schedule and excluded threat classes. The lock digest must be copied into each comparative run receipt; absent baseline-lock identity means `NOT_COMPARABLE`, not a performance win or loss. The per-scenario receipt schema and validator now enforce a comparative-lock digest. The matched-run receipt below adds the next required proof: that both arms use the same pinned source, platform, fault IDs, input digests, and recorded pair order.
 
 The upstream sources checked on 2026-10-22 identify these candidate baselines:
 
@@ -51,6 +51,14 @@ The lock pins the baseline's resolved upstream commit or official source-archive
 Only registry entries marked `pinned_reference_not_executed` can be locked for a comparison. Moving, unknown, unpinned, protocol-only or scope-blocked baselines fail closed. OSTree v2026.4 must not be used for hostile static-delta comparisons until its caveat is resolved or the scope is explicitly reviewed and registered as eligible.
 
 The committed lock fixture is accepted only with `--allow-fixtures`. Lock validation establishes structure and registry correspondence, not execution or safety. A comparative `PASS` receipt still needs authenticated provenance and raw matched-trial evidence. Non-comparative single-scenario receipts may omit `comparison_lock`.
+
+## Matched baseline comparison-run receipt v1
+
+`benchmarks/srq-v1/comparison-run-v1.schema.json` and `validate-comparison-run.sh` define the comparison-level contract. A valid receipt binds the exact comparison-lock bytes, the locked SRQ and baseline source identities, and the complete OS/kernel/filesystem/storage/runner tuple. It hashes both raw trial files and rejects missing or modified trial bytes.
+
+The validator requires at least five paired trials, unique trial IDs, valid raw duration/outcome fields, and the same trial IDs, fault IDs, input digests, and recorded baseline/SRQ execution order in both arms. A mismatch is `NOT_COMPARABLE`; it cannot be treated as a win or a loss. The contract does not trust caller-supplied aggregate statistics—it retains raw measurements for later analysis.
+
+The declared `randomized_per_pair` order policy plus seed is metadata, not proof that the harness actually randomized execution. Raw-trial checks also do not prove full schedule coverage, statistical significance, runtime execution authenticity, physical-device state, or qualification. A `STRUCTURALLY_COMPARABLE` receipt only means that the submitted evidence is consistently bound and pairable. It never establishes superiority; outcomes such as `unauthorized_accept`, `hybrid_state`, `state_lost`, and `state_inconsistent` remain release blockers rather than latency trade-offs.
 
 ## Matched fault-injection methodology
 

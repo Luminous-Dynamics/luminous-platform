@@ -81,7 +81,7 @@ jq -e '
   ((has("comparison_lock")) == (.comparison_mode == "matched_baseline_v1")) and
   ((has("comparison_lock") | not) or
     (.comparison_lock | type == "object" and
-      (.baseline_id | type == "string" and test("^[a-z0-9][a-z0-9-]{1,80}$")) and
+      (.baseline_id | type == "string" and test("^[a-z0-9][a-z0-9.-]{1,80}$")) and
       (.lock_sha256 | type == "string" and test("^[0-9a-f]{64}$")))) and
   (.source.expected_source_sha | type == "string" and test("^[0-9a-f]{40}$")) and
   ((.source.event_sha == null) or (.source.event_sha | type == "string" and test("^[0-9a-f]{40}$"))) and

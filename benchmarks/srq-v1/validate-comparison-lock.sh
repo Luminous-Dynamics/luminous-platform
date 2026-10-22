@@ -33,7 +33,7 @@ jq -e '
   type == "object" and .schema_version == 1 and .profile_id == "SRQ-COMPARISON-LOCK-V1" and
   (.fixture | type == "boolean") and
   (.locked_at_utc | type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")) and
-  (.baseline_id | type == "string" and test("^[a-z0-9][a-z0-9-]{1,80}$")) and
+  (.baseline_id | type == "string" and test("^[a-z0-9][a-z0-9.-]{1,80}$")) and
   (.baseline_version | type == "string" and length > 0 and (test("(^|/)(latest|main|master)($|/)"; "i") | not)) and
   (.baseline_source | type == "object") and
   ((.baseline_source.resolved_commit_sha == null) or (.baseline_source.resolved_commit_sha | type == "string" and test("^[0-9a-f]{40}$"))) and

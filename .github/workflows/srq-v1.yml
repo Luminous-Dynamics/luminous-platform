@@ -702,6 +702,11 @@ jobs:
 
       - name: Exercise per-run comparison-lock negative controls
         run: bash benchmarks/srq-v1/test-comparison-lock.sh
+      - name: Exercise matched baseline comparison-run contract
+        run: |
+          bash -n benchmarks/srq-v1/validate-comparison-run.sh
+          bash -n benchmarks/srq-v1/test-comparison-run.sh
+          bash benchmarks/srq-v1/test-comparison-run.sh
 
       - name: Validate PASS and NOT_RUN result receipt examples
         run: |

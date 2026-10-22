@@ -211,7 +211,7 @@
       "properties": {
         "baseline_id": {
           "type": "string",
-          "pattern": "^[a-z0-9][a-z0-9-]{1,80}$"
+          "pattern": "^[a-z0-9][a-z0-9.-]{1,80}$"
         },
         "lock_sha256": {
           "type": "string",
