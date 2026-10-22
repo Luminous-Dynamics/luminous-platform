@@ -42,6 +42,16 @@ The upstream sources checked on 2026-10-22 identify these candidate baselines:
 
 These are source-review observations and baseline-selection rules, not executed comparator results. Before a claim of superiority, freeze the exact tag commit and configuration in a machine-readable lock file. For standard documents without executable release tags (e.g., RFC 9334 and NIST SP 800-193), pin the document identifier/revision and the appraisal/control profile, not just a vendor's `latest` landing page.
 
+## Machine-enforced per-run comparison lock v1
+
+A baseline registry is only a selection catalog. A comparative scenario receipt must carry an explicit `comparison_lock` with `baseline_id` and SHA-256 of the exact lock-file bytes. When this field is present, `validate-result.sh` requires the lock file, invokes the lock validator, verifies its bytes, requires its baseline ID to match, and binds the receipt's expected and observed SRQ source to the locked SRQ commit.
+
+The lock pins the baseline's resolved upstream commit or official source-archive SHA3-256 (including SQLite `sqlite_source_id()` when relevant), exact SRQ source SHA, benchmark artifact, configuration, corpus, fault schedule, outcome-oracle digests, OS/platform/storage/runner tuple, and included/excluded threat scope.
+
+Only registry entries marked `pinned_reference_not_executed` can be locked for a comparison. Moving, unknown, unpinned, protocol-only or scope-blocked baselines fail closed. OSTree v2026.4 must not be used for hostile static-delta comparisons until its caveat is resolved or the scope is explicitly reviewed and registered as eligible.
+
+The committed lock fixture is accepted only with `--allow-fixtures`. Lock validation establishes structure and registry correspondence, not execution or safety. A comparative `PASS` receipt still needs authenticated provenance and raw matched-trial evidence. Non-comparative single-scenario receipts may omit `comparison_lock`.
+
 ## Matched fault-injection methodology
 
 For every comparison, publish these inputs before running:

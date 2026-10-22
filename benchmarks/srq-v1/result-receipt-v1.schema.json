@@ -199,6 +199,25 @@
     },
     "fixture": {
       "type": "boolean"
+    },
+    "comparison_lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Required whenever this scenario receipt is used as an industry/comparator run. The validator verifies exact lock bytes and source binding.",
+      "required": [
+        "baseline_id",
+        "lock_sha256"
+      ],
+      "properties": {
+        "baseline_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,80}$"
+        },
+        "lock_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
     }
   },
   "allOf": [

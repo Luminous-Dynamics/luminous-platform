@@ -5,6 +5,7 @@ script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 validator="$script_dir/validate-result.sh"
 pass_fixture="$script_dir/fixtures/result-pass-static.example.json"
 not_run_fixture="$script_dir/fixtures/result-not-run.example.json"
+comparison_lock_fixture="$script_dir/fixtures/comparison-lock-tuf-v1.0.36.example.json"
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
@@ -79,5 +80,37 @@ expect_evidence_reject digest-mismatch '.evidence[0].sha256 = "fffffffffffffffff
 expect_evidence_reject missing-artifact '.evidence[0].artifact = "fixtures/missing.log"'
 expect_evidence_reject unsafe-locator '.evidence[0].artifact = "../outside.log"'
 
-echo "PASS: 18 SRQ result-receipt negative controls were rejected, plus default rejection of fixture evidence."
+
+# Comparative receipts must bind the exact lock bytes and source/baseline identity.
+lock_sha="$(sha256sum "$comparison_lock_fixture" | cut -d ' ' -f 1)"
+jq --arg baseline "tuf-spec-v1.0.36" --arg lock_sha "$lock_sha" \
+  '. + {comparison_lock: {baseline_id: $baseline, lock_sha256: $lock_sha}}' \
+  "$pass_fixture" > "$tmpdir/comparison-valid.json"
+bash "$validator" --allow-fixtures --comparison-lock "$comparison_lock_fixture" "$tmpdir/comparison-valid.json"
+
+expect_comparison_reject() {
+  local label="$1"
+  local filter="$2"
+  local mutated="$tmpdir/comparison-$label.json"
+  local output="$tmpdir/comparison-$label.out"
+  jq "$filter" "$tmpdir/comparison-valid.json" > "$mutated"
+  if bash "$validator" --allow-fixtures --comparison-lock "$comparison_lock_fixture" "$mutated" >"$output" 2>&1; then
+    echo "FAIL: comparison receipt accepted negative control '$label'" >&2
+    cat "$output" >&2
+    exit 1
+  fi
+  echo "PASS: comparative receipt negative control rejected ($label)"
+}
+expect_comparison_reject wrong-lock-digest '.comparison_lock.lock_sha256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"'
+expect_comparison_reject wrong-baseline '.comparison_lock.baseline_id = "systemd-sysupdate-v261.4"'
+expect_comparison_reject missing-lock-binding 'del(.comparison_lock)'
+
+if bash "$validator" --allow-fixtures "$tmpdir/comparison-valid.json" >"$tmpdir/comparison-no-lock.out" 2>&1; then
+  echo "FAIL: comparative receipt accepted without checking its lock file" >&2
+  cat "$tmpdir/comparison-no-lock.out" >&2
+  exit 1
+fi
+echo "PASS: comparative receipt rejected when lock file was not provided"
+
+echo "PASS: 18 SRQ result-receipt negative controls plus 4 comparative-lock negative controls were rejected, plus default rejection of fixture evidence."
 echo "NON-CLAIM: these examples test receipt-state and artifact-digest invariants only; they do not authenticate signer/device identity or qualify runtime scenarios."

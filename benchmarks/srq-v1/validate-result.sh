@@ -6,10 +6,11 @@ schema="$script_dir/result-receipt-v1.schema.json"
 corpus="$script_dir/scenarios.json"
 allow_fixtures=false
 evidence_root=""
+comparison_lock=""
 receipt=""
 
 usage() {
-  echo "Usage: $0 [--allow-fixtures] [--evidence-root DIR] <result-receipt.json>" >&2
+  echo "Usage: $0 [--allow-fixtures] [--evidence-root DIR] [--comparison-lock LOCK.json] <result-receipt.json>" >&2
 }
 
 while (($#)); do
@@ -24,6 +25,14 @@ while (($#)); do
         exit 2
       fi
       evidence_root="$2"
+      shift 2
+      ;;
+    --comparison-lock)
+      if [[ $# -lt 2 || -z "$2" ]]; then
+        usage
+        exit 2
+      fi
+      comparison_lock="$2"
       shift 2
       ;;
     -*)
@@ -52,6 +61,10 @@ fi
 [[ -f "$schema" ]] || { echo "FAIL: result schema is missing" >&2; exit 1; }
 [[ -f "$corpus" ]] || { echo "FAIL: scenario corpus is missing" >&2; exit 1; }
 [[ -f "$receipt" ]] || { echo "FAIL: result receipt is missing: $receipt" >&2; exit 1; }
+if [[ -n "$comparison_lock" && ! -f "$comparison_lock" ]]; then
+  echo "FAIL: comparison lock is missing: $comparison_lock" >&2
+  exit 1
+fi
 
 # This is a reference semantic validator for SRQ's status/provenance invariants.
 # It intentionally does not claim to implement the complete JSON Schema spec.
@@ -64,6 +77,10 @@ jq -e '
   (.status == "PASS" or .status == "FAIL" or .status == "NOT_RUN" or .status == "BLOCKED" or .status == "NOT_APPLICABLE") and
   (.reason | type == "string" and length > 0) and
   (.fixture | type == "boolean") and
+  ((has("comparison_lock") | not) or
+    (.comparison_lock | type == "object" and
+      (.baseline_id | type == "string" and test("^[a-z0-9][a-z0-9-]{1,80}$")) and
+      (.lock_sha256 | type == "string" and test("^[0-9a-f]{64}$")))) and
   (.source.expected_source_sha | type == "string" and test("^[0-9a-f]{40}$")) and
   ((.source.event_sha == null) or (.source.event_sha | type == "string" and test("^[0-9a-f]{40}$"))) and
   ((.source.actual_checkout_sha == null) or (.source.actual_checkout_sha | type == "string" and test("^[0-9a-f]{40}$"))) and
@@ -112,6 +129,48 @@ if [[ "$fixture" == "true" && "$allow_fixtures" != "true" ]]; then
   echo "FAIL: fixture=true receipts are examples, not qualification evidence; --allow-fixtures is for tests only." >&2
   exit 1
 fi
+
+has_comparison_lock="$(jq 'has("comparison_lock")' "$receipt")"
+if [[ "$has_comparison_lock" == "true" && -z "$comparison_lock" ]]; then
+  echo "FAIL: comparative result receipt requires --comparison-lock to verify the referenced lock bytes." >&2
+  exit 1
+fi
+if [[ "$has_comparison_lock" == "false" && -n "$comparison_lock" ]]; then
+  echo "FAIL: --comparison-lock was provided but the receipt has no comparison_lock binding." >&2
+  exit 1
+fi
+if [[ -n "$comparison_lock" ]]; then
+  if [[ "$allow_fixtures" == "true" ]]; then
+    bash "$script_dir/validate-comparison-lock.sh" --allow-fixtures "$comparison_lock"
+  else
+    bash "$script_dir/validate-comparison-lock.sh" "$comparison_lock"
+  fi
+  expected_lock_sha="$(jq -r '.comparison_lock.lock_sha256' "$receipt")"
+  actual_lock_sha="$(sha256sum "$comparison_lock" | cut -d ' ' -f 1)"
+  [[ "$expected_lock_sha" == "$actual_lock_sha" ]] || {
+    echo "FAIL: comparison lock SHA-256 mismatch (receipt=$expected_lock_sha actual=$actual_lock_sha)." >&2
+    exit 1
+  }
+  receipt_baseline="$(jq -r '.comparison_lock.baseline_id' "$receipt")"
+  lock_baseline="$(jq -r '.baseline_id' "$comparison_lock")"
+  [[ "$receipt_baseline" == "$lock_baseline" ]] || {
+    echo "FAIL: comparison baseline ID mismatch (receipt=$receipt_baseline lock=$lock_baseline)." >&2
+    exit 1
+  }
+  receipt_source="$(jq -r '.source.expected_source_sha' "$receipt")"
+  lock_source="$(jq -r '.srq_source_sha' "$comparison_lock")"
+  [[ "$receipt_source" == "$lock_source" ]] || {
+    echo "FAIL: result receipt source SHA is not the source SHA frozen in the comparison lock." >&2
+    exit 1
+  }
+  actual_source="$(jq -r '.source.actual_checkout_sha // empty' "$receipt")"
+  if [[ -n "$actual_source" && "$actual_source" != "$lock_source" ]]; then
+    echo "FAIL: actual checkout SHA differs from the comparison lock's SRQ source SHA." >&2
+    exit 1
+  fi
+  echo "PASS: comparative receipt is bound to lock SHA-256 $actual_lock_sha (baseline=$receipt_baseline)."
+fi
+
 if [[ "$status" == "PASS" && "$fixture" == "false" && -z "$evidence_root" ]]; then
   echo "FAIL: non-fixture PASS receipts require --evidence-root so evidence bytes can be verified." >&2
   exit 1

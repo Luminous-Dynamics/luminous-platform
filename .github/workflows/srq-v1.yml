@@ -65,6 +65,8 @@ jobs:
           set -euo pipefail
           bash -n benchmarks/srq-v1/validate.sh
           bash -n benchmarks/srq-v1/test-validator.sh
+          bash -n benchmarks/srq-v1/validate-comparison-lock.sh
+          bash -n benchmarks/srq-v1/test-comparison-lock.sh
           bash -n benchmarks/srq-v1/validate-result.sh
           bash -n benchmarks/srq-v1/test-result-validator.sh
           bash -n benchmarks/srq-v1/evaluate-release.sh
@@ -697,6 +699,9 @@ jobs:
 
       - name: Exercise validator negative controls
         run: bash benchmarks/srq-v1/test-validator.sh
+
+      - name: Exercise per-run comparison-lock negative controls
+        run: bash benchmarks/srq-v1/test-comparison-lock.sh
 
       - name: Validate PASS and NOT_RUN result receipt examples
         run: |
