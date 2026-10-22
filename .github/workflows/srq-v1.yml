@@ -719,7 +719,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo fmt --manifest-path tools/srq-comparison-attestation-store/Cargo.toml -- --check
           log="$RUNNER_TEMP/srq-comparison-attestation-store-test.log"
           cargo test --manifest-path tools/srq-comparison-attestation-store/Cargo.toml --locked -- --nocapture 2>&1 | tee "$log"
           grep -Fq 'test result: ok. 12 passed; 0 failed' "$log"

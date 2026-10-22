@@ -15,7 +15,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
-use serde_json::{Value, json};
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 use srq_sqlite_runtime_policy::is_supported_sqlite_version;
 
@@ -279,7 +279,8 @@ impl SqliteComparisonAttestationStore {
             params![
                 envelope_sha256, challenge_id, payload_sha256, key_id, public_key_sha256,
                 baseline_id, srq_source_sha, i64::try_from(subject_count).map_err(|_| "subject count overflows SQLite")?,
-                sql_i64(clock()?)?
+                sql_i64(clock()?)?,
+                stored.run_challenge_sha256,
             ],
         ).map_err(|e| format!("insert immutable comparison appraisal receipt: {e}"))?;
         let changed = tx.execute(
@@ -773,6 +774,7 @@ fn verify_schema_inventory(connection: &Connection) -> Result<(), String> {
 mod tests {
     use super::*;
     use ed25519_dalek::{Signer, SigningKey};
+    use serde_json::json;
     use std::sync::{Arc, Barrier, atomic::{AtomicU64, Ordering}};
     use std::thread;
 
