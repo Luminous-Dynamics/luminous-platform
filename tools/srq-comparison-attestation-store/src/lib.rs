@@ -9,6 +9,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
+use std::io::Read as _;
 use std::path::{Component, Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -26,6 +27,8 @@ const STATEMENT_TYPE: &str = "https://in-toto.io/Statement/v1";
 const PREDICATE_TYPE: &str = "https://luminousdynamics.io/attestations/srq-matched-comparison/v1";
 const PROFILE_ID: &str = "SRQ-MATCHED-COMPARISON-ATTESTATION-V1";
 const CLAIM_CEILING: &str = "artifact_integrity_and_structural_comparability_only";
+const MAX_ENVELOPE_BYTES: usize = 16 * 1024 * 1024;
+const MAX_RECEIPT_BYTES: u64 = 16 * 1024 * 1024;
 
 #[derive(Clone, Debug)]
 pub struct IssuedComparisonChallenge {
@@ -95,7 +98,7 @@ impl SqliteComparisonAttestationStore {
 
         let initialize = match user_version {
             0 if application_id == 0 && object_count == 0 => true,
-            SCHEMA_VERSION if application_id == APPLICATION_ID && object_count == 7 => {
+            SCHEMA_VERSION if application_id == APPLICATION_ID && object_count == 8 => {
                 verify_schema_inventory(&connection)?;
                 false
             }
@@ -231,6 +234,9 @@ impl SqliteComparisonAttestationStore {
     {
         if !valid_identifier(challenge_id) {
             return Err("comparison challenge ID is malformed".into());
+        }
+        if envelope_bytes.len() > MAX_ENVELOPE_BYTES {
+            return Err("DSSE envelope exceeds the configured 16 MiB appraisal limit".into());
         }
         let preflight_now = clock()?;
         let stored = load_challenge(&self.connection, challenge_id)?
@@ -451,8 +457,8 @@ fn validate_statement(statement: &Value, challenge: &StoredChallenge, evidence_r
     }
     let lock_file = resolve_subject_path(&root, lock_path)?;
     let run_file = resolve_subject_path(&root, run_path)?;
-    let lock_bytes = fs::read(&lock_file).map_err(|e| format!("read comparison lock: {e}"))?;
-    let run_bytes = fs::read(&run_file).map_err(|e| format!("read comparison receipt: {e}"))?;
+    let lock_bytes = read_bounded_file(&lock_file, MAX_RECEIPT_BYTES, "comparison lock")?;
+    let run_bytes = read_bounded_file(&run_file, MAX_RECEIPT_BYTES, "comparison receipt")?;
     let lock_sha = sha256_hex(&lock_bytes);
     let run_sha = sha256_hex(&run_bytes);
     if lock_sha != json_string(statement, &["predicate", "comparison_lock_sha256"])?
@@ -529,8 +535,7 @@ fn validate_statement(statement: &Value, challenge: &StoredChallenge, evidence_r
     }
     for (name, expected_digest) in &subject_map {
         let file = resolve_subject_path(&root, name)?;
-        let bytes = fs::read(&file).map_err(|e| format!("read subject {name}: {e}"))?;
-        if sha256_hex(&bytes) != *expected_digest {
+        if sha256_file(&file)? != *expected_digest {
             return Err(format!("subject bytes do not match signed digest: {name}"));
         }
         if let Some(manifest_digest) = artifact_digests.get(name) {
@@ -611,6 +616,7 @@ fn validate_relative_path(path: &str) -> Result<(), String> {
         || path.contains("..")
         || path.contains("//")
         || path.ends_with('/')
+        || path.split('/').any(|part| part.is_empty() || part == "." || part == "..")
         || Path::new(path).is_absolute()
         || Path::new(path).components().any(|c| !matches!(c, Component::Normal(_)))
     {
@@ -640,6 +646,32 @@ fn is_hex(value: &str, length: usize) -> bool {
 
 fn sql_i64(value: u64) -> Result<i64, String> {
     i64::try_from(value).map_err(|_| "timestamp exceeds SQLite signed integer range".into())
+}
+
+fn read_bounded_file(path: &Path, maximum: u64, label: &str) -> Result<Vec<u8>, String> {
+    let metadata = fs::metadata(path).map_err(|e| format!("inspect {label}: {e}"))?;
+    if metadata.len() > maximum {
+        return Err(format!("{label} exceeds the configured {maximum}-byte limit"));
+    }
+    fs::read(path).map_err(|e| format!("read {label}: {e}"))
+}
+
+fn sha256_file(path: &Path) -> Result<String, String> {
+    let mut file = fs::File::open(path).map_err(|e| format!("open subject for hashing: {e}"))?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0u8; 64 * 1024];
+    loop {
+        let count = file.read(&mut buffer).map_err(|e| format!("hash subject bytes: {e}"))?;
+        if count == 0 { break; }
+        hasher.update(&buffer[..count]);
+    }
+    let digest = hasher.finalize();
+    let mut out = String::with_capacity(64);
+    for byte in digest {
+        use std::fmt::Write as _;
+        let _ = write!(&mut out, "{byte:02x}");
+    }
+    Ok(out)
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
@@ -993,6 +1025,19 @@ mod tests {
         store.integrity_check().unwrap();
     }
 
+    #[cfg(unix)]
+    #[test]
+    fn symlink_subject_cannot_escape_evidence_root() {
+        let f = fixture("symlink-escape");
+        let mut store = opened(&f);
+        let external = f.root.parent().unwrap().join("outside-secret.json");
+        fs::write(&external, br#"{"secret":true}"#).unwrap();
+        fs::remove_file(f.root.join("trial-data.json")).unwrap();
+        std::os::unix::fs::symlink(&external, f.root.join("trial-data.json")).unwrap();
+        assert!(store.consume_envelope(&f.challenge.challenge_id, &f.envelope, &f.public_key, &f.root).is_err());
+        assert_eq!(store.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap(), None);
+    }
+
     #[test]
     fn sixty_four_independent_connections_commit_exactly_one_appraisal() {
         let f = fixture("contention");
@@ -1014,7 +1059,7 @@ mod tests {
                 store.consume_envelope(&challenge_id, &envelope, &key, &root).is_ok()
             }));
         }
-        let winners = workers.into_iter().filter(|w| w.join().unwrap()).count();
+        let winners = workers.into_iter().map(|w| w.join().unwrap()).filter(|won| *won).count();
         assert_eq!(winners, 1);
         let reopened = SqliteComparisonAttestationStore::open(&f.db_path).unwrap();
         assert!(reopened.committed_receipt_for_challenge(&f.challenge.challenge_id).unwrap().is_some());
