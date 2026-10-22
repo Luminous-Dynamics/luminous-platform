@@ -1129,4 +1129,27 @@ mod tests {
         assert_eq!(sqlite_version_tuple("3.51"), None);
         assert_eq!(sqlite_version_tuple("3.51.3-extra"), None);
     }
+    #[test]
+    fn runtime_sqlite_source_id_matches_pinned_ci_source_when_configured() {
+        let connection = Connection::open_in_memory().expect("open SQLite runtime probe");
+        let version: String = connection
+            .query_row("SELECT sqlite_version()", [], |row| row.get(0))
+            .expect("read SQLite runtime version");
+        let source_id: String = connection
+            .query_row("SELECT sqlite_source_id()", [], |row| row.get(0))
+            .expect("read SQLite source ID");
+        let parsed = sqlite_version_tuple(&version).expect("parse SQLite runtime version");
+        assert!(
+            sqlite_version_is_supported(parsed),
+            "policy-promotion store runtime must satisfy SQLite release policy: {version}"
+        );
+        if let Ok(expected_version) = std::env::var("SRQ_EXPECTED_SQLITE_VERSION") {
+            assert_eq!(version, expected_version, "policy-promotion store must use pinned SQLite version");
+        }
+        if let Ok(expected_source_id) = std::env::var("SRQ_EXPECTED_SQLITE_SOURCE_ID") {
+            assert_eq!(source_id, expected_source_id, "policy-promotion store must use exact SHA3-pinned SQLite source");
+        }
+        println!("PASS: policy-promotion Rust SQLite runtime verified: version={version} source_id={source_id}");
+    }
+
 }
