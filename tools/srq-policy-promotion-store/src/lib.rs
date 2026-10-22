@@ -206,6 +206,12 @@ impl SqlitePolicyPromotionStore {
             }
         };
 
+        if !initialize_schema {
+            // Version/application ID alone can be copied onto a foreign file.
+            // Validate exact schema SQL before changing persistent journal mode.
+            verify_schema_inventory(&connection)?;
+        }
+
         let journal_mode: String = connection.query_row("PRAGMA journal_mode=WAL", [], |row| row.get(0))
             .map_err(|error| StoreError::Sqlite(format!("enable WAL: {error}")))?;
         if !journal_mode.eq_ignore_ascii_case("wal") {
@@ -233,8 +239,8 @@ impl SqlitePolicyPromotionStore {
             tx.execute_batch(&format!("PRAGMA user_version={SCHEMA_VERSION}; PRAGMA application_id={APPLICATION_ID};"))
                 .map_err(|error| StoreError::Sqlite(format!("version schema: {error}")))?;
             tx.commit().map_err(|error| StoreError::Sqlite(format!("commit schema: {error}")))?;
+            verify_schema_inventory(&connection)?;
         }
-        verify_schema_inventory(&connection)?;
         Ok(Self { connection })
     }
 
