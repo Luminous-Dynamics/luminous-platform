@@ -29,6 +29,19 @@ Reference links:
 - RFC 9334 (RATS): https://www.rfc-editor.org/rfc/rfc9334.html
 - NIST SP 800-193: https://csrc.nist.gov/pubs/sp/800/193/final
 
+## Baseline version lock and security eligibility (2026-10-22)
+
+A comparison is not reproducible if its standards/spec pages float to `main` or `latest`, and "newest" does not mean "eligible for every threat class". Before interpreting any comparison, record a baseline lock containing the exact upstream release/tag, resolved commit SHA, build/toolchain, configuration, artifact digest, OS/kernel/storage tuple, fault corpus digest, and excluded threat classes. The lock digest must be copied into each run receipt; absent baseline-lock identity means `NOT_COMPARABLE`, not a performance win or loss.
+
+The upstream sources checked on 2026-10-22 identify these candidate baselines:
+
+- **TUF:** the releases page lists stable release `v1.0.36`, while the upstream working specification advertises `1.0.37`. Use the published/tagged `v1.0.36` for the frozen stable comparison and record the floating development branch separately if it is also examined. Do not label a development spec as a released conformance baseline. Sources: [release/tag](https://github.com/theupdateframework/specification/releases/tag/v1.0.36), [working specification](https://github.com/theupdateframework/specification/blob/master/tuf-spec.md).
+- **OSTree:** the releases page lists `v2026.4` as latest. Its release notes explicitly say the change removes the 512 MiB static-delta part cap and reopens `GHSA-7cgc-gp99-6jmm` pending an exact-size replacement. Therefore the benchmark must declare whether it tests only trusted/prevalidated deployment objects or includes hostile static-delta ingestion. A run that excludes that ingestion path must say so; it cannot support a claim about resilience to hostile delta payloads. Keep the known advisory as an explicit negative control in a separate sandboxed threat campaign. Sources: [v2026.4 release](https://github.com/ostreedev/ostree/releases/tag/v2026.4), [atomic-upgrade contract](https://github.com/ostreedev/ostree/blob/v2026.4/docs/atomic-upgrades.md).
+- **systemd-sysupdate:** the stable release list includes `v261.4` (2026-10-17). Pin the source/manual to that tag for the first comparison rather than `man/latest`. Source: [systemd-stable v261.4](https://github.com/systemd/systemd/releases/tag/v261.4).
+- **SQLite:** use a release whose engine fix includes the WAL-reset correction: upstream documents the issue through `3.51.2`, fixed in `3.51.3` and later. The branch's reference harness selects SQLite `3.54.1`; every receipt must bind both its source identity and runtime `sqlite_source_id()`. Source: [SQLite WAL documentation](https://www.sqlite.org/wal.html).
+
+These are source-review observations and baseline-selection rules, not executed comparator results. Before a claim of superiority, freeze the exact tag commit and configuration in a machine-readable lock file. For standard documents without executable release tags (e.g., RFC 9334 and NIST SP 800-193), pin the document identifier/revision and the appraisal/control profile, not just a vendor's `latest` landing page.
+
 ## Matched fault-injection methodology
 
 For every comparison, publish these inputs before running:
