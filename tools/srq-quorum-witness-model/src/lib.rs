@@ -408,6 +408,25 @@ mod tests {
     }
 
     #[test]
+    fn restoring_witness_memory_can_erase_its_vote_and_is_not_durable_anti_equivocation() {
+        let mut witness = HonestWitness::new("w1").unwrap();
+        witness.initialize(tip()).unwrap();
+        let snapshot = witness.clone();
+        let first = checkpoint(A, "decision-before-rollback", 1_000);
+        let conflicting = checkpoint(B, "decision-after-rollback", 1_000);
+
+        witness.vote(&first, 1_001).unwrap();
+        assert_eq!(witness.vote(&conflicting, 1_001), Err(QuorumError::EquivocationRefused));
+
+        // Restoring the whole in-memory witness state simulates rolling back
+        // the witness's only anti-equivocation record. This model intentionally
+        // demonstrates why production votes must be persisted outside the
+        // rollback domain or guarded by an independent monotonic anchor.
+        witness = snapshot;
+        assert!(witness.vote(&conflicting, 1_001).is_ok());
+    }
+
+    #[test]
     fn quorum_state_isolated_by_target() {
         let mut witness = HonestWitness::new("w1").unwrap();
         witness.initialize(tip()).unwrap();
