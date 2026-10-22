@@ -27,6 +27,7 @@
           "mechanism": {"enum": ["function_return", "sigkill", "qemu_reset", "kernel_panic", "physical_power_cut"]},
           "trigger_confirmed": {"type": "boolean"},
           "post_restart": {"type": "boolean"},
+          "caused_by_event_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
           "observation_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$"},
           "outcome": {"enum": ["old_complete", "new_complete", "recoverable_blocked", "state_lost", "state_inconsistent", "unavailable_unobserved", "unauthorized_accept", "replay_accept", "hybrid_state", "unclassified_fault"]},
           "state_digest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
@@ -38,7 +39,7 @@
           },
           {
             "if": {"properties": {"event_kind": {"const": "post_restart_observation"}}, "required": ["event_kind"]},
-            "then": {"required": ["observation_id", "post_restart", "outcome", "state_digest_sha256"], "properties": {"source_role": {"const": "independent_observer"}}}
+            "then": {"required": ["observation_id", "post_restart", "caused_by_event_id", "outcome", "state_digest_sha256"], "properties": {"source_role": {"const": "independent_observer"}}}
           }
         ]
       }

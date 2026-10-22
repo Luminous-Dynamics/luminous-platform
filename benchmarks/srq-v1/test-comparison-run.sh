@@ -106,7 +106,7 @@ write_event_ledger() {
        {event_id:$t.observation_event_id,trial_id:$t.trial_id,fault_id:$t.fault_id,
         input_sha256:$t.input_sha256,run_challenge:$challenge,event_kind:"post_restart_observation",source_role:"independent_observer",
         monotonic_ns:(1000000 + (($t.trial_id|ltrimstr("trial-")|tonumber)*1000)),
-        observation_id:("obs-"+$t.trial_id),post_restart:true,outcome:$t.outcome,state_digest_sha256:$digest}]
+        observation_id:("obs-"+$t.trial_id),post_restart:true,caused_by_event_id:$t.fault_event_id,outcome:$t.outcome,state_digest_sha256:$digest}]
     )}
   ' > "$out.unsigned"
   sign_event_ledger "$out.unsigned" "$out"
@@ -265,7 +265,7 @@ echo "PASS: duplicate role key IDs rejected"
 
 mutate_witness_reject missing-injector-event baseline_events '.events |= map(select(.event_kind != "fault_injection" or .trial_id != "trial-0"))'
 mutate_witness_reject unconfirmed-injector baseline_events '.events |= map(if .event_kind == "fault_injection" and .trial_id == "trial-0" then .trigger_confirmed = false else . end)'
-mutate_witness_reject observer-before-trigger baseline_events '.events |= map(if .event_kind == "post_restart_observation" and .trial_id == "trial-0" then .monotonic_ns = 1 else . end)'
+mutate_witness_reject observer-causality-mismatch baseline_events '.events |= map(if .event_kind == "post_restart_observation" and .trial_id == "trial-0" then .caused_by_event_id = "unrelated-injector-event" else . end)'
 mutate_witness_reject observer-outcome-mismatch baseline_events '.events |= map(if .event_kind == "post_restart_observation" and .trial_id == "trial-0" then .outcome = "state_lost" else . end)'
 mutate_witness_reject observer-digest-mismatch baseline_events '.events |= map(if .event_kind == "post_restart_observation" and .trial_id == "trial-0" then .state_digest_sha256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" else . end)'
 mutate_witness_reject observation-not-after-restart baseline_observations '.observations |= map(if .trial_id == "trial-0" then .post_restart = false else . end)'

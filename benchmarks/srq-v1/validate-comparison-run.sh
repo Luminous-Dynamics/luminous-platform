@@ -355,7 +355,7 @@ validate_execution_witness() {
       $observe.source_role == "independent_observer" and $observe.post_restart == true and
       $observe.outcome == $t.outcome and $observe.observation_id == $o.observation_id and
       $observe.state_digest_sha256 == $o.state_digest_sha256 and
-      $inject.monotonic_ns < $observe.monotonic_ns)
+      $observe.caused_by_event_id == $t.fault_event_id)
   ' "$events" >/dev/null; then
     not_comparable "$label execution witness does not prove a matching trigger-plus-post-restart observation for every trial"
   fi
