@@ -4,6 +4,8 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "$0")" && pwd)"
 lock_validator="$script_dir/validate-comparison-lock.sh"
 schema="$script_dir/comparison-run-v1.schema.json"
+events_schema="$script_dir/execution-events-v1.schema.json"
+observations_schema="$script_dir/recovery-observations-v1.schema.json"
 allow_fixtures=false
 evidence_root=""
 comparison_lock=""
@@ -35,7 +37,7 @@ done
 [[ -n "$receipt" && -n "$comparison_lock" && -n "$evidence_root" ]] || { usage; exit 2; }
 command -v jq >/dev/null 2>&1 || { echo "BLOCKED: jq is required; no comparison result was produced." >&2; exit 2; }
 command -v sha256sum >/dev/null 2>&1 || { echo "BLOCKED: sha256sum is required; no comparison result was produced." >&2; exit 2; }
-[[ -f "$schema" ]] || { echo "FAIL: comparison-run schema is missing" >&2; exit 1; }
+[[ -f "$schema" && -f "$events_schema" && -f "$observations_schema" ]] || { echo "FAIL: comparison-run or execution-evidence schema is missing" >&2; exit 1; }
 [[ -f "$receipt" ]] || not_comparable "run receipt is missing: $receipt"
 [[ -f "$comparison_lock" ]] || not_comparable "comparison lock is missing: $comparison_lock"
 [[ -d "$evidence_root" ]] || not_comparable "evidence root is not a directory: $evidence_root"
@@ -62,7 +64,7 @@ if ! jq -e '
     .order_policy == "randomized_per_pair" and
     (.order_seed | type == "number" and floor == . and . >= 0)) and
   (.artifacts as $artifacts | ($artifacts | type == "object") and
-    all(["baseline_trials","srq_trials","fault_schedule"][]; . as $k |
+    all(["baseline_trials","srq_trials","fault_schedule","baseline_events","srq_events","baseline_observations","srq_observations"][]; . as $k |
       ($artifacts[$k] | type == "object" and
         (.path | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._/-]*$") and (startswith("/") | not) and (contains("..") | not) and (contains("//") | not)) and
         (.sha256 | type == "string" and test("^[0-9a-f]{64}$"))))) and
@@ -124,6 +126,8 @@ if ! jq -e --argjson min "$min_trials" '
   type == "object" and .schema_version == 1 and (.trials | type == "array" and length >= $min) and
   (.trials | all(.[]; 
     (.trial_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
+    (.fault_event_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
+    (.observation_event_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
     (.fault_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
     (.input_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
     (.duration_ns | type == "number" and floor == . and . > 0) and
@@ -174,6 +178,7 @@ if ! jq -e '
   all(.faults[];
     (.fault_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
     (.input_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+    (.mechanism == "function_return" or .mechanism == "sigkill" or .mechanism == "qemu_reset" or .mechanism == "kernel_panic" or .mechanism == "physical_power_cut") and
     (.minimum_trials | type == "number" and floor == . and . >= 1))
 ' "$fault_schedule" >/dev/null; then
   not_comparable "locked fault schedule is malformed or has duplicate fault IDs"
@@ -194,8 +199,83 @@ check_schedule_coverage() {
     not_comparable "$label trial set does not cover every locked fault/input pair at its required repetition count"
   fi
 }
+
 check_schedule_coverage "baseline" "$baseline_trials"
 check_schedule_coverage "SRQ" "$srq_trials"
+
+baseline_events="$(resolve_artifact baseline_events)"
+srq_events="$(resolve_artifact srq_events)"
+baseline_observations="$(resolve_artifact baseline_observations)"
+srq_observations="$(resolve_artifact srq_observations)"
+
+validate_observations() {
+  local label="$1" trials="$2" observations="$3"
+  if ! jq -e --slurpfile trials "$trials" '
+    type == "object" and .schema_version == 1 and
+    (.observations | type == "array" and length == ($trials[0].trials | length)) and
+    (([.observations[].trial_id] | length) == ([.observations[].trial_id] | unique | length)) and
+    (([.observations[].observation_id] | length) == ([.observations[].observation_id] | unique | length)) and
+    all(.observations[];
+      (.observation_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
+      (.trial_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
+      (.fault_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
+      (.input_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+      (.outcome == "old_complete" or .outcome == "new_complete" or .outcome == "recoverable_blocked" or .outcome == "state_lost" or .outcome == "state_inconsistent" or .outcome == "unavailable_unobserved" or .outcome == "unauthorized_accept" or .outcome == "replay_accept" or .outcome == "hybrid_state" or .outcome == "unclassified_fault") and
+      .post_restart == true and
+      (.observer_id | type == "string" and length > 0) and
+      (.state_digest_sha256 | type == "string" and test("^[0-9a-f]{64}$"))) and
+    all($trials[0].trials[];
+      . as $t | any(.observations[];
+        .trial_id == $t.trial_id and .fault_id == $t.fault_id and
+        .input_sha256 == $t.input_sha256 and .outcome == $t.outcome and
+        .observation_id == ("obs-" + $t.trial_id)))
+  ' "$observations" >/dev/null; then
+    not_comparable "$label recovery-observation ledger is malformed or does not match the full raw-trial set"
+  fi
+}
+
+validate_execution_witness() {
+  local label="$1" trials="$2" events="$3" observations="$4"
+  if ! jq -e --slurpfile trials "$trials" --slurpfile observations "$observations" --slurpfile schedule "$fault_schedule" '
+    type == "object" and .schema_version == 1 and
+    (.events | type == "array" and length == (($trials[0].trials | length) * 2)) and
+    (([.events[].event_id] | length) == ([.events[].event_id] | unique | length)) and
+    all(.events[];
+      (.event_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
+      (.trial_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
+      (.fault_id | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._:-]{0,120}$")) and
+      (.input_sha256 | type == "string" and test("^[0-9a-f]{64}$")) and
+      (.monotonic_ns | type == "number" and floor == . and . > 0) and
+      any($trials[0].trials[]; .trial_id == input.trial_id)) and
+    all($trials[0].trials[];
+      . as $t |
+      ([$observations[0].observations[] | select(.trial_id == $t.trial_id)] | length == 1) and
+      ([$schedule[0].faults[] | select(.fault_id == $t.fault_id and .input_sha256 == $t.input_sha256)] | length == 1) and
+      ([$observations[0].observations[] | select(.trial_id == $t.trial_id)][0]) as $o |
+      ([$schedule[0].faults[] | select(.fault_id == $t.fault_id and .input_sha256 == $t.input_sha256)][0]) as $f |
+      ([$events[] | select(.event_id == $t.fault_event_id)] | length == 1) and
+      ([$events[] | select(.event_id == $t.observation_event_id)] | length == 1) and
+      ([$events[] | select(.event_id == $t.fault_event_id)][0]) as $inject |
+      ([$events[] | select(.event_id == $t.observation_event_id)][0]) as $observe |
+      $inject.trial_id == $t.trial_id and $inject.fault_id == $t.fault_id and
+      $inject.input_sha256 == $t.input_sha256 and $inject.event_kind == "fault_injection" and
+      $inject.source_role == "fault_injector" and $inject.trigger_confirmed == true and
+      $inject.mechanism == $f.mechanism and
+      $observe.trial_id == $t.trial_id and $observe.fault_id == $t.fault_id and
+      $observe.input_sha256 == $t.input_sha256 and $observe.event_kind == "post_restart_observation" and
+      $observe.source_role == "independent_observer" and $observe.post_restart == true and
+      $observe.outcome == $t.outcome and $observe.observation_id == $o.observation_id and
+      $observe.state_digest_sha256 == $o.state_digest_sha256 and
+      $inject.monotonic_ns < $observe.monotonic_ns)
+  ' "$events" >/dev/null; then
+    not_comparable "$label execution witness does not prove a matching trigger-plus-post-restart observation for every trial"
+  fi
+}
+
+validate_observations "baseline" "$baseline_trials" "$baseline_observations"
+validate_observations "SRQ" "$srq_trials" "$srq_observations"
+validate_execution_witness "baseline" "$baseline_trials" "$baseline_events" "$baseline_observations"
+validate_execution_witness "SRQ" "$srq_trials" "$srq_events" "$srq_observations"
 
 paired_count="$(jq -r --slurpfile baseline "$baseline_trials" '. as $r | $baseline[0].trials | length' "$receipt")"
 if [[ "$fixture" == "true" ]]; then

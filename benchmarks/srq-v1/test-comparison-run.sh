@@ -29,7 +29,7 @@ jq -n '{
      else "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" end) as $input |
     {trial_id:("trial-"+($i|tostring)),fault_id:$fault,input_sha256:$input,
      duration_ns:(10000000 + $i*1000),outcome:"old_complete",
-     execution_order:(if ($i % 2) == 0 then "baseline_first" else "srq_first" end)}]
+     execution_order:(if ($i % 2) == 0 then "baseline_first" else "srq_first" end),fault_event_id:("baseline-inject-"+($i|tostring)),observation_event_id:("baseline-observe-"+($i|tostring))}]
 }' > "$baseline_trials"
 jq -n '{
   schema_version:1,
@@ -43,18 +43,64 @@ jq -n '{
     {trial_id:("trial-"+($i|tostring)),fault_id:$fault,input_sha256:$input,
      duration_ns:(9000000 + $i*1500),
      outcome:(if $i == 4 then "recoverable_blocked" else "old_complete" end),
-     execution_order:(if ($i % 2) == 0 then "baseline_first" else "srq_first" end)}]
+     execution_order:(if ($i % 2) == 0 then "srq_first" else "baseline_first" end),fault_event_id:("srq-inject-"+($i|tostring)),observation_event_id:("srq-observe-"+($i|tostring))}]
 }' > "$srq_trials"
+
+write_observation_ledger() {
+  local arm="$1" trials="$2" out="$3" state_digest
+  if [[ "$arm" == "baseline" ]]; then state_digest="dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  else state_digest="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; fi
+  jq --arg digest "$state_digest" --slurpfile trials "$trials" '
+    {schema_version:1,observations:[
+      $trials[0].trials[] as $t |
+      {observation_id:("obs-"+$t.trial_id),trial_id:$t.trial_id,fault_id:$t.fault_id,
+       input_sha256:$t.input_sha256,outcome:$t.outcome,post_restart:true,
+       observer_id:"fixture-independent-observer",state_digest_sha256:$digest}
+    ]}
+  ' > "$out"
+}
+write_event_ledger() {
+  local arm="$1" trials="$2" observations="$3" out="$4" digest
+  if [[ "$arm" == "baseline" ]]; then digest="dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  else digest="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"; fi
+  jq --arg arm "$arm" --arg digest "$digest" --slurpfile trials "$trials" '
+    {schema_version:1,events:(
+      [$trials[0].trials[] as $t |
+       {event_id:$t.fault_event_id,trial_id:$t.trial_id,fault_id:$t.fault_id,
+        input_sha256:$t.input_sha256,event_kind:"fault_injection",source_role:"fault_injector",
+        monotonic_ns:(100000 + (($t.trial_id|ltrimstr("trial-")|tonumber)*1000)),
+        mechanism:"sigkill",trigger_confirmed:true}] +
+      [$trials[0].trials[] as $t |
+       {event_id:$t.observation_event_id,trial_id:$t.trial_id,fault_id:$t.fault_id,
+        input_sha256:$t.input_sha256,event_kind:"post_restart_observation",source_role:"independent_observer",
+        monotonic_ns:(1000000 + (($t.trial_id|ltrimstr("trial-")|tonumber)*1000)),
+        observation_id:("obs-"+$t.trial_id),post_restart:true,outcome:$t.outcome,state_digest_sha256:$digest}]
+    )}
+  ' > "$out"
+}
+baseline_observations="$evidence_root/baseline-observations.json"
+srq_observations="$evidence_root/srq-observations.json"
+baseline_events="$evidence_root/baseline-events.json"
+srq_events="$evidence_root/srq-events.json"
+write_observation_ledger baseline "$baseline_trials" "$baseline_observations"
+write_observation_ledger srq "$srq_trials" "$srq_observations"
+write_event_ledger baseline "$baseline_trials" "$baseline_observations" "$baseline_events"
+write_event_ledger srq "$srq_trials" "$srq_observations" "$srq_events"
+baseline_events_sha="$(sha256sum "$baseline_events" | cut -d ' ' -f 1)"
+srq_events_sha="$(sha256sum "$srq_events" | cut -d ' ' -f 1)"
+baseline_observations_sha="$(sha256sum "$baseline_observations" | cut -d ' ' -f 1)"
+srq_observations_sha="$(sha256sum "$srq_observations" | cut -d ' ' -f 1)"
+
 lock_sha="$(sha256sum "$lock" | cut -d ' ' -f 1)"
 baseline_sha="$(sha256sum "$baseline_trials" | cut -d ' ' -f 1)"
 srq_sha="$(sha256sum "$srq_trials" | cut -d ' ' -f 1)"
-jq -n --slurpfile lock "$lock" --arg lock_sha "$lock_sha" --arg baseline_sha "$baseline_sha" --arg srq_sha "$srq_sha" --arg schedule_sha "$schedule_sha" --arg schedule_path "$locked_schedule_path" '
+jq -n --slurpfile lock "$lock" --arg lock_sha "$lock_sha" --arg baseline_sha "$baseline_sha" --arg srq_sha "$srq_sha" --arg schedule_sha "$schedule_sha" --arg schedule_path "$locked_schedule_path" --arg be_sha "$baseline_events_sha" --arg se_sha "$srq_events_sha" --arg bo_sha "$baseline_observations_sha" --arg so_sha "$srq_observations_sha" '
   {schema_version:1,profile_id:"SRQ-MATCHED-COMPARISON-RUN-V1",fixture:true,
    comparison_lock:{baseline_id:$lock[0].baseline_id,lock_sha256:$lock_sha},
    source:{expected_srq_source_sha:$lock[0].srq_source_sha,actual_srq_checkout_sha:$lock[0].srq_source_sha,baseline_source:$lock[0].baseline_source},
    environment:$lock[0].platform,
    pairing:{protocol:"paired_fault_trials_v1",minimum_paired_trials:5,order_policy:"randomized_per_pair",order_seed:42},
-   artifacts:{baseline_trials:{path:"baseline-trials.json",sha256:$baseline_sha},srq_trials:{path:"srq-trials.json",sha256:$srq_sha},fault_schedule:{path:$schedule_path,sha256:$schedule_sha}},
+   artifacts:{baseline_trials:{path:"baseline-trials.json",sha256:$baseline_sha},srq_trials:{path:"srq-trials.json",sha256:$srq_sha},fault_schedule:{path:$schedule_path,sha256:$schedule_sha},baseline_events:{path:"baseline-events.json",sha256:$be_sha},srq_events:{path:"srq-events.json",sha256:$se_sha},baseline_observations:{path:"baseline-observations.json",sha256:$bo_sha},srq_observations:{path:"srq-observations.json",sha256:$so_sha}},
    non_claims:["Synthetic fixture only.","Structural comparability is not a safety or performance win."]}
 ' > "$receipt"
 
@@ -144,6 +190,31 @@ make_both_arms_reject missing-scheduled-fault '.trials |= map(select(.fault_id !
 make_both_arms_reject unknown-fault '.trials[0].fault_id = "unregistered-fault"'
 make_both_arms_reject wrong-scheduled-input '.trials[0].input_sha256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"'
 make_both_arms_reject underrepresented-fault '.trials[0].fault_id = "sigkill-after-decision" | .trials[0].input_sha256 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"'
+
+
+mutate_witness_reject() {
+  local label="$1" artifact_key="$2" filter="$3"
+  local source_path target_file receipt_variant digest out
+  source_path="$(jq -r --arg key "$artifact_key" '.artifacts[$key].path' "$receipt")"
+  target_file="$evidence_root/$label.json"
+  jq "$filter" "$evidence_root/$source_path" > "$target_file"
+  digest="$(sha256sum "$target_file" | cut -d ' ' -f 1)"
+  receipt_variant="$tmpdir/$label-receipt.json"
+  jq --arg key "$artifact_key" --arg path "$label.json" --arg digest "$digest" \
+    '.artifacts[$key].path=$path | .artifacts[$key].sha256=$digest' "$receipt" > "$receipt_variant"
+  out="$tmpdir/$label.out"
+  if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt_variant" >"$out" 2>&1; then
+    echo "FAIL: execution-witness validator accepted negative control '$label'" >&2; cat "$out" >&2; exit 1
+  fi
+  echo "PASS: execution-witness negative control rejected ($label)"
+}
+mutate_witness_reject missing-injector-event baseline_events '.events |= map(select(.event_kind != "fault_injection" or .trial_id != "trial-0"))'
+mutate_witness_reject unconfirmed-injector baseline_events '.events |= map(if .event_kind == "fault_injection" and .trial_id == "trial-0" then .trigger_confirmed = false else . end)'
+mutate_witness_reject observer-before-trigger baseline_events '.events |= map(if .event_kind == "post_restart_observation" and .trial_id == "trial-0" then .monotonic_ns = 1 else . end)'
+mutate_witness_reject observer-outcome-mismatch baseline_events '.events |= map(if .event_kind == "post_restart_observation" and .trial_id == "trial-0" then .outcome = "state_lost" else . end)'
+mutate_witness_reject observer-digest-mismatch baseline_events '.events |= map(if .event_kind == "post_restart_observation" and .trial_id == "trial-0" then .state_digest_sha256 = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" else . end)'
+mutate_witness_reject observation-not-after-restart baseline_observations '.observations |= map(if .trial_id == "trial-0" then .post_restart = false else . end)'
+mutate_witness_reject missing-observation baseline_observations '.observations |= map(select(.trial_id != "trial-0"))'
 
 printf '\n' >> "$baseline_trials"
 if bash "$validator" --allow-fixtures --evidence-root "$evidence_root" --comparison-lock "$lock" "$receipt" >"$tmpdir/mutated-bytes.out" 2>&1; then

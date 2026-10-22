@@ -5,16 +5,19 @@
     {
       "fault_id": "commit-before-ack",
       "input_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "mechanism": "sigkill",
       "minimum_trials": 5
     },
     {
       "fault_id": "sigkill-after-decision",
       "input_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "mechanism": "sigkill",
       "minimum_trials": 5
     },
     {
       "fault_id": "sigkill-before-commit",
       "input_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "mechanism": "sigkill",
       "minimum_trials": 5
     }
   ]
