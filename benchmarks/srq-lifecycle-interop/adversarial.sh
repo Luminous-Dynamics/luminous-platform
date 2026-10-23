@@ -56,8 +56,20 @@ jq -cn \
 
 expect_reject() {
   local name="$1" filter="$2" expected_reason="$3" candidate="$tmp/$1.json"
-  local status=0 reason="" candidate_sha256=""
+  local status=0 reason="" candidate_sha256="" schema_result="" schema_report_sha256=""
+  local schema_report="$schema_reports_dir/$name-schema.json"
   jq "$filter" "$receipt" > "$candidate"
+
+  if ! "$schema_python" "$schema_validator" --schema "$schema" --instance "$candidate" --expect invalid --output "$schema_report" >"$tmp/$name-schema.log" 2>&1; then
+    echo "FAIL: full Draft 2020-12 schema unexpectedly accepted the invalid Mycelix mutation: $name" >&2
+    cat "$schema_report" >&2 || true
+    cat "$tmp/$name-schema.log" >&2
+    exit 1
+  fi
+  schema_result="$(jq -er '.result' "$schema_report")"
+  [[ "$schema_result" == "INVALID" ]] || { echo "FAIL: schema negative control has unexpected result: $name ($schema_result)" >&2; exit 1; }
+  schema_report_sha256="$(sha256sum "$schema_report" | cut -d ' ' -f 1)"
+
   if bash "$validator" \
     --nixward-root "$nixward_root" \
     --mycelix-root "$mycelix_root" \
@@ -80,10 +92,14 @@ expect_reject() {
   fi
   candidate_sha256="$(sha256sum "$candidate" | cut -d ' ' -f 1)"
   jq --arg id "$name" --arg filter "$filter" --arg reason "$reason" \
-    --arg candidate_sha256 "$candidate_sha256" --argjson exit_status "$status" \
+    --arg candidate_sha256 "$candidate_sha256" \
+    --arg schema_result "$schema_result" --arg schema_report_sha256 "$schema_report_sha256" \
+    --argjson exit_status "$status" \
     '.cases += [{
       id:$id,
       input_kind:"mycelix_receipt",
+      schema_validation_result:$schema_result,
+      schema_validation_report_raw_sha256:$schema_report_sha256,
       mutation_filter:$filter,
       expected_outcome:"reject",
       observed_outcome:"REJECTED_AS_EXPECTED",
@@ -93,7 +109,7 @@ expect_reject() {
     }]' "$report" > "$tmp/report.json"
   mv "$tmp/report.json" "$report"
   cases=$((cases + 1))
-  echo "PASS: rejected inconsistent evidence mutation: $name"
+  echo "PASS: full schema and lifecycle validator rejected inconsistent receipt: $name"
 }
 
 expect_transaction_reject() {
@@ -126,6 +142,8 @@ expect_transaction_reject() {
     '.cases += [{
       id:$id,
       input_kind:"nixward_transaction",
+      schema_validation_result:"NOT_APPLICABLE",
+      schema_validation_report_raw_sha256:null,
       mutation_filter:$filter,
       expected_outcome:"reject",
       observed_outcome:"REJECTED_AS_EXPECTED",
@@ -141,9 +159,20 @@ expect_transaction_reject() {
 expect_accept() {
   local name="$1" filter="$2" expected_tier="$3" expected_claim="$4"
   local candidate="$tmp/$name.json" assessment="$tmp/$name-assessment.json"
-  local candidate_sha256="" actual=""
+  local schema_report="$schema_reports_dir/$name-schema.json"
+  local candidate_sha256="" schema_result="" schema_report_sha256=""
 
   jq "$filter" "$receipt" > "$candidate"
+  if ! "$schema_python" "$schema_validator" --schema "$schema" --instance "$candidate" --expect valid --output "$schema_report" >"$tmp/$name-schema.log" 2>&1; then
+    echo "FAIL: full Draft 2020-12 schema rejected a positive Mycelix shape or could not validate it: $name" >&2
+    cat "$schema_report" >&2 || true
+    cat "$tmp/$name-schema.log" >&2
+    exit 1
+  fi
+  schema_result="$(jq -er '.result' "$schema_report")"
+  [[ "$schema_result" == "VALID" ]] || { echo "FAIL: schema positive control has unexpected result: $name ($schema_result)" >&2; exit 1; }
+  schema_report_sha256="$(sha256sum "$schema_report" | cut -d ' ' -f 1)"
+
   if ! bash "$validator" \
     --nixward-root "$nixward_root" \
     --mycelix-root "$mycelix_root" \
@@ -173,8 +202,12 @@ expect_accept() {
   candidate_sha256="$(sha256sum "$candidate" | cut -d ' ' -f 1)"
   jq --arg id "$name" --arg filter "$filter" --arg tier "$expected_tier" \
     --arg claim "$expected_claim" --arg sha256 "$candidate_sha256" \
+    --arg schema_result "$schema_result" --arg schema_report_sha256 "$schema_report_sha256" \
     '.positive_controls += [{
       id:$id,
+      input_kind:"mycelix_receipt",
+      schema_validation_result:$schema_result,
+      schema_validation_report_raw_sha256:$schema_report_sha256,
       mutation_filter:$filter,
       fixture_semantics:"synthetic structural positive control; digests and source identities are sentinels, not real-world evidence",
       expected_outcome:"accept_record_but_keep_release_blocked",
@@ -187,7 +220,7 @@ expect_accept() {
     }]' "$report" > "$tmp/report.json"
   mv "$tmp/report.json" "$report"
   controls=$((controls + 1))
-  echo "PASS: accepted structurally consistent $expected_tier control while keeping lifecycle blocked: $name"
+  echo "PASS: full schema and lifecycle validator accepted structurally consistent $expected_tier control; lifecycle stays blocked: $name"
 }
 
 expect_transaction_accept() {
@@ -222,6 +255,8 @@ expect_transaction_accept() {
     '.positive_controls += [{
       id:$id,
       input_kind:"nixward_transaction",
+      schema_validation_result:"NOT_APPLICABLE",
+      schema_validation_report_raw_sha256:null,
       mutation_filter:$filter,
       fixture_semantics:"synthetic valid-phase structural control; validation record is a sentinel",
       expected_outcome:"accept_record_but_keep_release_blocked",
@@ -233,7 +268,7 @@ expect_transaction_accept() {
     }]' "$report" > "$tmp/report.json"
   mv "$tmp/report.json" "$report"
   controls=$((controls + 1))
-  echo "PASS: accepted validated-phase record while keeping lifecycle blocked: $name"
+  echo "PASS: accepted $expected_phase-phase record while keeping lifecycle blocked: $name"
 }
 
 # Negative controls: mutations must fail on the intended contract invariant,
