@@ -209,7 +209,10 @@ interop_schema_requirements_path="benchmarks/srq-lifecycle-interop/requirements-
 interop_lock_path="benchmarks/srq-lifecycle-interop/upstream-lock-v1.json"
 interop_schema_path="benchmarks/srq-lifecycle-interop/assessment-v1.schema.json"
 interop_protocol_path="benchmarks/srq-lifecycle-interop/corpus-v1.json"
-git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+interop_protocol_schema_path="benchmarks/srq-lifecycle-interop/corpus-v1.schema.json"
+interop_protocol_validator_path="benchmarks/srq-lifecycle-interop/corpus_validate.py"
+interop_protocol_test_path="benchmarks/srq-lifecycle-interop/corpus_validate_test.py"
+git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
   echo "BLOCKED: interop source has uncommitted modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
@@ -226,6 +229,12 @@ interop_test_blob="$(git -C "$repo_root" hash-object -- "$interop_test_path")"
 interop_lock_blob="$(git -C "$repo_root" hash-object -- "$interop_lock_path")"
 interop_schema_blob="$(git -C "$repo_root" hash-object -- "$interop_schema_path")"
 interop_protocol_blob="$(git -C "$repo_root" hash-object -- "$interop_protocol_path")"
+interop_protocol_schema_blob="$(git -C "$repo_root" hash-object -- "$interop_protocol_schema_path")"
+interop_protocol_validator_blob="$(git -C "$repo_root" hash-object -- "$interop_protocol_validator_path")"
+interop_protocol_test_blob="$(git -C "$repo_root" hash-object -- "$interop_protocol_test_path")"
+interop_protocol_schema_sha256="$(sha256sum "$repo_root/$interop_protocol_schema_path" | cut -d ' ' -f 1)"
+interop_protocol_validator_sha256="$(sha256sum "$repo_root/$interop_protocol_validator_path" | cut -d ' ' -f 1)"
+interop_protocol_test_sha256="$(sha256sum "$repo_root/$interop_protocol_test_path" | cut -d ' ' -f 1)"
 interop_protocol_sha256="$(sha256sum "$repo_root/$interop_protocol_path" | cut -d ' ' -f 1)"
 interop_protocol_id="$(jq -er '.protocol_id' "$repo_root/$interop_protocol_path")"
 interop_validator_sha256="$(sha256sum "$repo_root/$interop_validator_path" | cut -d ' ' -f 1)"
@@ -254,6 +263,9 @@ report="$(
     --arg interop_lock_blob "$interop_lock_blob" --arg interop_lock_sha256 "$interop_lock_sha256" \
     --arg interop_schema_blob "$interop_schema_blob" --arg interop_schema_sha256 "$interop_schema_sha256" \
     --arg interop_protocol_blob "$interop_protocol_blob" --arg interop_protocol_sha256 "$interop_protocol_sha256" --arg interop_protocol_id "$interop_protocol_id" \
+    --arg protocol_schema_blob "$interop_protocol_schema_blob" --arg protocol_schema_sha256 "$interop_protocol_schema_sha256" \
+    --arg protocol_validator_blob "$interop_protocol_validator_blob" --arg protocol_validator_sha256 "$interop_protocol_validator_sha256" \
+    --arg protocol_test_blob "$interop_protocol_test_blob" --arg protocol_test_sha256 "$interop_protocol_test_sha256" \
     '{
       schema:"srq-lifecycle-interop-assessment-v1", contract_status:"PASS", release_status:"BLOCKED", claim_ceiling:"none", scenario_id:"LIFECYCLE-001",
       sources:{
@@ -271,7 +283,10 @@ report="$(
           test_git_blob_sha1:$interop_test_blob,test_raw_sha256:$interop_test_sha256,
           upstream_lock_git_blob_sha1:$interop_lock_blob,upstream_lock_raw_sha256:$interop_lock_sha256,
           assessment_schema_git_blob_sha1:$interop_schema_blob,assessment_schema_raw_sha256:$interop_schema_sha256,
-          corpus_protocol_git_blob_sha1:$interop_protocol_blob,corpus_protocol_raw_sha256:$interop_protocol_sha256,corpus_protocol_id:$interop_protocol_id}
+          corpus_protocol_git_blob_sha1:$interop_protocol_blob,corpus_protocol_raw_sha256:$interop_protocol_sha256,corpus_protocol_id:$interop_protocol_id,
+          corpus_schema_git_blob_sha1:$protocol_schema_blob,corpus_schema_raw_sha256:$protocol_schema_sha256,
+          corpus_validator_git_blob_sha1:$protocol_validator_blob,corpus_validator_raw_sha256:$protocol_validator_sha256,
+          corpus_validator_test_git_blob_sha1:$protocol_test_blob,corpus_validator_test_raw_sha256:$protocol_test_sha256}
       },
       transaction:{schema:$tx[0].schema,phase:$tx[0].phase,transaction_id:$tx[0].transaction_id,target_machine_digest:$tx[0].target_machine_digest,plan_digest:$tx[0].plan_digest,authorization_present:($tx[0].authorization != null),verification_present:($tx[0].verification != null),outcome_present:($tx[0].outcome != null)},
       boot_observation:{schema:$boot[0].schema,evidence_tier:$boot[0].evidence_tier,status:$boot[0].status,authenticated:$boot[0].authenticated,release_qualifying:$boot[0].release_qualifying,security_bindings_complete:($boot[0].target_id != null and $boot[0].decision_id != null and $boot[0].challenge_id != null and $boot[0].effective_policy_digest != null and $boot[0].artifact_digest != null and $boot[0].measurement != null)},
