@@ -67,9 +67,11 @@ jobs:
         run: |
           set -euo pipefail
           schema_venv="$RUNNER_TEMP/srq-schema-venv"
+          python3 -c 'import platform, sys; assert sys.implementation.name == "cpython" and sys.version_info[:2] == (3, 12) and platform.system() == "Linux" and platform.machine() == "x86_64", f"schema wheel lock requires CPython 3.12 on Linux x86_64; found {sys.implementation.name} {sys.version.split()[0]} {platform.system()} {platform.machine()}"'
           python3 -m venv "$schema_venv"
-          "$schema_venv/bin/python" -m pip install --disable-pip-version-check --no-input --only-binary=:all: -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
+          "$schema_venv/bin/python" -m pip install --disable-pip-version-check --no-input --require-hashes --only-binary=:all: -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
           export SRQ_SCHEMA_PYTHON="$schema_venv/bin/python"
+          "$SRQ_SCHEMA_PYTHON" -c 'import importlib.metadata, sys; print("schema test runtime:", sys.version.split()[0]); print("pinned jsonschema:", importlib.metadata.version("jsonschema"))'
           "$SRQ_SCHEMA_PYTHON" -m py_compile benchmarks/srq-lifecycle-interop/schema_validate.py benchmarks/srq-lifecycle-interop/schema_validate_test.py benchmarks/srq-lifecycle-interop/corpus_validate.py benchmarks/srq-lifecycle-interop/corpus_validate_test.py
           "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/schema_validate_test.py
           "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/corpus_validate_test.py
