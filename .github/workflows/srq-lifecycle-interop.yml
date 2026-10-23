@@ -87,6 +87,7 @@ jobs:
           "$schema_venv/bin/python" -m pip check
           export SRQ_SCHEMA_PYTHON="$schema_venv/bin/python"
           export SRQ_SCHEMA_WHEELHOUSE_MANIFEST="$wheel_manifest"
+          export SRQ_SCHEMA_WHEEL_COUNT="$wheel_count"
           "$SRQ_SCHEMA_PYTHON" -c 'import importlib.metadata, sys; print("schema test runtime:", sys.version.split()[0]); print("pinned jsonschema:", importlib.metadata.version("jsonschema"))'
           "$SRQ_SCHEMA_PYTHON" -m py_compile benchmarks/srq-lifecycle-interop/schema_validate.py benchmarks/srq-lifecycle-interop/schema_validate_test.py benchmarks/srq-lifecycle-interop/corpus_validate.py benchmarks/srq-lifecycle-interop/corpus_validate_test.py
           "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/schema_validate_test.py
