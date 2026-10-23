@@ -70,6 +70,9 @@ if bash "$script_dir/validate.sh" --nixward-root "$nixward_root" --mycelix-root 
 fi
 echo "PASS: phase-only promotion without authorization/readback/outcome fails closed"
 
+# Expand beyond hand-picked controls into a reusable cross-field mutation corpus.
+bash "$script_dir/adversarial.sh" "$nixward_root" "$mycelix_root" "$sovereign_boot_root" "$tmp/boot-observation.json" "$output_dir"
+
 git -C "$nixward_root" diff --exit-code -- docs/fixtures/system-transaction-v1.json
 git -C "$mycelix_root" diff --exit-code -- research/evidence-plane/receipt-v0.schema.json research/evidence-plane/examples/synthetic-planned-receipt-v0.json
 git -C "$sovereign_boot_root" diff --exit-code -- tools/srq-boot-observation-probe/src/main.rs
