@@ -74,6 +74,9 @@ jq -e '
        elif .phase == "applied" then .validation != null and .authorization != null and .snapshot != null and .application != null
        elif .phase == "verified" then .validation != null and .authorization != null and .snapshot != null and .application != null and .verification != null
        elif .phase == "promoted" then .authorization != null and .validation != null and .snapshot != null and .application != null and .verification != null and .outcome != null
+       # Terminal dispositions must be supported by recorded outcome/evidence.
+       elif .phase == "failed" then .outcome != null
+       elif .phase == "recovered" then .snapshot != null and .outcome != null
        else true end)
 ' "$nixward_fixture" >/dev/null || { echo "CONTRACT VIOLATION: Nixward transaction fields or phase invariants are inconsistent." >&2; exit 1; }
 
