@@ -98,6 +98,62 @@ jq -e '
        else true end)
 ' "$mycelix_receipt" >/dev/null || { echo "CONTRACT VIOLATION: Mycelix receipt fields do not support their declared evidence tier / claim ceiling." >&2; exit 1; }
 
+# Enforce cross-field semantics needed by this narrow interop check. This is not
+# a substitute for evaluating the complete upstream JSON Schema.
+jq -e '
+  (if .run_status == "planned" then
+    .evidence_tier == "S0" and .claim_ceiling == "synthetic_only"
+    and .subject.commit == null and .subject.artifact_sha256 == null
+    and .benchmark.protocol_sha256 == null
+    and .benchmark.pre_registered_at == null
+    and .benchmark.split_lock_sha256 == null
+    and .benchmark.results_summary.state == "not_run"
+    and .benchmark.results_summary.observed_result_count == 0
+    and ([.gates[]] | all(. == "unknown"))
+    and (.independent_verification.status | IN("none","pending"))
+    and .independent_verification.verifier_kind == "none"
+    and .independent_verification.replayed_commit == null
+   else true end)
+  and (if .run_status == "independently_checked" then
+    (.evidence_tier | IN("S3","S4"))
+    and (.claim_ceiling | IN("independently_reproduced","domain_validated"))
+   else true end)
+  and (if .run_status == "domain_validated" then
+    .evidence_tier == "S4" and .claim_ceiling == "domain_validated"
+    and .gates.domain_validation == "pass"
+   else true end)
+  and (if .evidence_tier == "S0" then .claim_ceiling == "synthetic_only"
+       elif .evidence_tier == "S1" then (.claim_ceiling | IN("synthetic_only","transcription_only"))
+       elif .evidence_tier == "S2" then (.claim_ceiling | IN("synthetic_only","transcription_only","source_reproducible"))
+       else true end)
+  and (if .evidence_tier == "S2" and .claim_ceiling == "source_reproducible" then
+    (.sources | length > 0)
+    and ([.sources[] |
+      .raw_bytes_ingested == true
+      and (.sha256 | type == "string" and test("^[a-f0-9]{64}$"))
+      and (.rights_status | IN("public_domain","open_license","permitted","permission_confirmed"))
+      and (.contact_status | IN("permission_confirmed","not_required"))
+    ] | all)
+    and (.subject.artifact_sha256 | type == "string" and test("^[a-f0-9]{64}$"))
+    and .gates.source_integrity == "pass"
+    and .gates.rights_stewardship == "pass"
+   else true end)
+  and (if (.evidence_tier | IN("S3","S4")) then
+    (.subject.commit | type == "string" and test("^[a-fA-F0-9]{40,64}$"))
+    and (.subject.artifact_sha256 | type == "string" and test("^[a-f0-9]{64}$"))
+    and .independent_verification.status == "passed"
+    and .gates.independent_verification == "pass"
+    and .gates.negative_controls == "pass"
+    and .gates.exact_head == "pass"
+    and .gates.source_integrity == "pass"
+    and .gates.rights_stewardship == "pass"
+   else true end)
+  and (if (.evidence_tier == "S4" or .claim_ceiling == "domain_validated") then
+    .evidence_tier == "S4" and .claim_ceiling == "domain_validated"
+    and .gates.domain_validation == "pass"
+   else true end)
+' "$mycelix_receipt" >/dev/null || { echo "CONTRACT VIOLATION: Mycelix receipt cross-field semantics permit status/tier/claim escalation." >&2; exit 1; }
+
 blockers="$(
   jq -cn --slurpfile tx "$nixward_fixture" --slurpfile boot "$boot_observation" --slurpfile evidence "$mycelix_receipt" '
     [
