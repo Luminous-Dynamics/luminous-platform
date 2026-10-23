@@ -67,10 +67,135 @@ jobs:
         run: |
           set -euo pipefail
           schema_venv="$RUNNER_TEMP/srq-schema-venv"
+          wheelhouse="$RUNNER_TEMP/srq-schema-wheelhouse"
+          evidence_dir="$RUNNER_TEMP/srq-lifecycle-interop"
+          wheel_manifest="$evidence_dir/schema-wheelhouse-manifest.txt"
+          mkdir -p "$wheelhouse" "$evidence_dir"
           python3 -c 'import platform, sys; assert sys.implementation.name == "cpython" and sys.version_info[:2] == (3, 12) and platform.system() == "Linux" and platform.machine() == "x86_64", f"schema wheel lock requires CPython 3.12 on Linux x86_64; found {sys.implementation.name} {sys.version.split()[0]} {platform.system()} {platform.machine()}"'
           python3 -m venv "$schema_venv"
-          "$schema_venv/bin/python" -m pip install --disable-pip-version-check --no-input --require-hashes --only-binary=:all: -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
+          "$schema_venv/bin/python" -m pip download --disable-pip-version-check --no-input --require-hashes --only-binary=:all: --dest "$wheelhouse" -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
+          {
+            printf 'schema-wheelhouse-manifest-v1\\n'
+            printf 'python=%s\\n' "$("$schema_venv/bin/python" --version 2>&1)"
+            printf 'pip=%s\\n' "$("$schema_venv/bin/python" -m pip --version)"
+            printf 'requirements_sha256=%s\\n' "$(sha256sum benchmarks/srq-lifecycle-interop/requirements-schema.txt | cut -d ' ' -f 1)"
+            (cd "$wheelhouse" && sha256sum ./*.whl | LC_ALL=C sort -k 2)
+          } > "$wheel_manifest"
+          wheel_count="$(grep -Ec '^[0-9a-f]{64}  \\./[^/]+\\.whl
+          "$SRQ_SCHEMA_PYTHON" -m py_compile benchmarks/srq-lifecycle-interop/schema_validate.py benchmarks/srq-lifecycle-interop/schema_validate_test.py benchmarks/srq-lifecycle-interop/corpus_validate.py benchmarks/srq-lifecycle-interop/corpus_validate_test.py
+          "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/schema_validate_test.py
+          "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/corpus_validate_test.py
+          bash -n benchmarks/srq-lifecycle-interop/validate.sh
+          bash -n benchmarks/srq-lifecycle-interop/test.sh
+          bash -n benchmarks/srq-lifecycle-interop/adversarial.sh
+          jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_id") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_schema_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_schema_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_test_raw_sha256") != null)' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
+          jq -e --slurpfile lock benchmarks/srq-lifecycle-interop/upstream-lock-v1.json '
+            .schema == "srq-lifecycle-adversarial-protocol-v1"
+            and .protocol_id == "srq-lifecycle-adversarial-v1"
+            and .version == 1
+            and (.cases | length == 17)
+            and .target_metrics.negative_case_count == 17
+            and .target_metrics.negative_false_accept_count == 0
+            and .target_metrics.positive_control_count == 5
+            and .target_metrics.positive_false_reject_count == 0
+            and .target_metrics.release_false_pass_count == 0
+            and ([.cases[] | select(.input_kind == "mycelix_receipt" and .expected_schema_result == "INVALID")] | length == 9)
+            and ([.cases[] | select(.input_kind == "nixward_transaction" and .expected_schema_result == "NOT_APPLICABLE")] | length == 8)
+            and (.positive_controls | length == 5)
+            and ([.positive_controls[] | select(.input_kind == "mycelix_receipt" and .expected_schema_result == "VALID")] | length == 2)
+            and ([.positive_controls[] | select(.input_kind == "nixward_transaction" and .expected_schema_result == "NOT_APPLICABLE")] | length == 3)
+            and .release_invariant.accepted_structural_control_must_leave_release_status == "BLOCKED"
+            and .release_invariant.accepted_structural_control_must_leave_claim_ceiling == "none"
+            and .release_invariant.release_pass_allowed == false
+            and all(.upstream_inputs[]; . as $input | any($lock[0].pins[]; .repository == $input.repository and .commit_sha == $input.commit_sha and .path == $input.path and .git_blob_sha1 == $input.git_blob_sha1))
+            and ([.cases[].id] | length == (unique | length))
+            and ([.positive_controls[].id] | length == (unique | length))
+          ' benchmarks/srq-lifecycle-interop/corpus-v1.json
+
+          cp benchmarks/srq-lifecycle-interop/corpus-v1.json "$evidence_dir/corpus-v1.json"
+          bash benchmarks/srq-lifecycle-interop/test.sh \
+            "$GITHUB_WORKSPACE/integration-upstream/nixward" \
+            "$GITHUB_WORKSPACE/integration-upstream/mycelix" \
+            "$GITHUB_WORKSPACE/integration-upstream/sovereign-boot" \
+            "$evidence_dir"
+          jq -e --slurpfile protocol benchmarks/srq-lifecycle-interop/corpus-v1.json --arg protocol_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-v1.json | cut -d ' ' -f 1)" --arg protocol_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" '
+            .schema == "srq-lifecycle-adversarial-assessment-v1"
+            and .protocol.protocol_id == $protocol[0].protocol_id
+            and .protocol.version == $protocol[0].version
+            and .protocol.raw_sha256 == $protocol_sha256
+            and .protocol.git_blob_sha1 == $protocol_blob
+            and ([.cases[] | {id,input_kind,schema_validation_result}] | sort_by(.id))
+                == ([$protocol[0].cases[] | {id,input_kind,schema_validation_result:.expected_schema_result}] | sort_by(.id))
+            and ([.positive_controls[] | {id,input_kind,schema_validation_result}] | sort_by(.id))
+                == ([$protocol[0].positive_controls[] | {id,input_kind,schema_validation_result:.expected_schema_result}] | sort_by(.id))
+            and .status == "PASS" and .release_status == "BLOCKED"
+            and .expected_case_count == 17 and .rejected_case_count == 17
+            and .all_expected_mutations_rejected == true
+            and .expected_positive_control_count == 5
+            and .accepted_positive_control_count == 5
+            and .all_positive_controls_accepted == true
+            and (.positive_controls | length == 5)
+            and .observed_metrics.negative_false_accept_count == 0
+            and .observed_metrics.positive_false_reject_count == 0
+            and .observed_metrics.release_false_pass_count == 0
+            and $protocol[0].target_metrics.negative_false_accept_count == .observed_metrics.negative_false_accept_count
+            and $protocol[0].target_metrics.positive_false_reject_count == .observed_metrics.positive_false_reject_count
+            and $protocol[0].target_metrics.release_false_pass_count == .observed_metrics.release_false_pass_count
+            and .schema_validator.library == "python-jsonschema"
+            and .schema_validator.version == "4.26.0"
+            and .schema_validator.format_assertion == true
+            and (.fixture.schema_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and ([.cases[] | select(.input_kind == "mycelix_receipt")] | (length == 9 and all(.[]; .schema_validation_result == "INVALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
+            and ([.cases[] | select(.input_kind == "nixward_transaction")] | (length == 8 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
+            and ([.positive_controls[] | select(.input_kind == "mycelix_receipt")] | (length == 2 and all(.[]; .schema_validation_result == "VALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
+            and ([.positive_controls[] | select(.input_kind == "nixward_transaction")] | (length == 3 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
+          ' "$evidence_dir/srq-lifecycle-adversarial-assessment.json"
+          jq -e --arg protocol_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-v1.json | cut -d ' ' -f 1)" --arg protocol_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" '
+            .schema == "srq-lifecycle-interop-assessment-v1"
+            and .contract_status == "PASS"
+            and .release_status == "BLOCKED"
+            and .claim_ceiling == "none"
+            and (.sources.interop_harness.commit_sha | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.schema_validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.schema_validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.schema_validator_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.schema_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.schema_requirements_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.schema_requirements_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.corpus_protocol_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.corpus_protocol_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and .sources.interop_harness.corpus_protocol_id == "srq-lifecycle-adversarial-v1"
+            and (.sources.interop_harness.corpus_schema_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.corpus_schema_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.corpus_validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.corpus_validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.corpus_validator_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.corpus_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and .sources.interop_harness.corpus_protocol_raw_sha256 == $protocol_sha256
+            and .sources.interop_harness.corpus_protocol_git_blob_sha1 == $protocol_blob
+            and (.release_blockers | length >= 5)
+          ' "$evidence_dir/lifecycle-interop-assessment.json"
+
+      - name: Preserve cross-layer interoperability evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-lifecycle-interop-evidence
+          path: |
+            ${{ runner.temp }}/srq-lifecycle-interop/lifecycle-interop-assessment.json
+            ${{ runner.temp }}/srq-lifecycle-interop/srq-lifecycle-adversarial-assessment.json
+            ${{ runner.temp }}/srq-lifecycle-interop/corpus-v1.json
+            ${{ runner.temp }}/srq-lifecycle-interop/schema-wheelhouse-manifest.txt
+            ${{ runner.temp }}/srq-lifecycle-interop/schema-validation/*.json
+          if-no-files-found: ignore
+          retention-days: 30
+ "$wheel_manifest")"
+          test "$wheel_count" -eq 20
+          "$schema_venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-index --find-links "$wheelhouse" --require-hashes --only-binary=:all: -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
+          "$schema_venv/bin/python" -m pip check
           export SRQ_SCHEMA_PYTHON="$schema_venv/bin/python"
+          export SRQ_SCHEMA_WHEELHOUSE_MANIFEST="$wheel_manifest"
           "$SRQ_SCHEMA_PYTHON" -c 'import importlib.metadata, sys; print("schema test runtime:", sys.version.split()[0]); print("pinned jsonschema:", importlib.metadata.version("jsonschema"))'
           "$SRQ_SCHEMA_PYTHON" -m py_compile benchmarks/srq-lifecycle-interop/schema_validate.py benchmarks/srq-lifecycle-interop/schema_validate_test.py benchmarks/srq-lifecycle-interop/corpus_validate.py benchmarks/srq-lifecycle-interop/corpus_validate_test.py
           "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/schema_validate_test.py
