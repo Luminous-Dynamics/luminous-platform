@@ -35,7 +35,7 @@ jq -cn \
     expected_case_count:15,
     rejected_case_count:0,
     all_expected_mutations_rejected:false,
-    expected_positive_control_count:2,
+    expected_positive_control_count:3,
     accepted_positive_control_count:0,
     all_positive_controls_accepted:false,
     positive_controls:[],
@@ -170,12 +170,58 @@ expect_accept() {
       release_status:"BLOCKED",
       claim_ceiling:"none",
       evidence_tier:$tier,
-      claim_ceiling:$claim,
+      evidence_claim_ceiling:$claim,
       candidate_raw_sha256:$sha256
     }]' "$report" > "$tmp/report.json"
   mv "$tmp/report.json" "$report"
   controls=$((controls + 1))
   echo "PASS: accepted structurally consistent $expected_tier control while keeping lifecycle blocked: $name"
+}
+
+expect_transaction_accept() {
+  local name="$1" filter="$2"
+  local candidate="$tmp/$name.json" assessment="$tmp/$name-assessment.json" candidate_sha256=""
+  jq "$filter" "$nixward_root/docs/fixtures/system-transaction-v1.json" > "$candidate"
+  if ! bash "$validator" \
+    --nixward-root "$nixward_root" \
+    --mycelix-root "$mycelix_root" \
+    --sovereign-boot-root "$sovereign_boot_root" \
+    --boot-observation "$boot_observation" \
+    --transaction-fixture "$candidate" \
+    --output "$assessment" >"$tmp/$name.log" 2>&1; then
+    echo "FAIL: valid transaction-phase control was rejected: $name" >&2
+    cat "$tmp/$name.log" >&2
+    exit 1
+  fi
+  if ! jq -e '
+      .schema == "srq-lifecycle-interop-assessment-v1"
+      and .contract_status == "PASS"
+      and .release_status == "BLOCKED"
+      and .claim_ceiling == "none"
+      and .transaction.phase == "validated"
+      and (.release_blockers | length > 0)
+    ' "$assessment" >/dev/null; then
+    echo "FAIL: transaction positive control changed phase semantics or unblocked the release: $name" >&2
+    cat "$assessment" >&2
+    exit 1
+  fi
+  candidate_sha256="$(sha256sum "$candidate" | cut -d ' ' -f 1)"
+  jq --arg id "$name" --arg filter "$filter" --arg sha256 "$candidate_sha256" \
+    '.positive_controls += [{
+      id:$id,
+      input_kind:"nixward_transaction",
+      mutation_filter:$filter,
+      fixture_semantics:"synthetic valid-phase structural control; validation record is a sentinel",
+      expected_outcome:"accept_record_but_keep_release_blocked",
+      observed_outcome:"ACCEPTED_WITH_RELEASE_BLOCKED",
+      release_status:"BLOCKED",
+      claim_ceiling:"none",
+      transaction_phase:"validated",
+      candidate_raw_sha256:$sha256
+    }]' "$report" > "$tmp/report.json"
+  mv "$tmp/report.json" "$report"
+  controls=$((controls + 1))
+  echo "PASS: accepted validated-phase record while keeping lifecycle blocked: $name"
 }
 
 # Negative controls: mutations must fail on the intended contract invariant,
@@ -269,6 +315,7 @@ s4_filter='.run_status = "domain_validated"
   | .independent_verification.note = "Synthetic shape test; not a real independent verification."
   | .limitations = ["Synthetic structural positive control only; identities, hashes and verification references are sentinels.", "Does not establish any real execution, independent reproduction or domain validation."]'
 expect_accept "valid-s4-domain-validated-shape" "$s4_filter" "S4" "domain_validated"
+expect_transaction_accept "valid-validated-phase-with-validation-record" '.phase = "validated" | .validation = {"status":"pass","validator_ref":"synthetic-control-only"}'
 
 jq --argjson negative_count "$cases" --argjson positive_count "$controls" '
   .status = "PASS"
@@ -279,12 +326,12 @@ jq --argjson negative_count "$cases" --argjson positive_count "$controls" '
 ' "$report" > "$tmp/final-report.json"
 mv "$tmp/final-report.json" "$report"
 [[ "$cases" -eq 15 ]] || { echo "FAIL: expected exactly 15 adversarial cases, found $cases" >&2; exit 1; }
-[[ "$controls" -eq 2 ]] || { echo "FAIL: expected exactly 2 positive controls, found $controls" >&2; exit 1; }
+[[ "$controls" -eq 3 ]] || { echo "FAIL: expected exactly 3 positive controls, found $controls" >&2; exit 1; }
 jq -e '
   .schema == "srq-lifecycle-adversarial-assessment-v1"
   and .status == "PASS" and .release_status == "BLOCKED"
   and .expected_case_count == 15 and .rejected_case_count == 15 and .all_expected_mutations_rejected == true
-  and .expected_positive_control_count == 2 and .accepted_positive_control_count == 2
+  and .expected_positive_control_count == 3 and .accepted_positive_control_count == 3
   and .all_positive_controls_accepted == true
   and (.positive_controls | all(.[]; .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED"))
 ' "$report" >/dev/null
