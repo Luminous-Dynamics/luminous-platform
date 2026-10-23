@@ -82,7 +82,7 @@ jobs:
             and .expected_case_count == 17 and .rejected_case_count == 17
             and .all_expected_mutations_rejected == true
             and .expected_positive_control_count == 5
-            and .accepted_positive_control_count == 3
+            and .accepted_positive_control_count == 5
             and .all_positive_controls_accepted == true
             and (.positive_controls | length == 5)
           ' "$evidence_dir/srq-lifecycle-adversarial-assessment.json"
