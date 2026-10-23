@@ -77,7 +77,7 @@ bash "$script_dir/adversarial.sh" "$nixward_root" "$mycelix_root" "$sovereign_bo
 jq -e '
   .schema == "srq-lifecycle-adversarial-assessment-v1"
   and .status == "PASS" and .release_status == "BLOCKED"
-  and .expected_case_count == 9 and .rejected_case_count == 9
+  and .expected_case_count == 15 and .rejected_case_count == 15
   and .all_expected_mutations_rejected == true
   and .expected_positive_control_count == 2
   and .accepted_positive_control_count == 2
@@ -90,7 +90,7 @@ jq -e '
   and (.harness.validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.harness.validator_sha256 | test("^[0-9a-f]{64}$"))
   and (.fixture.raw_sha256 | test("^[0-9a-f]{64}$"))
-  and (.cases | length == 9)
+  and (.cases | length == 15)
   and ([.cases[] | (.validator_exit_status > 0 and .expected_outcome == "reject" and .observed_outcome == "REJECTED_AS_EXPECTED" and (.candidate_raw_sha256 | test("^[0-9a-f]{64}$")) and (.rejection_reason | startswith("CONTRACT VIOLATION:")))] | all)
 ' "$output_dir/srq-lifecycle-adversarial-assessment.json" >/dev/null
 
