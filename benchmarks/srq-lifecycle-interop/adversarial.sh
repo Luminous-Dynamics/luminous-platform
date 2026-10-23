@@ -32,10 +32,10 @@ jq -cn \
     release_status:"BLOCKED",
     harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$commit,adversarial_script_git_blob_sha1:$script_blob,adversarial_script_sha256:$script_sha256,validator_git_blob_sha1:$validator_blob,validator_sha256:$validator_sha256},
     fixture:{repository:"Luminous-Dynamics/mycelix",commit_sha:"b02cefab8474262aef23b61a4ac3811fe92e29bf",git_blob_sha1:"d1d3516e2778e0da89013348b16ed73af6e5e8a8",raw_sha256:$receipt_sha256},
-    expected_case_count:9,
+    expected_case_count:17,
     rejected_case_count:0,
     all_expected_mutations_rejected:false,
-    expected_positive_control_count:2,
+    expected_positive_control_count:5,
     accepted_positive_control_count:0,
     all_positive_controls_accepted:false,
     positive_controls:[],
@@ -71,6 +71,7 @@ expect_reject() {
     --arg candidate_sha256 "$candidate_sha256" --argjson exit_status "$status" \
     '.cases += [{
       id:$id,
+      input_kind:"mycelix_receipt",
       mutation_filter:$filter,
       expected_outcome:"reject",
       observed_outcome:"REJECTED_AS_EXPECTED",
@@ -81,6 +82,48 @@ expect_reject() {
   mv "$tmp/report.json" "$report"
   cases=$((cases + 1))
   echo "PASS: rejected inconsistent evidence mutation: $name"
+}
+
+expect_transaction_reject() {
+  local name="$1" filter="$2" expected_reason="$3"
+  local candidate="$tmp/$name.json" status=0 reason="" candidate_sha256=""
+  jq "$filter" "$nixward_root/docs/fixtures/system-transaction-v1.json" > "$candidate"
+  if bash "$validator" \
+    --nixward-root "$nixward_root" \
+    --mycelix-root "$mycelix_root" \
+    --sovereign-boot-root "$sovereign_boot_root" \
+    --boot-observation "$boot_observation" \
+    --transaction-fixture "$candidate" \
+    --output /dev/null >"$tmp/$name.log" 2>&1; then
+    echo "FAIL: transaction phase mutation was accepted: $name" >&2
+    cat "$tmp/$name.log" >&2
+    exit 1
+  else
+    status=$?
+  fi
+
+  reason="$(grep -F "CONTRACT VIOLATION:" "$tmp/$name.log" | tail -n 1 || true)"
+  if [[ -z "$reason" || "$reason" != *"$expected_reason"* ]]; then
+    echo "FAIL: $name failed for an unexpected reason (exit $status)." >&2
+    cat "$tmp/$name.log" >&2
+    exit 1
+  fi
+  candidate_sha256="$(sha256sum "$candidate" | cut -d ' ' -f 1)"
+  jq --arg id "$name" --arg filter "$filter" --arg reason "$reason" \
+    --arg candidate_sha256 "$candidate_sha256" --argjson exit_status "$status" \
+    '.cases += [{
+      id:$id,
+      input_kind:"nixward_transaction",
+      mutation_filter:$filter,
+      expected_outcome:"reject",
+      observed_outcome:"REJECTED_AS_EXPECTED",
+      validator_exit_status:$exit_status,
+      rejection_reason:$reason,
+      candidate_raw_sha256:$candidate_sha256
+    }]' "$report" > "$tmp/report.json"
+  mv "$tmp/report.json" "$report"
+  cases=$((cases + 1))
+  echo "PASS: rejected impossible Nixward phase/evidence combination: $name"
 }
 
 expect_accept() {
@@ -135,6 +178,52 @@ expect_accept() {
   echo "PASS: accepted structurally consistent $expected_tier control while keeping lifecycle blocked: $name"
 }
 
+expect_transaction_accept() {
+  local name="$1" filter="$2" expected_phase="$3"
+  local candidate="$tmp/$name.json" assessment="$tmp/$name-assessment.json" candidate_sha256=""
+  jq "$filter" "$nixward_root/docs/fixtures/system-transaction-v1.json" > "$candidate"
+  if ! bash "$validator" \
+    --nixward-root "$nixward_root" \
+    --mycelix-root "$mycelix_root" \
+    --sovereign-boot-root "$sovereign_boot_root" \
+    --boot-observation "$boot_observation" \
+    --transaction-fixture "$candidate" \
+    --output "$assessment" >"$tmp/$name.log" 2>&1; then
+    echo "FAIL: valid transaction-phase control was rejected: $name" >&2
+    cat "$tmp/$name.log" >&2
+    exit 1
+  fi
+  if ! jq -e --arg expected_phase "$expected_phase" '
+      .schema == "srq-lifecycle-interop-assessment-v1"
+      and .contract_status == "PASS"
+      and .release_status == "BLOCKED"
+      and .claim_ceiling == "none"
+      and .transaction.phase == $expected_phase
+      and (.release_blockers | length > 0)
+    ' "$assessment" >/dev/null; then
+    echo "FAIL: transaction positive control changed phase semantics or unblocked the release: $name" >&2
+    cat "$assessment" >&2
+    exit 1
+  fi
+  candidate_sha256="$(sha256sum "$candidate" | cut -d ' ' -f 1)"
+  jq --arg id "$name" --arg filter "$filter" --arg expected_phase "$expected_phase" --arg sha256 "$candidate_sha256" \
+    '.positive_controls += [{
+      id:$id,
+      input_kind:"nixward_transaction",
+      mutation_filter:$filter,
+      fixture_semantics:"synthetic valid-phase structural control; validation record is a sentinel",
+      expected_outcome:"accept_record_but_keep_release_blocked",
+      observed_outcome:"ACCEPTED_WITH_RELEASE_BLOCKED",
+      release_status:"BLOCKED",
+      claim_ceiling:"none",
+      transaction_phase:$expected_phase,
+      candidate_raw_sha256:$sha256
+    }]' "$report" > "$tmp/report.json"
+  mv "$tmp/report.json" "$report"
+  controls=$((controls + 1))
+  echo "PASS: accepted validated-phase record while keeping lifecycle blocked: $name"
+}
+
 # Negative controls: mutations must fail on the intended contract invariant,
 # not on a missing tool, broken checkout pin or malformed input.
 expect_reject "s0-domain-validated-status" '.run_status = "domain_validated"' "cross-field semantics"
@@ -146,6 +235,18 @@ expect_reject "planned-result-count-injection" '.benchmark.results_summary.obser
 expect_reject "s3-without-independent-verification" '.evidence_tier = "S3" | .claim_ceiling = "independently_reproduced"' "cross-field semantics"
 expect_reject "s2-source-reproducible-without-source" '.evidence_tier = "S2" | .claim_ceiling = "source_reproducible"' "cross-field semantics"
 expect_reject "unknown-tier" '.evidence_tier = "S5"' "declared evidence tier / claim ceiling"
+
+# The phase label must be supported by all prerequisite records in the
+# transition chain. These candidates mutate only the phase on a planned record.
+tx_reason="Nixward transaction fields or phase invariants are inconsistent"
+expect_transaction_reject "validated-without-validation-record" '.phase = "validated"' "$tx_reason"
+expect_transaction_reject "authorized-without-prior-records" '.phase = "authorized"' "$tx_reason"
+expect_transaction_reject "snapshotted-without-prior-records" '.phase = "snapshotted"' "$tx_reason"
+expect_transaction_reject "applied-without-prior-records" '.phase = "applied"' "$tx_reason"
+expect_transaction_reject "verified-without-prior-records" '.phase = "verified"' "$tx_reason"
+expect_transaction_reject "promoted-without-any-evidence-records" '.phase = "promoted"' "$tx_reason"
+expect_transaction_reject "failed-without-outcome-record" '.phase = "failed"' "$tx_reason"
+expect_transaction_reject "recovered-without-snapshot-outcome" '.phase = "recovered"' "$tx_reason"
 
 # Positive controls use obviously synthetic sentinels and explicit limitations.
 # They exercise structural acceptance only; no test data is an actual attestation.
@@ -216,6 +317,9 @@ s4_filter='.run_status = "domain_validated"
   | .independent_verification.note = "Synthetic shape test; not a real independent verification."
   | .limitations = ["Synthetic structural positive control only; identities, hashes and verification references are sentinels.", "Does not establish any real execution, independent reproduction or domain validation."]'
 expect_accept "valid-s4-domain-validated-shape" "$s4_filter" "S4" "domain_validated"
+expect_transaction_accept "valid-validated-phase-with-validation-record" '.phase = "validated" | .validation = {"status":"pass","validator_ref":"synthetic-control-only"}' "validated"
+expect_transaction_accept "valid-failed-phase-with-outcome" '.phase = "failed" | .outcome = {"status":"failed","detail":"synthetic fixture"}' "failed"
+expect_transaction_accept "valid-recovered-phase-with-snapshot-outcome" '.phase = "recovered" | .snapshot = {"snapshot_digest":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"} | .outcome = {"status":"recovered","recovery_binding_digest":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}' "recovered"
 
 jq --argjson negative_count "$cases" --argjson positive_count "$controls" '
   .status = "PASS"
@@ -225,13 +329,13 @@ jq --argjson negative_count "$cases" --argjson positive_count "$controls" '
   | .all_positive_controls_accepted = (.positive_controls | length == $positive_count and all(.[]; .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED"))
 ' "$report" > "$tmp/final-report.json"
 mv "$tmp/final-report.json" "$report"
-[[ "$cases" -eq 9 ]] || { echo "FAIL: expected exactly 9 adversarial cases, found $cases" >&2; exit 1; }
-[[ "$controls" -eq 2 ]] || { echo "FAIL: expected exactly 2 positive controls, found $controls" >&2; exit 1; }
+[[ "$cases" -eq 17 ]] || { echo "FAIL: expected exactly 17 adversarial cases, found $cases" >&2; exit 1; }
+[[ "$controls" -eq 5 ]] || { echo "FAIL: expected exactly 5 positive controls, found $controls" >&2; exit 1; }
 jq -e '
   .schema == "srq-lifecycle-adversarial-assessment-v1"
   and .status == "PASS" and .release_status == "BLOCKED"
-  and .expected_case_count == 9 and .rejected_case_count == 9 and .all_expected_mutations_rejected == true
-  and .expected_positive_control_count == 2 and .accepted_positive_control_count == 2
+  and .expected_case_count == 17 and .rejected_case_count == 17 and .all_expected_mutations_rejected == true
+  and .expected_positive_control_count == 5 and .accepted_positive_control_count == 5
   and .all_positive_controls_accepted == true
   and (.positive_controls | all(.[]; .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED"))
 ' "$report" >/dev/null

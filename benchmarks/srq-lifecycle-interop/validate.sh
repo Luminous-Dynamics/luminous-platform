@@ -65,7 +65,19 @@ jq -e '
   and (.plan_digest | type == "string" and test("^[0-9a-f]{64}$"))
   and (.phase | IN("planned","validated","authorized","snapshotted","applied","verified","promoted","failed","recovered"))
   and has("authorization") and has("validation") and has("snapshot") and has("application") and has("verification") and has("outcome")
-  and (if .phase == "promoted" then .authorization != null and .validation != null and .snapshot != null and .application != null and .verification != null and .outcome != null else true end)
+  # Phase labels may not advance beyond the evidence records actually present.
+  # Later-stage fields are allowed to be pre-populated, but every completed
+  # prerequisite for the declared phase must be represented.
+  and (if .phase == "validated" then .validation != null
+       elif .phase == "authorized" then .validation != null and .authorization != null
+       elif .phase == "snapshotted" then .validation != null and .authorization != null and .snapshot != null
+       elif .phase == "applied" then .validation != null and .authorization != null and .snapshot != null and .application != null
+       elif .phase == "verified" then .validation != null and .authorization != null and .snapshot != null and .application != null and .verification != null
+       elif .phase == "promoted" then .authorization != null and .validation != null and .snapshot != null and .application != null and .verification != null and .outcome != null
+       # Terminal dispositions must be supported by recorded outcome/evidence.
+       elif .phase == "failed" then .outcome != null
+       elif .phase == "recovered" then .snapshot != null and .outcome != null
+       else true end)
 ' "$nixward_fixture" >/dev/null || { echo "CONTRACT VIOLATION: Nixward transaction fields or phase invariants are inconsistent." >&2; exit 1; }
 
 jq -e '
