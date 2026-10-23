@@ -68,6 +68,7 @@ jobs:
           set -euo pipefail
           bash -n benchmarks/srq-lifecycle-interop/validate.sh
           bash -n benchmarks/srq-lifecycle-interop/test.sh
+          bash -n benchmarks/srq-lifecycle-interop/adversarial.sh
           jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null)' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
           evidence_dir="$RUNNER_TEMP/srq-lifecycle-interop"
           bash benchmarks/srq-lifecycle-interop/test.sh \
