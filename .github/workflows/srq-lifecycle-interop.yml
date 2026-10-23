@@ -77,6 +77,16 @@ jobs:
             "$GITHUB_WORKSPACE/integration-upstream/sovereign-boot" \
             "$evidence_dir"
           jq -e '
+            .schema == "srq-lifecycle-adversarial-assessment-v1"
+            and .status == "PASS" and .release_status == "BLOCKED"
+            and .expected_case_count == 9 and .rejected_case_count == 9
+            and .all_expected_mutations_rejected == true
+            and .expected_positive_control_count == 2
+            and .accepted_positive_control_count == 2
+            and .all_positive_controls_accepted == true
+            and (.positive_controls | length == 2)
+          ' "$evidence_dir/srq-lifecycle-adversarial-assessment.json"
+          jq -e '
             .schema == "srq-lifecycle-interop-assessment-v1"
             and .contract_status == "PASS"
             and .release_status == "BLOCKED"
