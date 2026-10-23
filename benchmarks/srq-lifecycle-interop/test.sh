@@ -68,6 +68,45 @@ jq -e '
   and (.sources.interop_harness.corpus_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
 
+"$schema_python" "$script_dir/schema_validate.py" \
+  --schema "$script_dir/assessment-v1.schema.json" \
+  --instance "$output_dir/lifecycle-interop-assessment.json" \
+  --expect valid \
+  --output "$schema_reports_dir/lifecycle-assessment.json" >/dev/null
+jq -e '
+  .schema == "srq-json-schema-validation-report-v1"
+  and .result == "VALID"
+  and .expected == "valid"
+  and (.schema_input.sha256 | test("^[0-9a-f]{64}$"))
+  and (.instance_input.sha256 | test("^[0-9a-f]{64}$"))
+' "$schema_reports_dir/lifecycle-assessment.json" >/dev/null
+echo "PASS: full Draft 2020-12 schema validates the lifecycle assessment"
+
+assessment_schema_reject() {
+  local name="$1" filter="$2"
+  local candidate="$tmp/lifecycle-assessment-$name.json"
+  local result="$schema_reports_dir/lifecycle-assessment-mutation-$name.json"
+  jq "$filter" "$output_dir/lifecycle-interop-assessment.json" > "$candidate"
+  "$schema_python" "$script_dir/schema_validate.py" \
+    --schema "$script_dir/assessment-v1.schema.json" \
+    --instance "$candidate" \
+    --expect invalid \
+    --output "$result" >/dev/null
+  jq -e '
+    .schema == "srq-json-schema-validation-report-v1"
+    and .result == "INVALID"
+    and .expected == "invalid"
+    and (.errors | length > 0)
+  ' "$result" >/dev/null
+  echo "PASS: assessment schema rejected mutation: $name"
+}
+
+assessment_schema_reject release-status-escalation '.release_status = "PASS"'
+assessment_schema_reject claim-ceiling-escalation '.claim_ceiling = "domain_validated"'
+assessment_schema_reject malformed-protocol-digest '.sources.interop_harness.corpus_protocol_raw_sha256 = "not-a-sha256"'
+assessment_schema_reject missing-provenance-field 'del(.sources.interop_harness.corpus_validator_git_blob_sha1)'
+assessment_schema_reject unexpected-root-field '.release_qualifying = true'
+
 "$schema_python" "$script_dir/corpus_validate.py" \
   --schema "$script_dir/corpus-v1.schema.json" \
   --manifest "$script_dir/corpus-v1.json" \
