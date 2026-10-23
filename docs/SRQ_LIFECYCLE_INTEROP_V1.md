@@ -51,6 +51,21 @@ The competitive opportunity is the cross-layer guarantee: join authorization, tr
 
 The value hypothesis is operational: catch trust-tier escalation and contract drift across repository boundaries before the components are deployed together. The success measure is 100% rejection of the frozen claim-escalation controls, byte-identical upstream inputs at their locked commits, and no false release PASS in the integration corpus.
 
+## Benchmark ladder: targets, not results
+
+These are proposed gates for follow-on work, not results measured by this PR. Start with deterministic attacks and simulated recovery; only graduate to physical/fleet claims when those environments have been exercised.
+
+| Benchmark | Industry reference / fair baseline | Target |
+|---|---|---|
+| Claim-ceiling monotonicity | Mycelix receipt rules; RFC 9334 evidence appraisal | Reject 100% of pre-registered escalations; zero false release PASS; zero false rejects across explicit valid controls. |
+| Source and report identity | Git object IDs plus raw-byte SHA-256; in-toto subject binding | Reject 100% of wrong-commit, wrong-blob, one-byte-drift, symlink-substitution, and artifact/subject mismatch cases. |
+| Freshness and replay (future D1 verifier) | RATS freshness requirements and TUF rollback/freeze/mix-and-match threat classes | Reject every stale/replayed nonce, wrong target, wrong policy digest, and wrong artifact binding; under 64 concurrent submissions of one single-use challenge, exactly one acceptance. |
+| Crash/rollback consistency | [OSTree atomic-upgrade behavior](https://ostreedev.github.io/ostree/atomic-upgrades/) and NixOS generations | Inject 100 process kills at each durable transition boundary, then 1,000 VM reset/restore trials; observe old or new known-good state or an explicitly blocked recovery—never silent partial promotion. Report QEMU and physical-device outcomes separately. |
+| Independent appraisal | in-toto authenticated attestations, SLSA provenance, RATS verifier/relying-party split | Reject invalid signatures and policy/target mismatches; any verifier disagreement blocks promotion; record verifier implementation identity and replayed commit. |
+| Fleet behavior | TUF client/update safety plus atomic deployment mechanisms | Exercise 100, 1,000, 10,000, then 100,000 simulated targets; report p50/p95/p99 detection, promotion and rollback latency, throughput, peak memory, retries, and maximum failure blast radius. No fleet-safety claim from simulation alone. |
+
+Benchmark integrity requirements: freeze and hash the attack corpus before running; pin baseline revisions; include both valid and invalid controls; report exact hardware/runtime and resource budgets; retain raw per-case outcomes and tool identities; separate test-harness self-consistency from externally verified evidence. A high rejection percentage is meaningless if valid controls are also rejected, and speed is not a substitute for recovery correctness.
+
 ## Non-claims
 
 - No NixOS build, bootloader, QEMU, TPM, physical reset, power-loss, or production fleet qualification.
