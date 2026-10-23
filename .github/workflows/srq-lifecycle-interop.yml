@@ -81,6 +81,11 @@ jobs:
             and .protocol_id == "srq-lifecycle-adversarial-v1"
             and .version == 1
             and (.cases | length == 17)
+            and .target_metrics.negative_case_count == 17
+            and .target_metrics.negative_false_accept_count == 0
+            and .target_metrics.positive_control_count == 5
+            and .target_metrics.positive_false_reject_count == 0
+            and .target_metrics.release_false_pass_count == 0
             and ([.cases[] | select(.input_kind == "mycelix_receipt" and .expected_schema_result == "INVALID")] | length == 9)
             and ([.cases[] | select(.input_kind == "nixward_transaction" and .expected_schema_result == "NOT_APPLICABLE")] | length == 8)
             and (.positive_controls | length == 5)
