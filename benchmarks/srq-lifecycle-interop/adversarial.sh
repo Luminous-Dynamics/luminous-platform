@@ -127,7 +127,7 @@ expect_accept() {
       release_status:"BLOCKED",
       claim_ceiling:"none",
       evidence_tier:$tier,
-      claim_ceiling:$claim,
+      evidence_claim_ceiling:$claim,
       candidate_raw_sha256:$sha256
     }]' "$report" > "$tmp/report.json"
   mv "$tmp/report.json" "$report"
