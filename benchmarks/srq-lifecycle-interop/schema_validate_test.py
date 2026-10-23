@@ -2,7 +2,7 @@
 """Unit tests for strict JSON parsing and schema-policy helpers."""
 from __future__ import annotations
 
-import json
+import hashlib
 import os
 import tempfile
 import unittest
@@ -84,7 +84,7 @@ class SchemaPolicyHelperTests(unittest.TestCase):
     def test_digest_is_sha256_hex(self) -> None:
         value = validator.digest(b"srq-test")
         self.assertEqual(len(value), 64)
-        self.assertEqual(value, validator.hashlib.sha256(b"srq-test").hexdigest())
+        self.assertEqual(value, hashlib.sha256(b"srq-test").hexdigest())
 
 
 if __name__ == "__main__":
