@@ -80,7 +80,9 @@ jq -e '
   and .expected_case_count == 9 and .rejected_case_count == 9
   and .all_expected_mutations_rejected == true
   and (.harness.commit_sha | test("^[0-9a-f]{40}$"))
+  and (.harness.adversarial_script_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.harness.adversarial_script_sha256 | test("^[0-9a-f]{64}$"))
+  and (.harness.validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.harness.validator_sha256 | test("^[0-9a-f]{64}$"))
   and (.fixture.raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.cases | length == 9)
