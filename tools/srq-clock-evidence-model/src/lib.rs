@@ -111,6 +111,7 @@ pub struct PreparedClockObservation {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ClockCommitError {
     AuthorizationNotCommitted,
+    HighWaterNeedsAuthenticatedBootstrap,
     StaleAppraisal,
     StateCounterOverflow,
     MonotonicBootChanged,
@@ -248,6 +249,9 @@ pub fn commit_after_authorized_transaction(
     }
     if prepared.state_revision != state.revision {
         return Err(ClockCommitError::StaleAppraisal);
+    }
+    if state.high_water_unix_seconds.is_none() && prepared.tier != ClockTier::A3Authenticated {
+        return Err(ClockCommitError::HighWaterNeedsAuthenticatedBootstrap);
     }
     if state
         .high_water_unix_seconds
@@ -535,6 +539,34 @@ mod tests {
         assert_eq!(state.high_water_unix_seconds, Some(1_010));
         assert_eq!(state.revision, 5);
         assert_eq!(state.committed_observations, 5);
+    }
+
+    #[test]
+    fn high_water_bootstrap_requires_authenticated_evidence() {
+        let mut unseeded = ClockState::default();
+        let state_before = unseeded.clone();
+        let wall_clock = observation(ClockTier::A0HostWall, 1_003);
+        let prepared_wall = appraise_clock(
+            &wall_clock,
+            &policy(ClockTier::A0HostWall),
+            &unseeded,
+        ).unwrap();
+
+        assert_eq!(
+            commit_after_authorized_transaction(&mut unseeded, prepared_wall, true),
+            Err(ClockCommitError::HighWaterNeedsAuthenticatedBootstrap)
+        );
+        assert_eq!(unseeded, state_before);
+
+        let authenticated = authenticated_observation();
+        let prepared_authenticated = appraise_clock(
+            &authenticated,
+            &policy(ClockTier::A3Authenticated),
+            &unseeded,
+        ).unwrap();
+        commit_after_authorized_transaction(&mut unseeded, prepared_authenticated, true).unwrap();
+        assert_eq!(unseeded.high_water_unix_seconds, Some(1_003));
+        assert_eq!(unseeded.committed_observations, 1);
     }
 
     #[test]
