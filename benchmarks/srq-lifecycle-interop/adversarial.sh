@@ -69,6 +69,11 @@ jq -cn \
     expected_positive_control_count:5,
     accepted_positive_control_count:0,
     all_positive_controls_accepted:false,
+    observed_metrics:{
+      negative_false_accept_count:null,
+      positive_false_reject_count:null,
+      release_false_pass_count:null
+    },
     positive_controls:[],
     cases:[]
   }' > "$report"
@@ -393,6 +398,9 @@ jq --argjson negative_count "$cases" --argjson positive_count "$controls" '
   | .all_expected_mutations_rejected = (.cases | length == $negative_count and all(.[]; .observed_outcome == "REJECTED_AS_EXPECTED"))
   | .accepted_positive_control_count = ([.positive_controls[] | select(.observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED")] | length)
   | .all_positive_controls_accepted = (.positive_controls | length == $positive_count and all(.[]; .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED"))
+  | .observed_metrics.negative_false_accept_count = (.expected_case_count - .rejected_case_count)
+  | .observed_metrics.positive_false_reject_count = (.expected_positive_control_count - .accepted_positive_control_count)
+  | .observed_metrics.release_false_pass_count = (if .release_status != "BLOCKED" or .claim_ceiling != "none" or ([.positive_controls[] | select(.observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED" and (.release_status != "BLOCKED" or .claim_ceiling != "none"))] | length > 0) then 1 else 0 end)
 ' "$report" > "$tmp/final-report.json"
 mv "$tmp/final-report.json" "$report"
 [[ "$cases" -eq 17 ]] || { echo "FAIL: expected exactly 17 adversarial cases, found $cases" >&2; exit 1; }
@@ -425,6 +433,12 @@ jq -e --slurpfile protocol "$corpus_protocol" '
   and .expected_case_count == 17 and .rejected_case_count == 17 and .all_expected_mutations_rejected == true
   and .expected_positive_control_count == 5 and .accepted_positive_control_count == 5
   and .all_positive_controls_accepted == true
+  and .observed_metrics.negative_false_accept_count == 0
+  and .observed_metrics.positive_false_reject_count == 0
+  and .observed_metrics.release_false_pass_count == 0
+  and $protocol[0].target_metrics.negative_false_accept_count == .observed_metrics.negative_false_accept_count
+  and $protocol[0].target_metrics.positive_false_reject_count == .observed_metrics.positive_false_reject_count
+  and $protocol[0].target_metrics.release_false_pass_count == .observed_metrics.release_false_pass_count
   and .schema_validator.library == "python-jsonschema"
   and .schema_validator.version == "4.26.0"
   and .schema_validator.draft == "https://json-schema.org/draft/2020-12/schema"
