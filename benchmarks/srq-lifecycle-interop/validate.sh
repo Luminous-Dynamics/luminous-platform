@@ -249,13 +249,20 @@ interop_schema_sha256="$(sha256sum "$repo_root/$interop_schema_path" | cut -d ' 
 wheelhouse_manifest_sha256=""
 wheelhouse_count=""
 if [[ -n "${SRQ_SCHEMA_WHEELHOUSE_MANIFEST:-}" ]]; then
-  wheelhouse_manifest="${SRQ_SCHEMA_WHEELHOUSE_MANIFEST}"
+  wheelhouse_manifest="$SRQ_SCHEMA_WHEELHOUSE_MANIFEST"
   if [[ ! -f "$wheelhouse_manifest" || -L "$wheelhouse_manifest" ]]; then
     echo "BLOCKED: expected a regular schema wheelhouse manifest, but it was missing or symlinked." >&2
     exit 2
   fi
   wheelhouse_manifest_sha256="$(sha256sum "$wheelhouse_manifest" | cut -d ' ' -f 1)"
-  wheelhouse_count="$(grep -Ec '^[0-9a-f]{64}  \\./[^/]+\\.whl
+  wheelhouse_count="${SRQ_SCHEMA_WHEEL_COUNT:-}"
+  if [[ "$wheelhouse_count" != "20" ]]; then
+    echo "BLOCKED: schema wheelhouse must contain exactly 20 hash-locked wheels; observed '$wheelhouse_count'." >&2
+    exit 2
+  fi
+fi
+
+report="$(
   jq -cn --slurpfile tx "$nixward_fixture" --slurpfile boot "$boot_observation" --slurpfile evidence "$mycelix_receipt" \
     --argjson blockers "$blockers" \
     --arg nixward_commit "$(pin_field nixward_transaction_fixture commit_sha)" --arg nixward_blob "$nixward_blob" --arg nixward_sha256 "$nixward_raw_sha" \
@@ -317,72 +324,6 @@ if [[ -n "${SRQ_SCHEMA_WHEELHOUSE_MANIFEST:-}" ]]; then
         .sources.interop_harness.schema_wheelhouse_manifest_raw_sha256 = $wheelhouse_manifest_sha256
         | .sources.interop_harness.schema_wheel_count = ($wheelhouse_count | tonumber)
       end'
-)"
-if [[ "$output" == "-" ]]; then printf '%s\n' "$report"; else printf '%s\n' "$report" > "$output"; fi
-printf 'INTEROP_CONTRACT_PASS_RELEASE_BLOCKED: pinned transaction + D0 observation + S0 evidence were composed without claim escalation.\n' >&2
- "$wheelhouse_manifest" || true)"
-  if [[ "$wheelhouse_count" != "20" ]]; then
-    echo "BLOCKED: schema wheelhouse manifest must bind exactly 20 wheel artifacts; observed $wheelhouse_count." >&2
-    exit 2
-  fi
-fi
-
-report="$(
-  jq -cn --slurpfile tx "$nixward_fixture" --slurpfile boot "$boot_observation" --slurpfile evidence "$mycelix_receipt" \
-    --argjson blockers "$blockers" \
-    --arg nixward_commit "$(pin_field nixward_transaction_fixture commit_sha)" --arg nixward_blob "$nixward_blob" --arg nixward_sha256 "$nixward_raw_sha" \
-    --arg mycelix_commit "$(pin_field mycelix_planned_receipt commit_sha)" --arg mycelix_schema_blob "$mycelix_schema_blob" --arg mycelix_schema_sha256 "$mycelix_schema_raw_sha" \
-    --arg mycelix_receipt_blob "$mycelix_receipt_blob" --arg mycelix_receipt_sha256 "$mycelix_receipt_raw_sha" \
-    --arg boot_commit "$(pin_field sovereign_boot_d0_probe_source commit_sha)" --arg boot_source_blob "$boot_source_blob" --arg boot_sha256 "$boot_raw_sha" \
-    --arg interop_commit "$interop_commit" \
-    --arg interop_validator_blob "$interop_validator_blob" --arg interop_validator_sha256 "$interop_validator_sha256" \
-    --arg interop_adversarial_blob "$interop_adversarial_blob" --arg interop_adversarial_sha256 "$interop_adversarial_sha256" \
-    --arg interop_schema_validator_blob "$interop_schema_validator_blob" --arg interop_schema_validator_sha256 "$interop_schema_validator_sha256" \
-    --arg interop_schema_test_blob "$interop_schema_test_blob" --arg interop_schema_test_sha256 "$interop_schema_test_sha256" \
-    --arg interop_schema_requirements_blob "$interop_schema_requirements_blob" --arg interop_schema_requirements_sha256 "$interop_schema_requirements_sha256" \
-    --arg interop_test_blob "$interop_test_blob" --arg interop_test_sha256 "$interop_test_sha256" \
-    --arg interop_lock_blob "$interop_lock_blob" --arg interop_lock_sha256 "$interop_lock_sha256" \
-    --arg interop_schema_blob "$interop_schema_blob" --arg interop_schema_sha256 "$interop_schema_sha256" \
-    --arg interop_protocol_blob "$interop_protocol_blob" --arg interop_protocol_sha256 "$interop_protocol_sha256" --arg interop_protocol_id "$interop_protocol_id" \
-    --arg protocol_schema_blob "$interop_protocol_schema_blob" --arg protocol_schema_sha256 "$interop_protocol_schema_sha256" \
-    --arg protocol_validator_blob "$interop_protocol_validator_blob" --arg protocol_validator_sha256 "$interop_protocol_validator_sha256" \
-    --arg protocol_test_blob "$interop_protocol_test_blob" --arg protocol_test_sha256 "$interop_protocol_test_sha256" \
-    '{
-      schema:"srq-lifecycle-interop-assessment-v1", contract_status:"PASS", release_status:"BLOCKED", claim_ceiling:"none", scenario_id:"LIFECYCLE-001",
-      sources:{
-        nixward_transaction:{repository:"Luminous-Dynamics/nixward",commit_sha:$nixward_commit,git_blob_sha1:$nixward_blob,raw_sha256:$nixward_sha256},
-        mycelix_evidence_plane_schema:{repository:"Luminous-Dynamics/mycelix",commit_sha:$mycelix_commit,git_blob_sha1:$mycelix_schema_blob,raw_sha256:$mycelix_schema_sha256},
-        mycelix_evidence_plane_receipt:{repository:"Luminous-Dynamics/mycelix",commit_sha:$mycelix_commit,git_blob_sha1:$mycelix_receipt_blob,raw_sha256:$mycelix_receipt_sha256},
-        sovereign_boot_probe_source:{repository:"Luminous-Dynamics/sovereign-boot",commit_sha:$boot_commit,git_blob_sha1:$boot_source_blob},
-        sovereign_boot_observation:{raw_sha256:$boot_sha256},
-        interop_harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$interop_commit,
-          validator_git_blob_sha1:$interop_validator_blob,validator_raw_sha256:$interop_validator_sha256,
-          adversarial_script_git_blob_sha1:$interop_adversarial_blob,adversarial_script_raw_sha256:$interop_adversarial_sha256,
-          schema_validator_git_blob_sha1:$interop_schema_validator_blob,schema_validator_raw_sha256:$interop_schema_validator_sha256,
-          schema_validator_test_git_blob_sha1:$interop_schema_test_blob,schema_validator_test_raw_sha256:$interop_schema_test_sha256,
-          schema_requirements_git_blob_sha1:$interop_schema_requirements_blob,schema_requirements_raw_sha256:$interop_schema_requirements_sha256,
-          test_git_blob_sha1:$interop_test_blob,test_raw_sha256:$interop_test_sha256,
-          upstream_lock_git_blob_sha1:$interop_lock_blob,upstream_lock_raw_sha256:$interop_lock_sha256,
-          assessment_schema_git_blob_sha1:$interop_schema_blob,assessment_schema_raw_sha256:$interop_schema_sha256,
-          corpus_protocol_git_blob_sha1:$interop_protocol_blob,corpus_protocol_raw_sha256:$interop_protocol_sha256,corpus_protocol_id:$interop_protocol_id,
-          corpus_schema_git_blob_sha1:$protocol_schema_blob,corpus_schema_raw_sha256:$protocol_schema_sha256,
-          corpus_validator_git_blob_sha1:$protocol_validator_blob,corpus_validator_raw_sha256:$protocol_validator_sha256,
-          corpus_validator_test_git_blob_sha1:$protocol_test_blob,corpus_validator_test_raw_sha256:$protocol_test_sha256}
-      },
-      transaction:{schema:$tx[0].schema,phase:$tx[0].phase,transaction_id:$tx[0].transaction_id,target_machine_digest:$tx[0].target_machine_digest,plan_digest:$tx[0].plan_digest,authorization_present:($tx[0].authorization != null),verification_present:($tx[0].verification != null),outcome_present:($tx[0].outcome != null)},
-      boot_observation:{schema:$boot[0].schema,evidence_tier:$boot[0].evidence_tier,status:$boot[0].status,authenticated:$boot[0].authenticated,release_qualifying:$boot[0].release_qualifying,security_bindings_complete:($boot[0].target_id != null and $boot[0].decision_id != null and $boot[0].challenge_id != null and $boot[0].effective_policy_digest != null and $boot[0].artifact_digest != null and $boot[0].measurement != null)},
-      evidence_plane:{receipt_id:$evidence[0].receipt_id,run_status:$evidence[0].run_status,evidence_tier:$evidence[0].evidence_tier,claim_ceiling:$evidence[0].claim_ceiling,result_state:$evidence[0].benchmark.results_summary.state,independent_verification:$evidence[0].independent_verification.status},
-      release_blockers:$blockers,
-      invariant:"A structurally consistent set of lower-tier records does not imply that the lifecycle is qualified.",
-      non_claims:[
-        "This assessment is an interoperability contract check, not an SRQ result receipt.",
-        "A D0 boot diagnostic is local observation, not authenticated runtime truth.",
-        "The Nixward fixture is a planned transaction, not a completed authorized mutation.",
-        "The Mycelix example is S0 synthetic/planned evidence, not an executed or independently verified run.",
-        "Raw SHA-256 proves byte identity only; upstream Git pins do not establish operational truth or domain validity.",
-        "This harness cannot issue a release PASS, certify NixOS recovery, or qualify TPM/physical power-loss behavior."
-      ]
-    }'
 )"
 if [[ "$output" == "-" ]]; then printf '%s\n' "$report"; else printf '%s\n' "$report" > "$output"; fi
 printf 'INTEROP_CONTRACT_PASS_RELEASE_BLOCKED: pinned transaction + D0 observation + S0 evidence were composed without claim escalation.\n' >&2
