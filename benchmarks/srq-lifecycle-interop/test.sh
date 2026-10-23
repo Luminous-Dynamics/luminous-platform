@@ -118,7 +118,7 @@ jq -e --slurpfile protocol "$script_dir/corpus-v1.json" '
   and .protocol.version == $protocol[0].version
   and (.protocol.git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.protocol.raw_sha256 | test("^[0-9a-f]{64}$"))
-  and .status == "PASS" and .release_status == "BLOCKED"
+  and .status == "PASS" and .release_status == "BLOCKED" and .claim_ceiling == "none"
   and .expected_case_count == 17 and .rejected_case_count == 17
   and .all_expected_mutations_rejected == true
   and .expected_positive_control_count == 5
