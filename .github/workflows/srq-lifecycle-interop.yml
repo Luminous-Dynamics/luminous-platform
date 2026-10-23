@@ -1,0 +1,96 @@
+name: SRQ lifecycle interoperability
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/srq-lifecycle-interop.yml"
+      - "benchmarks/srq-lifecycle-interop/**"
+      - "docs/SRQ_LIFECYCLE_INTEROP_V1.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lifecycle-interop:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the exact SRQ integration revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Check out the pinned Nixward transaction contract
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Luminous-Dynamics/nixward
+          ref: ae60256f0be73138a539ecda048e81056dd14a30
+          path: integration-upstream/nixward
+          sparse-checkout: |
+            docs/fixtures/system-transaction-v1.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Check out the pinned Mycelix evidence-plane contract
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Luminous-Dynamics/mycelix
+          ref: b02cefab8474262aef23b61a4ac3811fe92e29bf
+          path: integration-upstream/mycelix
+          sparse-checkout: |
+            research/evidence-plane/receipt-v0.schema.json
+            research/evidence-plane/examples/synthetic-planned-receipt-v0.json
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Check out the pinned Sovereign Boot diagnostic producer
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: Luminous-Dynamics/sovereign-boot
+          ref: 9d183163a0f2bb101e6dd0ad3609afde04f1c5a4
+          path: integration-upstream/sovereign-boot
+          sparse-checkout: |
+            tools/srq-boot-observation-probe
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.96.0
+          components: rustfmt
+
+      - name: Execute cross-repository interoperability and negative controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n benchmarks/srq-lifecycle-interop/validate.sh
+          bash -n benchmarks/srq-lifecycle-interop/test.sh
+          jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null)' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
+          evidence_dir="$RUNNER_TEMP/srq-lifecycle-interop"
+          bash benchmarks/srq-lifecycle-interop/test.sh \
+            "$GITHUB_WORKSPACE/integration-upstream/nixward" \
+            "$GITHUB_WORKSPACE/integration-upstream/mycelix" \
+            "$GITHUB_WORKSPACE/integration-upstream/sovereign-boot" \
+            "$evidence_dir"
+          jq -e '
+            .schema == "srq-lifecycle-interop-assessment-v1"
+            and .contract_status == "PASS"
+            and .release_status == "BLOCKED"
+            and .claim_ceiling == "none"
+            and (.sources.interop_harness.commit_sha | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.release_blockers | length >= 5)
+          ' "$evidence_dir/lifecycle-interop-assessment.json"
+
+      - name: Preserve cross-layer interoperability evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-lifecycle-interop-evidence
+          path: |
+            ${{ runner.temp }}/srq-lifecycle-interop/lifecycle-interop-assessment.json
+          if-no-files-found: ignore
+          retention-days: 30
