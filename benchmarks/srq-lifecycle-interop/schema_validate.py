@@ -11,7 +11,9 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
+import os
 import platform
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -43,11 +45,29 @@ def reject_constant(value: str) -> None:
 
 
 def load_strict_json(path: Path, maximum: int) -> tuple[Any, bytes]:
-    if path.is_symlink() or not path.is_file():
-        raise ValueError(f"input must be a regular, non-symlink file: {path}")
-    raw = path.read_bytes()
+    # Open once without following symlinks; cap both the initial file size and
+    # the bytes read in case the file grows after fstat.
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(path, flags)
+    except OSError as exc:
+        raise ValueError(f"cannot securely open input: {path}: {exc}") from exc
+
+    try:
+        metadata = os.fstat(fd)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ValueError(f"input must be a regular file: {path}")
+        if metadata.st_size > maximum:
+            raise ValueError(f"input exceeds byte limit ({metadata.st_size} > {maximum}): {path}")
+        with os.fdopen(fd, "rb", closefd=True) as stream:
+            fd = -1
+            raw = stream.read(maximum + 1)
+    finally:
+        if fd >= 0:
+            os.close(fd)
+
     if len(raw) > maximum:
-        raise ValueError(f"input exceeds byte limit ({len(raw)} > {maximum}): {path}")
+        raise ValueError(f"input grew beyond byte limit ({len(raw)} > {maximum}): {path}")
     parsed = json.loads(
         raw,
         object_pairs_hook=unique_object,
