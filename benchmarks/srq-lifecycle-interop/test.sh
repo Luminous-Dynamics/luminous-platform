@@ -60,7 +60,31 @@ jq -e '
   and (.sources.interop_harness.corpus_protocol_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.corpus_protocol_raw_sha256 | test("^[0-9a-f]{64}$"))
   and .sources.interop_harness.corpus_protocol_id == "srq-lifecycle-adversarial-v1"
+  and (.sources.interop_harness.corpus_schema_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.corpus_schema_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.corpus_validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.corpus_validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.corpus_validator_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.corpus_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
+
+"$schema_python" "$script_dir/corpus_validate.py" \
+  --schema "$script_dir/corpus-v1.schema.json" \
+  --manifest "$script_dir/corpus-v1.json" \
+  --lock "$script_dir/upstream-lock-v1.json" \
+  --expect valid \
+  --output "$schema_reports_dir/corpus-v1.json" >/dev/null
+jq -e '
+  .schema == "srq-corpus-validation-report-v1"
+  and .result == "VALID"
+  and .validator.installed_version == "4.26.0"
+  and .protocol_id == "srq-lifecycle-adversarial-v1"
+  and .semantic_error_count == 0
+  and (.manifest_input.sha256 | test("^[0-9a-f]{64}$"))
+  and (.schema_input.sha256 | test("^[0-9a-f]{64}$"))
+  and (.lock_input.sha256 | test("^[0-9a-f]{64}$"))
+' "$schema_reports_dir/corpus-v1.json" >/dev/null
+echo "PASS: corpus manifest passes independent schema and semantic validation"
 
 "$schema_python" "$script_dir/schema_validate.py" \
   --schema "$mycelix_root/research/evidence-plane/receipt-v0.schema.json" \

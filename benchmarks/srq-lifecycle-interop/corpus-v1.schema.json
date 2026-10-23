@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/srq-lifecycle-adversarial-protocol-v1.schema.json",
+  "title": "SRQ lifecycle adversarial protocol v1",
+  "description": "Structural shape of a frozen test corpus. Semantic IDs, pin equality and zero-error targets are additionally checked by corpus_validate.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_id", "version", "purpose", "scope", "upstream_inputs", "schema_validator", "release_invariant", "target_metrics", "cases", "positive_controls"],
+  "properties": {
+    "schema": {"const": "srq-lifecycle-adversarial-protocol-v1"},
+    "protocol_id": {"const": "srq-lifecycle-adversarial-v1"},
+    "version": {"const": 1},
+    "purpose": {"type": "string", "minLength": 1},
+    "scope": {"type": "string", "minLength": 1},
+    "upstream_inputs": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "repository", "commit_sha", "path", "git_blob_sha1"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+          "commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+          "path": {"type": "string", "minLength": 1},
+          "git_blob_sha1": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+        }
+      }
+    },
+    "schema_validator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["draft", "library", "version", "format_assertion_required"],
+      "properties": {
+        "draft": {"const": "https://json-schema.org/draft/2020-12/schema"},
+        "library": {"const": "python-jsonschema"},
+        "version": {"const": "4.26.0"},
+        "format_assertion_required": {"const": true}
+      }
+    },
+    "release_invariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accepted_structural_control_must_leave_release_status", "accepted_structural_control_must_leave_claim_ceiling", "release_pass_allowed"],
+      "properties": {
+        "accepted_structural_control_must_leave_release_status": {"const": "BLOCKED"},
+        "accepted_structural_control_must_leave_claim_ceiling": {"const": "none"},
+        "release_pass_allowed": {"const": false}
+      }
+    },
+    "target_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["negative_case_count", "negative_false_accept_count", "positive_control_count", "positive_false_reject_count", "release_false_pass_count"],
+      "properties": {
+        "negative_case_count": {"const": 17},
+        "negative_false_accept_count": {"const": 0},
+        "positive_control_count": {"const": 5},
+        "positive_false_reject_count": {"const": 0},
+        "release_false_pass_count": {"const": 0}
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 17,
+      "maxItems": 17,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "input_kind", "mutation", "expected_schema_result", "expected_lifecycle_result"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "input_kind": {"const": "mycelix_receipt"},
+              "mutation": {"type": "string", "minLength": 1},
+              "expected_schema_result": {"const": "INVALID"},
+              "expected_lifecycle_result": {"const": "REJECT"}
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "input_kind", "mutation", "expected_schema_result", "expected_lifecycle_result"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "input_kind": {"const": "nixward_transaction"},
+              "mutation": {"type": "string", "minLength": 1},
+              "expected_schema_result": {"const": "NOT_APPLICABLE"},
+              "expected_lifecycle_result": {"const": "REJECT"}
+            }
+          }
+        ]
+      }
+    },
+    "positive_controls": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "input_kind", "shape", "expected_schema_result", "expected_lifecycle_result", "expected_evidence_tier", "expected_evidence_claim_ceiling"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "input_kind": {"const": "mycelix_receipt"},
+              "shape": {"type": "string", "minLength": 1},
+              "expected_schema_result": {"const": "VALID"},
+              "expected_lifecycle_result": {"const": "ACCEPT_RECORD_KEEP_RELEASE_BLOCKED"},
+              "expected_evidence_tier": {"enum": ["S2", "S4"]},
+              "expected_evidence_claim_ceiling": {"enum": ["source_reproducible", "domain_validated"]}
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "input_kind", "shape", "expected_schema_result", "expected_lifecycle_result", "expected_transaction_phase"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "input_kind": {"const": "nixward_transaction"},
+              "shape": {"type": "string", "minLength": 1},
+              "expected_schema_result": {"const": "NOT_APPLICABLE"},
+              "expected_lifecycle_result": {"const": "ACCEPT_RECORD_KEEP_RELEASE_BLOCKED"},
+              "expected_transaction_phase": {"enum": ["validated", "failed", "recovered"]}
+            }
+          }
+        ]
+      }
+    }
+  }
+}
