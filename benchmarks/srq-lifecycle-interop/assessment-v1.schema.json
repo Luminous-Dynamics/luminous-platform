@@ -12,7 +12,7 @@
     "release_status": {"const": "BLOCKED"},
     "claim_ceiling": {"const": "none"},
     "scenario_id": {"const": "LIFECYCLE-001"},
-    "sources": {"type":"object","required":["nixward_transaction","mycelix_evidence_plane_schema","mycelix_evidence_plane_receipt","sovereign_boot_probe_source","sovereign_boot_observation"]},
+    "sources": {"type":"object","required":["nixward_transaction","mycelix_evidence_plane_schema","mycelix_evidence_plane_receipt","sovereign_boot_probe_source","sovereign_boot_observation","interop_harness"],"properties":{"interop_harness":{"type":"object","required":["repository","commit_sha","validator_git_blob_sha1","validator_raw_sha256","test_git_blob_sha1","test_raw_sha256","upstream_lock_git_blob_sha1","upstream_lock_raw_sha256","assessment_schema_git_blob_sha1","assessment_schema_raw_sha256"]}}},
     "transaction": {"type":"object","required":["schema","phase","transaction_id","target_machine_digest","plan_digest","authorization_present","verification_present","outcome_present"]},
     "boot_observation": {"type":"object","required":["schema","evidence_tier","status","authenticated","release_qualifying","security_bindings_complete"]},
     "evidence_plane": {"type":"object","required":["receipt_id","run_status","evidence_tier","claim_ceiling","result_state","independent_verification"]},

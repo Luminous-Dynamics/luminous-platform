@@ -129,6 +129,30 @@ mycelix_schema_raw_sha="$(sha256sum "$mycelix_schema" | cut -d ' ' -f 1)"
 mycelix_receipt_raw_sha="$(sha256sum "$mycelix_receipt" | cut -d ' ' -f 1)"
 boot_raw_sha="$(sha256sum "$boot_observation" | cut -d ' ' -f 1)"
 
+# Bind the assessment to the exact source code and contract scripts that emitted it.
+repo_root="$(cd -- "$script_dir/../.." && pwd)"
+interop_commit="$(git -C "$repo_root" rev-parse HEAD)"
+interop_validator_path="benchmarks/srq-lifecycle-interop/validate.sh"
+interop_test_path="benchmarks/srq-lifecycle-interop/test.sh"
+interop_lock_path="benchmarks/srq-lifecycle-interop/upstream-lock-v1.json"
+interop_schema_path="benchmarks/srq-lifecycle-interop/assessment-v1.schema.json"
+git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_lock_path" "$interop_schema_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+  echo "BLOCKED: interop source has uncommitted modifications; refusing to bind the report to a different source SHA." >&2
+  exit 2
+}
+git -C "$repo_root" diff --cached --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_lock_path" "$interop_schema_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+  echo "BLOCKED: interop source has staged modifications; refusing to bind the report to a different source SHA." >&2
+  exit 2
+}
+interop_validator_blob="$(git -C "$repo_root" hash-object -- "$interop_validator_path")"
+interop_test_blob="$(git -C "$repo_root" hash-object -- "$interop_test_path")"
+interop_lock_blob="$(git -C "$repo_root" hash-object -- "$interop_lock_path")"
+interop_schema_blob="$(git -C "$repo_root" hash-object -- "$interop_schema_path")"
+interop_validator_sha256="$(sha256sum "$repo_root/$interop_validator_path" | cut -d ' ' -f 1)"
+interop_test_sha256="$(sha256sum "$repo_root/$interop_test_path" | cut -d ' ' -f 1)"
+interop_lock_sha256="$(sha256sum "$repo_root/$interop_lock_path" | cut -d ' ' -f 1)"
+interop_schema_sha256="$(sha256sum "$repo_root/$interop_schema_path" | cut -d ' ' -f 1)"
+
 report="$(
   jq -cn --slurpfile tx "$nixward_fixture" --slurpfile boot "$boot_observation" --slurpfile evidence "$mycelix_receipt" \
     --argjson blockers "$blockers" \
@@ -136,6 +160,11 @@ report="$(
     --arg mycelix_commit "$(pin_field mycelix_planned_receipt commit_sha)" --arg mycelix_schema_blob "$mycelix_schema_blob" --arg mycelix_schema_sha256 "$mycelix_schema_raw_sha" \
     --arg mycelix_receipt_blob "$mycelix_receipt_blob" --arg mycelix_receipt_sha256 "$mycelix_receipt_raw_sha" \
     --arg boot_commit "$(pin_field sovereign_boot_d0_probe_source commit_sha)" --arg boot_source_blob "$boot_source_blob" --arg boot_sha256 "$boot_raw_sha" \
+    --arg interop_commit "$interop_commit" \
+    --arg interop_validator_blob "$interop_validator_blob" --arg interop_validator_sha256 "$interop_validator_sha256" \
+    --arg interop_test_blob "$interop_test_blob" --arg interop_test_sha256 "$interop_test_sha256" \
+    --arg interop_lock_blob "$interop_lock_blob" --arg interop_lock_sha256 "$interop_lock_sha256" \
+    --arg interop_schema_blob "$interop_schema_blob" --arg interop_schema_sha256 "$interop_schema_sha256" \
     '{
       schema:"srq-lifecycle-interop-assessment-v1", contract_status:"PASS", release_status:"BLOCKED", claim_ceiling:"none", scenario_id:"LIFECYCLE-001",
       sources:{
@@ -143,7 +172,12 @@ report="$(
         mycelix_evidence_plane_schema:{repository:"Luminous-Dynamics/mycelix",commit_sha:$mycelix_commit,git_blob_sha1:$mycelix_schema_blob,raw_sha256:$mycelix_schema_sha256},
         mycelix_evidence_plane_receipt:{repository:"Luminous-Dynamics/mycelix",commit_sha:$mycelix_commit,git_blob_sha1:$mycelix_receipt_blob,raw_sha256:$mycelix_receipt_sha256},
         sovereign_boot_probe_source:{repository:"Luminous-Dynamics/sovereign-boot",commit_sha:$boot_commit,git_blob_sha1:$boot_source_blob},
-        sovereign_boot_observation:{raw_sha256:$boot_sha256}
+        sovereign_boot_observation:{raw_sha256:$boot_sha256},
+        interop_harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$interop_commit,
+          validator_git_blob_sha1:$interop_validator_blob,validator_raw_sha256:$interop_validator_sha256,
+          test_git_blob_sha1:$interop_test_blob,test_raw_sha256:$interop_test_sha256,
+          upstream_lock_git_blob_sha1:$interop_lock_blob,upstream_lock_raw_sha256:$interop_lock_sha256,
+          assessment_schema_git_blob_sha1:$interop_schema_blob,assessment_schema_raw_sha256:$interop_schema_sha256}
       },
       transaction:{schema:$tx[0].schema,phase:$tx[0].phase,transaction_id:$tx[0].transaction_id,target_machine_digest:$tx[0].target_machine_digest,plan_digest:$tx[0].plan_digest,authorization_present:($tx[0].authorization != null),verification_present:($tx[0].verification != null),outcome_present:($tx[0].outcome != null)},
       boot_observation:{schema:$boot[0].schema,evidence_tier:$boot[0].evidence_tier,status:$boot[0].status,authenticated:$boot[0].authenticated,release_qualifying:$boot[0].release_qualifying,security_bindings_complete:($boot[0].target_id != null and $boot[0].decision_id != null and $boot[0].challenge_id != null and $boot[0].effective_policy_digest != null and $boot[0].artifact_digest != null and $boot[0].measurement != null)},

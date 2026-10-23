@@ -40,6 +40,11 @@ jq -e '
   and (.sources.nixward_transaction.raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.mycelix_evidence_plane_receipt.raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.sovereign_boot_observation.raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.commit_sha | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.upstream_lock_raw_sha256 | test("^[0-9a-f]{64}$"))
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
 echo "PASS: exact upstream inputs interoperate while the lifecycle remains release-blocked"
 

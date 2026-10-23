@@ -79,6 +79,8 @@ jobs:
             and .contract_status == "PASS"
             and .release_status == "BLOCKED"
             and .claim_ceiling == "none"
+            and (.sources.interop_harness.commit_sha | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.validator_raw_sha256 | test("^[0-9a-f]{64}$"))
             and (.release_blockers | length >= 5)
           ' "$evidence_dir/lifecycle-interop-assessment.json"
 
