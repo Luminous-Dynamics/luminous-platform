@@ -49,7 +49,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Luminous-Dynamics/sovereign-boot
-          ref: 7f1c53924b1f0c2ba7b9734d875e50529837f057
+          ref: 9d183163a0f2bb101e6dd0ad3609afde04f1c5a4
           path: integration-upstream/sovereign-boot
           sparse-checkout: |
             tools/srq-boot-observation-probe
