@@ -1,0 +1,81 @@
+{
+  "schema": "srq-lifecycle-adversarial-protocol-v1",
+  "protocol_id": "srq-lifecycle-adversarial-v1",
+  "version": 1,
+  "purpose": "Versioned, digest-addressed expected outcomes for cross-repository lifecycle and evidence-tier conformance.",
+  "scope": "Structural integration conformance only. This protocol does not establish artifact authenticity, source rights, production authorization, physical correctness, or release qualification.",
+  "upstream_inputs": [
+    {
+      "name": "nixward-system-transaction-fixture-v1",
+      "repository": "Luminous-Dynamics/nixward",
+      "commit_sha": "ae60256f0be73138a539ecda048e81056dd14a30",
+      "path": "docs/fixtures/system-transaction-v1.json",
+      "git_blob_sha1": "c89d5033a35e5c1be1b5c7de0a2436539922a800"
+    },
+    {
+      "name": "mycelix-evidence-plane-schema-v0",
+      "repository": "Luminous-Dynamics/mycelix",
+      "commit_sha": "b02cefab8474262aef23b61a4ac3811fe92e29bf",
+      "path": "research/evidence-plane/receipt-v0.schema.json",
+      "git_blob_sha1": "e2b90a995f70d0a771b04e7f5fc077e1c0394f86"
+    },
+    {
+      "name": "mycelix-planned-receipt-s0",
+      "repository": "Luminous-Dynamics/mycelix",
+      "commit_sha": "b02cefab8474262aef23b61a4ac3811fe92e29bf",
+      "path": "research/evidence-plane/examples/synthetic-planned-receipt-v0.json",
+      "git_blob_sha1": "d1d3516e2778e0da89013348b16ed73af6e5e8a8"
+    },
+    {
+      "name": "sovereign-boot-d0-probe",
+      "repository": "Luminous-Dynamics/sovereign-boot",
+      "commit_sha": "9d183163a0f2bb101e6dd0ad3609afde04f1c5a4",
+      "path": "tools/srq-boot-observation-probe/src/main.rs",
+      "git_blob_sha1": "2b05462ab98e90abc085d2834e69dbf2ebae9337"
+    }
+  ],
+  "schema_validator": {
+    "draft": "https://json-schema.org/draft/2020-12/schema",
+    "library": "python-jsonschema",
+    "version": "4.26.0",
+    "format_assertion_required": true
+  },
+  "release_invariant": {
+    "accepted_structural_control_must_leave_release_status": "BLOCKED",
+    "accepted_structural_control_must_leave_claim_ceiling": "none",
+    "release_pass_allowed": false
+  },
+  "target_metrics": {
+    "negative_case_count": 17,
+    "negative_false_accept_count": 0,
+    "positive_control_count": 5,
+    "positive_false_reject_count": 0,
+    "release_false_pass_count": 0
+  },
+  "cases": [
+    {"id":"s0-domain-validated-status","input_kind":"mycelix_receipt","mutation":"Change planned S0 status to domain_validated without evidence.","expected_schema_result":"INVALID","expected_lifecycle_result":"REJECT"},
+    {"id":"s0-independently-checked-status","input_kind":"mycelix_receipt","mutation":"Change planned S0 status to independently_checked without evidence.","expected_schema_result":"INVALID","expected_lifecycle_result":"REJECT"},
+    {"id":"planned-gate-inflation","input_kind":"mycelix_receipt","mutation":"Set source_integrity gate to pass while receipt remains planned.","expected_schema_result":"INVALID","expected_lifecycle_result":"REJECT"},
+    {"id":"planned-subject-commit-injection","input_kind":"mycelix_receipt","mutation":"Inject a non-null subject commit into a planned receipt.","expected_schema_result":"INVALID","expected_lifecycle_result":"REJECT"},
+    {"id":"planned-artifact-hash-injection","input_kind":"mycelix_receipt","mutation":"Inject a subject artifact hash into a planned receipt.","expected_schema_result":"INVALID","expected_lifecycle_result":"REJECT"},
+    {"id":"planned-result-count-injection","input_kind":"mycelix_receipt","mutation":"Set planned receipt observed_result_count to one.","expected_schema_result":"INVALID","expected_lifecycle_result":"REJECT"},
+    {"id":"s3-without-independent-verification","input_kind":"mycelix_receipt","mutation":"Escalate a planned receipt to S3 without matching verification evidence.","expected_schema_result":"INVALID","expected_lifecycle_result":"REJECT"},
+    {"id":"s2-source-reproducible-without-source","input_kind":"mycelix_receipt","mutation":"Claim S2 source_reproducible while sources remains empty.","expected_schema_result":"INVALID","expected_lifecycle_result":"REJECT"},
+    {"id":"unknown-tier","input_kind":"mycelix_receipt","mutation":"Set evidence_tier to unknown value S5.","expected_schema_result":"INVALID","expected_lifecycle_result":"REJECT"},
+    {"id":"validated-without-validation-record","input_kind":"nixward_transaction","mutation":"Advance planned phase to validated without validation record.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"REJECT"},
+    {"id":"authorized-without-prior-records","input_kind":"nixward_transaction","mutation":"Advance planned phase to authorized without validation/authorization records.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"REJECT"},
+    {"id":"snapshotted-without-prior-records","input_kind":"nixward_transaction","mutation":"Advance planned phase to snapshotted without prerequisite records.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"REJECT"},
+    {"id":"applied-without-prior-records","input_kind":"nixward_transaction","mutation":"Advance planned phase to applied without prerequisite records.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"REJECT"},
+    {"id":"verified-without-prior-records","input_kind":"nixward_transaction","mutation":"Advance planned phase to verified without prerequisite records.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"REJECT"},
+    {"id":"promoted-without-any-evidence-records","input_kind":"nixward_transaction","mutation":"Advance planned phase to promoted without prerequisite/outcome records.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"REJECT"},
+    {"id":"failed-without-outcome-record","input_kind":"nixward_transaction","mutation":"Set phase failed without an outcome record.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"REJECT"},
+    {"id":"recovered-without-snapshot-outcome","input_kind":"nixward_transaction","mutation":"Set phase recovered without snapshot and outcome records.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"REJECT"}
+  ],
+  "positive_controls": [
+    {"id":"valid-s2-source-reproducible-shape","input_kind":"mycelix_receipt","shape":"S2 / source_reproducible with synthetic source fields.","expected_schema_result":"VALID","expected_lifecycle_result":"ACCEPT_RECORD_KEEP_RELEASE_BLOCKED","expected_evidence_tier":"S2","expected_evidence_claim_ceiling":"source_reproducible"},
+    {"id":"valid-s4-domain-validated-shape","input_kind":"mycelix_receipt","shape":"S4 / domain_validated with synthetic verification/gate fields.","expected_schema_result":"VALID","expected_lifecycle_result":"ACCEPT_RECORD_KEEP_RELEASE_BLOCKED","expected_evidence_tier":"S4","expected_evidence_claim_ceiling":"domain_validated"},
+    {"id":"valid-validated-phase-with-validation-record","input_kind":"nixward_transaction","shape":"validated phase with a minimal synthetic validation record.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"ACCEPT_RECORD_KEEP_RELEASE_BLOCKED","expected_transaction_phase":"validated"},
+    {"id":"valid-failed-phase-with-outcome","input_kind":"nixward_transaction","shape":"failed phase with a synthetic outcome record.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"ACCEPT_RECORD_KEEP_RELEASE_BLOCKED","expected_transaction_phase":"failed"},
+    {"id":"valid-recovered-phase-with-snapshot-outcome","input_kind":"nixward_transaction","shape":"recovered phase with synthetic snapshot and outcome records.","expected_schema_result":"NOT_APPLICABLE","expected_lifecycle_result":"ACCEPT_RECORD_KEEP_RELEASE_BLOCKED","expected_transaction_phase":"recovered"}
+  ]
+}
