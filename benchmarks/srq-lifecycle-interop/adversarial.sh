@@ -10,9 +10,14 @@ if [[ -z "$nixward_root" || -z "$mycelix_root" || -z "$sovereign_boot_root" || -
 fi
 
 readonly receipt="$mycelix_root/research/evidence-plane/examples/synthetic-planned-receipt-v0.json"
+readonly schema="$mycelix_root/research/evidence-plane/receipt-v0.schema.json"
+readonly schema_validator="$script_dir/schema_validate.py"
+readonly schema_requirements="$script_dir/requirements-schema.txt"
+readonly schema_python="${SRQ_SCHEMA_PYTHON:-python3}"
 readonly repository_root="$(git -C "$script_dir/../.." rev-parse --show-toplevel)"
 readonly harness_commit="$(git -C "$repository_root" rev-parse HEAD)"
-mkdir -p "$output_dir"
+mkdir -p "$output_dir" "$output_dir/schema-validation"
+schema_reports_dir="$output_dir/schema-validation"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 report="$output_dir/srq-lifecycle-adversarial-assessment.json"
@@ -25,13 +30,20 @@ jq -cn \
   --arg script_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/adversarial.sh)" \
   --arg validator_sha256 "$(sha256sum "$validator" | cut -d ' ' -f 1)" \
   --arg validator_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/validate.sh)" \
+  --arg schema_validator_sha256 "$(sha256sum "$schema_validator" | cut -d ' ' -f 1)" \
+  --arg schema_validator_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/schema_validate.py)" \
+  --arg schema_requirements_sha256 "$(sha256sum "$schema_requirements" | cut -d ' ' -f 1)" \
+  --arg schema_requirements_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/requirements-schema.txt)" \
   --arg receipt_sha256 "$(sha256sum "$receipt" | cut -d ' ' -f 1)" \
+  --arg schema_sha256 "$(sha256sum "$schema" | cut -d ' ' -f 1)" \
+  --arg schema_blob "$(git -C "$mycelix_root" hash-object -- research/evidence-plane/receipt-v0.schema.json)" \
   '{
     schema:"srq-lifecycle-adversarial-assessment-v1",
     status:"RUNNING",
     release_status:"BLOCKED",
-    harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$commit,adversarial_script_git_blob_sha1:$script_blob,adversarial_script_sha256:$script_sha256,validator_git_blob_sha1:$validator_blob,validator_sha256:$validator_sha256},
-    fixture:{repository:"Luminous-Dynamics/mycelix",commit_sha:"b02cefab8474262aef23b61a4ac3811fe92e29bf",git_blob_sha1:"d1d3516e2778e0da89013348b16ed73af6e5e8a8",raw_sha256:$receipt_sha256},
+    harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$commit,adversarial_script_git_blob_sha1:$script_blob,adversarial_script_sha256:$script_sha256,validator_git_blob_sha1:$validator_blob,validator_sha256:$validator_sha256,schema_validator_git_blob_sha1:$schema_validator_blob,schema_validator_sha256:$schema_validator_sha256,schema_requirements_git_blob_sha1:$schema_requirements_blob,schema_requirements_sha256:$schema_requirements_sha256},
+    fixture:{repository:"Luminous-Dynamics/mycelix",commit_sha:"b02cefab8474262aef23b61a4ac3811fe92e29bf",git_blob_sha1:"d1d3516e2778e0da89013348b16ed73af6e5e8a8",raw_sha256:$receipt_sha256,schema_git_blob_sha1:$schema_blob,schema_raw_sha256:$schema_sha256},
+    schema_validator:{library:"python-jsonschema",version:"4.26.0",draft:"https://json-schema.org/draft/2020-12/schema",format_assertion:true},
     expected_case_count:17,
     rejected_case_count:0,
     all_expected_mutations_rejected:false,
