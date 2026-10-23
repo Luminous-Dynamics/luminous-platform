@@ -93,5 +93,6 @@ jobs:
           name: srq-lifecycle-interop-evidence
           path: |
             ${{ runner.temp }}/srq-lifecycle-interop/lifecycle-interop-assessment.json
+            ${{ runner.temp }}/srq-lifecycle-interop/srq-lifecycle-adversarial-assessment.json
           if-no-files-found: ignore
           retention-days: 30
