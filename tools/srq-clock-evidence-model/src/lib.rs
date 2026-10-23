@@ -215,7 +215,7 @@ fn validate_authenticated_time(
     if binding.decision_id != policy.expected_decision_id {
         return Err(ClockReject::WrongDecision);
     }
-    if binding.expires_at_unix_seconds < binding.issued_at_unix_seconds {
+    if binding.expires_at_unix_seconds <= binding.issued_at_unix_seconds {
         return Err(ClockReject::InvalidValidityWindow);
     }
     if binding.issued_at_unix_seconds != observation.unix_seconds {
@@ -229,7 +229,7 @@ fn validate_authenticated_time(
     {
         return Err(ClockReject::AuthenticationNotYetValid);
     }
-    if reference_now > binding.expires_at_unix_seconds {
+    if reference_now >= binding.expires_at_unix_seconds {
         return Err(ClockReject::AuthenticationExpired);
     }
     Ok(())
@@ -455,6 +455,28 @@ mod tests {
         assert_eq!(
             appraise_clock(&authenticated_observation(), &expired_policy, &state),
             Err(ClockReject::AuthenticationExpired)
+        );
+
+        // Expiry is exclusive: evidence is invalid at the exact boundary.
+        let expiry_boundary_policy = ClockPolicy {
+            reference_unix_seconds: Some(1_010),
+            ..policy(ClockTier::A3Authenticated)
+        };
+        assert_eq!(
+            appraise_clock(&authenticated_observation(), &expiry_boundary_policy, &state),
+            Err(ClockReject::AuthenticationExpired)
+        );
+
+        let zero_length_window = ClockObservation {
+            authenticated_time: Some(AuthenticatedTimeBinding {
+                expires_at_unix_seconds: 1_003,
+                ..authenticated_observation().authenticated_time.unwrap()
+            }),
+            ..authenticated_observation()
+        };
+        assert_eq!(
+            appraise_clock(&zero_length_window, &policy(ClockTier::A3Authenticated), &state),
+            Err(ClockReject::InvalidValidityWindow)
         );
 
         let future_policy = ClockPolicy {
