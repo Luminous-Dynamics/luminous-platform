@@ -13,7 +13,7 @@ The test uses immutable upstream commit pins and exact Git blob IDs rather than 
 - Nixward transaction fixture: commit  ae60256f0be73138a539ecda048e81056dd14a30; blob c89d5033a35e5c1be1b5c7de0a2436539922a800.
 - Mycelix evidence-plane schema: commit b02cefab8474262aef23b61a4ac3811fe92e29bf; blob e2b90a995f70d0a771b04e7f5fc077e1c0394f86.
 - Mycelix planned receipt: the same pinned commit; blob d1d3516e2778e0da89013348b16ed73af6e5e8a8.
-- Sovereign Boot D0 probe source: commit 7f1c53924b1f0c2ba7b9734d875e50529837f057; blob de2126eefa1c2e41494bb2624a78e46576c39d27.
+- Sovereign Boot D0 probe source: commit 9d183163a0f2bb101e6dd0ad3609afde04f1c5a4; blob 2b05462ab98e90abc085d2834e69dbf2ebae9337.
 
 The workflow checks the checkout SHA and Git blob ID at runtime and computes SHA-256 over the exact raw fixture/observation bytes for the assessment report. The primary assessment also binds the exact lifecycle-interoperability harness commit, validator/test/adversarial-runner Git blob IDs, upstream-lock bytes, and assessment-schema bytes; it refuses to run if those tracked harness files have local staged or unstaged edits. The adversarial runner emits a second JSON assessment with every mutation filter, candidate raw-byte SHA-256, expected/observed rejection, validator exit status, rejection reason, and harness/fixture identities. CI retains both reports as artifacts.
 
