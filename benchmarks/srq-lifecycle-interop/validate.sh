@@ -204,10 +204,11 @@ interop_validator_path="benchmarks/srq-lifecycle-interop/validate.sh"
 interop_test_path="benchmarks/srq-lifecycle-interop/test.sh"
 interop_adversarial_path="benchmarks/srq-lifecycle-interop/adversarial.sh"
 interop_schema_validator_path="benchmarks/srq-lifecycle-interop/schema_validate.py"
+interop_schema_test_path="benchmarks/srq-lifecycle-interop/schema_validate_test.py"
 interop_schema_requirements_path="benchmarks/srq-lifecycle-interop/requirements-schema.txt"
 interop_lock_path="benchmarks/srq-lifecycle-interop/upstream-lock-v1.json"
 interop_schema_path="benchmarks/srq-lifecycle-interop/assessment-v1.schema.json"
-git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
   echo "BLOCKED: interop source has uncommitted modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
@@ -218,6 +219,7 @@ git -C "$repo_root" diff --cached --quiet -- "$interop_validator_path" "$interop
 interop_validator_blob="$(git -C "$repo_root" hash-object -- "$interop_validator_path")"
 interop_adversarial_blob="$(git -C "$repo_root" hash-object -- "$interop_adversarial_path")"
 interop_schema_validator_blob="$(git -C "$repo_root" hash-object -- "$interop_schema_validator_path")"
+interop_schema_test_blob="$(git -C "$repo_root" hash-object -- "$interop_schema_test_path")"
 interop_schema_requirements_blob="$(git -C "$repo_root" hash-object -- "$interop_schema_requirements_path")"
 interop_test_blob="$(git -C "$repo_root" hash-object -- "$interop_test_path")"
 interop_lock_blob="$(git -C "$repo_root" hash-object -- "$interop_lock_path")"
@@ -225,6 +227,7 @@ interop_schema_blob="$(git -C "$repo_root" hash-object -- "$interop_schema_path"
 interop_validator_sha256="$(sha256sum "$repo_root/$interop_validator_path" | cut -d ' ' -f 1)"
 interop_adversarial_sha256="$(sha256sum "$repo_root/$interop_adversarial_path" | cut -d ' ' -f 1)"
 interop_schema_validator_sha256="$(sha256sum "$repo_root/$interop_schema_validator_path" | cut -d ' ' -f 1)"
+interop_schema_test_sha256="$(sha256sum "$repo_root/$interop_schema_test_path" | cut -d ' ' -f 1)"
 interop_schema_requirements_sha256="$(sha256sum "$repo_root/$interop_schema_requirements_path" | cut -d ' ' -f 1)"
 interop_test_sha256="$(sha256sum "$repo_root/$interop_test_path" | cut -d ' ' -f 1)"
 interop_lock_sha256="$(sha256sum "$repo_root/$interop_lock_path" | cut -d ' ' -f 1)"
@@ -241,6 +244,7 @@ report="$(
     --arg interop_validator_blob "$interop_validator_blob" --arg interop_validator_sha256 "$interop_validator_sha256" \
     --arg interop_adversarial_blob "$interop_adversarial_blob" --arg interop_adversarial_sha256 "$interop_adversarial_sha256" \
     --arg interop_schema_validator_blob "$interop_schema_validator_blob" --arg interop_schema_validator_sha256 "$interop_schema_validator_sha256" \
+    --arg interop_schema_test_blob "$interop_schema_test_blob" --arg interop_schema_test_sha256 "$interop_schema_test_sha256" \
     --arg interop_schema_requirements_blob "$interop_schema_requirements_blob" --arg interop_schema_requirements_sha256 "$interop_schema_requirements_sha256" \
     --arg interop_test_blob "$interop_test_blob" --arg interop_test_sha256 "$interop_test_sha256" \
     --arg interop_lock_blob "$interop_lock_blob" --arg interop_lock_sha256 "$interop_lock_sha256" \
@@ -257,6 +261,7 @@ report="$(
           validator_git_blob_sha1:$interop_validator_blob,validator_raw_sha256:$interop_validator_sha256,
           adversarial_script_git_blob_sha1:$interop_adversarial_blob,adversarial_script_raw_sha256:$interop_adversarial_sha256,
           schema_validator_git_blob_sha1:$interop_schema_validator_blob,schema_validator_raw_sha256:$interop_schema_validator_sha256,
+          schema_validator_test_git_blob_sha1:$interop_schema_test_blob,schema_validator_test_raw_sha256:$interop_schema_test_sha256,
           schema_requirements_git_blob_sha1:$interop_schema_requirements_blob,schema_requirements_raw_sha256:$interop_schema_requirements_sha256,
           test_git_blob_sha1:$interop_test_blob,test_raw_sha256:$interop_test_sha256,
           upstream_lock_git_blob_sha1:$interop_lock_blob,upstream_lock_raw_sha256:$interop_lock_sha256,
