@@ -21,13 +21,15 @@ cases=0
 jq -cn \
   --arg commit "$harness_commit" \
   --arg script_sha256 "$(sha256sum "$script_dir/adversarial.sh" | cut -d ' ' -f 1)" \
+  --arg script_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/adversarial.sh)" \
   --arg validator_sha256 "$(sha256sum "$validator" | cut -d ' ' -f 1)" \
+  --arg validator_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/validate.sh)" \
   --arg receipt_sha256 "$(sha256sum "$receipt" | cut -d ' ' -f 1)" \
   '{
     schema:"srq-lifecycle-adversarial-assessment-v1",
     status:"RUNNING",
     release_status:"BLOCKED",
-    harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$commit,adversarial_script_sha256:$script_sha256,validator_sha256:$validator_sha256},
+    harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$commit,adversarial_script_git_blob_sha1:$script_blob,adversarial_script_sha256:$script_sha256,validator_git_blob_sha1:$validator_blob,validator_sha256:$validator_sha256},
     fixture:{repository:"Luminous-Dynamics/mycelix",commit_sha:"b02cefab8474262aef23b61a4ac3811fe92e29bf",git_blob_sha1:"d1d3516e2778e0da89013348b16ed73af6e5e8a8",raw_sha256:$receipt_sha256},
     expected_case_count:9,
     rejected_case_count:0,
