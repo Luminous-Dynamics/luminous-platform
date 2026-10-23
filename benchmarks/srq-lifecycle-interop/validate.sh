@@ -246,6 +246,22 @@ interop_test_sha256="$(sha256sum "$repo_root/$interop_test_path" | cut -d ' ' -f
 interop_lock_sha256="$(sha256sum "$repo_root/$interop_lock_path" | cut -d ' ' -f 1)"
 interop_schema_sha256="$(sha256sum "$repo_root/$interop_schema_path" | cut -d ' ' -f 1)"
 
+wheelhouse_manifest_sha256=""
+wheelhouse_count=""
+if [[ -n "${SRQ_SCHEMA_WHEELHOUSE_MANIFEST:-}" ]]; then
+  wheelhouse_manifest="$SRQ_SCHEMA_WHEELHOUSE_MANIFEST"
+  if [[ ! -f "$wheelhouse_manifest" || -L "$wheelhouse_manifest" ]]; then
+    echo "BLOCKED: expected a regular schema wheelhouse manifest, but it was missing or symlinked." >&2
+    exit 2
+  fi
+  wheelhouse_manifest_sha256="$(sha256sum "$wheelhouse_manifest" | cut -d ' ' -f 1)"
+  wheelhouse_count="${SRQ_SCHEMA_WHEEL_COUNT:-}"
+  if [[ "$wheelhouse_count" != "20" ]]; then
+    echo "BLOCKED: schema wheelhouse must contain exactly 20 hash-locked wheels; observed '$wheelhouse_count'." >&2
+    exit 2
+  fi
+fi
+
 report="$(
   jq -cn --slurpfile tx "$nixward_fixture" --slurpfile boot "$boot_observation" --slurpfile evidence "$mycelix_receipt" \
     --argjson blockers "$blockers" \
@@ -266,6 +282,7 @@ report="$(
     --arg protocol_schema_blob "$interop_protocol_schema_blob" --arg protocol_schema_sha256 "$interop_protocol_schema_sha256" \
     --arg protocol_validator_blob "$interop_protocol_validator_blob" --arg protocol_validator_sha256 "$interop_protocol_validator_sha256" \
     --arg protocol_test_blob "$interop_protocol_test_blob" --arg protocol_test_sha256 "$interop_protocol_test_sha256" \
+    --arg wheelhouse_manifest_sha256 "$wheelhouse_manifest_sha256" --arg wheelhouse_count "$wheelhouse_count" \
     '{
       schema:"srq-lifecycle-interop-assessment-v1", contract_status:"PASS", release_status:"BLOCKED", claim_ceiling:"none", scenario_id:"LIFECYCLE-001",
       sources:{
@@ -301,7 +318,12 @@ report="$(
         "Raw SHA-256 proves byte identity only; upstream Git pins do not establish operational truth or domain validity.",
         "This harness cannot issue a release PASS, certify NixOS recovery, or qualify TPM/physical power-loss behavior."
       ]
-    }'
+    }
+    | if $wheelhouse_manifest_sha256 == "" then .
+      else
+        .sources.interop_harness.schema_wheelhouse_manifest_raw_sha256 = $wheelhouse_manifest_sha256
+        | .sources.interop_harness.schema_wheel_count = ($wheelhouse_count | tonumber)
+      end'
 )"
 if [[ "$output" == "-" ]]; then printf '%s\n' "$report"; else printf '%s\n' "$report" > "$output"; fi
 printf 'INTEROP_CONTRACT_PASS_RELEASE_BLOCKED: pinned transaction + D0 observation + S0 evidence were composed without claim escalation.\n' >&2

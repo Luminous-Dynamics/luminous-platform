@@ -68,6 +68,20 @@ jq -e '
   and (.sources.interop_harness.corpus_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
 
+if [[ -n "${SRQ_SCHEMA_WHEELHOUSE_MANIFEST:-}" ]]; then
+  wheel_manifest="$SRQ_SCHEMA_WHEELHOUSE_MANIFEST"
+  [[ -f "$wheel_manifest" && ! -L "$wheel_manifest" ]] || { echo "FAIL: schema wheelhouse manifest missing or symlinked" >&2; exit 1; }
+  wheel_manifest_sha256="$(sha256sum "$wheel_manifest" | cut -d ' ' -f 1)"
+  [[ "${SRQ_SCHEMA_WHEEL_COUNT:-}" == "20" ]] || { echo "FAIL: schema wheelhouse count is not 20" >&2; exit 1; }
+  jq -e --arg manifest_sha256 "$wheel_manifest_sha256" '
+    .sources.interop_harness.schema_wheelhouse_manifest_raw_sha256 == $manifest_sha256
+    and .sources.interop_harness.schema_wheel_count == 20
+    and .release_status == "BLOCKED"
+    and .claim_ceiling == "none"
+  ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
+  echo "PASS: lifecycle assessment binds the exact 20-wheel runtime manifest"
+fi
+
 "$schema_python" "$script_dir/schema_validate.py" \
   --schema "$script_dir/assessment-v1.schema.json" \
   --instance "$output_dir/lifecycle-interop-assessment.json" \

@@ -67,10 +67,29 @@ jobs:
         run: |
           set -euo pipefail
           schema_venv="$RUNNER_TEMP/srq-schema-venv"
+          wheelhouse="$RUNNER_TEMP/srq-schema-wheelhouse"
+          evidence_dir="$RUNNER_TEMP/srq-lifecycle-interop"
+          wheel_manifest="$evidence_dir/schema-wheelhouse-manifest.txt"
+          mkdir -p "$wheelhouse" "$evidence_dir"
           python3 -c 'import platform, sys; assert sys.implementation.name == "cpython" and sys.version_info[:2] == (3, 12) and platform.system() == "Linux" and platform.machine() == "x86_64", f"schema wheel lock requires CPython 3.12 on Linux x86_64; found {sys.implementation.name} {sys.version.split()[0]} {platform.system()} {platform.machine()}"'
           python3 -m venv "$schema_venv"
-          "$schema_venv/bin/python" -m pip install --disable-pip-version-check --no-input --require-hashes --only-binary=:all: -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
+          "$schema_venv/bin/python" -m pip download --disable-pip-version-check --no-input --require-hashes --only-binary=:all: --dest "$wheelhouse" -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
+          {
+            printf 'schema-wheelhouse-manifest-v1\n'
+            printf 'python=%s\n' "$("$schema_venv/bin/python" --version 2>&1)"
+            printf 'pip=%s\n' "$("$schema_venv/bin/python" -m pip --version)"
+            printf 'requirements_sha256=%s\n' "$(sha256sum benchmarks/srq-lifecycle-interop/requirements-schema.txt | cut -d ' ' -f 1)"
+            (cd "$wheelhouse" && sha256sum ./*.whl | LC_ALL=C sort -k 2)
+          } > "$wheel_manifest"
+          wheel_count="$(find "$wheelhouse" -maxdepth 1 -type f -name '*.whl' | wc -l | tr -d '[:space:]')"
+          test "$wheel_count" -eq 20
+          "$schema_venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-index --find-links "$wheelhouse" --require-hashes --only-binary=:all: -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
+          "$schema_venv/bin/python" -m pip check
+          printf '\npip-check=PASS\ninstalled-distributions:\n' >> "$wheel_manifest"
+          "$schema_venv/bin/python" -m pip freeze --all | LC_ALL=C sort >> "$wheel_manifest"
           export SRQ_SCHEMA_PYTHON="$schema_venv/bin/python"
+          export SRQ_SCHEMA_WHEELHOUSE_MANIFEST="$wheel_manifest"
+          export SRQ_SCHEMA_WHEEL_COUNT="$wheel_count"
           "$SRQ_SCHEMA_PYTHON" -c 'import importlib.metadata, sys; print("schema test runtime:", sys.version.split()[0]); print("pinned jsonschema:", importlib.metadata.version("jsonschema"))'
           "$SRQ_SCHEMA_PYTHON" -m py_compile benchmarks/srq-lifecycle-interop/schema_validate.py benchmarks/srq-lifecycle-interop/schema_validate_test.py benchmarks/srq-lifecycle-interop/corpus_validate.py benchmarks/srq-lifecycle-interop/corpus_validate_test.py
           "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/schema_validate_test.py
@@ -78,7 +97,7 @@ jobs:
           bash -n benchmarks/srq-lifecycle-interop/validate.sh
           bash -n benchmarks/srq-lifecycle-interop/test.sh
           bash -n benchmarks/srq-lifecycle-interop/adversarial.sh
-          jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_id") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_schema_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_schema_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_test_raw_sha256") != null)' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
+          jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_id") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_schema_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_schema_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_test_raw_sha256") != null) and .properties.sources.properties.interop_harness.properties.schema_wheelhouse_manifest_raw_sha256.pattern == "^[0-9a-f]{64}$" and .properties.sources.properties.interop_harness.properties.schema_wheel_count.const == 20' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
           jq -e --slurpfile lock benchmarks/srq-lifecycle-interop/upstream-lock-v1.json '
             .schema == "srq-lifecycle-adversarial-protocol-v1"
             and .protocol_id == "srq-lifecycle-adversarial-v1"
@@ -102,8 +121,6 @@ jobs:
             and ([.positive_controls[].id] | length == (unique | length))
           ' benchmarks/srq-lifecycle-interop/corpus-v1.json
 
-          evidence_dir="$RUNNER_TEMP/srq-lifecycle-interop"
-          mkdir -p "$evidence_dir"
           cp benchmarks/srq-lifecycle-interop/corpus-v1.json "$evidence_dir/corpus-v1.json"
           bash benchmarks/srq-lifecycle-interop/test.sh \
             "$GITHUB_WORKSPACE/integration-upstream/nixward" \
@@ -142,7 +159,7 @@ jobs:
             and ([.positive_controls[] | select(.input_kind == "mycelix_receipt")] | (length == 2 and all(.[]; .schema_validation_result == "VALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
             and ([.positive_controls[] | select(.input_kind == "nixward_transaction")] | (length == 3 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
           ' "$evidence_dir/srq-lifecycle-adversarial-assessment.json"
-          jq -e --arg protocol_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-v1.json | cut -d ' ' -f 1)" --arg protocol_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" '
+          jq -e --arg protocol_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-v1.json | cut -d ' ' -f 1)" --arg protocol_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" --arg wheel_manifest_sha256 "$(sha256sum "$evidence_dir/schema-wheelhouse-manifest.txt" | cut -d ' ' -f 1)" '
             .schema == "srq-lifecycle-interop-assessment-v1"
             and .contract_status == "PASS"
             and .release_status == "BLOCKED"
@@ -166,6 +183,8 @@ jobs:
             and (.sources.interop_harness.corpus_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
             and .sources.interop_harness.corpus_protocol_raw_sha256 == $protocol_sha256
             and .sources.interop_harness.corpus_protocol_git_blob_sha1 == $protocol_blob
+            and .sources.interop_harness.schema_wheelhouse_manifest_raw_sha256 == $wheel_manifest_sha256
+            and .sources.interop_harness.schema_wheel_count == 20
             and (.release_blockers | length >= 5)
           ' "$evidence_dir/lifecycle-interop-assessment.json"
 
@@ -178,6 +197,7 @@ jobs:
             ${{ runner.temp }}/srq-lifecycle-interop/lifecycle-interop-assessment.json
             ${{ runner.temp }}/srq-lifecycle-interop/srq-lifecycle-adversarial-assessment.json
             ${{ runner.temp }}/srq-lifecycle-interop/corpus-v1.json
+            ${{ runner.temp }}/srq-lifecycle-interop/schema-wheelhouse-manifest.txt
             ${{ runner.temp }}/srq-lifecycle-interop/schema-validation/*.json
           if-no-files-found: ignore
           retention-days: 30
