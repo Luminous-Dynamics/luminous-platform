@@ -1,0 +1,44 @@
+name: SRQ clock evidence model
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/srq-clock-evidence.yml"
+      - "tools/srq-clock-evidence-model/**"
+      - "docs/SRQ_CLOCK_EVIDENCE_V1.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clock-evidence-model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install pinned Rust toolchain
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8
+        with:
+          toolchain: 1.96.0
+
+      - name: Run clock evidence model tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/srq-clock-evidence-model.log"
+          cargo test --manifest-path tools/srq-clock-evidence-model/Cargo.toml --locked -- --nocapture 2>&1 | tee "$log"
+          grep -Fq 'test result: ok. 15 passed; 0 failed' "$log"
+          grep -Fq 'PASS: 10000 clock-authentication binding mutations were rejected' "$log"
+          grep -Fq 'PASS: 10000 clock rollback/forward-jump mutations were rejected' "$log"
+
+      - name: Preserve model log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: srq-clock-evidence-model-evidence
+          path: ${{ runner.temp }}/srq-clock-evidence-model.log
+          if-no-files-found: ignore
+          retention-days: 14
