@@ -72,6 +72,18 @@ echo "PASS: phase-only promotion without authorization/readback/outcome fails cl
 
 # Expand beyond hand-picked controls into a reusable cross-field mutation corpus.
 bash "$script_dir/adversarial.sh" "$nixward_root" "$mycelix_root" "$sovereign_boot_root" "$tmp/boot-observation.json" "$output_dir"
+jq -e '
+  .schema == "srq-lifecycle-adversarial-assessment-v1"
+  and .status == "PASS" and .release_status == "BLOCKED"
+  and .expected_case_count == 9 and .rejected_case_count == 9
+  and .all_expected_mutations_rejected == true
+  and (.harness.commit_sha | test("^[0-9a-f]{40}$"))
+  and (.harness.adversarial_script_sha256 | test("^[0-9a-f]{64}$"))
+  and (.harness.validator_sha256 | test("^[0-9a-f]{64}$"))
+  and (.fixture.raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.cases | length == 9)
+  and ([.cases[] | (.validator_exit_status > 0 and .expected_outcome == "reject" and .observed_outcome == "REJECTED_AS_EXPECTED" and (.candidate_raw_sha256 | test("^[0-9a-f]{64}$")) and (.rejection_reason | startswith("CONTRACT VIOLATION:")))] | all)
+' "$output_dir/srq-lifecycle-adversarial-assessment.json" >/dev/null
 
 git -C "$nixward_root" diff --exit-code -- docs/fixtures/system-transaction-v1.json
 git -C "$mycelix_root" diff --exit-code -- research/evidence-plane/receipt-v0.schema.json research/evidence-plane/examples/synthetic-planned-receipt-v0.json
