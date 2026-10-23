@@ -10,9 +10,14 @@ if [[ -z "$nixward_root" || -z "$mycelix_root" || -z "$sovereign_boot_root" || -
 fi
 
 readonly receipt="$mycelix_root/research/evidence-plane/examples/synthetic-planned-receipt-v0.json"
+readonly schema="$mycelix_root/research/evidence-plane/receipt-v0.schema.json"
+readonly schema_validator="$script_dir/schema_validate.py"
+readonly schema_requirements="$script_dir/requirements-schema.txt"
+readonly schema_python="${SRQ_SCHEMA_PYTHON:-python3}"
 readonly repository_root="$(git -C "$script_dir/../.." rev-parse --show-toplevel)"
 readonly harness_commit="$(git -C "$repository_root" rev-parse HEAD)"
-mkdir -p "$output_dir"
+mkdir -p "$output_dir" "$output_dir/schema-validation"
+schema_reports_dir="$output_dir/schema-validation"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 report="$output_dir/srq-lifecycle-adversarial-assessment.json"
@@ -25,13 +30,22 @@ jq -cn \
   --arg script_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/adversarial.sh)" \
   --arg validator_sha256 "$(sha256sum "$validator" | cut -d ' ' -f 1)" \
   --arg validator_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/validate.sh)" \
+  --arg schema_validator_sha256 "$(sha256sum "$schema_validator" | cut -d ' ' -f 1)" \
+  --arg schema_validator_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/schema_validate.py)" \
+  --arg schema_test_sha256 "$(sha256sum "$script_dir/schema_validate_test.py" | cut -d ' ' -f 1)" \
+  --arg schema_test_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/schema_validate_test.py)" \
+  --arg schema_requirements_sha256 "$(sha256sum "$schema_requirements" | cut -d ' ' -f 1)" \
+  --arg schema_requirements_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/requirements-schema.txt)" \
   --arg receipt_sha256 "$(sha256sum "$receipt" | cut -d ' ' -f 1)" \
+  --arg schema_sha256 "$(sha256sum "$schema" | cut -d ' ' -f 1)" \
+  --arg schema_blob "$(git -C "$mycelix_root" hash-object -- research/evidence-plane/receipt-v0.schema.json)" \
   '{
     schema:"srq-lifecycle-adversarial-assessment-v1",
     status:"RUNNING",
     release_status:"BLOCKED",
-    harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$commit,adversarial_script_git_blob_sha1:$script_blob,adversarial_script_sha256:$script_sha256,validator_git_blob_sha1:$validator_blob,validator_sha256:$validator_sha256},
-    fixture:{repository:"Luminous-Dynamics/mycelix",commit_sha:"b02cefab8474262aef23b61a4ac3811fe92e29bf",git_blob_sha1:"d1d3516e2778e0da89013348b16ed73af6e5e8a8",raw_sha256:$receipt_sha256},
+    harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$commit,adversarial_script_git_blob_sha1:$script_blob,adversarial_script_sha256:$script_sha256,validator_git_blob_sha1:$validator_blob,validator_sha256:$validator_sha256,schema_validator_git_blob_sha1:$schema_validator_blob,schema_validator_sha256:$schema_validator_sha256,schema_validator_test_git_blob_sha1:$schema_test_blob,schema_validator_test_sha256:$schema_test_sha256,schema_requirements_git_blob_sha1:$schema_requirements_blob,schema_requirements_sha256:$schema_requirements_sha256},
+    fixture:{repository:"Luminous-Dynamics/mycelix",commit_sha:"b02cefab8474262aef23b61a4ac3811fe92e29bf",git_blob_sha1:"d1d3516e2778e0da89013348b16ed73af6e5e8a8",raw_sha256:$receipt_sha256,schema_git_blob_sha1:$schema_blob,schema_raw_sha256:$schema_sha256},
+    schema_validator:{library:"python-jsonschema",version:"4.26.0",draft:"https://json-schema.org/draft/2020-12/schema",format_assertion:true},
     expected_case_count:17,
     rejected_case_count:0,
     all_expected_mutations_rejected:false,
@@ -44,8 +58,20 @@ jq -cn \
 
 expect_reject() {
   local name="$1" filter="$2" expected_reason="$3" candidate="$tmp/$1.json"
-  local status=0 reason="" candidate_sha256=""
+  local status=0 reason="" candidate_sha256="" schema_result="" schema_report_sha256=""
+  local schema_report="$schema_reports_dir/$name-schema.json"
   jq "$filter" "$receipt" > "$candidate"
+
+  if ! "$schema_python" "$schema_validator" --schema "$schema" --instance "$candidate" --expect invalid --output "$schema_report" >"$tmp/$name-schema.log" 2>&1; then
+    echo "FAIL: full Draft 2020-12 schema unexpectedly accepted the invalid Mycelix mutation: $name" >&2
+    cat "$schema_report" >&2 || true
+    cat "$tmp/$name-schema.log" >&2
+    exit 1
+  fi
+  schema_result="$(jq -er '.result' "$schema_report")"
+  [[ "$schema_result" == "INVALID" ]] || { echo "FAIL: schema negative control has unexpected result: $name ($schema_result)" >&2; exit 1; }
+  schema_report_sha256="$(sha256sum "$schema_report" | cut -d ' ' -f 1)"
+
   if bash "$validator" \
     --nixward-root "$nixward_root" \
     --mycelix-root "$mycelix_root" \
@@ -68,10 +94,14 @@ expect_reject() {
   fi
   candidate_sha256="$(sha256sum "$candidate" | cut -d ' ' -f 1)"
   jq --arg id "$name" --arg filter "$filter" --arg reason "$reason" \
-    --arg candidate_sha256 "$candidate_sha256" --argjson exit_status "$status" \
+    --arg candidate_sha256 "$candidate_sha256" \
+    --arg schema_result "$schema_result" --arg schema_report_sha256 "$schema_report_sha256" \
+    --argjson exit_status "$status" \
     '.cases += [{
       id:$id,
       input_kind:"mycelix_receipt",
+      schema_validation_result:$schema_result,
+      schema_validation_report_raw_sha256:$schema_report_sha256,
       mutation_filter:$filter,
       expected_outcome:"reject",
       observed_outcome:"REJECTED_AS_EXPECTED",
@@ -81,7 +111,7 @@ expect_reject() {
     }]' "$report" > "$tmp/report.json"
   mv "$tmp/report.json" "$report"
   cases=$((cases + 1))
-  echo "PASS: rejected inconsistent evidence mutation: $name"
+  echo "PASS: full schema and lifecycle validator rejected inconsistent receipt: $name"
 }
 
 expect_transaction_reject() {
@@ -114,6 +144,8 @@ expect_transaction_reject() {
     '.cases += [{
       id:$id,
       input_kind:"nixward_transaction",
+      schema_validation_result:"NOT_APPLICABLE",
+      schema_validation_report_raw_sha256:null,
       mutation_filter:$filter,
       expected_outcome:"reject",
       observed_outcome:"REJECTED_AS_EXPECTED",
@@ -129,9 +161,20 @@ expect_transaction_reject() {
 expect_accept() {
   local name="$1" filter="$2" expected_tier="$3" expected_claim="$4"
   local candidate="$tmp/$name.json" assessment="$tmp/$name-assessment.json"
-  local candidate_sha256="" actual=""
+  local schema_report="$schema_reports_dir/$name-schema.json"
+  local candidate_sha256="" schema_result="" schema_report_sha256=""
 
   jq "$filter" "$receipt" > "$candidate"
+  if ! "$schema_python" "$schema_validator" --schema "$schema" --instance "$candidate" --expect valid --output "$schema_report" >"$tmp/$name-schema.log" 2>&1; then
+    echo "FAIL: full Draft 2020-12 schema rejected a positive Mycelix shape or could not validate it: $name" >&2
+    cat "$schema_report" >&2 || true
+    cat "$tmp/$name-schema.log" >&2
+    exit 1
+  fi
+  schema_result="$(jq -er '.result' "$schema_report")"
+  [[ "$schema_result" == "VALID" ]] || { echo "FAIL: schema positive control has unexpected result: $name ($schema_result)" >&2; exit 1; }
+  schema_report_sha256="$(sha256sum "$schema_report" | cut -d ' ' -f 1)"
+
   if ! bash "$validator" \
     --nixward-root "$nixward_root" \
     --mycelix-root "$mycelix_root" \
@@ -161,8 +204,12 @@ expect_accept() {
   candidate_sha256="$(sha256sum "$candidate" | cut -d ' ' -f 1)"
   jq --arg id "$name" --arg filter "$filter" --arg tier "$expected_tier" \
     --arg claim "$expected_claim" --arg sha256 "$candidate_sha256" \
+    --arg schema_result "$schema_result" --arg schema_report_sha256 "$schema_report_sha256" \
     '.positive_controls += [{
       id:$id,
+      input_kind:"mycelix_receipt",
+      schema_validation_result:$schema_result,
+      schema_validation_report_raw_sha256:$schema_report_sha256,
       mutation_filter:$filter,
       fixture_semantics:"synthetic structural positive control; digests and source identities are sentinels, not real-world evidence",
       expected_outcome:"accept_record_but_keep_release_blocked",
@@ -175,7 +222,7 @@ expect_accept() {
     }]' "$report" > "$tmp/report.json"
   mv "$tmp/report.json" "$report"
   controls=$((controls + 1))
-  echo "PASS: accepted structurally consistent $expected_tier control while keeping lifecycle blocked: $name"
+  echo "PASS: full schema and lifecycle validator accepted structurally consistent $expected_tier control; lifecycle stays blocked: $name"
 }
 
 expect_transaction_accept() {
@@ -210,6 +257,8 @@ expect_transaction_accept() {
     '.positive_controls += [{
       id:$id,
       input_kind:"nixward_transaction",
+      schema_validation_result:"NOT_APPLICABLE",
+      schema_validation_report_raw_sha256:null,
       mutation_filter:$filter,
       fixture_semantics:"synthetic valid-phase structural control; validation record is a sentinel",
       expected_outcome:"accept_record_but_keep_release_blocked",
@@ -221,7 +270,7 @@ expect_transaction_accept() {
     }]' "$report" > "$tmp/report.json"
   mv "$tmp/report.json" "$report"
   controls=$((controls + 1))
-  echo "PASS: accepted validated-phase record while keeping lifecycle blocked: $name"
+  echo "PASS: accepted $expected_phase-phase record while keeping lifecycle blocked: $name"
 }
 
 # Negative controls: mutations must fail on the intended contract invariant,
@@ -337,6 +386,21 @@ jq -e '
   and .expected_case_count == 17 and .rejected_case_count == 17 and .all_expected_mutations_rejected == true
   and .expected_positive_control_count == 5 and .accepted_positive_control_count == 5
   and .all_positive_controls_accepted == true
+  and .schema_validator.library == "python-jsonschema"
+  and .schema_validator.version == "4.26.0"
+  and .schema_validator.draft == "https://json-schema.org/draft/2020-12/schema"
+  and .schema_validator.format_assertion == true
+  and (.fixture.schema_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.harness.schema_validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.harness.schema_validator_sha256 | test("^[0-9a-f]{64}$"))
+  and (.harness.schema_validator_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.harness.schema_validator_test_sha256 | test("^[0-9a-f]{64}$"))
+  and (.harness.schema_requirements_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.harness.schema_requirements_sha256 | test("^[0-9a-f]{64}$"))
+  and ([.cases[] | select(.input_kind == "mycelix_receipt")] | (length == 9 and all(.[]; .schema_validation_result == "INVALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
+  and ([.cases[] | select(.input_kind == "nixward_transaction")] | (length == 8 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
+  and ([.positive_controls[] | select(.input_kind == "mycelix_receipt")] | (length == 2 and all(.[]; .schema_validation_result == "VALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
+  and ([.positive_controls[] | select(.input_kind == "nixward_transaction")] | (length == 3 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
   and (.positive_controls | all(.[]; .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED"))
 ' "$report" >/dev/null
 printf 'ADVERSARIAL_CORPUS_PASS: %s invalid mutations rejected; %s valid-shape controls accepted; lifecycle remains BLOCKED. Report: %s\n' "$cases" "$controls" "$report"

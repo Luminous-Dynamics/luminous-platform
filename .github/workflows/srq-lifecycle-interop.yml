@@ -66,10 +66,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          schema_venv="$RUNNER_TEMP/srq-schema-venv"
+          python3 -m venv "$schema_venv"
+          "$schema_venv/bin/python" -m pip install --disable-pip-version-check --no-input --only-binary=:all: -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
+          export SRQ_SCHEMA_PYTHON="$schema_venv/bin/python"
+          "$SRQ_SCHEMA_PYTHON" -m py_compile benchmarks/srq-lifecycle-interop/schema_validate.py benchmarks/srq-lifecycle-interop/schema_validate_test.py
+          "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/schema_validate_test.py
           bash -n benchmarks/srq-lifecycle-interop/validate.sh
           bash -n benchmarks/srq-lifecycle-interop/test.sh
           bash -n benchmarks/srq-lifecycle-interop/adversarial.sh
-          jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_raw_sha256") != null)' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
+          jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_raw_sha256") != null)' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
           evidence_dir="$RUNNER_TEMP/srq-lifecycle-interop"
           bash benchmarks/srq-lifecycle-interop/test.sh \
             "$GITHUB_WORKSPACE/integration-upstream/nixward" \
@@ -85,6 +91,14 @@ jobs:
             and .accepted_positive_control_count == 5
             and .all_positive_controls_accepted == true
             and (.positive_controls | length == 5)
+            and .schema_validator.library == "python-jsonschema"
+            and .schema_validator.version == "4.26.0"
+            and .schema_validator.format_assertion == true
+            and (.fixture.schema_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and ([.cases[] | select(.input_kind == "mycelix_receipt")] | (length == 9 and all(.[]; .schema_validation_result == "INVALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
+            and ([.cases[] | select(.input_kind == "nixward_transaction")] | (length == 8 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
+            and ([.positive_controls[] | select(.input_kind == "mycelix_receipt")] | (length == 2 and all(.[]; .schema_validation_result == "VALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
+            and ([.positive_controls[] | select(.input_kind == "nixward_transaction")] | (length == 3 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
           ' "$evidence_dir/srq-lifecycle-adversarial-assessment.json"
           jq -e '
             .schema == "srq-lifecycle-interop-assessment-v1"
@@ -93,6 +107,12 @@ jobs:
             and .claim_ceiling == "none"
             and (.sources.interop_harness.commit_sha | test("^[0-9a-f]{40}$"))
             and (.sources.interop_harness.validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.schema_validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.schema_validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.schema_validator_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.schema_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.schema_requirements_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.schema_requirements_raw_sha256 | test("^[0-9a-f]{64}$"))
             and (.release_blockers | length >= 5)
           ' "$evidence_dir/lifecycle-interop-assessment.json"
 
@@ -104,5 +124,6 @@ jobs:
           path: |
             ${{ runner.temp }}/srq-lifecycle-interop/lifecycle-interop-assessment.json
             ${{ runner.temp }}/srq-lifecycle-interop/srq-lifecycle-adversarial-assessment.json
+            ${{ runner.temp }}/srq-lifecycle-interop/schema-validation/*.json
           if-no-files-found: ignore
           retention-days: 30
