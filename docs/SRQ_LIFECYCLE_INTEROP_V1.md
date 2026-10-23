@@ -27,9 +27,10 @@ The benchmark script:
 4. Emits an assessment containing commit IDs, Git blob IDs, raw-byte SHA-256 values, observed source tiers and explicit release blockers.
 5. Runs three original negative controls: forged D0 authentication/qualification; S0-to-S4 claim inflation without source/verifier/gate evidence; and phase-only Nixward promotion without authorization/readback/outcome.
 6. Runs a reusable adversarial evidence-mutation corpus. It rejects planned receipts with execution-tier statuses, any passing gate or injected subject identity/hash, nonzero result counts, S3/S4 claims without required independent-verification bindings, S2 source-reproducibility claims without source bytes/rights evidence, and unknown tiers.
-7. Confirms the upstream fixture files and probe source remain unmodified.
+7. Accepts two deliberately synthetic positive-control *shapes* (S2/source-reproducible and S4/domain-validated) while asserting the lifecycle assessment itself remains `release_status=BLOCKED` and `claim_ceiling=none`.
+8. Confirms the upstream fixture files and probe source remain unmodified.
 
-The additional cross-field checks are deliberately a small safety-critical subset of the pinned Mycelix schema: they test run-state/tier/claim-ceiling consistency and cannot be represented as full schema validation. Every mutation uses disposable output; upstream source bytes and pins remain unchanged.
+The additional cross-field checks are deliberately a small safety-critical subset of the pinned Mycelix schema: they test run-state/tier/claim-ceiling consistency and cannot be represented as full schema validation. The positive controls use sentinel URLs, hashes, commit identities and verifier references; they exercise structural acceptance only and are explicitly not real source, execution, independent-verification or domain-validation evidence. Every mutation uses disposable output; upstream source bytes and pins remain unchanged.
 
 The validator performs a narrow field/invariant check. It does not implement the full JSON Schema 2020-12 validator from Mycelix, Nixward's full production transaction validator, SRQ's release evaluator, or a cryptographic attestation verifier. Exact pinning is not a substitute for those verifiers.
 
