@@ -83,7 +83,7 @@ jq -e '
   and .accepted_positive_control_count == 2
   and .all_positive_controls_accepted == true
   and (.positive_controls | length == 2)
-  and ([.positive_controls[] | (.expected_outcome == "accept_record_but_keep_release_blocked" and .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED" and .release_status == null and (.candidate_raw_sha256 | test("^[0-9a-f]{64}$")))] | all)
+  and ([.positive_controls[] | (.expected_outcome == "accept_record_but_keep_release_blocked" and .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED" and .release_status == "BLOCKED" and .claim_ceiling == "none" and (.candidate_raw_sha256 | test("^[0-9a-f]{64}$")))] | all)
   and (.harness.commit_sha | test("^[0-9a-f]{40}$"))
   and (.harness.adversarial_script_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.harness.adversarial_script_sha256 | test("^[0-9a-f]{64}$"))
