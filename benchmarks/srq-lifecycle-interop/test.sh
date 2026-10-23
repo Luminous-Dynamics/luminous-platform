@@ -49,6 +49,8 @@ jq -e '
   and (.sources.interop_harness.validator_raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.interop_harness.schema_validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.schema_validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.schema_validator_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.schema_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.interop_harness.schema_requirements_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.schema_requirements_raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.interop_harness.adversarial_script_git_blob_sha1 | test("^[0-9a-f]{40}$"))
