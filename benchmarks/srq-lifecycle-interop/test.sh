@@ -79,10 +79,10 @@ jq -e '
   and .status == "PASS" and .release_status == "BLOCKED"
   and .expected_case_count == 15 and .rejected_case_count == 15
   and .all_expected_mutations_rejected == true
-  and .expected_positive_control_count == 2
-  and .accepted_positive_control_count == 2
+  and .expected_positive_control_count == 3
+  and .accepted_positive_control_count == 3
   and .all_positive_controls_accepted == true
-  and (.positive_controls | length == 2)
+  and (.positive_controls | length == 3)
   and ([.positive_controls[] | (.expected_outcome == "accept_record_but_keep_release_blocked" and .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED" and .release_status == "BLOCKED" and .claim_ceiling == "none" and (.candidate_raw_sha256 | test("^[0-9a-f]{64}$")))] | all)
   and (.harness.commit_sha | test("^[0-9a-f]{40}$"))
   and (.harness.adversarial_script_git_blob_sha1 | test("^[0-9a-f]{40}$"))
