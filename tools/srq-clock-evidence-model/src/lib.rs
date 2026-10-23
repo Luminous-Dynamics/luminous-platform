@@ -275,12 +275,22 @@ pub fn commit_after_authorized_transaction(
         .checked_add(1)
         .ok_or(ClockCommitError::StateCounterOverflow)?;
 
-    state.high_water_unix_seconds = Some(
-        state
-            .high_water_unix_seconds
-            .unwrap_or(prepared.unix_seconds)
-            .max(prepared.unix_seconds),
-    );
+    match (state.high_water_unix_seconds, prepared.tier) {
+        (Some(high_water), ClockTier::A0HostWall | ClockTier::A1BootMonotonic) => {
+            // Low-assurance clocks may support a local decision under an A0/A1
+            // policy, but they must not move the persistent freshness floor.
+            state.high_water_unix_seconds = Some(high_water);
+        }
+        (previous, _) => {
+            // Bootstrap is guarded above (A3 only); after that, only A2/A3
+            // evidence can reach this advancing branch for a useful update.
+            state.high_water_unix_seconds = Some(
+                previous
+                    .unwrap_or(prepared.unix_seconds)
+                    .max(prepared.unix_seconds),
+            );
+        }
+    }
     if let Some(monotonic) = prepared.monotonic {
         match &state.last_monotonic {
             Some(previous) if previous.boot_id == monotonic.boot_id => {
@@ -538,6 +548,20 @@ mod tests {
         commit_after_authorized_transaction(&mut state, prepared, true).unwrap();
         assert_eq!(state.high_water_unix_seconds, Some(1_010));
         assert_eq!(state.revision, 5);
+        assert_eq!(state.committed_observations, 5);
+    }
+
+    #[test]
+    fn a0_wall_clock_does_not_advance_persistent_high_water() {
+        let mut state = seeded_state();
+        let prepared = appraise_clock(
+            &observation(ClockTier::A0HostWall, 1_001),
+            &policy(ClockTier::A0HostWall),
+            &state,
+        ).unwrap();
+
+        commit_after_authorized_transaction(&mut state, prepared, true).unwrap();
+        assert_eq!(state.high_water_unix_seconds, Some(1_000));
         assert_eq!(state.committed_observations, 5);
     }
 

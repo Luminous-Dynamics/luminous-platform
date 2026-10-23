@@ -30,7 +30,7 @@ jobs:
           set -euo pipefail
           log="$RUNNER_TEMP/srq-clock-evidence-model.log"
           cargo test --manifest-path tools/srq-clock-evidence-model/Cargo.toml --locked -- --nocapture 2>&1 | tee "$log"
-          grep -Fq 'test result: ok. 13 passed; 0 failed' "$log"
+          grep -Fq 'test result: ok. 14 passed; 0 failed' "$log"
           grep -Fq 'PASS: 10000 clock-authentication binding mutations were rejected' "$log"
           grep -Fq 'PASS: 10000 clock rollback/forward-jump mutations were rejected' "$log"
 
