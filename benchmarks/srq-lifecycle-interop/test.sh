@@ -124,6 +124,12 @@ jq -e --slurpfile protocol "$script_dir/corpus-v1.json" '
   and .expected_positive_control_count == 5
   and .accepted_positive_control_count == 5
   and .all_positive_controls_accepted == true
+  and .observed_metrics.negative_false_accept_count == 0
+  and .observed_metrics.positive_false_reject_count == 0
+  and .observed_metrics.release_false_pass_count == 0
+  and $protocol[0].target_metrics.negative_false_accept_count == .observed_metrics.negative_false_accept_count
+  and $protocol[0].target_metrics.positive_false_reject_count == .observed_metrics.positive_false_reject_count
+  and $protocol[0].target_metrics.release_false_pass_count == .observed_metrics.release_false_pass_count
   and .schema_validator.library == "python-jsonschema"
   and .schema_validator.version == "4.26.0"
   and .schema_validator.format_assertion == true
