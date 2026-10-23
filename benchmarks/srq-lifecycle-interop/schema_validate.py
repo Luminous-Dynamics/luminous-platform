@@ -11,8 +11,7 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
-import os
-import sys
+import platform
 from pathlib import Path
 from typing import Any
 
@@ -112,6 +111,7 @@ def main() -> int:
             "required_version": EXPECTED_JSONSCHEMA_VERSION,
             "draft": "https://json-schema.org/draft/2020-12/schema",
             "format_assertion": True,
+            "python_version": platform.python_version(),
         },
         "schema_input": {"path_label": args.schema.name, "sha256": None, "bytes": None},
         "instance_input": {"path_label": args.instance.name, "sha256": None, "bytes": None},
