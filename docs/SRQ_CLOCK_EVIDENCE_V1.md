@@ -31,7 +31,7 @@ These tiers are not interchangeable. A system requiring A3 must block on A3 unav
 - high-water advancement only after the associated authorization is reported committed;
 - two deterministic 10,000-case negative corpora for binding mutations and time rollback/forward-jump mutations.
 
-The model's `signature_verified_by_trusted_verifier` field is an abstract input used to test state-machine behavior. It is not a cryptographic verifier and must not be populated directly from untrusted receipt JSON. A real adapter must accept a private, typed verification capability created only after validating the actual signed evidence with a pinned trust policy. Similarly, the model's state is in memory; it does not provide durable storage semantics.
+The model's `signature_verified_by_trusted_verifier` field is an abstract input used to test state-machine behavior. It is not a cryptographic verifier and must not be populated directly from untrusted receipt JSON. A real adapter must accept a private, typed verification capability created only after validating the actual signed evidence with a pinned trust policy. An untrusted A0/A1 observation cannot initialize the high-water mark; bootstrap requires A3 evidence in this model or explicit out-of-band enrollment. Similarly, the model's state is in memory; it does not provide durable storage semantics.
 
 ## Transaction invariant for a real adapter
 
