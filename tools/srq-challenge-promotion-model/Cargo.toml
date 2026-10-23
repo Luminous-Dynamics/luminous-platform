@@ -1,9 +1,0 @@
-[package]
-name = "srq-challenge-promotion-model"
-version = "0.1.0"
-edition = "2024"
-license = "AGPL-3.0-or-later"
-publish = false
-
-[lib]
-path = "src/lib.rs"

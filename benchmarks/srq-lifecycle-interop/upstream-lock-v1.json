@@ -1,0 +1,11 @@
+{
+  "schema": "srq-lifecycle-interop-upstream-lock-v1",
+  "version": 1,
+  "purpose": "Pins exact upstream contract bytes used by the lifecycle interoperability smoke test. Git blob SHA-1 identifies the pinned Git object; SHA-256 of raw bytes is measured at execution and retained in the output receipt.",
+  "pins": [
+    {"key":"nixward_transaction_fixture","repository":"Luminous-Dynamics/nixward","commit_sha":"ae60256f0be73138a539ecda048e81056dd14a30","path":"docs/fixtures/system-transaction-v1.json","git_blob_sha1":"c89d5033a35e5c1be1b5c7de0a2436539922a800"},
+    {"key":"mycelix_evidence_plane_schema","repository":"Luminous-Dynamics/mycelix","commit_sha":"b02cefab8474262aef23b61a4ac3811fe92e29bf","path":"research/evidence-plane/receipt-v0.schema.json","git_blob_sha1":"e2b90a995f70d0a771b04e7f5fc077e1c0394f86"},
+    {"key":"mycelix_planned_receipt","repository":"Luminous-Dynamics/mycelix","commit_sha":"b02cefab8474262aef23b61a4ac3811fe92e29bf","path":"research/evidence-plane/examples/synthetic-planned-receipt-v0.json","git_blob_sha1":"d1d3516e2778e0da89013348b16ed73af6e5e8a8"},
+    {"key":"sovereign_boot_d0_probe_source","repository":"Luminous-Dynamics/sovereign-boot","commit_sha":"7f1c53924b1f0c2ba7b9734d875e50529837f057","path":"tools/srq-boot-observation-probe/src/main.rs","git_blob_sha1":"de2126eefa1c2e41494bb2624a78e46576c39d27"}
+  ]
+}
