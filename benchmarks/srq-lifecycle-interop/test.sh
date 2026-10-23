@@ -108,6 +108,18 @@ jq -e '
   and .expected_positive_control_count == 5
   and .accepted_positive_control_count == 5
   and .all_positive_controls_accepted == true
+  and .schema_validator.library == "python-jsonschema"
+  and .schema_validator.version == "4.26.0"
+  and .schema_validator.format_assertion == true
+  and (.fixture.schema_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.harness.schema_validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.harness.schema_validator_sha256 | test("^[0-9a-f]{64}$"))
+  and (.harness.schema_requirements_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.harness.schema_requirements_sha256 | test("^[0-9a-f]{64}$"))
+  and ([.cases[] | select(.input_kind == "mycelix_receipt")] | (length == 9 and all(.[]; .schema_validation_result == "INVALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
+  and ([.cases[] | select(.input_kind == "nixward_transaction")] | (length == 8 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
+  and ([.positive_controls[] | select(.input_kind == "mycelix_receipt")] | (length == 2 and all(.[]; .schema_validation_result == "VALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
+  and ([.positive_controls[] | select(.input_kind == "nixward_transaction")] | (length == 3 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
   and (.positive_controls | length == 5)
   and ([.positive_controls[] | (.expected_outcome == "accept_record_but_keep_release_blocked" and .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED" and .release_status == "BLOCKED" and .claim_ceiling == "none" and (.candidate_raw_sha256 | test("^[0-9a-f]{64}$")))] | all)
   and (.harness.commit_sha | test("^[0-9a-f]{40}$"))
