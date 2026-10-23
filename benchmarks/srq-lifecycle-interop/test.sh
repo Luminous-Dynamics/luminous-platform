@@ -57,6 +57,9 @@ jq -e '
   and (.sources.interop_harness.adversarial_script_raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.interop_harness.test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.upstream_lock_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.corpus_protocol_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.corpus_protocol_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and .sources.interop_harness.corpus_protocol_id == "srq-lifecycle-adversarial-v1"
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
 
 "$schema_python" "$script_dir/schema_validate.py" \
@@ -101,15 +104,32 @@ fi
 echo "PASS: phase-only promotion without authorization/readback/outcome fails closed"
 
 # Expand beyond hand-picked controls into a reusable cross-field mutation corpus.
-bash "$script_dir/adversarial.sh" "$nixward_root" "$mycelix_root" "$sovereign_boot_root" "$tmp/boot-observation.json" "$output_dir"
 jq -e '
+  .schema == "srq-lifecycle-adversarial-protocol-v1"
+  and .protocol_id == "srq-lifecycle-adversarial-v1"
+  and .version == 1 and (.cases | length == 17) and (.positive_controls | length == 5)
+  and ([.cases[].id] | length == (unique | length))
+  and ([.positive_controls[].id] | length == (unique | length))
+' "$script_dir/corpus-v1.json" >/dev/null
+bash "$script_dir/adversarial.sh" "$nixward_root" "$mycelix_root" "$sovereign_boot_root" "$tmp/boot-observation.json" "$output_dir"
+jq -e --slurpfile protocol "$script_dir/corpus-v1.json" '
   .schema == "srq-lifecycle-adversarial-assessment-v1"
-  and .status == "PASS" and .release_status == "BLOCKED"
+  and .protocol.protocol_id == $protocol[0].protocol_id
+  and .protocol.version == $protocol[0].version
+  and (.protocol.git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.protocol.raw_sha256 | test("^[0-9a-f]{64}$"))
+  and .status == "PASS" and .release_status == "BLOCKED" and .claim_ceiling == "none"
   and .expected_case_count == 17 and .rejected_case_count == 17
   and .all_expected_mutations_rejected == true
   and .expected_positive_control_count == 5
   and .accepted_positive_control_count == 5
   and .all_positive_controls_accepted == true
+  and .observed_metrics.negative_false_accept_count == 0
+  and .observed_metrics.positive_false_reject_count == 0
+  and .observed_metrics.release_false_pass_count == 0
+  and $protocol[0].target_metrics.negative_false_accept_count == .observed_metrics.negative_false_accept_count
+  and $protocol[0].target_metrics.positive_false_reject_count == .observed_metrics.positive_false_reject_count
+  and $protocol[0].target_metrics.release_false_pass_count == .observed_metrics.release_false_pass_count
   and .schema_validator.library == "python-jsonschema"
   and .schema_validator.version == "4.26.0"
   and .schema_validator.format_assertion == true

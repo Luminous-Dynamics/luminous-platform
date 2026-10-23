@@ -13,11 +13,24 @@ readonly receipt="$mycelix_root/research/evidence-plane/examples/synthetic-plann
 readonly schema="$mycelix_root/research/evidence-plane/receipt-v0.schema.json"
 readonly schema_validator="$script_dir/schema_validate.py"
 readonly schema_requirements="$script_dir/requirements-schema.txt"
+readonly corpus_protocol="$script_dir/corpus-v1.json"
 readonly schema_python="${SRQ_SCHEMA_PYTHON:-python3}"
 readonly repository_root="$(git -C "$script_dir/../.." rev-parse --show-toplevel)"
 readonly harness_commit="$(git -C "$repository_root" rev-parse HEAD)"
 mkdir -p "$output_dir" "$output_dir/schema-validation"
 schema_reports_dir="$output_dir/schema-validation"
+jq -e '
+  .schema == "srq-lifecycle-adversarial-protocol-v1"
+  and .protocol_id == "srq-lifecycle-adversarial-v1"
+  and .version == 1
+  and (.cases | length == 17)
+  and (.positive_controls | length == 5)
+  and ([.cases[].id] | length == (unique | length))
+  and ([.positive_controls[].id] | length == (unique | length))
+  and .release_invariant.accepted_structural_control_must_leave_release_status == "BLOCKED"
+  and .release_invariant.accepted_structural_control_must_leave_claim_ceiling == "none"
+  and .release_invariant.release_pass_allowed == false
+' "$corpus_protocol" >/dev/null
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 report="$output_dir/srq-lifecycle-adversarial-assessment.json"
@@ -36,6 +49,9 @@ jq -cn \
   --arg schema_test_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/schema_validate_test.py)" \
   --arg schema_requirements_sha256 "$(sha256sum "$schema_requirements" | cut -d ' ' -f 1)" \
   --arg schema_requirements_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/requirements-schema.txt)" \
+  --arg protocol_sha256 "$(sha256sum "$corpus_protocol" | cut -d ' ' -f 1)" \
+  --arg protocol_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" \
+  --arg protocol_id "$(jq -er '.protocol_id' "$corpus_protocol")" \
   --arg receipt_sha256 "$(sha256sum "$receipt" | cut -d ' ' -f 1)" \
   --arg schema_sha256 "$(sha256sum "$schema" | cut -d ' ' -f 1)" \
   --arg schema_blob "$(git -C "$mycelix_root" hash-object -- research/evidence-plane/receipt-v0.schema.json)" \
@@ -43,15 +59,22 @@ jq -cn \
     schema:"srq-lifecycle-adversarial-assessment-v1",
     status:"RUNNING",
     release_status:"BLOCKED",
+    claim_ceiling:"none",
     harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$commit,adversarial_script_git_blob_sha1:$script_blob,adversarial_script_sha256:$script_sha256,validator_git_blob_sha1:$validator_blob,validator_sha256:$validator_sha256,schema_validator_git_blob_sha1:$schema_validator_blob,schema_validator_sha256:$schema_validator_sha256,schema_validator_test_git_blob_sha1:$schema_test_blob,schema_validator_test_sha256:$schema_test_sha256,schema_requirements_git_blob_sha1:$schema_requirements_blob,schema_requirements_sha256:$schema_requirements_sha256},
     fixture:{repository:"Luminous-Dynamics/mycelix",commit_sha:"b02cefab8474262aef23b61a4ac3811fe92e29bf",git_blob_sha1:"d1d3516e2778e0da89013348b16ed73af6e5e8a8",raw_sha256:$receipt_sha256,schema_git_blob_sha1:$schema_blob,schema_raw_sha256:$schema_sha256},
     schema_validator:{library:"python-jsonschema",version:"4.26.0",draft:"https://json-schema.org/draft/2020-12/schema",format_assertion:true},
+    protocol:{protocol_id:$protocol_id,version:1,git_blob_sha1:$protocol_blob,raw_sha256:$protocol_sha256},
     expected_case_count:17,
     rejected_case_count:0,
     all_expected_mutations_rejected:false,
     expected_positive_control_count:5,
     accepted_positive_control_count:0,
     all_positive_controls_accepted:false,
+    observed_metrics:{
+      negative_false_accept_count:null,
+      positive_false_reject_count:null,
+      release_false_pass_count:null
+    },
     positive_controls:[],
     cases:[]
   }' > "$report"
@@ -376,16 +399,48 @@ jq --argjson negative_count "$cases" --argjson positive_count "$controls" '
   | .all_expected_mutations_rejected = (.cases | length == $negative_count and all(.[]; .observed_outcome == "REJECTED_AS_EXPECTED"))
   | .accepted_positive_control_count = ([.positive_controls[] | select(.observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED")] | length)
   | .all_positive_controls_accepted = (.positive_controls | length == $positive_count and all(.[]; .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED"))
+  | .observed_metrics.negative_false_accept_count = (.expected_case_count - .rejected_case_count)
+  | .observed_metrics.positive_false_reject_count = (.expected_positive_control_count - .accepted_positive_control_count)
+  | .observed_metrics.release_false_pass_count = (if .release_status != "BLOCKED" or ([.positive_controls[] | select(.observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED" and (.release_status != "BLOCKED" or .claim_ceiling != "none"))] | length > 0) then 1 else 0 end)
 ' "$report" > "$tmp/final-report.json"
 mv "$tmp/final-report.json" "$report"
 [[ "$cases" -eq 17 ]] || { echo "FAIL: expected exactly 17 adversarial cases, found $cases" >&2; exit 1; }
 [[ "$controls" -eq 5 ]] || { echo "FAIL: expected exactly 5 positive controls, found $controls" >&2; exit 1; }
-jq -e '
+jq -e --slurpfile protocol "$corpus_protocol" '
   .schema == "srq-lifecycle-adversarial-assessment-v1"
+  and .protocol.protocol_id == $protocol[0].protocol_id
+  and .protocol.version == $protocol[0].version
+  and (.protocol.git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.protocol.raw_sha256 | test("^[0-9a-f]{64}$"))
+  and ([.cases[] | {id,input_kind,schema_validation_result}] | sort_by(.id))
+      == ([$protocol[0].cases[] | {id,input_kind,schema_validation_result:.expected_schema_result}] | sort_by(.id))
+  and ([.positive_controls[] | {id,input_kind,schema_validation_result}] | sort_by(.id))
+      == ([$protocol[0].positive_controls[] | {id,input_kind,schema_validation_result:.expected_schema_result}] | sort_by(.id))
+  and ([.cases[] | {id,input_kind,expected_outcome}] | sort_by(.id))
+      == ([$protocol[0].cases[] | {id,input_kind,expected_outcome:(if .expected_lifecycle_result == "REJECT" then "reject" else "invalid" end)}] | sort_by(.id))
+  and ([.positive_controls[] | {id,input_kind,expected_outcome}] | sort_by(.id))
+      == ([$protocol[0].positive_controls[] | {id,input_kind,expected_outcome:(if .expected_lifecycle_result == "ACCEPT_RECORD_KEEP_RELEASE_BLOCKED" then "accept_record_but_keep_release_blocked" else "invalid" end)}] | sort_by(.id))
+  and ([.positive_controls[] | select(.input_kind == "mycelix_receipt") | {id,evidence_tier,evidence_claim_ceiling}] | sort_by(.id))
+      == ([$protocol[0].positive_controls[] | select(.input_kind == "mycelix_receipt") | {id,evidence_tier:.expected_evidence_tier,evidence_claim_ceiling:.expected_evidence_claim_ceiling}] | sort_by(.id))
+  and ([.positive_controls[] | select(.input_kind == "nixward_transaction") | {id,transaction_phase}] | sort_by(.id))
+      == ([$protocol[0].positive_controls[] | select(.input_kind == "nixward_transaction") | {id,transaction_phase:.expected_transaction_phase}] | sort_by(.id))
+  and $protocol[0].target_metrics.negative_case_count == .expected_case_count
+  and $protocol[0].target_metrics.positive_control_count == .expected_positive_control_count
+  and $protocol[0].target_metrics.negative_false_accept_count == 0
+  and $protocol[0].target_metrics.positive_false_reject_count == 0
+  and $protocol[0].target_metrics.release_false_pass_count == 0
+  and .schema == "srq-lifecycle-adversarial-assessment-v1"
   and .status == "PASS" and .release_status == "BLOCKED"
   and .expected_case_count == 17 and .rejected_case_count == 17 and .all_expected_mutations_rejected == true
   and .expected_positive_control_count == 5 and .accepted_positive_control_count == 5
   and .all_positive_controls_accepted == true
+  and .observed_metrics.negative_false_accept_count == 0
+  and .observed_metrics.positive_false_reject_count == 0
+  and .observed_metrics.release_false_pass_count == 0
+  and (.positive_controls | all(.[]; .release_status == "BLOCKED" and .claim_ceiling == "none"))
+  and $protocol[0].target_metrics.negative_false_accept_count == .observed_metrics.negative_false_accept_count
+  and $protocol[0].target_metrics.positive_false_reject_count == .observed_metrics.positive_false_reject_count
+  and $protocol[0].target_metrics.release_false_pass_count == .observed_metrics.release_false_pass_count
   and .schema_validator.library == "python-jsonschema"
   and .schema_validator.version == "4.26.0"
   and .schema_validator.draft == "https://json-schema.org/draft/2020-12/schema"
