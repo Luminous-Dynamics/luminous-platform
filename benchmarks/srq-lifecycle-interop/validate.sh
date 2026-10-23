@@ -98,6 +98,62 @@ jq -e '
        else true end)
 ' "$mycelix_receipt" >/dev/null || { echo "CONTRACT VIOLATION: Mycelix receipt fields do not support their declared evidence tier / claim ceiling." >&2; exit 1; }
 
+# Enforce cross-field semantics needed by this narrow interop check. This is not
+# a substitute for evaluating the complete upstream JSON Schema.
+jq -e '
+  (if .run_status == "planned" then
+    .evidence_tier == "S0" and .claim_ceiling == "synthetic_only"
+    and .subject.commit == null and .subject.artifact_sha256 == null
+    and .benchmark.protocol_sha256 == null
+    and .benchmark.pre_registered_at == null
+    and .benchmark.split_lock_sha256 == null
+    and .benchmark.results_summary.state == "not_run"
+    and .benchmark.results_summary.observed_result_count == 0
+    and ([.gates[]] | all(. == "unknown"))
+    and (.independent_verification.status | IN("none","pending"))
+    and .independent_verification.verifier_kind == "none"
+    and .independent_verification.replayed_commit == null
+   else true end)
+  and (if .run_status == "independently_checked" then
+    (.evidence_tier | IN("S3","S4"))
+    and (.claim_ceiling | IN("independently_reproduced","domain_validated"))
+   else true end)
+  and (if .run_status == "domain_validated" then
+    .evidence_tier == "S4" and .claim_ceiling == "domain_validated"
+    and .gates.domain_validation == "pass"
+   else true end)
+  and (if .evidence_tier == "S0" then .claim_ceiling == "synthetic_only"
+       elif .evidence_tier == "S1" then (.claim_ceiling | IN("synthetic_only","transcription_only"))
+       elif .evidence_tier == "S2" then (.claim_ceiling | IN("synthetic_only","transcription_only","source_reproducible"))
+       else true end)
+  and (if .evidence_tier == "S2" and .claim_ceiling == "source_reproducible" then
+    (.sources | length > 0)
+    and ([.sources[] |
+      .raw_bytes_ingested == true
+      and (.sha256 | type == "string" and test("^[a-f0-9]{64}$"))
+      and (.rights_status | IN("public_domain","open_license","permitted","permission_confirmed"))
+      and (.contact_status | IN("permission_confirmed","not_required"))
+    ] | all)
+    and (.subject.artifact_sha256 | type == "string" and test("^[a-f0-9]{64}$"))
+    and .gates.source_integrity == "pass"
+    and .gates.rights_stewardship == "pass"
+   else true end)
+  and (if (.evidence_tier | IN("S3","S4")) then
+    (.subject.commit | type == "string" and test("^[a-fA-F0-9]{40,64}$"))
+    and (.subject.artifact_sha256 | type == "string" and test("^[a-f0-9]{64}$"))
+    and .independent_verification.status == "passed"
+    and .gates.independent_verification == "pass"
+    and .gates.negative_controls == "pass"
+    and .gates.exact_head == "pass"
+    and .gates.source_integrity == "pass"
+    and .gates.rights_stewardship == "pass"
+   else true end)
+  and (if (.evidence_tier == "S4" or .claim_ceiling == "domain_validated") then
+    .evidence_tier == "S4" and .claim_ceiling == "domain_validated"
+    and .gates.domain_validation == "pass"
+   else true end)
+' "$mycelix_receipt" >/dev/null || { echo "CONTRACT VIOLATION: Mycelix receipt cross-field semantics permit status/tier/claim escalation." >&2; exit 1; }
+
 blockers="$(
   jq -cn --slurpfile tx "$nixward_fixture" --slurpfile boot "$boot_observation" --slurpfile evidence "$mycelix_receipt" '
     [
@@ -134,21 +190,24 @@ repo_root="$(cd -- "$script_dir/../.." && pwd)"
 interop_commit="$(git -C "$repo_root" rev-parse HEAD)"
 interop_validator_path="benchmarks/srq-lifecycle-interop/validate.sh"
 interop_test_path="benchmarks/srq-lifecycle-interop/test.sh"
+interop_adversarial_path="benchmarks/srq-lifecycle-interop/adversarial.sh"
 interop_lock_path="benchmarks/srq-lifecycle-interop/upstream-lock-v1.json"
 interop_schema_path="benchmarks/srq-lifecycle-interop/assessment-v1.schema.json"
-git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_lock_path" "$interop_schema_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_lock_path" "$interop_schema_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
   echo "BLOCKED: interop source has uncommitted modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
-git -C "$repo_root" diff --cached --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_lock_path" "$interop_schema_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+git -C "$repo_root" diff --cached --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_lock_path" "$interop_schema_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
   echo "BLOCKED: interop source has staged modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
 interop_validator_blob="$(git -C "$repo_root" hash-object -- "$interop_validator_path")"
+interop_adversarial_blob="$(git -C "$repo_root" hash-object -- "$interop_adversarial_path")"
 interop_test_blob="$(git -C "$repo_root" hash-object -- "$interop_test_path")"
 interop_lock_blob="$(git -C "$repo_root" hash-object -- "$interop_lock_path")"
 interop_schema_blob="$(git -C "$repo_root" hash-object -- "$interop_schema_path")"
 interop_validator_sha256="$(sha256sum "$repo_root/$interop_validator_path" | cut -d ' ' -f 1)"
+interop_adversarial_sha256="$(sha256sum "$repo_root/$interop_adversarial_path" | cut -d ' ' -f 1)"
 interop_test_sha256="$(sha256sum "$repo_root/$interop_test_path" | cut -d ' ' -f 1)"
 interop_lock_sha256="$(sha256sum "$repo_root/$interop_lock_path" | cut -d ' ' -f 1)"
 interop_schema_sha256="$(sha256sum "$repo_root/$interop_schema_path" | cut -d ' ' -f 1)"
@@ -162,6 +221,7 @@ report="$(
     --arg boot_commit "$(pin_field sovereign_boot_d0_probe_source commit_sha)" --arg boot_source_blob "$boot_source_blob" --arg boot_sha256 "$boot_raw_sha" \
     --arg interop_commit "$interop_commit" \
     --arg interop_validator_blob "$interop_validator_blob" --arg interop_validator_sha256 "$interop_validator_sha256" \
+    --arg interop_adversarial_blob "$interop_adversarial_blob" --arg interop_adversarial_sha256 "$interop_adversarial_sha256" \
     --arg interop_test_blob "$interop_test_blob" --arg interop_test_sha256 "$interop_test_sha256" \
     --arg interop_lock_blob "$interop_lock_blob" --arg interop_lock_sha256 "$interop_lock_sha256" \
     --arg interop_schema_blob "$interop_schema_blob" --arg interop_schema_sha256 "$interop_schema_sha256" \
@@ -175,6 +235,7 @@ report="$(
         sovereign_boot_observation:{raw_sha256:$boot_sha256},
         interop_harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$interop_commit,
           validator_git_blob_sha1:$interop_validator_blob,validator_raw_sha256:$interop_validator_sha256,
+          adversarial_script_git_blob_sha1:$interop_adversarial_blob,adversarial_script_raw_sha256:$interop_adversarial_sha256,
           test_git_blob_sha1:$interop_test_blob,test_raw_sha256:$interop_test_sha256,
           upstream_lock_git_blob_sha1:$interop_lock_blob,upstream_lock_raw_sha256:$interop_lock_sha256,
           assessment_schema_git_blob_sha1:$interop_schema_blob,assessment_schema_raw_sha256:$interop_schema_sha256}

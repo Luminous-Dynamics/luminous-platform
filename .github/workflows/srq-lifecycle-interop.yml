@@ -68,13 +68,24 @@ jobs:
           set -euo pipefail
           bash -n benchmarks/srq-lifecycle-interop/validate.sh
           bash -n benchmarks/srq-lifecycle-interop/test.sh
-          jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null)' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
+          bash -n benchmarks/srq-lifecycle-interop/adversarial.sh
+          jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_raw_sha256") != null)' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
           evidence_dir="$RUNNER_TEMP/srq-lifecycle-interop"
           bash benchmarks/srq-lifecycle-interop/test.sh \
             "$GITHUB_WORKSPACE/integration-upstream/nixward" \
             "$GITHUB_WORKSPACE/integration-upstream/mycelix" \
             "$GITHUB_WORKSPACE/integration-upstream/sovereign-boot" \
             "$evidence_dir"
+          jq -e '
+            .schema == "srq-lifecycle-adversarial-assessment-v1"
+            and .status == "PASS" and .release_status == "BLOCKED"
+            and .expected_case_count == 9 and .rejected_case_count == 9
+            and .all_expected_mutations_rejected == true
+            and .expected_positive_control_count == 2
+            and .accepted_positive_control_count == 2
+            and .all_positive_controls_accepted == true
+            and (.positive_controls | length == 2)
+          ' "$evidence_dir/srq-lifecycle-adversarial-assessment.json"
           jq -e '
             .schema == "srq-lifecycle-interop-assessment-v1"
             and .contract_status == "PASS"
@@ -92,5 +103,6 @@ jobs:
           name: srq-lifecycle-interop-evidence
           path: |
             ${{ runner.temp }}/srq-lifecycle-interop/lifecycle-interop-assessment.json
+            ${{ runner.temp }}/srq-lifecycle-interop/srq-lifecycle-adversarial-assessment.json
           if-no-files-found: ignore
           retention-days: 30
