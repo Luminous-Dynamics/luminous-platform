@@ -411,6 +411,15 @@ jq -e --slurpfile protocol "$corpus_protocol" '
       == ([$protocol[0].cases[] | {id,input_kind,expected_outcome:(if .expected_lifecycle_result == "REJECT" then "reject" else "invalid" end)}] | sort_by(.id))
   and ([.positive_controls[] | {id,input_kind,expected_outcome}] | sort_by(.id))
       == ([$protocol[0].positive_controls[] | {id,input_kind,expected_outcome:(if .expected_lifecycle_result == "ACCEPT_RECORD_KEEP_RELEASE_BLOCKED" then "accept_record_but_keep_release_blocked" else "invalid" end)}] | sort_by(.id))
+  and ([.positive_controls[] | select(.input_kind == "mycelix_receipt") | {id,evidence_tier,evidence_claim_ceiling}] | sort_by(.id))
+      == ([$protocol[0].positive_controls[] | select(.input_kind == "mycelix_receipt") | {id,evidence_tier:.expected_evidence_tier,evidence_claim_ceiling:.expected_evidence_claim_ceiling}] | sort_by(.id))
+  and ([.positive_controls[] | select(.input_kind == "nixward_transaction") | {id,transaction_phase}] | sort_by(.id))
+      == ([$protocol[0].positive_controls[] | select(.input_kind == "nixward_transaction") | {id,transaction_phase:.expected_transaction_phase}] | sort_by(.id))
+  and $protocol[0].target_metrics.negative_case_count == .expected_case_count
+  and $protocol[0].target_metrics.positive_control_count == .expected_positive_control_count
+  and $protocol[0].target_metrics.negative_false_accept_count == 0
+  and $protocol[0].target_metrics.positive_false_reject_count == 0
+  and $protocol[0].target_metrics.release_false_pass_count == 0
   and .schema == "srq-lifecycle-adversarial-assessment-v1"
   and .status == "PASS" and .release_status == "BLOCKED"
   and .expected_case_count == 17 and .rejected_case_count == 17 and .all_expected_mutations_rejected == true
