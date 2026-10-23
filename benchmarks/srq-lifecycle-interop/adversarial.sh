@@ -59,6 +59,7 @@ jq -cn \
     schema:"srq-lifecycle-adversarial-assessment-v1",
     status:"RUNNING",
     release_status:"BLOCKED",
+    claim_ceiling:"none",
     harness:{repository:"Luminous-Dynamics/luminous-platform",commit_sha:$commit,adversarial_script_git_blob_sha1:$script_blob,adversarial_script_sha256:$script_sha256,validator_git_blob_sha1:$validator_blob,validator_sha256:$validator_sha256,schema_validator_git_blob_sha1:$schema_validator_blob,schema_validator_sha256:$schema_validator_sha256,schema_validator_test_git_blob_sha1:$schema_test_blob,schema_validator_test_sha256:$schema_test_sha256,schema_requirements_git_blob_sha1:$schema_requirements_blob,schema_requirements_sha256:$schema_requirements_sha256},
     fixture:{repository:"Luminous-Dynamics/mycelix",commit_sha:"b02cefab8474262aef23b61a4ac3811fe92e29bf",git_blob_sha1:"d1d3516e2778e0da89013348b16ed73af6e5e8a8",raw_sha256:$receipt_sha256,schema_git_blob_sha1:$schema_blob,schema_raw_sha256:$schema_sha256},
     schema_validator:{library:"python-jsonschema",version:"4.26.0",draft:"https://json-schema.org/draft/2020-12/schema",format_assertion:true},
