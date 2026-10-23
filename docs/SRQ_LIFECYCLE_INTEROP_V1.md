@@ -25,12 +25,13 @@ The benchmark script:
 2. Builds a disposable filesystem fixture and captures the probe's actual JSON output; it does not maintain a hand-copied diagnostic output fixture.
 3. Checks Nixward transaction fields and Mycelix evidence tier/claim consistency.
 4. Emits an assessment containing commit IDs, Git blob IDs, raw-byte SHA-256 values, observed source tiers and explicit release blockers.
-5. Runs three original negative controls: forged D0 authentication/qualification; S0-to-S4 claim inflation without source/verifier/gate evidence; and phase-only Nixward promotion without authorization/readback/outcome.
-6. Runs a reusable adversarial evidence-mutation corpus. It rejects planned receipts with execution-tier statuses, any passing gate or injected subject identity/hash, nonzero result counts, S3/S4 claims without required independent-verification bindings, S2 source-reproducibility claims without source bytes/rights evidence, and unknown tiers.
-7. Accepts two deliberately synthetic positive-control *shapes* (S2/source-reproducible and S4/domain-validated) while asserting the lifecycle assessment itself remains `release_status=BLOCKED` and `claim_ceiling=none`.
-8. Confirms the upstream fixture files and probe source remain unmodified.
+5. Runs the original D0 authentication/qualification and S0-to-S4 claim-escalation controls.
+6. Runs fifteen named adversarial cases: nine Mycelix receipt mutations (run status, claim ceiling, source/gate/hash consistency and unknown tiers) plus six Nixward phase-only mutations (`validated`, `authorized`, `snapshotted`, `applied`, `verified`, `promoted`). Each must fail for the intended contract violation rather than for a missing tool or bad source pin.
+7. Requires the Nixward phase label to be backed by prerequisite transaction records: validation before `validated`, validation plus authorization before `authorized`, then snapshot/application/verification in sequence; `promoted` additionally requires an outcome record. This integration subset checks record presence and phase ordering, not nested-record validity or the full Nixward production transaction verifier.
+8. Accepts three explicitly synthetic positive-control shapes: S2/source-reproducible, S4/domain-validated, and a `validated` Nixward transaction with a validation record. Every control must still produce `release_status=BLOCKED` and `claim_ceiling=none` because the other lifecycle layers remain insufficient.
+9. Confirms the upstream fixture files and probe source remain unmodified.
 
-The additional cross-field checks are deliberately a small safety-critical subset of the pinned Mycelix schema: they test run-state/tier/claim-ceiling consistency and cannot be represented as full schema validation. The positive controls use sentinel URLs, hashes, commit identities and verifier references; they exercise structural acceptance only and are explicitly not real source, execution, independent-verification or domain-validation evidence. Every mutation uses disposable output; upstream source bytes and pins remain unchanged.
+The Mycelix cross-field checks are deliberately a small safety-critical subset of the pinned schema; they are not full Draft 2020-12 validation. Positive-control URLs, hashes, commits, verifier references and transaction records are sentinels, so they exercise structural acceptance only and do not establish actual source ingestion, rights, execution, independent verification or domain truth. Every mutation uses disposable output; upstream source bytes and pins remain unchanged.
 
 The validator performs a narrow field/invariant check. It does not implement the full JSON Schema 2020-12 validator from Mycelix, Nixward's full production transaction validator, SRQ's release evaluator, or a cryptographic attestation verifier. Exact pinning is not a substitute for those verifiers.
 
@@ -58,6 +59,7 @@ These are proposed gates for follow-on work, not results measured by this PR. St
 
 | Benchmark | Industry reference / fair baseline | Target |
 |---|---|---|
+| Transaction phase consistency | Nixward transaction v1 phase sequence | Reject 100% of phase-only advancement attacks; accept all frozen valid phase fixtures; zero false release PASS. |
 | Claim-ceiling monotonicity | Mycelix receipt rules; RFC 9334 evidence appraisal | Reject 100% of pre-registered escalations; zero false release PASS; zero false rejects across explicit valid controls. |
 | Source and report identity | Git object IDs plus raw-byte SHA-256; in-toto subject binding | Reject 100% of wrong-commit, wrong-blob, one-byte-drift, symlink-substitution, and artifact/subject mismatch cases. |
 | Freshness and replay (future D1 verifier) | RATS freshness requirements and TUF rollback/freeze/mix-and-match threat classes | Reject every stale/replayed nonce, wrong target, wrong policy digest, and wrong artifact binding; under 64 concurrent submissions of one single-use challenge, exactly one acceptance. |
