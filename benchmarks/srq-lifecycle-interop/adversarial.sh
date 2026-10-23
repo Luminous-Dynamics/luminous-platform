@@ -206,7 +206,7 @@ expect_transaction_accept() {
     exit 1
   fi
   candidate_sha256="$(sha256sum "$candidate" | cut -d ' ' -f 1)"
-  jq --arg id "$name" --arg filter "$filter" --arg sha256 "$candidate_sha256" \
+  jq --arg id "$name" --arg filter "$filter" --arg expected_phase "$expected_phase" --arg sha256 "$candidate_sha256" \
     '.positive_controls += [{
       id:$id,
       input_kind:"nixward_transaction",
