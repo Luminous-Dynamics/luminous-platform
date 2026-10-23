@@ -301,6 +301,13 @@
             "corpus_validator_test_raw_sha256": {
               "type": "string",
               "pattern": "^[0-9a-f]{64}$"
+            },
+            "schema_wheelhouse_manifest_raw_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "schema_wheel_count": {
+              "const": 20
             }
           }
         }
