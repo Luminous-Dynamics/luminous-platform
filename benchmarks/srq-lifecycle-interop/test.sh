@@ -7,6 +7,10 @@ if [[ -z "$nixward_root" || -z "$mycelix_root" || -z "$sovereign_boot_root" || -
   exit 2
 fi
 mkdir -p "$output_dir"
+schema_python="${SRQ_SCHEMA_PYTHON:-python3}"
+export SRQ_SCHEMA_PYTHON="$schema_python"
+schema_reports_dir="$output_dir/schema-validation"
+mkdir -p "$schema_reports_dir"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 export CARGO_TARGET_DIR="$tmp/cargo-target"
@@ -43,11 +47,33 @@ jq -e '
   and (.sources.interop_harness.commit_sha | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.schema_validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.schema_validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.schema_requirements_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.schema_requirements_raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.interop_harness.adversarial_script_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.adversarial_script_raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.interop_harness.test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.upstream_lock_raw_sha256 | test("^[0-9a-f]{64}$"))
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
+
+"$schema_python" "$script_dir/schema_validate.py" \
+  --schema "$mycelix_root/research/evidence-plane/receipt-v0.schema.json" \
+  --instance "$mycelix_root/research/evidence-plane/examples/synthetic-planned-receipt-v0.json" \
+  --expect valid \
+  --output "$schema_reports_dir/mycelix-planned-s0.json" >/dev/null
+jq -e '
+  .schema == "srq-json-schema-validation-report-v1"
+  and .result == "VALID"
+  and .expected == "valid"
+  and .validator.required_version == "4.26.0"
+  and .validator.installed_version == "4.26.0"
+  and .validator.draft == "https://json-schema.org/draft/2020-12/schema"
+  and .validator.format_assertion == true
+  and (.schema_input.sha256 | test("^[0-9a-f]{64}$"))
+  and (.instance_input.sha256 | test("^[0-9a-f]{64}$"))
+' "$schema_reports_dir/mycelix-planned-s0.json" >/dev/null
+echo "PASS: full JSON Schema Draft 2020-12 validation accepts the pinned planned S0 receipt"
 echo "PASS: exact upstream inputs interoperate while the lifecycle remains release-blocked"
 
 # Negative control 1: D0 may never claim authentication or release qualification.
