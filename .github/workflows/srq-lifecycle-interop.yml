@@ -81,7 +81,7 @@ jobs:
             printf 'requirements_sha256=%s\n' "$(sha256sum benchmarks/srq-lifecycle-interop/requirements-schema.txt | cut -d ' ' -f 1)"
             (cd "$wheelhouse" && sha256sum ./*.whl | LC_ALL=C sort -k 2)
           } > "$wheel_manifest"
-          wheel_count="$(find "$wheelhouse" -maxdepth 1 -type f -name '*.whl' | wc -l)"
+          wheel_count="$(find "$wheelhouse" -maxdepth 1 -type f -name '*.whl' | wc -l | tr -d '[:space:]')"
           test "$wheel_count" -eq 20
           "$schema_venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-index --find-links "$wheelhouse" --require-hashes --only-binary=:all: -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
           "$schema_venv/bin/python" -m pip check
