@@ -135,14 +135,16 @@ pub fn appraise_clock(
         (ClockTier::A2PersistentHighWater, None) => {
             return Err(ClockReject::HighWaterUninitialized);
         }
-        (_, Some(high_water)) if observation.unix_seconds < high_water => {
+        (
+            ClockTier::A0HostWall | ClockTier::A2PersistentHighWater | ClockTier::A3Authenticated,
+            Some(high_water),
+        ) if observation.unix_seconds < high_water => {
             return Err(ClockReject::WallClockRollback);
         }
-        (_, Some(high_water))
-            if observation.tier != ClockTier::A3Authenticated
-                && observation.unix_seconds - high_water
-                    > policy.maximum_forward_step_seconds =>
-        {
+        (
+            ClockTier::A0HostWall | ClockTier::A2PersistentHighWater,
+            Some(high_water),
+        ) if observation.unix_seconds - high_water > policy.maximum_forward_step_seconds => {
             return Err(ClockReject::ForwardJump);
         }
         _ => {}
@@ -405,6 +407,24 @@ mod tests {
             ),
             Err(ClockReject::HighWaterUninitialized)
         );
+    }
+
+    #[test]
+    fn boot_monotonic_tier_ignores_wall_clock_rollback_when_ticks_advance() {
+        let mut state = seeded_state();
+        let observation = observation(ClockTier::A1BootMonotonic, 900);
+        let prepared = appraise_clock(
+            &observation,
+            &policy(ClockTier::A1BootMonotonic),
+            &state,
+        ).unwrap();
+
+        commit_after_authorized_transaction(&mut state, prepared, true).unwrap();
+        assert_eq!(state.high_water_unix_seconds, Some(1_000));
+        assert_eq!(state.last_monotonic, Some(MonotonicPoint {
+            boot_id: "boot-a".into(),
+            ticks: 220,
+        }));
     }
 
     #[test]

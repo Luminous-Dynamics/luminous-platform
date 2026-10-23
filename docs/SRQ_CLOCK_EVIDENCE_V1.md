@@ -24,7 +24,7 @@ These tiers are not interchangeable. A system requiring A3 must block on A3 unav
 `tools/srq-clock-evidence-model/` is a dependency-free Rust reference state machine. It models:
 
 - strict minimum-tier policy with no automatic fallback;
-- A1 monotonic ticks bound to a boot ID, rejecting regressions and unexplained reboot changes;
+- A1 monotonic ticks bound to a boot ID, rejecting regressions and unexplained reboot changes without consulting wall-clock high-water comparisons;
 - A2 rejection when no prior high-water value exists, when time moves behind the committed high-water value, or when an unauthenticated forward jump exceeds the configured bound;
 - A3 issuer, policy, target, challenge, decision, issue-time, expiry and reference-time binding;
 - a compare-by-revision commit step that rejects stale appraisals;
