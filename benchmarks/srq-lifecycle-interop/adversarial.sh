@@ -124,6 +124,8 @@ expect_accept() {
       fixture_semantics:"synthetic structural positive control; digests and source identities are sentinels, not real-world evidence",
       expected_outcome:"accept_record_but_keep_release_blocked",
       observed_outcome:"ACCEPTED_WITH_RELEASE_BLOCKED",
+      release_status:"BLOCKED",
+      claim_ceiling:"none",
       evidence_tier:$tier,
       claim_ceiling:$claim,
       candidate_raw_sha256:$sha256
