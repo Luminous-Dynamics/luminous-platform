@@ -157,6 +157,7 @@ jobs:
           path: |
             ${{ runner.temp }}/srq-lifecycle-interop/lifecycle-interop-assessment.json
             ${{ runner.temp }}/srq-lifecycle-interop/srq-lifecycle-adversarial-assessment.json
+            ${{ runner.temp }}/srq-lifecycle-interop/corpus-v1.json
             ${{ runner.temp }}/srq-lifecycle-interop/schema-validation/*.json
           if-no-files-found: ignore
           retention-days: 30
