@@ -401,7 +401,7 @@ jq --argjson negative_count "$cases" --argjson positive_count "$controls" '
   | .all_positive_controls_accepted = (.positive_controls | length == $positive_count and all(.[]; .observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED"))
   | .observed_metrics.negative_false_accept_count = (.expected_case_count - .rejected_case_count)
   | .observed_metrics.positive_false_reject_count = (.expected_positive_control_count - .accepted_positive_control_count)
-  | .observed_metrics.release_false_pass_count = (if .release_status != "BLOCKED" or .claim_ceiling != "none" or ([.positive_controls[] | select(.observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED" and (.release_status != "BLOCKED" or .claim_ceiling != "none"))] | length > 0) then 1 else 0 end)
+  | .observed_metrics.release_false_pass_count = (if .release_status != "BLOCKED" or ([.positive_controls[] | select(.observed_outcome == "ACCEPTED_WITH_RELEASE_BLOCKED" and (.release_status != "BLOCKED" or .claim_ceiling != "none"))] | length > 0) then 1 else 0 end)
 ' "$report" > "$tmp/final-report.json"
 mv "$tmp/final-report.json" "$report"
 [[ "$cases" -eq 17 ]] || { echo "FAIL: expected exactly 17 adversarial cases, found $cases" >&2; exit 1; }
@@ -437,6 +437,7 @@ jq -e --slurpfile protocol "$corpus_protocol" '
   and .observed_metrics.negative_false_accept_count == 0
   and .observed_metrics.positive_false_reject_count == 0
   and .observed_metrics.release_false_pass_count == 0
+  and (.positive_controls | all(.[]; .release_status == "BLOCKED" and .claim_ceiling == "none"))
   and $protocol[0].target_metrics.negative_false_accept_count == .observed_metrics.negative_false_accept_count
   and $protocol[0].target_metrics.positive_false_reject_count == .observed_metrics.positive_false_reject_count
   and $protocol[0].target_metrics.release_false_pass_count == .observed_metrics.release_false_pass_count
