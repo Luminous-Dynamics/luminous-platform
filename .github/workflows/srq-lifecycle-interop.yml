@@ -85,6 +85,8 @@ jobs:
           test "$wheel_count" -eq 20
           "$schema_venv/bin/python" -m pip install --disable-pip-version-check --no-input --no-index --find-links "$wheelhouse" --require-hashes --only-binary=:all: -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
           "$schema_venv/bin/python" -m pip check
+          printf '\npip-check=PASS\ninstalled-distributions:\n' >> "$wheel_manifest"
+          "$schema_venv/bin/python" -m pip freeze --all | LC_ALL=C sort >> "$wheel_manifest"
           export SRQ_SCHEMA_PYTHON="$schema_venv/bin/python"
           export SRQ_SCHEMA_WHEELHOUSE_MANIFEST="$wheel_manifest"
           export SRQ_SCHEMA_WHEEL_COUNT="$wheel_count"
