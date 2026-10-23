@@ -15,7 +15,7 @@ The test uses immutable upstream commit pins and exact Git blob IDs rather than 
 - Mycelix planned receipt: the same pinned commit; blob d1d3516e2778e0da89013348b16ed73af6e5e8a8.
 - Sovereign Boot D0 probe source: commit 9d183163a0f2bb101e6dd0ad3609afde04f1c5a4; blob 2b05462ab98e90abc085d2834e69dbf2ebae9337.
 
-The workflow checks the checkout SHA and Git blob ID at runtime and computes SHA-256 over the exact raw fixture/observation bytes for the assessment report. The primary assessment also binds the exact lifecycle-interoperability harness commit, validator/test/adversarial-runner Git blob IDs, upstream-lock bytes, and assessment-schema bytes; it refuses to run if those tracked harness files have local staged or unstaged edits. The adversarial runner emits a second JSON assessment with every mutation filter, candidate raw-byte SHA-256, expected/observed rejection, validator exit status, rejection reason, and harness/fixture identities. CI retains both reports as artifacts.
+The workflow checks the checkout SHA and Git blob ID at runtime and computes SHA-256 over the exact raw fixture/observation bytes for the assessment report. The primary assessment binds the exact lifecycle-interoperability harness commit, validator/test/adversarial-runner identities, full-schema validator source, version-pinned schema-validator dependency list, upstream-lock bytes, and assessment-schema bytes; it refuses to run if tracked harness files have staged or unstaged edits. The adversarial runner emits a JSON assessment with every mutation filter, candidate raw-byte SHA-256, schema-validation result (or explicit `NOT_APPLICABLE` for Nixward transactions), schema-report digest, expected/observed rejection, validator exit status, rejection reason, and harness/fixture identities. CI retains the assessments and per-case schema reports as artifacts.
 
 ## Executable contract
 
@@ -23,17 +23,20 @@ The benchmark script:
 
 1. Checks and runs the actual pinned Rust D0 probe with cargo fmt and cargo test.
 2. Builds a disposable filesystem fixture and captures the probe's actual JSON output; it does not maintain a hand-copied diagnostic output fixture.
-3. Checks Nixward transaction fields and Mycelix evidence tier/claim consistency.
-4. Emits an assessment containing commit IDs, Git blob IDs, raw-byte SHA-256 values, observed source tiers and explicit release blockers.
-5. Runs the original D0 authentication/qualification and S0-to-S4 claim-escalation controls.
-6. Runs seventeen named adversarial cases: nine Mycelix receipt mutations (run status, claim ceiling, source/gate/hash consistency and unknown tiers), six Nixward phase-only mutations (`validated`, `authorized`, `snapshotted`, `applied`, `verified`, `promoted`), and two invalid terminal-disposition mutations (`failed` without an outcome record and `recovered` without snapshot/outcome evidence). Each must fail for the intended contract violation rather than for a missing tool or bad source pin.
-7. Requires each Nixward phase to have its prerequisite evidence records. `failed` requires an outcome record; `recovered` requires snapshot and outcome records. These are narrow record-presence/order checks—not nested-record validity, exact recovery-binding validation or the full Nixward production verifier.
-8. Accepts five explicitly synthetic positive-control shapes: S2/source-reproducible, S4/domain-validated, and Nixward `validated`, `failed` and `recovered` records with minimum required companion fields. Every control must still produce `release_status=BLOCKED` and `claim_ceiling=none` because the other lifecycle layers remain insufficient.
-9. Confirms the upstream fixture files and probe source remain unmodified.
+3. Validates the pinned Mycelix receipt with the full JSON Schema Draft 2020-12 meta-schema and instance validator, with format assertions enabled, using a test-only Python environment. The validator version is pinned to `jsonschema==4.26.0` with exact direct/transitive package versions in `requirements-schema.txt`; it rejects duplicate JSON keys and remote `$ref` values and never makes a release decision.
+4. Checks the additional safety-critical Mycelix cross-field invariants and Nixward transaction phase/terminal-disposition prerequisites.
+5. Emits an assessment containing commit IDs, Git blob IDs, raw-byte SHA-256 values, observed source tiers and explicit release blockers.
+6. Runs the original D0 authentication/qualification and S0-to-S4 claim-escalation controls.
+7. Runs seventeen named adversarial cases: nine Mycelix receipt mutations (run status, claim ceiling, source/gate/hash consistency and unknown tiers), six Nixward phase-only mutations (`validated`, `authorized`, `snapshotted`, `applied`, `verified`, `promoted`), and two invalid terminal-disposition mutations (`failed` without an outcome record and `recovered` without snapshot/outcome evidence). All nine receipt mutations must fail the full schema validator and the lifecycle adapter for their expected reasons; transaction tests report schema applicability as `NOT_APPLICABLE`, not as schema failures.
+8. Requires each Nixward phase to have its prerequisite evidence records. `failed` requires an outcome record; `recovered` requires snapshot and outcome records. These are narrow record-presence/order checks—not nested-record validity, exact recovery-binding validation or the full Nixward production verifier.
+9. Accepts five explicitly synthetic positive-control shapes: S2/source-reproducible, S4/domain-validated, and Nixward `validated`, `failed` and `recovered` records with minimum required companion fields. The two Mycelix shapes must pass full schema validation. Every control must still produce `release_status=BLOCKED` and `claim_ceiling=none` because the other lifecycle layers remain insufficient.
+10. Confirms the upstream fixture files and probe source remain unmodified.
 
-The Mycelix cross-field checks are deliberately a small safety-critical subset of the pinned schema; they are not full Draft 2020-12 validation. Positive-control URLs, hashes, commits, verifier references and transaction records are sentinels, so they exercise structural acceptance only and do not establish actual source ingestion, rights, execution, independent verification or domain truth. Every mutation uses disposable output; upstream source bytes and pins remain unchanged.
+The Mycelix receipt is now checked against the actual pinned Draft 2020-12 schema, while the additional Mycelix cross-field check remains a deliberately small safety-critical subset. The schema runner checks the schema itself against the Draft 2020-12 meta-schema, enables format assertions, and prohibits remote references. It is an isolated test-only dependency and not a production runtime path. Version pinning does not equal hash-locking the package artifacts, and a schema-valid record still does not establish the truth/authenticity of its source bytes, rights, execution or domain claim.
 
-The validator performs a narrow field/invariant check. It does not implement the full JSON Schema 2020-12 validator from Mycelix, Nixward's full production transaction validator, SRQ's release evaluator, or a cryptographic attestation verifier. Exact pinning is not a substitute for those verifiers.
+Positive-control URLs, hashes, commits, verifier references and transaction records are sentinels; they exercise structural acceptance only and do not establish actual source ingestion, rights, execution, independent verification or domain truth. Every mutation uses disposable output; upstream source bytes and pins remain unchanged.
+
+The schema validator does not replace Nixward's full production transaction verifier, SRQ's release evaluator, or a cryptographic attestation verifier. JSON Schema checks structural validity; policy, provenance authenticity, actual target state and qualification remain separate evidence dimensions.
 
 ## Required result for this scenario
 
@@ -59,6 +62,7 @@ These are proposed gates for follow-on work, not results measured by this PR. St
 
 | Benchmark | Industry reference / fair baseline | Target |
 |---|---|---|
+| Full schema conformance | Pinned Mycelix Draft 2020-12 schema + `jsonschema==4.26.0` | Reject all frozen invalid receipt fixtures; accept all known-good receipt controls; pass meta-schema and format assertions; zero false release PASS. |
 | Transaction phase consistency | Nixward transaction v1 phase sequence, including failed/recovered terminal dispositions | Reject 100% of phase-only advancement attacks and invalid terminal dispositions; accept all frozen valid structural controls; zero false release PASS. |
 | Claim-ceiling monotonicity | Mycelix receipt rules; RFC 9334 evidence appraisal | Reject 100% of pre-registered escalations; zero false release PASS; zero false rejects across explicit valid controls. |
 | Source and report identity | Git object IDs plus raw-byte SHA-256; in-toto subject binding | Reject 100% of wrong-commit, wrong-blob, one-byte-drift, symlink-substitution, and artifact/subject mismatch cases. |
