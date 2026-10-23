@@ -1,0 +1,20 @@
+[package]
+name = "srq-d1-sqlite-store"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[dependencies]
+rusqlite = "=0.40.2"
+sha2 = "=0.10.9"
+srq-eat-cose-verifier = { path = "../srq-eat-cose-verifier" }
+srq-sqlite-runtime-policy = { path = "../srq-sqlite-runtime-policy" }
+
+[dev-dependencies]
+coset = "=0.4.2"
+ed25519-dalek = "=3.0.0"
+srq-boot-reconciliation-model = { path = "../srq-boot-reconciliation-model" }
+srq-policy-promotion-store = { path = "../srq-policy-promotion-store" }
+srq-rollback-witness-model = { path = "../srq-rollback-witness-model" }

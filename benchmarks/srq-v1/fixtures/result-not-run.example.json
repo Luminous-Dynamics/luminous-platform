@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "profile_id": "SRQ-1",
+  "scenario_id": "BOOT-001",
+  "status": "NOT_RUN",
+  "reason": "Fixture example only: no runner was assigned, so checkout and scenario steps did not execute.",
+  "source": {
+    "expected_source_sha": "3333333333333333333333333333333333333333",
+    "event_sha": "4444444444444444444444444444444444444444",
+    "actual_checkout_sha": null,
+    "source_matches_expected": null
+  },
+  "execution": {
+    "tier": "qemu",
+    "steps_executed": false,
+    "command": null,
+    "exit_code": null,
+    "environment": {
+      "os": null,
+      "architecture": null,
+      "toolchain": null
+    }
+  },
+  "evidence": [],
+  "claim_ceiling": "none",
+  "non_claims": [
+    "The scenario did not run.",
+    "NOT_RUN is not PASS and is not evidence of a safe boot.",
+    "No system recovery or hardware properties were measured."
+  ],
+  "fixture": true
+}

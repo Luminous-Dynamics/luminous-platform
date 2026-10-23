@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/srq-comparison-lock-v1.schema.json",
+  "title": "SRQ industry comparison run lock v1",
+  "description": "A per-run baseline lock. This binds baseline source identity, SRQ source, benchmark inputs, platform, and threat scope. It is not execution evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "fixture",
+    "locked_at_utc",
+    "baseline_id",
+    "baseline_version",
+    "baseline_source",
+    "srq_source_sha",
+    "benchmark_artifact_sha256",
+    "configuration_sha256",
+    "corpus_sha256",
+    "fault_schedule_sha256",
+    "outcome_oracle_sha256",
+    "artifacts",
+    "platform",
+    "scope"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "profile_id": {
+      "const": "SRQ-COMPARISON-LOCK-V1"
+    },
+    "fixture": {
+      "type": "boolean"
+    },
+    "locked_at_utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "baseline_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]{1,80}$"
+    },
+    "baseline_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "baseline_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resolved_commit_sha",
+        "archive_sha3_256",
+        "sqlite_source_id"
+      ],
+      "properties": {
+        "resolved_commit_sha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "archive_sha3_256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sqlite_source_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        }
+      }
+    },
+    "srq_source_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "benchmark_artifact_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "configuration_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "corpus_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "fault_schedule_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "outcome_oracle_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "os_image",
+        "architecture",
+        "kernel",
+        "filesystem",
+        "storage_class",
+        "runner_class"
+      ],
+      "properties": {
+        "os_image": {
+          "type": "string",
+          "minLength": 1
+        },
+        "architecture": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kernel": {
+          "type": "string",
+          "minLength": 1
+        },
+        "filesystem": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storage_class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runner_class": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "included",
+        "excluded"
+      ],
+      "properties": {
+        "included": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "excluded": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "benchmark_artifact",
+        "configuration",
+        "corpus",
+        "fault_schedule",
+        "outcome_oracle"
+      ],
+      "properties": {
+        "benchmark_artifact": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+        },
+        "configuration": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+        },
+        "corpus": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+        },
+        "fault_schedule": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+        },
+        "outcome_oracle": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._/-]*$"
+        }
+      }
+    }
+  }
+}
