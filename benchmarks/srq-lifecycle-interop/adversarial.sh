@@ -14,6 +14,7 @@ readonly schema="$mycelix_root/research/evidence-plane/receipt-v0.schema.json"
 readonly schema_validator="$script_dir/schema_validate.py"
 readonly schema_requirements="$script_dir/requirements-schema.txt"
 readonly corpus_protocol="$script_dir/corpus-v1.json"
+readonly executable_mutations="$script_dir/corpus-executable-mutations-v1.json"
 readonly schema_python="${SRQ_SCHEMA_PYTHON:-python3}"
 readonly repository_root="$(git -C "$script_dir/../.." rev-parse --show-toplevel)"
 readonly harness_commit="$(git -C "$repository_root" rev-parse HEAD)"
@@ -31,6 +32,25 @@ jq -e '
   and .release_invariant.accepted_structural_control_must_leave_claim_ceiling == "none"
   and .release_invariant.release_pass_allowed == false
 ' "$corpus_protocol" >/dev/null
+jq -e --slurpfile parent "$corpus_protocol" '
+  .schema == "srq-lifecycle-executable-mutations-v1"
+  and .version == 1
+  and .parent_protocol_id == $parent[0].protocol_id
+  and .invariants.exact_parent_case_id_join == true
+  and .invariants.exact_parent_positive_control_id_join == true
+  and .invariants.reject_missing_or_duplicate_ids == true
+  and .invariants.transformations_must_be_non_empty_strings == true
+  and .invariants.release_status_after_positive_controls == "BLOCKED"
+  and .invariants.claim_ceiling_after_positive_controls == "none"
+  and ([.cases[] | {id,input_kind,expected_schema_result,expected_lifecycle_result}] | sort_by(.id))
+      == ([$parent[0].cases[] | {id,input_kind,expected_schema_result,expected_lifecycle_result}] | sort_by(.id))
+  and ([.positive_controls[] | {id,input_kind,expected_schema_result,expected_lifecycle_result,expected_evidence_tier,expected_evidence_claim_ceiling,expected_transaction_phase}] | sort_by(.id))
+      == ([$parent[0].positive_controls[] | {id,input_kind,expected_schema_result,expected_lifecycle_result,expected_evidence_tier,expected_evidence_claim_ceiling,expected_transaction_phase}] | sort_by(.id))
+  and ([.cases[].id] | length == (unique | length))
+  and ([.positive_controls[].id] | length == (unique | length))
+  and (.cases | all(.[]; (.transform_filter | type == "string" and length > 0) and (.expected_failure_reason | type == "string" and length > 0)))
+  and (.positive_controls | all(.[]; (.transform_filter | type == "string" and length > 0)))
+' "$executable_mutations" >/dev/null
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 report="$output_dir/srq-lifecycle-adversarial-assessment.json"
@@ -52,6 +72,8 @@ jq -cn \
   --arg protocol_sha256 "$(sha256sum "$corpus_protocol" | cut -d ' ' -f 1)" \
   --arg protocol_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" \
   --arg protocol_id "$(jq -er '.protocol_id' "$corpus_protocol")" \
+  --arg mutation_manifest_sha256 "$(sha256sum "$executable_mutations" | cut -d ' ' -f 1)" \
+  --arg mutation_manifest_blob "$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json)" \
   --arg receipt_sha256 "$(sha256sum "$receipt" | cut -d ' ' -f 1)" \
   --arg schema_sha256 "$(sha256sum "$schema" | cut -d ' ' -f 1)" \
   --arg schema_blob "$(git -C "$mycelix_root" hash-object -- research/evidence-plane/receipt-v0.schema.json)" \
@@ -64,6 +86,7 @@ jq -cn \
     fixture:{repository:"Luminous-Dynamics/mycelix",commit_sha:"b02cefab8474262aef23b61a4ac3811fe92e29bf",git_blob_sha1:"d1d3516e2778e0da89013348b16ed73af6e5e8a8",raw_sha256:$receipt_sha256,schema_git_blob_sha1:$schema_blob,schema_raw_sha256:$schema_sha256},
     schema_validator:{library:"python-jsonschema",version:"4.26.0",draft:"https://json-schema.org/draft/2020-12/schema",format_assertion:true},
     protocol:{protocol_id:$protocol_id,version:1,git_blob_sha1:$protocol_blob,raw_sha256:$protocol_sha256},
+    executable_mutations:{schema:"srq-lifecycle-executable-mutations-v1",version:1,parent_protocol_id:$protocol_id,git_blob_sha1:$mutation_manifest_blob,raw_sha256:$mutation_manifest_sha256},
     expected_case_count:17,
     rejected_case_count:0,
     all_expected_mutations_rejected:false,
@@ -296,102 +319,35 @@ expect_transaction_accept() {
   echo "PASS: accepted $expected_phase-phase record while keeping lifecycle blocked: $name"
 }
 
-# Negative controls: mutations must fail on the intended contract invariant,
-# not on a missing tool, broken checkout pin or malformed input.
-expect_reject "s0-domain-validated-status" '.run_status = "domain_validated"' "cross-field semantics"
-expect_reject "s0-independently-checked-status" '.run_status = "independently_checked"' "cross-field semantics"
-expect_reject "planned-gate-inflation" '.gates.source_integrity = "pass"' "cross-field semantics"
-expect_reject "planned-subject-commit-injection" '.subject.commit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"' "cross-field semantics"
-expect_reject "planned-artifact-hash-injection" '.subject.artifact_sha256 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"' "cross-field semantics"
-expect_reject "planned-result-count-injection" '.benchmark.results_summary.observed_result_count = 1' "declared evidence tier / claim ceiling"
-expect_reject "s3-without-independent-verification" '.evidence_tier = "S3" | .claim_ceiling = "independently_reproduced"' "cross-field semantics"
-expect_reject "s2-source-reproducible-without-source" '.evidence_tier = "S2" | .claim_ceiling = "source_reproducible"' "cross-field semantics"
-expect_reject "unknown-tier" '.evidence_tier = "S5"' "declared evidence tier / claim ceiling"
+# Executable transforms live in the digest-bound companion manifest. The parent
+# corpus-v1 file defines the immutable case inventory and expected dispositions.
+while IFS= read -r id; do
+  input_kind="$(jq -er --arg id "$id" '.cases[] | select(.id == $id) | .input_kind' "$executable_mutations")"
+  filter="$(jq -er --arg id "$id" '.cases[] | select(.id == $id) | .transform_filter' "$executable_mutations")"
+  reason="$(jq -er --arg id "$id" '.cases[] | select(.id == $id) | .expected_failure_reason' "$executable_mutations")"
+  case "$input_kind" in
+    mycelix_receipt) expect_reject "$id" "$filter" "$reason" ;;
+    nixward_transaction) expect_transaction_reject "$id" "$filter" "$reason" ;;
+    *) echo "FAIL: unknown executable mutation input kind: $id / $input_kind" >&2; exit 1 ;;
+  esac
+done < <(jq -er '.cases[].id' "$executable_mutations")
 
-# The phase label must be supported by all prerequisite records in the
-# transition chain. These candidates mutate only the phase on a planned record.
-tx_reason="Nixward transaction fields or phase invariants are inconsistent"
-expect_transaction_reject "validated-without-validation-record" '.phase = "validated"' "$tx_reason"
-expect_transaction_reject "authorized-without-prior-records" '.phase = "authorized"' "$tx_reason"
-expect_transaction_reject "snapshotted-without-prior-records" '.phase = "snapshotted"' "$tx_reason"
-expect_transaction_reject "applied-without-prior-records" '.phase = "applied"' "$tx_reason"
-expect_transaction_reject "verified-without-prior-records" '.phase = "verified"' "$tx_reason"
-expect_transaction_reject "promoted-without-any-evidence-records" '.phase = "promoted"' "$tx_reason"
-expect_transaction_reject "failed-without-outcome-record" '.phase = "failed"' "$tx_reason"
-expect_transaction_reject "recovered-without-snapshot-outcome" '.phase = "recovered"' "$tx_reason"
-
-# Positive controls use obviously synthetic sentinels and explicit limitations.
-# They exercise structural acceptance only; no test data is an actual attestation.
-s2_filter='.run_status = "executed"
-  | .evidence_tier = "S2"
-  | .claim_ceiling = "source_reproducible"
-  | .receipt_id = "synthetic:positive-control:S2"
-  | .subject.repository = "synthetic://lifecycle-positive-control/S2"
-  | .subject.artifact_path = "fixtures/synthetic-positive-control-s2.json"
-  | .subject.commit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-  | .subject.artifact_sha256 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-  | .sources = [{
-      source_id:"synthetic-source-1",
-      url:"https://example.org/srq-test-fixture.bin",
-      observed_at:"2026-10-23T00:00:00Z",
-      media_type:"application/octet-stream",
-      raw_bytes_ingested:true,
-      byte_count:42,
-      sha256:"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-      rights_status:"open_license",
-      contact_status:"not_required",
-      temporal_coverage:null,
-      spatial_coverage:null,
-      metadata_conflicts:[],
-      artifact_path:"fixtures/synthetic-source.bin"
-    }]
-  | .benchmark.protocol_sha256 = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-  | .benchmark.pre_registered_at = "2026-10-23T00:00:00Z"
-  | .benchmark.split_strategy = "temporal_holdout"
-  | .benchmark.split_lock_sha256 = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-  | .benchmark.results_summary.state = "available"
-  | .benchmark.results_summary.observed_result_count = 1
-  | .benchmark.results_summary.note = "Synthetic shape control only; no empirical result is asserted."
-  | .benchmark.primary_metrics = ["structural positive control only; no empirical measurement"]
-  | .gates.source_integrity = "pass"
-  | .gates.rights_stewardship = "pass"
-  | .gates.transform_reproducibility = "pass"
-  | .gates.split_lock = "pass"
-  | .gates.budget_parity = "pass"
-  | .gates.negative_controls = "pass"
-  | .gates.exact_head = "pass"
-  | .gates.safety_critical_regression = "pass"
-  | .gates.independent_verification = "unknown"
-  | .gates.domain_validation = "unknown"
-  | .limitations = ["Synthetic structural positive control only; every source URL and digest is a sentinel.", "Does not prove real source ingestion, rights, reproducibility or domain validity."]'
-expect_accept "valid-s2-source-reproducible-shape" "$s2_filter" "S2" "source_reproducible"
-
-s4_filter='.run_status = "domain_validated"
-  | .evidence_tier = "S4"
-  | .claim_ceiling = "domain_validated"
-  | .receipt_id = "synthetic:positive-control:S4"
-  | .subject.repository = "synthetic://lifecycle-positive-control/S4"
-  | .subject.artifact_path = "fixtures/synthetic-positive-control-s4.json"
-  | .subject.commit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-  | .subject.artifact_sha256 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-  | .benchmark.protocol_sha256 = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
-  | .benchmark.pre_registered_at = "2026-10-23T00:00:00Z"
-  | .benchmark.split_lock_sha256 = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-  | .benchmark.results_summary.state = "available"
-  | .benchmark.results_summary.observed_result_count = 1
-  | .benchmark.results_summary.note = "Synthetic shape control only; no empirical result is asserted."
-  | .benchmark.primary_metrics = ["structural positive control only; no empirical measurement"]
-  | .gates = (.gates | with_entries(.value = "pass"))
-  | .independent_verification.status = "passed"
-  | .independent_verification.verifier_kind = "independent_implementation"
-  | .independent_verification.verifier_ref = "synthetic-positive-control-only"
-  | .independent_verification.replayed_commit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-  | .independent_verification.note = "Synthetic shape test; not a real independent verification."
-  | .limitations = ["Synthetic structural positive control only; identities, hashes and verification references are sentinels.", "Does not establish any real execution, independent reproduction or domain validation."]'
-expect_accept "valid-s4-domain-validated-shape" "$s4_filter" "S4" "domain_validated"
-expect_transaction_accept "valid-validated-phase-with-validation-record" '.phase = "validated" | .validation = {"status":"pass","validator_ref":"synthetic-control-only"}' "validated"
-expect_transaction_accept "valid-failed-phase-with-outcome" '.phase = "failed" | .outcome = {"status":"failed","detail":"synthetic fixture"}' "failed"
-expect_transaction_accept "valid-recovered-phase-with-snapshot-outcome" '.phase = "recovered" | .snapshot = {"snapshot_digest":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"} | .outcome = {"status":"recovered","recovery_binding_digest":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}' "recovered"
+while IFS= read -r id; do
+  input_kind="$(jq -er --arg id "$id" '.positive_controls[] | select(.id == $id) | .input_kind' "$executable_mutations")"
+  filter="$(jq -er --arg id "$id" '.positive_controls[] | select(.id == $id) | .transform_filter' "$executable_mutations")"
+  case "$input_kind" in
+    mycelix_receipt)
+      tier="$(jq -er --arg id "$id" '.positive_controls[] | select(.id == $id) | .expected_evidence_tier' "$executable_mutations")"
+      ceiling="$(jq -er --arg id "$id" '.positive_controls[] | select(.id == $id) | .expected_evidence_claim_ceiling' "$executable_mutations")"
+      expect_accept "$id" "$filter" "$tier" "$ceiling"
+      ;;
+    nixward_transaction)
+      phase="$(jq -er --arg id "$id" '.positive_controls[] | select(.id == $id) | .expected_transaction_phase' "$executable_mutations")"
+      expect_transaction_accept "$id" "$filter" "$phase"
+      ;;
+    *) echo "FAIL: unknown executable positive-control input kind: $id / $input_kind" >&2; exit 1 ;;
+  esac
+done < <(jq -er '.positive_controls[].id' "$executable_mutations")
 
 jq --argjson negative_count "$cases" --argjson positive_count "$controls" '
   .status = "PASS"
@@ -406,8 +362,17 @@ jq --argjson negative_count "$cases" --argjson positive_count "$controls" '
 mv "$tmp/final-report.json" "$report"
 [[ "$cases" -eq 17 ]] || { echo "FAIL: expected exactly 17 adversarial cases, found $cases" >&2; exit 1; }
 [[ "$controls" -eq 5 ]] || { echo "FAIL: expected exactly 5 positive controls, found $controls" >&2; exit 1; }
-jq -e --slurpfile protocol "$corpus_protocol" '
+jq -e --slurpfile protocol "$corpus_protocol" --slurpfile executable "$executable_mutations" '
   .schema == "srq-lifecycle-adversarial-assessment-v1"
+  and .executable_mutations.schema == $executable[0].schema
+  and .executable_mutations.version == $executable[0].version
+  and .executable_mutations.parent_protocol_id == $protocol[0].protocol_id
+  and (.executable_mutations.git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.executable_mutations.raw_sha256 | test("^[0-9a-f]{64}$"))
+  and ([.cases[] | {id,input_kind,mutation_filter}] | sort_by(.id))
+      == ([$executable[0].cases[] | {id,input_kind,mutation_filter:.transform_filter}] | sort_by(.id))
+  and ([.positive_controls[] | {id,input_kind,mutation_filter}] | sort_by(.id))
+      == ([$executable[0].positive_controls[] | {id,input_kind,mutation_filter:.transform_filter}] | sort_by(.id))
   and .protocol.protocol_id == $protocol[0].protocol_id
   and .protocol.version == $protocol[0].version
   and (.protocol.git_blob_sha1 | test("^[0-9a-f]{40}$"))
