@@ -7,13 +7,18 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use std::sync::{Arc, Barrier};
 use std::thread;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 fn main() {
     if let Err(error) = run() {
         eprintln!("BLOCKED: {error}");
         std::process::exit(2);
     }
+}
+
+fn percentile(sorted: &[u128], percentile: usize) -> u128 {
+    let rank = (percentile * sorted.len()).div_ceil(100).max(1);
+    sorted[rank - 1]
 }
 
 fn run() -> Result<(), Box<dyn Error>> {
@@ -44,7 +49,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     let ledger = ChallengeLedger::initialize(&path)?;
     ledger.issue(&challenge, 1_001)?;
     let ledger = Arc::new(ledger);
-    let barrier = Arc::new(Barrier::new(SUBMISSIONS));
+    let barrier = Arc::new(Barrier::new(SUBMISSIONS + 1));
     let mut workers = Vec::with_capacity(SUBMISSIONS);
     for _ in 0..SUBMISSIONS {
         let ledger = Arc::clone(&ledger);
@@ -52,20 +57,35 @@ fn run() -> Result<(), Box<dyn Error>> {
         let challenge = challenge.clone();
         workers.push(thread::spawn(move || {
             barrier.wait();
-            ledger.consume(&challenge.id, &challenge.binding, 1_002)
+            let started = Instant::now();
+            let result = ledger.consume(&challenge.id, &challenge.binding, 1_002);
+            (result, started.elapsed().as_nanos())
         }));
     }
 
+    // Workers are already waiting; measure only the concurrent execution window.
+    let wall_started = Instant::now();
+    barrier.wait();
     let mut accepted = 0usize;
     let mut replay_rejections = 0usize;
     let mut unexpected_errors = 0usize;
+    let mut latencies_ns = Vec::with_capacity(SUBMISSIONS);
     for worker in workers {
-        match worker.join().map_err(|_| "worker panicked")? {
+        let (result, latency_ns) = worker.join().map_err(|_| "worker panicked")?;
+        latencies_ns.push(latency_ns);
+        match result {
             Ok(()) => accepted += 1,
             Err(LedgerError::AlreadyConsumed) => replay_rejections += 1,
             Err(_) => unexpected_errors += 1,
         }
     }
+    let concurrency_wall_ns = wall_started.elapsed().as_nanos();
+    latencies_ns.sort_unstable();
+    let p50_ns = percentile(&latencies_ns, 50);
+    let p95_ns = percentile(&latencies_ns, 95);
+    let p99_ns = percentile(&latencies_ns, 99);
+    let throughput_per_second =
+        (SUBMISSIONS as f64) * 1_000_000_000.0 / (concurrency_wall_ns as f64);
 
     drop(ledger);
     let reopened = ChallengeLedger::open(&path)?;
@@ -86,7 +106,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     };
 
     println!(
-        "{{\"schema\":\"srq-challenge-replay-benchmark-v1\",\"status\":\"{status}\",\"concurrent_submissions\":{SUBMISSIONS},\"accepted_submissions\":{accepted},\"replay_rejections\":{replay_rejections},\"unexpected_errors\":{unexpected_errors},\"persisted_replay_rejected\":{persisted_replay_rejected},\"qualification_status\":\"BLOCKED\",\"claim_ceiling\":\"none\"}}"
+        "{{\"schema\":\"srq-challenge-replay-benchmark-v1\",\"status\":\"{status}\",\"concurrent_submissions\":{SUBMISSIONS},\"accepted_submissions\":{accepted},\"replay_rejections\":{replay_rejections},\"unexpected_errors\":{unexpected_errors},\"persisted_replay_rejected\":{persisted_replay_rejected},\"concurrency_wall_ns\":{concurrency_wall_ns},\"latency_p50_ns\":{p50_ns},\"latency_p95_ns\":{p95_ns},\"latency_p99_ns\":{p99_ns},\"throughput_submissions_per_second\":{throughput_per_second:.3},\"qualification_status\":\"BLOCKED\",\"claim_ceiling\":\"none\"}}"
     );
 
     fs::remove_dir_all(&private_dir)?;
