@@ -28,7 +28,10 @@ ln -s "/nix/store/$store_hash-$deployment_name" "$root/run/current-system"
 cargo run --manifest-path "$probe_manifest" --locked -- --root "$root" > "$tmp/boot-observation.json"
 
 bash "$script_dir/validate.sh" --nixward-root "$nixward_root" --mycelix-root "$mycelix_root" --sovereign-boot-root "$sovereign_boot_root" --boot-observation "$tmp/boot-observation.json" --output "$output_dir/lifecycle-interop-assessment.json"
-jq -e '
+jq -e \
+  --arg schema_env_install_report_sha256 "$(sha256sum "${SRQ_SCHEMA_INSTALL_REPORT:?missing hash-locked pip install report}" | cut -d ' ' -f 1)" \
+  --arg schema_env_validation_report_sha256 "$(sha256sum "${SRQ_SCHEMA_ENV_VALIDATION_REPORT:?missing validated package report}" | cut -d ' ' -f 1)" \
+  --arg schema_env_lock_sha256 "$(sha256sum "$script_dir/schema-env-lock-v1.json" | cut -d ' ' -f 1)" '
   .schema == "srq-lifecycle-interop-assessment-v1"
   and .contract_status == "PASS" and .release_status == "BLOCKED" and .claim_ceiling == "none"
   and .transaction.phase == "planned"
@@ -66,6 +69,14 @@ jq -e '
   and (.sources.interop_harness.corpus_validator_raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.interop_harness.corpus_validator_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.corpus_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.schema_environment_lock_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and .sources.interop_harness.schema_environment_lock_raw_sha256 == $schema_env_lock_sha256
+  and (.sources.interop_harness.schema_environment_validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.schema_environment_validator_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.schema_environment_validator_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.schema_environment_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and .sources.interop_harness.schema_install_report_raw_sha256 == $schema_env_install_report_sha256
+  and .sources.interop_harness.schema_environment_validation_report_raw_sha256 == $schema_env_validation_report_sha256
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
 
 "$schema_python" "$script_dir/corpus_validate.py" \
