@@ -1,0 +1,71 @@
+{
+  "schema": "srq-evidence-claim-ceiling-matrix-v1",
+  "protocol_id": "srq-evidence-claim-ceiling-matrix-v1",
+  "version": 1,
+  "purpose": "Cross-check every evidence tier against every claim ceiling using canonical synthetic receipts, the pinned full Mycelix schema, and the lifecycle adapter.",
+  "scope": "Structural claim/tier/status conformance only. This is not evidence of actual source ingestion, execution, independent reproduction, domain truth or release qualification.",
+  "source_contract": {
+    "repository": "Luminous-Dynamics/mycelix",
+    "commit_sha": "b02cefab8474262aef23b61a4ac3811fe92e29bf",
+    "path": "research/evidence-plane/receipt-v0.schema.json",
+    "git_blob_sha1": "e2b90a995f70d0a771b04e7f5fc077e1c0394f86"
+  },
+  "evidence_tiers": ["S0", "S1", "S2", "S3", "S4"],
+  "claim_ceilings": [
+    "synthetic_only",
+    "transcription_only",
+    "source_reproducible",
+    "independently_reproduced",
+    "domain_validated"
+  ],
+  "canonical_profiles": [
+    {
+      "evidence_tier": "S0",
+      "run_status": "planned",
+      "canonical_claim_ceiling": "synthetic_only",
+      "allowed_claim_ceilings": ["synthetic_only"]
+    },
+    {
+      "evidence_tier": "S1",
+      "run_status": "executed",
+      "canonical_claim_ceiling": "transcription_only",
+      "allowed_claim_ceilings": ["synthetic_only", "transcription_only"]
+    },
+    {
+      "evidence_tier": "S2",
+      "run_status": "executed",
+      "canonical_claim_ceiling": "source_reproducible",
+      "allowed_claim_ceilings": ["synthetic_only", "transcription_only", "source_reproducible"]
+    },
+    {
+      "evidence_tier": "S3",
+      "run_status": "independently_checked",
+      "canonical_claim_ceiling": "independently_reproduced",
+      "allowed_claim_ceilings": ["independently_reproduced"]
+    },
+    {
+      "evidence_tier": "S4",
+      "run_status": "domain_validated",
+      "canonical_claim_ceiling": "domain_validated",
+      "allowed_claim_ceilings": ["domain_validated"]
+    }
+  ],
+  "enumeration": {
+    "tier_count": 5,
+    "claim_ceiling_count": 5,
+    "expected_case_count": 25,
+    "expected_accept_count": 8,
+    "expected_reject_count": 17
+  },
+  "target_metrics": {
+    "false_accept_count": 0,
+    "false_reject_count": 0,
+    "schema_adapter_disagreement_count": 0,
+    "release_false_pass_count": 0
+  },
+  "release_invariant": {
+    "every_accepted_candidate_must_leave_release_status": "BLOCKED",
+    "every_accepted_candidate_must_leave_claim_ceiling": "none",
+    "release_pass_allowed": false
+  }
+}
