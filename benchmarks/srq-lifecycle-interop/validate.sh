@@ -215,7 +215,10 @@ interop_protocol_test_path="benchmarks/srq-lifecycle-interop/corpus_validate_tes
 transaction_phase_matrix_protocol_path="benchmarks/srq-lifecycle-interop/transaction-phase-matrix-v1.json"
 transaction_phase_matrix_runner_path="benchmarks/srq-lifecycle-interop/phase_matrix.py"
 transaction_phase_matrix_test_path="benchmarks/srq-lifecycle-interop/phase_matrix_test.py"
-git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" "$transaction_phase_matrix_protocol_path" "$transaction_phase_matrix_runner_path" "$transaction_phase_matrix_test_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+claim_matrix_protocol_path="benchmarks/srq-lifecycle-interop/claim-ceiling-matrix-v1.json"
+claim_matrix_runner_path="benchmarks/srq-lifecycle-interop/claim_matrix.py"
+claim_matrix_test_path="benchmarks/srq-lifecycle-interop/claim_matrix_test.py"
+git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" "$transaction_phase_matrix_protocol_path" "$transaction_phase_matrix_runner_path" "$transaction_phase_matrix_test_path" "$claim_matrix_protocol_path" "$claim_matrix_runner_path" "$claim_matrix_test_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
   echo "BLOCKED: interop source has uncommitted modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
@@ -244,6 +247,13 @@ transaction_phase_matrix_test_blob="$(git -C "$repo_root" hash-object -- "$trans
 transaction_phase_matrix_protocol_sha256="$(sha256sum "$repo_root/$transaction_phase_matrix_protocol_path" | cut -d ' ' -f 1)"
 transaction_phase_matrix_runner_sha256="$(sha256sum "$repo_root/$transaction_phase_matrix_runner_path" | cut -d ' ' -f 1)"
 transaction_phase_matrix_test_sha256="$(sha256sum "$repo_root/$transaction_phase_matrix_test_path" | cut -d ' ' -f 1)"
+claim_matrix_protocol_blob="$(git -C "$repo_root" hash-object -- "$claim_matrix_protocol_path")"
+claim_matrix_runner_blob="$(git -C "$repo_root" hash-object -- "$claim_matrix_runner_path")"
+claim_matrix_test_blob="$(git -C "$repo_root" hash-object -- "$claim_matrix_test_path")"
+claim_matrix_protocol_sha256="$(sha256sum "$repo_root/$claim_matrix_protocol_path" | cut -d ' ' -f 1)"
+claim_matrix_runner_sha256="$(sha256sum "$repo_root/$claim_matrix_runner_path" | cut -d ' ' -f 1)"
+claim_matrix_test_sha256="$(sha256sum "$repo_root/$claim_matrix_test_path" | cut -d ' ' -f 1)"
+claim_matrix_protocol_id="$(jq -er '.protocol_id' "$repo_root/$claim_matrix_protocol_path")"
 transaction_phase_matrix_protocol_id="$(jq -er '.protocol_id' "$repo_root/$transaction_phase_matrix_protocol_path")"
 interop_protocol_sha256="$(sha256sum "$repo_root/$interop_protocol_path" | cut -d ' ' -f 1)"
 interop_protocol_id="$(jq -er '.protocol_id' "$repo_root/$interop_protocol_path")"
@@ -279,6 +289,9 @@ report="$(
     --arg phase_matrix_protocol_blob "$transaction_phase_matrix_protocol_blob" --arg phase_matrix_protocol_sha256 "$transaction_phase_matrix_protocol_sha256" --arg phase_matrix_protocol_id "$transaction_phase_matrix_protocol_id" \
     --arg phase_matrix_runner_blob "$transaction_phase_matrix_runner_blob" --arg phase_matrix_runner_sha256 "$transaction_phase_matrix_runner_sha256" \
     --arg phase_matrix_test_blob "$transaction_phase_matrix_test_blob" --arg phase_matrix_test_sha256 "$transaction_phase_matrix_test_sha256" \
+    --arg claim_matrix_protocol_blob "$claim_matrix_protocol_blob" --arg claim_matrix_protocol_sha256 "$claim_matrix_protocol_sha256" --arg claim_matrix_protocol_id "$claim_matrix_protocol_id" \
+    --arg claim_matrix_runner_blob "$claim_matrix_runner_blob" --arg claim_matrix_runner_sha256 "$claim_matrix_runner_sha256" \
+    --arg claim_matrix_test_blob "$claim_matrix_test_blob" --arg claim_matrix_test_sha256 "$claim_matrix_test_sha256" \
     '{
       schema:"srq-lifecycle-interop-assessment-v1", contract_status:"PASS", release_status:"BLOCKED", claim_ceiling:"none", scenario_id:"LIFECYCLE-001",
       sources:{
@@ -302,7 +315,10 @@ report="$(
           corpus_validator_test_git_blob_sha1:$protocol_test_blob,corpus_validator_test_raw_sha256:$protocol_test_sha256,
           transaction_phase_matrix_protocol_git_blob_sha1:$phase_matrix_protocol_blob,transaction_phase_matrix_protocol_raw_sha256:$phase_matrix_protocol_sha256,transaction_phase_matrix_protocol_id:$phase_matrix_protocol_id,
           transaction_phase_matrix_runner_git_blob_sha1:$phase_matrix_runner_blob,transaction_phase_matrix_runner_raw_sha256:$phase_matrix_runner_sha256,
-          transaction_phase_matrix_test_git_blob_sha1:$phase_matrix_test_blob,transaction_phase_matrix_test_raw_sha256:$phase_matrix_test_sha256}
+          transaction_phase_matrix_test_git_blob_sha1:$phase_matrix_test_blob,transaction_phase_matrix_test_raw_sha256:$phase_matrix_test_sha256,
+          claim_matrix_protocol_git_blob_sha1:$claim_matrix_protocol_blob,claim_matrix_protocol_raw_sha256:$claim_matrix_protocol_sha256,claim_matrix_protocol_id:$claim_matrix_protocol_id,
+          claim_matrix_runner_git_blob_sha1:$claim_matrix_runner_blob,claim_matrix_runner_raw_sha256:$claim_matrix_runner_sha256,
+          claim_matrix_test_git_blob_sha1:$claim_matrix_test_blob,claim_matrix_test_raw_sha256:$claim_matrix_test_sha256}
       },
       transaction:{schema:$tx[0].schema,phase:$tx[0].phase,transaction_id:$tx[0].transaction_id,target_machine_digest:$tx[0].target_machine_digest,plan_digest:$tx[0].plan_digest,authorization_present:($tx[0].authorization != null),verification_present:($tx[0].verification != null),outcome_present:($tx[0].outcome != null)},
       boot_observation:{schema:$boot[0].schema,evidence_tier:$boot[0].evidence_tier,status:$boot[0].status,authenticated:$boot[0].authenticated,release_qualifying:$boot[0].release_qualifying,security_bindings_complete:($boot[0].target_id != null and $boot[0].decision_id != null and $boot[0].challenge_id != null and $boot[0].effective_policy_digest != null and $boot[0].artifact_digest != null and $boot[0].measurement != null)},
