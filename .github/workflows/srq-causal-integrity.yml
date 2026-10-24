@@ -74,7 +74,7 @@ jobs:
         run: |
           cargo run --locked --manifest-path benchmarks/srq-lifecycle-interop/challenge-ledger-rs/Cargo.toml --bin replay-benchmark > "$RUNNER_TEMP/srq-challenge-replay-report.json"
           python3 - "$RUNNER_TEMP/srq-challenge-replay-report.json" <<'PY'
-          import hashlib, json, os, pathlib, sys
+          import hashlib, json, os, pathlib, subprocess, sys
           report_path = pathlib.Path(sys.argv[1])
           report = json.loads(report_path.read_text(encoding="utf-8"))
           root = pathlib.Path.cwd()
@@ -95,8 +95,12 @@ jobs:
           assert report["concurrency_wall_ns"] > 0
           assert report["latency_p50_ns"] <= report["latency_p95_ns"] <= report["latency_p99_ns"]
           assert report["throughput_submissions_per_second"] > 0
-          report["rustc_version"] = os.popen("rustc --version --verbose").read().strip()
-          report["cargo_version"] = os.popen("cargo --version").read().strip()
+          report["rustc_version"] = subprocess.run(
+              ["rustc", "--version", "--verbose"], check=True, capture_output=True, text=True
+          ).stdout.strip()
+          report["cargo_version"] = subprocess.run(
+              ["cargo", "--version"], check=True, capture_output=True, text=True
+          ).stdout.strip()
           report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           PY
       - name: Retain exact-head benchmark reports

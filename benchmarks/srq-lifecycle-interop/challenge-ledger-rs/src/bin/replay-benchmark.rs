@@ -49,23 +49,27 @@ fn run() -> Result<(), Box<dyn Error>> {
     let ledger = ChallengeLedger::initialize(&path)?;
     ledger.issue(&challenge, 1_001)?;
     let ledger = Arc::new(ledger);
-    let barrier = Arc::new(Barrier::new(SUBMISSIONS + 1));
+    let ready = Arc::new(Barrier::new(SUBMISSIONS + 1));
+    let start = Arc::new(Barrier::new(SUBMISSIONS + 1));
     let mut workers = Vec::with_capacity(SUBMISSIONS);
     for _ in 0..SUBMISSIONS {
         let ledger = Arc::clone(&ledger);
-        let barrier = Arc::clone(&barrier);
+        let ready = Arc::clone(&ready);
+        let start = Arc::clone(&start);
         let challenge = challenge.clone();
         workers.push(thread::spawn(move || {
-            barrier.wait();
+            ready.wait();
+            start.wait();
             let started = Instant::now();
             let result = ledger.consume(&challenge.id, &challenge.binding, 1_002);
             (result, started.elapsed().as_nanos())
         }));
     }
 
-    // Workers are already waiting; measure only the concurrent execution window.
+    // Wait until all workers have arrived, then release them together for the measured window.
+    ready.wait();
     let wall_started = Instant::now();
-    barrier.wait();
+    start.wait();
     let mut accepted = 0usize;
     let mut replay_rejections = 0usize;
     let mut unexpected_errors = 0usize;
