@@ -1,0 +1,63 @@
+{
+  "schema": "srq-transaction-causal-binding-protocol-v1",
+  "protocol_id": "srq-transaction-causal-binding-v1",
+  "version": 1,
+  "purpose": "Standalone structural benchmark for binding transaction lifecycle records into one causal chain. This protocol is not a production wire-format specification.",
+  "identity_fields": ["transaction_id", "target_machine_digest", "plan_digest", "policy_digest"],
+  "allowed_event_sequences": [
+    ["planned", "validated", "authorized", "snapshotted", "applied", "verified", "outcome", "promoted"],
+    ["planned", "validated", "authorized", "snapshotted", "applied", "failed"],
+    ["planned", "validated", "authorized", "snapshotted", "applied", "failed", "recovered"]
+  ],
+  "required_payload_fields": {
+    "planned": ["intent"],
+    "validated": ["status", "validated_plan_digest", "validated_target_machine_digest"],
+    "authorized": ["authorized_plan_digest", "authorized_target_machine_digest", "policy_digest", "decision", "nonce", "signer_key_id", "signature_sha256"],
+    "snapshotted": ["target_machine_digest", "pre_state_digest", "snapshot_id"],
+    "applied": ["authorization_event_id", "snapshot_event_id", "applied_artifact_digest", "expected_post_state_digest", "generation_after"],
+    "verified": ["application_event_id", "observed_state_digest", "observed_generation", "result", "verifier_id"],
+    "outcome": ["verification_event_id", "status"],
+    "promoted": ["outcome_event_id", "verification_event_id", "target_state_digest"],
+    "failed": ["reason_code", "application_event_id"],
+    "recovered": ["failed_event_id", "snapshot_event_id", "restored_state_digest", "recovery_observation_sha256"]
+  },
+  "binding_invariants": [
+    {"id": "CB-01", "rule": "Every event repeats the root transaction, target, and plan identities exactly."},
+    {"id": "CB-02", "rule": "Event sequence and previous-event digest form one ordered, unbroken chain."},
+    {"id": "CB-03", "rule": "Validation and authorization bind the exact root plan and target; authorization also binds the policy digest."},
+    {"id": "CB-04", "rule": "Application references the preceding authorization and snapshot events."},
+    {"id": "CB-05", "rule": "Verification references the applied event and matches its expected state digest and generation."},
+    {"id": "CB-06", "rule": "Successful outcome references a passing verification; promotion references that same outcome and verification."},
+    {"id": "CB-07", "rule": "Recovery references the failed event and original snapshot, and records a restoration digest matching the snapshot pre-state."},
+    {"id": "CB-08", "rule": "Every accepted structural control remains release BLOCKED with claim ceiling none."}
+  ],
+  "attack_cases": [
+    "authorization_plan_mismatch", "authorization_target_mismatch", "authorization_policy_mismatch",
+    "validation_plan_mismatch", "snapshot_target_mismatch", "application_authorization_ref_mismatch",
+    "application_snapshot_ref_mismatch", "application_artifact_digest_malformed",
+    "verification_application_ref_mismatch", "verification_state_mismatch", "verification_generation_mismatch",
+    "successful_outcome_after_failed_verification", "outcome_verification_ref_mismatch",
+    "promotion_outcome_ref_mismatch", "promotion_verification_ref_mismatch", "promotion_state_mismatch",
+    "recovery_snapshot_ref_mismatch", "recovery_restored_state_mismatch", "recovery_observation_digest_malformed",
+    "event_target_identity_mismatch", "duplicate_event_id", "event_order_violation",
+    "sequence_gap", "stale_event_digest", "event_transaction_identity_mismatch",
+    "release_status_escalation"
+  ],
+  "positive_controls": ["successful_promotion", "terminal_failure", "failure_then_recovery"],
+  "target_metrics": {
+    "expected_attack_case_count": 26,
+    "expected_positive_control_count": 3,
+    "false_accept_count": 0,
+    "false_reject_count": 0,
+    "unexpected_error_count": 0,
+    "false_release_pass_count": 0
+  },
+  "release_invariant": {"release_status": "BLOCKED", "claim_ceiling": "none", "release_pass_allowed": false},
+  "limitations": [
+    "All records and all positive controls are synthetic; an accepted record is not evidence that the underlying operation occurred.",
+    "SHA-256 values detect internal byte changes but this prototype does not verify digital signatures, signer trust, trusted time, nonce freshness, or replay state.",
+    "The event chain is not authenticated; an attacker able to rewrite the complete chain can recompute its digests.",
+    "This is a structural causal-binding prototype, not integration with the production Nixward transaction verifier or Mycelix schema.",
+    "No actual NixOS build, boot, VM reset, power-loss, target observation, rollback, or fleet behavior is tested."
+  ]
+}

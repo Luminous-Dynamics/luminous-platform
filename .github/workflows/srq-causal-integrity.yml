@@ -1,0 +1,49 @@
+name: SRQ causal integrity prototype
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/srq-causal-integrity.yml'
+      - 'benchmarks/srq-lifecycle-interop/causal-integrity/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  causal-integrity:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run unit tests
+        run: python -m unittest discover -s benchmarks/srq-lifecycle-interop/causal-integrity -p 'test_*.py' -v
+      - name: Run frozen attack/positive-control corpus
+        run: |
+          python benchmarks/srq-lifecycle-interop/causal-integrity/causal_integrity.py --self-test --commit-sha "$GITHUB_SHA" --output "$RUNNER_TEMP/srq-causal-integrity-report.json"
+          python - "$RUNNER_TEMP/srq-causal-integrity-report.json" <<'PY'
+          import json, os, sys
+          with open(sys.argv[1], encoding='utf-8') as stream:
+              report = json.load(stream)
+          assert report['status'] == 'PASS'
+          assert report['qualification_status'] == 'BLOCKED'
+          assert report['claim_ceiling'] == 'none'
+          assert report['attack_case_count'] == 26
+          assert report['positive_control_count'] == 3
+          assert report['harness_commit_sha'] == os.environ['GITHUB_SHA']
+          assert len(report['protocol_raw_sha256']) == 64
+          assert len(report['harness_script_raw_sha256']) == 64
+          for key in ('false_accept_count', 'false_reject_count', 'unexpected_error_count', 'false_release_pass_count'):
+              assert report[key] == 0, (key, report[key])
+          PY
+      - name: Retain exact-head benchmark report
+        uses: actions/upload-artifact@v4
+        with:
+          name: srq-causal-integrity-${{ github.sha }}
+          path: ${{ runner.temp }}/srq-causal-integrity-report.json
+          if-no-files-found: error
+          retention-days: 30
