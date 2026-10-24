@@ -21,9 +21,30 @@ fn main() {
             }
         }
     }
+    if args.get(1).map(String::as_str) == Some("--consume-crash-window") {
+        if let Err(error) = run_consume_crash_window(&args) {
+            eprintln!("CRASH_WINDOW_WORKER_ERROR: {error}");
+            std::process::exit(2);
+        }
+    }
     if let Err(error) = run() {
         eprintln!("BLOCKED: {error}");
         std::process::exit(2);
+    }
+}
+
+fn run_consume_crash_window(args: &[String]) -> Result<(), Box<dyn Error>> {
+    if args.len() != 4 {
+        return Err("crash-window worker expects ledger and consumed-marker paths".into());
+    }
+    let ledger = ChallengeLedger::open(&args[2])?;
+    let challenge = synthetic_challenge();
+    ledger.consume(&challenge.id, &challenge.binding, 1_002)?;
+    // The marker is written only after consume has returned following sync_all. The parent
+    // kills this process in the window before any privileged side effect is performed.
+    fs::write(&args[3], b"consumed-before-side-effect")?;
+    loop {
+        thread::sleep(Duration::from_secs(1));
     }
 }
 

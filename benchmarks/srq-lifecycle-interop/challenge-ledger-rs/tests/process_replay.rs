@@ -127,3 +127,43 @@ fn concurrent_processes_can_consume_one_challenge_exactly_once() {
         Err(LedgerError::AlreadyConsumed)
     ));
 }
+
+#[test]
+fn kill_after_durable_consumption_before_side_effect_keeps_challenge_spent() {
+    let dir = PrivateTempDir::new();
+    let ledger_path = dir.path("ledger.log");
+    let consumed_marker = dir.path("consumed.marker");
+    let challenge = sample_challenge();
+    let ledger = ChallengeLedger::initialize(&ledger_path).expect("initialize ledger");
+    ledger.issue(&challenge, 1_001).expect("issue challenge");
+    drop(ledger);
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_replay-benchmark"))
+        .arg("--consume-crash-window")
+        .arg(&ledger_path)
+        .arg(&consumed_marker)
+        .spawn()
+        .expect("spawn crash-window worker");
+
+    let deadline = Instant::now() + Duration::from_secs(15);
+    while !consumed_marker.exists() {
+        if let Some(status) = child.try_wait().expect("poll crash-window worker") {
+            panic!("worker exited before the durable-consume marker: {status}");
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            panic!("worker did not reach the post-consume, pre-side-effect window");
+        }
+        thread::sleep(Duration::from_millis(5));
+    }
+
+    child.kill().expect("kill worker before side effect");
+    let _killed_status = child.wait().expect("wait for killed worker");
+
+    let reopened = ChallengeLedger::open(&ledger_path).expect("reopen journal after worker kill");
+    assert!(matches!(
+        reopened.consume(&challenge.id, &challenge.binding, 1_003),
+        Err(LedgerError::AlreadyConsumed)
+    ));
+}
