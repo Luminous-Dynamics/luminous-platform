@@ -234,11 +234,12 @@ interop_environment_lock_path="benchmarks/srq-lifecycle-interop/schema-env-lock-
 interop_environment_validator_path="benchmarks/srq-lifecycle-interop/schema_env_validate.py"
 interop_environment_validator_test_path="benchmarks/srq-lifecycle-interop/schema_env_validate_test.py"
 interop_phase_matrix_path="benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh"
-git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_executable_mutations_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" "$interop_environment_lock_path" "$interop_environment_validator_path" "$interop_environment_validator_test_path" "$interop_phase_matrix_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+interop_phase_protocol_path="benchmarks/srq-lifecycle-interop/transaction-phase-state-protocol-v1.json"
+git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_executable_mutations_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" "$interop_environment_lock_path" "$interop_environment_validator_path" "$interop_environment_validator_test_path" "$interop_phase_matrix_path" "$interop_phase_protocol_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
   echo "BLOCKED: interop source has uncommitted modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
-git -C "$repo_root" diff --cached --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_executable_mutations_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" "$interop_environment_lock_path" "$interop_environment_validator_path" "$interop_environment_validator_test_path" "$interop_phase_matrix_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+git -C "$repo_root" diff --cached --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_executable_mutations_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" "$interop_environment_lock_path" "$interop_environment_validator_path" "$interop_environment_validator_test_path" "$interop_phase_matrix_path" "$interop_phase_protocol_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
   echo "BLOCKED: interop source has staged modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
@@ -261,6 +262,9 @@ interop_environment_validator_blob="$(git -C "$repo_root" hash-object -- "$inter
 interop_environment_validator_test_blob="$(git -C "$repo_root" hash-object -- "$interop_environment_validator_test_path")"
 interop_phase_matrix_blob="$(git -C "$repo_root" hash-object -- "$interop_phase_matrix_path")"
 interop_phase_matrix_sha256="$(sha256sum "$repo_root/$interop_phase_matrix_path" | cut -d ' ' -f 1)"
+interop_phase_protocol_blob="$(git -C "$repo_root" hash-object -- "$interop_phase_protocol_path")"
+interop_phase_protocol_sha256="$(sha256sum "$repo_root/$interop_phase_protocol_path" | cut -d ' ' -f 1)"
+interop_phase_protocol_id="$(jq -er '.protocol_id' "$repo_root/$interop_phase_protocol_path")"
 interop_environment_lock_sha256="$(sha256sum "$repo_root/$interop_environment_lock_path" | cut -d ' ' -f 1)"
 interop_environment_validator_sha256="$(sha256sum "$repo_root/$interop_environment_validator_path" | cut -d ' ' -f 1)"
 interop_environment_validator_test_sha256="$(sha256sum "$repo_root/$interop_environment_validator_test_path" | cut -d ' ' -f 1)"
@@ -303,6 +307,7 @@ report="$(
     --arg environment_validator_blob "$interop_environment_validator_blob" --arg environment_validator_sha256 "$interop_environment_validator_sha256" \
     --arg environment_validator_test_blob "$interop_environment_validator_test_blob" --arg environment_validator_test_sha256 "$interop_environment_validator_test_sha256" \
     --arg phase_matrix_blob "$interop_phase_matrix_blob" --arg phase_matrix_sha256 "$interop_phase_matrix_sha256" \
+    --arg phase_protocol_blob "$interop_phase_protocol_blob" --arg phase_protocol_sha256 "$interop_phase_protocol_sha256" --arg phase_protocol_id "$interop_phase_protocol_id" \
     --arg schema_env_install_report_sha256 "$schema_env_install_report_sha256" --arg schema_env_validation_report_sha256 "$schema_env_validation_report_sha256" \
     '{
       schema:"srq-lifecycle-interop-assessment-v1", contract_status:"PASS", release_status:"BLOCKED", claim_ceiling:"none", scenario_id:"LIFECYCLE-001",
@@ -330,6 +335,7 @@ report="$(
           schema_environment_validator_git_blob_sha1:$environment_validator_blob,schema_environment_validator_raw_sha256:$environment_validator_sha256,
           schema_environment_validator_test_git_blob_sha1:$environment_validator_test_blob,schema_environment_validator_test_raw_sha256:$environment_validator_test_sha256,
           phase_matrix_git_blob_sha1:$phase_matrix_blob,phase_matrix_raw_sha256:$phase_matrix_sha256,
+          phase_matrix_protocol_git_blob_sha1:$phase_protocol_blob,phase_matrix_protocol_raw_sha256:$phase_protocol_sha256,phase_matrix_protocol_id:$phase_protocol_id,
           schema_install_report_raw_sha256:$schema_env_install_report_sha256,schema_environment_validation_report_raw_sha256:$schema_env_validation_report_sha256}
       },
       transaction:{schema:$tx[0].schema,phase:$tx[0].phase,transaction_id:$tx[0].transaction_id,target_machine_digest:$tx[0].target_machine_digest,plan_digest:$tx[0].plan_digest,authorization_present:($tx[0].authorization != null),verification_present:($tx[0].verification != null),outcome_present:($tx[0].outcome != null)},
