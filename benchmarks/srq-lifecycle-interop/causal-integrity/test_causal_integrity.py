@@ -22,6 +22,7 @@ class CausalIntegrityTests(unittest.TestCase):
         report = ci.run_corpus(self.protocol)
         self.assertEqual(report["qualification_status"], "BLOCKED")
         self.assertEqual(report["claim_ceiling"], "none")
+        self.assertEqual(report["mutation_manifest_raw_sha256"], self.protocol["mutation_manifest_sha256"])
 
     def test_terminal_failure_is_structurally_accepted(self):
         self.assertEqual(ci.validate_candidate(ci.make_candidate("failed"), self.protocol), [])
@@ -107,6 +108,12 @@ class CausalIntegrityTests(unittest.TestCase):
     def test_duplicate_json_keys_are_rejected(self):
         with self.assertRaises(ValueError):
             ci.json.loads('{"x":1,"x":2}', object_pairs_hook=ci._unique_object)
+
+    def test_mutation_manifest_digest_is_pinned(self):
+        changed = copy.deepcopy(self.protocol)
+        changed["mutation_manifest_sha256"] = "0" * 64
+        with self.assertRaises(ValueError):
+            ci.validate_protocol(changed)
 
     def test_protocol_drift_fails_closed(self):
         changed = copy.deepcopy(self.protocol)

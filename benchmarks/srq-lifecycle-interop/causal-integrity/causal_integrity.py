@@ -14,6 +14,7 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 PROTOCOL_PATH = HERE / "causal-integrity-protocol-v1.json"
+MUTATIONS_PATH = HERE / "causal-integrity-mutations-v1.json"
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 EVENT_KEYS = {"event_id", "sequence", "kind", "transaction_id", "target_machine_digest", "plan_digest", "artifact_digest", "previous_event_sha256", "payload", "payload_sha256", "event_sha256"}
 ROOT_KEYS = {"schema", "transaction", "events"}
@@ -284,47 +285,90 @@ def make_candidate(mode: str = "success") -> dict[str, Any]:
     return seal({"schema": "srq-causal-transaction-candidate-v1", "transaction": tx, "events": events})
 
 
+def load_mutation_manifest(protocol: dict[str, Any]) -> dict[str, Any]:
+    raw = MUTATIONS_PATH.read_bytes()
+    expected_digest = protocol.get("mutation_manifest_sha256")
+    observed_digest = hashlib.sha256(raw).hexdigest()
+    if not isinstance(expected_digest, str) or expected_digest != observed_digest:
+        raise ValueError("mutation manifest digest differs from the pinned protocol digest")
+    manifest = json.loads(raw.decode("utf-8"), object_pairs_hook=_unique_object)
+    if not isinstance(manifest, dict) or set(manifest) != {"schema", "protocol_id", "version", "positive_controls", "attacks"}:
+        raise ValueError("mutation manifest root differs from the closed schema")
+    if manifest.get("schema") != "srq-transaction-causal-binding-mutations-v1" or manifest.get("protocol_id") != protocol.get("protocol_id") or manifest.get("version") != 1:
+        raise ValueError("mutation manifest identity/version mismatch")
+    controls = manifest.get("positive_controls")
+    attacks = manifest.get("attacks")
+    if not isinstance(controls, list) or not isinstance(attacks, list):
+        raise ValueError("mutation manifest controls and attacks must be arrays")
+    if [case.get("case_id") for case in controls if isinstance(case, dict)] != protocol.get("positive_controls"):
+        raise ValueError("positive-control IDs/order differ from the pinned protocol")
+    if [case.get("case_id") for case in attacks if isinstance(case, dict)] != protocol.get("attack_cases"):
+        raise ValueError("attack IDs/order differ from the pinned protocol")
+    for case in controls:
+        if not isinstance(case, dict) or set(case) != {"case_id", "mode", "expected"} or case.get("expected") != "ACCEPT" or case.get("mode") not in ("success", "failed", "recovered"):
+            raise ValueError("invalid positive-control declaration")
+    for case in attacks:
+        if not isinstance(case, dict) or set(case) != {"case_id", "mode", "expected", "reseal", "mutations"}:
+            raise ValueError("invalid attack declaration shape")
+        if case.get("expected") != "REJECT" or case.get("mode") not in ("success", "failed", "recovered") or not isinstance(case.get("reseal"), bool):
+            raise ValueError("invalid attack disposition, mode, or reseal flag")
+        mutations = case.get("mutations")
+        if not isinstance(mutations, list) or not mutations:
+            raise ValueError("every attack must contain at least one mutation")
+        for mutation in mutations:
+            if not isinstance(mutation, dict) or mutation.get("op") not in ("set", "swap_events"):
+                raise ValueError("unknown mutation operation")
+            if mutation["op"] == "set":
+                if set(mutation) != {"op", "path", "value"} or not isinstance(mutation.get("path"), list) or not mutation["path"]:
+                    raise ValueError("set mutation requires a non-empty path and value")
+                if any(not isinstance(token, (str, int)) or isinstance(token, bool) for token in mutation["path"]):
+                    raise ValueError("mutation path tokens must be strings or integer indexes")
+            elif set(mutation) != {"op", "indices"} or not isinstance(mutation.get("indices"), list) or len(mutation["indices"]) != 2 or any(not isinstance(n, int) or isinstance(n, bool) or n < 0 for n in mutation["indices"]):
+                raise ValueError("swap_events requires two non-negative integer indexes")
+    ids = [case["case_id"] for case in controls + attacks]
+    if len(ids) != len(set(ids)):
+        raise ValueError("duplicate case ID in mutation manifest")
+    return manifest
+
+
+def apply_mutation(candidate: dict[str, Any], mutation: dict[str, Any]) -> None:
+    if mutation["op"] == "swap_events":
+        events = candidate.get("events")
+        left, right = mutation["indices"]
+        if not isinstance(events, list) or left >= len(events) or right >= len(events):
+            raise ValueError("swap_events index is out of range")
+        events[left], events[right] = events[right], events[left]
+        return
+    path = mutation["path"]
+    node: Any = candidate
+    for token in path[:-1]:
+        if isinstance(node, dict) and isinstance(token, str) and token in node:
+            node = node[token]
+        elif isinstance(node, list) and isinstance(token, int) and not isinstance(token, bool) and 0 <= token < len(node):
+            node = node[token]
+        else:
+            raise ValueError("mutation path does not resolve")
+    final = path[-1]
+    if isinstance(node, dict) and isinstance(final, str):
+        node[final] = mutation["value"]
+    elif isinstance(node, list) and isinstance(final, int) and not isinstance(final, bool) and 0 <= final < len(node):
+        node[final] = mutation["value"]
+    else:
+        raise ValueError("mutation destination is invalid")
+
+
 def build_corpus(protocol: dict[str, Any]) -> list[dict[str, Any]]:
+    manifest = load_mutation_manifest(protocol)
     cases: list[dict[str, Any]] = []
-    for case_id, mode in (("successful_promotion", "success"), ("terminal_failure", "failed"), ("failure_then_recovery", "recovered")):
-        cases.append({"case_id": case_id, "expected": "ACCEPT", "candidate": make_candidate(mode)})
-
-    def attack(case_id: str, mode: str, mutate, stale_hash: bool = False) -> None:
-        candidate = make_candidate(mode)
-        mutate(candidate)
-        if not stale_hash:
+    for control in manifest["positive_controls"]:
+        cases.append({"case_id": control["case_id"], "expected": control["expected"], "candidate": make_candidate(control["mode"])})
+    for attack in manifest["attacks"]:
+        candidate = make_candidate(attack["mode"])
+        for mutation in attack["mutations"]:
+            apply_mutation(candidate, mutation)
+        if attack["reseal"]:
             seal(candidate)
-        cases.append({"case_id": case_id, "expected": "REJECT", "candidate": candidate})
-
-    attack("authorization_plan_mismatch", "success", lambda c: c["events"][2]["payload"].__setitem__("authorized_plan_digest", "9" * 64))
-    attack("authorization_target_mismatch", "success", lambda c: c["events"][2]["payload"].__setitem__("authorized_target_machine_digest", "9" * 64))
-    attack("authorization_policy_mismatch", "success", lambda c: c["events"][2]["payload"].__setitem__("policy_digest", "9" * 64))
-    attack("validation_plan_mismatch", "success", lambda c: c["events"][1]["payload"].__setitem__("validated_plan_digest", "9" * 64))
-    attack("validation_artifact_mismatch", "success", lambda c: c["events"][1]["payload"].__setitem__("validated_artifact_digest", "9" * 64))
-    attack("authorization_artifact_mismatch", "success", lambda c: c["events"][2]["payload"].__setitem__("authorized_artifact_digest", "9" * 64))
-    attack("snapshot_target_mismatch", "success", lambda c: c["events"][3]["payload"].__setitem__("target_machine_digest", "9" * 64))
-    attack("application_authorization_ref_mismatch", "success", lambda c: c["events"][4]["payload"].__setitem__("authorization_event_id", "evt-plan"))
-    attack("application_snapshot_ref_mismatch", "success", lambda c: c["events"][4]["payload"].__setitem__("snapshot_event_id", "evt-validated"))
-    attack("application_artifact_digest_malformed", "success", lambda c: c["events"][4]["payload"].__setitem__("applied_artifact_digest", "not-a-digest"))
-    attack("application_artifact_binding_mismatch", "success", lambda c: c["events"][4]["payload"].__setitem__("applied_artifact_digest", "9" * 64))
-    attack("verification_application_ref_mismatch", "success", lambda c: c["events"][5]["payload"].__setitem__("application_event_id", "evt-snapshot"))
-    attack("verification_state_mismatch", "success", lambda c: c["events"][5]["payload"].__setitem__("observed_state_digest", "9" * 64))
-    attack("verification_generation_mismatch", "success", lambda c: c["events"][5]["payload"].__setitem__("observed_generation", 99))
-    attack("successful_outcome_after_failed_verification", "success", lambda c: c["events"][5]["payload"].__setitem__("result", "fail"))
-    attack("outcome_verification_ref_mismatch", "success", lambda c: c["events"][6]["payload"].__setitem__("verification_event_id", "evt-applied"))
-    attack("promotion_outcome_ref_mismatch", "success", lambda c: c["events"][7]["payload"].__setitem__("outcome_event_id", "evt-verified"))
-    attack("promotion_verification_ref_mismatch", "success", lambda c: c["events"][7]["payload"].__setitem__("verification_event_id", "evt-applied"))
-    attack("promotion_state_mismatch", "success", lambda c: c["events"][7]["payload"].__setitem__("target_state_digest", "9" * 64))
-    attack("recovery_snapshot_ref_mismatch", "recovered", lambda c: c["events"][6]["payload"].__setitem__("snapshot_event_id", "evt-validated"))
-    attack("recovery_restored_state_mismatch", "recovered", lambda c: c["events"][6]["payload"].__setitem__("restored_state_digest", "9" * 64))
-    attack("recovery_observation_digest_malformed", "recovered", lambda c: c["events"][6]["payload"].__setitem__("recovery_observation_sha256", "invalid"))
-    attack("event_target_identity_mismatch", "success", lambda c: c["events"][4].__setitem__("target_machine_digest", "9" * 64))
-    attack("duplicate_event_id", "success", lambda c: c["events"][4].__setitem__("event_id", "evt-snapshot"))
-    attack("event_order_violation", "success", lambda c: c["events"].__setitem__(slice(3, 5), [c["events"][4], c["events"][3]]))
-    attack("sequence_gap", "success", lambda c: c["events"][3].__setitem__("sequence", 44))
-    attack("stale_event_digest", "success", lambda c: c["events"][3]["payload"].__setitem__("pre_state_digest", "9" * 64), stale_hash=True)
-    attack("event_transaction_identity_mismatch", "success", lambda c: c["events"][4].__setitem__("transaction_id", "9" * 64))
-    attack("release_status_escalation", "success", lambda c: c.update({"release_status": "PASS", "claim_ceiling": "domain_validated"}))
+        cases.append({"case_id": attack["case_id"], "expected": attack["expected"], "candidate": candidate})
     return cases
 
 
@@ -364,6 +408,7 @@ def run_corpus(protocol: dict[str, Any], commit_sha: str | None = None) -> dict[
     return {
         "schema": "srq-causal-integrity-benchmark-report-v1",
         "protocol_id": protocol["protocol_id"], "protocol_raw_sha256": hashlib.sha256(PROTOCOL_PATH.read_bytes()).hexdigest(),
+        "mutation_manifest_raw_sha256": hashlib.sha256(MUTATIONS_PATH.read_bytes()).hexdigest(),
         "harness_commit_sha": commit_sha or os.environ.get("GITHUB_SHA", "UNPINNED_LOCAL"),
         "harness_script_raw_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "status": status, "qualification_status": "BLOCKED", "claim_ceiling": "none",

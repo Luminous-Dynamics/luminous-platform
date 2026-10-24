@@ -37,6 +37,8 @@ jobs:
           assert report['observed_case_count'] == 32
           assert report['harness_commit_sha'] == os.environ['GITHUB_SHA']
           assert len(report['protocol_raw_sha256']) == 64
+          assert len(report['mutation_manifest_raw_sha256']) == 64
+          assert report['mutation_manifest_raw_sha256'] == json.load(open('benchmarks/srq-lifecycle-interop/causal-integrity/causal-integrity-protocol-v1.json', encoding='utf-8'))['mutation_manifest_sha256']
           assert len(report['harness_script_raw_sha256']) == 64
           for key in ('false_accept_count', 'false_reject_count', 'unexpected_error_count', 'false_release_pass_count'):
               assert report[key] == 0, (key, report[key])

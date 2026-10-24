@@ -187,5 +187,6 @@
     "The event chain is not authenticated; an attacker able to rewrite the complete chain can recompute its digests.",
     "This is a structural causal-binding prototype, not integration with the production Nixward transaction verifier or Mycelix schema.",
     "No actual NixOS build, boot, VM reset, power-loss, target observation, rollback, or fleet behavior is tested."
-  ]
+  ],
+  "mutation_manifest_sha256": "2c095d6dd7bcdb3002aec42e1a19527a6d77f5e05c853b948fe5d77442fae33c"
 }

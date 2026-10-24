@@ -25,7 +25,7 @@ The standalone workflow runs the same unit tests and frozen synthetic corpus on 
 - Recovery references the failed event and original snapshot and declares a restored-state digest matching the snapshot pre-state.
 - The candidate shape is closed, so extra release-status or claim-ceiling fields cannot be smuggled into this normalized envelope.
 
-The frozen corpus includes 29 negative cases and three positive controls (32 cases total). The expected target is zero false accepts, zero false rejects, zero unexpected errors, and no release/claim escalation. The positive controls intentionally cover success, terminal failure, and failure followed by recovery. Synthetic acceptance always remains release_status=BLOCKED and claim_ceiling=none.
+The frozen corpus includes 29 negative cases and three positive controls (32 cases total). The exact mutation operations live in causal-integrity-mutations-v1.json; its raw SHA-256 is pinned in the protocol and included in every report, and the runner checks the pin before executing cases. The expected target is zero false accepts, zero false rejects, zero unexpected errors, and no release/claim escalation. The positive controls intentionally cover success, terminal failure, and failure followed by recovery. Synthetic acceptance always remains release_status=BLOCKED and claim_ceiling=none.
 
 ## Industry comparison: compose existing guarantees; do not reinvent them
 
