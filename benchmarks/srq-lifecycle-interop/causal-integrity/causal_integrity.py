@@ -15,9 +15,9 @@ from typing import Any
 HERE = Path(__file__).resolve().parent
 PROTOCOL_PATH = HERE / "causal-integrity-protocol-v1.json"
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
-EVENT_KEYS = {"event_id", "sequence", "kind", "transaction_id", "target_machine_digest", "plan_digest", "previous_event_sha256", "payload", "payload_sha256", "event_sha256"}
+EVENT_KEYS = {"event_id", "sequence", "kind", "transaction_id", "target_machine_digest", "plan_digest", "artifact_digest", "previous_event_sha256", "payload", "payload_sha256", "event_sha256"}
 ROOT_KEYS = {"schema", "transaction", "events"}
-TRANSACTION_KEYS = {"transaction_id", "target_machine_digest", "plan_digest", "policy_digest"}
+TRANSACTION_KEYS = {"transaction_id", "target_machine_digest", "plan_digest", "artifact_digest", "policy_digest"}
 
 
 def canonical_bytes(value: Any) -> bytes:
@@ -55,7 +55,7 @@ def validate_protocol(protocol: Any) -> None:
         raise ValueError("unexpected protocol schema")
     if protocol.get("protocol_id") != "srq-transaction-causal-binding-v1" or protocol.get("version") != 1:
         raise ValueError("unexpected protocol identity/version")
-    if protocol.get("identity_fields") != ["transaction_id", "target_machine_digest", "plan_digest", "policy_digest"]:
+    if protocol.get("identity_fields") != ["transaction_id", "target_machine_digest", "plan_digest", "artifact_digest", "policy_digest"]:
         raise ValueError("identity field inventory drift")
     expected_sequences = [
         ["planned", "validated", "authorized", "snapshotted", "applied", "verified", "outcome", "promoted"],
@@ -137,6 +137,8 @@ def validate_candidate(candidate: Any, protocol: dict[str, Any]) -> list[str]:
             _err(errors, f"event {index} target identity mismatch")
         if event.get("plan_digest") != tx.get("plan_digest"):
             _err(errors, f"event {index} plan identity mismatch")
+        if event.get("artifact_digest") != tx.get("artifact_digest"):
+            _err(errors, f"event {index} artifact identity mismatch")
         if event.get("previous_event_sha256") != previous_digest:
             _err(errors, f"event {index} previous-event chain mismatch")
         payload = event.get("payload")
@@ -164,10 +166,10 @@ def validate_candidate(candidate: Any, protocol: dict[str, Any]) -> list[str]:
         if kind == "planned" and payload.get("intent") != "apply":
             _err(errors, "planned intent must be apply")
         elif kind == "validated":
-            if payload.get("status") != "pass" or payload.get("validated_plan_digest") != tx.get("plan_digest") or payload.get("validated_target_machine_digest") != tx.get("target_machine_digest"):
+            if payload.get("status") != "pass" or payload.get("validated_plan_digest") != tx.get("plan_digest") or payload.get("validated_target_machine_digest") != tx.get("target_machine_digest") or payload.get("validated_artifact_digest") != tx.get("artifact_digest"):
                 _err(errors, "validation does not bind the root plan and target")
         elif kind == "authorized":
-            if payload.get("authorized_plan_digest") != tx.get("plan_digest") or payload.get("authorized_target_machine_digest") != tx.get("target_machine_digest") or payload.get("policy_digest") != tx.get("policy_digest") or payload.get("decision") != "allow":
+            if payload.get("authorized_plan_digest") != tx.get("plan_digest") or payload.get("authorized_target_machine_digest") != tx.get("target_machine_digest") or payload.get("authorized_artifact_digest") != tx.get("artifact_digest") or payload.get("policy_digest") != tx.get("policy_digest") or payload.get("decision") != "allow":
                 _err(errors, "authorization does not bind the root plan, target, and policy")
             for field in ("nonce", "signer_key_id"):
                 if not isinstance(payload.get(field), str) or not payload[field]:
@@ -189,6 +191,8 @@ def validate_candidate(candidate: Any, protocol: dict[str, Any]) -> list[str]:
             for field in ("applied_artifact_digest", "expected_post_state_digest"):
                 if not isinstance(payload.get(field), str) or not HEX64.fullmatch(payload[field]):
                     _err(errors, f"application {field} is malformed")
+            if payload.get("applied_artifact_digest") != tx.get("artifact_digest"):
+                _err(errors, "applied artifact differs from the transaction authorized artifact")
             generation = payload.get("generation_after")
             if not isinstance(generation, int) or isinstance(generation, bool) or generation < 1:
                 _err(errors, "application generation_after must be a positive integer")
@@ -238,7 +242,7 @@ def _event(event_id: str, sequence: int, kind: str, tx: dict[str, str], payload:
     return {
         "event_id": event_id, "sequence": sequence, "kind": kind,
         "transaction_id": tx["transaction_id"], "target_machine_digest": tx["target_machine_digest"],
-        "plan_digest": tx["plan_digest"], "previous_event_sha256": None,
+        "plan_digest": tx["plan_digest"], "artifact_digest": tx["artifact_digest"], "previous_event_sha256": None,
         "payload": payload, "payload_sha256": "", "event_sha256": ""
     }
 
@@ -255,14 +259,14 @@ def seal(candidate: dict[str, Any]) -> dict[str, Any]:
 
 
 def make_candidate(mode: str = "success") -> dict[str, Any]:
-    tx = {"transaction_id": "a" * 64, "target_machine_digest": "b" * 64, "plan_digest": "c" * 64, "policy_digest": "d" * 64}
+    tx = {"transaction_id": "a" * 64, "target_machine_digest": "b" * 64, "plan_digest": "c" * 64, "artifact_digest": "8" * 64, "policy_digest": "d" * 64}
     ids = {"planned": "evt-plan", "validated": "evt-validated", "authorized": "evt-authorized", "snapshotted": "evt-snapshot", "applied": "evt-applied", "verified": "evt-verified", "outcome": "evt-outcome", "promoted": "evt-promoted", "failed": "evt-failed", "recovered": "evt-recovered"}
     payloads: list[tuple[str, dict[str, Any]]] = [
         ("planned", {"intent": "apply"}),
-        ("validated", {"status": "pass", "validated_plan_digest": tx["plan_digest"], "validated_target_machine_digest": tx["target_machine_digest"]}),
-        ("authorized", {"authorized_plan_digest": tx["plan_digest"], "authorized_target_machine_digest": tx["target_machine_digest"], "policy_digest": tx["policy_digest"], "decision": "allow", "nonce": "synthetic-nonce-01", "signer_key_id": "synthetic-signer", "signature_sha256": "e" * 64}),
+        ("validated", {"status": "pass", "validated_plan_digest": tx["plan_digest"], "validated_target_machine_digest": tx["target_machine_digest"], "validated_artifact_digest": tx["artifact_digest"]}),
+        ("authorized", {"authorized_plan_digest": tx["plan_digest"], "authorized_target_machine_digest": tx["target_machine_digest"], "authorized_artifact_digest": tx["artifact_digest"], "policy_digest": tx["policy_digest"], "decision": "allow", "nonce": "synthetic-nonce-01", "signer_key_id": "synthetic-signer", "signature_sha256": "e" * 64}),
         ("snapshotted", {"target_machine_digest": tx["target_machine_digest"], "pre_state_digest": "f" * 64, "snapshot_id": "snapshot-001"}),
-        ("applied", {"authorization_event_id": ids["authorized"], "snapshot_event_id": ids["snapshotted"], "applied_artifact_digest": "1" * 64, "expected_post_state_digest": "2" * 64, "generation_after": 7})
+        ("applied", {"authorization_event_id": ids["authorized"], "snapshot_event_id": ids["snapshotted"], "applied_artifact_digest": tx["artifact_digest"], "expected_post_state_digest": "2" * 64, "generation_after": 7})
     ]
     if mode == "success":
         payloads.extend([
@@ -296,10 +300,13 @@ def build_corpus(protocol: dict[str, Any]) -> list[dict[str, Any]]:
     attack("authorization_target_mismatch", "success", lambda c: c["events"][2]["payload"].__setitem__("authorized_target_machine_digest", "9" * 64))
     attack("authorization_policy_mismatch", "success", lambda c: c["events"][2]["payload"].__setitem__("policy_digest", "9" * 64))
     attack("validation_plan_mismatch", "success", lambda c: c["events"][1]["payload"].__setitem__("validated_plan_digest", "9" * 64))
+    attack("validation_artifact_mismatch", "success", lambda c: c["events"][1]["payload"].__setitem__("validated_artifact_digest", "9" * 64))
+    attack("authorization_artifact_mismatch", "success", lambda c: c["events"][2]["payload"].__setitem__("authorized_artifact_digest", "9" * 64))
     attack("snapshot_target_mismatch", "success", lambda c: c["events"][3]["payload"].__setitem__("target_machine_digest", "9" * 64))
     attack("application_authorization_ref_mismatch", "success", lambda c: c["events"][4]["payload"].__setitem__("authorization_event_id", "evt-plan"))
     attack("application_snapshot_ref_mismatch", "success", lambda c: c["events"][4]["payload"].__setitem__("snapshot_event_id", "evt-validated"))
     attack("application_artifact_digest_malformed", "success", lambda c: c["events"][4]["payload"].__setitem__("applied_artifact_digest", "not-a-digest"))
+    attack("application_artifact_binding_mismatch", "success", lambda c: c["events"][4]["payload"].__setitem__("applied_artifact_digest", "9" * 64))
     attack("verification_application_ref_mismatch", "success", lambda c: c["events"][5]["payload"].__setitem__("application_event_id", "evt-snapshot"))
     attack("verification_state_mismatch", "success", lambda c: c["events"][5]["payload"].__setitem__("observed_state_digest", "9" * 64))
     attack("verification_generation_mismatch", "success", lambda c: c["events"][5]["payload"].__setitem__("observed_generation", 99))

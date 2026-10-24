@@ -32,8 +32,9 @@ jobs:
           assert report['status'] == 'PASS'
           assert report['qualification_status'] == 'BLOCKED'
           assert report['claim_ceiling'] == 'none'
-          assert report['attack_case_count'] == 26
+          assert report['attack_case_count'] == 29
           assert report['positive_control_count'] == 3
+          assert report['observed_case_count'] == 32
           assert report['harness_commit_sha'] == os.environ['GITHUB_SHA']
           assert len(report['protocol_raw_sha256']) == 64
           assert len(report['harness_script_raw_sha256']) == 64

@@ -13,7 +13,7 @@ class CausalIntegrityTests(unittest.TestCase):
         cls.protocol = ci.load_protocol()
 
     def test_protocol_frozen_inventories(self):
-        self.assertEqual(len(self.protocol["attack_cases"]), 26)
+        self.assertEqual(len(self.protocol["attack_cases"]), 29)
         self.assertEqual(len(self.protocol["positive_controls"]), 3)
 
     def test_successful_promotion_is_structurally_accepted_but_not_release_qualified(self):
@@ -57,8 +57,8 @@ class CausalIntegrityTests(unittest.TestCase):
     def test_report_counts_and_zero_error_gates(self):
         report = ci.run_corpus(self.protocol)
         self.assertEqual(report["status"], "PASS")
-        self.assertEqual(report["observed_case_count"], 29)
-        self.assertEqual(report["attack_case_count"], 26)
+        self.assertEqual(report["observed_case_count"], 32)
+        self.assertEqual(report["attack_case_count"], 29)
         self.assertEqual(report["positive_control_count"], 3)
         for metric in ("false_accept_count", "false_reject_count", "unexpected_error_count", "false_release_pass_count"):
             self.assertEqual(report[metric], 0, metric)

@@ -17,7 +17,7 @@ The standalone workflow runs the same unit tests and frozen synthetic corpus on 
 
 ## What the candidate checker verifies
 
-- The root transaction, target, plan, and policy identities have the declared shape; each event repeats the transaction, target, and plan identities.
+- The root transaction, target, plan, explicit artifact, and policy identities have the declared shape; each event repeats the transaction, target, plan, and artifact identities. Validation, authorization, and application must bind the same artifact digest.
 - Event sequence numbers, previous-event digests, payload digests, and event-envelope digests are internally consistent.
 - Validation and authorization bind the root plan and target; authorization also refers to the declared policy.
 - Application references the preceding authorization and snapshot; verification references the application and agrees with its expected post-state digest and generation.
@@ -25,7 +25,7 @@ The standalone workflow runs the same unit tests and frozen synthetic corpus on 
 - Recovery references the failed event and original snapshot and declares a restored-state digest matching the snapshot pre-state.
 - The candidate shape is closed, so extra release-status or claim-ceiling fields cannot be smuggled into this normalized envelope.
 
-The frozen corpus includes 26 negative cases and three positive controls. The expected target is zero false accepts, zero false rejects, zero unexpected errors, and no release/claim escalation. The positive controls intentionally cover success, terminal failure, and failure followed by recovery. Synthetic acceptance always remains release_status=BLOCKED and claim_ceiling=none.
+The frozen corpus includes 29 negative cases and three positive controls (32 cases total). The expected target is zero false accepts, zero false rejects, zero unexpected errors, and no release/claim escalation. The positive controls intentionally cover success, terminal failure, and failure followed by recovery. Synthetic acceptance always remains release_status=BLOCKED and claim_ceiling=none.
 
 ## Industry comparison: compose existing guarantees; do not reinvent them
 
@@ -39,7 +39,7 @@ The opportunity is a compositional contract that links update/artifact identity,
 
 ## Next benchmark ladder
 
-1. **Now — structural causal binding:** frozen 26-attack / 3-control corpus; exact outcome inventory; zero false accepts/rejects/errors; report digests and exact-head provenance.
+1. **Now — structural causal binding:** frozen 29-attack / 3-control corpus; exact outcome inventory; zero false accepts/rejects/errors; report digests and exact-head provenance.
 2. **Next — independent implementations:** port the contract oracle into Rust with no shared validation implementation, then differential-test Rust and the test harness over generated candidates. Any disagreement blocks promotion.
 3. **Cryptographic binding:** verify actual signatures against a pinned trust policy; bind signed authorization to target, plan, policy, nonce, and expiry. A digest-shaped signature field is not signature verification.
 4. **Freshness and replay:** use a verifier-issued challenge with persistent single-use state and race 64 concurrent submissions; target exactly one acceptance. Test stale challenges, wrong target/policy/artifact, and crash-safe nonce consumption.
