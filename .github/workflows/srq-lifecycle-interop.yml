@@ -118,7 +118,14 @@ jobs:
             and .release_invariant.every_accepted_candidate_must_leave_release_status == "BLOCKED"
             and .release_invariant.every_accepted_candidate_must_leave_claim_ceiling == "none"
             and .release_invariant.release_pass_allowed == false
-            and any($lock[0].pins[]; .repository == .repository)
+            and ( . as $protocol
+                  | any($lock[0].pins[];
+                      .repository == $protocol.source_contract.repository
+                      and .commit_sha == $protocol.source_contract.commit_sha
+                      and .path == $protocol.source_contract.path
+                      and .git_blob_sha1 == $protocol.source_contract.git_blob_sha1
+                    )
+                )
           ' benchmarks/srq-lifecycle-interop/transaction-phase-matrix-v1.json
 
           evidence_dir="$RUNNER_TEMP/srq-lifecycle-interop"
