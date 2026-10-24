@@ -248,7 +248,6 @@ jq -e --slurpfile protocol "$script_dir/transaction-phase-state-protocol-v1.json
   and .protocol.protocol_id == $protocol[0].protocol_id
   and .protocol.version == $protocol[0].version
   and .protocol.git_blob_sha1 == $phase_protocol_blob
-  and .protocol.git_blob_sha1 == "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-state-protocol-v1.json)"
   and .protocol.raw_sha256 == $phase_protocol_sha256
   and .expected_state_count == $protocol[0].oracle.expected_state_count
   and .observed_state_count == $protocol[0].oracle.expected_state_count
