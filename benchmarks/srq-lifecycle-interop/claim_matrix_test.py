@@ -6,6 +6,8 @@ import copy
 import unittest
 from pathlib import Path
 
+from jsonschema import Draft202012Validator, FormatChecker
+
 from schema_validate import load_strict_json
 from claim_matrix import (
     CLAIM_CEILINGS,
@@ -16,8 +18,12 @@ from claim_matrix import (
 )
 
 ROOT = Path(__file__).resolve().parent
+REPO_ROOT = ROOT.parents[1]
+MYCELIX_ROOT = REPO_ROOT / "integration-upstream" / "mycelix"
 PROTOCOL, _ = load_strict_json(ROOT / "claim-ceiling-matrix-v1.json", 2 * 1024 * 1024)
 LOCK, _ = load_strict_json(ROOT / "upstream-lock-v1.json", 2 * 1024 * 1024)
+SCHEMA, _ = load_strict_json(MYCELIX_ROOT / "research/evidence-plane/receipt-v0.schema.json", 2 * 1024 * 1024)
+BASE_RECEIPT, _ = load_strict_json(MYCELIX_ROOT / "research/evidence-plane/examples/synthetic-planned-receipt-v0.json", 2 * 1024 * 1024)
 
 
 class ClaimCeilingMatrixTests(unittest.TestCase):
@@ -79,6 +85,14 @@ class ClaimCeilingMatrixTests(unittest.TestCase):
         for tier, allowed in EXPECTED_ALLOWED.items():
             actual = [profile["allowed_claim_ceilings"] for profile in PROTOCOL["canonical_profiles"] if profile["evidence_tier"] == tier]
             self.assertEqual(actual, [allowed])
+
+    def test_all_five_canonical_receipts_pass_the_pinned_schema(self) -> None:
+        validator = Draft202012Validator(SCHEMA, format_checker=FormatChecker())
+        for tier in ("S0", "S1", "S2", "S3", "S4"):
+            with self.subTest(tier=tier):
+                receipt = canonical_receipt(BASE_RECEIPT, tier)
+                errors = list(validator.iter_errors(receipt))
+                self.assertEqual(errors, [], "; ".join(error.message for error in errors))
 
     def test_canonical_profile_builder_fills_status_and_tier(self) -> None:
         base = {
