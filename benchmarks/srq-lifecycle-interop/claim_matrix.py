@@ -20,6 +20,12 @@ PROTOCOL_SCHEMA = "srq-evidence-claim-ceiling-matrix-v1"
 PROTOCOL_ID = "srq-evidence-claim-ceiling-matrix-v1"
 DRAFT_URI = "https://json-schema.org/draft/2020-12/schema"
 MAX_INPUT = 2 * 1024 * 1024
+EXPECTED_SCHEMA_SOURCE = {
+    "repository": "Luminous-Dynamics/mycelix",
+    "commit_sha": "b02cefab8474262aef23b61a4ac3811fe92e29bf",
+    "path": "research/evidence-plane/receipt-v0.schema.json",
+    "git_blob_sha1": "e2b90a995f70d0a771b04e7f5fc077e1c0394f86",
+}
 
 EXPECTED_ALLOWED = {
     "S0": ["synthetic_only"],
@@ -105,6 +111,8 @@ def validate_protocol(protocol: Any, lock: Any) -> list[str]:
     ):
         errors.append("release-blocked invariant changed")
     source = protocol.get("source_contract", {})
+    if source != EXPECTED_SCHEMA_SOURCE:
+        errors.append("Mycelix schema source contract identity changed")
     pins = lock.get("pins", []) if isinstance(lock, dict) else []
     matching = [
         item for item in pins
@@ -213,6 +221,25 @@ def run_matrix(
     if not isinstance(schema, dict) or schema.get("$schema") != DRAFT_URI:
         raise ValueError("pinned Mycelix schema must declare Draft 2020-12")
 
+    schema_repo_root = schema_path.parents[2]
+    schema_relative_path = schema_path.relative_to(schema_repo_root)
+    actual_schema_commit = subprocess.run(
+        ["git", "-C", str(schema_repo_root), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    actual_schema_blob = subprocess.run(
+        ["git", "-C", str(schema_repo_root), "hash-object", "--", str(schema_relative_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    if actual_schema_commit != protocol["source_contract"]["commit_sha"]:
+        raise ValueError(f"Mycelix schema commit mismatch: expected {protocol['source_contract']['commit_sha']}, found {actual_schema_commit}")
+    if actual_schema_blob != protocol["source_contract"]["git_blob_sha1"]:
+        raise ValueError(f"Mycelix schema blob mismatch: expected {protocol['source_contract']['git_blob_sha1']}, found {actual_schema_blob}")
+
     protocol_blob = subprocess.run(
         ["git", "-C", str(protocol_path.parents[2]), "hash-object", "--", str(protocol_path.relative_to(protocol_path.parents[2]))],
         check=True,
@@ -237,8 +264,8 @@ def run_matrix(
         },
         "schema_input": {
             "repository": "Luminous-Dynamics/mycelix",
-            "commit_sha": protocol["source_contract"]["commit_sha"],
-            "git_blob_sha1": schema_blob,
+            "commit_sha": actual_schema_commit,
+            "git_blob_sha1": actual_schema_blob,
             "raw_sha256": sha256(schema_raw),
         },
         "base_receipt_sha256": sha256(base_raw),
