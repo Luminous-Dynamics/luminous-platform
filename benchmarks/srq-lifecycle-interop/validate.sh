@@ -29,12 +29,12 @@ schema_env_install_report="${SRQ_SCHEMA_INSTALL_REPORT:-}"
 schema_env_validation_report="${SRQ_SCHEMA_ENV_VALIDATION_REPORT:-}"
 [[ -n "$schema_env_install_report" && -f "$schema_env_install_report" ]] || { echo "BLOCKED: hash-locked pip install report is required." >&2; exit 2; }
 [[ -n "$schema_env_validation_report" && -f "$schema_env_validation_report" ]] || { echo "BLOCKED: validated schema environment report is required." >&2; exit 2; }
-jq -e '
+jq -e --arg expected_lock_sha256 "$(sha256sum "$script_dir/schema-env-lock-v1.json" | cut -d ' ' -f 1)" '
   .schema == "srq-schema-environment-validation-v1"
   and .result == "VALID"
   and .runtime.expected_package_count == 20
   and .runtime.observed_package_count == 20
-  and (.environment_lock.sha256 | test("^[0-9a-f]{64}$"))
+  and .environment_lock.sha256 == $expected_lock_sha256
   and (.pip_install_report.sha256 | test("^[0-9a-f]{64}$"))
   and (.installed_packages | length == 20)
   and (.installed_packages | all(.[]; (.sha256 | test("^[0-9a-f]{64}$"))))
@@ -236,7 +236,7 @@ git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_pat
   echo "BLOCKED: interop source has uncommitted modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
-git -C "$repo_root" diff --cached --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+git -C "$repo_root" diff --cached --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" "$interop_environment_lock_path" "$interop_environment_validator_path" "$interop_environment_validator_test_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
   echo "BLOCKED: interop source has staged modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
