@@ -6,7 +6,7 @@ fn main() {
     let expected_count = fixtures.len();
     let expected_positive_count = fixtures
         .iter()
-        .filter(|case| matches!(case.expected, ExpectedOutcome::Accept(_)))
+        .filter(|case| matches!(&case.expected, ExpectedOutcome::Accept(_)))
         .count();
     let expected_attack_count = expected_count - expected_positive_count;
 
