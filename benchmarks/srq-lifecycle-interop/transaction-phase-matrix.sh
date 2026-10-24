@@ -96,7 +96,7 @@ for phase in $(jq -er '.phases[].id' "$phase_protocol"); do
         *) echo "BLOCKED: unknown required record in protocol: $required_record" >&2; exit 2 ;;
       esac
       required_mask=$((required_mask | (1 << bit)))
-    done < <(jq -er --arg phase "$phase" '.phases[] | select(.id == $phase) | .required_records[]' "$phase_protocol")
+    done < <(jq -r --arg phase "$phase" '.phases[] | select(.id == $phase) | .required_records[]?' "$phase_protocol")
 
     if (( (mask & required_mask) == required_mask )); then
       expected="ACCEPT"
