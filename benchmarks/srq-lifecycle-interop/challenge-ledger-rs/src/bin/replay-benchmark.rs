@@ -4,15 +4,64 @@ use srq_challenge_ledger::{
 use std::error::Error;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Barrier};
 use std::thread;
+use std::time::Duration;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("--consume-worker") {
+        match run_consume_worker(&args) {
+            Ok(code) => std::process::exit(code),
+            Err(error) => {
+                eprintln!("WORKER_ERROR: {error}");
+                std::process::exit(2);
+            }
+        }
+    }
     if let Err(error) = run() {
         eprintln!("BLOCKED: {error}");
         std::process::exit(2);
+    }
+}
+
+fn run_consume_worker(args: &[String]) -> Result<i32, Box<dyn Error>> {
+    if args.len() != 5 {
+        return Err("worker expects ledger, ready-marker, and start-marker paths".into());
+    }
+    let ledger = ChallengeLedger::open(&args[2])?;
+    fs::write(&args[3], b"ready")?;
+    let start_path = Path::new(&args[4]);
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while !start_path.exists() {
+        if Instant::now() >= deadline {
+            return Err("worker timed out waiting for the shared start marker".into());
+        }
+        thread::sleep(Duration::from_millis(2));
+    }
+    let challenge = synthetic_challenge();
+    match ledger.consume(&challenge.id, &challenge.binding, 1_002) {
+        Ok(()) => Ok(0),
+        Err(LedgerError::AlreadyConsumed) => Ok(3),
+        Err(error) => Err(Box::new(error)),
+    }
+}
+
+fn synthetic_challenge() -> Challenge {
+    Challenge {
+        // Synthetic test fixture only. Production callers must provide CSPRNG bytes.
+        id: "a".repeat(64),
+        binding: Binding {
+            transaction_id: "b".repeat(64),
+            target_digest: "c".repeat(64),
+            plan_digest: "d".repeat(64),
+            artifact_digest: "e".repeat(64),
+            policy_digest: "f".repeat(64),
+        },
+        issued_at_unix_secs: 1_000,
+        expires_at_unix_secs: 1_000 + MAX_CHALLENGE_LIFETIME_SECS,
     }
 }
 
@@ -32,19 +81,7 @@ fn run() -> Result<(), Box<dyn Error>> {
     fs::set_permissions(&private_dir, fs::Permissions::from_mode(0o700))?;
     let path: PathBuf = private_dir.join("ledger.log");
 
-    let challenge = Challenge {
-        // Synthetic test fixture only. Production callers must provide CSPRNG bytes.
-        id: "a".repeat(64),
-        binding: Binding {
-            transaction_id: "b".repeat(64),
-            target_digest: "c".repeat(64),
-            plan_digest: "d".repeat(64),
-            artifact_digest: "e".repeat(64),
-            policy_digest: "f".repeat(64),
-        },
-        issued_at_unix_secs: 1_000,
-        expires_at_unix_secs: 1_000 + MAX_CHALLENGE_LIFETIME_SECS,
-    };
+    let challenge = synthetic_challenge();
 
     let ledger = ChallengeLedger::initialize(&path)?;
     ledger.issue(&challenge, 1_001)?;
