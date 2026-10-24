@@ -6,8 +6,6 @@ import copy
 import unittest
 from pathlib import Path
 
-from jsonschema import Draft202012Validator, FormatChecker
-
 from schema_validate import load_strict_json
 from claim_matrix import (
     CLAIM_CEILINGS,
@@ -20,10 +18,6 @@ from claim_matrix import (
 ROOT = Path(__file__).resolve().parent
 PROTOCOL, _ = load_strict_json(ROOT / "claim-ceiling-matrix-v1.json", 2 * 1024 * 1024)
 LOCK, _ = load_strict_json(ROOT / "upstream-lock-v1.json", 2 * 1024 * 1024)
-SCHEMA, _ = load_strict_json(ROOT / "assessment-v1.schema.json", 2 * 1024 * 1024)
-RECEIPT, _ = load_strict_json(ROOT / "corpus-v1.json", 2 * 1024 * 1024) if False else load_strict_json(
-    ROOT / "upstream-lock-v1.json", 2 * 1024 * 1024
-)
 
 
 class ClaimCeilingMatrixTests(unittest.TestCase):
