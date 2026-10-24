@@ -14,7 +14,7 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 PARENT = HERE.parent
-sys.path.insert(0, str(PARENT))
+sys.path.insert(0, str(HERE))
 import causal_integrity as ci
 
 PROTOCOL_PATH = HERE / "reference-matrix-protocol-v1.json"
@@ -97,6 +97,7 @@ def _set_reference(candidate: dict[str, Any], source_kind: str, field: str, valu
 def run_matrix(protocol: dict[str, Any] | None = None, commit_sha: str | None = None) -> dict[str, Any]:
     protocol = protocol or load_protocol()
     validate_protocol(protocol)
+    causal_protocol = ci.load_protocol()
     results = []
     for edge in protocol["edges"]:
         baseline = ci.make_candidate(edge["mode"])
@@ -119,7 +120,7 @@ def run_matrix(protocol: dict[str, Any] | None = None, commit_sha: str | None = 
             expected = "ACCEPT" if value == target_id else "REJECT"
             started = time.perf_counter_ns()
             try:
-                errors = ci.validate_candidate(candidate, ci.load_protocol())
+                errors = ci.validate_candidate(candidate, causal_protocol)
                 observed = "ACCEPT" if not errors else "REJECT"
                 reason = errors
             except Exception as exc:
@@ -167,7 +168,7 @@ def run_matrix(protocol: dict[str, Any] | None = None, commit_sha: str | None = 
         "protocol_id": protocol["protocol_id"],
         "protocol_raw_sha256": hashlib.sha256(PROTOCOL_PATH.read_bytes()).hexdigest(),
         "oracle_script_raw_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        "parent_checker_raw_sha256": hashlib.sha256((PARENT / "causal_integrity.py").read_bytes()).hexdigest(),
+        "parent_checker_raw_sha256": hashlib.sha256((HERE / "causal_integrity.py").read_bytes()).hexdigest(),
         "harness_commit_sha": commit_sha or os.environ.get("GITHUB_SHA", "UNPINNED_LOCAL"),
         "status": status,
         "qualification_status": "BLOCKED",
