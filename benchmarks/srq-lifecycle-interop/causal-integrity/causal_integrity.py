@@ -336,7 +336,8 @@ def run_corpus(protocol: dict[str, Any], commit_sha: str | None = None) -> dict[
             "case_id": case["case_id"], "expected_outcome": case["expected"], "observed_outcome": observed,
             "candidate_sha256": sha256(case["candidate"]), "error_count": len(failure_reason),
             "errors": failure_reason, "elapsed_ns": time.perf_counter_ns() - started,
-            "release_status": "BLOCKED", "claim_ceiling": "none"
+            "release_status": case["candidate"].get("release_status", "BLOCKED"),
+            "claim_ceiling": case["candidate"].get("claim_ceiling", "none")
         })
     false_accept = sum(x["expected_outcome"] == "REJECT" and x["observed_outcome"] == "ACCEPT" for x in results)
     false_reject = sum(x["expected_outcome"] == "ACCEPT" and x["observed_outcome"] == "REJECT" for x in results)
