@@ -114,9 +114,30 @@ jobs:
             and ([.positive_controls[].id] | length == (unique | length))
           ' benchmarks/srq-lifecycle-interop/corpus-v1.json
 
+          jq -e --slurpfile parent benchmarks/srq-lifecycle-interop/corpus-v1.json '
+            .schema == "srq-lifecycle-executable-mutations-v1"
+            and .version == 1
+            and .parent_protocol_id == $parent[0].protocol_id
+            and .invariants.exact_parent_case_id_join == true
+            and .invariants.exact_parent_positive_control_id_join == true
+            and .invariants.reject_missing_or_duplicate_ids == true
+            and .invariants.transformations_must_be_non_empty_strings == true
+            and .invariants.release_status_after_positive_controls == "BLOCKED"
+            and .invariants.claim_ceiling_after_positive_controls == "none"
+            and ([.cases[] | {id,input_kind,expected_schema_result,expected_lifecycle_result}] | sort_by(.id))
+                == ([$parent[0].cases[] | {id,input_kind,expected_schema_result,expected_lifecycle_result}] | sort_by(.id))
+            and ([.positive_controls[] | {id,input_kind,expected_schema_result,expected_lifecycle_result,expected_evidence_tier,expected_evidence_claim_ceiling,expected_transaction_phase}] | sort_by(.id))
+                == ([$parent[0].positive_controls[] | {id,input_kind,expected_schema_result,expected_lifecycle_result,expected_evidence_tier,expected_evidence_claim_ceiling,expected_transaction_phase}] | sort_by(.id))
+            and ([.cases[].id] | length == (unique | length))
+            and ([.positive_controls[].id] | length == (unique | length))
+            and (.cases | all(.[]; (.transform_filter | type == "string" and length > 0) and (.expected_failure_reason | type == "string" and length > 0)))
+            and (.positive_controls | all(.[]; (.transform_filter | type == "string" and length > 0)))
+          ' benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json
+
           evidence_dir="$RUNNER_TEMP/srq-lifecycle-interop"
           mkdir -p "$evidence_dir"
           cp benchmarks/srq-lifecycle-interop/corpus-v1.json "$evidence_dir/corpus-v1.json"
+          cp benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json "$evidence_dir/corpus-executable-mutations-v1.json"
           cp benchmarks/srq-lifecycle-interop/schema-env-lock-v1.json "$evidence_dir/schema-env-lock-v1.json"
           cp "$schema_install_report" "$evidence_dir/schema-pip-install-report.json"
           cp "$schema_environment_report" "$evidence_dir/schema-environment-validation.json"
