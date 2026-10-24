@@ -19,13 +19,15 @@ The workflow checks the checkout SHA and Git blob ID at runtime and computes SHA
 
 The protocol manifest is versioned, Git-blob-addressed, and SHA-256-bound, but it is not separately signed or externally timestamped; this provides reproducible same-corpus comparisons, not cryptographic proof of pre-registration. The standalone `corpus_validate.py` validates the manifest against `corpus-v1.schema.json` and independently checks the exact v1 case/control ID inventory, allowed schema/lifecycle outcomes, tier/claim-ceiling and transaction-phase mappings, zero-error targets, release-blocked invariant, and exact upstream pin equality against `upstream-lock-v1.json`. Its 12 focused tests mutate duplicate/missing/replaced IDs, release and claim ceilings, upstream digests, metrics, dispositions, positive-control mapping, and protocol identity.
 
+The separate schema-test environment is itself pinned by a 20-wheel SHA-256 lock, with Python version and Linux architecture checked at runtime. CI retains pip's own install report, the repository environment lock, and a validator report listing the exact installed wheel identities. This makes the dependency resolution fail closed on unexpected packages, missing packages, version changes, wheel substitutions or hash mismatches. It is a narrow test-only reproducibility measure, not an SBOM security audit or proof that any dependency is benign.
+
 ## Executable contract
 
 The benchmark script:
 
 1. Checks and runs the actual pinned Rust D0 probe with `cargo fmt --check` and `cargo test --locked`.
 2. Builds a disposable filesystem fixture and captures the probe's actual JSON output; it does not maintain a hand-copied diagnostic output fixture.
-3. Validates the pinned Mycelix receipt with the full JSON Schema Draft 2020-12 meta-schema and instance validator, with format assertions enabled, using a test-only Python environment. The validator version is pinned to `jsonschema==4.26.0` with direct/transitive package versions in `requirements-schema.txt`; it rejects duplicate JSON keys and remote `$ref` values and never makes a release decision.
+3. Validates the pinned Mycelix receipt with the full JSON Schema Draft 2020-12 meta-schema and instance validator, with format assertions enabled, using a test-only Python environment. The test environment is scoped to Ubuntu 24.04 / Linux x86_64 / CPython 3.12. `requirements-schema.txt` pins every package version and wheel SHA-256; CI installs only wheels with pip `--require-hashes --only-binary=:all:`. `schema_env_validate.py` checks pip's install report against `schema-env-lock-v1.json`, including package set, versions, wheel filenames and hashes, and the environment validation report is digest-bound into the primary assessment. The schema validator rejects duplicate JSON keys and remote `$ref` values and never makes a release decision.
 4. Runs focused unit tests for duplicate-key and non-standard-number rejection, no-follow symlink handling, bounded reads, local versus remote references, format discovery and JSON Pointer escaping.
 5. Checks the additional safety-critical Mycelix cross-field invariants and Nixward transaction phase/terminal-disposition prerequisites.
 6. Runs the original D0 authentication/qualification and S0-to-S4 claim-escalation controls.
@@ -65,6 +67,7 @@ These are proposed gates for follow-on work, not results measured by this PR. St
 | Benchmark | Industry reference / fair baseline | Target |
 |---|---|---|
 | Frozen-protocol reproducibility | `corpus-v1.json` + strict corpus schema + independent semantic validator | Every implementation run must match 17 negative and five positive case IDs, schema dispositions and expected lifecycle outcomes; reject duplicate, missing or substituted IDs; zero manifest/report mismatches. |
+| Test-environment reproducibility | `schema-env-lock-v1.json` + pip `--require-hashes` | Exactly 20 approved wheels, every version/filename/SHA-256 matched; unsupported Python/platform, package drift or hash mismatch must fail closed. |
 | Full schema conformance | Pinned Mycelix Draft 2020-12 schema + `jsonschema==4.26.0` | Reject all frozen invalid receipt fixtures; accept all known-good receipt controls; pass meta-schema and format assertions; zero false release PASS. |
 | Transaction phase consistency | Nixward transaction v1 phase sequence, including failed/recovered terminal dispositions | Reject 100% of phase-only advancement attacks and invalid terminal dispositions; accept all frozen valid structural controls; zero false release PASS. |
 | Claim-ceiling monotonicity | Mycelix receipt rules; RFC 9334 evidence appraisal | Reject 100% of pre-registered escalations; zero false release PASS; zero false rejects across explicit valid controls. |
