@@ -35,7 +35,10 @@ jq -e \
   --arg executable_mutations_sha256 "$(sha256sum "$script_dir/corpus-executable-mutations-v1.json" | cut -d ' ' -f 1)" \
   --arg executable_mutations_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json)" \
   --arg phase_matrix_sha256 "$(sha256sum "$script_dir/transaction-phase-matrix.sh" | cut -d ' ' -f 1)" \
-  --arg phase_matrix_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh)" '
+  --arg phase_matrix_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh)" \
+  --arg phase_protocol_sha256 "$(sha256sum "$script_dir/transaction-phase-state-protocol-v1.json" | cut -d ' ' -f 1)" \
+  --arg phase_protocol_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-state-protocol-v1.json)" \
+  --arg phase_protocol_id "$(jq -er '.protocol_id' "$script_dir/transaction-phase-state-protocol-v1.json)" '
   .schema == "srq-lifecycle-interop-assessment-v1"
   and .contract_status == "PASS" and .release_status == "BLOCKED" and .claim_ceiling == "none"
   and .transaction.phase == "planned"
@@ -86,6 +89,9 @@ jq -e \
   and .sources.interop_harness.schema_environment_validation_report_raw_sha256 == $schema_env_validation_report_sha256
   and .sources.interop_harness.phase_matrix_git_blob_sha1 == $phase_matrix_blob
   and .sources.interop_harness.phase_matrix_raw_sha256 == $phase_matrix_sha256
+  and .sources.interop_harness.phase_matrix_protocol_git_blob_sha1 == $phase_protocol_blob
+  and .sources.interop_harness.phase_matrix_protocol_raw_sha256 == $phase_protocol_sha256
+  and .sources.interop_harness.phase_matrix_protocol_id == $phase_protocol_id
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
 
 "$schema_python" "$script_dir/corpus_validate.py" \
@@ -220,10 +226,13 @@ jq -e --slurpfile protocol "$script_dir/corpus-v1.json" --slurpfile executable "
 ' "$output_dir/srq-lifecycle-adversarial-assessment.json" >/dev/null
 
 bash "$script_dir/transaction-phase-matrix.sh" "$nixward_root" "$mycelix_root" "$sovereign_boot_root" "$tmp/boot-observation.json" "$output_dir"
-jq -e \
+jq -e --slurpfile protocol "$script_dir/transaction-phase-state-protocol-v1.json" \
   --arg head_sha "$(git -C "$script_dir/../.." rev-parse HEAD)" \
   --arg phase_matrix_sha256 "$(sha256sum "$script_dir/transaction-phase-matrix.sh" | cut -d ' ' -f 1)" \
-  --arg phase_matrix_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh)" '
+  --arg phase_matrix_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh)" \
+  --arg phase_protocol_sha256 "$(sha256sum "$script_dir/transaction-phase-state-protocol-v1.json" | cut -d ' ' -f 1)" \
+  --arg phase_protocol_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-state-protocol-v1.json)" \
+  --arg phase_protocol_id "$(jq -er '.protocol_id' "$script_dir/transaction-phase-state-protocol-v1.json")" '
   .schema == "srq-transaction-phase-state-space-assessment-v1"
   and .status == "PASS"
   and .release_status == "BLOCKED" and .claim_ceiling == "none"
@@ -235,6 +244,19 @@ jq -e \
   and .harness.commit_sha == $head_sha
   and .harness.script_git_blob_sha1 == $phase_matrix_blob
   and .harness.script_raw_sha256 == $phase_matrix_sha256
+  and .protocol.protocol_id == $phase_protocol_id
+  and .protocol.protocol_id == $protocol[0].protocol_id
+  and .protocol.version == $protocol[0].version
+  and .protocol.git_blob_sha1 == $phase_protocol_blob
+  and .protocol.raw_sha256 == $phase_protocol_sha256
+  and .expected_state_count == $protocol[0].oracle.expected_state_count
+  and .observed_state_count == $protocol[0].oracle.expected_state_count
+  and .expected_accept_count == $protocol[0].oracle.expected_accept_count
+  and .expected_reject_count == $protocol[0].oracle.expected_reject_count
+  and .false_accept_count == $protocol[0].target_metrics.false_accept_count
+  and .false_reject_count == $protocol[0].target_metrics.false_reject_count
+  and .unexpected_error_count == $protocol[0].target_metrics.unexpected_error_count
+  and .false_release_pass_count == $protocol[0].target_metrics.false_release_pass_count
   and (.source_fixture.commit_sha | test("^[0-9a-f]{40}$"))
   and (.source_fixture.git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.source_fixture.raw_sha256 | test("^[0-9a-f]{64}$"))

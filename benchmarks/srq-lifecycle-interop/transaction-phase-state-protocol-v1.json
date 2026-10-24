@@ -1,0 +1,127 @@
+{
+  "schema": "srq-transaction-phase-state-protocol-v1",
+  "protocol_id": "nixward-transaction-phase-presence-v1",
+  "version": 1,
+  "purpose": "Frozen expected-result oracle for the Nixward transaction phase × companion-record-presence state space.",
+  "scope": "Structural state-space conformance only. Does not validate nested record semantics, cryptographic authorization, runtime truth, or actual recovery.",
+  "record_bits": [
+    {
+      "name": "validation",
+      "bit": 0
+    },
+    {
+      "name": "authorization",
+      "bit": 1
+    },
+    {
+      "name": "snapshot",
+      "bit": 2
+    },
+    {
+      "name": "application",
+      "bit": 3
+    },
+    {
+      "name": "verification",
+      "bit": 4
+    },
+    {
+      "name": "outcome",
+      "bit": 5
+    }
+  ],
+  "phases": [
+    {
+      "id": "planned",
+      "required_records": []
+    },
+    {
+      "id": "validated",
+      "required_records": [
+        "validation"
+      ]
+    },
+    {
+      "id": "authorized",
+      "required_records": [
+        "validation",
+        "authorization"
+      ]
+    },
+    {
+      "id": "snapshotted",
+      "required_records": [
+        "validation",
+        "authorization",
+        "snapshot"
+      ]
+    },
+    {
+      "id": "applied",
+      "required_records": [
+        "validation",
+        "authorization",
+        "snapshot",
+        "application"
+      ]
+    },
+    {
+      "id": "verified",
+      "required_records": [
+        "validation",
+        "authorization",
+        "snapshot",
+        "application",
+        "verification"
+      ]
+    },
+    {
+      "id": "promoted",
+      "required_records": [
+        "validation",
+        "authorization",
+        "snapshot",
+        "application",
+        "verification",
+        "outcome"
+      ]
+    },
+    {
+      "id": "failed",
+      "required_records": [
+        "outcome"
+      ]
+    },
+    {
+      "id": "recovered",
+      "required_records": [
+        "snapshot",
+        "outcome"
+      ]
+    }
+  ],
+  "oracle": {
+    "kind": "minimum_record_presence",
+    "accept_if": "Every record named by the phase's required_records is non-null.",
+    "extra_records_on_earlier_phases": "allowed",
+    "expected_state_count": 576,
+    "expected_accept_count": 175,
+    "expected_reject_count": 401
+  },
+  "target_metrics": {
+    "false_accept_count": 0,
+    "false_reject_count": 0,
+    "unexpected_error_count": 0,
+    "false_release_pass_count": 0
+  },
+  "release_invariant": {
+    "every_accepted_state_release_status": "BLOCKED",
+    "every_accepted_state_claim_ceiling": "none",
+    "release_pass_allowed": false
+  },
+  "limitations": [
+    "The record bits encode object presence only, not full record validity.",
+    "This protocol does not assert that every accepted shape is semantically valid in production; it defines minimum-prerequisite test scope.",
+    "The manifest is Git/SHA-256 addressed but not separately signed or externally timestamped."
+  ]
+}

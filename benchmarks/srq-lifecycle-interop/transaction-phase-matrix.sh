@@ -12,6 +12,32 @@ readonly repository_root="$(git -C "$script_dir/../.." rev-parse --show-toplevel
 readonly fixture="$nixward_root/$fixture_relative"
 [[ -f "$fixture" ]] || { echo "BLOCKED: missing pinned transaction fixture: $fixture" >&2; exit 2; }
 readonly lock_file="$script_dir/upstream-lock-v1.json"
+readonly phase_protocol="$script_dir/transaction-phase-state-protocol-v1.json"
+jq -e '
+  .schema == "srq-transaction-phase-state-protocol-v1"
+  and .protocol_id == "nixward-transaction-phase-presence-v1"
+  and .version == 1
+  and (.record_bits | map(.name) == ["validation","authorization","snapshot","application","verification","outcome"])
+  and (.record_bits | map(.bit) == [0,1,2,3,4,5])
+  and (.phases | map(.id) == ["planned","validated","authorized","snapshotted","applied","verified","promoted","failed","recovered"])
+  and (.phases | length == 9)
+  and ([.phases[].id] | length == (unique | length))
+  and all(.phases[]; (.required_records | type == "array") and ((.required_records | length) == (.required_records | unique | length)) and (.required_records | all(.[]; . as $record | ["validation","authorization","snapshot","application","verification","outcome"] | index($record) != null)))
+  and .oracle.kind == "minimum_record_presence"
+  and .oracle.expected_state_count == 576
+  and .oracle.expected_accept_count == 175
+  and .oracle.expected_reject_count == 401
+  and .target_metrics.false_accept_count == 0
+  and .target_metrics.false_reject_count == 0
+  and .target_metrics.unexpected_error_count == 0
+  and .target_metrics.false_release_pass_count == 0
+  and .release_invariant.every_accepted_state_release_status == "BLOCKED"
+  and .release_invariant.every_accepted_state_claim_ceiling == "none"
+  and .release_invariant.release_pass_allowed == false
+' "$phase_protocol" >/dev/null || { echo "BLOCKED: transaction phase oracle protocol is invalid or differs from v1." >&2; exit 2; }
+phase_protocol_id="$(jq -er '.protocol_id' "$phase_protocol")"
+phase_protocol_blob="$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-state-protocol-v1.json)"
+phase_protocol_sha256="$(sha256sum "$phase_protocol" | cut -d ' ' -f 1)"
 readonly expected_fixture_commit="$(jq -er '.pins[] | select(.key == "nixward_transaction_fixture") | .commit_sha' "$lock_file")"
 readonly expected_fixture_blob="$(jq -er '.pins[] | select(.key == "nixward_transaction_fixture") | .git_blob_sha1' "$lock_file")"
 actual_fixture_commit="$(git -C "$nixward_root" rev-parse HEAD)"
@@ -36,7 +62,7 @@ has_bit() {
   (( (mask >> bit) & 1 ))
 }
 
-for phase in planned validated authorized snapshotted applied verified promoted failed recovered; do
+for phase in $(jq -er '.phases[].id' "$phase_protocol"); do
   for mask in $(seq 0 63); do
     v=0; a=0; s=0; ap=0; ver=0; o=0
     has_bit "$mask" 0 && v=1
@@ -58,19 +84,25 @@ for phase in planned validated authorized snapshotted applied verified promoted 
       | .outcome=(if $o==1 then {"status":"terminal","outcome_ref":"synthetic-phase-matrix"} else null end)
     ' "$fixture" > "$candidate"
 
-    expected="REJECT"
-    case "$phase" in
-      planned) expected="ACCEPT" ;;
-      validated) ((v==1)) && expected="ACCEPT" ;;
-      authorized) ((v==1 && a==1)) && expected="ACCEPT" ;;
-      snapshotted) ((v==1 && a==1 && s==1)) && expected="ACCEPT" ;;
-      applied) ((v==1 && a==1 && s==1 && ap==1)) && expected="ACCEPT" ;;
-      verified) ((v==1 && a==1 && s==1 && ap==1 && ver==1)) && expected="ACCEPT" ;;
-      promoted) ((v==1 && a==1 && s==1 && ap==1 && ver==1 && o==1)) && expected="ACCEPT" ;;
-      failed) ((o==1)) && expected="ACCEPT" ;;
-      recovered) ((s==1 && o==1)) && expected="ACCEPT" ;;
-      *) echo "BLOCKED: unknown phase in matrix oracle: $phase" >&2; exit 2 ;;
-    esac
+    required_mask=0
+    while IFS= read -r required_record; do
+      case "$required_record" in
+        validation) bit=0 ;;
+        authorization) bit=1 ;;
+        snapshot) bit=2 ;;
+        application) bit=3 ;;
+        verification) bit=4 ;;
+        outcome) bit=5 ;;
+        *) echo "BLOCKED: unknown required record in protocol: $required_record" >&2; exit 2 ;;
+      esac
+      required_mask=$((required_mask | (1 << bit)))
+    done < <(jq -r --arg phase "$phase" '.phases[] | select(.id == $phase) | .required_records[]?' "$phase_protocol")
+
+    if (( (mask & required_mask) == required_mask )); then
+      expected="ACCEPT"
+    else
+      expected="REJECT"
+    fi
 
     observed="ERROR"; reason=""; release_status="UNKNOWN"; claim_ceiling="UNKNOWN"; status=0
     if bash "$validator" --nixward-root "$nixward_root" --mycelix-root "$mycelix_root" --sovereign-boot-root "$sovereign_boot_root" --boot-observation "$boot_observation" --transaction-fixture "$candidate" --output "$assessment" >"$log" 2>&1; then
@@ -121,7 +153,7 @@ script_blob="$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle
 script_sha256="$(sha256sum "$script_dir/transaction-phase-matrix.sh" | cut -d ' ' -f 1)"
 harness_commit="$(git -C "$repository_root" rev-parse HEAD)"
 
-jq -s --arg harness_commit "$harness_commit" --arg script_blob "$script_blob" --arg script_sha256 "$script_sha256" --arg fixture_commit "$fixture_commit" --arg fixture_blob "$fixture_blob" --arg fixture_sha256 "$fixture_sha256" --argjson accept_count "$expected_accept_count" --argjson reject_count "$expected_reject_count" --argjson state_count "$states" '
+jq -s --slurpfile protocol "$phase_protocol" --arg protocol_id "$phase_protocol_id" --arg protocol_blob "$phase_protocol_blob" --arg protocol_sha256 "$phase_protocol_sha256" --arg harness_commit "$harness_commit" --arg script_blob "$script_blob" --arg script_sha256 "$script_sha256" --arg fixture_commit "$fixture_commit" --arg fixture_blob "$fixture_blob" --arg fixture_sha256 "$fixture_sha256" --argjson accept_count "$expected_accept_count" --argjson reject_count "$expected_reject_count" --argjson state_count "$states" '
   . as $cases
   | {
       schema:"srq-transaction-phase-state-space-assessment-v1",
@@ -129,6 +161,8 @@ jq -s --arg harness_commit "$harness_commit" --arg script_blob "$script_blob" --
       claim_ceiling:"none",
       harness:{commit_sha:$harness_commit,script_git_blob_sha1:$script_blob,script_raw_sha256:$script_sha256},
       source_fixture:{repository:"Luminous-Dynamics/nixward",commit_sha:$fixture_commit,git_blob_sha1:$fixture_blob,raw_sha256:$fixture_sha256},
+      protocol:{protocol_id:$protocol_id,version:$protocol[0].version,git_blob_sha1:$protocol_blob,raw_sha256:$protocol_sha256},
+      target_metrics:$protocol[0].target_metrics,
       expected_state_count:$state_count,observed_state_count:($cases|length),
       expected_accept_count:$accept_count,expected_reject_count:$reject_count,
       false_accept_count:([$cases[]|select(.expected_outcome=="REJECT" and .observed_outcome=="ACCEPT")]|length),
@@ -145,16 +179,24 @@ jq -s --arg harness_commit "$harness_commit" --arg script_blob "$script_blob" --
         "This is a structural state-space conformance test, not release qualification."
       ]
     }
-  | .status = (if .false_accept_count==0 and .false_reject_count==0 and .unexpected_error_count==0 and .false_release_pass_count==0 then "PASS" else "FAIL" end)
+  | .status = (if .expected_state_count==$protocol[0].oracle.expected_state_count and .expected_accept_count==$protocol[0].oracle.expected_accept_count and .expected_reject_count==$protocol[0].oracle.expected_reject_count and .false_accept_count==$protocol[0].target_metrics.false_accept_count and .false_reject_count==$protocol[0].target_metrics.false_reject_count and .unexpected_error_count==$protocol[0].target_metrics.unexpected_error_count and .false_release_pass_count==$protocol[0].target_metrics.false_release_pass_count then "PASS" else "FAIL" end)
 ' "$records" > "$report"
 
-jq -e --argjson expected "$states" --argjson accepted "$expected_accept_count" --argjson rejected "$expected_reject_count" '
+jq -e --slurpfile protocol "$phase_protocol" --arg protocol_id "$phase_protocol_id" --arg protocol_blob "$phase_protocol_blob" --arg protocol_sha256 "$phase_protocol_sha256" --argjson expected "$states" --argjson accepted "$expected_accept_count" --argjson rejected "$expected_reject_count" '
   .schema=="srq-transaction-phase-state-space-assessment-v1"
   and .status=="PASS" and .release_status=="BLOCKED" and .claim_ceiling=="none"
+  and .protocol.protocol_id==$protocol_id and .protocol.version==$protocol[0].version
+  and .protocol.git_blob_sha1==$protocol_blob and .protocol.raw_sha256==$protocol_sha256
   and .expected_state_count==$expected and .observed_state_count==$expected
   and .expected_accept_count==$accepted and .expected_reject_count==$rejected
-  and .false_accept_count==0 and .false_reject_count==0 and .unexpected_error_count==0
-  and .false_release_pass_count==0 and .accepted_with_blocked_release_count==$accepted
+  and $protocol[0].oracle.expected_state_count==$expected
+  and $protocol[0].oracle.expected_accept_count==$accepted
+  and $protocol[0].oracle.expected_reject_count==$rejected
+  and .false_accept_count==$protocol[0].target_metrics.false_accept_count
+  and .false_reject_count==$protocol[0].target_metrics.false_reject_count
+  and .unexpected_error_count==$protocol[0].target_metrics.unexpected_error_count
+  and .false_release_pass_count==$protocol[0].target_metrics.false_release_pass_count
+  and .accepted_with_blocked_release_count==$accepted
   and ([.cases[].id]|length==(unique|length))
 ' "$report" >/dev/null || { echo "FAIL: transaction phase state-space conformance failed; report: $report" >&2; exit 1; }
 
