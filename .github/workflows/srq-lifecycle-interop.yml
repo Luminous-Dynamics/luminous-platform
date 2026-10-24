@@ -146,8 +146,17 @@ jobs:
             "$GITHUB_WORKSPACE/integration-upstream/mycelix" \
             "$GITHUB_WORKSPACE/integration-upstream/sovereign-boot" \
             "$evidence_dir"
-          jq -e --slurpfile protocol benchmarks/srq-lifecycle-interop/corpus-v1.json --arg protocol_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-v1.json | cut -d ' ' -f 1)" --arg protocol_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" '
+          jq -e --slurpfile protocol benchmarks/srq-lifecycle-interop/corpus-v1.json --slurpfile executable benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json --arg protocol_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-v1.json | cut -d ' ' -f 1)" --arg protocol_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" --arg mutation_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json | cut -d ' ' -f 1)" --arg mutation_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json)" '
             .schema == "srq-lifecycle-adversarial-assessment-v1"
+            and .executable_mutations.schema == $executable[0].schema
+            and .executable_mutations.version == $executable[0].version
+            and .executable_mutations.parent_protocol_id == $protocol[0].protocol_id
+            and .executable_mutations.raw_sha256 == $mutation_sha256
+            and .executable_mutations.git_blob_sha1 == $mutation_blob
+            and ([.cases[] | {id,input_kind,mutation_filter}] | sort_by(.id))
+                == ([$executable[0].cases[] | {id,input_kind,mutation_filter:.transform_filter}] | sort_by(.id))
+            and ([.positive_controls[] | {id,input_kind,mutation_filter}] | sort_by(.id))
+                == ([$executable[0].positive_controls[] | {id,input_kind,mutation_filter:.transform_filter}] | sort_by(.id))
             and .protocol.protocol_id == $protocol[0].protocol_id
             and .protocol.version == $protocol[0].version
             and .protocol.raw_sha256 == $protocol_sha256
@@ -178,7 +187,7 @@ jobs:
             and ([.positive_controls[] | select(.input_kind == "mycelix_receipt")] | (length == 2 and all(.[]; .schema_validation_result == "VALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
             and ([.positive_controls[] | select(.input_kind == "nixward_transaction")] | (length == 3 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
           ' "$evidence_dir/srq-lifecycle-adversarial-assessment.json"
-          jq -e --arg protocol_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-v1.json | cut -d ' ' -f 1)" --arg protocol_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" --arg schema_env_lock_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/schema-env-lock-v1.json | cut -d ' ' -f 1)" --arg schema_install_report_sha256 "$(sha256sum "$schema_install_report" | cut -d ' ' -f 1)" --arg schema_environment_report_sha256 "$(sha256sum "$schema_environment_report" | cut -d ' ' -f 1)" '
+          jq -e --arg protocol_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-v1.json | cut -d ' ' -f 1)" --arg protocol_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" --arg mutation_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json | cut -d ' ' -f 1)" --arg mutation_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json)" --arg schema_env_lock_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/schema-env-lock-v1.json | cut -d ' ' -f 1)" --arg schema_install_report_sha256 "$(sha256sum "$schema_install_report" | cut -d ' ' -f 1)" --arg schema_environment_report_sha256 "$(sha256sum "$schema_environment_report" | cut -d ' ' -f 1)" '
             .schema == "srq-lifecycle-interop-assessment-v1"
             and .contract_status == "PASS"
             and .release_status == "BLOCKED"
@@ -210,6 +219,9 @@ jobs:
             and .sources.interop_harness.schema_environment_validation_report_raw_sha256 == $schema_environment_report_sha256
             and .sources.interop_harness.corpus_protocol_raw_sha256 == $protocol_sha256
             and .sources.interop_harness.corpus_protocol_git_blob_sha1 == $protocol_blob
+            and (.sources.interop_harness.executable_mutations_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and .sources.interop_harness.executable_mutations_raw_sha256 == $mutation_sha256
+            and .sources.interop_harness.executable_mutations_git_blob_sha1 == $mutation_blob
             and (.release_blockers | length >= 5)
           ' "$evidence_dir/lifecycle-interop-assessment.json"
 
@@ -222,6 +234,7 @@ jobs:
             ${{ runner.temp }}/srq-lifecycle-interop/lifecycle-interop-assessment.json
             ${{ runner.temp }}/srq-lifecycle-interop/srq-lifecycle-adversarial-assessment.json
             ${{ runner.temp }}/srq-lifecycle-interop/corpus-v1.json
+            ${{ runner.temp }}/srq-lifecycle-interop/corpus-executable-mutations-v1.json
             ${{ runner.temp }}/srq-lifecycle-interop/schema-env-lock-v1.json
             ${{ runner.temp }}/srq-lifecycle-interop/schema-pip-install-report.json
             ${{ runner.temp }}/srq-lifecycle-interop/schema-environment-validation.json
