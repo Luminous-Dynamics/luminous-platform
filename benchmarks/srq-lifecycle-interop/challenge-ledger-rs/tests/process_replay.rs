@@ -1,4 +1,6 @@
-use srq_challenge_ledger::{Binding, Challenge, ChallengeLedger, LedgerError, MAX_CHALLENGE_LIFETIME_SECS};
+use srq_challenge_ledger::{
+    Binding, Challenge, ChallengeLedger, LedgerError, MAX_CHALLENGE_LIFETIME_SECS,
+};
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
