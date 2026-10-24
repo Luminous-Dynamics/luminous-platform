@@ -238,7 +238,7 @@ git -C "$repo_root" diff --quiet -- "$interop_validator_path" "$interop_test_pat
   echo "BLOCKED: interop source has uncommitted modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
-git -C "$repo_root" diff --cached --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_executable_mutations_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" "$interop_environment_lock_path" "$interop_environment_validator_path" "$interop_environment_validator_test_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
+git -C "$repo_root" diff --cached --quiet -- "$interop_validator_path" "$interop_test_path" "$interop_adversarial_path" "$interop_schema_validator_path" "$interop_schema_test_path" "$interop_schema_requirements_path" "$interop_lock_path" "$interop_schema_path" "$interop_protocol_path" "$interop_executable_mutations_path" "$interop_protocol_schema_path" "$interop_protocol_validator_path" "$interop_protocol_test_path" "$interop_environment_lock_path" "$interop_environment_validator_path" "$interop_environment_validator_test_path" "$interop_phase_matrix_path" ".github/workflows/srq-lifecycle-interop.yml" "docs/SRQ_LIFECYCLE_INTEROP_V1.md" || {
   echo "BLOCKED: interop source has staged modifications; refusing to bind the report to a different source SHA." >&2
   exit 2
 }
