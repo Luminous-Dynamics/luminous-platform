@@ -42,6 +42,24 @@ Baseline reference pages (re-check the exact model, revision, purchase date and 
 
 These manufacturer claims are starting points, not independent matched-test results. The benchmark must distinguish supplier specifications, lab-observed results, field observations and modelled costs.
 
+## 2A. Current market snapshot (checked 2026-10-24)
+
+This snapshot uses official vendor pages and is meant to focus the research gap, not to claim an independently verified head-to-head result.
+
+| Reference | Current documented facts | Implication for Luminous |
+|---|---|---|
+| Fairphone Gen 6 / Gen 6+ | The official product page lists Gen 6 at €599 and Gen 6+ at €649, 12 replaceable parts, IP55 water resistance, and software support until 2033. It says the display, battery, USB-C port and back cover can be swapped in under five minutes. | The differentiation is not “first repairable phone.” It is the combination of stronger independently tested ingress/impact performance with similar repair access, including resealing and requalification after repair. IP68 remains a target hypothesis, not a guarantee. |
+| Framework Laptop 13 (Ryzen AI 300 family) | The official product page lists starting price $1,049 and positions the 13.5-inch system as customizable, upgradeable and repairable; its official guides include many replacement procedures and a NixOS installation guide. | Do not compete with Framework solely on modularity. The gap to test is rugged enclosure, serviceable protection, ingress/thermal behavior, offline recovery and total cost of service. |
+| Panasonic TOUGHBOOK family | The official vendor page says select models are tested to MIL-STD-810H, include IP-rated protection and have long-term support/configuration options. Exact qualifications vary by model/configuration. | Use a specific SKU and test profile as the rugged baseline. A family-level marketing claim is not a matched-comparison data point. |
+
+Official references:
+- Fairphone Gen 6: https://www.fairphone.com/the-fairphone-gen-6
+- Framework Laptop 13: https://frame.work/laptop13
+- Framework replacement and Linux guides: https://guides.frame.work/c/Framework_Laptop
+- Panasonic TOUGHBOOK family: https://connect.na.panasonic.com/toughbook
+
+Practical research gap: prove a combined operating point—more impact/ingress protection than a repairability-first phone, and easier/cheaper field repair than a rugged enterprise laptop—without sacrificing reasonable weight, battery life, thermals or parts availability. Only a matched test can prove that gap is closed.
+
 ## 3. Define failure before testing
 
 ### Smartphone failure criteria
