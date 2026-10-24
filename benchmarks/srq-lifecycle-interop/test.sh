@@ -31,7 +31,9 @@ bash "$script_dir/validate.sh" --nixward-root "$nixward_root" --mycelix-root "$m
 jq -e \
   --arg schema_env_install_report_sha256 "$(sha256sum "${SRQ_SCHEMA_INSTALL_REPORT:?missing hash-locked pip install report}" | cut -d ' ' -f 1)" \
   --arg schema_env_validation_report_sha256 "$(sha256sum "${SRQ_SCHEMA_ENV_VALIDATION_REPORT:?missing validated package report}" | cut -d ' ' -f 1)" \
-  --arg schema_env_lock_sha256 "$(sha256sum "$script_dir/schema-env-lock-v1.json" | cut -d ' ' -f 1)" '
+  --arg schema_env_lock_sha256 "$(sha256sum "$script_dir/schema-env-lock-v1.json" | cut -d ' ' -f 1)" \
+  --arg executable_mutations_sha256 "$(sha256sum "$script_dir/corpus-executable-mutations-v1.json" | cut -d ' ' -f 1)" \
+  --arg executable_mutations_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json)" '
   .schema == "srq-lifecycle-interop-assessment-v1"
   and .contract_status == "PASS" and .release_status == "BLOCKED" and .claim_ceiling == "none"
   and .transaction.phase == "planned"
@@ -63,6 +65,9 @@ jq -e \
   and (.sources.interop_harness.corpus_protocol_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.corpus_protocol_raw_sha256 | test("^[0-9a-f]{64}$"))
   and .sources.interop_harness.corpus_protocol_id == "srq-lifecycle-adversarial-v1"
+  and (.sources.interop_harness.executable_mutations_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and .sources.interop_harness.executable_mutations_git_blob_sha1 == $executable_mutations_blob
+  and .sources.interop_harness.executable_mutations_raw_sha256 == $executable_mutations_sha256
   and (.sources.interop_harness.corpus_schema_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.corpus_schema_raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.interop_harness.corpus_validator_git_blob_sha1 | test("^[0-9a-f]{40}$"))
@@ -146,9 +151,30 @@ jq -e '
   and ([.cases[].id] | length == (unique | length))
   and ([.positive_controls[].id] | length == (unique | length))
 ' "$script_dir/corpus-v1.json" >/dev/null
+jq -e --slurpfile parent "$script_dir/corpus-v1.json" '
+  .schema == "srq-lifecycle-executable-mutations-v1"
+  and .version == 1 and .parent_protocol_id == $parent[0].protocol_id
+  and ([.cases[] | {id,input_kind,expected_schema_result,expected_lifecycle_result}] | sort_by(.id))
+      == ([$parent[0].cases[] | {id,input_kind,expected_schema_result,expected_lifecycle_result}] | sort_by(.id))
+  and ([.positive_controls[] | {id,input_kind,expected_schema_result,expected_lifecycle_result,expected_evidence_tier,expected_evidence_claim_ceiling,expected_transaction_phase}] | sort_by(.id))
+      == ([$parent[0].positive_controls[] | {id,input_kind,expected_schema_result,expected_lifecycle_result,expected_evidence_tier,expected_evidence_claim_ceiling,expected_transaction_phase}] | sort_by(.id))
+  and (.cases | all(.[]; (.transform_filter | type == "string" and length > 0) and (.expected_failure_reason | type == "string" and length > 0)))
+  and (.positive_controls | all(.[]; (.transform_filter | type == "string" and length > 0)))
+' "$script_dir/corpus-executable-mutations-v1.json" >/dev/null
 bash "$script_dir/adversarial.sh" "$nixward_root" "$mycelix_root" "$sovereign_boot_root" "$tmp/boot-observation.json" "$output_dir"
-jq -e --slurpfile protocol "$script_dir/corpus-v1.json" '
+jq -e --slurpfile protocol "$script_dir/corpus-v1.json" --slurpfile executable "$script_dir/corpus-executable-mutations-v1.json" \
+  --arg mutation_sha256 "$(sha256sum "$script_dir/corpus-executable-mutations-v1.json" | cut -d ' ' -f 1)" \
+  --arg mutation_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/corpus-executable-mutations-v1.json)" '
   .schema == "srq-lifecycle-adversarial-assessment-v1"
+  and .executable_mutations.schema == $executable[0].schema
+  and .executable_mutations.version == $executable[0].version
+  and .executable_mutations.parent_protocol_id == $protocol[0].protocol_id
+  and .executable_mutations.raw_sha256 == $mutation_sha256
+  and .executable_mutations.git_blob_sha1 == $mutation_blob
+  and ([.cases[] | {id,input_kind,mutation_filter}] | sort_by(.id))
+      == ([$executable[0].cases[] | {id,input_kind,mutation_filter:.transform_filter}] | sort_by(.id))
+  and ([.positive_controls[] | {id,input_kind,mutation_filter}] | sort_by(.id))
+      == ([$executable[0].positive_controls[] | {id,input_kind,mutation_filter:.transform_filter}] | sort_by(.id))
   and .protocol.protocol_id == $protocol[0].protocol_id
   and .protocol.version == $protocol[0].version
   and (.protocol.git_blob_sha1 | test("^[0-9a-f]{40}$"))

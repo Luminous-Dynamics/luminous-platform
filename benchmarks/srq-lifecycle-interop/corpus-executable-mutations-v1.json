@@ -1,0 +1,202 @@
+{
+  "schema": "srq-lifecycle-executable-mutations-v1",
+  "version": 1,
+  "parent_protocol_id": "srq-lifecycle-adversarial-v1",
+  "purpose": "Executable transformation companion for frozen corpus-v1; the transformations are versioned data rather than shell-only literals.",
+  "scope": "Test-only JSON jq transformations. The parent protocol corpus remains the authoritative case inventory and expected disposition protocol.",
+  "cases": [
+    {
+      "id": "s0-domain-validated-status",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".run_status = \"domain_validated\"",
+      "expected_failure_reason": "cross-field semantics",
+      "expected_schema_result": "INVALID",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "s0-independently-checked-status",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".run_status = \"independently_checked\"",
+      "expected_failure_reason": "cross-field semantics",
+      "expected_schema_result": "INVALID",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "planned-gate-inflation",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".gates.source_integrity = \"pass\"",
+      "expected_failure_reason": "cross-field semantics",
+      "expected_schema_result": "INVALID",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "planned-subject-commit-injection",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".subject.commit = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"",
+      "expected_failure_reason": "cross-field semantics",
+      "expected_schema_result": "INVALID",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "planned-artifact-hash-injection",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".subject.artifact_sha256 = \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"",
+      "expected_failure_reason": "cross-field semantics",
+      "expected_schema_result": "INVALID",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "planned-result-count-injection",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".benchmark.results_summary.observed_result_count = 1",
+      "expected_failure_reason": "declared evidence tier / claim ceiling",
+      "expected_schema_result": "INVALID",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "s3-without-independent-verification",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".evidence_tier = \"S3\" | .claim_ceiling = \"independently_reproduced\"",
+      "expected_failure_reason": "cross-field semantics",
+      "expected_schema_result": "INVALID",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "s2-source-reproducible-without-source",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".evidence_tier = \"S2\" | .claim_ceiling = \"source_reproducible\"",
+      "expected_failure_reason": "cross-field semantics",
+      "expected_schema_result": "INVALID",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "unknown-tier",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".evidence_tier = \"S5\"",
+      "expected_failure_reason": "declared evidence tier / claim ceiling",
+      "expected_schema_result": "INVALID",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "validated-without-validation-record",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"validated\"",
+      "expected_failure_reason": "Nixward transaction fields or phase invariants are inconsistent",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "authorized-without-prior-records",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"authorized\"",
+      "expected_failure_reason": "Nixward transaction fields or phase invariants are inconsistent",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "snapshotted-without-prior-records",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"snapshotted\"",
+      "expected_failure_reason": "Nixward transaction fields or phase invariants are inconsistent",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "applied-without-prior-records",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"applied\"",
+      "expected_failure_reason": "Nixward transaction fields or phase invariants are inconsistent",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "verified-without-prior-records",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"verified\"",
+      "expected_failure_reason": "Nixward transaction fields or phase invariants are inconsistent",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "promoted-without-any-evidence-records",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"promoted\"",
+      "expected_failure_reason": "Nixward transaction fields or phase invariants are inconsistent",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "failed-without-outcome-record",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"failed\"",
+      "expected_failure_reason": "Nixward transaction fields or phase invariants are inconsistent",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "REJECT"
+    },
+    {
+      "id": "recovered-without-snapshot-outcome",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"recovered\"",
+      "expected_failure_reason": "Nixward transaction fields or phase invariants are inconsistent",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "REJECT"
+    }
+  ],
+  "positive_controls": [
+    {
+      "id": "valid-s2-source-reproducible-shape",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".run_status = \"executed\"\n  | .evidence_tier = \"S2\"\n  | .claim_ceiling = \"source_reproducible\"\n  | .receipt_id = \"synthetic:positive-control:S2\"\n  | .subject.repository = \"synthetic://lifecycle-positive-control/S2\"\n  | .subject.artifact_path = \"fixtures/synthetic-positive-control-s2.json\"\n  | .subject.commit = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n  | .subject.artifact_sha256 = \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n  | .sources = [{\n      source_id:\"synthetic-source-1\",\n      url:\"https://example.org/srq-test-fixture.bin\",\n      observed_at:\"2026-10-23T00:00:00Z\",\n      media_type:\"application/octet-stream\",\n      raw_bytes_ingested:true,\n      byte_count:42,\n      sha256:\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\n      rights_status:\"open_license\",\n      contact_status:\"not_required\",\n      temporal_coverage:null,\n      spatial_coverage:null,\n      metadata_conflicts:[],\n      artifact_path:\"fixtures/synthetic-source.bin\"\n    }]\n  | .benchmark.protocol_sha256 = \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\"\n  | .benchmark.pre_registered_at = \"2026-10-23T00:00:00Z\"\n  | .benchmark.split_strategy = \"temporal_holdout\"\n  | .benchmark.split_lock_sha256 = \"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\"\n  | .benchmark.results_summary.state = \"available\"\n  | .benchmark.results_summary.observed_result_count = 1\n  | .benchmark.results_summary.note = \"Synthetic shape control only; no empirical result is asserted.\"\n  | .benchmark.primary_metrics = [\"structural positive control only; no empirical measurement\"]\n  | .gates.source_integrity = \"pass\"\n  | .gates.rights_stewardship = \"pass\"\n  | .gates.transform_reproducibility = \"pass\"\n  | .gates.split_lock = \"pass\"\n  | .gates.budget_parity = \"pass\"\n  | .gates.negative_controls = \"pass\"\n  | .gates.exact_head = \"pass\"\n  | .gates.safety_critical_regression = \"pass\"\n  | .gates.independent_verification = \"unknown\"\n  | .gates.domain_validation = \"unknown\"\n  | .limitations = [\"Synthetic structural positive control only; every source URL and digest is a sentinel.\", \"Does not prove real source ingestion, rights, reproducibility or domain validity.\"]",
+      "expected_schema_result": "VALID",
+      "expected_lifecycle_result": "ACCEPT_RECORD_KEEP_RELEASE_BLOCKED",
+      "expected_evidence_tier": "S2",
+      "expected_evidence_claim_ceiling": "source_reproducible"
+    },
+    {
+      "id": "valid-s4-domain-validated-shape",
+      "input_kind": "mycelix_receipt",
+      "transform_filter": ".run_status = \"domain_validated\"\n  | .evidence_tier = \"S4\"\n  | .claim_ceiling = \"domain_validated\"\n  | .receipt_id = \"synthetic:positive-control:S4\"\n  | .subject.repository = \"synthetic://lifecycle-positive-control/S4\"\n  | .subject.artifact_path = \"fixtures/synthetic-positive-control-s4.json\"\n  | .subject.commit = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n  | .subject.artifact_sha256 = \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"\n  | .benchmark.protocol_sha256 = \"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"\n  | .benchmark.pre_registered_at = \"2026-10-23T00:00:00Z\"\n  | .benchmark.split_lock_sha256 = \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\"\n  | .benchmark.results_summary.state = \"available\"\n  | .benchmark.results_summary.observed_result_count = 1\n  | .benchmark.results_summary.note = \"Synthetic shape control only; no empirical result is asserted.\"\n  | .benchmark.primary_metrics = [\"structural positive control only; no empirical measurement\"]\n  | .gates = (.gates | with_entries(.value = \"pass\"))\n  | .independent_verification.status = \"passed\"\n  | .independent_verification.verifier_kind = \"independent_implementation\"\n  | .independent_verification.verifier_ref = \"synthetic-positive-control-only\"\n  | .independent_verification.replayed_commit = \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n  | .independent_verification.note = \"Synthetic shape test; not a real independent verification.\"\n  | .limitations = [\"Synthetic structural positive control only; identities, hashes and verification references are sentinels.\", \"Does not establish any real execution, independent reproduction or domain validation.\"]",
+      "expected_schema_result": "VALID",
+      "expected_lifecycle_result": "ACCEPT_RECORD_KEEP_RELEASE_BLOCKED",
+      "expected_evidence_tier": "S4",
+      "expected_evidence_claim_ceiling": "domain_validated"
+    },
+    {
+      "id": "valid-validated-phase-with-validation-record",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"validated\" | .validation = {\"status\":\"pass\",\"validator_ref\":\"synthetic-control-only\"}",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "ACCEPT_RECORD_KEEP_RELEASE_BLOCKED",
+      "expected_transaction_phase": "validated"
+    },
+    {
+      "id": "valid-failed-phase-with-outcome",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"failed\" | .outcome = {\"status\":\"failed\",\"detail\":\"synthetic fixture\"}",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "ACCEPT_RECORD_KEEP_RELEASE_BLOCKED",
+      "expected_transaction_phase": "failed"
+    },
+    {
+      "id": "valid-recovered-phase-with-snapshot-outcome",
+      "input_kind": "nixward_transaction",
+      "transform_filter": ".phase = \"recovered\" | .snapshot = {\"snapshot_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"} | .outcome = {\"status\":\"recovered\",\"recovery_binding_digest\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}",
+      "expected_schema_result": "NOT_APPLICABLE",
+      "expected_lifecycle_result": "ACCEPT_RECORD_KEEP_RELEASE_BLOCKED",
+      "expected_transaction_phase": "recovered"
+    }
+  ],
+  "invariants": {
+    "exact_parent_case_id_join": true,
+    "exact_parent_positive_control_id_join": true,
+    "reject_missing_or_duplicate_ids": true,
+    "transformations_must_be_non_empty_strings": true,
+    "release_status_after_positive_controls": "BLOCKED",
+    "claim_ceiling_after_positive_controls": "none"
+  },
+  "limitations": [
+    "The jq transformation expressions are executable test input and must be reviewed as code.",
+    "The companion manifest is digest-addressed, not separately signed or externally timestamped.",
+    "Positive control identities, source records, hashes and verifier references are synthetic sentinels."
+  ]
+}
