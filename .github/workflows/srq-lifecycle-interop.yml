@@ -70,14 +70,15 @@ jobs:
           python3 -m venv "$schema_venv"
           "$schema_venv/bin/python" -m pip install --disable-pip-version-check --no-input --only-binary=:all: -r benchmarks/srq-lifecycle-interop/requirements-schema.txt
           export SRQ_SCHEMA_PYTHON="$schema_venv/bin/python"
-          "$SRQ_SCHEMA_PYTHON" -m py_compile benchmarks/srq-lifecycle-interop/schema_validate.py benchmarks/srq-lifecycle-interop/schema_validate_test.py benchmarks/srq-lifecycle-interop/corpus_validate.py benchmarks/srq-lifecycle-interop/corpus_validate_test.py benchmarks/srq-lifecycle-interop/phase_matrix.py benchmarks/srq-lifecycle-interop/phase_matrix_test.py
+          "$SRQ_SCHEMA_PYTHON" -m py_compile benchmarks/srq-lifecycle-interop/schema_validate.py benchmarks/srq-lifecycle-interop/schema_validate_test.py benchmarks/srq-lifecycle-interop/corpus_validate.py benchmarks/srq-lifecycle-interop/corpus_validate_test.py benchmarks/srq-lifecycle-interop/phase_matrix.py benchmarks/srq-lifecycle-interop/phase_matrix_test.py benchmarks/srq-lifecycle-interop/claim_matrix.py benchmarks/srq-lifecycle-interop/claim_matrix_test.py
           "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/schema_validate_test.py
           "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/corpus_validate_test.py
           "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/phase_matrix_test.py
+          "$SRQ_SCHEMA_PYTHON" benchmarks/srq-lifecycle-interop/claim_matrix_test.py
           bash -n benchmarks/srq-lifecycle-interop/validate.sh
           bash -n benchmarks/srq-lifecycle-interop/test.sh
           bash -n benchmarks/srq-lifecycle-interop/adversarial.sh
-          jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_id") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_schema_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_schema_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_test_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_protocol_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_protocol_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_protocol_id") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_runner_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_runner_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_test_raw_sha256") != null)' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
+          jq -e '.["$schema"] == "https://json-schema.org/draft/2020-12/schema" and .properties.contract_status.const == "PASS" and .properties.release_status.const == "BLOCKED" and .properties.claim_ceiling.const == "none" and (.properties.sources.required | index("interop_harness") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("adversarial_script_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_validator_test_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("schema_requirements_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_protocol_id") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_schema_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_schema_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("corpus_validator_test_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_protocol_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_protocol_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_protocol_id") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_runner_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_runner_raw_sha256") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_test_git_blob_sha1") != null) and (.properties.sources.properties.interop_harness.required | index("transaction_phase_matrix_test_raw_sha256") != null and index("claim_matrix_protocol_git_blob_sha1") != null and index("claim_matrix_protocol_raw_sha256") != null and index("claim_matrix_protocol_id") != null and index("claim_matrix_runner_git_blob_sha1") != null and index("claim_matrix_runner_raw_sha256") != null and index("claim_matrix_test_git_blob_sha1") != null and index("claim_matrix_test_raw_sha256") != null)' benchmarks/srq-lifecycle-interop/assessment-v1.schema.json
           jq -e --slurpfile lock benchmarks/srq-lifecycle-interop/upstream-lock-v1.json '
             .schema == "srq-lifecycle-adversarial-protocol-v1"
             and .protocol_id == "srq-lifecycle-adversarial-v1"
@@ -128,6 +129,35 @@ jobs:
                 )
           ' benchmarks/srq-lifecycle-interop/transaction-phase-matrix-v1.json
 
+          jq -e --slurpfile lock benchmarks/srq-lifecycle-interop/upstream-lock-v1.json '
+            .schema == "srq-evidence-claim-ceiling-matrix-v1"
+            and .protocol_id == "srq-evidence-claim-ceiling-matrix-v1"
+            and .version == 1
+            and .evidence_tiers == ["S0","S1","S2","S3","S4"]
+            and .claim_ceilings == ["synthetic_only","transcription_only","source_reproducible","independently_reproduced","domain_validated"]
+            and (.canonical_profiles | length == 5)
+            and .enumeration.tier_count == 5
+            and .enumeration.claim_ceiling_count == 5
+            and .enumeration.expected_case_count == 25
+            and .enumeration.expected_accept_count == 8
+            and .enumeration.expected_reject_count == 17
+            and .target_metrics.false_accept_count == 0
+            and .target_metrics.false_reject_count == 0
+            and .target_metrics.schema_adapter_disagreement_count == 0
+            and .target_metrics.release_false_pass_count == 0
+            and .release_invariant.every_accepted_candidate_must_leave_release_status == "BLOCKED"
+            and .release_invariant.every_accepted_candidate_must_leave_claim_ceiling == "none"
+            and .release_invariant.release_pass_allowed == false
+            and ( . as $protocol
+                  | any($lock[0].pins[];
+                      .repository == $protocol.source_contract.repository
+                      and .commit_sha == $protocol.source_contract.commit_sha
+                      and .path == $protocol.source_contract.path
+                      and .git_blob_sha1 == $protocol.source_contract.git_blob_sha1
+                    )
+                )
+          ' benchmarks/srq-lifecycle-interop/claim-ceiling-matrix-v1.json
+
           evidence_dir="$RUNNER_TEMP/srq-lifecycle-interop"
           mkdir -p "$evidence_dir"
           cp benchmarks/srq-lifecycle-interop/corpus-v1.json "$evidence_dir/corpus-v1.json"
@@ -168,6 +198,22 @@ jobs:
             and ([.positive_controls[] | select(.input_kind == "mycelix_receipt")] | (length == 2 and all(.[]; .schema_validation_result == "VALID" and (.schema_validation_report_raw_sha256 | test("^[0-9a-f]{64}$")))))
             and ([.positive_controls[] | select(.input_kind == "nixward_transaction")] | (length == 3 and all(.[]; .schema_validation_result == "NOT_APPLICABLE" and .schema_validation_report_raw_sha256 == null)))
           ' "$evidence_dir/srq-lifecycle-adversarial-assessment.json"
+          jq -e '
+            .schema == "srq-evidence-claim-ceiling-matrix-assessment-v1"
+            and .result == "PASS"
+            and .protocol.protocol_id == "srq-evidence-claim-ceiling-matrix-v1"
+            and (.protocol.git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.protocol.raw_sha256 | test("^[0-9a-f]{64}$"))
+            and .schema_input.git_blob_sha1 == "e2b90a995f70d0a771b04e7f5fc077e1c0394f86"
+            and .schema_input.commit_sha == "b02cefab8474262aef23b61a4ac3811fe92e29bf"
+            and .expected_case_count == 25 and .completed_case_count == 25
+            and .expected_accept_count == 8 and .observed_accept_count == 8 and .schema_accepted_count == 8
+            and .false_accept_count == 0 and .false_reject_count == 0
+            and .schema_adapter_disagreement_count == 0 and .release_false_pass_count == 0
+            and ([.cases[] | select(.result != "MATCH")] | length == 0)
+            and ([.cases[] | select(.expected_accept) | (.assessment_release_status == "BLOCKED" and .assessment_claim_ceiling == "none")] | all)
+          ' "$evidence_dir/claim-ceiling-matrix-assessment.json"
+
           jq -e --arg protocol_sha256 "$(sha256sum benchmarks/srq-lifecycle-interop/corpus-v1.json | cut -d ' ' -f 1)" --arg protocol_blob "$(git hash-object -- benchmarks/srq-lifecycle-interop/corpus-v1.json)" '
             .schema == "srq-lifecycle-interop-assessment-v1"
             and .contract_status == "PASS"
@@ -197,6 +243,13 @@ jobs:
             and (.sources.interop_harness.transaction_phase_matrix_runner_raw_sha256 | test("^[0-9a-f]{64}$"))
             and (.sources.interop_harness.transaction_phase_matrix_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
             and (.sources.interop_harness.transaction_phase_matrix_test_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.claim_matrix_protocol_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.claim_matrix_protocol_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and .sources.interop_harness.claim_matrix_protocol_id == "srq-evidence-claim-ceiling-matrix-v1"
+            and (.sources.interop_harness.claim_matrix_runner_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.claim_matrix_runner_raw_sha256 | test("^[0-9a-f]{64}$"))
+            and (.sources.interop_harness.claim_matrix_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+            and (.sources.interop_harness.claim_matrix_test_raw_sha256 | test("^[0-9a-f]{64}$"))
             and .sources.interop_harness.corpus_protocol_raw_sha256 == $protocol_sha256
             and .sources.interop_harness.corpus_protocol_git_blob_sha1 == $protocol_blob
             and (.release_blockers | length >= 5)
@@ -212,6 +265,7 @@ jobs:
             ${{ runner.temp }}/srq-lifecycle-interop/srq-lifecycle-adversarial-assessment.json
             ${{ runner.temp }}/srq-lifecycle-interop/corpus-v1.json
             ${{ runner.temp }}/srq-lifecycle-interop/transaction-phase-matrix-assessment.json
+            ${{ runner.temp }}/srq-lifecycle-interop/claim-ceiling-matrix-assessment.json
             ${{ runner.temp }}/srq-lifecycle-interop/schema-validation/*.json
           if-no-files-found: ignore
           retention-days: 30
