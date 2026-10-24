@@ -1,0 +1,116 @@
+{
+  "schema": "srq-causal-reference-matrix-protocol-v1",
+  "protocol_id": "srq-causal-reference-matrix-v1",
+  "version": 1,
+  "purpose": "Enumerate every event-ID target plus dangling, empty and null references for every declared causal edge in successful, failed and recovered synthetic transaction paths.",
+  "candidate_domain": {
+    "values": "All event IDs in the selected candidate, followed by the dangling string 'missing-event', the empty string, and null.",
+    "expected_rule": "Accept exactly when the reference equals the unique event ID of the declared target_kind and that target precedes the source event."
+  },
+  "edges": [
+    {
+      "mode": "success",
+      "source_kind": "applied",
+      "field": "authorization_event_id",
+      "target_kind": "authorized"
+    },
+    {
+      "mode": "success",
+      "source_kind": "applied",
+      "field": "snapshot_event_id",
+      "target_kind": "snapshotted"
+    },
+    {
+      "mode": "success",
+      "source_kind": "verified",
+      "field": "application_event_id",
+      "target_kind": "applied"
+    },
+    {
+      "mode": "success",
+      "source_kind": "outcome",
+      "field": "verification_event_id",
+      "target_kind": "verified"
+    },
+    {
+      "mode": "success",
+      "source_kind": "promoted",
+      "field": "outcome_event_id",
+      "target_kind": "outcome"
+    },
+    {
+      "mode": "success",
+      "source_kind": "promoted",
+      "field": "verification_event_id",
+      "target_kind": "verified"
+    },
+    {
+      "mode": "failed",
+      "source_kind": "applied",
+      "field": "authorization_event_id",
+      "target_kind": "authorized"
+    },
+    {
+      "mode": "failed",
+      "source_kind": "applied",
+      "field": "snapshot_event_id",
+      "target_kind": "snapshotted"
+    },
+    {
+      "mode": "failed",
+      "source_kind": "failed",
+      "field": "application_event_id",
+      "target_kind": "applied"
+    },
+    {
+      "mode": "recovered",
+      "source_kind": "applied",
+      "field": "authorization_event_id",
+      "target_kind": "authorized"
+    },
+    {
+      "mode": "recovered",
+      "source_kind": "applied",
+      "field": "snapshot_event_id",
+      "target_kind": "snapshotted"
+    },
+    {
+      "mode": "recovered",
+      "source_kind": "failed",
+      "field": "application_event_id",
+      "target_kind": "applied"
+    },
+    {
+      "mode": "recovered",
+      "source_kind": "recovered",
+      "field": "failed_event_id",
+      "target_kind": "failed"
+    },
+    {
+      "mode": "recovered",
+      "source_kind": "recovered",
+      "field": "snapshot_event_id",
+      "target_kind": "snapshotted"
+    }
+  ],
+  "target_metrics": {
+    "expected_state_count": 143,
+    "expected_edge_count": 14,
+    "expected_accept_count": 14,
+    "expected_reject_count": 129,
+    "false_accept_count": 0,
+    "false_reject_count": 0,
+    "unexpected_error_count": 0,
+    "false_release_pass_count": 0
+  },
+  "release_invariant": {
+    "qualification_status": "BLOCKED",
+    "claim_ceiling": "none",
+    "release_pass_allowed": false
+  },
+  "limitations": [
+    "The matrix exhausts only the declared reference fields and candidate event-ID domains, not all payload values or state-machine semantics.",
+    "All candidates are synthetic. A structurally correct event reference is not proof that the event is authentic or that an operation occurred.",
+    "This is a conformance supplement to the causal prototype, not an authenticated verifier or release qualification."
+  ]
+}
