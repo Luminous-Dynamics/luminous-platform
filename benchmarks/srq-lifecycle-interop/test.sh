@@ -212,6 +212,32 @@ jq -e --slurpfile protocol "$script_dir/corpus-v1.json" --slurpfile executable "
   and ([.cases[] | (.validator_exit_status > 0 and .expected_outcome == "reject" and .observed_outcome == "REJECTED_AS_EXPECTED" and (.candidate_raw_sha256 | test("^[0-9a-f]{64}$")) and (.rejection_reason | startswith("CONTRACT VIOLATION:")))] | all)
 ' "$output_dir/srq-lifecycle-adversarial-assessment.json" >/dev/null
 
+bash "$script_dir/transaction-phase-matrix.sh" "$nixward_root" "$mycelix_root" "$sovereign_boot_root" "$tmp/boot-observation.json" "$output_dir"
+jq -e '
+  .schema == "srq-transaction-phase-state-space-assessment-v1"
+  and .status == "PASS"
+  and .release_status == "BLOCKED"
+  and .claim_ceiling == "none"
+  and .expected_state_count == 576
+  and .observed_state_count == 576
+  and .expected_accept_count == 175
+  and .expected_reject_count == 401
+  and .false_accept_count == 0
+  and .false_reject_count == 0
+  and .unexpected_error_count == 0
+  and .false_release_pass_count == 0
+  and .accepted_with_blocked_release_count == 175
+  and (.harness.commit_sha | test("^[0-9a-f]{40}$"))
+  and (.harness.script_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.harness.script_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.source_fixture.commit_sha | test("^[0-9a-f]{40}$"))
+  and (.source_fixture.git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.source_fixture.raw_sha256 | test("^[0-9a-f]{64}$"))
+  and ([.cases[] | select(.observed_outcome == "ACCEPT")] | all(.[]; .release_status == "BLOCKED" and .claim_ceiling == "none"))
+  and (.cases | length == 576)
+' "$output_dir/transaction-phase-matrix-assessment.json" >/dev/null
+echo "PASS: all 576 transaction phase/evidence presence states match the oracle with zero false accepts/rejects/release passes"
+
 git -C "$nixward_root" diff --exit-code -- docs/fixtures/system-transaction-v1.json
 git -C "$mycelix_root" diff --exit-code -- research/evidence-plane/receipt-v0.schema.json research/evidence-plane/examples/synthetic-planned-receipt-v0.json
 git -C "$sovereign_boot_root" diff --exit-code -- tools/srq-boot-observation-probe/src/main.rs
