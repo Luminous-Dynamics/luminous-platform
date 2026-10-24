@@ -24,7 +24,7 @@ From the repository root:
     cargo clippy --locked --manifest-path benchmarks/srq-lifecycle-interop/challenge-ledger-rs/Cargo.toml --all-targets -- -D warnings
     cargo run --locked --manifest-path benchmarks/srq-lifecycle-interop/challenge-ledger-rs/Cargo.toml --bin replay-benchmark
 
-The benchmark races 64 callers against one challenge and reports the observed acceptance/replay counts. Its intended result is exactly one accepted consumption, 63 replay rejections, zero unexpected errors, and rejection after reopening the ledger. CI retains a JSON report bound to the exact source revision and source digests.
+The benchmark races 64 callers against one challenge and reports acceptance/replay counts, concurrent-window duration, p50/p95/p99 operation latency, and aggregate submissions/second. Its intended result is exactly one accepted consumption, 63 replay rejections, zero unexpected errors, and rejection after reopening the ledger. Timing is a workload-specific observation, not a universal SOTA comparison. CI retains a JSON report bound to the exact source revision, source digests, and toolchain version.
 
 ## Current guarantees and non-guarantees
 

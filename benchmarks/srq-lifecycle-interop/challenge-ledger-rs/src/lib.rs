@@ -107,10 +107,12 @@ impl Binding {
         ] {
             if !is_digest(value) {
                 return Err(LedgerError::InvalidInput(match name {
-                    "transaction_id" => "transaction_id must be 64 lowercase hexadecimal characters",
+                    "transaction_id" =>
+                        "transaction_id must be 64 lowercase hexadecimal characters",
                     "target_digest" => "target_digest must be 64 lowercase hexadecimal characters",
                     "plan_digest" => "plan_digest must be 64 lowercase hexadecimal characters",
-                    "artifact_digest" => "artifact_digest must be 64 lowercase hexadecimal characters",
+                    "artifact_digest" =>
+                        "artifact_digest must be 64 lowercase hexadecimal characters",
                     _ => "policy_digest must be 64 lowercase hexadecimal characters",
                 }));
             }
@@ -451,7 +453,9 @@ fn read_state(file: &mut File) -> LedgerResult<State> {
                 if consumed_at < challenge.issued_at_unix_secs
                     || consumed_at >= challenge.expires_at_unix_secs
                 {
-                    return Err(LedgerError::Corrupt("CONSUME timestamp outside challenge lifetime"));
+                    return Err(LedgerError::Corrupt(
+                        "CONSUME timestamp outside challenge lifetime",
+                    ));
                 }
                 if !state.consumed.insert(id) {
                     return Err(LedgerError::Corrupt("duplicate CONSUME record"));
@@ -550,7 +554,13 @@ mod tests {
         let challenge = sample_challenge();
         ledger.issue(&challenge, 20).expect("issue");
 
-        for field in ["transaction_id", "target_digest", "plan_digest", "artifact_digest", "policy_digest"] {
+        for field in [
+            "transaction_id",
+            "target_digest",
+            "plan_digest",
+            "artifact_digest",
+            "policy_digest",
+        ] {
             let mut wrong = challenge.binding.clone();
             match field {
                 "transaction_id" => wrong.transaction_id = repeated('9'),
@@ -624,7 +634,8 @@ mod tests {
         let path = dir.ledger_path();
         let ledger = ChallengeLedger::initialize(&path).expect("initialize");
         let mut challenge = sample_challenge();
-        challenge.expires_at_unix_secs = challenge.issued_at_unix_secs + MAX_CHALLENGE_LIFETIME_SECS + 1;
+        challenge.expires_at_unix_secs =
+            challenge.issued_at_unix_secs + MAX_CHALLENGE_LIFETIME_SECS + 1;
         assert!(matches!(
             ledger.issue(&challenge, 20),
             Err(LedgerError::InvalidInput(_))
