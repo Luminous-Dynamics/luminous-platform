@@ -11,6 +11,17 @@ nixward_root="$1"; mycelix_root="$2"; sovereign_boot_root="$3"; boot_observation
 readonly repository_root="$(git -C "$script_dir/../.." rev-parse --show-toplevel)"
 readonly fixture="$nixward_root/$fixture_relative"
 [[ -f "$fixture" ]] || { echo "BLOCKED: missing pinned transaction fixture: $fixture" >&2; exit 2; }
+readonly lock_file="$script_dir/upstream-lock-v1.json"
+readonly expected_fixture_commit="$(jq -er '.pins[] | select(.key == "nixward_transaction_fixture") | .commit_sha' "$lock_file")"
+readonly expected_fixture_blob="$(jq -er '.pins[] | select(.key == "nixward_transaction_fixture") | .git_blob_sha1' "$lock_file")"
+actual_fixture_commit="$(git -C "$nixward_root" rev-parse HEAD)"
+actual_fixture_blob="$(git -C "$nixward_root" hash-object -- "$fixture_relative")"
+[[ "$actual_fixture_commit" == "$expected_fixture_commit" && "$actual_fixture_blob" == "$expected_fixture_blob" ]] || {
+  echo "BLOCKED: transaction phase matrix source fixture does not match the immutable upstream lock." >&2
+  printf 'expected commit/blob: %s / %s\nobserved commit/blob: %s / %s\n' "$expected_fixture_commit" "$expected_fixture_blob" "$actual_fixture_commit" "$actual_fixture_blob" >&2
+  exit 2
+}
+git -C "$nixward_root" diff --quiet -- "$fixture_relative" || { echo "BLOCKED: pinned Nixward transaction fixture has local edits." >&2; exit 2; }
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -103,9 +114,8 @@ for phase in planned validated authorized snapshotted applied verified promoted 
   done
 done
 
-lock_file="$script_dir/upstream-lock-v1.json"
-fixture_commit="$(jq -er '.pins[]|select(.key=="nixward_transaction_fixture")|.commit_sha' "$lock_file")"
-fixture_blob="$(git -C "$nixward_root" hash-object -- "$fixture_relative")"
+fixture_commit="$actual_fixture_commit"
+fixture_blob="$actual_fixture_blob"
 fixture_sha256="$(sha256sum "$fixture" | cut -d ' ' -f 1)"
 script_blob="$(git -C "$repository_root" hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh)"
 script_sha256="$(sha256sum "$script_dir/transaction-phase-matrix.sh" | cut -d ' ' -f 1)"
