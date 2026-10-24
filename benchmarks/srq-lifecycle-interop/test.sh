@@ -66,6 +66,13 @@ jq -e '
   and (.sources.interop_harness.corpus_validator_raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.interop_harness.corpus_validator_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.corpus_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.transaction_phase_matrix_protocol_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.transaction_phase_matrix_protocol_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and .sources.interop_harness.transaction_phase_matrix_protocol_id == "srq-transaction-phase-presence-matrix-v1"
+  and (.sources.interop_harness.transaction_phase_matrix_runner_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.transaction_phase_matrix_runner_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.transaction_phase_matrix_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.transaction_phase_matrix_test_raw_sha256 | test("^[0-9a-f]{64}$"))
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
 
 "$schema_python" "$script_dir/corpus_validate.py" \
