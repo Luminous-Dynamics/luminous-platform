@@ -34,7 +34,7 @@ const PRIVATE_DIR_MASK: u32 = 0o077;
 pub const MAX_CHALLENGE_LIFETIME_SECS: u64 = 300;
 
 #[link(name = "c")]
-unsafe unsafe extern "C" {
+unsafe extern "C" {
     fn flock(fd: c_int, operation: c_int) -> c_int;
 }
 
