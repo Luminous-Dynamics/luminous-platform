@@ -178,6 +178,38 @@ jq -e --slurpfile protocol "$script_dir/corpus-v1.json" '
   and ([.cases[] | (.validator_exit_status > 0 and .expected_outcome == "reject" and .observed_outcome == "REJECTED_AS_EXPECTED" and (.candidate_raw_sha256 | test("^[0-9a-f]{64}$")) and (.rejection_reason | startswith("CONTRACT VIOLATION:")))] | all)
 ' "$output_dir/srq-lifecycle-adversarial-assessment.json" >/dev/null
 
+"$schema_python" "$script_dir/phase_matrix.py" \
+  --protocol "$script_dir/transaction-phase-matrix-v1.json" \
+  --lock "$script_dir/upstream-lock-v1.json" \
+  --transaction-fixture "$nixward_root/docs/fixtures/system-transaction-v1.json" \
+  --validator "$script_dir/validate.sh" \
+  --nixward-root "$nixward_root" \
+  --mycelix-root "$mycelix_root" \
+  --sovereign-boot-root "$sovereign_boot_root" \
+  --boot-observation "$tmp/boot-observation.json" \
+  --output "$output_dir/transaction-phase-matrix-assessment.json"
+jq -e '
+  .schema == "srq-transaction-phase-presence-matrix-assessment-v1"
+  and .result == "PASS"
+  and .protocol.protocol_id == "srq-transaction-phase-presence-matrix-v1"
+  and (.protocol.git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.protocol.raw_sha256 | test("^[0-9a-f]{64}$"))
+  and .expected_case_count == 576 and .completed_case_count == 576
+  and .expected_accept_count == 175 and .observed_accept_count == 175
+  and .false_accept_count == 0 and .false_reject_count == 0 and .release_false_pass_count == 0
+  and (.cases | length == 576)
+  and ([.cases[].id] | length == (unique | length))
+  and ([.cases[] | select(.result != "MATCH")] | length == 0)
+  and .phase_summary.planned.case_count == 64
+  and .phase_summary.planned.expected_accept_count == 64
+  and .phase_summary.promoted.expected_accept_count == 1
+  and .phase_summary.promoted.false_accept_count == 0
+  and .phase_summary.promoted.false_reject_count == 0
+  and (.performance_ms.p50 | type == "number")
+  and (.performance_ms.p95 | type == "number")
+  and (.performance_ms.p99 | type == "number")
+' "$output_dir/transaction-phase-matrix-assessment.json" >/dev/null
+
 git -C "$nixward_root" diff --exit-code -- docs/fixtures/system-transaction-v1.json
 git -C "$mycelix_root" diff --exit-code -- research/evidence-plane/receipt-v0.schema.json research/evidence-plane/examples/synthetic-planned-receipt-v0.json
 git -C "$sovereign_boot_root" diff --exit-code -- tools/srq-boot-observation-probe/src/main.rs
