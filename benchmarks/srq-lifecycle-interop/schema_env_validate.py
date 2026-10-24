@@ -12,21 +12,10 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from schema_validate import load_strict_json
+
 REPORT_SCHEMA = "srq-schema-environment-validation-v1"
 LOCK_SCHEMA = "srq-schema-environment-lock-v1"
-
-
-class DuplicateJsonKey(ValueError):
-    pass
-
-
-def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    result: dict[str, Any] = {}
-    for key, value in pairs:
-        if key in result:
-            raise DuplicateJsonKey(f"duplicate JSON key: {key!r}")
-        result[key] = value
-    return result
 
 
 def sha256(raw: bytes) -> str:
@@ -35,15 +24,6 @@ def sha256(raw: bytes) -> str:
 
 def canonical_name(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
-
-
-def strict_load(path: Path, max_bytes: int = 4 * 1024 * 1024) -> tuple[Any, bytes]:
-    if path.is_symlink() or not path.is_file():
-        raise ValueError(f"expected regular non-symlink file: {path}")
-    raw = path.read_bytes()
-    if len(raw) > max_bytes:
-        raise ValueError(f"input exceeds {max_bytes} bytes: {path}")
-    return json.loads(raw, object_pairs_hook=unique_object), raw
 
 
 def install_hash(item: dict[str, Any]) -> str | None:
@@ -172,8 +152,8 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        lock, lock_raw = strict_load(args.lock)
-        report, report_raw = strict_load(args.install_report, max_bytes=16 * 1024 * 1024)
+        lock, lock_raw = load_strict_json(args.lock, maximum=4 * 1024 * 1024)
+        report, report_raw = load_strict_json(args.install_report, maximum=16 * 1024 * 1024)
         errors, installed = validate_environment(
             lock,
             report,
