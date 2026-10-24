@@ -73,6 +73,13 @@ jq -e '
   and (.sources.interop_harness.transaction_phase_matrix_runner_raw_sha256 | test("^[0-9a-f]{64}$"))
   and (.sources.interop_harness.transaction_phase_matrix_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.sources.interop_harness.transaction_phase_matrix_test_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.claim_matrix_protocol_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.claim_matrix_protocol_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and .sources.interop_harness.claim_matrix_protocol_id == "srq-evidence-claim-ceiling-matrix-v1"
+  and (.sources.interop_harness.claim_matrix_runner_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.claim_matrix_runner_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and (.sources.interop_harness.claim_matrix_test_git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.sources.interop_harness.claim_matrix_test_raw_sha256 | test("^[0-9a-f]{64}$"))
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
 
 "$schema_python" "$script_dir/corpus_validate.py" \
@@ -216,6 +223,44 @@ jq -e '
   and (.performance_ms.p95 | type == "number")
   and (.performance_ms.p99 | type == "number")
 ' "$output_dir/transaction-phase-matrix-assessment.json" >/dev/null
+
+"$schema_python" "$script_dir/claim_matrix.py" \
+  --protocol "$script_dir/claim-ceiling-matrix-v1.json" \
+  --lock "$script_dir/upstream-lock-v1.json" \
+  --schema "$mycelix_root/research/evidence-plane/receipt-v0.schema.json" \
+  --base-receipt "$mycelix_root/research/evidence-plane/examples/synthetic-planned-receipt-v0.json" \
+  --schema-validator "$script_dir/schema_validate.py" \
+  --validator "$script_dir/validate.sh" \
+  --nixward-root "$nixward_root" \
+  --mycelix-root "$mycelix_root" \
+  --sovereign-boot-root "$sovereign_boot_root" \
+  --boot-observation "$tmp/boot-observation.json" \
+  --output "$output_dir/claim-ceiling-matrix-assessment.json"
+jq -e '
+  .schema == "srq-evidence-claim-ceiling-matrix-assessment-v1"
+  and .result == "PASS"
+  and .protocol.protocol_id == "srq-evidence-claim-ceiling-matrix-v1"
+  and (.protocol.git_blob_sha1 | test("^[0-9a-f]{40}$"))
+  and (.protocol.raw_sha256 | test("^[0-9a-f]{64}$"))
+  and .schema_input.commit_sha == "b02cefab8474262aef23b61a4ac3811fe92e29bf"
+  and .schema_input.git_blob_sha1 == "e2b90a995f70d0a771b04e7f5fc077e1c0394f86"
+  and (.schema_input.raw_sha256 | test("^[0-9a-f]{64}$"))
+  and .expected_case_count == 25 and .completed_case_count == 25
+  and .expected_accept_count == 8 and .observed_accept_count == 8 and .schema_accepted_count == 8
+  and .false_accept_count == 0 and .false_reject_count == 0
+  and .schema_adapter_disagreement_count == 0 and .release_false_pass_count == 0
+  and ([.cases[].id] | length == (unique | length))
+  and ([.cases[] | select(.result != "MATCH")] | length == 0)
+  and .tier_summary.S0.expected_accept_count == 1
+  and .tier_summary.S1.expected_accept_count == 2
+  and .tier_summary.S2.expected_accept_count == 3
+  and .tier_summary.S3.expected_accept_count == 1
+  and .tier_summary.S4.expected_accept_count == 1
+  and ([.cases[] | select(.expected_accept) | (.assessment_release_status == "BLOCKED" and .assessment_claim_ceiling == "none")] | all)
+  and (.performance_ms.p50 | type == "number")
+  and (.performance_ms.p95 | type == "number")
+  and (.performance_ms.p99 | type == "number")
+' "$output_dir/claim-ceiling-matrix-assessment.json" >/dev/null
 
 git -C "$nixward_root" diff --exit-code -- docs/fixtures/system-transaction-v1.json
 git -C "$mycelix_root" diff --exit-code -- research/evidence-plane/receipt-v0.schema.json research/evidence-plane/examples/synthetic-planned-receipt-v0.json
