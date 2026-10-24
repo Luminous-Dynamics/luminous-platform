@@ -62,7 +62,7 @@ jobs:
               assert report[key] == 0, (key, report[key])
           PY
       - name: Set up Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.99.0
         with:
           components: clippy, rustfmt
       - name: Format, test, and lint durable challenge ledger
@@ -92,6 +92,11 @@ jobs:
           assert report["replay_rejections"] == 63
           assert report["unexpected_errors"] == 0
           assert report["persisted_replay_rejected"] is True
+          assert report["concurrency_wall_ns"] > 0
+          assert report["latency_p50_ns"] <= report["latency_p95_ns"] <= report["latency_p99_ns"]
+          assert report["throughput_submissions_per_second"] > 0
+          report["rustc_version"] = os.popen("rustc --version --verbose").read().strip()
+          report["cargo_version"] = os.popen("cargo --version").read().strip()
           report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           PY
       - name: Retain exact-head benchmark reports
