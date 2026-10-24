@@ -1,0 +1,49 @@
+{
+  "schema": "srq-transaction-phase-presence-matrix-v1",
+  "protocol_id": "srq-transaction-phase-presence-matrix-v1",
+  "version": 1,
+  "purpose": "Exhaustively exercise every presence/absence mask for the six optional Nixward transaction evidence records against every declared lifecycle phase.",
+  "scope": "Record-presence/phase-label conformance only. Nested record validity, cryptographic verification, real authorization, command execution, target health, causal event ordering and recovery correctness remain out of scope.",
+  "source_contract": {
+    "repository": "Luminous-Dynamics/nixward",
+    "commit_sha": "ae60256f0be73138a539ecda048e81056dd14a30",
+    "path": "docs/fixtures/system-transaction-v1.json",
+    "git_blob_sha1": "c89d5033a35e5c1be1b5c7de0a2436539922a800"
+  },
+  "record_fields": [
+    "validation",
+    "authorization",
+    "snapshot",
+    "application",
+    "verification",
+    "outcome"
+  ],
+  "phase_requirements": [
+    {"phase":"planned","required_records":[]},
+    {"phase":"validated","required_records":["validation"]},
+    {"phase":"authorized","required_records":["validation","authorization"]},
+    {"phase":"snapshotted","required_records":["validation","authorization","snapshot"]},
+    {"phase":"applied","required_records":["validation","authorization","snapshot","application"]},
+    {"phase":"verified","required_records":["validation","authorization","snapshot","application","verification"]},
+    {"phase":"promoted","required_records":["validation","authorization","snapshot","application","verification","outcome"]},
+    {"phase":"failed","required_records":["outcome"]},
+    {"phase":"recovered","required_records":["snapshot","outcome"]}
+  ],
+  "enumeration": {
+    "presence_masks_per_phase": 64,
+    "phase_count": 9,
+    "expected_case_count": 576,
+    "expected_accepted_count": 175,
+    "expected_rejected_count": 401
+  },
+  "release_invariant": {
+    "every_accepted_candidate_must_leave_release_status": "BLOCKED",
+    "every_accepted_candidate_must_leave_claim_ceiling": "none",
+    "release_pass_allowed": false
+  },
+  "target_metrics": {
+    "false_accept_count": 0,
+    "false_reject_count": 0,
+    "release_false_pass_count": 0
+  }
+}
