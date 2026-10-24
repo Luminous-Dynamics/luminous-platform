@@ -31,7 +31,9 @@ bash "$script_dir/validate.sh" --nixward-root "$nixward_root" --mycelix-root "$m
 jq -e \
   --arg schema_env_install_report_sha256 "$(sha256sum "${SRQ_SCHEMA_INSTALL_REPORT:?missing hash-locked pip install report}" | cut -d ' ' -f 1)" \
   --arg schema_env_validation_report_sha256 "$(sha256sum "${SRQ_SCHEMA_ENV_VALIDATION_REPORT:?missing validated package report}" | cut -d ' ' -f 1)" \
-  --arg schema_env_lock_sha256 "$(sha256sum "$script_dir/schema-env-lock-v1.json" | cut -d ' ' -f 1)" '
+  --arg schema_env_lock_sha256 "$(sha256sum "$script_dir/schema-env-lock-v1.json" | cut -d ' ' -f 1)" \
+  --arg phase_matrix_sha256 "$(sha256sum "$script_dir/transaction-phase-matrix.sh" | cut -d ' ' -f 1)" \
+  --arg phase_matrix_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh)" '
   .schema == "srq-lifecycle-interop-assessment-v1"
   and .contract_status == "PASS" and .release_status == "BLOCKED" and .claim_ceiling == "none"
   and .transaction.phase == "planned"
@@ -79,6 +81,8 @@ jq -e \
   and (.sources.interop_harness.schema_environment_validator_test_raw_sha256 | test("^[0-9a-f]{64}$"))
   and .sources.interop_harness.schema_install_report_raw_sha256 == $schema_env_install_report_sha256
   and .sources.interop_harness.schema_environment_validation_report_raw_sha256 == $schema_env_validation_report_sha256
+  and .sources.interop_harness.phase_matrix_git_blob_sha1 == $phase_matrix_blob
+  and .sources.interop_harness.phase_matrix_raw_sha256 == $phase_matrix_sha256
 ' "$output_dir/lifecycle-interop-assessment.json" >/dev/null
 
 "$schema_python" "$script_dir/corpus_validate.py" \
@@ -213,7 +217,10 @@ jq -e --slurpfile protocol "$script_dir/corpus-v1.json" --slurpfile executable "
 ' "$output_dir/srq-lifecycle-adversarial-assessment.json" >/dev/null
 
 bash "$script_dir/transaction-phase-matrix.sh" "$nixward_root" "$mycelix_root" "$sovereign_boot_root" "$tmp/boot-observation.json" "$output_dir"
-jq -e '
+jq -e \
+  --arg head_sha "$(git -C "$script_dir/../.." rev-parse HEAD)" \
+  --arg phase_matrix_sha256 "$(sha256sum "$script_dir/transaction-phase-matrix.sh" | cut -d ' ' -f 1)" \
+  --arg phase_matrix_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh)" '
   .schema == "srq-transaction-phase-state-space-assessment-v1"
   and .status == "PASS"
   and .release_status == "BLOCKED"
@@ -227,9 +234,9 @@ jq -e '
   and .unexpected_error_count == 0
   and .false_release_pass_count == 0
   and .accepted_with_blocked_release_count == 175
-  and (.harness.commit_sha | test("^[0-9a-f]{40}$"))
-  and (.harness.script_git_blob_sha1 | test("^[0-9a-f]{40}$"))
-  and (.harness.script_raw_sha256 | test("^[0-9a-f]{64}$"))
+  and .harness.commit_sha == $head_sha
+  and .harness.script_git_blob_sha1 == $phase_matrix_blob
+  and .harness.script_raw_sha256 == $phase_matrix_sha256
   and (.source_fixture.commit_sha | test("^[0-9a-f]{40}$"))
   and (.source_fixture.git_blob_sha1 | test("^[0-9a-f]{40}$"))
   and (.source_fixture.raw_sha256 | test("^[0-9a-f]{64}$"))
