@@ -34,7 +34,7 @@ const PRIVATE_DIR_MASK: u32 = 0o077;
 pub const MAX_CHALLENGE_LIFETIME_SECS: u64 = 300;
 
 #[link(name = "c")]
-extern "C" {
+unsafe extern "C" {
     fn flock(fd: c_int, operation: c_int) -> c_int;
 }
 
@@ -328,7 +328,7 @@ fn is_digest(value: &str) -> bool {
 fn parent_directory(path: &Path) -> &Path {
     path.parent()
         .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or_else(|| Path::new("."))
+        .unwrap_or(Path::new("."))
 }
 
 fn ensure_private_parent(path: &Path) -> LedgerResult<()> {
@@ -505,7 +505,7 @@ mod tests {
     }
 
     fn repeated(ch: char) -> String {
-        std::iter::repeat(ch).take(64).collect()
+        ch.to_string().repeat(64)
     }
 
     fn sample_challenge() -> Challenge {
@@ -550,12 +550,23 @@ mod tests {
         let challenge = sample_challenge();
         ledger.issue(&challenge, 20).expect("issue");
 
-        let mut wrong = challenge.binding.clone();
-        wrong.artifact_digest = repeated('9');
-        assert!(matches!(
-            ledger.consume(&challenge.id, &wrong, 21),
-            Err(LedgerError::BindingMismatch)
-        ));
+        for field in ["transaction_id", "target_digest", "plan_digest", "artifact_digest", "policy_digest"] {
+            let mut wrong = challenge.binding.clone();
+            match field {
+                "transaction_id" => wrong.transaction_id = repeated('9'),
+                "target_digest" => wrong.target_digest = repeated('9'),
+                "plan_digest" => wrong.plan_digest = repeated('9'),
+                "artifact_digest" => wrong.artifact_digest = repeated('9'),
+                _ => wrong.policy_digest = repeated('9'),
+            }
+            assert!(
+                matches!(
+                    ledger.consume(&challenge.id, &wrong, 21),
+                    Err(LedgerError::BindingMismatch)
+                ),
+                "mismatched {field} must be rejected"
+            );
+        }
         ledger
             .consume(&challenge.id, &challenge.binding, 21)
             .expect("right binding still usable");
