@@ -43,10 +43,30 @@ jobs:
           for key in ('false_accept_count', 'false_reject_count', 'unexpected_error_count', 'false_release_pass_count'):
               assert report[key] == 0, (key, report[key])
           PY
-      - name: Retain exact-head benchmark report
+      - name: Run exhaustive causal reference-target matrix
+        run: |
+          python benchmarks/srq-lifecycle-interop/causal-integrity/causal_reference_matrix.py --commit-sha "$GITHUB_SHA" --output "$RUNNER_TEMP/srq-reference-matrix-report.json"
+          python - "$RUNNER_TEMP/srq-reference-matrix-report.json" <<'PY'
+          import json, os, sys
+          with open(sys.argv[1], encoding='utf-8') as stream:
+              report = json.load(stream)
+          assert report['status'] == 'PASS'
+          assert report['qualification_status'] == 'BLOCKED'
+          assert report['claim_ceiling'] == 'none'
+          assert report['expected_state_count'] == report['observed_state_count'] == 143
+          assert report['expected_edge_count'] == report['observed_edge_count'] == 14
+          assert report['accepted_count'] == 14
+          assert report['rejected_count'] == 129
+          assert report['harness_commit_sha'] == os.environ['GITHUB_SHA']
+          for key in ('false_accept_count', 'false_reject_count', 'unexpected_error_count', 'false_release_pass_count'):
+              assert report[key] == 0, (key, report[key])
+          PY
+      - name: Retain exact-head benchmark reports
         uses: actions/upload-artifact@v4
         with:
           name: srq-causal-integrity-${{ github.sha }}
-          path: ${{ runner.temp }}/srq-causal-integrity-report.json
+          path: |
+            ${{ runner.temp }}/srq-causal-integrity-report.json
+            ${{ runner.temp }}/srq-reference-matrix-report.json
           if-no-files-found: error
           retention-days: 30
