@@ -61,6 +61,48 @@ jobs:
           for key in ('false_accept_count', 'false_reject_count', 'unexpected_error_count', 'false_release_pass_count'):
               assert report[key] == 0, (key, report[key])
           PY
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          components: clippy, rustfmt
+      - name: Format, test, and lint durable challenge ledger
+        run: |
+          cargo fmt --manifest-path benchmarks/srq-lifecycle-interop/challenge-ledger-rs/Cargo.toml --all -- --check
+          cargo test --locked --manifest-path benchmarks/srq-lifecycle-interop/challenge-ledger-rs/Cargo.toml
+          cargo clippy --locked --manifest-path benchmarks/srq-lifecycle-interop/challenge-ledger-rs/Cargo.toml --all-targets -- -D warnings
+      - name: Run durable challenge replay benchmark
+        run: |
+          cargo run --locked --manifest-path benchmarks/srq-lifecycle-interop/challenge-ledger-rs/Cargo.toml --bin replay-benchmark > "$RUNNER_TEMP/srq-challenge-replay-report.json"
+          python3 - "$RUNNER_TEMP/srq-challenge-replay-report.json" <<'PY'
+          import hashlib, json, os, pathlib, subprocess, sys
+          report_path = pathlib.Path(sys.argv[1])
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+          root = pathlib.Path.cwd()
+          crate = root / "benchmarks/srq-lifecycle-interop/challenge-ledger-rs"
+          report["harness_commit_sha"] = os.environ["GITHUB_SHA"]
+          report["source_sha256"] = {
+              name: hashlib.sha256((crate / name).read_bytes()).hexdigest()
+              for name in ("Cargo.toml", "Cargo.lock", "src/lib.rs", "src/bin/replay-benchmark.rs", "tests/process_replay.rs")
+          }
+          assert report["status"] == "PASS"
+          assert report["qualification_status"] == "BLOCKED"
+          assert report["claim_ceiling"] == "none"
+          assert report["concurrent_submissions"] == 64
+          assert report["accepted_submissions"] == 1
+          assert report["replay_rejections"] == 63
+          assert report["unexpected_errors"] == 0
+          assert report["persisted_replay_rejected"] is True
+          assert report["concurrency_wall_ns"] > 0
+          assert report["latency_p50_ns"] <= report["latency_p95_ns"] <= report["latency_p99_ns"]
+          assert report["throughput_submissions_per_second"] > 0
+          report["rustc_version"] = subprocess.run(
+              ["rustc", "--version", "--verbose"], check=True, capture_output=True, text=True
+          ).stdout.strip()
+          report["cargo_version"] = subprocess.run(
+              ["cargo", "--version"], check=True, capture_output=True, text=True
+          ).stdout.strip()
+          report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
       - name: Retain exact-head benchmark reports
         uses: actions/upload-artifact@v4
         with:
@@ -68,5 +110,6 @@ jobs:
           path: |
             ${{ runner.temp }}/srq-causal-integrity-report.json
             ${{ runner.temp }}/srq-reference-matrix-report.json
+            ${{ runner.temp }}/srq-challenge-replay-report.json
           if-no-files-found: error
           retention-days: 30
