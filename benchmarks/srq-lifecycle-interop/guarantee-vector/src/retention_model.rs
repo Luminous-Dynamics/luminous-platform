@@ -74,6 +74,7 @@ pub enum RetentionError {
     AuthorizationExpired,
     AuthorizationLifetimeExceeded,
     EpochRegression,
+    TrustedTimeUnavailable,
     EpochOverflow,
     IdempotencyKeyConflict,
     IdempotencyKeyRetired,
@@ -134,6 +135,7 @@ struct State {
     keys: HashMap<(String, String), KeyRecord>,
     latest_fencing_token: HashMap<String, u64>,
     high_water_epoch: u64,
+    trusted_epoch_observed: bool,
     logical_effect_count: u64,
 }
 
@@ -163,6 +165,7 @@ impl RetentionSink {
             return Err(RetentionError::EpochRegression);
         }
         state.high_water_epoch = observed_epoch;
+        state.trusted_epoch_observed = true;
         Ok(())
     }
 
@@ -182,6 +185,9 @@ impl RetentionSink {
             .policy
             .required_retention_until(request.expires_epoch)?;
         let mut state = self.state.lock().map_err(|_| RetentionError::LockPoisoned)?;
+        if !state.trusted_epoch_observed {
+            return Err(RetentionError::TrustedTimeUnavailable);
+        }
         let now_epoch = state.high_water_epoch;
 
         let key = (request.scope.clone(), request.idempotency_key.clone());
@@ -377,6 +383,17 @@ mod tests {
     ) -> Result<SubmitOutcome, RetentionError> {
         sink.observe_trusted_epoch(trusted_epoch)?;
         sink.submit(request)
+    }
+
+    #[test]
+    fn submit_fails_closed_before_first_trusted_time_observation() {
+        let sink = sink();
+        let request = request("tenant-a:deploy", "op-before-time", 1, 2, 3, 7);
+        assert_eq!(
+            sink.submit(&request),
+            Err(RetentionError::TrustedTimeUnavailable)
+        );
+        assert_eq!(sink.logical_effect_count().unwrap(), 0);
     }
 
     #[test]
