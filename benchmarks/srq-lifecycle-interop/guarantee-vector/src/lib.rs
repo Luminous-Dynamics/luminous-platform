@@ -329,7 +329,7 @@ pub fn evaluate(vector: &AssuranceVector) -> Assessment {
         signature_valid,
     } = &vector.receipt
     {
-        if !signature_valid
+        if !*signature_valid
             || !is_lower_hex_digest(request_digest)
             || !is_lower_hex_digest(effect_digest)
             || !is_lower_hex_digest(policy_digest)
