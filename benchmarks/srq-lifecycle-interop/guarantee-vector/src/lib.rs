@@ -31,14 +31,50 @@ pub mod sink_model;
 pub mod retention_model;
 pub mod epoch_compaction_model;
 
+/// Opaque authorization evidence issued only after a trusted verifier validates the
+/// signature, policy binding, and freshness window. Fields and constructor are private;
+/// this research crate intentionally supplies no production verifier adapter.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedAuthorization;
+/// let _forged = VerifiedAuthorization { request_digest: String::new(), policy_digest: String::new() };
+/// ```
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedAuthorization {
+    request_digest: String,
+    policy_digest: String,
+}
+impl VerifiedAuthorization {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(request_digest: String, policy_digest: String) -> Self {
+        Self { request_digest, policy_digest }
+    }
+}
+
+/// Opaque checkpoint data returned by an adapter that has authenticated the independent
+/// anchor and established rollback protection and atomic compare-and-advance semantics.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedAnchorCheckpoint;
+/// let _forged = VerifiedAnchorCheckpoint { local_sequence: 1, trusted_sequence: 1, local_root: String::new(), trusted_root: String::new() };
+/// ```
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedAnchorCheckpoint {
+    local_sequence: u64,
+    trusted_sequence: u64,
+    local_root: String,
+    trusted_root: String,
+}
+impl VerifiedAnchorCheckpoint {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(local_sequence: u64, trusted_sequence: u64, local_root: String, trusted_root: String) -> Self {
+        Self { local_sequence, trusted_sequence, local_root, trusted_root }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AuthorizationEvidence {
-    Verified {
-        request_digest: String,
-        policy_digest: String,
-        signature_valid: bool,
-        freshness_verified: bool,
-    },
+    Verified(VerifiedAuthorization),
     Missing,
     InvalidSignature,
     Stale,
@@ -47,15 +83,7 @@ pub enum AuthorizationEvidence {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AnchorEvidence {
-    Checkpoint {
-        local_sequence: u64,
-        trusted_sequence: u64,
-        local_root: String,
-        trusted_root: String,
-        anchor_independent: bool,
-        atomic_compare_and_advance: bool,
-        rollback_protected: bool,
-    },
+    Checkpoint(VerifiedAnchorCheckpoint),
     Unavailable,
     Divergent,
     RollbackDetected,
@@ -100,14 +128,29 @@ pub enum DeliveryContract {
     Invalid,
 }
 
+/// Opaque receipt evidence returned only after a trusted verifier validates signature and
+/// bindings. A Boolean supplied by a caller is not proof of a verified receipt.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedReceipt;
+/// let _forged = VerifiedReceipt { request_digest: String::new(), effect_digest: String::new(), policy_digest: String::new() };
+/// ```
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedReceipt {
+    request_digest: String,
+    effect_digest: String,
+    policy_digest: String,
+}
+impl VerifiedReceipt {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(request_digest: String, effect_digest: String, policy_digest: String) -> Self {
+        Self { request_digest, effect_digest, policy_digest }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ReceiptEvidence {
-    Verified {
-        request_digest: String,
-        effect_digest: String,
-        policy_digest: String,
-        signature_valid: bool,
-    },
+    Verified(VerifiedReceipt),
     Missing,
     Unknown,
     Invalid,
@@ -202,15 +245,11 @@ pub fn is_lower_hex_digest(value: &str) -> bool {
 
 fn authorization_status(vector: &AssuranceVector) -> DimensionStatus {
     match &vector.authorization {
-        AuthorizationEvidence::Verified {
-            request_digest,
-            policy_digest,
-            signature_valid: true,
-            freshness_verified: true,
-        } if is_lower_hex_digest(request_digest)
-            && request_digest == &vector.request_digest
-            && is_lower_hex_digest(policy_digest)
-            && policy_digest == &vector.policy_digest =>
+        AuthorizationEvidence::Verified(proof)
+            if is_lower_hex_digest(&proof.request_digest)
+                && proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.policy_digest)
+                && proof.policy_digest == vector.policy_digest =>
         {
             DimensionStatus::Verified
         }
@@ -221,17 +260,10 @@ fn authorization_status(vector: &AssuranceVector) -> DimensionStatus {
 
 fn anchor_status(vector: &AssuranceVector) -> DimensionStatus {
     match &vector.anchor {
-        AnchorEvidence::Checkpoint {
-            local_sequence,
-            trusted_sequence,
-            local_root,
-            trusted_root,
-            anchor_independent: true,
-            atomic_compare_and_advance: true,
-            rollback_protected: true,
-        } if local_sequence == trusted_sequence
-            && is_lower_hex_digest(local_root)
-            && local_root == trusted_root =>
+        AnchorEvidence::Checkpoint(proof)
+            if proof.local_sequence == proof.trusted_sequence
+                && is_lower_hex_digest(&proof.local_root)
+                && proof.local_root == proof.trusted_root =>
         {
             DimensionStatus::Verified
         }
@@ -242,17 +274,13 @@ fn anchor_status(vector: &AssuranceVector) -> DimensionStatus {
 
 fn receipt_status(vector: &AssuranceVector) -> DimensionStatus {
     match &vector.receipt {
-        ReceiptEvidence::Verified {
-            request_digest,
-            effect_digest,
-            policy_digest,
-            signature_valid: true,
-        } if is_lower_hex_digest(request_digest)
-            && request_digest == &vector.request_digest
-            && is_lower_hex_digest(effect_digest)
-            && effect_digest == &vector.effect_digest
-            && is_lower_hex_digest(policy_digest)
-            && policy_digest == &vector.policy_digest =>
+        ReceiptEvidence::Verified(proof)
+            if is_lower_hex_digest(&proof.request_digest)
+                && proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.effect_digest)
+                && proof.effect_digest == vector.effect_digest
+                && is_lower_hex_digest(&proof.policy_digest)
+                && proof.policy_digest == vector.policy_digest =>
         {
             DimensionStatus::Verified
         }
@@ -366,20 +394,13 @@ pub fn evaluate(vector: &AssuranceVector) -> Assessment {
 
     // A cryptographically verified receipt for the exact requested effect proves this
     // operation should not be invoked again, even if current authorization has since expired.
-    if let ReceiptEvidence::Verified {
-        request_digest,
-        effect_digest,
-        policy_digest,
-        signature_valid,
-    } = &vector.receipt
-    {
-        if !*signature_valid
-            || !is_lower_hex_digest(request_digest)
-            || !is_lower_hex_digest(effect_digest)
-            || !is_lower_hex_digest(policy_digest)
-            || request_digest != &vector.request_digest
-            || effect_digest != &vector.effect_digest
-            || policy_digest != &vector.policy_digest
+    if let ReceiptEvidence::Verified(proof) = &vector.receipt {
+        if !is_lower_hex_digest(&proof.request_digest)
+            || !is_lower_hex_digest(&proof.effect_digest)
+            || !is_lower_hex_digest(&proof.policy_digest)
+            || proof.request_digest != vector.request_digest
+            || proof.effect_digest != vector.effect_digest
+            || proof.policy_digest != vector.policy_digest
         {
             return block("receipt is invalid or bound to a different request/effect/policy");
         }
@@ -463,6 +484,7 @@ pub fn evaluate(vector: &AssuranceVector) -> Assessment {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg(any(test, feature = "qualification-fixtures"))]
 pub struct QualificationCase {
     pub name: &'static str,
     pub vector: AssuranceVector,
@@ -470,10 +492,12 @@ pub struct QualificationCase {
     pub expected_action_permitted: bool,
 }
 
+#[cfg(any(test, feature = "qualification-fixtures"))]
 fn digest(byte: u8) -> String {
     format!("{byte:02x}").repeat(32)
 }
 
+#[cfg(any(test, feature = "qualification-fixtures"))]
 pub fn fixture_matrix() -> Vec<QualificationCase> {
     let request = digest(1);
     let effect = digest(2);
@@ -487,21 +511,12 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         effect_digest: effect.clone(),
         policy_digest: policy.clone(),
         fencing_required: true,
-        authorization: AuthorizationEvidence::Verified {
-            request_digest: request.clone(),
-            policy_digest: policy.clone(),
-            signature_valid: true,
-            freshness_verified: true,
-        },
-        anchor: AnchorEvidence::Checkpoint {
-            local_sequence: 5,
-            trusted_sequence: 5,
-            local_root: root.clone(),
-            trusted_root: root,
-            anchor_independent: true,
-            atomic_compare_and_advance: true,
-            rollback_protected: true,
-        },
+        authorization: AuthorizationEvidence::Verified(
+            VerifiedAuthorization::qualification_fixture(request.clone(), policy.clone()),
+        ),
+        anchor: AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
+            5, 5, root.clone(), root,
+        )),
         dispatch: DispatchEvidence::NotClaimed,
         delivery: DeliveryContract::AtomicIdempotency {
             request_digest: request.clone(),
@@ -582,12 +597,9 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     );
 
     let mut completed = base.clone();
-    completed.receipt = ReceiptEvidence::Verified {
-        request_digest: request.clone(),
-        effect_digest: effect.clone(),
-        policy_digest: policy.clone(),
-        signature_valid: true,
-    };
+    completed.receipt = ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+        request.clone(), effect.clone(), policy.clone(),
+    ));
     completed.authorization = AuthorizationEvidence::Stale;
     add(
         "positive_matching_receipt_never_redispatches",
@@ -609,12 +621,9 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     add("attack_stale_authorization", bad, Decision::Block, false);
 
     let mut bad = base.clone();
-    bad.authorization = AuthorizationEvidence::Verified {
-        request_digest: digest(9),
-        policy_digest: policy.clone(),
-        signature_valid: true,
-        freshness_verified: true,
-    };
+    bad.authorization = AuthorizationEvidence::Verified(
+        VerifiedAuthorization::qualification_fixture(digest(9), policy.clone()),
+    );
     add("attack_authorization_request_mismatch", bad, Decision::Block, false);
 
     let mut bad = base.clone();
@@ -626,15 +635,9 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     add("attack_snapshot_rollback", bad, Decision::Block, false);
 
     let mut bad = base.clone();
-    bad.anchor = AnchorEvidence::Checkpoint {
-        local_sequence: 5,
-        trusted_sequence: 6,
-        local_root: digest(4),
-        trusted_root: digest(4),
-        anchor_independent: true,
-        atomic_compare_and_advance: true,
-        rollback_protected: true,
-    };
+    bad.anchor = AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
+        5, 6, digest(4), digest(4),
+    ));
     add("attack_checkpoint_sequence_divergence", bad, Decision::Block, false);
 
     let mut bad = atomic_claim.clone();
@@ -714,30 +717,19 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     add("attack_missing_required_fencing", bad, Decision::Block, false);
 
     let mut bad = base.clone();
-    bad.receipt = ReceiptEvidence::Verified {
-        request_digest: request.clone(),
-        effect_digest: digest(8),
-        policy_digest: policy.clone(),
-        signature_valid: true,
-    };
+    bad.receipt = ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+        request.clone(), digest(8), policy.clone(),
+    ));
     add("attack_receipt_wrong_effect_digest", bad, Decision::Block, false);
 
     let mut bad = base.clone();
-    bad.receipt = ReceiptEvidence::Verified {
-        request_digest: request.clone(),
-        effect_digest: effect.clone(),
-        policy_digest: policy.clone(),
-        signature_valid: false,
-    };
+    bad.receipt = ReceiptEvidence::Invalid;
     add("attack_receipt_invalid_signature", bad, Decision::Block, false);
 
     let mut bad = base.clone();
-    bad.receipt = ReceiptEvidence::Verified {
-        request_digest: request.clone(),
-        effect_digest: effect.clone(),
-        policy_digest: digest(8),
-        signature_valid: true,
-    };
+    bad.receipt = ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+        request.clone(), effect.clone(), digest(8),
+    ));
     add("attack_receipt_wrong_policy_digest", bad, Decision::Block, false);
 
     let mut bad = base.clone();
@@ -758,6 +750,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
 
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[cfg(any(test, feature = "qualification-fixtures"))]
 pub struct ExhaustiveSummary {
     pub combinations_checked: usize,
     pub false_release_count: usize,
@@ -768,6 +761,7 @@ pub struct ExhaustiveSummary {
 /// Bounded cross-product over five evidence dimensions. The expectation oracle is deliberately
 /// separate from evaluate(): it states the minimum evidence necessary to permit an effect.
 /// This is finite adversarial exploration, not a proof over all possible traces.
+#[cfg(any(test, feature = "qualification-fixtures"))]
 pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
     let base = fixture_matrix()
         .into_iter()
@@ -778,7 +772,7 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
     let effect = base.effect_digest.clone();
     let policy = base.policy_digest.clone();
     let root = match &base.anchor {
-        AnchorEvidence::Checkpoint { local_root, .. } => local_root.clone(),
+        AnchorEvidence::Checkpoint(proof) => proof.local_root.clone(),
         _ => unreachable!("base fixture has a checkpoint"),
     };
     let key = match &base.delivery {
@@ -787,12 +781,9 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
     };
     let txn = "stable-transaction-001".to_string();
 
-    let wrong_authorization = AuthorizationEvidence::Verified {
-        request_digest: digest(9),
-        policy_digest: policy.clone(),
-        signature_valid: true,
-        freshness_verified: true,
-    };
+    let wrong_authorization = AuthorizationEvidence::Verified(
+        VerifiedAuthorization::qualification_fixture(digest(9), policy.clone()),
+    );
     let authorizations = vec![
         base.authorization.clone(),
         AuthorizationEvidence::Missing,
@@ -805,15 +796,9 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
         base.anchor.clone(),
         AnchorEvidence::Unavailable,
         AnchorEvidence::RollbackDetected,
-        AnchorEvidence::Checkpoint {
-            local_sequence: 5,
-            trusted_sequence: 6,
-            local_root: root.clone(),
-            trusted_root: root.clone(),
-            anchor_independent: true,
-            atomic_compare_and_advance: true,
-            rollback_protected: true,
-        },
+        AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
+            5, 6, root.clone(), root.clone(),
+        )),
         AnchorEvidence::Untrusted,
     ];
 
@@ -875,24 +860,15 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
     let receipts = vec![
         ReceiptEvidence::Missing,
         ReceiptEvidence::Unknown,
-        ReceiptEvidence::Verified {
-            request_digest: request.clone(),
-            effect_digest: effect.clone(),
-            policy_digest: policy.clone(),
-            signature_valid: true,
-        },
-        ReceiptEvidence::Verified {
-            request_digest: request.clone(),
-            effect_digest: digest(8),
-            policy_digest: policy.clone(),
-            signature_valid: true,
-        },
-        ReceiptEvidence::Verified {
-            request_digest: request.clone(),
-            effect_digest: effect,
-            policy_digest: digest(8),
-            signature_valid: true,
-        },
+        ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+            request.clone(), effect.clone(), policy.clone(),
+        )),
+        ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+            request.clone(), digest(8), policy.clone(),
+        )),
+        ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+            request.clone(), effect, digest(8),
+        )),
     ];
 
     let mut summary = ExhaustiveSummary::default();
@@ -932,39 +908,22 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
     summary
 }
 
+#[cfg(any(test, feature = "qualification-fixtures"))]
 fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
     let authorization_ok = match &vector.authorization {
-        AuthorizationEvidence::Verified {
-            request_digest,
-            policy_digest,
-            signature_valid,
-            freshness_verified,
-        } => {
-            *signature_valid
-                && *freshness_verified
-                && is_lower_hex_digest(request_digest)
-                && request_digest == &vector.request_digest
-                && is_lower_hex_digest(policy_digest)
-                && policy_digest == &vector.policy_digest
+        AuthorizationEvidence::Verified(proof) => {
+            is_lower_hex_digest(&proof.request_digest)
+                && proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.policy_digest)
+                && proof.policy_digest == vector.policy_digest
         }
         _ => false,
     };
     let anchor_ok = match &vector.anchor {
-        AnchorEvidence::Checkpoint {
-            local_sequence,
-            trusted_sequence,
-            local_root,
-            trusted_root,
-            anchor_independent,
-            atomic_compare_and_advance,
-            rollback_protected,
-        } => {
-            *local_sequence == *trusted_sequence
-                && is_lower_hex_digest(local_root)
-                && local_root == trusted_root
-                && *anchor_independent
-                && *atomic_compare_and_advance
-                && *rollback_protected
+        AnchorEvidence::Checkpoint(proof) => {
+            proof.local_sequence == proof.trusted_sequence
+                && is_lower_hex_digest(&proof.local_root)
+                && proof.local_root == proof.trusted_root
         }
         _ => false,
     };
