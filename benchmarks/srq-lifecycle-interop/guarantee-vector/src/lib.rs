@@ -272,6 +272,14 @@ impl DimensionStatus {
 ///     receipt: todo!(),
 /// };
 /// ```
+///
+/// The evaluator consumes vectors so their trusted epoch cannot be replayed by cloning.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::AssuranceVector;
+/// fn require_clone<T: Clone>() {}
+/// require_clone::<AssuranceVector>();
+/// ```
 #[derive(Debug, Eq, PartialEq)]
 pub struct AssuranceVector {
     pub request_digest: String,
@@ -1230,6 +1238,16 @@ mod tests {
             .expect("expired authorization case");
         assert_eq!(authorization_status(&expired.vector), DimensionStatus::Failed);
         assert_eq!(evaluate(expired.vector).decision, Decision::Block);
+    }
+
+    #[test]
+    fn stale_anchor_checkpoint_cannot_be_replayed_at_a_newer_epoch() {
+        let case = fixture_matrix()
+            .into_iter()
+            .find(|case| case.name == "attack_checkpoint_stale_epoch")
+            .expect("stale anchor checkpoint case");
+        assert_eq!(anchor_status(&case.vector), DimensionStatus::Failed);
+        assert_eq!(evaluate(case.vector).decision, Decision::Block);
     }
 
     #[test]
