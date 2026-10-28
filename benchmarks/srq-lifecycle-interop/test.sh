@@ -38,7 +38,7 @@ jq -e \
   --arg phase_matrix_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh)" \
   --arg phase_protocol_sha256 "$(sha256sum "$script_dir/transaction-phase-state-protocol-v1.json" | cut -d ' ' -f 1)" \
   --arg phase_protocol_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-state-protocol-v1.json)" \
-  --arg phase_protocol_id "$(jq -er '.protocol_id' "$script_dir/transaction-phase-state-protocol-v1.json)" '
+  --arg phase_protocol_id "$(jq -er '.protocol_id' "$script_dir/transaction-phase-state-protocol-v1.json")" '
   .schema == "srq-lifecycle-interop-assessment-v1"
   and .contract_status == "PASS" and .release_status == "BLOCKED" and .claim_ceiling == "none"
   and .transaction.phase == "planned"
