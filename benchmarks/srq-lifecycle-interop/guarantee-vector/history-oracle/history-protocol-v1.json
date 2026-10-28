@@ -10,26 +10,146 @@
     "claim_ceiling": "trace-consistency and invariant detection only"
   },
   "event_kinds": {
-    "invoke": ["seq", "kind", "attempt_id", "idempotency_key", "request_digest", "effect_digest", "policy_digest", "fencing_token"],
-    "fence_advanced": ["seq", "kind", "fencing_token"],
-    "effect_committed": ["seq", "kind", "attempt_id", "effect_id", "request_digest", "effect_digest", "policy_digest", "sink_identity_digest", "fencing_token"],
-    "receipt_committed": ["seq", "kind", "attempt_id", "receipt_id", "effect_id", "request_digest", "effect_digest", "policy_digest", "sink_identity_digest"],
-    "response": ["seq", "kind", "attempt_id", "outcome", "receipt_id"]
+    "invoke": [
+      "seq",
+      "kind",
+      "attempt_id",
+      "idempotency_key",
+      "request_digest",
+      "effect_digest",
+      "policy_digest",
+      "fencing_token"
+    ],
+    "fence_advanced": [
+      "seq",
+      "kind",
+      "fencing_token"
+    ],
+    "effect_committed": [
+      "seq",
+      "kind",
+      "attempt_id",
+      "effect_id",
+      "request_digest",
+      "effect_digest",
+      "policy_digest",
+      "sink_identity_digest",
+      "fencing_token"
+    ],
+    "receipt_committed": [
+      "seq",
+      "kind",
+      "attempt_id",
+      "receipt_id",
+      "effect_id",
+      "request_digest",
+      "effect_digest",
+      "policy_digest",
+      "sink_identity_digest"
+    ],
+    "response": [
+      "seq",
+      "kind",
+      "attempt_id",
+      "outcome",
+      "receipt_id"
+    ]
   },
-  "outcomes": ["committed", "unknown", "rejected"],
+  "outcomes": [
+    "committed",
+    "unknown",
+    "rejected"
+  ],
   "invariants": [
-    {"id": "HIST-001", "name": "contiguous-history", "description": "Sequence is contiguous, unique, and ordered."},
-    {"id": "HIST-002", "name": "stable-intent", "description": "A key cannot be reused for a different request/effect/policy tuple."},
-    {"id": "HIST-003", "name": "single-logical-effect", "description": "A key has no more than one distinct committed effect ID."},
-    {"id": "HIST-004", "name": "receipt-effect-binding", "description": "Every receipt names an existing effect and matches its intent, sink, and key."},
-    {"id": "HIST-005", "name": "effect-receipt-pairing", "description": "Every observed committed effect has a corresponding receipt in the completed trace."},
-    {"id": "HIST-006", "name": "response-truthfulness", "description": "Committed responses reference a prior matching receipt; rejected attempts have no effect or receipt."},
-    {"id": "HIST-007", "name": "fencing", "description": "The attempt and effect use the active monotonic fencing token."}
+    {
+      "id": "HIST-001",
+      "name": "contiguous-history",
+      "description": "Sequence is contiguous, unique, and ordered.",
+      "violation_codes": [
+        "DUPLICATE_SEQUENCE",
+        "NON_CONTIGUOUS_SEQUENCE",
+        "DUPLICATE_INVOCATION_ID",
+        "EVENT_WITHOUT_PRIOR_INVOCATION"
+      ]
+    },
+    {
+      "id": "HIST-002",
+      "name": "stable-intent",
+      "description": "A key cannot be reused for a different request/effect/policy tuple.",
+      "violation_codes": [
+        "KEY_REUSED_FOR_DIFFERENT_INTENT"
+      ]
+    },
+    {
+      "id": "HIST-003",
+      "name": "single-logical-effect",
+      "description": "A key has no more than one distinct committed effect ID.",
+      "violation_codes": [
+        "DUPLICATE_EFFECT_ID",
+        "DUPLICATE_LOGICAL_EFFECT"
+      ]
+    },
+    {
+      "id": "HIST-004",
+      "name": "receipt-effect-binding",
+      "description": "Every receipt names an existing effect and matches its intent, sink, and key.",
+      "violation_codes": [
+        "DUPLICATE_RECEIPT_ID",
+        "EFFECT_INTENT_MISMATCH",
+        "EFFECT_WRONG_SINK",
+        "RECEIPT_WITHOUT_PRIOR_EFFECT",
+        "RECEIPT_COMMIT_ATTRIBUTED_TO_WRONG_ATTEMPT",
+        "RECEIPT_INTENT_MISMATCH",
+        "RECEIPT_WRONG_SINK",
+        "RECEIPT_DOES_NOT_BIND_EFFECT",
+        "RECEIPT_EFFECT_BINDING_MISMATCH"
+      ]
+    },
+    {
+      "id": "HIST-005",
+      "name": "effect-receipt-pairing",
+      "description": "Every observed committed effect has a corresponding receipt in the completed trace.",
+      "violation_codes": [
+        "EFFECT_WITHOUT_RECEIPT"
+      ]
+    },
+    {
+      "id": "HIST-006",
+      "name": "response-truthfulness",
+      "description": "Committed responses reference a prior matching receipt; rejected attempts have no effect or receipt.",
+      "violation_codes": [
+        "MULTIPLE_TERMINAL_RESPONSES",
+        "COMMITTED_RESPONSE_WITHOUT_PRIOR_RECEIPT",
+        "RESPONSE_RECEIPT_INTENT_MISMATCH",
+        "REJECTED_ATTEMPT_HAS_EFFECT",
+        "REJECTED_RESPONSE_HAS_RECEIPT",
+        "UNKNOWN_RESPONSE_CLAIMS_RECEIPT"
+      ]
+    },
+    {
+      "id": "HIST-007",
+      "name": "fencing",
+      "description": "The attempt and effect use the active monotonic fencing token.",
+      "violation_codes": [
+        "FENCE_NOT_MONOTONIC",
+        "INVOCATION_USED_STALE_OR_UNISSUED_FENCE",
+        "EFFECT_FENCE_DIFFERS_FROM_INVOCATION",
+        "STALE_WORKER_EFFECT"
+      ]
+    }
   ],
   "reporting": {
-    "safety_status": ["PASS", "FAIL", "INVALID_HISTORY"],
+    "safety_status": [
+      "PASS",
+      "FAIL",
+      "INVALID_HISTORY"
+    ],
     "liveness": "Observations only; no liveness PASS is inferred without a workload-specific completion bound.",
-    "provenance": ["harness_commit_sha", "source_head_sha", "source_sha256"]
+    "provenance": [
+      "harness_commit_sha",
+      "source_head_sha",
+      "source_sha256"
+    ]
   },
   "explicit_non_claims": [
     "Does not execute a real sink or prove the recorder is honest.",
