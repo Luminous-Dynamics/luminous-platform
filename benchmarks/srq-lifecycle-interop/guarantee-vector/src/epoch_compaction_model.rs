@@ -12,6 +12,7 @@
 use std::collections::HashMap;
 
 use super::retention_model::{RetentionPolicy, RetentionError};
+use super::TrustedEpoch;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RecordKind {
@@ -118,9 +119,10 @@ impl EpochCompactionModel {
     /// another caller-controlled value. Production must enforce this adapter boundary.
     pub fn observe_trusted_time_epoch(
         &mut self,
-        observed_epoch: u64,
+        observed: TrustedEpoch,
     ) -> Result<(), EpochError> {
         self.validate_anchor()?;
+        let observed_epoch = observed.value();
         if observed_epoch < self.anchor.trusted_time_epoch {
             return Err(EpochError::TrustedTimeRegression);
         }
@@ -411,7 +413,7 @@ mod tests {
         let mut model = model();
         add_old_records(&mut model);
         assert_eq!(model.retained_record_count(), 2);
-        model.observe_trusted_time_epoch(46).unwrap();
+        model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(46)).unwrap();
         model.prepare_compaction(5).unwrap();
         model.advance_anchor().unwrap();
         model.commit_compaction().unwrap();
@@ -553,7 +555,7 @@ mod tests {
         let mut model = model();
         model.observe_trusted_time_epoch(46).unwrap();
         assert_eq!(
-            model.observe_trusted_time_epoch(45),
+            model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(45)),
             Err(EpochError::TrustedTimeRegression)
         );
         assert_eq!(model.trusted_time_epoch(), 46);
