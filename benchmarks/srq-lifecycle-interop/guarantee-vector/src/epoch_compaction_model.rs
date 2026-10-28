@@ -130,18 +130,19 @@ impl EpochCompactionModel {
             return Err(EpochError::InvalidKeyRecord);
         }
         let identity = (key_epoch, key.to_string());
-        if self.local.records.contains_key(&identity) {
-            return Err(EpochError::KeyAlreadyRecorded);
+        match self.local.records.entry(identity) {
+            std::collections::hash_map::Entry::Occupied(_) => {
+                Err(EpochError::KeyAlreadyRecorded)
+            }
+            std::collections::hash_map::Entry::Vacant(entry) => {
+                entry.insert(RetainedKeyRecord {
+                    request_digest: request_digest.to_string(),
+                    retain_until_epoch,
+                    kind,
+                });
+                Ok(())
+            }
         }
-        self.local.records.insert(
-            identity,
-            RetainedKeyRecord {
-                request_digest: request_digest.to_string(),
-                retain_until_epoch,
-                kind,
-            },
-        );
-        Ok(())
     }
 
     /// Prepare a namespace epoch transition without deleting any old keys.
