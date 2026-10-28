@@ -27,7 +27,7 @@ The request digest and effect digest are separate: request identity includes the
 
 ## Frozen matrix and reproducibility
 
-The frozen Rust matrix has 22 cases: safe dispatch, same-key retry, same-transaction recovery, conservative operator escalation, verified completion, and attacks covering missing/invalid/stale authorization, request mismatch, unavailable or rolled-back anchors, divergent checkpoints, key/contract mismatch, non-atomic effects/receipts, unknown delivery guarantees, missing fencing, wrong/invalid receipts, missing completion receipts, and malformed digest input. An additional bounded cross-product explores 2,000 combinations across authorization, anchor, dispatch, delivery-contract, and receipt dimensions using a separate minimum-evidence oracle.
+The frozen Rust matrix has 23 cases: safe dispatch, same-key retry, same-transaction recovery, conservative operator escalation, verified completion, and attacks covering missing/invalid/stale authorization, request mismatch, unavailable or rolled-back anchors, divergent checkpoints, key/contract mismatch, non-atomic effects/receipts, unknown delivery guarantees, missing fencing, wrong/invalid receipts, missing completion receipts, and malformed digest input. An additional bounded cross-product explores 2,500 combinations across authorization, anchor, dispatch, delivery-contract, and receipt dimensions using a separate minimum-evidence oracle.
 
 Run from the repository root:
 
@@ -38,7 +38,7 @@ cargo clippy --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee
 cargo run --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --bin qualification-report
 ```
 
-The acceptance gate is exactly 22/22 expected outcomes, zero unexpected decisions, zero false releases, and zero false blocks against the frozen expectation matrix, plus 2,000 cross-product states with zero false releases and zero false blocks under the independent minimum-evidence oracle. Reports remain `qualification_status=BLOCKED` and `claim_ceiling=none`.
+The acceptance gate is exactly 23/23 expected outcomes, zero unexpected decisions, zero false releases, and zero false blocks against the frozen expectation matrix, plus 2,500 cross-product states with zero false releases and zero false blocks under the independent minimum-evidence oracle. Reports remain `qualification_status=BLOCKED` and `claim_ceiling=none`.
 
 ## Industry comparison
 
