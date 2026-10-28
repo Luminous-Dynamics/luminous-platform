@@ -67,6 +67,7 @@ jobs:
           assert report["schema"] == "srq-history-oracle-report-v1"
           assert report["safety_status"] == "FAIL"
           assert "DUPLICATE_LOGICAL_EFFECT" in codes
+          assert "HIST-003" in report["invariants_violated"]
           assert report["harness_commit_sha"] == os.environ["SRQ_HISTORY_ORACLE_CHECKOUT_SHA"]
           assert report["workflow_event_sha"] == os.environ["GITHUB_SHA"]
           assert report["source_head_sha"] == os.environ["SRQ_HISTORY_ORACLE_PR_HEAD_SHA"]
