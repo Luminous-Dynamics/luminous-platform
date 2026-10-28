@@ -6,6 +6,7 @@
 //! The crate is a policy/state-machine model, not a production security boundary.
 
 pub mod sink_model;
+pub mod retention_model;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AuthorizationEvidence {
