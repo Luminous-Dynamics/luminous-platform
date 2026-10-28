@@ -681,8 +681,7 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
     };
     let txn = "stable-transaction-001".to_string();
 
-    let mut wrong_authorization = base.authorization.clone();
-    wrong_authorization = AuthorizationEvidence::Verified {
+    let wrong_authorization = AuthorizationEvidence::Verified {
         request_digest: digest(9),
         policy_digest: policy.clone(),
         signature_valid: true,
