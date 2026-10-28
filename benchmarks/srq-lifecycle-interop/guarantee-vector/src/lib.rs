@@ -5,6 +5,28 @@
 //! Evidence variants named Verified represent results supplied by a trusted adapter.
 //! The crate is a policy/state-machine model, not a production security boundary.
 
+/// Opaque proof token for an epoch supplied by a trusted adapter.
+///
+/// This model intentionally has no public constructor. Until a production verifier
+/// adapter is integrated, downstream crates cannot create a value and therefore cannot
+/// advance time through the retention/compaction APIs. Unit tests may create synthetic
+/// values to exercise the state machine; synthetic tokens are not security evidence.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct TrustedEpoch {
+    value: u64,
+}
+
+impl TrustedEpoch {
+    pub(crate) fn value(self) -> u64 {
+        self.value
+    }
+
+    #[cfg(test)]
+    pub(crate) fn synthetic_for_tests(value: u64) -> Self {
+        Self { value }
+    }
+}
+
 pub mod sink_model;
 pub mod retention_model;
 pub mod epoch_compaction_model;
