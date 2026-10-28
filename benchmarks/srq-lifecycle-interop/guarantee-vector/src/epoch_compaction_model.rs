@@ -11,6 +11,8 @@
 
 use std::collections::HashMap;
 
+use super::retention_model::{RetentionPolicy, RetentionError};
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RecordKind {
     Receipt,
@@ -68,16 +70,28 @@ pub enum EpochError {
     AnchorBehindLocal,
     AnchorAdvancedTooFar,
     InvalidPreparedTransition,
+    InvalidRetentionPolicy,
+    InvalidAuthorizationWindow,
+    AuthorizationLifetimeExceeded,
+    RetentionHorizonOverflow,
 }
 
 pub struct EpochCompactionModel {
     local: LocalLedger,
     anchor: IndependentAnchor,
+    retention_policy: RetentionPolicy,
 }
 
 impl EpochCompactionModel {
-    pub fn new(initial_epoch: u64, anchor_is_trusted: bool) -> Self {
-        Self {
+    pub fn new(
+        initial_epoch: u64,
+        anchor_is_trusted: bool,
+        retention_policy: RetentionPolicy,
+    ) -> Result<Self, EpochError> {
+        retention_policy
+            .validate()
+            .map_err(|_| EpochError::InvalidRetentionPolicy)?;
+        Ok(Self {
             local: LocalLedger {
                 current_key_epoch: initial_epoch,
                 pending_transition: None,
@@ -89,7 +103,8 @@ impl EpochCompactionModel {
                 authenticated: anchor_is_trusted,
                 rollback_protected: anchor_is_trusted,
             },
-        }
+            retention_policy,
+        })
     }
 
     fn validate_anchor(&self) -> Result<(), EpochError> {
@@ -104,13 +119,18 @@ impl EpochCompactionModel {
     }
 
     /// Record retained receipt/tombstone identity in the current namespace.
-    /// This model records only enough metadata to exercise safe compaction decisions.
+    ///
+    /// The caller supplies the signed authorization issue/expiry epochs, not a retention
+    /// deadline. The model derives the deadline from its validated policy so a caller
+    /// cannot shorten retention to force unsafe compaction. This method is called after
+    /// the effect has already been authorized; it does not independently dispatch effects.
     pub fn record_key(
         &mut self,
         key_epoch: u64,
         key: &str,
         request_digest: &str,
-        retain_until_epoch: u64,
+        issued_epoch: u64,
+        expires_epoch: u64,
         kind: RecordKind,
     ) -> Result<(), EpochError> {
         self.validate_anchor()?;
@@ -129,6 +149,20 @@ impl EpochCompactionModel {
         if key.is_empty() || !is_lower_hex_digest(request_digest) {
             return Err(EpochError::InvalidKeyRecord);
         }
+        if expires_epoch <= issued_epoch {
+            return Err(EpochError::InvalidAuthorizationWindow);
+        }
+        let authorization_lifetime = expires_epoch - issued_epoch;
+        if authorization_lifetime > self.retention_policy.max_authorization_lifetime {
+            return Err(EpochError::AuthorizationLifetimeExceeded);
+        }
+        let retain_until_epoch = self
+            .retention_policy
+            .required_retention_until(expires_epoch)
+            .map_err(|error| match error {
+                RetentionError::EpochOverflow => EpochError::RetentionHorizonOverflow,
+                _ => EpochError::InvalidRetentionPolicy,
+            })?;
         let identity = (key_epoch, key.to_string());
         match self.local.records.entry(identity) {
             std::collections::hash_map::Entry::Occupied(_) => {
@@ -326,20 +360,28 @@ fn is_lower_hex_digest(value: &str) -> bool {
 mod tests {
     use super::*;
 
+    fn policy() -> RetentionPolicy {
+        RetentionPolicy {
+            max_authorization_lifetime: 10,
+            max_retry_horizon: 20,
+            epoch_skew_margin: 5,
+        }
+    }
+
     fn digest(byte: u8) -> String {
         format!("{byte:02x}").repeat(32)
     }
 
     fn model() -> EpochCompactionModel {
-        EpochCompactionModel::new(4, true)
+        EpochCompactionModel::new(4, true, policy()).unwrap()
     }
 
     fn add_old_records(model: &mut EpochCompactionModel) {
         model
-            .record_key(4, "receipt-001", &digest(1), 45, RecordKind::Receipt)
+            .record_key(4, "receipt-001", &digest(1), 10, 20, RecordKind::Receipt)
             .unwrap();
         model
-            .record_key(4, "tombstone-002", &digest(2), 45, RecordKind::Tombstone)
+            .record_key(4, "tombstone-002", &digest(2), 10, 20, RecordKind::Tombstone)
             .unwrap();
     }
 
