@@ -5,12 +5,18 @@
 //! Evidence variants named Verified represent results supplied by a trusted adapter.
 //! The crate is a policy/state-machine model, not a production security boundary.
 
-/// Opaque proof token for an epoch supplied by a trusted adapter.
+/// Opaque, non-cloneable proof token for one observation from a trusted epoch adapter.
 ///
-/// This model intentionally has no public constructor. Until a production verifier
-/// adapter is integrated, downstream crates cannot create a value and therefore cannot
-/// advance time through the retention/compaction APIs. Unit tests may create synthetic
-/// values to exercise the state machine; synthetic tokens are not security evidence.
+/// This model intentionally has no public constructor. Until a production verifier/clock
+/// adapter is integrated, downstream crates cannot create a value or manufacture trusted
+/// freshness evidence. Evaluation consumes the containing assurance vector, making an
+/// individual observation one-shot within this API.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::TrustedEpoch;
+/// fn require_clone<T: Clone>() {}
+/// require_clone::<TrustedEpoch>();
+/// ```
 #[derive(Debug, Eq, PartialEq)]
 pub struct TrustedEpoch {
     value: u64,
@@ -1167,6 +1173,24 @@ mod tests {
                 assert!(!assessment.action_permitted(), "unsafe permit for {}", case.name);
             }
         }
+    }
+
+    #[test]
+    fn authorization_window_is_inclusive_at_start_and_exclusive_at_expiry() {
+        let mut valid = fixture_matrix()
+            .into_iter()
+            .find(|case| case.name == "positive_ready_to_dispatch")
+            .expect("valid dispatch case");
+        valid.vector.trusted_epoch = TrustedEpoch::synthetic_for_tests(10);
+        assert_eq!(authorization_status(&valid.vector), DimensionStatus::Verified);
+        assert_eq!(evaluate(valid.vector).decision, Decision::DispatchOnce);
+
+        let expired = fixture_matrix()
+            .into_iter()
+            .find(|case| case.name == "attack_expired_verified_authorization")
+            .expect("expired authorization case");
+        assert_eq!(authorization_status(&expired.vector), DimensionStatus::Failed);
+        assert_eq!(evaluate(expired.vector).decision, Decision::Block);
     }
 
     #[test]
