@@ -1,0 +1,68 @@
+name: SRQ trace mutation adequacy
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/srq-trace-mutation-adequacy.yml'
+      - 'benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace-mutation-adequacy:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact PR source head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run oracle and trace-mutation unit tests
+        run: python -m unittest discover -s benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle -p 'test_*.py' -v
+      - name: Execute exact-code trace mutation corpus
+        env:
+          SRQ_TRACE_MUTATION_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SRQ_TRACE_MUTATION_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/trace_mutation_qualification.py --output "$RUNNER_TEMP/srq-trace-mutation-report.json"
+          python3 - "$RUNNER_TEMP/srq-trace-mutation-report.json" <<'PY'
+          import hashlib, json, os, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert report["schema"] == "srq-trace-mutation-report-v1"
+          assert report["status"] == "PASS"
+          assert report["qualification_status"] == "BLOCKED"
+          assert report["claim_ceiling"] == "none"
+          assert report["baseline_positive_control"]["status"] == "PASS"
+          assert report["baseline_positive_control"]["violation_count"] == 0
+          assert report["mutation_count"] == 23
+          assert report["detected_expected_mutations"] == 23
+          assert report["survived_or_wrong_violation_count"] == 0
+          assert report["invalid_mutation_count"] == 0
+          assert report["harness_commit_sha"] == os.environ["SRQ_TRACE_MUTATION_CHECKOUT_SHA"]
+          assert report["source_head_sha"] == os.environ["SRQ_TRACE_MUTATION_PR_HEAD_SHA"]
+          assert report["workflow_event_sha"] == os.environ["GITHUB_SHA"]
+          assert all(len(value) == 64 for value in report["source_sha256"].values())
+          assert all(item["status"] == "DETECTED" and item["expected_code"] in item["observed_codes"] and item["expected_invariant"] in item["observed_invariants"] for item in report["mutations"])
+          trace_hashes = []
+          for item in report["mutations"]:
+              canonical = json.dumps(item["mutated_history"], sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+              digest = hashlib.sha256(canonical).hexdigest()
+              assert item["mutated_history_sha256"] == digest
+              assert len(digest) == 64
+              trace_hashes.append(digest)
+          assert len(set(trace_hashes)) == 23
+          PY
+      - name: Retain trace mutation evidence, even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: srq-trace-mutation-adequacy-${{ github.sha }}
+          path: ${{ runner.temp }}/srq-trace-mutation-report.json
+          if-no-files-found: warn
+          retention-days: 30
