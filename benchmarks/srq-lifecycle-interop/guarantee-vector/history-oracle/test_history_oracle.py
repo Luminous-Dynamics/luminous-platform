@@ -1,6 +1,8 @@
+import json
 import unittest
+from pathlib import Path
 
-from history_oracle import InvalidHistory, check_history
+from history_oracle import InvalidHistory, VIOLATION_INVARIANTS, check_history
 
 SINK = "a" * 64
 REQ = "b" * 64
@@ -50,6 +52,7 @@ class HistoryOracleTests(unittest.TestCase):
         codes = {v["code"] for v in report["violations"]}
         self.assertIn("DUPLICATE_LOGICAL_EFFECT", codes)
         self.assertIn("EFFECT_WITHOUT_RECEIPT", codes)
+        self.assertIn("HIST-003", report["invariants_violated"])
 
     def test_detects_receipt_wrong_effect_binding(self):
         history = valid_history()
@@ -129,6 +132,16 @@ class HistoryOracleTests(unittest.TestCase):
         history = {"schema": "srq-sink-history-v1", "sink_identity_digest": SINK, "events": []}
         with self.assertRaises(InvalidHistory):
             check_history(history)
+
+    def test_protocol_invariant_map_matches_executable_checker(self):
+        path = Path(__file__).with_name("history-protocol-v1.json")
+        protocol = json.loads(path.read_text(encoding="utf-8"))
+        declared = {
+            code: invariant["id"]
+            for invariant in protocol["invariants"]
+            for code in invariant["violation_codes"]
+        }
+        self.assertEqual(declared, VIOLATION_INVARIANTS)
 
 
 if __name__ == "__main__":
