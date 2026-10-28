@@ -143,24 +143,70 @@ pub enum DispatchEvidence {
     CompletionMarked,
 }
 
+/// Sink-issued capability for atomic effect + durable receipt, stable idempotency keys,
+/// and fencing. Private fields prevent callers from self-asserting those guarantees.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedAtomicIdempotency;
+/// let _forged = VerifiedAtomicIdempotency {
+///     request_digest: String::new(),
+///     idempotency_key: String::new(),
+///     sink_identity_digest: String::new(),
+/// };
+/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DeliveryContract {
-    AtomicIdempotency {
+pub struct VerifiedAtomicIdempotency {
+    request_digest: String,
+    idempotency_key: String,
+    sink_identity_digest: String,
+}
+impl VerifiedAtomicIdempotency {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(
         request_digest: String,
         idempotency_key: String,
-        atomic_effect_and_receipt: bool,
-        durable_receipt: bool,
-        sink_enforces_fencing: bool,
-    },
-    Transactional {
+        sink_identity_digest: String,
+    ) -> Self {
+        Self { request_digest, idempotency_key, sink_identity_digest }
+    }
+}
+
+/// Sink-issued capability for resuming the same transaction with effect/receipt atomicity
+/// and fencing semantics verified by the adapter.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedTransactionalDelivery {
+    request_digest: String,
+    transaction_id: String,
+    sink_identity_digest: String,
+}
+impl VerifiedTransactionalDelivery {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(
         request_digest: String,
         transaction_id: String,
-        effect_and_receipt_atomic: bool,
-        sink_enforces_fencing: bool,
-    },
-    AtMostOnce {
-        sink_enforces_fencing: bool,
-    },
+        sink_identity_digest: String,
+    ) -> Self {
+        Self { request_digest, transaction_id, sink_identity_digest }
+    }
+}
+
+/// Sink-issued capability for an at-most-once operation on the identified sink.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedAtMostOnceDelivery {
+    sink_identity_digest: String,
+}
+impl VerifiedAtMostOnceDelivery {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(sink_identity_digest: String) -> Self {
+        Self { sink_identity_digest }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DeliveryContract {
+    AtomicIdempotency(VerifiedAtomicIdempotency),
+    Transactional(VerifiedTransactionalDelivery),
+    AtMostOnce(VerifiedAtMostOnceDelivery),
     Unknown,
     Invalid,
 }
@@ -285,6 +331,7 @@ pub struct AssuranceVector {
     pub request_digest: String,
     pub effect_digest: String,
     pub policy_digest: String,
+    sink_identity_digest: String,
     trusted_epoch: TrustedEpoch,
     pub fencing_required: bool,
     pub authorization: AuthorizationEvidence,
@@ -370,34 +417,30 @@ fn receipt_status(vector: &AssuranceVector) -> DimensionStatus {
 
 fn delivery_status(vector: &AssuranceVector) -> DimensionStatus {
     match &vector.delivery {
-        DeliveryContract::AtomicIdempotency {
-            request_digest,
-            idempotency_key,
-            atomic_effect_and_receipt: true,
-            durable_receipt: true,
-            sink_enforces_fencing,
-        } if is_lower_hex_digest(request_digest)
-            && request_digest == &vector.request_digest
-            && !idempotency_key.is_empty()
-            && (!vector.fencing_required || *sink_enforces_fencing) =>
+        DeliveryContract::AtomicIdempotency(proof)
+            if proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.request_digest)
+                && !proof.idempotency_key.is_empty()
+                && is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest =>
         {
             DimensionStatus::Verified
         }
-        DeliveryContract::Transactional {
-            request_digest,
-            transaction_id,
-            effect_and_receipt_atomic: true,
-            sink_enforces_fencing,
-        } if is_lower_hex_digest(request_digest)
-            && request_digest == &vector.request_digest
-            && !transaction_id.is_empty()
-            && (!vector.fencing_required || *sink_enforces_fencing) =>
+        DeliveryContract::Transactional(proof)
+            if proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.request_digest)
+                && !proof.transaction_id.is_empty()
+                && is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest =>
         {
             DimensionStatus::Verified
         }
-        DeliveryContract::AtMostOnce {
-            sink_enforces_fencing,
-        } if !vector.fencing_required || *sink_enforces_fencing => DimensionStatus::Verified,
+        DeliveryContract::AtMostOnce(proof)
+            if is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest =>
+        {
+            DimensionStatus::Verified
+        }
         DeliveryContract::Unknown => DimensionStatus::Unknown,
         _ => DimensionStatus::Failed,
     }
@@ -443,13 +486,11 @@ fn dispatch_status(vector: &AssuranceVector) -> DimensionStatus {
 
 fn dispatch_key_matches(key: Option<&str>, contract: &DeliveryContract) -> bool {
     match contract {
-        DeliveryContract::AtomicIdempotency { idempotency_key, .. } => {
-            key == Some(idempotency_key.as_str())
+        DeliveryContract::AtomicIdempotency(proof) => {
+            key == Some(proof.idempotency_key.as_str())
         }
-        DeliveryContract::Transactional { transaction_id, .. } => {
-            key == Some(transaction_id.as_str())
-        }
-        DeliveryContract::AtMostOnce { .. } => key.is_none() || key == Some(""),
+        DeliveryContract::Transactional(proof) => key == Some(proof.transaction_id.as_str()),
+        DeliveryContract::AtMostOnce(_) => key.is_none() || key == Some(""),
         DeliveryContract::Unknown | DeliveryContract::Invalid => false,
     }
 }
@@ -522,11 +563,11 @@ pub fn evaluate(vector: AssuranceVector) -> Assessment {
         },
         DispatchEvidence::ClaimAnchored { .. } | DispatchEvidence::OutcomeUnknown { .. } => {
             let decision = match &vector.delivery {
-                DeliveryContract::AtomicIdempotency { .. } => {
+                DeliveryContract::AtomicIdempotency(_) => {
                     Decision::RetrySameIdempotencyKey
                 }
-                DeliveryContract::Transactional { .. } => Decision::ResumeTransaction,
-                DeliveryContract::AtMostOnce { .. } => Decision::OperatorRequired,
+                DeliveryContract::Transactional(_) => Decision::ResumeTransaction,
+                DeliveryContract::AtMostOnce(_) => Decision::OperatorRequired,
                 DeliveryContract::Unknown | DeliveryContract::Invalid => Decision::Block,
             };
             Assessment {
@@ -568,6 +609,7 @@ fn clone_fixture_vector(vector: &AssuranceVector) -> AssuranceVector {
         request_digest: vector.request_digest.clone(),
         effect_digest: vector.effect_digest.clone(),
         policy_digest: vector.policy_digest.clone(),
+        sink_identity_digest: vector.sink_identity_digest.clone(),
         trusted_epoch: TrustedEpoch::synthetic_for_tests(vector.trusted_epoch.value()),
         fencing_required: vector.fencing_required,
         authorization: vector.authorization.clone(),
@@ -598,6 +640,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     let effect = digest(2);
     let policy = digest(3);
     let root = digest(4);
+    let sink = digest(5);
     let key = "stable-idempotency-key-001".to_string();
     let txn = "stable-transaction-001".to_string();
 
@@ -605,6 +648,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         request_digest: request.clone(),
         effect_digest: effect.clone(),
         policy_digest: policy.clone(),
+        sink_identity_digest: sink.clone(),
         trusted_epoch: TrustedEpoch::synthetic_for_tests(15),
         fencing_required: true,
         authorization: AuthorizationEvidence::Verified(VerifiedAuthorization::qualification_fixture(
@@ -614,13 +658,11 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
             15, 5, 5, root.clone(), root,
         )),
         dispatch: DispatchEvidence::NotClaimed,
-        delivery: DeliveryContract::AtomicIdempotency {
-            request_digest: request.clone(),
-            idempotency_key: key.clone(),
-            atomic_effect_and_receipt: true,
-            durable_receipt: true,
-            sink_enforces_fencing: true,
-        },
+        delivery: DeliveryContract::AtomicIdempotency(
+            VerifiedAtomicIdempotency::qualification_fixture(
+                request.clone(), key.clone(), sink.clone(),
+            ),
+        ),
         receipt: ReceiptEvidence::Missing,
     };
 
@@ -663,12 +705,11 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     );
 
     let mut transaction = clone_fixture_vector(&base);
-    transaction.delivery = DeliveryContract::Transactional {
-        request_digest: request.clone(),
-        transaction_id: txn.clone(),
-        effect_and_receipt_atomic: true,
-        sink_enforces_fencing: true,
-    };
+    transaction.delivery = DeliveryContract::Transactional(
+        VerifiedTransactionalDelivery::qualification_fixture(
+            request.clone(), txn.clone(), sink.clone(),
+        ),
+    );
     transaction.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
         idempotency_key: Some(txn.clone()),
@@ -677,9 +718,9 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     add("positive_resume_same_transaction", transaction, Decision::ResumeTransaction, true);
 
     let mut at_most_once = clone_fixture_vector(&base);
-    at_most_once.delivery = DeliveryContract::AtMostOnce {
-        sink_enforces_fencing: true,
-    };
+    at_most_once.delivery = DeliveryContract::AtMostOnce(
+        VerifiedAtMostOnceDelivery::qualification_fixture(sink.clone()),
+    );
     at_most_once.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
         idempotency_key: None,
@@ -752,24 +793,16 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     add("attack_dispatch_key_mismatch", bad, Decision::Block, false);
 
     let mut bad = clone_fixture_vector(&base);
-    bad.delivery = DeliveryContract::AtomicIdempotency {
-        request_digest: digest(9),
-        idempotency_key: key.clone(),
-        atomic_effect_and_receipt: true,
-        durable_receipt: true,
-        sink_enforces_fencing: true,
-    };
+    bad.delivery = DeliveryContract::AtomicIdempotency(
+        VerifiedAtomicIdempotency::qualification_fixture(
+            digest(9), key.clone(), sink.clone(),
+        ),
+    );
     add("attack_contract_request_mismatch", bad, Decision::Block, false);
 
     let mut bad = clone_fixture_vector(&base);
-    bad.delivery = DeliveryContract::AtomicIdempotency {
-        request_digest: request.clone(),
-        idempotency_key: key.clone(),
-        atomic_effect_and_receipt: false,
-        durable_receipt: true,
-        sink_enforces_fencing: true,
-    };
-    add("attack_nonatomic_effect_and_receipt", bad, Decision::Block, false);
+    bad.delivery = DeliveryContract::Invalid;
+    add("attack_unverified_atomicity_contract", bad, Decision::Block, false);
 
     let mut bad = clone_fixture_vector(&base);
     bad.delivery = DeliveryContract::Unknown;
@@ -810,14 +843,12 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     );
 
     let mut bad = clone_fixture_vector(&base);
-    bad.delivery = DeliveryContract::AtomicIdempotency {
-        request_digest: request.clone(),
-        idempotency_key: key.clone(),
-        atomic_effect_and_receipt: true,
-        durable_receipt: true,
-        sink_enforces_fencing: false,
-    };
-    add("attack_missing_required_fencing", bad, Decision::Block, false);
+    bad.delivery = DeliveryContract::AtomicIdempotency(
+        VerifiedAtomicIdempotency::qualification_fixture(
+            request.clone(), key.clone(), digest(6),
+        ),
+    );
+    add("attack_delivery_capability_wrong_sink", bad, Decision::Block, false);
 
     let mut bad = clone_fixture_vector(&base);
     bad.receipt = ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
@@ -879,9 +910,10 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
         _ => unreachable!("base fixture has a checkpoint"),
     };
     let key = match &base.delivery {
-        DeliveryContract::AtomicIdempotency { idempotency_key, .. } => idempotency_key.clone(),
+        DeliveryContract::AtomicIdempotency(proof) => proof.idempotency_key.clone(),
         _ => unreachable!("base fixture has atomic idempotency"),
     };
+    let sink = base.sink_identity_digest.clone();
     let txn = "stable-transaction-001".to_string();
 
     let wrong_authorization = AuthorizationEvidence::Verified(
@@ -941,23 +973,16 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
 
     let deliveries = vec![
         base.delivery.clone(),
-        DeliveryContract::Transactional {
-            request_digest: request.clone(),
-            transaction_id: txn,
-            effect_and_receipt_atomic: true,
-            sink_enforces_fencing: true,
-        },
-        DeliveryContract::AtMostOnce {
-            sink_enforces_fencing: true,
-        },
+        DeliveryContract::Transactional(VerifiedTransactionalDelivery::qualification_fixture(
+            request.clone(), txn, sink.clone(),
+        )),
+        DeliveryContract::AtMostOnce(VerifiedAtMostOnceDelivery::qualification_fixture(
+            sink.clone(),
+        )),
         DeliveryContract::Unknown,
-        DeliveryContract::AtomicIdempotency {
-            request_digest: request.clone(),
-            idempotency_key: key,
-            atomic_effect_and_receipt: false,
-            durable_receipt: true,
-            sink_enforces_fencing: true,
-        },
+        DeliveryContract::AtomicIdempotency(VerifiedAtomicIdempotency::qualification_fixture(
+            request.clone(), key, sink,
+        )),
     ];
 
     let receipts = vec![
@@ -984,6 +1009,7 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
                             request_digest: request.clone(),
                             effect_digest: base.effect_digest.clone(),
                             policy_digest: policy.clone(),
+                            sink_identity_digest: sink.clone(),
                             trusted_epoch: TrustedEpoch::synthetic_for_tests(
                                 base.trusted_epoch.value(),
                             ),
@@ -1038,34 +1064,23 @@ fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
         _ => false,
     };
     let delivery_ok = match &vector.delivery {
-        DeliveryContract::AtomicIdempotency {
-            request_digest,
-            idempotency_key,
-            atomic_effect_and_receipt,
-            durable_receipt,
-            sink_enforces_fencing,
-        } => {
-            request_digest == &vector.request_digest
-                && is_lower_hex_digest(request_digest)
-                && !idempotency_key.is_empty()
-                && *atomic_effect_and_receipt
-                && *durable_receipt
-                && (!vector.fencing_required || *sink_enforces_fencing)
+        DeliveryContract::AtomicIdempotency(proof) => {
+            proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.request_digest)
+                && !proof.idempotency_key.is_empty()
+                && is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest
         }
-        DeliveryContract::Transactional {
-            request_digest,
-            transaction_id,
-            effect_and_receipt_atomic,
-            sink_enforces_fencing,
-        } => {
-            request_digest == &vector.request_digest
-                && is_lower_hex_digest(request_digest)
-                && !transaction_id.is_empty()
-                && *effect_and_receipt_atomic
-                && (!vector.fencing_required || *sink_enforces_fencing)
+        DeliveryContract::Transactional(proof) => {
+            proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.request_digest)
+                && !proof.transaction_id.is_empty()
+                && is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest
         }
-        DeliveryContract::AtMostOnce { sink_enforces_fencing } => {
-            !vector.fencing_required || *sink_enforces_fencing
+        DeliveryContract::AtMostOnce(proof) => {
+            is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest
         }
         DeliveryContract::Unknown | DeliveryContract::Invalid => false,
     };
@@ -1089,14 +1104,13 @@ fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
                 false
             } else {
                 match contract {
-                    DeliveryContract::AtomicIdempotency {
-                        idempotency_key: expected_key,
-                        ..
-                    } => idempotency_key.as_deref() == Some(expected_key.as_str()),
-                    DeliveryContract::Transactional {
-                        transaction_id, ..
-                    } => idempotency_key.as_deref() == Some(transaction_id.as_str()),
-                    DeliveryContract::AtMostOnce { .. } => {
+                    DeliveryContract::AtomicIdempotency(proof) => {
+                        idempotency_key.as_deref() == Some(proof.idempotency_key.as_str())
+                    }
+                    DeliveryContract::Transactional(proof) => {
+                        idempotency_key.as_deref() == Some(proof.transaction_id.as_str())
+                    }
+                    DeliveryContract::AtMostOnce(_) => {
                         idempotency_key.as_deref().is_none_or(str::is_empty)
                     }
                     DeliveryContract::Unknown | DeliveryContract::Invalid => false,
@@ -1117,13 +1131,13 @@ fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
                 false
             } else {
                 match contract {
-                    DeliveryContract::AtomicIdempotency { idempotency_key: expected, .. } => {
-                        idempotency_key.as_deref() == Some(expected.as_str())
+                    DeliveryContract::AtomicIdempotency(proof) => {
+                        idempotency_key.as_deref() == Some(proof.idempotency_key.as_str())
                     }
-                    DeliveryContract::Transactional { transaction_id, .. } => {
-                        idempotency_key.as_deref() == Some(transaction_id.as_str())
+                    DeliveryContract::Transactional(proof) => {
+                        idempotency_key.as_deref() == Some(proof.transaction_id.as_str())
                     }
-                    DeliveryContract::AtMostOnce { .. }
+                    DeliveryContract::AtMostOnce(_)
                     | DeliveryContract::Unknown
                     | DeliveryContract::Invalid => false,
                 }
