@@ -56,7 +56,7 @@ Callers cannot request a shorter retention window. Time uses a trusted monotonic
 
 The model returns the original receipt for exact same-key retries while its retention window is open—even after authorization expiry—but never applies a new effect from that retry. Once the retention window is past, the active receipt becomes a permanent tombstone and the key cannot be used again in that namespace. This is intentionally conservative. Safely deleting tombstones requires a separate proof that old authorizations are irreversibly expired, the old namespace cannot be restored, and key epochs cannot be reused; that compaction protocol is not implemented here.
 
-The retention model includes 12 focused tests for derived retention horizon, replay after authorization expiry, tombstoning, changed-intent collisions, rejection of fresh expired operations, excessive authorization lifetimes, monotonic epoch regression, stale fencing, scope separation, 64-way concurrency, and overflow. All state is in memory. These tests do not demonstrate durable retention across process restarts, storage rollback, or an untrusted clock.
+The retention model includes 13 focused tests for derived retention horizon, replay after authorization expiry, tombstoning, changed-intent collisions, rejection of fresh expired operations, excessive authorization lifetimes, monotonic epoch regression, stale fencing, scope separation, 64-way concurrency, and overflow. All state is in memory. These tests do not demonstrate durable retention across process restarts, storage rollback, or an untrusted clock.
 
 ## Industry comparison
 
