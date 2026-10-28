@@ -38,13 +38,25 @@ cargo clippy --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee
 cargo run --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --bin qualification-report
 ```
 
-The acceptance gate is exactly 24/24 expected outcomes, zero unexpected decisions, zero false releases, and zero false blocks against the frozen expectation matrix, plus 3,125 cross-product states with zero false releases and zero false blocks under the independent minimum-evidence oracle. Cargo tests also exercise the Rust sink model; its state is process-local and not durable. Reports remain `qualification_status=BLOCKED` and `claim_ceiling=none`.
+The acceptance gate is exactly 24/24 expected outcomes, zero unexpected decisions, zero false releases, and zero false blocks against the frozen expectation matrix, plus 3,125 cross-product states with zero false releases and zero false blocks under the independent minimum-evidence oracle. Cargo tests also exercise the Rust sink and retention models; their state is process-local and not durable. CI attests `src/retention_model.rs` alongside the evaluator and sink source. Reports remain `qualification_status=BLOCKED` and `claim_ceiling=none`.
 
 ## Reference sink model (not production)
 
 The module `src/sink_model.rs` provides a mutex-serialized in-memory sink solely to make idempotency/fencing semantics executable in Rust. It scopes a key by tenant/operation domain; binds it to request and effect digests; returns the original receipt for an exact key replay; rejects the same key with different request/effect intent; and rejects a **new** effect from a token lower than the accepted high-water token. The 64-thread race requires one logical effect and one shared receipt.
 
 This sink is intentionally volatile. A process crash discards it; the mutex does not establish disk durability, multi-process atomicity, distributed linearizability, trusted token issuance, or production exactly-once behavior. The sink and evaluator must not be treated as an end-to-end security proof. A production adapter needs transactional effect+receipt persistence, durable idempotency-key retention, and sink-side fencing, followed by actual crash and restore tests.
+
+## New retention-horizon model
+
+`src/retention_model.rs` tests a separate failure mode: idempotency is only as durable as the memory of prior keys. The sink derives retention from a policy-controlled formula:
+
+`retain_until = authorization_expiry + maximum_retry_horizon + epoch_skew_margin`
+
+Callers cannot request a shorter retention window. Time uses a trusted monotonic epoch abstraction rather than a local wall-clock value; production must bind that epoch to an independently protected source.
+
+The model returns the original receipt for exact same-key retries while its retention window is open—even after authorization expiry—but never applies a new effect from that retry. Once the retention window is past, the active receipt becomes a permanent tombstone and the key cannot be used again in that namespace. This is intentionally conservative. Safely deleting tombstones requires a separate proof that old authorizations are irreversibly expired, the old namespace cannot be restored, and key epochs cannot be reused; that compaction protocol is not implemented here.
+
+The retention model includes 12 focused tests for derived retention horizon, replay after authorization expiry, tombstoning, changed-intent collisions, rejection of fresh expired operations, excessive authorization lifetimes, monotonic epoch regression, stale fencing, scope separation, 64-way concurrency, and overflow. All state is in memory. These tests do not demonstrate durable retention across process restarts, storage rollback, or an untrusted clock.
 
 ## Industry comparison
 
