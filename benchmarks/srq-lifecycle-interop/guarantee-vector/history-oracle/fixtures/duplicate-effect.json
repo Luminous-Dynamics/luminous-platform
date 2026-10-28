@@ -1,0 +1,53 @@
+{
+  "schema": "srq-sink-history-v1",
+  "sink_identity_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "initial_fencing_token": 1,
+  "events": [
+    {
+      "seq": 0, "kind": "invoke", "attempt_id": "a1", "idempotency_key": "k1",
+      "request_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "fencing_token": 1
+    },
+    {
+      "seq": 1, "kind": "effect_committed", "attempt_id": "a1", "effect_id": "e1",
+      "request_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "sink_identity_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fencing_token": 1
+    },
+    {
+      "seq": 2, "kind": "receipt_committed", "attempt_id": "a1", "receipt_id": "r1", "effect_id": "e1",
+      "request_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "sink_identity_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {"seq": 3, "kind": "response", "attempt_id": "a1", "outcome": "committed", "receipt_id": "r1"},
+    {
+      "seq": 4, "kind": "invoke", "attempt_id": "a2", "idempotency_key": "k1",
+      "request_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "fencing_token": 1
+    },
+    {
+      "seq": 5, "kind": "effect_committed", "attempt_id": "a2", "effect_id": "e2",
+      "request_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "sink_identity_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "fencing_token": 1
+    },
+    {
+      "seq": 6, "kind": "receipt_committed", "attempt_id": "a2", "receipt_id": "r2", "effect_id": "e2",
+      "request_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "sink_identity_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {"seq": 7, "kind": "response", "attempt_id": "a2", "outcome": "committed", "receipt_id": "r2"}
+  ]
+}
