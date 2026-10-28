@@ -21,6 +21,35 @@ SCHEMA = "srq-sink-history-v1"
 REPORT_SCHEMA = "srq-history-oracle-report-v1"
 HEX_DIGEST = re.compile(r"^[0-9a-f]{64}$")
 INTENT_FIELDS = ("request_digest", "effect_digest", "policy_digest")
+VIOLATION_INVARIANTS = {
+    "DUPLICATE_SEQUENCE": "HIST-001",
+    "NON_CONTIGUOUS_SEQUENCE": "HIST-001",
+    "DUPLICATE_INVOCATION_ID": "HIST-001",
+    "EVENT_WITHOUT_PRIOR_INVOCATION": "HIST-001",
+    "DUPLICATE_EFFECT_ID": "HIST-003",
+    "DUPLICATE_RECEIPT_ID": "HIST-004",
+    "KEY_REUSED_FOR_DIFFERENT_INTENT": "HIST-002",
+    "DUPLICATE_LOGICAL_EFFECT": "HIST-003",
+    "EFFECT_INTENT_MISMATCH": "HIST-004",
+    "EFFECT_WRONG_SINK": "HIST-004",
+    "RECEIPT_WITHOUT_PRIOR_EFFECT": "HIST-004",
+    "RECEIPT_COMMIT_ATTRIBUTED_TO_WRONG_ATTEMPT": "HIST-004",
+    "RECEIPT_INTENT_MISMATCH": "HIST-004",
+    "RECEIPT_WRONG_SINK": "HIST-004",
+    "RECEIPT_DOES_NOT_BIND_EFFECT": "HIST-004",
+    "RECEIPT_EFFECT_BINDING_MISMATCH": "HIST-004",
+    "EFFECT_WITHOUT_RECEIPT": "HIST-005",
+    "MULTIPLE_TERMINAL_RESPONSES": "HIST-006",
+    "COMMITTED_RESPONSE_WITHOUT_PRIOR_RECEIPT": "HIST-006",
+    "RESPONSE_RECEIPT_INTENT_MISMATCH": "HIST-006",
+    "REJECTED_ATTEMPT_HAS_EFFECT": "HIST-006",
+    "REJECTED_RESPONSE_HAS_RECEIPT": "HIST-006",
+    "UNKNOWN_RESPONSE_CLAIMS_RECEIPT": "HIST-006",
+    "FENCE_NOT_MONOTONIC": "HIST-007",
+    "INVOCATION_USED_STALE_OR_UNISSUED_FENCE": "HIST-007",
+    "EFFECT_FENCE_DIFFERS_FROM_INVOCATION": "HIST-007",
+    "STALE_WORKER_EFFECT": "HIST-007",
+}
 
 
 class InvalidHistory(ValueError):
@@ -77,7 +106,12 @@ def check_history(history: dict[str, Any]) -> dict[str, Any]:
     seen_sequences: set[int] = set()
 
     def violation(code: str, seq: int, **context: Any) -> None:
-        violations.append({"code": code, "seq": seq, "context": context})
+        violations.append({
+            "invariant_id": VIOLATION_INVARIANTS[code],
+            "code": code,
+            "seq": seq,
+            "context": context,
+        })
 
     for index, event in enumerate(events):
         if not isinstance(event, dict):
@@ -242,6 +276,7 @@ def check_history(history: dict[str, Any]) -> dict[str, Any]:
         "oracle_version": 1,
         "safety_status": "PASS" if not violations else "FAIL",
         "violation_count": len(violations),
+        "invariants_violated": sorted({item["invariant_id"] for item in violations}),
         "violations": violations,
         "liveness_observations": {
             "claim": "NOT_EVALUATED",
