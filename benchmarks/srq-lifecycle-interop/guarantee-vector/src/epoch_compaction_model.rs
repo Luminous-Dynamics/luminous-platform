@@ -435,7 +435,7 @@ mod tests {
         model
             .record_key(4, "long-receipt", &digest(1), 15, 25, RecordKind::Receipt)
             .unwrap();
-        model.observe_trusted_time_epoch(46).unwrap();
+        model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(46)).unwrap();
         assert_eq!(
             model.prepare_compaction(5),
             Err(EpochError::ActiveRetentionWindow)
@@ -448,7 +448,7 @@ mod tests {
     fn crash_before_anchor_advance_discards_prepare_and_keeps_old_keys() {
         let mut model = model();
         add_old_records(&mut model);
-        model.observe_trusted_time_epoch(46).unwrap();
+        model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(46)).unwrap();
         model.prepare_compaction(5).unwrap();
         assert_eq!(
             model.recover(),
@@ -464,7 +464,7 @@ mod tests {
     fn crash_after_anchor_advance_finalizes_and_prunes() {
         let mut model = model();
         add_old_records(&mut model);
-        model.observe_trusted_time_epoch(46).unwrap();
+        model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(46)).unwrap();
         model.prepare_compaction(5).unwrap();
         model.advance_anchor().unwrap();
         assert_eq!(
@@ -481,7 +481,7 @@ mod tests {
         let mut model = model();
         add_old_records(&mut model);
         let snapshot = model.local_snapshot();
-        model.observe_trusted_time_epoch(46).unwrap();
+        model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(46)).unwrap();
         model.prepare_compaction(5).unwrap();
         model.advance_anchor().unwrap();
         model.restore_local_snapshot(snapshot);
@@ -546,14 +546,14 @@ mod tests {
             model.prepare_compaction(5),
             Err(EpochError::ActiveRetentionWindow)
         );
-        model.observe_trusted_time_epoch(46).unwrap();
+        model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(46)).unwrap();
         assert!(model.prepare_compaction(5).is_ok());
     }
 
     #[test]
     fn trusted_time_epoch_cannot_regress() {
         let mut model = model();
-        model.observe_trusted_time_epoch(46).unwrap();
+        model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(46)).unwrap();
         assert_eq!(
             model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(45)),
             Err(EpochError::TrustedTimeRegression)
@@ -634,7 +634,7 @@ mod tests {
     fn prepare_does_not_delete_records_before_anchor_advance() {
         let mut model = model();
         add_old_records(&mut model);
-        model.observe_trusted_time_epoch(46).unwrap();
+        model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(46)).unwrap();
         model.prepare_compaction(5).unwrap();
         assert_eq!(model.retained_record_count(), 2);
         assert_eq!(model.current_key_epoch(), 4);
@@ -645,7 +645,7 @@ mod tests {
     fn prepare_epoch_and_current_anchor_must_be_aligned() {
         let mut model = model();
         add_old_records(&mut model);
-        model.observe_trusted_time_epoch(46).unwrap();
+        model.observe_trusted_time_epoch(TrustedEpoch::synthetic_for_tests(46)).unwrap();
         model.prepare_compaction(5).unwrap();
         model.advance_anchor().unwrap();
         // Simulate a process crash with an older local namespace view; a new prepare
