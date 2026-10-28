@@ -17,7 +17,7 @@ python3 benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/trace_m
 
 The initial corpus has 23 deliberate trace faults across all seven frozen invariant families: changed intent under a reused key, duplicate effects and IDs, missing/mismatched receipts, wrong sink bindings, false response claims, stale or mismatched fencing, non-contiguous histories, orphan events, and duplicate terminal responses.
 
-Acceptance is 23/23 expected detections, zero survivors, zero invalid mutations, and one valid baseline trace with zero violations. A detected case must include both the exact expected code and invariant ID. The report records the event SHA, checker/protocol/manifest/harness hashes, workflow-event SHA, exact checked-out source SHA, and PR source-head SHA.
+Acceptance is 23/23 expected detections, zero survivors, zero invalid mutations, and one valid baseline trace with zero violations. A detected case must include both the exact expected code and invariant ID. The report embeds every mutated history and its canonical-JSON SHA-256, alongside the positive-control event SHA, checker/protocol/manifest/harness hashes, workflow-event SHA, exact checked-out source SHA, and PR source-head SHA. CI recomputes all 23 trace digests and requires them to be distinct, so reviewers can inspect or replay the exact negative controls rather than relying only on the summary counters.
 
 ## Explicit limits
 
