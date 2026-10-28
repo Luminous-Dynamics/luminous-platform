@@ -32,5 +32,13 @@
     "negative_fixtures": 10,
     "expected_false_accepts": 0,
     "expected_false_rejects": 0
+  },
+  "generated_smoke_acceptance": {
+    "seed": 20261028,
+    "generated_valid_histories": 10000,
+    "generated_single_fault_mutants": 10000,
+    "expected_valid_false_rejects": 0,
+    "expected_mutant_survivors": 0,
+    "scope": "deterministic-generated-checker-smoke-not-adapter-or-linearizability-evidence"
   }
 }
