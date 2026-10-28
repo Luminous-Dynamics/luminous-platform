@@ -1,3 +1,5 @@
+import hashlib
+import json
 import unittest
 from pathlib import Path
 
@@ -17,11 +19,20 @@ class TraceMutationAdequacyTests(unittest.TestCase):
         self.assertEqual(report["detected_expected_mutations"], len(MUTATIONS))
         self.assertEqual(report["survived_or_wrong_violation_count"], 0)
         self.assertEqual(report["invalid_mutation_count"], 0)
+        history_hashes = []
         for result in report["mutations"]:
             with self.subTest(mutation=result["mutation_id"]):
                 self.assertEqual(result["status"], "DETECTED")
                 self.assertIn(result["expected_code"], result["observed_codes"])
                 self.assertIn(result["expected_invariant"], result["observed_invariants"])
+                self.assertIsInstance(result["mutated_history"], dict)
+                canonical = json.dumps(
+                    result["mutated_history"], sort_keys=True, separators=(",", ":"), ensure_ascii=False
+                ).encode("utf-8")
+                digest = hashlib.sha256(canonical).hexdigest()
+                self.assertEqual(result["mutated_history_sha256"], digest)
+                history_hashes.append(digest)
+        self.assertEqual(len(set(history_hashes)), len(MUTATIONS))
 
 
 if __name__ == "__main__":
