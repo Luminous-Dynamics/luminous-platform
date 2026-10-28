@@ -75,6 +75,7 @@ pub enum ReceiptEvidence {
     Verified {
         request_digest: String,
         effect_digest: String,
+        policy_digest: String,
         signature_valid: bool,
     },
     Missing,
@@ -214,11 +215,14 @@ fn receipt_status(vector: &AssuranceVector) -> DimensionStatus {
         ReceiptEvidence::Verified {
             request_digest,
             effect_digest,
+            policy_digest,
             signature_valid: true,
         } if is_lower_hex_digest(request_digest)
             && request_digest == &vector.request_digest
             && is_lower_hex_digest(effect_digest)
-            && effect_digest == &vector.effect_digest =>
+            && effect_digest == &vector.effect_digest
+            && is_lower_hex_digest(policy_digest)
+            && policy_digest == &vector.policy_digest =>
         {
             DimensionStatus::Verified
         }
@@ -321,16 +325,19 @@ pub fn evaluate(vector: &AssuranceVector) -> Assessment {
     if let ReceiptEvidence::Verified {
         request_digest,
         effect_digest,
+        policy_digest,
         signature_valid,
     } = &vector.receipt
     {
         if !signature_valid
             || !is_lower_hex_digest(request_digest)
             || !is_lower_hex_digest(effect_digest)
+            || !is_lower_hex_digest(policy_digest)
             || request_digest != &vector.request_digest
             || effect_digest != &vector.effect_digest
+            || policy_digest != &vector.policy_digest
         {
-            return block("receipt is invalid or bound to a different request/effect");
+            return block("receipt is invalid or bound to a different request/effect/policy");
         }
         return Assessment {
             decision: Decision::CompletedNoRedispatch,
@@ -530,6 +537,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     completed.receipt = ReceiptEvidence::Verified {
         request_digest: request.clone(),
         effect_digest: effect.clone(),
+        policy_digest: policy.clone(),
         signature_valid: true,
     };
     completed.authorization = AuthorizationEvidence::Stale;
@@ -635,6 +643,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     bad.receipt = ReceiptEvidence::Verified {
         request_digest: request.clone(),
         effect_digest: digest(8),
+        policy_digest: policy.clone(),
         signature_valid: true,
     };
     add("attack_receipt_wrong_effect_digest", bad, Decision::Block, false);
@@ -643,9 +652,19 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     bad.receipt = ReceiptEvidence::Verified {
         request_digest: request.clone(),
         effect_digest: effect.clone(),
+        policy_digest: policy.clone(),
         signature_valid: false,
     };
     add("attack_receipt_invalid_signature", bad, Decision::Block, false);
+
+    let mut bad = base.clone();
+    bad.receipt = ReceiptEvidence::Verified {
+        request_digest: request.clone(),
+        effect_digest: effect.clone(),
+        policy_digest: digest(8),
+        signature_valid: true,
+    };
+    add("attack_receipt_wrong_policy_digest", bad, Decision::Block, false);
 
     let mut bad = base.clone();
     bad.dispatch = DispatchEvidence::CompletionMarked;
@@ -770,12 +789,20 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
         ReceiptEvidence::Unknown,
         ReceiptEvidence::Verified {
             request_digest: request.clone(),
-            effect_digest: effect,
+            effect_digest: effect.clone(),
+            policy_digest: policy.clone(),
             signature_valid: true,
         },
         ReceiptEvidence::Verified {
             request_digest: request.clone(),
             effect_digest: digest(8),
+            policy_digest: policy.clone(),
+            signature_valid: true,
+        },
+        ReceiptEvidence::Verified {
+            request_digest: request.clone(),
+            effect_digest: effect,
+            policy_digest: digest(8),
             signature_valid: true,
         },
     ];
@@ -995,7 +1022,7 @@ mod tests {
     #[test]
     fn exhaustive_bounded_combinations_have_no_false_release_or_false_block() {
         let summary = exhaustive_invariant_summary();
-        assert_eq!(summary.combinations_checked, 2_500);
+        assert_eq!(summary.combinations_checked, 3_125);
         assert_eq!(summary.false_release_count, 0);
         assert_eq!(summary.false_block_count, 0);
     }
