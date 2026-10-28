@@ -47,7 +47,11 @@ pub enum DispatchEvidence {
         idempotency_key: Option<String>,
         fencing_token: Option<u64>,
     },
-    OutcomeUnknown,
+    OutcomeUnknown {
+        request_digest: String,
+        idempotency_key: Option<String>,
+        fencing_token: Option<u64>,
+    },
     CompletionMarked,
 }
 
@@ -287,9 +291,23 @@ fn dispatch_status(vector: &AssuranceVector) -> DimensionStatus {
                 DimensionStatus::Verified
             }
         }
-        DispatchEvidence::OutcomeUnknown | DispatchEvidence::CompletionMarked => {
-            DimensionStatus::Unknown
+        DispatchEvidence::OutcomeUnknown {
+            request_digest,
+            idempotency_key,
+            fencing_token,
+        } => {
+            if !is_lower_hex_digest(request_digest)
+                || request_digest != &vector.request_digest
+                || !dispatch_key_matches(idempotency_key.as_deref(), &vector.delivery)
+                || (vector.fencing_required && fencing_token.is_none())
+            {
+                DimensionStatus::Failed
+            } else {
+                // Attempt identity is verified; its effect outcome remains unresolved.
+                DimensionStatus::Unknown
+            }
         }
+        DispatchEvidence::CompletionMarked => DimensionStatus::Unknown,
     }
 }
 
@@ -379,7 +397,7 @@ pub fn evaluate(vector: &AssuranceVector) -> Assessment {
             receipt,
             reason: "verified prerequisites; persist claim before one dispatch",
         },
-        DispatchEvidence::ClaimAnchored { .. } | DispatchEvidence::OutcomeUnknown => {
+        DispatchEvidence::ClaimAnchored { .. } | DispatchEvidence::OutcomeUnknown { .. } => {
             let decision = match &vector.delivery {
                 DeliveryContract::AtomicIdempotency { .. } => {
                     Decision::RetrySameIdempotencyKey
@@ -498,7 +516,11 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     );
 
     let mut unknown_atomic = base.clone();
-    unknown_atomic.dispatch = DispatchEvidence::OutcomeUnknown;
+    unknown_atomic.dispatch = DispatchEvidence::OutcomeUnknown {
+        request_digest: request.clone(),
+        idempotency_key: Some(key.clone()),
+        fencing_token: Some(8),
+    };
     add(
         "positive_unknown_outcome_atomic_retry",
         unknown_atomic,
@@ -632,6 +654,32 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add("attack_dispatch_missing_fencing_token", bad, Decision::Block, false);
 
+    let mut bad = unknown_atomic.clone();
+    bad.dispatch = DispatchEvidence::OutcomeUnknown {
+        request_digest: request.clone(),
+        idempotency_key: Some(key.clone()),
+        fencing_token: None,
+    };
+    add(
+        "attack_unknown_outcome_missing_fencing_token",
+        bad,
+        Decision::Block,
+        false,
+    );
+
+    let mut bad = unknown_atomic.clone();
+    bad.dispatch = DispatchEvidence::OutcomeUnknown {
+        request_digest: request.clone(),
+        idempotency_key: Some("wrong-key".to_string()),
+        fencing_token: Some(8),
+    };
+    add(
+        "attack_unknown_outcome_wrong_idempotency_key",
+        bad,
+        Decision::Block,
+        false,
+    );
+
     let mut bad = base.clone();
     bad.delivery = DeliveryContract::AtomicIdempotency {
         request_digest: request.clone(),
@@ -763,7 +811,21 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
             idempotency_key: Some(key.clone()),
             fencing_token: None,
         },
-        DispatchEvidence::OutcomeUnknown,
+        DispatchEvidence::OutcomeUnknown {
+            request_digest: request.clone(),
+            idempotency_key: Some(key.clone()),
+            fencing_token: Some(8),
+        },
+        DispatchEvidence::OutcomeUnknown {
+            request_digest: request.clone(),
+            idempotency_key: Some(key.clone()),
+            fencing_token: None,
+        },
+        DispatchEvidence::OutcomeUnknown {
+            request_digest: request.clone(),
+            idempotency_key: Some("other-key".to_string()),
+            fencing_token: Some(8),
+        },
     ];
 
     let deliveries = vec![
@@ -949,9 +1011,33 @@ fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
                 }
             }
         }
-        (DispatchEvidence::OutcomeUnknown, DeliveryContract::AtomicIdempotency { .. })
-        | (DispatchEvidence::OutcomeUnknown, DeliveryContract::Transactional { .. }) => true,
-        (DispatchEvidence::OutcomeUnknown, _) | (DispatchEvidence::CompletionMarked, _) => false,
+        (
+            DispatchEvidence::OutcomeUnknown {
+                request_digest,
+                idempotency_key,
+                fencing_token,
+            },
+            contract,
+        ) => {
+            if request_digest != &vector.request_digest
+                || (vector.fencing_required && fencing_token.is_none())
+            {
+                false
+            } else {
+                match contract {
+                    DeliveryContract::AtomicIdempotency { idempotency_key: expected, .. } => {
+                        idempotency_key.as_deref() == Some(expected.as_str())
+                    }
+                    DeliveryContract::Transactional { transaction_id, .. } => {
+                        idempotency_key.as_deref() == Some(transaction_id.as_str())
+                    }
+                    DeliveryContract::AtMostOnce { .. }
+                    | DeliveryContract::Unknown
+                    | DeliveryContract::Invalid => false,
+                }
+            }
+        }
+        (DispatchEvidence::CompletionMarked, _) => false,
     };
     authorization_ok && anchor_ok && delivery_ok && receipt_allows_new_effect && dispatch_ok
 }
@@ -999,6 +1085,23 @@ mod tests {
     }
 
     #[test]
+    fn unknown_outcome_requires_valid_key_and_fencing_token() {
+        for name in [
+            "positive_unknown_outcome_atomic_retry",
+            "attack_unknown_outcome_missing_fencing_token",
+            "attack_unknown_outcome_wrong_idempotency_key",
+        ] {
+            let case = fixture_matrix()
+                .into_iter()
+                .find(|case| case.name == name)
+                .expect("unknown-outcome fixture");
+            let observed = evaluate(&case.vector);
+            assert_eq!(observed.decision, case.expected, "{name}");
+            assert_eq!(observed.action_permitted(), case.expected_action_permitted, "{name}");
+        }
+    }
+
+    #[test]
     fn receipt_must_bind_request_effect_and_policy() {
         for name in [
             "attack_receipt_wrong_effect_digest",
@@ -1026,7 +1129,7 @@ mod tests {
     #[test]
     fn exhaustive_bounded_combinations_have_no_false_release_or_false_block() {
         let summary = exhaustive_invariant_summary();
-        assert_eq!(summary.combinations_checked, 3_125);
+        assert_eq!(summary.combinations_checked, 4_375);
         assert_eq!(summary.false_release_count, 0);
         assert_eq!(summary.false_block_count, 0);
     }
