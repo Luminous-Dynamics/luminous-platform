@@ -74,10 +74,9 @@ def inject_one_fault(trace: dict, fault_index: int) -> None:
     elif fault_index == 3:
         trace["transactions"][0]["receipt_id"] = ""
     else:
-        trace["fence_events"].append({
-            "event_seq": max(item["event_seq"] for item in trace["fence_events"]) + 1,
-            "token": 1,
-        })
+        # Single fault only: make an otherwise valid committed operation use
+        # a stale token, without mutating the independent fence/sequence journal.
+        trace["transactions"][0]["fencing_token"] = 0
 
 
 def main() -> int:
