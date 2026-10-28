@@ -13,7 +13,7 @@ fn main() {
     let mut permitted_count = 0usize;
 
     for case in cases {
-        let observed = evaluate(&case.vector);
+        let observed = evaluate(case.vector);
         let decision_matches = observed.decision == case.expected;
         if !decision_matches {
             unexpected_decision_count += 1;
