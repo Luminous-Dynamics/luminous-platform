@@ -177,6 +177,23 @@ jobs:
       - name: Mutation-qualify lifecycle assurance invariants
         run: |
           python3 benchmarks/srq-lifecycle-interop/guarantee-vector/mutation_qualification.py --output "$RUNNER_TEMP/srq-mutation-qualification-report.json"
+          python3 - "$RUNNER_TEMP/srq-mutation-qualification-report.json" <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert report["schema"] == "srq-mutation-qualification-report-v1"
+          assert report["status"] == "PASS"
+          assert report["qualification_status"] == "BLOCKED"
+          assert report["claim_ceiling"] == "none"
+          assert report["harness_commit_sha"] == os.environ["GITHUB_SHA"]
+          assert report["mutation_count"] == report["killed_mutant_count"] == 5
+          assert report["survived_mutant_count"] == 0
+          assert report["invalid_mutant_count"] == 0
+          assert len(report["source_sha256"]) == 64
+          assert len(report["protocol_sha256"]) == 64
+          assert len(report["mutation_harness_sha256"]) == 64
+          assert all(item["status"] == "KILLED" for item in report["mutations"])
+          PY
       - name: Retain exact-head benchmark reports
         uses: actions/upload-artifact@v4
         with:
