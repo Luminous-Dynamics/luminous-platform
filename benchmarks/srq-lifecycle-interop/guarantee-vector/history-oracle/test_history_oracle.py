@@ -125,6 +125,11 @@ class HistoryOracleTests(unittest.TestCase):
         with self.assertRaises(InvalidHistory):
             check_history(history)
 
+    def test_empty_history_is_invalid_not_vacuous_pass(self):
+        history = {"schema": "srq-sink-history-v1", "sink_identity_digest": SINK, "events": []}
+        with self.assertRaises(InvalidHistory):
+            check_history(history)
+
 
 if __name__ == "__main__":
     unittest.main()
