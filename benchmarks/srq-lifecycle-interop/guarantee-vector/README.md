@@ -62,7 +62,7 @@ The retention model includes 13 focused tests for derived retention horizon, rep
 
 `src/epoch_compaction_model.rs` tests a bounded-storage alternative to keeping every tombstone forever. Each idempotency key belongs to a monotonic namespace epoch. The old epoch can be compacted only after every receipt and tombstone in that epoch is past its retention horizon.
 
-The model enforces the order:
+The model derives each key's retention deadline using the same `RetentionPolicy` formula as the retention sink—authorization expiry plus retry horizon plus epoch-skew margin. Callers cannot submit a shorter retention deadline. It enforces the order:
 
 1. Verify that all prior-epoch retention horizons have passed and persist a local prepared transition.
 2. Atomically advance an independent rollback-protected anchor from epoch `n` to `n+1`.
@@ -72,7 +72,7 @@ The model enforces the order:
 
 This ordering preserves a small permanent high-water mark instead of retaining an unbounded key-by-key tombstone set. The model also covers crash recovery: before anchor advancement, discard the prepare and keep old keys; after advancement, finalize the matching prepared transition; after restoration of a snapshot that lacks the prepare, fail closed because the anchor is ahead.
 
-The module has 10 tests covering retention gating, old-epoch rejection, skipped epochs, untrusted anchors, both sides of the anchor-advance crash boundary, snapshot restoration, and pruning only after commit. It is a single-process abstract model: it does not implement durable CAS, signed anchor evidence, TPM or remote service integration, power-loss behavior, or key-epoch authorization. Production must bind the epoch to the signed request and an actually independent durable anchor before relying on compaction.
+The module has 14 tests covering policy-derived retention horizons, authorization-window bounds, overflow, retention gating, old-epoch rejection, skipped epochs, untrusted anchors, both sides of the anchor-advance crash boundary, snapshot restoration, and pruning only after commit. It is a single-process abstract model: it does not implement durable CAS, signed anchor evidence, TPM or remote service integration, power-loss behavior, or key-epoch authorization. Production must bind the epoch to the signed request and an actually independent durable anchor before relying on compaction.
 
 ## Industry comparison
 
