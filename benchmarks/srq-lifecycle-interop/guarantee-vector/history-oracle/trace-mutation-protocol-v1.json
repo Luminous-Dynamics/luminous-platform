@@ -1,0 +1,158 @@
+{
+  "schema": "srq-trace-mutation-protocol-v1",
+  "version": 1,
+  "purpose": "Test the history oracle against deliberately corrupted, well-formed traces. A case is detected only when the expected violation code and invariant ID appear.",
+  "guardrails": {
+    "checker_source_is_not_mutated": true,
+    "malformed_histories_do_not_count_as_detected": true,
+    "qualification_status": "BLOCKED",
+    "claim_ceiling": "none"
+  },
+  "acceptance": {
+    "mutation_count": 23,
+    "detected_expected_mutations": 23,
+    "survived_or_wrong_violation_count": 0,
+    "invalid_mutation_count": 0,
+    "positive_control_status": "PASS"
+  },
+  "mutations": [
+    {
+      "mutation_id": "changed_intent_same_key",
+      "expected_code": "KEY_REUSED_FOR_DIFFERENT_INTENT",
+      "expected_invariant": "HIST-002",
+      "description": "Reuse an idempotency key with a changed effect digest."
+    },
+    {
+      "mutation_id": "duplicate_logical_effect",
+      "expected_code": "DUPLICATE_LOGICAL_EFFECT",
+      "expected_invariant": "HIST-003",
+      "description": "Commit a second effect under one key."
+    },
+    {
+      "mutation_id": "stale_worker_after_fence",
+      "expected_code": "STALE_WORKER_EFFECT",
+      "expected_invariant": "HIST-007",
+      "description": "Advance fencing before an old worker commits."
+    },
+    {
+      "mutation_id": "committed_without_receipt",
+      "expected_code": "COMMITTED_RESPONSE_WITHOUT_PRIOR_RECEIPT",
+      "expected_invariant": "HIST-006",
+      "description": "Claim commitment without a known receipt."
+    },
+    {
+      "mutation_id": "effect_receipt_gap",
+      "expected_code": "EFFECT_WITHOUT_RECEIPT",
+      "expected_invariant": "HIST-005",
+      "description": "Remove the receipt for an observed effect."
+    },
+    {
+      "mutation_id": "receipt_wrong_effect_digest",
+      "expected_code": "RECEIPT_DOES_NOT_BIND_EFFECT",
+      "expected_invariant": "HIST-004",
+      "description": "Change a receipt's effect digest."
+    },
+    {
+      "mutation_id": "receipt_wrong_sink",
+      "expected_code": "RECEIPT_WRONG_SINK",
+      "expected_invariant": "HIST-004",
+      "description": "Bind a receipt to a different sink."
+    },
+    {
+      "mutation_id": "effect_wrong_sink",
+      "expected_code": "EFFECT_WRONG_SINK",
+      "expected_invariant": "HIST-004",
+      "description": "Record an effect against a different sink identity."
+    },
+    {
+      "mutation_id": "unknown_response_with_receipt",
+      "expected_code": "UNKNOWN_RESPONSE_CLAIMS_RECEIPT",
+      "expected_invariant": "HIST-006",
+      "description": "Claim a receipt while reporting an unknown outcome."
+    },
+    {
+      "mutation_id": "rejected_after_effect",
+      "expected_code": "REJECTED_ATTEMPT_HAS_EFFECT",
+      "expected_invariant": "HIST-006",
+      "description": "Reject an attempt that already committed an effect."
+    },
+    {
+      "mutation_id": "duplicate_receipt_identifier",
+      "expected_code": "DUPLICATE_RECEIPT_ID",
+      "expected_invariant": "HIST-004",
+      "description": "Reuse a receipt identifier for another event."
+    },
+    {
+      "mutation_id": "nonmonotonic_fence",
+      "expected_code": "FENCE_NOT_MONOTONIC",
+      "expected_invariant": "HIST-007",
+      "description": "Replay a fencing-token advance at the current value."
+    },
+    {
+      "mutation_id": "sequence_gap",
+      "expected_code": "NON_CONTIGUOUS_SEQUENCE",
+      "expected_invariant": "HIST-001",
+      "description": "Create a gap in the recorded event sequence."
+    },
+    {
+      "mutation_id": "duplicate_attempt_identifier",
+      "expected_code": "DUPLICATE_INVOCATION_ID",
+      "expected_invariant": "HIST-001",
+      "description": "Reuse a previously observed attempt identifier."
+    },
+    {
+      "mutation_id": "orphan_effect",
+      "expected_code": "EVENT_WITHOUT_PRIOR_INVOCATION",
+      "expected_invariant": "HIST-001",
+      "description": "Record an effect without a prior invocation."
+    },
+    {
+      "mutation_id": "duplicate_effect_identifier",
+      "expected_code": "DUPLICATE_EFFECT_ID",
+      "expected_invariant": "HIST-003",
+      "description": "Reuse an effect identifier."
+    },
+    {
+      "mutation_id": "receipt_without_effect",
+      "expected_code": "RECEIPT_WITHOUT_PRIOR_EFFECT",
+      "expected_invariant": "HIST-004",
+      "description": "Record a receipt for an effect that was never observed."
+    },
+    {
+      "mutation_id": "receipt_attributed_to_wrong_attempt",
+      "expected_code": "RECEIPT_COMMIT_ATTRIBUTED_TO_WRONG_ATTEMPT",
+      "expected_invariant": "HIST-004",
+      "description": "Attribute an effect receipt to a different attempt."
+    },
+    {
+      "mutation_id": "stale_invocation_fence",
+      "expected_code": "INVOCATION_USED_STALE_OR_UNISSUED_FENCE",
+      "expected_invariant": "HIST-007",
+      "description": "Invoke with a fencing token older than the active token."
+    },
+    {
+      "mutation_id": "effect_fence_mismatch",
+      "expected_code": "EFFECT_FENCE_DIFFERS_FROM_INVOCATION",
+      "expected_invariant": "HIST-007",
+      "description": "Commit using a token different from the invocation token."
+    },
+    {
+      "mutation_id": "effect_intent_mismatch",
+      "expected_code": "EFFECT_INTENT_MISMATCH",
+      "expected_invariant": "HIST-004",
+      "description": "Record an effect that does not match the invoked intent."
+    },
+    {
+      "mutation_id": "multiple_terminal_responses",
+      "expected_code": "MULTIPLE_TERMINAL_RESPONSES",
+      "expected_invariant": "HIST-006",
+      "description": "Emit two terminal responses for one attempt."
+    },
+    {
+      "mutation_id": "rejected_response_with_receipt",
+      "expected_code": "REJECTED_RESPONSE_HAS_RECEIPT",
+      "expected_invariant": "HIST-006",
+      "description": "Return a receipt while claiming the operation was rejected."
+    }
+  ]
+}
