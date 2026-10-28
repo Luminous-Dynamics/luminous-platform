@@ -29,7 +29,7 @@ Run the generated smoke benchmark:
 python3 benchmarks/srq-lifecycle-interop/guarantee-vector/fuzz_history.py
 ```
 
-The fixed seed `20261028` generates 10,000 valid histories and 10,000 single-fault mutants. The local reference run observed zero false rejects and zero mutant survivors. This measures the current small invariant set against generated inputs; it is not broad state-space exploration, a real-adapter result, or a linearizability proof.
+The fixed seed `20261028` generates 10,000 valid histories and 10,000 single-fault mutants. The stale-fencing mutant changes only the transaction's fencing token; it leaves the journal sequence and fencing-event history unchanged, to avoid stacking multiple faults in one mutant. The local reference run observed zero false rejects and zero mutant survivors. This measures the current small invariant set against generated inputs; it is not broad state-space exploration, a real-adapter result, or a linearizability proof.
 
 Run the checker against an adapter-exported trace:
 
