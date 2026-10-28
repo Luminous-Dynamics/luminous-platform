@@ -1,0 +1,62 @@
+# SRQ typed assurance vector — research prototype
+
+**Research model only.** The crate evaluates evidence already supplied by adapters. It does not cryptographically verify the evidence, contact a remote anchor, execute an effect, or prove that an adapter's promises are true. A `Verified` enum variant means a trusted upstream verifier claims to have completed the corresponding check; production wiring must make that boundary explicit.
+
+## Paradigm shift
+
+A single `PASS` hides important distinctions. This model reports independent dimensions for:
+
+1. authorization, signature, freshness, policy, and request-binding result;
+2. anti-rollback checkpoint alignment and independence;
+3. dispatch-claim/request consistency;
+4. effect/receipt idempotency and fencing contract; and
+5. authoritative receipt binding.
+
+It then produces a constrained recovery disposition. The overall release claim never exceeds the evidence provided by the weakest required dimension.
+
+## Recovery decisions
+
+- `DISPATCH_ONCE`: all required preconditions are verified and no dispatch claim exists.
+- `RETRY_SAME_IDEMPOTENCY_KEY`: allowed only when the same request digest is bound to a stable key and the sink contract says the effect and durable receipt are committed atomically. If fencing is required, the sink must enforce it.
+- `RESUME_TRANSACTION`: continue within the same transaction identity and domain where effect and receipt are atomic; do not create a new transaction.
+- `OPERATOR_REQUIRED`: an at-most-once operation may have run but has no authoritative receipt, or a completion marker lacks the receipt. The model does not guess and does not redispatch.
+- `COMPLETED_NO_REDISPATCH`: a signature-valid receipt matches both the exact request and effect digest. Even an expired current authorization does not justify executing the completed operation again.
+- `BLOCK`: authorization, anchor, request binding, receipt, delivery contract, or required fencing is invalid, unknown, or inconsistent.
+
+The request digest and effect digest are separate: request identity includes the command intent; effect identity represents the expected applied effect. A verified receipt must bind both.
+
+## Frozen matrix and reproducibility
+
+The Rust matrix has 22 cases: safe dispatch, same-key retry, same-transaction recovery, conservative operator escalation, verified completion, and attacks covering missing/invalid/stale authorization, request mismatch, unavailable or rolled-back anchors, divergent checkpoints, key/contract mismatch, non-atomic effects/receipts, unknown delivery guarantees, missing fencing, wrong/invalid receipts, missing completion receipts, and malformed digest input.
+
+Run from the repository root:
+
+```sh
+cargo fmt --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --all -- --check
+cargo test --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml
+cargo clippy --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --all-targets -- -D warnings
+cargo run --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --bin qualification-report
+```
+
+The acceptance gate is exactly 22/22 expected outcomes, zero unexpected decisions, zero false releases, and zero false blocks against the frozen expectation matrix. Reports remain `qualification_status=BLOCKED` and `claim_ceiling=none`.
+
+## Industry comparison
+
+- AWS's idempotent API design stores the original request parameters with a client request identifier and rejects the same identifier when intent differs: https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/
+- Google Cloud Pub/Sub's exactly-once delivery contract is scoped to pull subscriptions and a single region and has explicit latency and retry trade-offs: https://docs.cloud.google.com/pubsub/docs/exactly-once-delivery
+- The Update Framework specifies versioned trusted metadata and defences against rollback/freeze attacks: https://theupdateframework.github.io/specification/latest/
+- RFC 9334 treats freshness as a protocol architecture choice involving trusted clocks, nonces, or epoch IDs: https://www.rfc-editor.org/rfc/rfc9334.html
+- NIST SP 800-193 frames platform resiliency around protection, detection, and recovery: https://csrc.nist.gov/pubs/sp/800/193/final
+
+The benchmark target is not an unqualified claim of “better than SOTA.” It is to give a more precise, measurable contract for each lifecycle transition and demonstrate lower false release risk with a published latency/recovery cost under comparable workload and durability guarantees.
+
+## Next qualification gates
+
+1. Compile, format, test, and lint this crate on the exact PR head.
+2. Port the types to the production Rust integration and make the “verified evidence” adapter boundary explicit.
+3. Use canonical domain-separated encodings and reviewed crypto libraries for signed authorizations, receipt verification, and request/effect digests.
+4. Add real anchor and effect adapters with durable idempotency/fencing semantics.
+5. Inject at least 100 crashes per durable boundary and run at least 1,000 snapshot/restore/replay cases per real adapter.
+6. Report false-release count, false-block count, p50/p95/p99, throughput, recovery duration, persistence cost, and operator-required rate. Do not hide availability regressions by reporting only duplicate prevention.
+
+Until those gates have exact-head evidence, this model is an aid to design and review, not a production security claim.
