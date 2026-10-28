@@ -411,6 +411,7 @@ mod tests {
         let mut model = model();
         add_old_records(&mut model);
         assert_eq!(model.retained_record_count(), 2);
+        model.observe_trusted_time_epoch(46).unwrap();
         model.prepare_compaction(5).unwrap();
         model.advance_anchor().unwrap();
         model.commit_compaction().unwrap();
@@ -432,8 +433,9 @@ mod tests {
         model
             .record_key(4, "long-receipt", &digest(1), 15, 25, RecordKind::Receipt)
             .unwrap();
+        model.observe_trusted_time_epoch(46).unwrap();
         assert_eq!(
-            model.prepare_compaction(5, 46),
+            model.prepare_compaction(5),
             Err(EpochError::ActiveRetentionWindow)
         );
         assert!(!model.pending_transition());
@@ -444,7 +446,8 @@ mod tests {
     fn crash_before_anchor_advance_discards_prepare_and_keeps_old_keys() {
         let mut model = model();
         add_old_records(&mut model);
-        model.prepare_compaction(5, 46).unwrap();
+        model.observe_trusted_time_epoch(46).unwrap();
+        model.prepare_compaction(5).unwrap();
         assert_eq!(
             model.recover(),
             Ok(RecoveryAction::DiscardedUnanchoredTransition)
@@ -459,7 +462,8 @@ mod tests {
     fn crash_after_anchor_advance_finalizes_and_prunes() {
         let mut model = model();
         add_old_records(&mut model);
-        model.prepare_compaction(5, 46).unwrap();
+        model.observe_trusted_time_epoch(46).unwrap();
+        model.prepare_compaction(5).unwrap();
         model.advance_anchor().unwrap();
         assert_eq!(
             model.recover(),
@@ -475,7 +479,8 @@ mod tests {
         let mut model = model();
         add_old_records(&mut model);
         let snapshot = model.local_snapshot();
-        model.prepare_compaction(5, 46).unwrap();
+        model.observe_trusted_time_epoch(46).unwrap();
+        model.prepare_compaction(5).unwrap();
         model.advance_anchor().unwrap();
         model.restore_local_snapshot(snapshot);
         assert_eq!(
@@ -528,6 +533,30 @@ mod tests {
             Err(EpochError::KeyAlreadyRecorded)
         );
         assert_eq!(model.retained_record_count(), 1);
+    }
+
+    #[test]
+    fn compaction_uses_anchor_time_not_caller_supplied_time() {
+        let mut model = model();
+        add_old_records(&mut model);
+        assert_eq!(model.trusted_time_epoch(), 0);
+        assert_eq!(
+            model.prepare_compaction(5),
+            Err(EpochError::ActiveRetentionWindow)
+        );
+        model.observe_trusted_time_epoch(46).unwrap();
+        assert!(model.prepare_compaction(5).is_ok());
+    }
+
+    #[test]
+    fn trusted_time_epoch_cannot_regress() {
+        let mut model = model();
+        model.observe_trusted_time_epoch(46).unwrap();
+        assert_eq!(
+            model.observe_trusted_time_epoch(45),
+            Err(EpochError::TrustedTimeRegression)
+        );
+        assert_eq!(model.trusted_time_epoch(), 46);
     }
 
     #[test]
@@ -603,7 +632,8 @@ mod tests {
     fn prepare_does_not_delete_records_before_anchor_advance() {
         let mut model = model();
         add_old_records(&mut model);
-        model.prepare_compaction(5, 46).unwrap();
+        model.observe_trusted_time_epoch(46).unwrap();
+        model.prepare_compaction(5).unwrap();
         assert_eq!(model.retained_record_count(), 2);
         assert_eq!(model.current_key_epoch(), 4);
         assert_eq!(model.anchor_key_epoch(), 4);
@@ -613,12 +643,13 @@ mod tests {
     fn prepare_epoch_and_current_anchor_must_be_aligned() {
         let mut model = model();
         add_old_records(&mut model);
-        model.prepare_compaction(5, 46).unwrap();
+        model.observe_trusted_time_epoch(46).unwrap();
+        model.prepare_compaction(5).unwrap();
         model.advance_anchor().unwrap();
         // Simulate a process crash with an older local namespace view; a new prepare
         // must be blocked until recovery reconciles the pending anchored transition.
         assert_eq!(
-            model.prepare_compaction(6, 47),
+            model.prepare_compaction(6),
             Err(EpochError::TransitionPending)
         );
     }
