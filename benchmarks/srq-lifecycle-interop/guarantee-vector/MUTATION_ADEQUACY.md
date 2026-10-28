@@ -14,7 +14,7 @@ The initial SRQ mutation set has five deliberately unsafe edits:
 
 Each mutation has a named target test. A mutant is counted as **killed** only when that target test fails. A compile error, missing target, timeout, unrelated test failure, or broken mutation anchor is an invalid result—not a killed mutant. The harness copies the crate to a temporary directory, changes only that copy, and keeps the checked-in source unchanged.
 
-The executable protocol is mutation-protocol-v1.json; mutation_qualification.py --check-only performs a source-anchor preflight without invoking Rust. CI runs the full execution mode and retains the JSON result with the other exact-head reports.
+The executable protocol is mutation-protocol-v1.json; mutation_qualification.py --check-only performs a source-anchor preflight without invoking Rust. The report records both the workflow checkout SHA and the PR source-head SHA; CI asserts the latter matches the PR event instead of conflating it with GitHub's synthetic merge commit. A dedicated if: always() upload retains the JSON mutation result even when the gate fails.
 
 ## Initial acceptance criteria
 
