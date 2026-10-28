@@ -29,7 +29,7 @@ Event kinds:
 
 ## Checked safety invariants
 
-The checker detects non-contiguous histories, duplicate attempt/effect/receipt identifiers, reuse of one idempotency key for different intent, multiple distinct effects under one key, stale or mismatched fences, effect/receipt binding mismatch, orphan effects or receipts, a `committed` response without a matching prior receipt, and a rejected attempt that nevertheless has an effect or receipt.
+The checker reports stable `HIST-001` through `HIST-007` invariant IDs as well as machine-readable violation codes. The tests cross-check the ID/code mapping against the frozen protocol so a code change cannot silently drift from the research contract. It detects non-contiguous histories, duplicate attempt/effect/receipt identifiers, reuse of one idempotency key for different intent, multiple distinct effects under one key, stale or mismatched fences, effect/receipt binding mismatch, orphan effects or receipts, a `committed` response without a matching prior receipt, and a rejected attempt that nevertheless has an effect or receipt.
 
 Invalid input is distinct from a security invariant failure. For example, a malformed digest or unsupported event kind is `INVALID_HISTORY`, not a successful negative control.
 
