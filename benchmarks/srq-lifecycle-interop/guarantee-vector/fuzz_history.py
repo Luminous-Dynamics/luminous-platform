@@ -68,6 +68,7 @@ def inject_one_fault(trace: dict, fault_index: int) -> None:
             "transaction_id": "duplicate-tx",
             "effect_id": "new-effect",
             "receipt_id": "new-receipt",
+            "fencing_token": max(item["token"] for item in trace["fence_events"]),
             "commit_seq": max(item["commit_seq"] for item in trace["transactions"]) + 1,
         })
     elif fault_index == 3:
