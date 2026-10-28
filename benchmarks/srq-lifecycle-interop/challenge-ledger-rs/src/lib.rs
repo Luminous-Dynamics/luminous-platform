@@ -107,12 +107,14 @@ impl Binding {
         ] {
             if !is_digest(value) {
                 return Err(LedgerError::InvalidInput(match name {
-                    "transaction_id" =>
-                        "transaction_id must be 64 lowercase hexadecimal characters",
+                    "transaction_id" => {
+                        "transaction_id must be 64 lowercase hexadecimal characters"
+                    }
                     "target_digest" => "target_digest must be 64 lowercase hexadecimal characters",
                     "plan_digest" => "plan_digest must be 64 lowercase hexadecimal characters",
-                    "artifact_digest" =>
-                        "artifact_digest must be 64 lowercase hexadecimal characters",
+                    "artifact_digest" => {
+                        "artifact_digest must be 64 lowercase hexadecimal characters"
+                    }
                     _ => "policy_digest must be 64 lowercase hexadecimal characters",
                 }));
             }
@@ -654,7 +656,8 @@ mod tests {
             .append(true)
             .open(ledger.path())
             .expect("open journal for corruption fixture");
-        file.write_all(b"CONSUME\tpartial").expect("append partial row");
+        file.write_all(b"CONSUME\tpartial")
+            .expect("append partial row");
         file.sync_all().expect("sync partial row");
 
         assert!(matches!(
