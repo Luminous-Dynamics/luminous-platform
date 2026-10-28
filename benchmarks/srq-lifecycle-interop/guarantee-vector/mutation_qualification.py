@@ -133,6 +133,7 @@ def preflight(crate_root: Path, source: str, manifest: dict) -> dict:
         "protocol_sha256": sha256_bytes(
             (crate_root / "mutation-protocol-v1.json").read_bytes()
         ),
+        "mutation_harness_sha256": sha256_bytes(Path(__file__).read_bytes()),
         "failures": failures,
         "note": "Static target matching only; this is not executed mutation evidence.",
     }
