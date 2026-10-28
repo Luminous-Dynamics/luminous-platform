@@ -265,7 +265,8 @@ def _sha256_file(path: Path) -> str:
 
 def _add_provenance(report: dict[str, Any]) -> dict[str, Any]:
     root = Path(__file__).resolve().parent
-    report["harness_commit_sha"] = os.environ.get("GITHUB_SHA")
+    report["workflow_event_sha"] = os.environ.get("GITHUB_SHA")
+    report["harness_commit_sha"] = os.environ.get("SRQ_HISTORY_ORACLE_CHECKOUT_SHA") or os.environ.get("GITHUB_SHA")
     report["source_head_sha"] = os.environ.get("SRQ_HISTORY_ORACLE_PR_HEAD_SHA") or os.environ.get("GITHUB_SHA")
     report["source_sha256"] = {
         name: _sha256_file(root / name)
