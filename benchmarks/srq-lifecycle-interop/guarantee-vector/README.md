@@ -52,7 +52,7 @@ This sink is intentionally volatile. A process crash discards it; the mutex does
 
 `retain_until = authorization_expiry + maximum_retry_horizon + epoch_skew_margin`
 
-Callers cannot request a shorter retention window. Time uses a trusted monotonic epoch abstraction rather than a local wall-clock value; production must bind that epoch to an independently protected source.
+Callers cannot request a shorter retention window. Effect submission does not accept a timestamp: the sink reads a monotonic high-water epoch updated through a separate trusted-adapter hook. Production must ensure only independently verified time/epoch evidence can advance that observation; do not expose the hook to untrusted request callers.
 
 The model returns the original receipt for exact same-key retries while its retention window is open—even after authorization expiry—but never applies a new effect from that retry. Once the retention window is past, the active receipt becomes a permanent tombstone and the key cannot be used again in that namespace. This is intentionally conservative. Safely deleting tombstones requires a proof that old authorizations are irreversibly expired, the old namespace cannot be restored, and old key epochs cannot be reused. The separate abstract epoch-compaction model below tests this ordering but does not provide a production anchor.
 
