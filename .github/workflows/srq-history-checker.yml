@@ -1,0 +1,44 @@
+name: SRQ external history checker
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/srq-history-checker.yml'
+      - 'benchmarks/srq-lifecycle-interop/guarantee-vector/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  history-checker:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate protocol JSON
+        run: python -m json.tool benchmarks/srq-lifecycle-interop/guarantee-vector/history-protocol-v1.json > /dev/null
+      - name: Run adversarial history fixtures
+        run: python -m unittest discover -s benchmarks/srq-lifecycle-interop/guarantee-vector -p 'test_history_checker.py' -v
+      - name: Check claim ceiling stays blocked
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('benchmarks/srq-lifecycle-interop/guarantee-vector')
+          protocol = json.loads((root / 'history-protocol-v1.json').read_text(encoding='utf-8'))
+          assert protocol['qualification_status'] == 'BLOCKED'
+          assert protocol['claim_ceiling'] == 'none'
+          assert protocol['initial_fixture_acceptance']['positive_fixtures'] == 1
+          assert protocol['initial_fixture_acceptance']['negative_fixtures'] == 10
+          assert protocol['initial_fixture_acceptance']['expected_false_accepts'] == 0
+          assert protocol['initial_fixture_acceptance']['expected_false_rejects'] == 0
+          checker = (root / 'history_checker.py').read_text(encoding='utf-8')
+          assert 'not-full-linearizability' in checker
+          assert 'STALE_OR_WRONG_FENCE' in checker
+          assert 'MULTIPLE_EFFECTS_FOR_KEY' in checker
+          PY
