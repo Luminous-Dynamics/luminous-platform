@@ -52,8 +52,8 @@ fn main() {
     let passed = unexpected_decision_count == 0
         && false_release_count == 0
         && false_block_count == 0
-        && case_count == 22
-        && exhaustive.combinations_checked == 2_000
+        && case_count == 23
+        && exhaustive.combinations_checked == 2_500
         && exhaustive.false_release_count == 0
         && exhaustive.false_block_count == 0;
     let status = if passed { "PASS" } else { "FAIL" };
@@ -65,7 +65,7 @@ fn main() {
             "\"qualification_status\":\"BLOCKED\",",
             "\"claim_ceiling\":\"none\",",
             "\"scope\":\"typed_evidence_evaluator_only\",",
-            "\"expected_case_count\":22,",
+            "\"expected_case_count\":23,",
             "\"observed_case_count\":{},",
             "\"unexpected_decision_count\":{},",
             "\"false_release_count\":{},",
