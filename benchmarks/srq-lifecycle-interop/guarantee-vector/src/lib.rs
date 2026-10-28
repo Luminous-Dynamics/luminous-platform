@@ -172,7 +172,16 @@ impl VerifiedAtomicIdempotency {
 }
 
 /// Sink-issued capability for resuming the same transaction with effect/receipt atomicity
-/// and fencing semantics verified by the adapter.
+/// and fencing semantics verified by the adapter. Construction is private.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedTransactionalDelivery;
+/// let _forged = VerifiedTransactionalDelivery {
+///     request_digest: String::new(),
+///     transaction_id: String::new(),
+///     sink_identity_digest: String::new(),
+/// };
+/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerifiedTransactionalDelivery {
     request_digest: String,
@@ -191,6 +200,14 @@ impl VerifiedTransactionalDelivery {
 }
 
 /// Sink-issued capability for an at-most-once operation on the identified sink.
+/// Construction is private.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedAtMostOnceDelivery;
+/// let _forged = VerifiedAtMostOnceDelivery {
+///     sink_identity_digest: String::new(),
+/// };
+/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerifiedAtMostOnceDelivery {
     sink_identity_digest: String,
