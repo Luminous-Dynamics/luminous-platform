@@ -1,6 +1,6 @@
 # SRQ typed assurance vector — research prototype
 
-**Research model only.** The crate evaluates evidence already supplied by adapters. It does not cryptographically verify the evidence, contact a remote anchor, execute an effect, or prove that an adapter's promises are true. A `Verified` enum variant means a trusted upstream verifier claims to have completed the corresponding check; production wiring must make that boundary explicit.
+**Research model only.** The crate evaluates evidence already supplied by adapters. It does not cryptographically verify the evidence, contact a remote anchor, execute an effect, or prove that an adapter's promises are true. A `Verified` enum variant means a trusted upstream verifier claims to have completed the corresponding check; production wiring must make that boundary explicit. `TrustedEpoch` is an opaque capability with no public constructor; only unit tests can create synthetic tokens. Until a real verified time/epoch adapter is integrated, downstream crates cannot advance retention or compaction time, so these models are deliberately not production-usable.
 
 ## Paradigm shift
 
@@ -52,7 +52,7 @@ This sink is intentionally volatile. A process crash discards it; the mutex does
 
 `retain_until = authorization_expiry + maximum_retry_horizon + epoch_skew_margin`
 
-Callers cannot request a shorter retention window. Effect submission does not accept a timestamp: the sink reads a monotonic high-water epoch updated through an opaque `TrustedEpoch` capability. There is no public capability constructor yet, so downstream code cannot advance the model clock. Production must integrate a verifier that creates the token only from independently verified time/epoch evidence.
+Callers cannot request a shorter retention window. Effect submission does not accept a timestamp, and fails closed until a trusted epoch observation exists. The sink then reads a monotonic high-water epoch updated through an opaque `TrustedEpoch` capability. There is no public capability constructor yet, so downstream code cannot advance the model clock. Production must integrate a verifier that creates the token only from independently verified time/epoch evidence.
 
 The model returns the original receipt for exact same-key retries while its retention window is open—even after authorization expiry—but never applies a new effect from that retry. Once the retention window is past, the active receipt becomes a permanent tombstone and the key cannot be used again in that namespace. This is intentionally conservative. Safely deleting tombstones requires a proof that old authorizations are irreversibly expired, the old namespace cannot be restored, and old key epochs cannot be reused. The separate abstract epoch-compaction model below tests this ordering but does not provide a production anchor.
 
