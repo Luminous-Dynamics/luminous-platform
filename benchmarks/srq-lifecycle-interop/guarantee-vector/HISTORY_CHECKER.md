@@ -23,6 +23,14 @@ Run the fixture suite:
 python3 -m unittest discover -s benchmarks/srq-lifecycle-interop/guarantee-vector -p 'test_history_checker.py' -v
 ```
 
+Run the generated smoke benchmark:
+
+```sh
+python3 benchmarks/srq-lifecycle-interop/guarantee-vector/fuzz_history.py
+```
+
+The fixed seed `20261028` generates 10,000 valid histories and 10,000 single-fault mutants. The local reference run observed zero false rejects and zero mutant survivors. This measures the current small invariant set against generated inputs; it is not broad state-space exploration, a real-adapter result, or a linearizability proof.
+
 Run the checker against an adapter-exported trace:
 
 ```sh
@@ -40,7 +48,7 @@ The checker rejects unbound successful responses, effect/receipt identity mismat
 The core shift is **evidence from the sink, not self-attestation by the policy layer**. An assurance token should be bound to a specific sink identity and contract, and the acceptance decision should be checked against durable side-effect history.
 
 1. **Local oracle adequacy:** one positive fixture plus ten negative controls; require zero false accepts and zero false rejects.
-2. **Generated trace adequacy:** at least 10,000 seeded generated histories, minimized counterexamples, and a reviewed mutation corpus of 20–40 realistic faults. Track checker soundness and rejection reasons independently.
+2. **Generated trace adequacy (smoke implemented):** run 10,000 seeded generated histories and 10,000 single-fault mutants; target zero false rejects and zero survivors. The current generator exercises the checker invariants with one deterministic seed. The next stronger tier is property-based stateful generation with concurrency/transition interleavings, shrinkable counterexamples, and reviewed mutations that challenge interactions among invariants.
 3. **Real adapter:** choose a concrete transactional sink; document the exact atomic commit boundary and extract journal records. Start with one durable backend rather than claiming backend portability.
 4. **Fault injection:** at least 100 crash/restart trials per durable boundary, then 1,000 restore/replay/rollback trials per supported adapter. Include lost responses after commit, duplicate submissions, concurrent same-key requests, changed-intent key reuse, stale writers, and restore from an old snapshot.
 5. **Concurrency and cost:** run 1/8/64/256 concurrent submitters and publish p50/p95/p99, throughput, lock contention, journal bytes/write amplification, recovery time, and blocking rate. Compare only implementations with equivalent durability/fencing semantics.
