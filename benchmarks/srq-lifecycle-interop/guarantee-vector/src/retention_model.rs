@@ -340,7 +340,14 @@ mod tests {
         }
     }
 
-    fn request(scope: &str, key: &str, request_byte: u8, effect_byte: u8, policy_byte: u8, token: u64) -> AuthorizedEffect {
+    fn request(
+        scope: &str,
+        key: &str,
+        request_byte: u8,
+        effect_byte: u8,
+        policy_byte: u8,
+        token: u64,
+    ) -> AuthorizedEffect {
         AuthorizedEffect {
             scope: scope.to_string(),
             idempotency_key: key.to_string(),
