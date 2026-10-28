@@ -63,6 +63,8 @@ def check_history(history: dict[str, Any]) -> dict[str, Any]:
     events = history.get("events")
     if not isinstance(events, list):
         raise InvalidHistory("events must be an array")
+    if not events:
+        raise InvalidHistory("events must contain at least one observed event; an empty trace is not evidence")
 
     violations: list[dict[str, Any]] = []
     attempts: dict[str, dict[str, Any]] = {}
