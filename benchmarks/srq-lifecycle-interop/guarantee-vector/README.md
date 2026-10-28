@@ -74,6 +74,10 @@ This ordering preserves a small permanent high-water mark instead of retaining a
 
 The module has 16 tests covering policy-derived retention horizons, authorization-window bounds, overflow, trusted-time sourcing and regression, retention gating, old-epoch rejection, skipped epochs, untrusted anchors, both sides of the anchor-advance crash boundary, snapshot restoration, and pruning only after commit. It is a single-process abstract model: it does not implement durable CAS, signed anchor evidence, TPM or remote service integration, power-loss behavior, or key-epoch authorization. Production must bind the epoch to the signed request and an actually independent durable anchor before relying on compaction.
 
+## Comparative benchmark protocol
+
+The full matched-contract benchmark procedure is in [`BENCHMARK_PROTOCOL.md`](./BENCHMARK_PROTOCOL.md). It defines comparable reference classes, fixed workload/fault matrices, per-adapter snapshot/restore trials, safety/availability/performance metrics, and a rule against comparing unlike durability promises. Its proposed targets are not measurements or guarantees.
+
 ## Industry comparison
 
 - AWS's idempotent API design stores the original request parameters with a client request identifier and rejects the same identifier when intent differs: https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/
