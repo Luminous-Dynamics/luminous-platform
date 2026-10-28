@@ -507,8 +507,8 @@ mod tests {
     #[test]
     fn identical_key_in_separate_scopes_is_independent() {
         let sink = sink();
-        sink.submit(&request("tenant-a:deploy", "op-001", 1, 2, 3, 1), 12).unwrap();
-        sink.submit(&request("tenant-b:deploy", "op-001", 1, 2, 3, 1), 12).unwrap();
+        submit_at(&sink, &request("tenant-a:deploy", "op-001", 1, 2, 3, 1), 12).unwrap();
+        submit_at(&sink, &request("tenant-b:deploy", "op-001", 1, 2, 3, 1), 12).unwrap();
         assert_eq!(sink.logical_effect_count().unwrap(), 2);
     }
 
