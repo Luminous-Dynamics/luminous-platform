@@ -46,6 +46,8 @@ pub struct IndependentAnchor {
     independently_protected: bool,
     authenticated: bool,
     rollback_protected: bool,
+    /// Epoch reported by the trusted time/freshness adapter, not request input.
+    trusted_time_epoch: u64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -74,6 +76,7 @@ pub enum EpochError {
     InvalidAuthorizationWindow,
     AuthorizationLifetimeExceeded,
     RetentionHorizonOverflow,
+    TrustedTimeRegression,
 }
 
 pub struct EpochCompactionModel {
@@ -102,9 +105,31 @@ impl EpochCompactionModel {
                 independently_protected: anchor_is_trusted,
                 authenticated: anchor_is_trusted,
                 rollback_protected: anchor_is_trusted,
+                trusted_time_epoch: 0,
             },
             retention_policy,
         })
+    }
+
+    /// Advance the model's trusted time observation.
+    ///
+    /// This represents an authenticated monotonic epoch received from an independent
+    /// trusted-time/epoch adapter. Never wire this method to a request's timestamp or
+    /// another caller-controlled value. Production must enforce this adapter boundary.
+    pub fn observe_trusted_time_epoch(
+        &mut self,
+        observed_epoch: u64,
+    ) -> Result<(), EpochError> {
+        self.validate_anchor()?;
+        if observed_epoch < self.anchor.trusted_time_epoch {
+            return Err(EpochError::TrustedTimeRegression);
+        }
+        self.anchor.trusted_time_epoch = observed_epoch;
+        Ok(())
+    }
+
+    pub fn trusted_time_epoch(&self) -> u64 {
+        self.anchor.trusted_time_epoch
     }
 
     fn validate_anchor(&self) -> Result<(), EpochError> {
@@ -184,11 +209,7 @@ impl EpochCompactionModel {
     /// Every key record in the active namespace must have strictly passed its derived
     /// retention horizon. The external anchor remains the authority; the local prepare
     /// merely makes recovery possible if the process stops between steps.
-    pub fn prepare_compaction(
-        &mut self,
-        next_epoch: u64,
-        now_epoch: u64,
-    ) -> Result<(), EpochError> {
+    pub fn prepare_compaction(&mut self, next_epoch: u64) -> Result<(), EpochError> {
         self.validate_anchor()?;
         if self.local.pending_transition.is_some() {
             return Err(EpochError::TransitionPending);
@@ -210,7 +231,7 @@ impl EpochCompactionModel {
             .iter()
             .any(|((epoch, _), record)| {
                 *epoch == self.local.current_key_epoch
-                    && record.retain_until_epoch >= now_epoch
+                    && record.retain_until_epoch >= self.anchor.trusted_time_epoch
             })
         {
             return Err(EpochError::ActiveRetentionWindow);
@@ -218,7 +239,7 @@ impl EpochCompactionModel {
         self.local.pending_transition = Some(PendingTransition {
             from_epoch: self.local.current_key_epoch,
             to_epoch: next_epoch,
-            prepared_at_epoch: now_epoch,
+            prepared_at_epoch: self.anchor.trusted_time_epoch,
         });
         Ok(())
     }
@@ -390,7 +411,7 @@ mod tests {
         let mut model = model();
         add_old_records(&mut model);
         assert_eq!(model.retained_record_count(), 2);
-        model.prepare_compaction(5, 46).unwrap();
+        model.prepare_compaction(5).unwrap();
         model.advance_anchor().unwrap();
         model.commit_compaction().unwrap();
         assert_eq!(model.current_key_epoch(), 5);
@@ -474,7 +495,7 @@ mod tests {
             Err(EpochError::UntrustedAnchor)
         );
         assert_eq!(
-            model.prepare_compaction(5, 3),
+            model.prepare_compaction(5),
             Err(EpochError::UntrustedAnchor)
         );
     }
@@ -487,7 +508,7 @@ mod tests {
             Err(EpochError::FutureEpoch)
         );
         assert_eq!(
-            model.prepare_compaction(6, 46),
+            model.prepare_compaction(6),
             Err(EpochError::InvalidEpochAdvance)
         );
     }
