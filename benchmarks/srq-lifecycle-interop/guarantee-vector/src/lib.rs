@@ -437,11 +437,11 @@ fn dispatch_key_matches(key: Option<&str>, contract: &DeliveryContract) -> bool 
 }
 
 pub fn evaluate(vector: AssuranceVector) -> Assessment {
-    let authorization = authorization_status(vector);
-    let anti_rollback = anchor_status(vector);
-    let dispatch = dispatch_status(vector);
-    let delivery = delivery_status(vector);
-    let receipt = receipt_status(vector);
+    let authorization = authorization_status(&vector);
+    let anti_rollback = anchor_status(&vector);
+    let dispatch = dispatch_status(&vector);
+    let delivery = delivery_status(&vector);
+    let receipt = receipt_status(&vector);
 
     let block = |reason| Assessment {
         decision: Decision::Block,
