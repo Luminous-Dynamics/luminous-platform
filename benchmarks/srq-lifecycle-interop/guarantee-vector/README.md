@@ -27,7 +27,7 @@ The request digest, effect digest, and policy digest are separate: request ident
 
 ## Frozen matrix and reproducibility
 
-The frozen Rust matrix has 24 cases: safe dispatch, same-key retry, same-transaction recovery, conservative operator escalation, verified completion, and attacks covering missing/invalid/stale authorization, request mismatch, unavailable or rolled-back anchors, divergent checkpoints, key/contract mismatch, non-atomic effects/receipts, unknown delivery guarantees, missing fencing, wrong/invalid receipts, missing completion receipts, and malformed digest input. An additional bounded cross-product explores 3,125 combinations across authorization, anchor, dispatch, delivery-contract, and receipt dimensions using a separate minimum-evidence oracle. The new in-memory Rust sink model adds direct tests of tenant-scoped idempotency, same-key/different-request rejection, exact-retry receipt reuse, stale fencing-token rejection, and a 64-thread same-key race.
+The frozen Rust matrix has 26 cases: safe dispatch, same-key retry, same-transaction recovery, conservative operator escalation, verified completion, and attacks covering missing/invalid/stale authorization, request mismatch, unavailable or rolled-back anchors, divergent checkpoints, key/contract mismatch, non-atomic effects/receipts, unknown delivery guarantees, missing fencing, wrong/invalid receipts, missing completion receipts, malformed digest input, and unknown-outcome claims with missing fencing tokens or mismatched idempotency keys. An additional bounded cross-product explores 4,375 combinations across authorization, anchor, dispatch, delivery-contract, and receipt dimensions using a separate minimum-evidence oracle. The new in-memory Rust sink model adds direct tests of tenant-scoped idempotency, same-key/different-request rejection, exact-retry receipt reuse, stale fencing-token rejection, and a 64-thread same-key race.
 
 Run from the repository root:
 
@@ -38,7 +38,7 @@ cargo clippy --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee
 cargo run --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --bin qualification-report
 ```
 
-The acceptance gate is exactly 24/24 expected outcomes, zero unexpected decisions, zero false releases, and zero false blocks against the frozen expectation matrix, plus 3,125 cross-product states with zero false releases and zero false blocks under the independent minimum-evidence oracle. Cargo tests also exercise the Rust sink and retention models; their state is process-local and not durable. CI attests `src/retention_model.rs` alongside the evaluator and sink source. Reports remain `qualification_status=BLOCKED` and `claim_ceiling=none`.
+The acceptance gate is exactly 26/26 expected outcomes, zero unexpected decisions, zero false releases, and zero false blocks against the frozen expectation matrix, plus 4,375 cross-product states with zero false releases and zero false blocks under the independent minimum-evidence oracle. Cargo tests also exercise the Rust sink and retention models; their state is process-local and not durable. CI attests `src/retention_model.rs` alongside the evaluator and sink source. Reports remain `qualification_status=BLOCKED` and `claim_ceiling=none`.
 
 ## Reference sink model (not production)
 
