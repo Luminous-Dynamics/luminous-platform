@@ -11,13 +11,13 @@
 /// adapter is integrated, downstream crates cannot create a value and therefore cannot
 /// advance time through the retention/compaction APIs. Unit tests may create synthetic
 /// values to exercise the state machine; synthetic tokens are not security evidence.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct TrustedEpoch {
     value: u64,
 }
 
 impl TrustedEpoch {
-    pub(crate) fn value(self) -> u64 {
+    pub(crate) fn value(&self) -> u64 {
         self.value
     }
 
@@ -218,19 +218,38 @@ impl DimensionStatus {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+/// Evidence for one evaluation. The private, non-cloneable epoch capability is consumed
+/// by `evaluate`, so the same time observation cannot be replayed through a cloned vector.
+///
+/// No public constructor is provided until a production verifier/anchor adapter can build this
+/// value from real verified evidence.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::AssuranceVector;
+/// let _forged = AssuranceVector {
+///     request_digest: String::new(),
+///     effect_digest: String::new(),
+///     policy_digest: String::new(),
+///     trusted_epoch: todo!(),
+///     fencing_required: false,
+///     authorization: todo!(),
+///     anchor: todo!(),
+///     dispatch: todo!(),
+///     delivery: todo!(),
+///     receipt: todo!(),
+/// };
+/// ```
+#[derive(Debug, Eq, PartialEq)]
 pub struct AssuranceVector {
     pub request_digest: String,
     pub effect_digest: String,
     pub policy_digest: String,
-    /// Opaque epoch from the trusted time adapter; request input cannot construct it.
-    pub trusted_epoch: TrustedEpoch,
+    trusted_epoch: TrustedEpoch,
     pub fencing_required: bool,
     pub authorization: AuthorizationEvidence,
     pub anchor: AnchorEvidence,
     pub dispatch: DispatchEvidence,
     pub delivery: DeliveryContract,
-    pub receipt: ReceiptEvidence,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -392,7 +411,7 @@ fn dispatch_key_matches(key: Option<&str>, contract: &DeliveryContract) -> bool 
     }
 }
 
-pub fn evaluate(vector: &AssuranceVector) -> Assessment {
+pub fn evaluate(vector: AssuranceVector) -> Assessment {
     let authorization = authorization_status(vector);
     let anti_rollback = anchor_status(vector);
     let dispatch = dispatch_status(vector);
@@ -502,6 +521,22 @@ pub fn evaluate(vector: &AssuranceVector) -> Assessment {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[cfg(any(test, feature = "qualification-fixtures"))]
+fn clone_fixture_vector(vector: &AssuranceVector) -> AssuranceVector {
+    AssuranceVector {
+        request_digest: vector.request_digest.clone(),
+        effect_digest: vector.effect_digest.clone(),
+        policy_digest: vector.policy_digest.clone(),
+        trusted_epoch: TrustedEpoch::synthetic_for_tests(vector.trusted_epoch.value()),
+        fencing_required: vector.fencing_required,
+        authorization: vector.authorization.clone(),
+        anchor: vector.anchor.clone(),
+        dispatch: vector.dispatch.clone(),
+        delivery: vector.delivery.clone(),
+        receipt: vector.receipt.clone(),
+    }
+}
+
+#[cfg(any(test, feature = "qualification-fixtures"))]
 pub struct QualificationCase {
     pub name: &'static str,
     pub vector: AssuranceVector,
@@ -556,7 +591,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         });
     };
 
-    add("positive_ready_to_dispatch", base.clone(), Decision::DispatchOnce, true);
+    add("positive_ready_to_dispatch", clone_fixture_vector(&base), Decision::DispatchOnce, true);
 
     let mut atomic_claim = base.clone();
     atomic_claim.dispatch = DispatchEvidence::ClaimAnchored {
@@ -901,7 +936,7 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
                             request_digest: request.clone(),
                             effect_digest: base.effect_digest.clone(),
                             policy_digest: policy.clone(),
-                            trusted_epoch: base.trusted_epoch,
+                            trusted_epoch: TrustedEpoch::synthetic_for_tests(base.trusted_epoch.value()),
                             fencing_required: true,
                             authorization: authorization.clone(),
                             anchor: anchor.clone(),
@@ -909,8 +944,8 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
                             delivery: delivery.clone(),
                             receipt: receipt.clone(),
                         };
-                        let assessment = evaluate(&vector);
                         let expected_action = oracle_allows_effect(&vector);
+                        let assessment = evaluate(vector);
                         summary.combinations_checked += 1;
                         if assessment.action_permitted() {
                             summary.observed_action_permitted_count += 1;
@@ -1055,7 +1090,7 @@ mod tests {
     #[test]
     fn frozen_assurance_vector_matrix_matches_all_expected_decisions() {
         for case in fixture_matrix() {
-            let observed = evaluate(&case.vector);
+            let observed = evaluate(case.vector);
             assert_eq!(
                 observed.decision, case.expected,
                 "unexpected decision for {}: {:?}",
@@ -1077,8 +1112,9 @@ mod tests {
             .find(|case| case.name == "positive_matching_receipt_never_redispatches")
             .expect("positive receipt case");
         case.vector.authorization = AuthorizationEvidence::Missing;
-        assert_eq!(evaluate(&case.vector).decision, Decision::CompletedNoRedispatch);
-        assert!(!evaluate(&case.vector).action_permitted());
+        let assessment = evaluate(case.vector);
+        assert_eq!(assessment.decision, Decision::CompletedNoRedispatch);
+        assert!(!assessment.action_permitted());
     }
 
     #[test]
@@ -1087,7 +1123,7 @@ mod tests {
             .into_iter()
             .find(|case| case.name == "positive_unknown_at_most_once_escalates")
             .expect("at-most-once case");
-        assert_eq!(evaluate(&case.vector).decision, Decision::OperatorRequired);
+        assert_eq!(evaluate(case.vector).decision, Decision::OperatorRequired);
     }
 
     #[test]
@@ -1101,7 +1137,7 @@ mod tests {
                 .into_iter()
                 .find(|case| case.name == name)
                 .expect("unknown-outcome fixture");
-            let observed = evaluate(&case.vector);
+            let observed = evaluate(case.vector);
             assert_eq!(observed.decision, case.expected, "{name}");
             assert_eq!(observed.action_permitted(), case.expected_action_permitted, "{name}");
         }
@@ -1118,14 +1154,14 @@ mod tests {
                 .into_iter()
                 .find(|case| case.name == name)
                 .expect("attack fixture");
-            assert_eq!(evaluate(&case.vector).decision, Decision::Block, "{name}");
+            assert_eq!(evaluate(case.vector).decision, Decision::Block, "{name}");
         }
     }
 
     #[test]
     fn no_side_effect_is_permitted_by_block_or_operator_required() {
         for case in fixture_matrix() {
-            let assessment = evaluate(&case.vector);
+            let assessment = evaluate(case.vector);
             if matches!(assessment.decision, Decision::Block | Decision::OperatorRequired) {
                 assert!(!assessment.action_permitted(), "unsafe permit for {}", case.name);
             }
