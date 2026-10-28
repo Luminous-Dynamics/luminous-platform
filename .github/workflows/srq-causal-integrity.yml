@@ -143,6 +143,7 @@ jobs:
       - name: Format, test, and lint typed guarantee vector
         run: |
           cargo fmt --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --all -- --check
+          cargo check --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml
           cargo test --locked --features qualification-fixtures --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml
           cargo clippy --locked --features qualification-fixtures --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --all-targets -- -D warnings
       - name: Run typed guarantee-vector qualification matrix
