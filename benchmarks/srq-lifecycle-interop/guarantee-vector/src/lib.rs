@@ -250,6 +250,7 @@ pub struct AssuranceVector {
     pub anchor: AnchorEvidence,
     pub dispatch: DispatchEvidence,
     pub delivery: DeliveryContract,
+    pub receipt: ReceiptEvidence,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -593,7 +594,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
 
     add("positive_ready_to_dispatch", clone_fixture_vector(&base), Decision::DispatchOnce, true);
 
-    let mut atomic_claim = base.clone();
+    let mut atomic_claim = clone_fixture_vector(&base);
     atomic_claim.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
         idempotency_key: Some(key.clone()),
@@ -606,7 +607,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         true,
     );
 
-    let mut unknown_atomic = base.clone();
+    let mut unknown_atomic = clone_fixture_vector(&base);
     unknown_atomic.dispatch = DispatchEvidence::OutcomeUnknown {
         request_digest: request.clone(),
         idempotency_key: Some(key.clone()),
@@ -619,7 +620,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         true,
     );
 
-    let mut transaction = base.clone();
+    let mut transaction = clone_fixture_vector(&base);
     transaction.delivery = DeliveryContract::Transactional {
         request_digest: request.clone(),
         transaction_id: txn.clone(),
@@ -633,7 +634,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add("positive_resume_same_transaction", transaction, Decision::ResumeTransaction, true);
 
-    let mut at_most_once = base.clone();
+    let mut at_most_once = clone_fixture_vector(&base);
     at_most_once.delivery = DeliveryContract::AtMostOnce {
         sink_enforces_fencing: true,
     };
@@ -649,7 +650,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         false,
     );
 
-    let mut completed = base.clone();
+    let mut completed = clone_fixture_vector(&base);
     completed.receipt = ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
         request.clone(), effect.clone(), policy.clone(),
     ));
@@ -661,35 +662,35 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         false,
     );
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.authorization = AuthorizationEvidence::Missing;
     add("attack_missing_authorization", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.authorization = AuthorizationEvidence::InvalidSignature;
     add("attack_invalid_signature", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.authorization = AuthorizationEvidence::Verified(VerifiedAuthorization::qualification_fixture(
         request.clone(), policy.clone(), 10, 15,
     ));
     add("attack_expired_verified_authorization", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.authorization = AuthorizationEvidence::Verified(
         VerifiedAuthorization::qualification_fixture(digest(9), policy.clone(), 10, 20),
     );
     add("attack_authorization_request_mismatch", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.anchor = AnchorEvidence::Unavailable;
     add("attack_anchor_unavailable", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.anchor = AnchorEvidence::RollbackDetected;
     add("attack_snapshot_rollback", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.anchor = AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
         5, 6, digest(4), digest(4),
     ));
@@ -703,7 +704,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add("attack_dispatch_key_mismatch", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.delivery = DeliveryContract::AtomicIdempotency {
         request_digest: digest(9),
         idempotency_key: key.clone(),
@@ -713,7 +714,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add("attack_contract_request_mismatch", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.delivery = DeliveryContract::AtomicIdempotency {
         request_digest: request.clone(),
         idempotency_key: key.clone(),
@@ -723,7 +724,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add("attack_nonatomic_effect_and_receipt", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.delivery = DeliveryContract::Unknown;
     add("attack_unknown_delivery_contract", bad, Decision::Block, false);
 
@@ -761,7 +762,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         false,
     );
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.delivery = DeliveryContract::AtomicIdempotency {
         request_digest: request.clone(),
         idempotency_key: key.clone(),
@@ -771,23 +772,23 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add("attack_missing_required_fencing", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.receipt = ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
         request.clone(), digest(8), policy.clone(),
     ));
     add("attack_receipt_wrong_effect_digest", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.receipt = ReceiptEvidence::Invalid;
     add("attack_receipt_invalid_signature", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.receipt = ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
         request.clone(), effect.clone(), digest(8),
     ));
     add("attack_receipt_wrong_policy_digest", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.dispatch = DispatchEvidence::CompletionMarked;
     add(
         "attack_completion_marker_without_receipt",
@@ -1182,7 +1183,7 @@ mod tests {
             .into_iter()
             .find(|case| case.name == "attack_anchor_unavailable")
             .expect("anchor unavailable case");
-        let assessment = evaluate(&case.vector);
+        let assessment = evaluate(case.vector);
         assert_eq!(assessment.authorization, DimensionStatus::Verified);
         assert_eq!(assessment.anti_rollback, DimensionStatus::Unknown);
         assert_eq!(assessment.delivery, DimensionStatus::Verified);
