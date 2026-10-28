@@ -271,6 +271,7 @@ def main() -> int:
             "qualification_status": "BLOCKED",
             "scope": "test-suite-mutation-adequacy-not-production-security",
             "harness_commit_sha": os.environ.get("GITHUB_SHA"),
+            "source_head_sha": os.environ.get("SRQ_MUTATION_PR_HEAD_SHA") or os.environ.get("GITHUB_SHA"),
             **{
                 key: value
                 for key, value in static_report.items()
