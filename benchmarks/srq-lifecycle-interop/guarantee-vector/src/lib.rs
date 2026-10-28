@@ -75,6 +75,7 @@ impl VerifiedAuthorization {
 /// ```compile_fail
 /// use srq_guarantee_vector::VerifiedAnchorCheckpoint;
 /// let _forged = VerifiedAnchorCheckpoint {
+///     observed_at_epoch: 1,
 ///     local_sequence: 1,
 ///     trusted_sequence: 1,
 ///     local_root: String::new(),
@@ -83,6 +84,7 @@ impl VerifiedAuthorization {
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerifiedAnchorCheckpoint {
+    observed_at_epoch: u64,
     local_sequence: u64,
     trusted_sequence: u64,
     local_root: String,
@@ -91,12 +93,19 @@ pub struct VerifiedAnchorCheckpoint {
 impl VerifiedAnchorCheckpoint {
     #[cfg(any(test, feature = "qualification-fixtures"))]
     fn qualification_fixture(
+        observed_at_epoch: u64,
         local_sequence: u64,
         trusted_sequence: u64,
         local_root: String,
         trusted_root: String,
     ) -> Self {
-        Self { local_sequence, trusted_sequence, local_root, trusted_root }
+        Self {
+            observed_at_epoch,
+            local_sequence,
+            trusted_sequence,
+            local_root,
+            trusted_root,
+        }
     }
 }
 
@@ -322,7 +331,8 @@ fn authorization_status(vector: &AssuranceVector) -> DimensionStatus {
 fn anchor_status(vector: &AssuranceVector) -> DimensionStatus {
     match &vector.anchor {
         AnchorEvidence::Checkpoint(proof)
-            if proof.local_sequence == proof.trusted_sequence
+            if proof.observed_at_epoch == vector.trusted_epoch.value()
+                && proof.local_sequence == proof.trusted_sequence
                 && is_lower_hex_digest(&proof.local_root)
                 && proof.local_root == proof.trusted_root =>
         {
@@ -593,7 +603,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
             request.clone(), policy.clone(), 10, 20,
         )),
         anchor: AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
-            5, 5, root.clone(), root,
+            15, 5, 5, root.clone(), root,
         )),
         dispatch: DispatchEvidence::NotClaimed,
         delivery: DeliveryContract::AtomicIdempotency {
@@ -721,9 +731,9 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
 
     let mut bad = clone_fixture_vector(&base);
     bad.anchor = AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
-        5, 6, digest(4), digest(4),
+        14, 5, 5, digest(4), digest(4),
     ));
-    add("attack_checkpoint_sequence_divergence", bad, Decision::Block, false);
+    add("attack_checkpoint_stale_epoch", bad, Decision::Block, false);
 
     let mut bad = atomic_claim.clone();
     bad.dispatch = DispatchEvidence::ClaimAnchored {
@@ -882,7 +892,7 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
         AnchorEvidence::Unavailable,
         AnchorEvidence::RollbackDetected,
         AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
-            5, 6, root.clone(), root.clone(),
+            15, 5, 6, root.clone(), root.clone(),
         )),
         AnchorEvidence::Untrusted,
     ];
@@ -1012,7 +1022,8 @@ fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
     };
     let anchor_ok = match &vector.anchor {
         AnchorEvidence::Checkpoint(proof) => {
-            proof.local_sequence == proof.trusted_sequence
+            proof.observed_at_epoch == vector.trusted_epoch.value()
+                && proof.local_sequence == proof.trusted_sequence
                 && is_lower_hex_digest(&proof.local_root)
                 && proof.local_root == proof.trusted_root
         }
@@ -1207,6 +1218,9 @@ mod tests {
             .find(|case| case.name == "positive_ready_to_dispatch")
             .expect("valid dispatch case");
         valid.vector.trusted_epoch = TrustedEpoch::synthetic_for_tests(10);
+        valid.vector.anchor = AnchorEvidence::Checkpoint(
+            VerifiedAnchorCheckpoint::qualification_fixture(10, 5, 5, digest(4), digest(4)),
+        );
         assert_eq!(authorization_status(&valid.vector), DimensionStatus::Verified);
         assert_eq!(evaluate(valid.vector).decision, Decision::DispatchOnce);
 
