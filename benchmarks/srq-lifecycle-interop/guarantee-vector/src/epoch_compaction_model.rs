@@ -400,7 +400,9 @@ mod tests {
             model.record_key(4, "receipt-003", &digest(3), 10, 20, RecordKind::Receipt),
             Err(EpochError::EpochRetired)
         );
-        assert!(model.record_key(5, "receipt-004", &digest(4), 10, 20, RecordKind::Receipt).is_ok());
+        assert!(model
+            .record_key(5, "receipt-004", &digest(4), 10, 20, RecordKind::Receipt)
+            .is_ok());
     }
 
     #[test]
@@ -505,6 +507,75 @@ mod tests {
             Err(EpochError::KeyAlreadyRecorded)
         );
         assert_eq!(model.retained_record_count(), 1);
+    }
+
+    #[test]
+    fn retention_deadline_is_derived_from_policy_not_caller_input() {
+        let mut model = model();
+        add_old_records(&mut model);
+        let record = model
+            .local
+            .records
+            .get(&(4, "receipt-001".to_string()))
+            .expect("record must be present");
+        // expiry 20 + retry horizon 20 + skew margin 5 = retain until 45.
+        assert_eq!(record.retain_until_epoch, 45);
+    }
+
+    #[test]
+    fn authorization_lifetime_exceeding_policy_is_rejected() {
+        let mut model = model();
+        assert_eq!(
+            model.record_key(
+                4,
+                "long-auth",
+                &digest(1),
+                10,
+                21,
+                RecordKind::Receipt
+            ),
+            Err(EpochError::AuthorizationLifetimeExceeded)
+        );
+        assert_eq!(model.retained_record_count(), 0);
+    }
+
+    #[test]
+    fn invalid_authorization_window_is_rejected() {
+        let mut model = model();
+        assert_eq!(
+            model.record_key(
+                4,
+                "invalid-window",
+                &digest(1),
+                20,
+                20,
+                RecordKind::Receipt
+            ),
+            Err(EpochError::InvalidAuthorizationWindow)
+        );
+        assert_eq!(model.retained_record_count(), 0);
+    }
+
+    #[test]
+    fn retention_horizon_overflow_blocks_compaction_record() {
+        let overflow_policy = RetentionPolicy {
+            max_authorization_lifetime: 10,
+            max_retry_horizon: u64::MAX,
+            epoch_skew_margin: 5,
+        };
+        let mut model = EpochCompactionModel::new(4, true, overflow_policy).unwrap();
+        assert_eq!(
+            model.record_key(
+                4,
+                "overflow",
+                &digest(1),
+                u64::MAX - 5,
+                u64::MAX,
+                RecordKind::Receipt
+            ),
+            Err(EpochError::RetentionHorizonOverflow)
+        );
+        assert_eq!(model.retained_record_count(), 0);
     }
 
     #[test]
