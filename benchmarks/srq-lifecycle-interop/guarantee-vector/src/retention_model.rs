@@ -153,17 +153,26 @@ impl RetentionSink {
         })
     }
 
-    /// Submit a request at a trusted monotonic epoch from an independent authority.
+    /// Record a trusted monotonic epoch observation from an independent adapter.
     ///
-    /// The sink derives the retention horizon; callers cannot ask for a shorter one.
-    /// Once a key's receipt retention has passed, the payload receipt may be compacted,
-    /// but a permanent key tombstone blocks reapplication/reuse. A namespace is the unit
-    /// of idempotency; using the same token in a different scope is independent.
-    pub fn submit(
-        &self,
-        request: &AuthorizedEffect,
-        now_epoch: u64,
-    ) -> Result<SubmitOutcome, RetentionError> {
+    /// Treat this as a trusted-adapter hook, never expose it directly to request callers.
+    /// A later observation may equal or advance the high-water epoch, never regress it.
+    pub fn observe_trusted_epoch(&self, observed_epoch: u64) -> Result<(), RetentionError> {
+        let mut state = self.state.lock().map_err(|_| RetentionError::LockPoisoned)?;
+        if observed_epoch < state.high_water_epoch {
+            return Err(RetentionError::EpochRegression);
+        }
+        state.high_water_epoch = observed_epoch;
+        Ok(())
+    }
+
+    /// Submit using the sink's previously observed trusted monotonic epoch.
+    ///
+    /// The request cannot supply time, and the sink derives its retention horizon from
+    /// policy. Once a key's receipt retention has passed, the payload receipt may be
+    /// compacted, but a permanent tombstone blocks reapplication/reuse. A namespace is
+    /// the unit of idempotency; using the same token in a different scope is independent.
+    pub fn submit(&self, request: &AuthorizedEffect) -> Result<SubmitOutcome, RetentionError> {
         validate_request(request)?;
         let lifetime = request.expires_epoch - request.issued_epoch;
         if lifetime > self.policy.max_authorization_lifetime {
@@ -173,10 +182,7 @@ impl RetentionSink {
             .policy
             .required_retention_until(request.expires_epoch)?;
         let mut state = self.state.lock().map_err(|_| RetentionError::LockPoisoned)?;
-        if now_epoch < state.high_water_epoch {
-            return Err(RetentionError::EpochRegression);
-        }
-        state.high_water_epoch = now_epoch;
+        let now_epoch = state.high_water_epoch;
 
         let key = (request.scope.clone(), request.idempotency_key.clone());
         if let Some(record) = state.keys.get_mut(&key) {
@@ -364,11 +370,20 @@ mod tests {
         RetentionSink::new(policy()).unwrap()
     }
 
+    fn submit_at(
+        sink: &RetentionSink,
+        request: &AuthorizedEffect,
+        trusted_epoch: u64,
+    ) -> Result<SubmitOutcome, RetentionError> {
+        sink.observe_trusted_epoch(trusted_epoch)?;
+        sink.submit(request)
+    }
+
     #[test]
     fn receipt_retention_includes_retry_horizon_and_skew_margin() {
         let sink = sink();
         let request = request("tenant-a:deploy", "op-001", 1, 2, 3, 7);
-        let SubmitOutcome::Applied(receipt) = sink.submit(&request, 12).unwrap() else {
+        let SubmitOutcome::Applied(receipt) = submit_at(&sink, &request, 12).unwrap() else {
             panic!("first request must apply");
         };
         assert_eq!(receipt.retain_until_epoch, 45);
@@ -378,10 +393,10 @@ mod tests {
     fn same_key_retry_returns_receipt_without_reapplying_even_after_auth_expiry() {
         let sink = sink();
         let request = request("tenant-a:deploy", "op-001", 1, 2, 3, 7);
-        let SubmitOutcome::Applied(first) = sink.submit(&request, 12).unwrap() else {
+        let SubmitOutcome::Applied(first) = submit_at(&sink, &request, 12).unwrap() else {
             panic!("first request must apply");
         };
-        let replay = sink.submit(&request, 25).unwrap();
+        let replay = submit_at(&sink, &request, 25).unwrap();
         assert_eq!(replay, SubmitOutcome::ExistingReceipt(first));
         assert_eq!(sink.logical_effect_count().unwrap(), 1);
     }
@@ -391,7 +406,7 @@ mod tests {
         // The request has no retention field; the sink derives the minimum horizon.
         let sink = sink();
         let request = request("tenant-a:deploy", "op-001", 1, 2, 3, 7);
-        let SubmitOutcome::Applied(receipt) = sink.submit(&request, 12).unwrap() else {
+        let SubmitOutcome::Applied(receipt) = submit_at(&sink, &request, 12).unwrap() else {
             panic!("first request must apply");
         };
         assert_eq!(receipt.retain_until_epoch, 45);
@@ -402,14 +417,14 @@ mod tests {
     fn expired_receipt_becomes_tombstone_and_cannot_be_reapplied() {
         let sink = sink();
         let request = request("tenant-a:deploy", "op-001", 1, 2, 3, 7);
-        sink.submit(&request, 12).unwrap();
+        submit_at(&sink, &request, 12).unwrap();
         assert_eq!(
-            sink.submit(&request, 46),
+            submit_at(&sink, &request, 46),
             Err(RetentionError::IdempotencyKeyRetired)
         );
         assert!(sink.is_tombstoned("tenant-a:deploy", "op-001").unwrap());
         assert_eq!(
-            sink.submit(&request, 47),
+            submit_at(&sink, &request, 47),
             Err(RetentionError::IdempotencyKeyRetired)
         );
         assert_eq!(sink.logical_effect_count().unwrap(), 1);
@@ -419,14 +434,14 @@ mod tests {
     fn retired_key_cannot_be_reused_for_different_intent() {
         let sink = sink();
         let original = request("tenant-a:deploy", "op-001", 1, 2, 3, 7);
-        sink.submit(&original, 12).unwrap();
+        submit_at(&sink, &original, 12).unwrap();
         assert_eq!(
-            sink.submit(&original, 46),
+            submit_at(&sink, &original, 46),
             Err(RetentionError::IdempotencyKeyRetired)
         );
         let changed = request("tenant-a:deploy", "op-001", 9, 8, 3, 7);
         assert_eq!(
-            sink.submit(&changed, 47),
+            submit_at(&sink, &changed, 47),
             Err(RetentionError::IdempotencyKeyRetired)
         );
         assert_eq!(sink.logical_effect_count().unwrap(), 1);
@@ -435,9 +450,9 @@ mod tests {
     #[test]
     fn key_conflict_is_rejected_while_receipt_is_retained() {
         let sink = sink();
-        sink.submit(&request("tenant-a:deploy", "op-001", 1, 2, 3, 7), 12).unwrap();
+        submit_at(&sink, &request("tenant-a:deploy", "op-001", 1, 2, 3, 7), 12).unwrap();
         assert_eq!(
-            sink.submit(&request("tenant-a:deploy", "op-001", 9, 2, 3, 7), 13),
+            submit_at(&sink, &request("tenant-a:deploy", "op-001", 9, 2, 3, 7), 13),
             Err(RetentionError::IdempotencyKeyConflict)
         );
         assert_eq!(sink.logical_effect_count().unwrap(), 1);
@@ -447,7 +462,7 @@ mod tests {
     fn first_application_after_expiry_is_rejected() {
         let sink = sink();
         assert_eq!(
-            sink.submit(&request("tenant-a:deploy", "op-new", 1, 2, 3, 7), 20),
+            submit_at(&sink, &request("tenant-a:deploy", "op-new", 1, 2, 3, 7), 20),
             Err(RetentionError::AuthorizationExpired)
         );
         assert_eq!(sink.logical_effect_count().unwrap(), 0);
@@ -459,7 +474,7 @@ mod tests {
         let mut request = request("tenant-a:deploy", "op-long", 1, 2, 3, 7);
         request.expires_epoch = 21;
         assert_eq!(
-            sink.submit(&request, 12),
+            submit_at(&sink, &request, 12),
             Err(RetentionError::AuthorizationLifetimeExceeded)
         );
         assert_eq!(sink.logical_effect_count().unwrap(), 0);
@@ -468,9 +483,11 @@ mod tests {
     #[test]
     fn monotonic_epoch_regression_is_rejected() {
         let sink = sink();
-        sink.submit(&request("tenant-a:deploy", "op-001", 1, 2, 3, 7), 12).unwrap();
+        sink.observe_trusted_epoch(12).unwrap();
+        sink.submit(&request("tenant-a:deploy", "op-001", 1, 2, 3, 7))
+            .unwrap();
         assert_eq!(
-            sink.submit(&request("tenant-a:deploy", "op-002", 4, 5, 3, 7), 11),
+            sink.observe_trusted_epoch(11),
             Err(RetentionError::EpochRegression)
         );
         assert_eq!(sink.high_water_epoch().unwrap(), 12);
@@ -479,9 +496,9 @@ mod tests {
     #[test]
     fn stale_fencing_token_cannot_apply_new_key() {
         let sink = sink();
-        sink.submit(&request("tenant-a:deploy", "op-001", 1, 2, 3, 8), 12).unwrap();
+        submit_at(&sink, &request("tenant-a:deploy", "op-001", 1, 2, 3, 8), 12).unwrap();
         assert_eq!(
-            sink.submit(&request("tenant-a:deploy", "op-002", 4, 5, 3, 7), 13),
+            submit_at(&sink, &request("tenant-a:deploy", "op-002", 4, 5, 3, 7), 13),
             Err(RetentionError::StaleFencingToken)
         );
         assert_eq!(sink.logical_effect_count().unwrap(), 1);
@@ -507,7 +524,7 @@ mod tests {
             workers.push(thread::spawn(move || {
                 let request = request("tenant-a:deploy", "op-race", 1, 2, 3, 7);
                 barrier.wait();
-                sink.submit(&request, 12).unwrap()
+                submit_at(&sink, &request, 12).unwrap()
             }));
         }
         let results: Vec<_> = workers
@@ -527,7 +544,7 @@ mod tests {
         })
         .unwrap();
         let request = request("tenant-a:deploy", "op-overflow", 1, 2, 3, 7);
-        assert_eq!(sink.submit(&request, 12), Err(RetentionError::EpochOverflow));
+        assert_eq!(submit_at(&sink, &request, 12), Err(RetentionError::EpochOverflow));
         assert_eq!(sink.logical_effect_count().unwrap(), 0);
     }
 }
