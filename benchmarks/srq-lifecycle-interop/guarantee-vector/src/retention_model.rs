@@ -9,6 +9,8 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use super::TrustedEpoch;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RetentionPolicy {
     /// Maximum accepted lifetime between signed issue and expiry epochs.
@@ -159,8 +161,9 @@ impl RetentionSink {
     ///
     /// Treat this as a trusted-adapter hook, never expose it directly to request callers.
     /// A later observation may equal or advance the high-water epoch, never regress it.
-    pub fn observe_trusted_epoch(&self, observed_epoch: u64) -> Result<(), RetentionError> {
+    pub fn observe_trusted_epoch(&self, observed: TrustedEpoch) -> Result<(), RetentionError> {
         let mut state = self.state.lock().map_err(|_| RetentionError::LockPoisoned)?;
+        let observed_epoch = observed.value();
         if observed_epoch < state.high_water_epoch {
             return Err(RetentionError::EpochRegression);
         }
@@ -381,7 +384,7 @@ mod tests {
         request: &AuthorizedEffect,
         trusted_epoch: u64,
     ) -> Result<SubmitOutcome, RetentionError> {
-        sink.observe_trusted_epoch(trusted_epoch)?;
+        sink.observe_trusted_epoch(TrustedEpoch::synthetic_for_tests(trusted_epoch))?;
         sink.submit(request)
     }
 
@@ -500,11 +503,11 @@ mod tests {
     #[test]
     fn monotonic_epoch_regression_is_rejected() {
         let sink = sink();
-        sink.observe_trusted_epoch(12).unwrap();
+        sink.observe_trusted_epoch(TrustedEpoch::synthetic_for_tests(12)).unwrap();
         sink.submit(&request("tenant-a:deploy", "op-001", 1, 2, 3, 7))
             .unwrap();
         assert_eq!(
-            sink.observe_trusted_epoch(11),
+            sink.observe_trusted_epoch(TrustedEpoch::synthetic_for_tests(11)),
             Err(RetentionError::EpochRegression)
         );
         assert_eq!(sink.high_water_epoch().unwrap(), 12);
