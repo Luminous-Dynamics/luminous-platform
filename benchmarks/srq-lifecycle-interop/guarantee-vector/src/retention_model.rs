@@ -1,8 +1,8 @@
 //! Reference model for idempotency-key retention and replay-horizon safety.
 //!
-//! This model uses a caller-supplied trusted monotonic epoch. It is deliberately
-//! in-memory and does not prove that a production clock/anchor or receipt store is
-//! durable. Its key lifecycle rule is conservative: after receipt retention expires,
+//! Trusted epoch observations enter through a separate adapter hook; effect submission
+//! itself cannot supply or advance time. This is an in-memory model and does not prove
+//! that a production clock/anchor or receipt store is durable. Its key lifecycle rule is conservative: after receipt retention expires,
 //! keep a tombstone and reject that key forever in this namespace. Purging tombstones
 //! safely requires a separately proven epoch/namespace-rotation protocol.
 
