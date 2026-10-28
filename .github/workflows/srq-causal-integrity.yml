@@ -6,6 +6,7 @@ on:
       - '.github/workflows/srq-causal-integrity.yml'
       - 'benchmarks/srq-lifecycle-interop/causal-integrity/**'
       - 'benchmarks/srq-lifecycle-interop/challenge-ledger-rs/**'
+      - 'benchmarks/srq-lifecycle-interop/anti-rollback-model/**'
       - 'benchmarks/srq-lifecycle-interop/guarantee-vector/**'
   workflow_dispatch:
 
@@ -105,6 +106,40 @@ jobs:
           ).stdout.strip()
           report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
           PY
+      - name: Format, test, and lint anti-rollback checkpoint model
+        run: |
+          cargo fmt --manifest-path benchmarks/srq-lifecycle-interop/anti-rollback-model/Cargo.toml --all -- --check
+          cargo test --locked --manifest-path benchmarks/srq-lifecycle-interop/anti-rollback-model/Cargo.toml
+          cargo clippy --locked --manifest-path benchmarks/srq-lifecycle-interop/anti-rollback-model/Cargo.toml --all-targets -- -D warnings
+      - name: Run anti-rollback attack and positive-control matrix
+        run: |
+          cargo run --locked --manifest-path benchmarks/srq-lifecycle-interop/anti-rollback-model/Cargo.toml --bin rollback-benchmark > "$RUNNER_TEMP/srq-anti-rollback-report.json"
+          python3 - "$RUNNER_TEMP/srq-anti-rollback-report.json" <<'PY'
+          import hashlib, json, os, pathlib, sys
+          report_path = pathlib.Path(sys.argv[1])
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+          root = pathlib.Path.cwd()
+          crate = root / "benchmarks/srq-lifecycle-interop/anti-rollback-model"
+          report["harness_commit_sha"] = os.environ["GITHUB_SHA"]
+          report["source_sha256"] = {
+              name: hashlib.sha256((crate / name).read_bytes()).hexdigest()
+              for name in ("Cargo.toml", "Cargo.lock", "src/lib.rs", "src/bin/rollback-benchmark.rs")
+          }
+          assert report["status"] == "PASS"
+          assert report["qualification_status"] == "BLOCKED"
+          assert report["claim_ceiling"] == "none"
+          assert report["model_scope"] == "abstract_checkpoint_state_machine_only"
+          assert report["expected_case_count"] == report["observed_case_count"] == 12
+          assert report["expected_positive_control_count"] == report["accepted_positive_controls"] == 3
+          assert report["expected_attack_case_count"] == report["rejected_attack_cases"] == 9
+          assert report["false_accept_count"] == 0
+          assert report["false_reject_count"] == 0
+          assert report["unexpected_error_count"] == 0
+          assert report["anchor_backend_count"] == 0
+          assert report["harness_commit_sha"] == os.environ["GITHUB_SHA"]
+          assert all(len(value) == 64 for value in report["source_sha256"].values())
+          report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+          PY
       - name: Format, test, and lint typed guarantee vector
         run: |
           cargo fmt --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --all -- --check
@@ -146,6 +181,7 @@ jobs:
             ${{ runner.temp }}/srq-causal-integrity-report.json
             ${{ runner.temp }}/srq-reference-matrix-report.json
             ${{ runner.temp }}/srq-challenge-replay-report.json
+            ${{ runner.temp }}/srq-anti-rollback-report.json
             ${{ runner.temp }}/srq-guarantee-vector-report.json
           if-no-files-found: error
           retention-days: 30
