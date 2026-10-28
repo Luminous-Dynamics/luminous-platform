@@ -14,8 +14,10 @@ jobs:
   history-oracle:
     runs-on: ubuntu-24.04
     steps:
-      - name: Checkout PR
+      - name: Checkout exact PR source head
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -25,6 +27,7 @@ jobs:
       - name: Check valid retry history and provenance
         env:
           SRQ_HISTORY_ORACLE_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SRQ_HISTORY_ORACLE_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           python3 benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/history_oracle.py benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/fixtures/valid-retry.json --output "$RUNNER_TEMP/srq-history-oracle-positive.json"
           python3 - "$RUNNER_TEMP/srq-history-oracle-positive.json" <<'PY'
@@ -37,7 +40,8 @@ jobs:
           assert report["liveness_observations"]["claim"] == "NOT_EVALUATED"
           assert report["liveness_observations"]["effect_count"] == 1
           assert report["liveness_observations"]["receipt_count"] == 1
-          assert report["harness_commit_sha"] == os.environ["GITHUB_SHA"]
+          assert report["harness_commit_sha"] == os.environ["SRQ_HISTORY_ORACLE_CHECKOUT_SHA"]
+          assert report["workflow_event_sha"] == os.environ["GITHUB_SHA"]
           assert report["source_head_sha"] == os.environ["SRQ_HISTORY_ORACLE_PR_HEAD_SHA"]
           assert set(report["source_sha256"]) == {"history_oracle.py", "test_history_oracle.py", "history-protocol-v1.json"}
           assert all(len(value) == 64 for value in report["source_sha256"].values())
@@ -45,6 +49,7 @@ jobs:
       - name: Confirm duplicate-effect negative control is detected
         env:
           SRQ_HISTORY_ORACLE_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SRQ_HISTORY_ORACLE_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set +e
           python3 benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/history_oracle.py benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/fixtures/duplicate-effect.json --output "$RUNNER_TEMP/srq-history-oracle-negative.json"
@@ -62,7 +67,8 @@ jobs:
           assert report["schema"] == "srq-history-oracle-report-v1"
           assert report["safety_status"] == "FAIL"
           assert "DUPLICATE_LOGICAL_EFFECT" in codes
-          assert report["harness_commit_sha"] == os.environ["GITHUB_SHA"]
+          assert report["harness_commit_sha"] == os.environ["SRQ_HISTORY_ORACLE_CHECKOUT_SHA"]
+          assert report["workflow_event_sha"] == os.environ["GITHUB_SHA"]
           assert report["source_head_sha"] == os.environ["SRQ_HISTORY_ORACLE_PR_HEAD_SHA"]
           PY
       - name: Retain exact-head history reports
