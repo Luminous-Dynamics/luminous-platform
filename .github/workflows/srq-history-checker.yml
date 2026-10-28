@@ -1,0 +1,55 @@
+name: SRQ external history checker
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/srq-history-checker.yml'
+      - 'benchmarks/srq-lifecycle-interop/guarantee-vector/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  history-checker:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate protocol JSON
+        run: python -m json.tool benchmarks/srq-lifecycle-interop/guarantee-vector/history-protocol-v1.json > /dev/null
+      - name: Run adversarial history fixtures
+        run: python -m unittest discover -s benchmarks/srq-lifecycle-interop/guarantee-vector -p 'test_history_checker.py' -v
+      - name: Generate 10,000 valid histories and 10,000 single-fault mutants
+        run: python benchmarks/srq-lifecycle-interop/guarantee-vector/fuzz_history.py
+      - name: Check claim ceiling and benchmark contract
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('benchmarks/srq-lifecycle-interop/guarantee-vector')
+          protocol = json.loads((root / 'history-protocol-v1.json').read_text(encoding='utf-8'))
+          assert protocol['qualification_status'] == 'BLOCKED'
+          assert protocol['claim_ceiling'] == 'none'
+          fixtures = protocol['initial_fixture_acceptance']
+          assert fixtures['positive_fixtures'] == 1
+          assert fixtures['negative_fixtures'] == 10
+          assert fixtures['expected_false_accepts'] == 0
+          assert fixtures['expected_false_rejects'] == 0
+          generated = protocol['generated_smoke_acceptance']
+          assert generated['seed'] == 20261028
+          assert generated['generated_valid_histories'] == 10_000
+          assert generated['generated_single_fault_mutants'] == 10_000
+          assert generated['expected_valid_false_rejects'] == 0
+          assert generated['expected_mutant_survivors'] == 0
+          checker = (root / 'history_checker.py').read_text(encoding='utf-8')
+          assert 'not-full-linearizability' in checker
+          assert 'STALE_OR_WRONG_FENCE' in checker
+          assert 'MULTIPLE_EFFECTS_FOR_KEY' in checker
+          fuzzer = (root / 'fuzz_history.py').read_text(encoding='utf-8')
+          assert 'CASES = 10_000' in fuzzer
+          PY
