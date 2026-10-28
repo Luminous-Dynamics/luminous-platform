@@ -542,7 +542,7 @@ fn clone_fixture_vector(vector: &AssuranceVector) -> AssuranceVector {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[cfg(any(test, feature = "qualification-fixtures"))]
 pub struct QualificationCase {
     pub name: &'static str,
