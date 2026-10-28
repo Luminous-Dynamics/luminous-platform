@@ -5,23 +5,29 @@
 //! Evidence variants named Verified represent results supplied by a trusted adapter.
 //! The crate is a policy/state-machine model, not a production security boundary.
 
-/// Opaque proof token for an epoch supplied by a trusted adapter.
+/// Opaque, non-cloneable proof token for one observation from a trusted epoch adapter.
 ///
-/// This model intentionally has no public constructor. Until a production verifier
-/// adapter is integrated, downstream crates cannot create a value and therefore cannot
-/// advance time through the retention/compaction APIs. Unit tests may create synthetic
-/// values to exercise the state machine; synthetic tokens are not security evidence.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+/// This model intentionally has no public constructor. Until a production verifier/clock
+/// adapter is integrated, downstream crates cannot create a value or manufacture trusted
+/// freshness evidence. Evaluation consumes the containing assurance vector, making an
+/// individual observation one-shot within this API.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::TrustedEpoch;
+/// fn require_clone<T: Clone>() {}
+/// require_clone::<TrustedEpoch>();
+/// ```
+#[derive(Debug, Eq, PartialEq)]
 pub struct TrustedEpoch {
     value: u64,
 }
 
 impl TrustedEpoch {
-    pub(crate) fn value(self) -> u64 {
+    pub(crate) fn value(&self) -> u64 {
         self.value
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "qualification-fixtures"))]
     pub(crate) fn synthetic_for_tests(value: u64) -> Self {
         Self { value }
     }
@@ -31,14 +37,81 @@ pub mod sink_model;
 pub mod retention_model;
 pub mod epoch_compaction_model;
 
+/// Opaque authorization evidence issued only after a trusted verifier validates the
+/// signature, policy binding, and freshness window. Fields and constructor are private;
+/// this research crate intentionally supplies no production verifier adapter.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedAuthorization;
+/// let _forged = VerifiedAuthorization {
+///     request_digest: String::new(),
+///     policy_digest: String::new(),
+///     not_before_epoch: 0,
+///     expires_at_epoch: 10,
+/// };
+/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum AuthorizationEvidence {
-    Verified {
+pub struct VerifiedAuthorization {
+    request_digest: String,
+    policy_digest: String,
+    not_before_epoch: u64,
+    expires_at_epoch: u64,
+}
+impl VerifiedAuthorization {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(
         request_digest: String,
         policy_digest: String,
-        signature_valid: bool,
-        freshness_verified: bool,
-    },
+        not_before_epoch: u64,
+        expires_at_epoch: u64,
+    ) -> Self {
+        Self { request_digest, policy_digest, not_before_epoch, expires_at_epoch }
+    }
+}
+
+/// Opaque checkpoint data returned by an adapter that has authenticated the independent
+/// anchor and established rollback protection and atomic compare-and-advance semantics.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedAnchorCheckpoint;
+/// let _forged = VerifiedAnchorCheckpoint {
+///     observed_at_epoch: 1,
+///     local_sequence: 1,
+///     trusted_sequence: 1,
+///     local_root: String::new(),
+///     trusted_root: String::new(),
+/// };
+/// ```
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedAnchorCheckpoint {
+    observed_at_epoch: u64,
+    local_sequence: u64,
+    trusted_sequence: u64,
+    local_root: String,
+    trusted_root: String,
+}
+impl VerifiedAnchorCheckpoint {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(
+        observed_at_epoch: u64,
+        local_sequence: u64,
+        trusted_sequence: u64,
+        local_root: String,
+        trusted_root: String,
+    ) -> Self {
+        Self {
+            observed_at_epoch,
+            local_sequence,
+            trusted_sequence,
+            local_root,
+            trusted_root,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AuthorizationEvidence {
+    Verified(VerifiedAuthorization),
     Missing,
     InvalidSignature,
     Stale,
@@ -47,15 +120,7 @@ pub enum AuthorizationEvidence {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AnchorEvidence {
-    Checkpoint {
-        local_sequence: u64,
-        trusted_sequence: u64,
-        local_root: String,
-        trusted_root: String,
-        anchor_independent: bool,
-        atomic_compare_and_advance: bool,
-        rollback_protected: bool,
-    },
+    Checkpoint(VerifiedAnchorCheckpoint),
     Unavailable,
     Divergent,
     RollbackDetected,
@@ -78,36 +143,122 @@ pub enum DispatchEvidence {
     CompletionMarked,
 }
 
+/// Sink-issued capability for atomic effect + durable receipt, stable idempotency keys,
+/// and sink-enforced fencing. Private fields prevent self-asserted guarantees.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedAtomicIdempotency;
+/// let _forged = VerifiedAtomicIdempotency {
+///     request_digest: String::new(),
+///     idempotency_key: String::new(),
+///     sink_identity_digest: String::new(),
+/// };
+/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum DeliveryContract {
-    AtomicIdempotency {
+pub struct VerifiedAtomicIdempotency {
+    request_digest: String,
+    idempotency_key: String,
+    sink_identity_digest: String,
+}
+impl VerifiedAtomicIdempotency {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(
         request_digest: String,
         idempotency_key: String,
-        atomic_effect_and_receipt: bool,
-        durable_receipt: bool,
-        sink_enforces_fencing: bool,
-    },
-    Transactional {
+        sink_identity_digest: String,
+    ) -> Self {
+        Self { request_digest, idempotency_key, sink_identity_digest }
+    }
+}
+
+/// Sink-issued capability for resuming the same transaction with effect/receipt atomicity
+/// and fencing semantics verified by the adapter. Construction is private.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedTransactionalDelivery;
+/// let _forged = VerifiedTransactionalDelivery {
+///     request_digest: String::new(),
+///     transaction_id: String::new(),
+///     sink_identity_digest: String::new(),
+/// };
+/// ```
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedTransactionalDelivery {
+    request_digest: String,
+    transaction_id: String,
+    sink_identity_digest: String,
+}
+impl VerifiedTransactionalDelivery {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(
         request_digest: String,
         transaction_id: String,
-        effect_and_receipt_atomic: bool,
-        sink_enforces_fencing: bool,
-    },
-    AtMostOnce {
-        sink_enforces_fencing: bool,
-    },
+        sink_identity_digest: String,
+    ) -> Self {
+        Self { request_digest, transaction_id, sink_identity_digest }
+    }
+}
+
+/// Sink-issued capability proving fenced at-most-once operation on the identified sink.
+/// This replaces caller-supplied enforcement Booleans. Construction is private.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedFencedAtMostOnceDelivery;
+/// let _forged = VerifiedFencedAtMostOnceDelivery {
+///     sink_identity_digest: String::new(),
+/// };
+/// ```
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifiedFencedAtMostOnceDelivery {
+    sink_identity_digest: String,
+}
+impl VerifiedFencedAtMostOnceDelivery {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(sink_identity_digest: String) -> Self {
+        Self { sink_identity_digest }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum DeliveryContract {
+    AtomicIdempotency(VerifiedAtomicIdempotency),
+    Transactional(VerifiedTransactionalDelivery),
+    AtMostOnce(VerifiedFencedAtMostOnceDelivery),
     Unknown,
     Invalid,
 }
 
+/// Opaque receipt evidence returned only after a trusted verifier validates signature and
+/// bindings. A Boolean supplied by a caller is not proof of a verified receipt.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::VerifiedReceipt;
+/// let _forged = VerifiedReceipt {
+///     request_digest: String::new(),
+///     effect_digest: String::new(),
+///     policy_digest: String::new(),
+/// };
+/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ReceiptEvidence {
-    Verified {
+pub struct VerifiedReceipt {
+    request_digest: String,
+    effect_digest: String,
+    policy_digest: String,
+}
+impl VerifiedReceipt {
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(
         request_digest: String,
         effect_digest: String,
         policy_digest: String,
-        signature_valid: bool,
-    },
+    ) -> Self {
+        Self { request_digest, effect_digest, policy_digest }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ReceiptEvidence {
+    Verified(VerifiedReceipt),
     Missing,
     Unknown,
     Invalid,
@@ -163,17 +314,48 @@ impl DimensionStatus {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+/// Evidence for one evaluation. The private, non-cloneable epoch capability is consumed
+/// by `evaluate`, so the same time observation cannot be replayed through a cloned vector.
+///
+/// No public constructor is provided until a production verifier/anchor adapter can build this
+/// value from real verified evidence.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::AssuranceVector;
+/// let _forged = AssuranceVector {
+///     request_digest: String::new(),
+///     effect_digest: String::new(),
+///     policy_digest: String::new(),
+///     trusted_epoch: todo!(),
+///     fencing_required: false,
+///     authorization: todo!(),
+///     anchor: todo!(),
+///     dispatch: todo!(),
+///     delivery: todo!(),
+///     receipt: todo!(),
+/// };
+/// ```
+///
+/// The evaluator consumes vectors so their trusted epoch cannot be replayed by cloning.
+///
+/// ```compile_fail
+/// use srq_guarantee_vector::AssuranceVector;
+/// fn require_clone<T: Clone>() {}
+/// require_clone::<AssuranceVector>();
+/// ```
+#[derive(Debug, Eq, PartialEq)]
 pub struct AssuranceVector {
-    pub request_digest: String,
-    pub effect_digest: String,
-    pub policy_digest: String,
-    pub fencing_required: bool,
-    pub authorization: AuthorizationEvidence,
-    pub anchor: AnchorEvidence,
-    pub dispatch: DispatchEvidence,
-    pub delivery: DeliveryContract,
-    pub receipt: ReceiptEvidence,
+    request_digest: String,
+    effect_digest: String,
+    policy_digest: String,
+    sink_identity_digest: String,
+    trusted_epoch: TrustedEpoch,
+    fencing_required: bool,
+    authorization: AuthorizationEvidence,
+    anchor: AnchorEvidence,
+    dispatch: DispatchEvidence,
+    delivery: DeliveryContract,
+    receipt: ReceiptEvidence,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -202,15 +384,14 @@ pub fn is_lower_hex_digest(value: &str) -> bool {
 
 fn authorization_status(vector: &AssuranceVector) -> DimensionStatus {
     match &vector.authorization {
-        AuthorizationEvidence::Verified {
-            request_digest,
-            policy_digest,
-            signature_valid: true,
-            freshness_verified: true,
-        } if is_lower_hex_digest(request_digest)
-            && request_digest == &vector.request_digest
-            && is_lower_hex_digest(policy_digest)
-            && policy_digest == &vector.policy_digest =>
+        AuthorizationEvidence::Verified(proof)
+            if proof.not_before_epoch < proof.expires_at_epoch
+                && proof.not_before_epoch <= vector.trusted_epoch.value()
+                && vector.trusted_epoch.value() < proof.expires_at_epoch
+                && is_lower_hex_digest(&proof.request_digest)
+                && proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.policy_digest)
+                && proof.policy_digest == vector.policy_digest =>
         {
             DimensionStatus::Verified
         }
@@ -221,17 +402,11 @@ fn authorization_status(vector: &AssuranceVector) -> DimensionStatus {
 
 fn anchor_status(vector: &AssuranceVector) -> DimensionStatus {
     match &vector.anchor {
-        AnchorEvidence::Checkpoint {
-            local_sequence,
-            trusted_sequence,
-            local_root,
-            trusted_root,
-            anchor_independent: true,
-            atomic_compare_and_advance: true,
-            rollback_protected: true,
-        } if local_sequence == trusted_sequence
-            && is_lower_hex_digest(local_root)
-            && local_root == trusted_root =>
+        AnchorEvidence::Checkpoint(proof)
+            if proof.observed_at_epoch == vector.trusted_epoch.value()
+                && proof.local_sequence == proof.trusted_sequence
+                && is_lower_hex_digest(&proof.local_root)
+                && proof.local_root == proof.trusted_root =>
         {
             DimensionStatus::Verified
         }
@@ -242,17 +417,13 @@ fn anchor_status(vector: &AssuranceVector) -> DimensionStatus {
 
 fn receipt_status(vector: &AssuranceVector) -> DimensionStatus {
     match &vector.receipt {
-        ReceiptEvidence::Verified {
-            request_digest,
-            effect_digest,
-            policy_digest,
-            signature_valid: true,
-        } if is_lower_hex_digest(request_digest)
-            && request_digest == &vector.request_digest
-            && is_lower_hex_digest(effect_digest)
-            && effect_digest == &vector.effect_digest
-            && is_lower_hex_digest(policy_digest)
-            && policy_digest == &vector.policy_digest =>
+        ReceiptEvidence::Verified(proof)
+            if is_lower_hex_digest(&proof.request_digest)
+                && proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.effect_digest)
+                && proof.effect_digest == vector.effect_digest
+                && is_lower_hex_digest(&proof.policy_digest)
+                && proof.policy_digest == vector.policy_digest =>
         {
             DimensionStatus::Verified
         }
@@ -263,34 +434,30 @@ fn receipt_status(vector: &AssuranceVector) -> DimensionStatus {
 
 fn delivery_status(vector: &AssuranceVector) -> DimensionStatus {
     match &vector.delivery {
-        DeliveryContract::AtomicIdempotency {
-            request_digest,
-            idempotency_key,
-            atomic_effect_and_receipt: true,
-            durable_receipt: true,
-            sink_enforces_fencing,
-        } if is_lower_hex_digest(request_digest)
-            && request_digest == &vector.request_digest
-            && !idempotency_key.is_empty()
-            && (!vector.fencing_required || *sink_enforces_fencing) =>
+        DeliveryContract::AtomicIdempotency(proof)
+            if proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.request_digest)
+                && !proof.idempotency_key.is_empty()
+                && is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest =>
         {
             DimensionStatus::Verified
         }
-        DeliveryContract::Transactional {
-            request_digest,
-            transaction_id,
-            effect_and_receipt_atomic: true,
-            sink_enforces_fencing,
-        } if is_lower_hex_digest(request_digest)
-            && request_digest == &vector.request_digest
-            && !transaction_id.is_empty()
-            && (!vector.fencing_required || *sink_enforces_fencing) =>
+        DeliveryContract::Transactional(proof)
+            if proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.request_digest)
+                && !proof.transaction_id.is_empty()
+                && is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest =>
         {
             DimensionStatus::Verified
         }
-        DeliveryContract::AtMostOnce {
-            sink_enforces_fencing,
-        } if !vector.fencing_required || *sink_enforces_fencing => DimensionStatus::Verified,
+        DeliveryContract::AtMostOnce(proof)
+            if is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest =>
+        {
+            DimensionStatus::Verified
+        }
         DeliveryContract::Unknown => DimensionStatus::Unknown,
         _ => DimensionStatus::Failed,
     }
@@ -336,23 +503,21 @@ fn dispatch_status(vector: &AssuranceVector) -> DimensionStatus {
 
 fn dispatch_key_matches(key: Option<&str>, contract: &DeliveryContract) -> bool {
     match contract {
-        DeliveryContract::AtomicIdempotency { idempotency_key, .. } => {
-            key == Some(idempotency_key.as_str())
+        DeliveryContract::AtomicIdempotency(proof) => {
+            key == Some(proof.idempotency_key.as_str())
         }
-        DeliveryContract::Transactional { transaction_id, .. } => {
-            key == Some(transaction_id.as_str())
-        }
-        DeliveryContract::AtMostOnce { .. } => key.is_none() || key == Some(""),
+        DeliveryContract::Transactional(proof) => key == Some(proof.transaction_id.as_str()),
+        DeliveryContract::AtMostOnce(_) => key.is_none() || key == Some(""),
         DeliveryContract::Unknown | DeliveryContract::Invalid => false,
     }
 }
 
-pub fn evaluate(vector: &AssuranceVector) -> Assessment {
-    let authorization = authorization_status(vector);
-    let anti_rollback = anchor_status(vector);
-    let dispatch = dispatch_status(vector);
-    let delivery = delivery_status(vector);
-    let receipt = receipt_status(vector);
+pub fn evaluate(vector: AssuranceVector) -> Assessment {
+    let authorization = authorization_status(&vector);
+    let anti_rollback = anchor_status(&vector);
+    let dispatch = dispatch_status(&vector);
+    let delivery = delivery_status(&vector);
+    let receipt = receipt_status(&vector);
 
     let block = |reason| Assessment {
         decision: Decision::Block,
@@ -366,20 +531,13 @@ pub fn evaluate(vector: &AssuranceVector) -> Assessment {
 
     // A cryptographically verified receipt for the exact requested effect proves this
     // operation should not be invoked again, even if current authorization has since expired.
-    if let ReceiptEvidence::Verified {
-        request_digest,
-        effect_digest,
-        policy_digest,
-        signature_valid,
-    } = &vector.receipt
-    {
-        if !*signature_valid
-            || !is_lower_hex_digest(request_digest)
-            || !is_lower_hex_digest(effect_digest)
-            || !is_lower_hex_digest(policy_digest)
-            || request_digest != &vector.request_digest
-            || effect_digest != &vector.effect_digest
-            || policy_digest != &vector.policy_digest
+    if let ReceiptEvidence::Verified(proof) = &vector.receipt {
+        if !is_lower_hex_digest(&proof.request_digest)
+            || !is_lower_hex_digest(&proof.effect_digest)
+            || !is_lower_hex_digest(&proof.policy_digest)
+            || proof.request_digest != vector.request_digest
+            || proof.effect_digest != vector.effect_digest
+            || proof.policy_digest != vector.policy_digest
         {
             return block("receipt is invalid or bound to a different request/effect/policy");
         }
@@ -422,11 +580,11 @@ pub fn evaluate(vector: &AssuranceVector) -> Assessment {
         },
         DispatchEvidence::ClaimAnchored { .. } | DispatchEvidence::OutcomeUnknown { .. } => {
             let decision = match &vector.delivery {
-                DeliveryContract::AtomicIdempotency { .. } => {
+                DeliveryContract::AtomicIdempotency(_) => {
                     Decision::RetrySameIdempotencyKey
                 }
-                DeliveryContract::Transactional { .. } => Decision::ResumeTransaction,
-                DeliveryContract::AtMostOnce { .. } => Decision::OperatorRequired,
+                DeliveryContract::Transactional(_) => Decision::ResumeTransaction,
+                DeliveryContract::AtMostOnce(_) => Decision::OperatorRequired,
                 DeliveryContract::Unknown | DeliveryContract::Invalid => Decision::Block,
             };
             Assessment {
@@ -462,7 +620,25 @@ pub fn evaluate(vector: &AssuranceVector) -> Assessment {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[cfg(any(test, feature = "qualification-fixtures"))]
+fn clone_fixture_vector(vector: &AssuranceVector) -> AssuranceVector {
+    AssuranceVector {
+        request_digest: vector.request_digest.clone(),
+        effect_digest: vector.effect_digest.clone(),
+        policy_digest: vector.policy_digest.clone(),
+        sink_identity_digest: vector.sink_identity_digest.clone(),
+        trusted_epoch: TrustedEpoch::synthetic_for_tests(vector.trusted_epoch.value()),
+        fencing_required: vector.fencing_required,
+        authorization: vector.authorization.clone(),
+        anchor: vector.anchor.clone(),
+        dispatch: vector.dispatch.clone(),
+        delivery: vector.delivery.clone(),
+        receipt: vector.receipt.clone(),
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+#[cfg(any(test, feature = "qualification-fixtures"))]
 pub struct QualificationCase {
     pub name: &'static str,
     pub vector: AssuranceVector,
@@ -470,15 +646,18 @@ pub struct QualificationCase {
     pub expected_action_permitted: bool,
 }
 
+#[cfg(any(test, feature = "qualification-fixtures"))]
 fn digest(byte: u8) -> String {
     format!("{byte:02x}").repeat(32)
 }
 
+#[cfg(any(test, feature = "qualification-fixtures"))]
 pub fn fixture_matrix() -> Vec<QualificationCase> {
     let request = digest(1);
     let effect = digest(2);
     let policy = digest(3);
     let root = digest(4);
+    let sink = digest(5);
     let key = "stable-idempotency-key-001".to_string();
     let txn = "stable-transaction-001".to_string();
 
@@ -486,30 +665,21 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         request_digest: request.clone(),
         effect_digest: effect.clone(),
         policy_digest: policy.clone(),
+        sink_identity_digest: sink.clone(),
+        trusted_epoch: TrustedEpoch::synthetic_for_tests(15),
         fencing_required: true,
-        authorization: AuthorizationEvidence::Verified {
-            request_digest: request.clone(),
-            policy_digest: policy.clone(),
-            signature_valid: true,
-            freshness_verified: true,
-        },
-        anchor: AnchorEvidence::Checkpoint {
-            local_sequence: 5,
-            trusted_sequence: 5,
-            local_root: root.clone(),
-            trusted_root: root,
-            anchor_independent: true,
-            atomic_compare_and_advance: true,
-            rollback_protected: true,
-        },
+        authorization: AuthorizationEvidence::Verified(VerifiedAuthorization::qualification_fixture(
+            request.clone(), policy.clone(), 10, 20,
+        )),
+        anchor: AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
+            15, 5, 5, root.clone(), root,
+        )),
         dispatch: DispatchEvidence::NotClaimed,
-        delivery: DeliveryContract::AtomicIdempotency {
-            request_digest: request.clone(),
-            idempotency_key: key.clone(),
-            atomic_effect_and_receipt: true,
-            durable_receipt: true,
-            sink_enforces_fencing: true,
-        },
+        delivery: DeliveryContract::AtomicIdempotency(
+            VerifiedAtomicIdempotency::qualification_fixture(
+                request.clone(), key.clone(), sink.clone(),
+            ),
+        ),
         receipt: ReceiptEvidence::Missing,
     };
 
@@ -523,9 +693,9 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         });
     };
 
-    add("positive_ready_to_dispatch", base.clone(), Decision::DispatchOnce, true);
+    add("positive_ready_to_dispatch", clone_fixture_vector(&base), Decision::DispatchOnce, true);
 
-    let mut atomic_claim = base.clone();
+    let mut atomic_claim = clone_fixture_vector(&base);
     atomic_claim.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
         idempotency_key: Some(key.clone()),
@@ -533,12 +703,12 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add(
         "positive_atomic_same_key_retry",
-        atomic_claim.clone(),
+        clone_fixture_vector(&atomic_claim),
         Decision::RetrySameIdempotencyKey,
         true,
     );
 
-    let mut unknown_atomic = base.clone();
+    let mut unknown_atomic = clone_fixture_vector(&base);
     unknown_atomic.dispatch = DispatchEvidence::OutcomeUnknown {
         request_digest: request.clone(),
         idempotency_key: Some(key.clone()),
@@ -551,13 +721,12 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         true,
     );
 
-    let mut transaction = base.clone();
-    transaction.delivery = DeliveryContract::Transactional {
-        request_digest: request.clone(),
-        transaction_id: txn.clone(),
-        effect_and_receipt_atomic: true,
-        sink_enforces_fencing: true,
-    };
+    let mut transaction = clone_fixture_vector(&base);
+    transaction.delivery = DeliveryContract::Transactional(
+        VerifiedTransactionalDelivery::qualification_fixture(
+            request.clone(), txn.clone(), sink.clone(),
+        ),
+    );
     transaction.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
         idempotency_key: Some(txn.clone()),
@@ -565,10 +734,10 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add("positive_resume_same_transaction", transaction, Decision::ResumeTransaction, true);
 
-    let mut at_most_once = base.clone();
-    at_most_once.delivery = DeliveryContract::AtMostOnce {
-        sink_enforces_fencing: true,
-    };
+    let mut at_most_once = clone_fixture_vector(&base);
+    at_most_once.delivery = DeliveryContract::AtMostOnce(
+        VerifiedFencedAtMostOnceDelivery::qualification_fixture(sink.clone()),
+    );
     at_most_once.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
         idempotency_key: None,
@@ -581,13 +750,10 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         false,
     );
 
-    let mut completed = base.clone();
-    completed.receipt = ReceiptEvidence::Verified {
-        request_digest: request.clone(),
-        effect_digest: effect.clone(),
-        policy_digest: policy.clone(),
-        signature_valid: true,
-    };
+    let mut completed = clone_fixture_vector(&base);
+    completed.receipt = ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+        request.clone(), effect.clone(), policy.clone(),
+    ));
     completed.authorization = AuthorizationEvidence::Stale;
     add(
         "positive_matching_receipt_never_redispatches",
@@ -596,48 +762,46 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         false,
     );
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.authorization = AuthorizationEvidence::Missing;
     add("attack_missing_authorization", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.authorization = AuthorizationEvidence::InvalidSignature;
     add("attack_invalid_signature", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
-    bad.authorization = AuthorizationEvidence::Stale;
-    add("attack_stale_authorization", bad, Decision::Block, false);
+    let mut bad = clone_fixture_vector(&base);
+    bad.authorization = AuthorizationEvidence::Verified(
+        VerifiedAuthorization::qualification_fixture(
+            request.clone(),
+            policy.clone(),
+            10,
+            15,
+        ),
+    );
+    add("attack_expired_verified_authorization", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
-    bad.authorization = AuthorizationEvidence::Verified {
-        request_digest: digest(9),
-        policy_digest: policy.clone(),
-        signature_valid: true,
-        freshness_verified: true,
-    };
+    let mut bad = clone_fixture_vector(&base);
+    bad.authorization = AuthorizationEvidence::Verified(
+        VerifiedAuthorization::qualification_fixture(digest(9), policy.clone(), 10, 20),
+    );
     add("attack_authorization_request_mismatch", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.anchor = AnchorEvidence::Unavailable;
     add("attack_anchor_unavailable", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.anchor = AnchorEvidence::RollbackDetected;
     add("attack_snapshot_rollback", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
-    bad.anchor = AnchorEvidence::Checkpoint {
-        local_sequence: 5,
-        trusted_sequence: 6,
-        local_root: digest(4),
-        trusted_root: digest(4),
-        anchor_independent: true,
-        atomic_compare_and_advance: true,
-        rollback_protected: true,
-    };
-    add("attack_checkpoint_sequence_divergence", bad, Decision::Block, false);
+    let mut bad = clone_fixture_vector(&base);
+    bad.anchor = AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
+        14, 5, 5, digest(4), digest(4),
+    ));
+    add("attack_checkpoint_stale_epoch", bad, Decision::Block, false);
 
-    let mut bad = atomic_claim.clone();
+    let mut bad = clone_fixture_vector(&atomic_claim);
     bad.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
         idempotency_key: Some("different-key".to_string()),
@@ -645,31 +809,23 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add("attack_dispatch_key_mismatch", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
-    bad.delivery = DeliveryContract::AtomicIdempotency {
-        request_digest: digest(9),
-        idempotency_key: key.clone(),
-        atomic_effect_and_receipt: true,
-        durable_receipt: true,
-        sink_enforces_fencing: true,
-    };
+    let mut bad = clone_fixture_vector(&base);
+    bad.delivery = DeliveryContract::AtomicIdempotency(
+        VerifiedAtomicIdempotency::qualification_fixture(
+            digest(9), key.clone(), sink.clone(),
+        ),
+    );
     add("attack_contract_request_mismatch", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
-    bad.delivery = DeliveryContract::AtomicIdempotency {
-        request_digest: request.clone(),
-        idempotency_key: key.clone(),
-        atomic_effect_and_receipt: false,
-        durable_receipt: true,
-        sink_enforces_fencing: true,
-    };
-    add("attack_nonatomic_effect_and_receipt", bad, Decision::Block, false);
+    let mut bad = clone_fixture_vector(&base);
+    bad.delivery = DeliveryContract::Invalid;
+    add("attack_unverified_atomicity_contract", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.delivery = DeliveryContract::Unknown;
     add("attack_unknown_delivery_contract", bad, Decision::Block, false);
 
-    let mut bad = atomic_claim.clone();
+    let mut bad = clone_fixture_vector(&atomic_claim);
     bad.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
         idempotency_key: Some(key.clone()),
@@ -677,7 +833,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add("attack_dispatch_missing_fencing_token", bad, Decision::Block, false);
 
-    let mut bad = unknown_atomic.clone();
+    let mut bad = clone_fixture_vector(&unknown_atomic);
     bad.dispatch = DispatchEvidence::OutcomeUnknown {
         request_digest: request.clone(),
         idempotency_key: Some(key.clone()),
@@ -690,7 +846,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         false,
     );
 
-    let mut bad = unknown_atomic.clone();
+    let mut bad = clone_fixture_vector(&unknown_atomic);
     bad.dispatch = DispatchEvidence::OutcomeUnknown {
         request_digest: request.clone(),
         idempotency_key: Some("wrong-key".to_string()),
@@ -703,44 +859,31 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         false,
     );
 
-    let mut bad = base.clone();
-    bad.delivery = DeliveryContract::AtomicIdempotency {
-        request_digest: request.clone(),
-        idempotency_key: key.clone(),
-        atomic_effect_and_receipt: true,
-        durable_receipt: true,
-        sink_enforces_fencing: false,
-    };
-    add("attack_missing_required_fencing", bad, Decision::Block, false);
+    let mut bad = clone_fixture_vector(&base);
+    bad.delivery = DeliveryContract::AtomicIdempotency(
+        VerifiedAtomicIdempotency::qualification_fixture(
+            request.clone(), key.clone(), digest(6),
+        ),
+    );
+    add("attack_delivery_capability_wrong_sink", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
-    bad.receipt = ReceiptEvidence::Verified {
-        request_digest: request.clone(),
-        effect_digest: digest(8),
-        policy_digest: policy.clone(),
-        signature_valid: true,
-    };
+    let mut bad = clone_fixture_vector(&base);
+    bad.receipt = ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+        request.clone(), digest(8), policy.clone(),
+    ));
     add("attack_receipt_wrong_effect_digest", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
-    bad.receipt = ReceiptEvidence::Verified {
-        request_digest: request.clone(),
-        effect_digest: effect.clone(),
-        policy_digest: policy.clone(),
-        signature_valid: false,
-    };
+    let mut bad = clone_fixture_vector(&base);
+    bad.receipt = ReceiptEvidence::Invalid;
     add("attack_receipt_invalid_signature", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
-    bad.receipt = ReceiptEvidence::Verified {
-        request_digest: request.clone(),
-        effect_digest: effect.clone(),
-        policy_digest: digest(8),
-        signature_valid: true,
-    };
+    let mut bad = clone_fixture_vector(&base);
+    bad.receipt = ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+        request.clone(), effect.clone(), digest(8),
+    ));
     add("attack_receipt_wrong_policy_digest", bad, Decision::Block, false);
 
-    let mut bad = base.clone();
+    let mut bad = clone_fixture_vector(&base);
     bad.dispatch = DispatchEvidence::CompletionMarked;
     add(
         "attack_completion_marker_without_receipt",
@@ -758,6 +901,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
 
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[cfg(any(test, feature = "qualification-fixtures"))]
 pub struct ExhaustiveSummary {
     pub combinations_checked: usize,
     pub false_release_count: usize,
@@ -768,6 +912,7 @@ pub struct ExhaustiveSummary {
 /// Bounded cross-product over five evidence dimensions. The expectation oracle is deliberately
 /// separate from evaluate(): it states the minimum evidence necessary to permit an effect.
 /// This is finite adversarial exploration, not a proof over all possible traces.
+#[cfg(any(test, feature = "qualification-fixtures"))]
 pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
     let base = fixture_matrix()
         .into_iter()
@@ -778,21 +923,19 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
     let effect = base.effect_digest.clone();
     let policy = base.policy_digest.clone();
     let root = match &base.anchor {
-        AnchorEvidence::Checkpoint { local_root, .. } => local_root.clone(),
+        AnchorEvidence::Checkpoint(proof) => proof.local_root.clone(),
         _ => unreachable!("base fixture has a checkpoint"),
     };
     let key = match &base.delivery {
-        DeliveryContract::AtomicIdempotency { idempotency_key, .. } => idempotency_key.clone(),
+        DeliveryContract::AtomicIdempotency(proof) => proof.idempotency_key.clone(),
         _ => unreachable!("base fixture has atomic idempotency"),
     };
+    let sink = base.sink_identity_digest.clone();
     let txn = "stable-transaction-001".to_string();
 
-    let wrong_authorization = AuthorizationEvidence::Verified {
-        request_digest: digest(9),
-        policy_digest: policy.clone(),
-        signature_valid: true,
-        freshness_verified: true,
-    };
+    let wrong_authorization = AuthorizationEvidence::Verified(
+        VerifiedAuthorization::qualification_fixture(digest(9), policy.clone(), 10, 20),
+    );
     let authorizations = vec![
         base.authorization.clone(),
         AuthorizationEvidence::Missing,
@@ -805,15 +948,9 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
         base.anchor.clone(),
         AnchorEvidence::Unavailable,
         AnchorEvidence::RollbackDetected,
-        AnchorEvidence::Checkpoint {
-            local_sequence: 5,
-            trusted_sequence: 6,
-            local_root: root.clone(),
-            trusted_root: root.clone(),
-            anchor_independent: true,
-            atomic_compare_and_advance: true,
-            rollback_protected: true,
-        },
+        AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
+            15, 5, 6, root.clone(), root.clone(),
+        )),
         AnchorEvidence::Untrusted,
     ];
 
@@ -853,46 +990,30 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
 
     let deliveries = vec![
         base.delivery.clone(),
-        DeliveryContract::Transactional {
-            request_digest: request.clone(),
-            transaction_id: txn,
-            effect_and_receipt_atomic: true,
-            sink_enforces_fencing: true,
-        },
-        DeliveryContract::AtMostOnce {
-            sink_enforces_fencing: true,
-        },
+        DeliveryContract::Transactional(VerifiedTransactionalDelivery::qualification_fixture(
+            request.clone(), txn, sink.clone(),
+        )),
+        DeliveryContract::AtMostOnce(VerifiedFencedAtMostOnceDelivery::qualification_fixture(
+            sink.clone(),
+        )),
         DeliveryContract::Unknown,
-        DeliveryContract::AtomicIdempotency {
-            request_digest: request.clone(),
-            idempotency_key: key,
-            atomic_effect_and_receipt: false,
-            durable_receipt: true,
-            sink_enforces_fencing: true,
-        },
+        DeliveryContract::AtomicIdempotency(VerifiedAtomicIdempotency::qualification_fixture(
+            request.clone(), key, sink,
+        )),
     ];
 
     let receipts = vec![
         ReceiptEvidence::Missing,
         ReceiptEvidence::Unknown,
-        ReceiptEvidence::Verified {
-            request_digest: request.clone(),
-            effect_digest: effect.clone(),
-            policy_digest: policy.clone(),
-            signature_valid: true,
-        },
-        ReceiptEvidence::Verified {
-            request_digest: request.clone(),
-            effect_digest: digest(8),
-            policy_digest: policy.clone(),
-            signature_valid: true,
-        },
-        ReceiptEvidence::Verified {
-            request_digest: request.clone(),
-            effect_digest: effect,
-            policy_digest: digest(8),
-            signature_valid: true,
-        },
+        ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+            request.clone(), effect.clone(), policy.clone(),
+        )),
+        ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+            request.clone(), digest(8), policy.clone(),
+        )),
+        ReceiptEvidence::Verified(VerifiedReceipt::qualification_fixture(
+            request.clone(), effect, digest(8),
+        )),
     ];
 
     let mut summary = ExhaustiveSummary::default();
@@ -905,6 +1026,10 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
                             request_digest: request.clone(),
                             effect_digest: base.effect_digest.clone(),
                             policy_digest: policy.clone(),
+                            sink_identity_digest: sink.clone(),
+                            trusted_epoch: TrustedEpoch::synthetic_for_tests(
+                                base.trusted_epoch.value(),
+                            ),
                             fencing_required: true,
                             authorization: authorization.clone(),
                             anchor: anchor.clone(),
@@ -912,8 +1037,8 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
                             delivery: delivery.clone(),
                             receipt: receipt.clone(),
                         };
-                        let assessment = evaluate(&vector);
                         let expected_action = oracle_allows_effect(&vector);
+                        let assessment = evaluate(vector);
                         summary.combinations_checked += 1;
                         if assessment.action_permitted() {
                             summary.observed_action_permitted_count += 1;
@@ -932,71 +1057,47 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
     summary
 }
 
+#[cfg(any(test, feature = "qualification-fixtures"))]
 fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
     let authorization_ok = match &vector.authorization {
-        AuthorizationEvidence::Verified {
-            request_digest,
-            policy_digest,
-            signature_valid,
-            freshness_verified,
-        } => {
-            *signature_valid
-                && *freshness_verified
-                && is_lower_hex_digest(request_digest)
-                && request_digest == &vector.request_digest
-                && is_lower_hex_digest(policy_digest)
-                && policy_digest == &vector.policy_digest
+        AuthorizationEvidence::Verified(proof) => {
+            proof.not_before_epoch < proof.expires_at_epoch
+                && proof.not_before_epoch <= vector.trusted_epoch.value()
+                && vector.trusted_epoch.value() < proof.expires_at_epoch
+                && is_lower_hex_digest(&proof.request_digest)
+                && proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.policy_digest)
+                && proof.policy_digest == vector.policy_digest
         }
         _ => false,
     };
     let anchor_ok = match &vector.anchor {
-        AnchorEvidence::Checkpoint {
-            local_sequence,
-            trusted_sequence,
-            local_root,
-            trusted_root,
-            anchor_independent,
-            atomic_compare_and_advance,
-            rollback_protected,
-        } => {
-            *local_sequence == *trusted_sequence
-                && is_lower_hex_digest(local_root)
-                && local_root == trusted_root
-                && *anchor_independent
-                && *atomic_compare_and_advance
-                && *rollback_protected
+        AnchorEvidence::Checkpoint(proof) => {
+            proof.observed_at_epoch == vector.trusted_epoch.value()
+                && proof.local_sequence == proof.trusted_sequence
+                && is_lower_hex_digest(&proof.local_root)
+                && proof.local_root == proof.trusted_root
         }
         _ => false,
     };
     let delivery_ok = match &vector.delivery {
-        DeliveryContract::AtomicIdempotency {
-            request_digest,
-            idempotency_key,
-            atomic_effect_and_receipt,
-            durable_receipt,
-            sink_enforces_fencing,
-        } => {
-            request_digest == &vector.request_digest
-                && is_lower_hex_digest(request_digest)
-                && !idempotency_key.is_empty()
-                && *atomic_effect_and_receipt
-                && *durable_receipt
-                && (!vector.fencing_required || *sink_enforces_fencing)
+        DeliveryContract::AtomicIdempotency(proof) => {
+            proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.request_digest)
+                && !proof.idempotency_key.is_empty()
+                && is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest
         }
-        DeliveryContract::Transactional {
-            request_digest,
-            transaction_id,
-            effect_and_receipt_atomic,
-            sink_enforces_fencing,
-        } => {
-            request_digest == &vector.request_digest
-                && is_lower_hex_digest(request_digest)
-                && !transaction_id.is_empty()
-                && *effect_and_receipt_atomic
-                && (!vector.fencing_required || *sink_enforces_fencing)
+        DeliveryContract::Transactional(proof) => {
+            proof.request_digest == vector.request_digest
+                && is_lower_hex_digest(&proof.request_digest)
+                && !proof.transaction_id.is_empty()
+                && is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest
         }
-        DeliveryContract::AtMostOnce { sink_enforces_fencing } => {
-            !vector.fencing_required || *sink_enforces_fencing
+        DeliveryContract::AtMostOnce(proof) => {
+            is_lower_hex_digest(&proof.sink_identity_digest)
+                && proof.sink_identity_digest == vector.sink_identity_digest
         }
         DeliveryContract::Unknown | DeliveryContract::Invalid => false,
     };
@@ -1020,14 +1121,13 @@ fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
                 false
             } else {
                 match contract {
-                    DeliveryContract::AtomicIdempotency {
-                        idempotency_key: expected_key,
-                        ..
-                    } => idempotency_key.as_deref() == Some(expected_key.as_str()),
-                    DeliveryContract::Transactional {
-                        transaction_id, ..
-                    } => idempotency_key.as_deref() == Some(transaction_id.as_str()),
-                    DeliveryContract::AtMostOnce { .. } => {
+                    DeliveryContract::AtomicIdempotency(proof) => {
+                        idempotency_key.as_deref() == Some(proof.idempotency_key.as_str())
+                    }
+                    DeliveryContract::Transactional(proof) => {
+                        idempotency_key.as_deref() == Some(proof.transaction_id.as_str())
+                    }
+                    DeliveryContract::AtMostOnce(_) => {
                         idempotency_key.as_deref().is_none_or(str::is_empty)
                     }
                     DeliveryContract::Unknown | DeliveryContract::Invalid => false,
@@ -1048,13 +1148,13 @@ fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
                 false
             } else {
                 match contract {
-                    DeliveryContract::AtomicIdempotency { idempotency_key: expected, .. } => {
-                        idempotency_key.as_deref() == Some(expected.as_str())
+                    DeliveryContract::AtomicIdempotency(proof) => {
+                        idempotency_key.as_deref() == Some(proof.idempotency_key.as_str())
                     }
-                    DeliveryContract::Transactional { transaction_id, .. } => {
-                        idempotency_key.as_deref() == Some(transaction_id.as_str())
+                    DeliveryContract::Transactional(proof) => {
+                        idempotency_key.as_deref() == Some(proof.transaction_id.as_str())
                     }
-                    DeliveryContract::AtMostOnce { .. }
+                    DeliveryContract::AtMostOnce(_)
                     | DeliveryContract::Unknown
                     | DeliveryContract::Invalid => false,
                 }
@@ -1072,7 +1172,7 @@ mod tests {
     #[test]
     fn frozen_assurance_vector_matrix_matches_all_expected_decisions() {
         for case in fixture_matrix() {
-            let observed = evaluate(&case.vector);
+            let observed = evaluate(case.vector);
             assert_eq!(
                 observed.decision, case.expected,
                 "unexpected decision for {}: {:?}",
@@ -1094,8 +1194,9 @@ mod tests {
             .find(|case| case.name == "positive_matching_receipt_never_redispatches")
             .expect("positive receipt case");
         case.vector.authorization = AuthorizationEvidence::Missing;
-        assert_eq!(evaluate(&case.vector).decision, Decision::CompletedNoRedispatch);
-        assert!(!evaluate(&case.vector).action_permitted());
+        let assessment = evaluate(case.vector);
+        assert_eq!(assessment.decision, Decision::CompletedNoRedispatch);
+        assert!(!assessment.action_permitted());
     }
 
     #[test]
@@ -1104,7 +1205,7 @@ mod tests {
             .into_iter()
             .find(|case| case.name == "positive_unknown_at_most_once_escalates")
             .expect("at-most-once case");
-        assert_eq!(evaluate(&case.vector).decision, Decision::OperatorRequired);
+        assert_eq!(evaluate(case.vector).decision, Decision::OperatorRequired);
     }
 
     #[test]
@@ -1118,7 +1219,7 @@ mod tests {
                 .into_iter()
                 .find(|case| case.name == name)
                 .expect("unknown-outcome fixture");
-            let observed = evaluate(&case.vector);
+            let observed = evaluate(case.vector);
             assert_eq!(observed.decision, case.expected, "{name}");
             assert_eq!(observed.action_permitted(), case.expected_action_permitted, "{name}");
         }
@@ -1135,18 +1236,49 @@ mod tests {
                 .into_iter()
                 .find(|case| case.name == name)
                 .expect("attack fixture");
-            assert_eq!(evaluate(&case.vector).decision, Decision::Block, "{name}");
+            assert_eq!(evaluate(case.vector).decision, Decision::Block, "{name}");
         }
     }
 
     #[test]
     fn no_side_effect_is_permitted_by_block_or_operator_required() {
         for case in fixture_matrix() {
-            let assessment = evaluate(&case.vector);
+            let assessment = evaluate(case.vector);
             if matches!(assessment.decision, Decision::Block | Decision::OperatorRequired) {
                 assert!(!assessment.action_permitted(), "unsafe permit for {}", case.name);
             }
         }
+    }
+
+    #[test]
+    fn authorization_window_is_inclusive_at_start_and_exclusive_at_expiry() {
+        let mut valid = fixture_matrix()
+            .into_iter()
+            .find(|case| case.name == "positive_ready_to_dispatch")
+            .expect("valid dispatch case");
+        valid.vector.trusted_epoch = TrustedEpoch::synthetic_for_tests(10);
+        valid.vector.anchor = AnchorEvidence::Checkpoint(
+            VerifiedAnchorCheckpoint::qualification_fixture(10, 5, 5, digest(4), digest(4)),
+        );
+        assert_eq!(authorization_status(&valid.vector), DimensionStatus::Verified);
+        assert_eq!(evaluate(valid.vector).decision, Decision::DispatchOnce);
+
+        let expired = fixture_matrix()
+            .into_iter()
+            .find(|case| case.name == "attack_expired_verified_authorization")
+            .expect("expired authorization case");
+        assert_eq!(authorization_status(&expired.vector), DimensionStatus::Failed);
+        assert_eq!(evaluate(expired.vector).decision, Decision::Block);
+    }
+
+    #[test]
+    fn stale_anchor_checkpoint_cannot_be_replayed_at_a_newer_epoch() {
+        let case = fixture_matrix()
+            .into_iter()
+            .find(|case| case.name == "attack_checkpoint_stale_epoch")
+            .expect("stale anchor checkpoint case");
+        assert_eq!(anchor_status(&case.vector), DimensionStatus::Failed);
+        assert_eq!(evaluate(case.vector).decision, Decision::Block);
     }
 
     #[test]
@@ -1163,7 +1295,7 @@ mod tests {
             .into_iter()
             .find(|case| case.name == "attack_anchor_unavailable")
             .expect("anchor unavailable case");
-        let assessment = evaluate(&case.vector);
+        let assessment = evaluate(case.vector);
         assert_eq!(assessment.authorization, DimensionStatus::Verified);
         assert_eq!(assessment.anti_rollback, DimensionStatus::Unknown);
         assert_eq!(assessment.delivery, DimensionStatus::Verified);

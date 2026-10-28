@@ -143,11 +143,12 @@ jobs:
       - name: Format, test, and lint typed guarantee vector
         run: |
           cargo fmt --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --all -- --check
-          cargo test --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml
-          cargo clippy --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --all-targets -- -D warnings
+          cargo check --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml
+          cargo test --locked --features qualification-fixtures --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml
+          cargo clippy --locked --features qualification-fixtures --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --all-targets -- -D warnings
       - name: Run typed guarantee-vector qualification matrix
         run: |
-          cargo run --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --bin qualification-report > "$RUNNER_TEMP/srq-guarantee-vector-report.json"
+          cargo run --locked --features qualification-fixtures --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --bin qualification-report > "$RUNNER_TEMP/srq-guarantee-vector-report.json"
           python3 - "$RUNNER_TEMP/srq-guarantee-vector-report.json" <<'PY'
           import hashlib, json, os, pathlib, sys
           report_path = pathlib.Path(sys.argv[1])

@@ -6,9 +6,13 @@ rust-version = "1.82"
 license = "MIT"
 description = "Fail-closed assurance-vector evaluator for privileged lifecycle recovery"
 
+[features]
+qualification-fixtures = []
+
 [lib]
 path = "src/lib.rs"
 
 [[bin]]
 name = "qualification-report"
 path = "src/bin/qualification-report.rs"
+required-features = ["qualification-fixtures"]
