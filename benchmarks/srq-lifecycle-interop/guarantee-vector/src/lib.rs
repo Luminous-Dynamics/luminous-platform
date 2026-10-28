@@ -703,7 +703,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add(
         "positive_atomic_same_key_retry",
-        atomic_claim.clone(),
+        clone_fixture_vector(&atomic_claim),
         Decision::RetrySameIdempotencyKey,
         true,
     );
@@ -801,7 +801,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     ));
     add("attack_checkpoint_stale_epoch", bad, Decision::Block, false);
 
-    let mut bad = atomic_claim.clone();
+    let mut bad = clone_fixture_vector(&atomic_claim);
     bad.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
         idempotency_key: Some("different-key".to_string()),
@@ -825,7 +825,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     bad.delivery = DeliveryContract::Unknown;
     add("attack_unknown_delivery_contract", bad, Decision::Block, false);
 
-    let mut bad = atomic_claim.clone();
+    let mut bad = clone_fixture_vector(&atomic_claim);
     bad.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
         idempotency_key: Some(key.clone()),
@@ -833,7 +833,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     };
     add("attack_dispatch_missing_fencing_token", bad, Decision::Block, false);
 
-    let mut bad = unknown_atomic.clone();
+    let mut bad = clone_fixture_vector(&unknown_atomic);
     bad.dispatch = DispatchEvidence::OutcomeUnknown {
         request_digest: request.clone(),
         idempotency_key: Some(key.clone()),
@@ -846,7 +846,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         false,
     );
 
-    let mut bad = unknown_atomic.clone();
+    let mut bad = clone_fixture_vector(&unknown_atomic);
     bad.dispatch = DispatchEvidence::OutcomeUnknown {
         request_digest: request.clone(),
         idempotency_key: Some("wrong-key".to_string()),
