@@ -20,7 +20,7 @@ It then produces a constrained recovery disposition. The overall release claim n
 - `RETRY_SAME_IDEMPOTENCY_KEY`: allowed only when the same request digest is bound to a stable key and the sink contract says the effect and durable receipt are committed atomically. If fencing is required, the sink must enforce it.
 - `RESUME_TRANSACTION`: continue within the same transaction identity and domain where effect and receipt are atomic; do not create a new transaction.
 - `OPERATOR_REQUIRED`: an at-most-once operation may have run but has no authoritative receipt, or a completion marker lacks the receipt. The model does not guess and does not redispatch.
-- `COMPLETED_NO_REDISPATCH`: a signature-valid receipt matches both the exact request and effect digest. Even an expired current authorization does not justify executing the completed operation again.
+- `COMPLETED_NO_REDISPATCH`: a signature-valid receipt matches the exact request, effect, and policy digests. Even an expired current authorization does not justify executing the completed operation again.
 - `BLOCK`: authorization, anchor, request binding, receipt, delivery contract, or required fencing is invalid, unknown, or inconsistent.
 
 The request digest, effect digest, and policy digest are separate: request identity includes the command intent; effect identity represents the expected applied effect; the policy digest records the authorizing policy version. A verified receipt must bind all three.
