@@ -192,6 +192,11 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def sha256_canonical_json(value: Any) -> str:
+    canonical = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def load_and_validate_manifest(root: Path) -> dict[str, Any]:
     manifest_path = root / "trace-mutation-protocol-v1.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -271,6 +276,8 @@ def run_corpus(root: Path) -> dict[str, Any]:
                 "status": status,
                 "observed_codes": codes,
                 "observed_invariants": invariant_ids,
+                "mutated_history_sha256": sha256_canonical_json(history),
+                "mutated_history": history,
             })
         except (InvalidHistory, KeyError, IndexError, TypeError, ValueError) as exc:
             results.append({
@@ -279,6 +286,8 @@ def run_corpus(root: Path) -> dict[str, Any]:
                 "expected_invariant": mutation.expected_invariant,
                 "status": "INVALID_MUTATION",
                 "error": str(exc),
+                "mutated_history_sha256": sha256_canonical_json(history),
+                "mutated_history": history,
             })
 
     detected = sum(item["status"] == "DETECTED" for item in results)
