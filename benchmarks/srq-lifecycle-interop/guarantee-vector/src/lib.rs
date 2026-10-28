@@ -654,6 +654,251 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     cases
 }
 
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct ExhaustiveSummary {
+    pub combinations_checked: usize,
+    pub false_release_count: usize,
+    pub false_block_count: usize,
+    pub observed_action_permitted_count: usize,
+}
+
+/// Bounded cross-product over five evidence dimensions. The expectation oracle is deliberately
+/// separate from evaluate(): it states the minimum evidence necessary to permit an effect.
+/// This is finite adversarial exploration, not a proof over all possible traces.
+pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
+    let base = fixture_matrix()[0].vector;
+    let request = base.request_digest.clone();
+    let effect = base.effect_digest.clone();
+    let policy = base.policy_digest.clone();
+    let root = match &base.anchor {
+        AnchorEvidence::Checkpoint { local_root, .. } => local_root.clone(),
+        _ => unreachable!("base fixture has a checkpoint"),
+    };
+    let key = match &base.delivery {
+        DeliveryContract::AtomicIdempotency { idempotency_key, .. } => idempotency_key.clone(),
+        _ => unreachable!("base fixture has atomic idempotency"),
+    };
+    let txn = "stable-transaction-001".to_string();
+
+    let mut wrong_authorization = base.authorization.clone();
+    wrong_authorization = AuthorizationEvidence::Verified {
+        request_digest: digest(9),
+        policy_digest: policy.clone(),
+        signature_valid: true,
+        freshness_verified: true,
+    };
+    let authorizations = vec![
+        base.authorization.clone(),
+        AuthorizationEvidence::Missing,
+        AuthorizationEvidence::InvalidSignature,
+        AuthorizationEvidence::Stale,
+        wrong_authorization,
+    ];
+
+    let anchors = vec![
+        base.anchor.clone(),
+        AnchorEvidence::Unavailable,
+        AnchorEvidence::RollbackDetected,
+        AnchorEvidence::Checkpoint {
+            local_sequence: 5,
+            trusted_sequence: 6,
+            local_root: root.clone(),
+            trusted_root: root.clone(),
+            anchor_independent: true,
+            atomic_compare_and_advance: true,
+            rollback_protected: true,
+        },
+        AnchorEvidence::Untrusted,
+    ];
+
+    let dispatches = vec![
+        DispatchEvidence::NotClaimed,
+        DispatchEvidence::ClaimAnchored {
+            request_digest: request.clone(),
+            idempotency_key: Some(key.clone()),
+            fencing_token: Some(8),
+        },
+        DispatchEvidence::ClaimAnchored {
+            request_digest: digest(9),
+            idempotency_key: Some(key.clone()),
+            fencing_token: Some(8),
+        },
+        DispatchEvidence::OutcomeUnknown,
+    ];
+
+    let deliveries = vec![
+        base.delivery.clone(),
+        DeliveryContract::Transactional {
+            request_digest: request.clone(),
+            transaction_id: txn,
+            effect_and_receipt_atomic: true,
+            sink_enforces_fencing: true,
+        },
+        DeliveryContract::AtMostOnce {
+            sink_enforces_fencing: true,
+        },
+        DeliveryContract::Unknown,
+        DeliveryContract::AtomicIdempotency {
+            request_digest: request.clone(),
+            idempotency_key: key,
+            atomic_effect_and_receipt: false,
+            durable_receipt: true,
+            sink_enforces_fencing: true,
+        },
+    ];
+
+    let receipts = vec![
+        ReceiptEvidence::Missing,
+        ReceiptEvidence::Unknown,
+        ReceiptEvidence::Verified {
+            request_digest: request.clone(),
+            effect_digest: effect,
+            signature_valid: true,
+        },
+        ReceiptEvidence::Verified {
+            request_digest: request.clone(),
+            effect_digest: digest(8),
+            signature_valid: true,
+        },
+    ];
+
+    let mut summary = ExhaustiveSummary::default();
+    for authorization in &authorizations {
+        for anchor in &anchors {
+            for dispatch in &dispatches {
+                for delivery in &deliveries {
+                    for receipt in &receipts {
+                        let vector = AssuranceVector {
+                            request_digest: request.clone(),
+                            effect_digest: base.effect_digest.clone(),
+                            policy_digest: policy.clone(),
+                            fencing_required: true,
+                            authorization: authorization.clone(),
+                            anchor: anchor.clone(),
+                            dispatch: dispatch.clone(),
+                            delivery: delivery.clone(),
+                            receipt: receipt.clone(),
+                        };
+                        let assessment = evaluate(&vector);
+                        let expected_action = oracle_allows_effect(&vector);
+                        summary.combinations_checked += 1;
+                        summary.observed_action_permitted_count +=
+                            usize::from(assessment.action_permitted());
+                        if assessment.action_permitted() && !expected_action {
+                            summary.false_release_count += 1;
+                        }
+                        if expected_action && !assessment.action_permitted() {
+                            summary.false_block_count += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    summary
+}
+
+fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
+    let authorization_ok = match &vector.authorization {
+        AuthorizationEvidence::Verified {
+            request_digest,
+            policy_digest,
+            signature_valid,
+            freshness_verified,
+        } => {
+            *signature_valid
+                && *freshness_verified
+                && is_lower_hex_digest(request_digest)
+                && request_digest == &vector.request_digest
+                && is_lower_hex_digest(policy_digest)
+                && policy_digest == &vector.policy_digest
+        }
+        _ => false,
+    };
+    let anchor_ok = match &vector.anchor {
+        AnchorEvidence::Checkpoint {
+            local_sequence,
+            trusted_sequence,
+            local_root,
+            trusted_root,
+            anchor_independent,
+            atomic_compare_and_advance,
+            rollback_protected,
+        } => {
+            *local_sequence == *trusted_sequence
+                && is_lower_hex_digest(local_root)
+                && local_root == trusted_root
+                && *anchor_independent
+                && *atomic_compare_and_advance
+                && *rollback_protected
+        }
+        _ => false,
+    };
+    let delivery_ok = match &vector.delivery {
+        DeliveryContract::AtomicIdempotency {
+            request_digest,
+            idempotency_key,
+            atomic_effect_and_receipt,
+            durable_receipt,
+            sink_enforces_fencing,
+        } => {
+            request_digest == &vector.request_digest
+                && is_lower_hex_digest(request_digest)
+                && !idempotency_key.is_empty()
+                && *atomic_effect_and_receipt
+                && *durable_receipt
+                && (!vector.fencing_required || *sink_enforces_fencing)
+        }
+        DeliveryContract::Transactional {
+            request_digest,
+            transaction_id,
+            effect_and_receipt_atomic,
+            sink_enforces_fencing,
+        } => {
+            request_digest == &vector.request_digest
+                && is_lower_hex_digest(request_digest)
+                && !transaction_id.is_empty()
+                && *effect_and_receipt_atomic
+                && (!vector.fencing_required || *sink_enforces_fencing)
+        }
+        DeliveryContract::AtMostOnce { sink_enforces_fencing } => {
+            !vector.fencing_required || *sink_enforces_fencing
+        }
+        DeliveryContract::Unknown | DeliveryContract::Invalid => false,
+    };
+    let receipt_allows_new_effect = matches!(
+        &vector.receipt,
+        ReceiptEvidence::Missing | ReceiptEvidence::Unknown
+    );
+    let dispatch_ok = match (&vector.dispatch, &vector.delivery) {
+        (DispatchEvidence::NotClaimed, _) => true,
+        (DispatchEvidence::ClaimAnchored { request_digest, idempotency_key, .. }, contract) => {
+            if request_digest != &vector.request_digest {
+                false
+            } else {
+                match contract {
+                    DeliveryContract::AtomicIdempotency {
+                        idempotency_key: expected_key,
+                        ..
+                    } => idempotency_key.as_deref() == Some(expected_key.as_str()),
+                    DeliveryContract::Transactional {
+                        transaction_id, ..
+                    } => idempotency_key.as_deref() == Some(transaction_id.as_str()),
+                    DeliveryContract::AtMostOnce { .. } => {
+                        idempotency_key.as_deref().is_none_or(str::is_empty)
+                    }
+                    DeliveryContract::Unknown | DeliveryContract::Invalid => false,
+                }
+            }
+        }
+        (DispatchEvidence::OutcomeUnknown, DeliveryContract::AtomicIdempotency { .. })
+        | (DispatchEvidence::OutcomeUnknown, DeliveryContract::Transactional { .. }) => true,
+        (DispatchEvidence::OutcomeUnknown, _) | (DispatchEvidence::CompletionMarked, _) => false,
+    };
+    authorization_ok && anchor_ok && delivery_ok && receipt_allows_new_effect && dispatch_ok
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -718,6 +963,14 @@ mod tests {
                 assert!(!assessment.action_permitted(), "unsafe permit for {}", case.name);
             }
         }
+    }
+
+    #[test]
+    fn exhaustive_bounded_combinations_have_no_false_release_or_false_block() {
+        let summary = exhaustive_invariant_summary();
+        assert_eq!(summary.combinations_checked, 2_000);
+        assert_eq!(summary.false_release_count, 0);
+        assert_eq!(summary.false_block_count, 0);
     }
 
     #[test]
