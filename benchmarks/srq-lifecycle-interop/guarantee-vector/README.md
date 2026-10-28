@@ -38,7 +38,7 @@ cargo clippy --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee
 cargo run --locked --manifest-path benchmarks/srq-lifecycle-interop/guarantee-vector/Cargo.toml --bin qualification-report
 ```
 
-The acceptance gate is exactly 26/26 expected outcomes, zero unexpected decisions, zero false releases, and zero false blocks against the frozen expectation matrix, plus 4,375 cross-product states with zero false releases and zero false blocks under the independent minimum-evidence oracle. Cargo tests also exercise the Rust sink and retention models; their state is process-local and not durable. CI attests `src/retention_model.rs` alongside the evaluator and sink source. Reports remain `qualification_status=BLOCKED` and `claim_ceiling=none`.
+The acceptance gate is exactly 26/26 expected outcomes, zero unexpected decisions, zero false releases, and zero false blocks against the frozen expectation matrix, plus 4,375 cross-product states with zero false releases and zero false blocks under the independent minimum-evidence oracle. Cargo tests also exercise the Rust sink, retention, and epoch-compaction models; their state is process-local and not durable. CI attests `src/retention_model.rs` and `src/epoch_compaction_model.rs` alongside the evaluator and sink source. Reports remain `qualification_status=BLOCKED` and `claim_ceiling=none`.
 
 ## Reference sink model (not production)
 
@@ -54,9 +54,25 @@ This sink is intentionally volatile. A process crash discards it; the mutex does
 
 Callers cannot request a shorter retention window. Time uses a trusted monotonic epoch abstraction rather than a local wall-clock value; production must bind that epoch to an independently protected source.
 
-The model returns the original receipt for exact same-key retries while its retention window is open—even after authorization expiry—but never applies a new effect from that retry. Once the retention window is past, the active receipt becomes a permanent tombstone and the key cannot be used again in that namespace. This is intentionally conservative. Safely deleting tombstones requires a separate proof that old authorizations are irreversibly expired, the old namespace cannot be restored, and key epochs cannot be reused; that compaction protocol is not implemented here.
+The model returns the original receipt for exact same-key retries while its retention window is open—even after authorization expiry—but never applies a new effect from that retry. Once the retention window is past, the active receipt becomes a permanent tombstone and the key cannot be used again in that namespace. This is intentionally conservative. Safely deleting tombstones requires a proof that old authorizations are irreversibly expired, the old namespace cannot be restored, and old key epochs cannot be reused. The separate abstract epoch-compaction model below tests this ordering but does not provide a production anchor.
 
 The retention model includes 13 focused tests for derived retention horizon, replay after authorization expiry, tombstoning, changed-intent collisions, rejection of fresh expired operations, excessive authorization lifetimes, monotonic epoch regression, stale fencing, scope separation, 64-way concurrency, and overflow. All state is in memory. These tests do not demonstrate durable retention across process restarts, storage rollback, or an untrusted clock.
+
+## Anchored key-epoch compaction model
+
+`src/epoch_compaction_model.rs` tests a bounded-storage alternative to keeping every tombstone forever. Each idempotency key belongs to a monotonic namespace epoch. The old epoch can be compacted only after every receipt and tombstone in that epoch is past its retention horizon.
+
+The model enforces the order:
+
+1. Verify that all prior-epoch retention horizons have passed and persist a local prepared transition.
+2. Atomically advance an independent rollback-protected anchor from epoch `n` to `n+1`.
+3. Commit the local epoch transition.
+4. Only then prune receipt/tombstone records from epochs older than the new minimum.
+5. Reject every request with a retired epoch before looking up or applying its effect.
+
+This ordering preserves a small permanent high-water mark instead of retaining an unbounded key-by-key tombstone set. The model also covers crash recovery: before anchor advancement, discard the prepare and keep old keys; after advancement, finalize the matching prepared transition; after restoration of a snapshot that lacks the prepare, fail closed because the anchor is ahead.
+
+The module has 10 tests covering retention gating, old-epoch rejection, skipped epochs, untrusted anchors, both sides of the anchor-advance crash boundary, snapshot restoration, and pruning only after commit. It is a single-process abstract model: it does not implement durable CAS, signed anchor evidence, TPM or remote service integration, power-loss behavior, or key-epoch authorization. Production must bind the epoch to the signed request and an actually independent durable anchor before relying on compaction.
 
 ## Industry comparison
 
