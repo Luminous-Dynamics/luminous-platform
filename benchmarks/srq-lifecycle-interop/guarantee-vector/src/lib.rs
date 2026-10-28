@@ -345,17 +345,17 @@ impl DimensionStatus {
 /// ```
 #[derive(Debug, Eq, PartialEq)]
 pub struct AssuranceVector {
-    pub request_digest: String,
-    pub effect_digest: String,
-    pub policy_digest: String,
+    request_digest: String,
+    effect_digest: String,
+    policy_digest: String,
     sink_identity_digest: String,
     trusted_epoch: TrustedEpoch,
-    pub fencing_required: bool,
-    pub authorization: AuthorizationEvidence,
-    pub anchor: AnchorEvidence,
-    pub dispatch: DispatchEvidence,
-    pub delivery: DeliveryContract,
-    pub receipt: ReceiptEvidence,
+    fencing_required: bool,
+    authorization: AuthorizationEvidence,
+    anchor: AnchorEvidence,
+    dispatch: DispatchEvidence,
+    delivery: DeliveryContract,
+    receipt: ReceiptEvidence,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
