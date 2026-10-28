@@ -7,6 +7,7 @@
 
 pub mod sink_model;
 pub mod retention_model;
+pub mod epoch_compaction_model;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AuthorizationEvidence {
