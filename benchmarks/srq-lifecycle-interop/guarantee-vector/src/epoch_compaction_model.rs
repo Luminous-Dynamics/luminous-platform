@@ -87,7 +87,19 @@ pub struct EpochCompactionModel {
 }
 
 impl EpochCompactionModel {
-    pub fn new(
+    /// Test/qualification-only constructor. The Boolean deliberately models trusted versus
+    /// untrusted adapter setup and is never exposed as a production trust assertion.
+    ///
+    /// ```compile_fail
+    /// use srq_guarantee_vector::epoch_compaction_model::{EpochCompactionModel, RetentionPolicy};
+    /// let _ = EpochCompactionModel::new(4, true, RetentionPolicy {
+    ///     max_authorization_lifetime: 10,
+    ///     max_retry_horizon: 20,
+    ///     epoch_skew_margin: 5,
+    /// });
+    /// ```
+    #[cfg(any(test, feature = "qualification-fixtures"))]
+    fn qualification_fixture(
         initial_epoch: u64,
         anchor_is_trusted: bool,
         retention_policy: RetentionPolicy,
@@ -396,7 +408,7 @@ mod tests {
     }
 
     fn model() -> EpochCompactionModel {
-        EpochCompactionModel::new(4, true, policy()).unwrap()
+        EpochCompactionModel::qualification_fixture(4, true, policy()).unwrap()
     }
 
     fn add_old_records(model: &mut EpochCompactionModel) {
@@ -496,7 +508,7 @@ mod tests {
 
     #[test]
     fn untrusted_anchor_cannot_open_or_compact_epoch() {
-        let mut model = EpochCompactionModel::new(4, false, policy()).unwrap();
+        let mut model = EpochCompactionModel::qualification_fixture(4, false, policy()).unwrap();
         assert_eq!(
             model.record_key(4, "key", &digest(1), 10, 20, RecordKind::Receipt),
             Err(EpochError::UntrustedAnchor)
@@ -615,7 +627,7 @@ mod tests {
             max_retry_horizon: u64::MAX,
             epoch_skew_margin: 5,
         };
-        let mut model = EpochCompactionModel::new(4, true, overflow_policy).unwrap();
+        let mut model = EpochCompactionModel::qualification_fixture(4, true, overflow_policy).unwrap();
         assert_eq!(
             model.record_key(
                 4,
