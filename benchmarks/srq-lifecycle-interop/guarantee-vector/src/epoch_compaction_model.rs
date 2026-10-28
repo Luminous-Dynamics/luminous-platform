@@ -397,17 +397,17 @@ mod tests {
         assert_eq!(model.anchor_key_epoch(), 5);
         assert_eq!(model.retained_record_count(), 0);
         assert_eq!(
-            model.record_key(4, "receipt-003", &digest(3), 60, RecordKind::Receipt),
+            model.record_key(4, "receipt-003", &digest(3), 10, 20, RecordKind::Receipt),
             Err(EpochError::EpochRetired)
         );
-        assert!(model.record_key(5, "receipt-004", &digest(4), 60, RecordKind::Receipt).is_ok());
+        assert!(model.record_key(5, "receipt-004", &digest(4), 10, 20, RecordKind::Receipt).is_ok());
     }
 
     #[test]
     fn compaction_is_blocked_until_every_retention_horizon_has_passed() {
         let mut model = model();
         model
-            .record_key(4, "long-receipt", &digest(1), 50, RecordKind::Receipt)
+            .record_key(4, "long-receipt", &digest(1), 15, 25, RecordKind::Receipt)
             .unwrap();
         assert_eq!(
             model.prepare_compaction(5, 46),
@@ -466,9 +466,9 @@ mod tests {
 
     #[test]
     fn untrusted_anchor_cannot_open_or_compact_epoch() {
-        let mut model = EpochCompactionModel::new(4, false);
+        let mut model = EpochCompactionModel::new(4, false, policy()).unwrap();
         assert_eq!(
-            model.record_key(4, "key", &digest(1), 2, RecordKind::Receipt),
+            model.record_key(4, "key", &digest(1), 10, 20, RecordKind::Receipt),
             Err(EpochError::UntrustedAnchor)
         );
         assert_eq!(
@@ -481,7 +481,7 @@ mod tests {
     fn epoch_skip_and_future_key_epoch_are_rejected() {
         let mut model = model();
         assert_eq!(
-            model.record_key(5, "future", &digest(1), 20, RecordKind::Receipt),
+            model.record_key(5, "future", &digest(1), 10, 20, RecordKind::Receipt),
             Err(EpochError::FutureEpoch)
         );
         assert_eq!(
@@ -494,14 +494,14 @@ mod tests {
     fn duplicate_key_identity_is_not_reinserted_within_epoch() {
         let mut model = model();
         model
-            .record_key(4, "key", &digest(1), 20, RecordKind::Receipt)
+            .record_key(4, "key", &digest(1), 10, 20, RecordKind::Receipt)
             .unwrap();
         assert_eq!(
-            model.record_key(4, "key", &digest(1), 20, RecordKind::Receipt),
+            model.record_key(4, "key", &digest(1), 10, 20, RecordKind::Receipt),
             Err(EpochError::KeyAlreadyRecorded)
         );
         assert_eq!(
-            model.record_key(4, "key", &digest(2), 20, RecordKind::Receipt),
+            model.record_key(4, "key", &digest(2), 10, 20, RecordKind::Receipt),
             Err(EpochError::KeyAlreadyRecorded)
         );
         assert_eq!(model.retained_record_count(), 1);
