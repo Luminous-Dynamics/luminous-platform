@@ -29,7 +29,7 @@ impl RetentionPolicy {
         Ok(self)
     }
 
-    fn required_retention_until(self, expires_epoch: u64) -> Result<u64, RetentionError> {
+    pub fn required_retention_until(self, expires_epoch: u64) -> Result<u64, RetentionError> {
         expires_epoch
             .checked_add(self.max_retry_horizon)
             .and_then(|epoch| epoch.checked_add(self.epoch_skew_margin))
