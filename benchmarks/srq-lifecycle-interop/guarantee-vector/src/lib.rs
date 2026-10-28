@@ -144,7 +144,7 @@ pub enum DispatchEvidence {
 }
 
 /// Sink-issued capability for atomic effect + durable receipt, stable idempotency keys,
-/// and fencing. Private fields prevent callers from self-asserting those guarantees.
+/// and sink-enforced fencing. Private fields prevent self-asserted guarantees.
 ///
 /// ```compile_fail
 /// use srq_guarantee_vector::VerifiedAtomicIdempotency;
@@ -199,20 +199,20 @@ impl VerifiedTransactionalDelivery {
     }
 }
 
-/// Sink-issued capability for an at-most-once operation on the identified sink.
-/// Construction is private.
+/// Sink-issued capability proving fenced at-most-once operation on the identified sink.
+/// This replaces caller-supplied enforcement Booleans. Construction is private.
 ///
 /// ```compile_fail
-/// use srq_guarantee_vector::VerifiedAtMostOnceDelivery;
-/// let _forged = VerifiedAtMostOnceDelivery {
+/// use srq_guarantee_vector::VerifiedFencedAtMostOnceDelivery;
+/// let _forged = VerifiedFencedAtMostOnceDelivery {
 ///     sink_identity_digest: String::new(),
 /// };
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct VerifiedAtMostOnceDelivery {
+pub struct VerifiedFencedAtMostOnceDelivery {
     sink_identity_digest: String,
 }
-impl VerifiedAtMostOnceDelivery {
+impl VerifiedFencedAtMostOnceDelivery {
     #[cfg(any(test, feature = "qualification-fixtures"))]
     fn qualification_fixture(sink_identity_digest: String) -> Self {
         Self { sink_identity_digest }
@@ -223,7 +223,7 @@ impl VerifiedAtMostOnceDelivery {
 pub enum DeliveryContract {
     AtomicIdempotency(VerifiedAtomicIdempotency),
     Transactional(VerifiedTransactionalDelivery),
-    AtMostOnce(VerifiedAtMostOnceDelivery),
+    AtMostOnce(VerifiedFencedAtMostOnceDelivery),
     Unknown,
     Invalid,
 }
@@ -736,7 +736,7 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
 
     let mut at_most_once = clone_fixture_vector(&base);
     at_most_once.delivery = DeliveryContract::AtMostOnce(
-        VerifiedAtMostOnceDelivery::qualification_fixture(sink.clone()),
+        VerifiedFencedAtMostOnceDelivery::qualification_fixture(sink.clone()),
     );
     at_most_once.dispatch = DispatchEvidence::ClaimAnchored {
         request_digest: request.clone(),
@@ -993,7 +993,7 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
         DeliveryContract::Transactional(VerifiedTransactionalDelivery::qualification_fixture(
             request.clone(), txn, sink.clone(),
         )),
-        DeliveryContract::AtMostOnce(VerifiedAtMostOnceDelivery::qualification_fixture(
+        DeliveryContract::AtMostOnce(VerifiedFencedAtMostOnceDelivery::qualification_fixture(
             sink.clone(),
         )),
         DeliveryContract::Unknown,
