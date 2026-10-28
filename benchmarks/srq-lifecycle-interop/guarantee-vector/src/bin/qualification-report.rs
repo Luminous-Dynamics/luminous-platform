@@ -1,4 +1,4 @@
-use srq_guarantee_vector::{evaluate, fixture_matrix, Decision};
+use srq_guarantee_vector::{evaluate, exhaustive_invariant_summary, fixture_matrix, Decision};
 use std::process;
 
 fn main() {
@@ -48,10 +48,14 @@ fn main() {
     }
 
     let case_count = rows.len();
+    let exhaustive = exhaustive_invariant_summary();
     let passed = unexpected_decision_count == 0
         && false_release_count == 0
         && false_block_count == 0
-        && case_count == 22;
+        && case_count == 22
+        && exhaustive.combinations_checked == 2_000
+        && exhaustive.false_release_count == 0
+        && exhaustive.false_block_count == 0;
     let status = if passed { "PASS" } else { "FAIL" };
 
     println!(
@@ -70,6 +74,10 @@ fn main() {
             "\"operator_required_count\":{},",
             "\"completed_no_redispatch_count\":{},",
             "\"action_permitted_count\":{},",
+            "\"exhaustive_combinations_checked\":{},",
+            "\"exhaustive_false_release_count\":{},",
+            "\"exhaustive_false_block_count\":{},",
+            "\"exhaustive_action_permitted_count\":{},",
             "\"cases\":[{}]",
             "}}"
         ),
@@ -82,6 +90,10 @@ fn main() {
         operator_required_count,
         completed_count,
         permitted_count,
+        exhaustive.combinations_checked,
+        exhaustive.false_release_count,
+        exhaustive.false_block_count,
+        exhaustive.observed_action_permitted_count,
         rows.join(",")
     );
 
