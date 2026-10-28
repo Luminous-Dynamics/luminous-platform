@@ -21,7 +21,7 @@ impl TrustedEpoch {
         self.value
     }
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "qualification-fixtures"))]
     pub(crate) fn synthetic_for_tests(value: u64) -> Self {
         Self { value }
     }
@@ -37,17 +37,29 @@ pub mod epoch_compaction_model;
 ///
 /// ```compile_fail
 /// use srq_guarantee_vector::VerifiedAuthorization;
-/// let _forged = VerifiedAuthorization { request_digest: String::new(), policy_digest: String::new() };
+/// let _forged = VerifiedAuthorization {
+///     request_digest: String::new(),
+///     policy_digest: String::new(),
+///     not_before_epoch: 0,
+///     expires_at_epoch: 10,
+/// };
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerifiedAuthorization {
     request_digest: String,
     policy_digest: String,
+    not_before_epoch: u64,
+    expires_at_epoch: u64,
 }
 impl VerifiedAuthorization {
     #[cfg(any(test, feature = "qualification-fixtures"))]
-    fn qualification_fixture(request_digest: String, policy_digest: String) -> Self {
-        Self { request_digest, policy_digest }
+    fn qualification_fixture(
+        request_digest: String,
+        policy_digest: String,
+        not_before_epoch: u64,
+        expires_at_epoch: u64,
+    ) -> Self {
+        Self { request_digest, policy_digest, not_before_epoch, expires_at_epoch }
     }
 }
 
@@ -211,6 +223,8 @@ pub struct AssuranceVector {
     pub request_digest: String,
     pub effect_digest: String,
     pub policy_digest: String,
+    /// Opaque epoch from the trusted time adapter; request input cannot construct it.
+    pub trusted_epoch: TrustedEpoch,
     pub fencing_required: bool,
     pub authorization: AuthorizationEvidence,
     pub anchor: AnchorEvidence,
@@ -246,7 +260,10 @@ pub fn is_lower_hex_digest(value: &str) -> bool {
 fn authorization_status(vector: &AssuranceVector) -> DimensionStatus {
     match &vector.authorization {
         AuthorizationEvidence::Verified(proof)
-            if is_lower_hex_digest(&proof.request_digest)
+            if proof.not_before_epoch < proof.expires_at_epoch
+                && proof.not_before_epoch <= vector.trusted_epoch.value()
+                && vector.trusted_epoch.value() < proof.expires_at_epoch
+                && is_lower_hex_digest(&proof.request_digest)
                 && proof.request_digest == vector.request_digest
                 && is_lower_hex_digest(&proof.policy_digest)
                 && proof.policy_digest == vector.policy_digest =>
@@ -510,10 +527,11 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
         request_digest: request.clone(),
         effect_digest: effect.clone(),
         policy_digest: policy.clone(),
+        trusted_epoch: TrustedEpoch::synthetic_for_tests(15),
         fencing_required: true,
-        authorization: AuthorizationEvidence::Verified(
-            VerifiedAuthorization::qualification_fixture(request.clone(), policy.clone()),
-        ),
+        authorization: AuthorizationEvidence::Verified(VerifiedAuthorization::qualification_fixture(
+            request.clone(), policy.clone(), 10, 20,
+        )),
         anchor: AnchorEvidence::Checkpoint(VerifiedAnchorCheckpoint::qualification_fixture(
             5, 5, root.clone(), root,
         )),
@@ -617,12 +635,14 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     add("attack_invalid_signature", bad, Decision::Block, false);
 
     let mut bad = base.clone();
-    bad.authorization = AuthorizationEvidence::Stale;
-    add("attack_stale_authorization", bad, Decision::Block, false);
+    bad.authorization = AuthorizationEvidence::Verified(VerifiedAuthorization::qualification_fixture(
+        request.clone(), policy.clone(), 10, 15,
+    ));
+    add("attack_expired_verified_authorization", bad, Decision::Block, false);
 
     let mut bad = base.clone();
     bad.authorization = AuthorizationEvidence::Verified(
-        VerifiedAuthorization::qualification_fixture(digest(9), policy.clone()),
+        VerifiedAuthorization::qualification_fixture(digest(9), policy.clone(), 10, 20),
     );
     add("attack_authorization_request_mismatch", bad, Decision::Block, false);
 
@@ -782,7 +802,7 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
     let txn = "stable-transaction-001".to_string();
 
     let wrong_authorization = AuthorizationEvidence::Verified(
-        VerifiedAuthorization::qualification_fixture(digest(9), policy.clone()),
+        VerifiedAuthorization::qualification_fixture(digest(9), policy.clone(), 10, 20),
     );
     let authorizations = vec![
         base.authorization.clone(),
@@ -881,6 +901,7 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
                             request_digest: request.clone(),
                             effect_digest: base.effect_digest.clone(),
                             policy_digest: policy.clone(),
+                            trusted_epoch: base.trusted_epoch,
                             fencing_required: true,
                             authorization: authorization.clone(),
                             anchor: anchor.clone(),
@@ -912,7 +933,10 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
 fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
     let authorization_ok = match &vector.authorization {
         AuthorizationEvidence::Verified(proof) => {
-            is_lower_hex_digest(&proof.request_digest)
+            proof.not_before_epoch < proof.expires_at_epoch
+                && proof.not_before_epoch <= vector.trusted_epoch.value()
+                && vector.trusted_epoch.value() < proof.expires_at_epoch
+                && is_lower_hex_digest(&proof.request_digest)
                 && proof.request_digest == vector.request_digest
                 && is_lower_hex_digest(&proof.policy_digest)
                 && proof.policy_digest == vector.policy_digest
