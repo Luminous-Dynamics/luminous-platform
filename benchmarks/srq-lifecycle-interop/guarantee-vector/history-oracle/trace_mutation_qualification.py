@@ -200,6 +200,7 @@ def load_and_validate_manifest(root: Path) -> dict[str, Any]:
             "mutation_id": item.mutation_id,
             "expected_code": item.expected_code,
             "expected_invariant": item.expected_invariant,
+            "description": item.description,
         }
         for item in MUTATIONS
     ]
@@ -210,11 +211,30 @@ def load_and_validate_manifest(root: Path) -> dict[str, Any]:
             "mutation_id": item.get("mutation_id"),
             "expected_code": item.get("expected_code"),
             "expected_invariant": item.get("expected_invariant"),
+            "description": item.get("description"),
         }
         for item in manifest.get("mutations", [])
     ]
     if declared != expected:
-        raise ValueError("manifest mutation list/order/expected invariant differs from executable corpus")
+        raise ValueError("manifest mutation list/order/description/expected invariant differs from executable corpus")
+    acceptance = manifest.get("acceptance", {})
+    expected_acceptance = {
+        "mutation_count": len(MUTATIONS),
+        "detected_expected_mutations": len(MUTATIONS),
+        "survived_or_wrong_violation_count": 0,
+        "invalid_mutation_count": 0,
+        "positive_control_status": "PASS",
+    }
+    if acceptance != expected_acceptance:
+        raise ValueError("manifest acceptance criteria differ from the executable corpus gate")
+    guardrails = manifest.get("guardrails", {})
+    if (
+        guardrails.get("checker_source_is_not_mutated") is not True
+        or guardrails.get("malformed_histories_do_not_count_as_detected") is not True
+        or guardrails.get("qualification_status") != "BLOCKED"
+        or guardrails.get("claim_ceiling") != "none"
+    ):
+        raise ValueError("manifest guardrails or claim ceiling are missing or inconsistent")
     return manifest
 
 
