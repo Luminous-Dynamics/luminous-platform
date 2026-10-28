@@ -8,34 +8,34 @@ The intended loop is **real adapter → fault injection → immutable operation 
 
 ## Run
 
-\`\`\`sh
+```sh
 python3 -m unittest discover -s benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle -p 'test_*.py' -v
 python3 benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/history_oracle.py benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/fixtures/valid-retry.json
-\`\`\`
+```
 
 The CLI exits 0 for a structurally valid safety-PASS trace, 1 for a well-formed trace that violates an invariant, and 2 for invalid/uninterpretable input. A safety PASS is deliberately not a liveness PASS.
 
 ## Frozen event format
 
-The exact event names and required fields are in \`history-protocol-v1.json\`. Each trace covers one \`sink_identity_digest\` and one explicit idempotency-key namespace/retention scope. Each request, effect, and policy is represented by a lowercase 64-hex SHA-256 digest. \`seq\` is a contiguous zero-based causal order, not a wall-clock timestamp. The adapter exporter must preserve enough causal ordering that receipt/effect facts referenced by a committed response appear before that response.
+The exact event names and required fields are in `history-protocol-v1.json`. Each trace covers one `sink_identity_digest` and one explicit idempotency-key namespace/retention scope. Each request, effect, and policy is represented by a lowercase 64-hex SHA-256 digest. `seq` is a contiguous zero-based causal order, not a wall-clock timestamp. The adapter exporter must preserve enough causal ordering that receipt/effect facts referenced by a committed response appear before that response.
 
 Event kinds:
 
-- \`invoke\`: one client attempt, intent digests, key, and fencing token.
-- \`fence_advanced\`: an observed monotonic fencing-token advance.
-- \`effect_committed\`: an independently observed sink effect identifier and its intent/sink/fence binding.
-- \`receipt_committed\`: an independently observed receipt identifier, effect binding, and the same intent/sink tuple.
-- \`response\`: the attempt result (\`committed\`, \`unknown\`, or \`rejected\`) and optional receipt ID.
+- `invoke`: one client attempt, intent digests, key, and fencing token.
+- `fence_advanced`: an observed monotonic fencing-token advance.
+- `effect_committed`: an independently observed sink effect identifier and its intent/sink/fence binding.
+- `receipt_committed`: an independently observed receipt identifier, effect binding, and the same intent/sink tuple.
+- `response`: the attempt result (`committed`, `unknown`, or `rejected`) and optional receipt ID.
 
 ## Checked safety invariants
 
-The checker detects non-contiguous histories, duplicate attempt/effect/receipt identifiers, reuse of one idempotency key for different intent, multiple distinct effects under one key, stale or mismatched fences, effect/receipt binding mismatch, orphan effects or receipts, a \`committed\` response without a matching prior receipt, and a rejected attempt that nevertheless has an effect or receipt.
+The checker detects non-contiguous histories, duplicate attempt/effect/receipt identifiers, reuse of one idempotency key for different intent, multiple distinct effects under one key, stale or mismatched fences, effect/receipt binding mismatch, orphan effects or receipts, a `committed` response without a matching prior receipt, and a rejected attempt that nevertheless has an effect or receipt.
 
-Invalid input is distinct from a security invariant failure. For example, a malformed digest or unsupported event kind is \`INVALID_HISTORY\`, not a successful negative control.
+Invalid input is distinct from a security invariant failure. For example, a malformed digest or unsupported event kind is `INVALID_HISTORY`, not a successful negative control.
 
 ## Safety is not liveness
 
-The report emits attempt counts, terminal/rejected/unknown responses, unresolved attempt IDs, effects, effectful intents, and receipts. It always records \`liveness_observations.claim = NOT_EVALUATED\`. A system that rejects every request can satisfy these safety checks yet make no useful progress; the checker therefore never interprets universal blocking as liveness success. To qualify liveness, a workload must define an allowed retry policy, deadline/availability assumptions, and a minimum useful completion rate.
+The report emits attempt counts, terminal/rejected/unknown responses, unresolved attempt IDs, effects, effectful intents, and receipts. It always records `liveness_observations.claim = NOT_EVALUATED`. A system that rejects every request can satisfy these safety checks yet make no useful progress; the checker therefore never interprets universal blocking as liveness success. To qualify liveness, a workload must define an allowed retry policy, deadline/availability assumptions, and a minimum useful completion rate.
 
 ## Industry baseline and differentiator
 
