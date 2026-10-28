@@ -1,0 +1,77 @@
+name: SRQ sink history oracle
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/srq-history-oracle.yml'
+      - 'benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  history-oracle:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run independent history-oracle unit tests
+        run: python -m unittest discover -s benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle -p 'test_*.py' -v
+      - name: Check valid retry history and provenance
+        env:
+          SRQ_HISTORY_ORACLE_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/history_oracle.py benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/fixtures/valid-retry.json --output "$RUNNER_TEMP/srq-history-oracle-positive.json"
+          python3 - "$RUNNER_TEMP/srq-history-oracle-positive.json" <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert report["schema"] == "srq-history-oracle-report-v1"
+          assert report["safety_status"] == "PASS"
+          assert report["violation_count"] == 0
+          assert report["liveness_observations"]["claim"] == "NOT_EVALUATED"
+          assert report["liveness_observations"]["effect_count"] == 1
+          assert report["liveness_observations"]["receipt_count"] == 1
+          assert report["harness_commit_sha"] == os.environ["GITHUB_SHA"]
+          assert report["source_head_sha"] == os.environ["SRQ_HISTORY_ORACLE_PR_HEAD_SHA"]
+          assert set(report["source_sha256"]) == {"history_oracle.py", "test_history_oracle.py", "history-protocol-v1.json"}
+          assert all(len(value) == 64 for value in report["source_sha256"].values())
+          PY
+      - name: Confirm duplicate-effect negative control is detected
+        env:
+          SRQ_HISTORY_ORACLE_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set +e
+          python3 benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/history_oracle.py benchmarks/srq-lifecycle-interop/guarantee-vector/history-oracle/fixtures/duplicate-effect.json --output "$RUNNER_TEMP/srq-history-oracle-negative.json"
+          status=$?
+          set -e
+          if [ "$status" -ne 1 ]; then
+            echo "Expected a well-formed invariant violation (exit 1), got $status"
+            exit 1
+          fi
+          python3 - "$RUNNER_TEMP/srq-history-oracle-negative.json" <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          codes = {item["code"] for item in report["violations"]}
+          assert report["schema"] == "srq-history-oracle-report-v1"
+          assert report["safety_status"] == "FAIL"
+          assert "DUPLICATE_LOGICAL_EFFECT" in codes
+          assert report["harness_commit_sha"] == os.environ["GITHUB_SHA"]
+          assert report["source_head_sha"] == os.environ["SRQ_HISTORY_ORACLE_PR_HEAD_SHA"]
+          PY
+      - name: Retain exact-head history reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: srq-history-oracle-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/srq-history-oracle-positive.json
+            ${{ runner.temp }}/srq-history-oracle-negative.json
+          if-no-files-found: warn
+          retention-days: 30
