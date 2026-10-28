@@ -5,6 +5,8 @@
 //! Evidence variants named Verified represent results supplied by a trusted adapter.
 //! The crate is a policy/state-machine model, not a production security boundary.
 
+pub mod sink_model;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AuthorizationEvidence {
     Verified {
