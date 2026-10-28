@@ -341,7 +341,7 @@ pub fn evaluate(vector: &AssuranceVector) -> Assessment {
             reason: "matching authoritative receipt; never redispatch",
         };
     }
-    if matches!(vector.receipt, ReceiptEvidence::Invalid) {
+    if matches!(&vector.receipt, ReceiptEvidence::Invalid) {
         return block("receipt evidence is invalid");
     }
 
@@ -419,7 +419,7 @@ pub struct QualificationCase {
 }
 
 fn digest(byte: u8) -> String {
-    std::iter::repeat_n(format!("{byte:02x}"), 32).collect()
+    format!("{byte:02x}").repeat(32)
 }
 
 pub fn fixture_matrix() -> Vec<QualificationCase> {
