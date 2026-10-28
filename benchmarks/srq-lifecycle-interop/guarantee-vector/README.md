@@ -52,11 +52,11 @@ This sink is intentionally volatile. A process crash discards it; the mutex does
 
 `retain_until = authorization_expiry + maximum_retry_horizon + epoch_skew_margin`
 
-Callers cannot request a shorter retention window. Effect submission does not accept a timestamp: the sink reads a monotonic high-water epoch updated through a separate trusted-adapter hook. Production must ensure only independently verified time/epoch evidence can advance that observation; do not expose the hook to untrusted request callers.
+Callers cannot request a shorter retention window. Effect submission does not accept a timestamp: the sink reads a monotonic high-water epoch updated through an opaque `TrustedEpoch` capability. There is no public capability constructor yet, so downstream code cannot advance the model clock. Production must integrate a verifier that creates the token only from independently verified time/epoch evidence.
 
 The model returns the original receipt for exact same-key retries while its retention window is open—even after authorization expiry—but never applies a new effect from that retry. Once the retention window is past, the active receipt becomes a permanent tombstone and the key cannot be used again in that namespace. This is intentionally conservative. Safely deleting tombstones requires a proof that old authorizations are irreversibly expired, the old namespace cannot be restored, and old key epochs cannot be reused. The separate abstract epoch-compaction model below tests this ordering but does not provide a production anchor.
 
-The retention model includes 13 focused tests for derived retention horizon, replay after authorization expiry, tombstoning, changed-intent collisions, rejection of fresh expired operations, excessive authorization lifetimes, monotonic epoch regression, stale fencing, scope separation, 64-way concurrency, and overflow. All state is in memory. These tests do not demonstrate durable retention across process restarts, storage rollback, or an untrusted clock.
+The retention model includes 14 focused tests for derived retention horizon, replay after authorization expiry, tombstoning, changed-intent collisions, rejection of fresh expired operations, excessive authorization lifetimes, monotonic epoch regression, pre-observation fail-closed behavior, stale fencing, scope separation, 64-way concurrency, and overflow. All state is in memory. These tests do not demonstrate durable retention across process restarts, storage rollback, or an untrusted clock.
 
 ## Anchored key-epoch compaction model
 
