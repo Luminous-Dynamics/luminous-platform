@@ -1,0 +1,46 @@
+{
+  "schema": "srq-mutation-protocol-v1",
+  "version": 1,
+  "purpose": "Test whether focused lifecycle regression tests detect representative unsafe policy mutations.",
+  "guardrails": {
+    "production_code": false,
+    "mutation_execution_isolated_temporary_copy": true,
+    "compile_failure_counts_as_killed": false,
+    "claim_ceiling": "none",
+    "qualification_status": "BLOCKED"
+  },
+  "mutations": [
+    {
+      "mutation_id": "expired_authorization",
+      "invariant": "Reject authorization at exclusive expiry",
+      "target_test": "tests::authorization_window_is_inclusive_at_start_and_exclusive_at_expiry"
+    },
+    {
+      "mutation_id": "stale_anchor_epoch",
+      "invariant": "Reject anchor evidence observed at a different trusted epoch",
+      "target_test": "tests::stale_anchor_checkpoint_cannot_be_replayed_at_a_newer_epoch"
+    },
+    {
+      "mutation_id": "wrong_sink_capability",
+      "invariant": "Require sink identity binding for positive delivery capabilities",
+      "target_test": "tests::frozen_assurance_vector_matrix_matches_all_expected_decisions"
+    },
+    {
+      "mutation_id": "receipt_effect_binding",
+      "invariant": "Never suppress redispatch on a receipt for a different effect digest",
+      "target_test": "tests::receipt_must_bind_request_effect_and_policy"
+    },
+    {
+      "mutation_id": "retry_policy",
+      "invariant": "Recover only through the declared same-key retry capability",
+      "target_test": "tests::frozen_assurance_vector_matrix_matches_all_expected_decisions"
+    }
+  ],
+  "acceptance": {
+    "expected_mutants": 5,
+    "killed_mutants": 5,
+    "survived_mutants": 0,
+    "invalid_mutants": 0,
+    "interpretation": "A finite mutation set measures test sensitivity; passing it is not a proof of production security."
+  }
+}
