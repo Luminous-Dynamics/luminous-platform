@@ -121,7 +121,7 @@ jobs:
           report["harness_commit_sha"] = os.environ["GITHUB_SHA"]
           report["source_sha256"] = {
               name: hashlib.sha256((crate / name).read_bytes()).hexdigest()
-              for name in ("Cargo.toml", "Cargo.lock", "src/lib.rs", "src/bin/qualification-report.rs")
+              for name in ("Cargo.toml", "Cargo.lock", "src/lib.rs", "src/bin/qualification-report.rs", "src/sink_model.rs")
           }
           assert report["status"] == "PASS"
           assert report["qualification_status"] == "BLOCKED"
