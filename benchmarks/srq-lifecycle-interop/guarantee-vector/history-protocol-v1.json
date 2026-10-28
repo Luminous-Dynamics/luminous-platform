@@ -1,0 +1,36 @@
+{
+  "schema": "srq-side-effect-history-protocol-v1",
+  "version": 1,
+  "purpose": "Define a machine-checkable external operation history and sink journal for SRQ delivery qualification.",
+  "qualification_status": "BLOCKED",
+  "claim_ceiling": "none",
+  "trace_schema": "srq-side-effect-history-v1",
+  "required_top_level_fields": ["schema", "trace_id", "sink_id", "fencing_required", "operations", "transactions", "fence_events"],
+  "transaction_atomicity_contract": "Each transaction journal record binds one idempotency key and request digest to exactly one effect ID and one durable receipt ID; it is the sink's atomic commit record, not an inferred join of independent tables.",
+  "ordering_contract": "commit_seq and fence event_seq share one sink-controlled durable sequence domain; all values are unique. Fencing advances must be strictly increasing and every transaction must use the currently effective token when fencing_required is true.",
+  "outcome_values": ["success", "rejected", "unknown"],
+  "rejection_reason_for_reused_key": "idempotency_key_payload_mismatch",
+  "required_checks": [
+    "successful operations bind to a committed transaction with identical key and request digest",
+    "successful operations return the exact effect ID and receipt ID of that transaction",
+    "each committed transaction contains both effect and receipt IDs",
+    "one idempotency key cannot commit multiple transactions",
+    "retries for the same key and intent return stable transaction/effect/receipt identities",
+    "reusing a key with different intent cannot succeed",
+    "mismatch rejection does not have an effect for the rejected intent",
+    "fencing events are monotonic and effect commits use the currently effective token"
+  ],
+  "limitations": [
+    "does not authenticate the sink journal or prove trace completeness",
+    "does not prove storage durability or atomicity independently of the sink implementation",
+    "does not implement a full linearizability checker",
+    "does not measure retention-window expiry, anchor independence, or recovery liveness",
+    "passing a synthetic fixture is not production evidence"
+  ],
+  "initial_fixture_acceptance": {
+    "positive_fixtures": 1,
+    "negative_fixtures": 10,
+    "expected_false_accepts": 0,
+    "expected_false_rejects": 0
+  }
+}
