@@ -174,6 +174,9 @@ jobs:
           assert all(len(value) == 64 for value in report["source_sha256"].values())
           report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
           PY
+      - name: Mutation-qualify lifecycle assurance invariants
+        run: |
+          python3 benchmarks/srq-lifecycle-interop/guarantee-vector/mutation_qualification.py --output "$RUNNER_TEMP/srq-mutation-qualification-report.json"
       - name: Retain exact-head benchmark reports
         uses: actions/upload-artifact@v4
         with:
@@ -184,5 +187,6 @@ jobs:
             ${{ runner.temp }}/srq-challenge-replay-report.json
             ${{ runner.temp }}/srq-anti-rollback-report.json
             ${{ runner.temp }}/srq-guarantee-vector-report.json
+            ${{ runner.temp }}/srq-mutation-qualification-report.json
           if-no-files-found: error
           retention-days: 30
