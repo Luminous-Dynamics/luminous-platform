@@ -197,8 +197,12 @@ impl EpochCompactionModel {
             .pending_transition
             .as_ref()
             .ok_or(EpochError::MissingPreparedTransition)?;
+        let expected_to_epoch = pending
+            .from_epoch
+            .checked_add(1)
+            .ok_or(EpochError::InvalidEpochAdvance)?;
         if pending.from_epoch != self.anchor.key_epoch
-            || pending.to_epoch != pending.from_epoch.checked_add(1).ok_or(EpochError::InvalidEpochAdvance)?
+            || pending.to_epoch != expected_to_epoch
         {
             return Err(EpochError::InvalidPreparedTransition);
         }
@@ -215,9 +219,13 @@ impl EpochCompactionModel {
             .pending_transition
             .clone()
             .ok_or(EpochError::MissingPreparedTransition)?;
+        let expected_to_epoch = pending
+            .from_epoch
+            .checked_add(1)
+            .ok_or(EpochError::InvalidEpochAdvance)?;
         if pending.from_epoch != self.local.current_key_epoch
             || pending.to_epoch != self.anchor.key_epoch
-            || pending.to_epoch != pending.from_epoch.checked_add(1).ok_or(EpochError::InvalidEpochAdvance)?
+            || pending.to_epoch != expected_to_epoch
         {
             return Err(EpochError::InvalidPreparedTransition);
         }
