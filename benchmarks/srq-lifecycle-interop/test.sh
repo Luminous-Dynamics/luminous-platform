@@ -226,13 +226,19 @@ jq -e --slurpfile protocol "$script_dir/corpus-v1.json" --slurpfile executable "
 ' "$output_dir/srq-lifecycle-adversarial-assessment.json" >/dev/null
 
 bash "$script_dir/transaction-phase-matrix.sh" "$nixward_root" "$mycelix_root" "$sovereign_boot_root" "$tmp/boot-observation.json" "$output_dir"
+phase_head_sha="$(git -C "$script_dir/../.." rev-parse HEAD)"
+phase_matrix_sha256="$(sha256sum "$script_dir/transaction-phase-matrix.sh" | cut -d ' ' -f 1)"
+phase_matrix_blob="$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh)"
+phase_protocol_sha256="$(sha256sum "$script_dir/transaction-phase-state-protocol-v1.json" | cut -d ' ' -f 1)"
+phase_protocol_blob="$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-state-protocol-v1.json)"
+phase_protocol_id="$(jq -er '.protocol_id' "$script_dir/transaction-phase-state-protocol-v1.json")"
 jq -e --slurpfile protocol "$script_dir/transaction-phase-state-protocol-v1.json" \
-  --arg head_sha "$(git -C "$script_dir/../.." rev-parse HEAD)" \
-  --arg phase_matrix_sha256 "$(sha256sum "$script_dir/transaction-phase-matrix.sh" | cut -d ' ' -f 1)" \
-  --arg phase_matrix_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-matrix.sh)" \
-  --arg phase_protocol_sha256 "$(sha256sum "$script_dir/transaction-phase-state-protocol-v1.json" | cut -d ' ' -f 1)" \
-  --arg phase_protocol_blob "$(git -C "$script_dir/../.." hash-object -- benchmarks/srq-lifecycle-interop/transaction-phase-state-protocol-v1.json)" \
-  --arg phase_protocol_id "$(jq -er '.protocol_id' "$script_dir/transaction-phase-state-protocol-v1.json")" '
+  --arg head_sha "$phase_head_sha" \
+  --arg phase_matrix_sha256 "$phase_matrix_sha256" \
+  --arg phase_matrix_blob "$phase_matrix_blob" \
+  --arg phase_protocol_sha256 "$phase_protocol_sha256" \
+  --arg phase_protocol_blob "$phase_protocol_blob" \
+  --arg phase_protocol_id "$phase_protocol_id" '
   .schema == "srq-transaction-phase-state-space-assessment-v1"
   and .status == "PASS"
   and .release_status == "BLOCKED" and .claim_ceiling == "none"
