@@ -996,10 +996,11 @@ mod tests {
     }
 
     #[test]
-    fn receipt_must_bind_both_request_and_effect() {
+    fn receipt_must_bind_request_effect_and_policy() {
         for name in [
             "attack_receipt_wrong_effect_digest",
             "attack_receipt_invalid_signature",
+            "attack_receipt_wrong_policy_digest",
         ] {
             let case = fixture_matrix()
                 .into_iter()
