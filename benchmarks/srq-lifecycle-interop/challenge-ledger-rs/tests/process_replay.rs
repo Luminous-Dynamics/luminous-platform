@@ -117,9 +117,19 @@ fn concurrent_processes_can_consume_one_challenge_exactly_once() {
             other => unexpected.push((index, other)),
         }
     }
-    assert!(unexpected.is_empty(), "unexpected child exits: {unexpected:?}");
-    assert_eq!(accepted, 1, "exactly one process must consume the challenge");
-    assert_eq!(replay_rejected, WORKERS - 1, "every competing process must be rejected as replay");
+    assert!(
+        unexpected.is_empty(),
+        "unexpected child exits: {unexpected:?}"
+    );
+    assert_eq!(
+        accepted, 1,
+        "exactly one process must consume the challenge"
+    );
+    assert_eq!(
+        replay_rejected,
+        WORKERS - 1,
+        "every competing process must be rejected as replay"
+    );
 
     let reopened = ChallengeLedger::open(&ledger_path).expect("reopen consumed journal");
     assert!(matches!(
