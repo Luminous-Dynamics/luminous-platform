@@ -136,8 +136,7 @@ pub fn reconcile(
             .sequence
             .checked_add(1)
             .ok_or(ReconcileError::InvalidPreparedCheckpoint)?;
-        if pending.sequence != expected_sequence
-            || pending.previous_root != journal.committed.root
+        if pending.sequence != expected_sequence || pending.previous_root != journal.committed.root
         {
             return Err(ReconcileError::InvalidPreparedCheckpoint);
         }
@@ -370,7 +369,10 @@ mod tests {
         );
         assert_eq!(journal.committed, anchor);
         assert_eq!(journal.pending, None);
-        assert_eq!(reconcile(&mut journal, &anchor), Ok(RecoveryAction::Aligned));
+        assert_eq!(
+            reconcile(&mut journal, &anchor),
+            Ok(RecoveryAction::Aligned)
+        );
     }
 
     #[test]
@@ -389,10 +391,7 @@ mod tests {
         };
         let mut anchor = MemoryAnchor::new(initial.clone());
 
-        assert_eq!(
-            anchor.compare_and_advance(&initial, &next),
-            Ok(())
-        );
+        assert_eq!(anchor.compare_and_advance(&initial, &next), Ok(()));
         assert_eq!(
             anchor.compare_and_advance(&initial, &stale_next),
             Err(AnchorError::StaleExpectedCheckpoint)
