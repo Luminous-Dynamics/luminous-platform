@@ -667,7 +667,11 @@ pub struct ExhaustiveSummary {
 /// separate from evaluate(): it states the minimum evidence necessary to permit an effect.
 /// This is finite adversarial exploration, not a proof over all possible traces.
 pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
-    let base = fixture_matrix()[0].vector;
+    let base = fixture_matrix()
+        .into_iter()
+        .next()
+        .expect("at least one frozen fixture")
+        .vector;
     let request = base.request_digest.clone();
     let effect = base.effect_digest.clone();
     let policy = base.policy_digest.clone();
@@ -782,8 +786,9 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
                         let assessment = evaluate(&vector);
                         let expected_action = oracle_allows_effect(&vector);
                         summary.combinations_checked += 1;
-                        summary.observed_action_permitted_count +=
-                            usize::from(assessment.action_permitted());
+                        if assessment.action_permitted() {
+                            summary.observed_action_permitted_count += 1;
+                        }
                         if assessment.action_permitted() && !expected_action {
                             summary.false_release_count += 1;
                         }
