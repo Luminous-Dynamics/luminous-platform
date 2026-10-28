@@ -194,6 +194,14 @@ jobs:
           assert len(report["mutation_harness_sha256"]) == 64
           assert all(item["status"] == "KILLED" for item in report["mutations"])
           PY
+      - name: Retain mutation result, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: srq-mutation-qualification-${{ github.sha }}
+          path: ${{ runner.temp }}/srq-mutation-qualification-report.json
+          if-no-files-found: warn
+          retention-days: 30
       - name: Retain exact-head benchmark reports
         uses: actions/upload-artifact@v4
         with:
@@ -204,6 +212,5 @@ jobs:
             ${{ runner.temp }}/srq-challenge-replay-report.json
             ${{ runner.temp }}/srq-anti-rollback-report.json
             ${{ runner.temp }}/srq-guarantee-vector-report.json
-            ${{ runner.temp }}/srq-mutation-qualification-report.json
           if-no-files-found: error
           retention-days: 30
