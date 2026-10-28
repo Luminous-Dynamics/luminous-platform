@@ -91,7 +91,8 @@ impl EpochCompactionModel {
     /// untrusted adapter setup and is never exposed as a production trust assertion.
     ///
     /// ```compile_fail
-    /// use srq_guarantee_vector::epoch_compaction_model::{EpochCompactionModel, RetentionPolicy};
+    /// use srq_guarantee_vector::epoch_compaction_model::EpochCompactionModel;
+    /// use srq_guarantee_vector::retention_model::RetentionPolicy;
     /// let _ = EpochCompactionModel::new(4, true, RetentionPolicy {
     ///     max_authorization_lifetime: 10,
     ///     max_retry_horizon: 20,
@@ -627,7 +628,8 @@ mod tests {
             max_retry_horizon: u64::MAX,
             epoch_skew_margin: 5,
         };
-        let mut model = EpochCompactionModel::qualification_fixture(4, true, overflow_policy).unwrap();
+        let mut model =
+            EpochCompactionModel::qualification_fixture(4, true, overflow_policy).unwrap();
         assert_eq!(
             model.record_key(
                 4,
