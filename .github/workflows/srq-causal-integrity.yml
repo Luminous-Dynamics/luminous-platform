@@ -131,6 +131,9 @@ jobs:
           assert report["unexpected_decision_count"] == 0
           assert report["false_release_count"] == 0
           assert report["false_block_count"] == 0
+          assert report["exhaustive_combinations_checked"] == 2000
+          assert report["exhaustive_false_release_count"] == 0
+          assert report["exhaustive_false_block_count"] == 0
           assert report["harness_commit_sha"] == os.environ["GITHUB_SHA"]
           assert all(len(value) == 64 for value in report["source_sha256"].values())
           report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
