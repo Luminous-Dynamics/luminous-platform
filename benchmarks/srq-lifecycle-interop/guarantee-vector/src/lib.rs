@@ -268,11 +268,12 @@ fn dispatch_status(vector: &AssuranceVector) -> DimensionStatus {
         DispatchEvidence::ClaimAnchored {
             request_digest,
             idempotency_key,
-            ..
+            fencing_token,
         } => {
             if !is_lower_hex_digest(request_digest)
                 || request_digest != &vector.request_digest
                 || !dispatch_key_matches(idempotency_key.as_deref(), &vector.delivery)
+                || (vector.fencing_required && fencing_token.is_none())
             {
                 DimensionStatus::Failed
             } else {
@@ -612,6 +613,14 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     bad.delivery = DeliveryContract::Unknown;
     add("attack_unknown_delivery_contract", bad, Decision::Block, false);
 
+    let mut bad = atomic_claim.clone();
+    bad.dispatch = DispatchEvidence::ClaimAnchored {
+        request_digest: request.clone(),
+        idempotency_key: Some(key.clone()),
+        fencing_token: None,
+    };
+    add("attack_dispatch_missing_fencing_token", bad, Decision::Block, false);
+
     let mut bad = base.clone();
     bad.delivery = DeliveryContract::AtomicIdempotency {
         request_digest: request.clone(),
@@ -726,6 +735,11 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
             request_digest: digest(9),
             idempotency_key: Some(key.clone()),
             fencing_token: Some(8),
+        },
+        DispatchEvidence::ClaimAnchored {
+            request_digest: request.clone(),
+            idempotency_key: Some(key.clone()),
+            fencing_token: None,
         },
         DispatchEvidence::OutcomeUnknown,
     ];
@@ -877,8 +891,17 @@ fn oracle_allows_effect(vector: &AssuranceVector) -> bool {
     );
     let dispatch_ok = match (&vector.dispatch, &vector.delivery) {
         (DispatchEvidence::NotClaimed, _) => true,
-        (DispatchEvidence::ClaimAnchored { request_digest, idempotency_key, .. }, contract) => {
-            if request_digest != &vector.request_digest {
+        (
+            DispatchEvidence::ClaimAnchored {
+                request_digest,
+                idempotency_key,
+                fencing_token,
+            },
+            contract,
+        ) => {
+            if request_digest != &vector.request_digest
+                || (vector.fencing_required && fencing_token.is_none())
+            {
                 false
             } else {
                 match contract {
@@ -972,7 +995,7 @@ mod tests {
     #[test]
     fn exhaustive_bounded_combinations_have_no_false_release_or_false_block() {
         let summary = exhaustive_invariant_summary();
-        assert_eq!(summary.combinations_checked, 2_000);
+        assert_eq!(summary.combinations_checked, 2_500);
         assert_eq!(summary.false_release_count, 0);
         assert_eq!(summary.false_block_count, 0);
     }
