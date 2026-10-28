@@ -127,11 +127,11 @@ jobs:
           assert report["qualification_status"] == "BLOCKED"
           assert report["claim_ceiling"] == "none"
           assert report["scope"] == "typed_evidence_evaluator_only"
-          assert report["expected_case_count"] == report["observed_case_count"] == 22
+          assert report["expected_case_count"] == report["observed_case_count"] == 23
           assert report["unexpected_decision_count"] == 0
           assert report["false_release_count"] == 0
           assert report["false_block_count"] == 0
-          assert report["exhaustive_combinations_checked"] == 2000
+          assert report["exhaustive_combinations_checked"] == 2500
           assert report["exhaustive_false_release_count"] == 0
           assert report["exhaustive_false_block_count"] == 0
           assert report["harness_commit_sha"] == os.environ["GITHUB_SHA"]
