@@ -74,7 +74,12 @@ impl VerifiedAuthorization {
 ///
 /// ```compile_fail
 /// use srq_guarantee_vector::VerifiedAnchorCheckpoint;
-/// let _forged = VerifiedAnchorCheckpoint { local_sequence: 1, trusted_sequence: 1, local_root: String::new(), trusted_root: String::new() };
+/// let _forged = VerifiedAnchorCheckpoint {
+///     local_sequence: 1,
+///     trusted_sequence: 1,
+///     local_root: String::new(),
+///     trusted_root: String::new(),
+/// };
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerifiedAnchorCheckpoint {
@@ -85,7 +90,12 @@ pub struct VerifiedAnchorCheckpoint {
 }
 impl VerifiedAnchorCheckpoint {
     #[cfg(any(test, feature = "qualification-fixtures"))]
-    fn qualification_fixture(local_sequence: u64, trusted_sequence: u64, local_root: String, trusted_root: String) -> Self {
+    fn qualification_fixture(
+        local_sequence: u64,
+        trusted_sequence: u64,
+        local_root: String,
+        trusted_root: String,
+    ) -> Self {
         Self { local_sequence, trusted_sequence, local_root, trusted_root }
     }
 }
@@ -151,7 +161,11 @@ pub enum DeliveryContract {
 ///
 /// ```compile_fail
 /// use srq_guarantee_vector::VerifiedReceipt;
-/// let _forged = VerifiedReceipt { request_digest: String::new(), effect_digest: String::new(), policy_digest: String::new() };
+/// let _forged = VerifiedReceipt {
+///     request_digest: String::new(),
+///     effect_digest: String::new(),
+///     policy_digest: String::new(),
+/// };
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerifiedReceipt {
@@ -161,7 +175,11 @@ pub struct VerifiedReceipt {
 }
 impl VerifiedReceipt {
     #[cfg(any(test, feature = "qualification-fixtures"))]
-    fn qualification_fixture(request_digest: String, effect_digest: String, policy_digest: String) -> Self {
+    fn qualification_fixture(
+        request_digest: String,
+        effect_digest: String,
+        policy_digest: String,
+    ) -> Self {
         Self { request_digest, effect_digest, policy_digest }
     }
 }
@@ -677,9 +695,14 @@ pub fn fixture_matrix() -> Vec<QualificationCase> {
     add("attack_invalid_signature", bad, Decision::Block, false);
 
     let mut bad = clone_fixture_vector(&base);
-    bad.authorization = AuthorizationEvidence::Verified(VerifiedAuthorization::qualification_fixture(
-        request.clone(), policy.clone(), 10, 15,
-    ));
+    bad.authorization = AuthorizationEvidence::Verified(
+        VerifiedAuthorization::qualification_fixture(
+            request.clone(),
+            policy.clone(),
+            10,
+            15,
+        ),
+    );
     add("attack_expired_verified_authorization", bad, Decision::Block, false);
 
     let mut bad = clone_fixture_vector(&base);
@@ -943,7 +966,9 @@ pub fn exhaustive_invariant_summary() -> ExhaustiveSummary {
                             request_digest: request.clone(),
                             effect_digest: base.effect_digest.clone(),
                             policy_digest: policy.clone(),
-                            trusted_epoch: TrustedEpoch::synthetic_for_tests(base.trusted_epoch.value()),
+                            trusted_epoch: TrustedEpoch::synthetic_for_tests(
+                                base.trusted_epoch.value(),
+                            ),
                             fencing_required: true,
                             authorization: authorization.clone(),
                             anchor: anchor.clone(),
