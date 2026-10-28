@@ -61,7 +61,6 @@ class SchemaEnvironmentLockTests(unittest.TestCase):
         extra["metadata"]["name"] = "unexpected"
         extra["download_info"]["url"] = "https://files.pythonhosted.org/unexpected-0.whl"
         report["install"].append(extra)
-        lock["package_count"] = 3
         errors, _ = validate_environment(
             lock, report, python_version="3.12.10", os_name="linux", machine="x86_64"
         )
