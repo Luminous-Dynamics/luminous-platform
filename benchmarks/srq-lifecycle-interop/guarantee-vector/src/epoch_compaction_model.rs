@@ -223,9 +223,10 @@ impl EpochCompactionModel {
         }
         self.local.current_key_epoch = pending.to_epoch;
         self.local.pending_transition = None;
+        let minimum_epoch = self.local.current_key_epoch;
         self.local
             .records
-            .retain(|(epoch, _), _| *epoch >= self.local.current_key_epoch);
+            .retain(|(epoch, _), _| *epoch >= minimum_epoch);
         Ok(())
     }
 
