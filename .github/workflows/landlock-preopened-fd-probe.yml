@@ -228,7 +228,7 @@ jobs:
           retention-days: 14
           compression-level: 9
 
-attest-main-evidence:
+  attest-main-evidence:
     name: Sign main-branch evidence manifest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: preopened-descriptor-authority
