@@ -31,11 +31,11 @@ The CI workflow runs this integration binary on the hosted Linux runner. The tes
 
 The implementation uses direct Linux syscalls with a tiny FFI surface and no third-party dependencies. It calls PR_SET_NO_NEW_PRIVS, creates a ruleset, adds an O_PATH-anchored subtree rule, and calls landlock_restrict_self. ABI >= 3 is required because older ABI versions could not restrict truncation. See the official Linux Landlock userspace API: https://docs.kernel.org/userspace-api/landlock.html
 
-This test proves only that the tested kernel enforces the stated read-only filesystem fixture policy under the tested runner configuration. It does not:
+This test proves only the tested kernel's file-content read/write/create controls for the stated fixture under the tested runner configuration. It is **not** a complete read-only filesystem lock: Landlock does not provide a general metadata-mutation right for operations such as chmod/chown, xattr and timestamp updates, so those need separate policy controls (for example, a carefully scoped seccomp layer) and tests. The machine-readable result explicitly marks metadata mutation syscalls as not covered. It does not:
 - integrate the full syscall-policy core into a general process launcher;
 - install seccomp filters or enforce syscall argument policy;
-- restrict network egress, inherited file descriptors, IPC, devices, credentials, or kernel attack surfaces;
+- restrict metadata mutation syscalls, network egress, inherited file descriptors, IPC, devices, credentials, or kernel attack surfaces;
 - defeat a compromised kernel, host administrator, or an already-open sensitive file descriptor;
 - establish production isolation, portability to other kernels, or superiority over commercial sandbox products.
 
-Call the result landlock_readonly_fixture_kernel_observation; do not label it a general endpoint-prevention result.
+Call the result landlock_file_content_access_fixture_observation; do not label it a complete read-only filesystem policy or a general endpoint-prevention result.
