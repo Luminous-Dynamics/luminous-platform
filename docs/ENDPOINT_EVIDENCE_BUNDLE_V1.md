@@ -53,3 +53,13 @@ The verifier has two distinct non-success results:
 ## Test strategy
 
 \`test_verify_evidence_bundle.py\` uses synthetic receipts for both runtime probes and mutation tests for wrong source SHA/run ID, changed bytes, missing checksum entries, a failed control, a failed CI step, false qualification labels, outcome mismatch, unsupported receipt schemas, non-emitted receipts, and attempted claim inflation. These tests validate the verifier's contract; they do not run the Landlock experiment.
+
+
+## First runtime artifact examples
+
+As of the current research snapshot (2026-10-29), two exact-head Linux micro-test runs completed all of their declared checks:
+
+- [Landlock descriptor-ordering run 40951705435](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/40951705435), receipt SHA-bound to `2d7402a6aeef5fa3aca24de019a4f315213bfe73`, Landlock ABI 8, runner kernel release `7.0.0-1017-azure`.
+- [close_range descriptor-inheritance run 40951695669](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/40951695669), receipt SHA-bound to `525fcce3f3ec875fcef2cb26f09ab8f8dc69f49c`, runner kernel release `7.0.0-1017-azure`.
+
+The respective artifact bundles are [Landlock evidence bundle](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/40951705435/artifacts/12931677316) and [FD-inheritance evidence bundle](https://github.com/Luminous-Dynamics/luminous-platform/actions/runs/40951695669/artifacts/12931013405). Both archives were downloaded during authoring; their listed SHA-256 digests matched all included files, and receipt/run-context/manifest values agreed. The receipts describe only the declared micro-tests. Those checksums are self-contained consistency checks, not signed publisher authentication, and the artifacts have finite retention.
