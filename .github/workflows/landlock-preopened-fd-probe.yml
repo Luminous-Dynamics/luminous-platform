@@ -121,6 +121,7 @@ jobs:
           CLIPPY_OUTCOME: ${{ steps.clippy.outcome || 'not_run' }}
         run: |
           set -euo pipefail
+          mkdir -p /tmp/luminous-evidence
           result=/tmp/luminous-evidence/landlock-preopened-fd-result.jsonl
           if [ ! -s "$result" ]; then
             printf '%s\n' '{"schema":"luminous.landlock-preopened-fd-result.v1","status":"not_emitted","full_descriptor_hygiene_coverage":false,"scope":"preopened_writable_fd_ordering_microtest"}' > "$result"
