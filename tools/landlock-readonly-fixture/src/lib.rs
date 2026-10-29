@@ -45,6 +45,7 @@ const AUDIT_ARCH: u32 = 0xc000_00b7;
 const SECCOMP_SET_MODE_FILTER: c_long = 1;
 const BPF_LD_W_ABS: u16 = 0x20;
 const BPF_JMP_JEQ_K: u16 = 0x15;
+#[cfg(target_arch = "x86_64")]
 const BPF_JMP_JSET_K: u16 = 0x45;
 const BPF_RET_K: u16 = 0x06;
 const SECCOMP_RET_KILL_PROCESS: u32 = 0x8000_0000;
