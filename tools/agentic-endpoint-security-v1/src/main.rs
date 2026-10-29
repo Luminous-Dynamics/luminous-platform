@@ -6,7 +6,11 @@ use agentic_endpoint_assurance_model::{
 fn example<'a>(label: &str, evidence: EvidenceBundle<'a>) {
     let result = evaluate(evidence);
     println!(
-        "{label}: disposition={:?}; authorization={:?}; binding={:?}; freshness={:?}; revocation={:?}; telemetry={:?}; effect={:?}; observation={:?}; rollback={:?}",
+        concat!(
+            "{label}: disposition={:?}; authorization={:?}; binding={:?}; ",
+            "freshness={:?}; revocation={:?}; telemetry={:?}; effect={:?}; ",
+            "observation={:?}; rollback={:?}"
+        ),
         result.disposition,
         result.evidence.authorization,
         result.computed_binding,
