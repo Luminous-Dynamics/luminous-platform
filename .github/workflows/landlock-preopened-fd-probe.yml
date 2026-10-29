@@ -255,7 +255,6 @@ attest-main-evidence:
         run: |
           set -euo pipefail
           cd evidence
-          sha256sum -c SHA256SUMS
           python3 - <<'PY'
           import hashlib
           import json
@@ -264,10 +263,32 @@ attest-main-evidence:
           from pathlib import Path
 
           root = Path(".")
+          expected_files = {
+              "landlock-preopened-fd-result.jsonl",
+              "run-context.txt",
+              "evidence-manifest.json",
+              "SHA256SUMS",
+          }
+          entries = list(root.iterdir())
+          assert {entry.name for entry in entries} == expected_files
+          assert all(entry.is_file() and not entry.is_symlink() for entry in entries)
+          checksum_lines = (root / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
+          checksum_names = set()
+          for line in checksum_lines:
+              match = re.fullmatch(r"([0-9a-f]{64})  ([A-Za-z0-9._-]+)", line)
+              assert match is not None
+              digest, filename = match.groups()
+              assert filename in expected_files - {"SHA256SUMS"}
+              assert filename not in checksum_names
+              checksum_names.add(filename)
+              assert hashlib.sha256((root / filename).read_bytes()).hexdigest() == digest
+          assert checksum_names == expected_files - {"SHA256SUMS"}
           manifest = json.loads((root / "evidence-manifest.json").read_text(encoding="utf-8"))
           assert manifest.get("schema") == "luminous.ci-evidence-bundle-manifest.v1"
           assert manifest.get("status") == "candidate_pass_for_declared_microtest"
           assert manifest.get("claim_ceiling") == "one file-descriptor ordering and exec boundary on the named Linux runner; not full descriptor hygiene"
+          assert manifest.get("receipt_schema") == "luminous.landlock-preopened-fd-result.v1"
+          assert manifest.get("receipt_status") == "pass"
           assert manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]
           assert manifest.get("workflow_sha") == os.environ["EXPECTED_WORKFLOW_SHA"]
           assert str(manifest.get("workflow_run_id")) == os.environ["EXPECTED_RUN_ID"]
@@ -290,10 +311,14 @@ attest-main-evidence:
           assert len(lines) == 1
           receipt = json.loads(lines[0])
           assert receipt.get("schema") == "luminous.landlock-preopened-fd-result.v1"
+          assert manifest.get("receipt_schema") == receipt.get("schema")
+          assert manifest.get("receipt_status") == receipt.get("status")
           assert receipt.get("status") == "pass"
           assert receipt.get("checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]
           assert re.fullmatch(r"[0-9a-f]{40}", receipt.get("checkout_sha", ""))
           assert type(receipt.get("landlock_abi")) is int and receipt["landlock_abi"] >= 3
+          assert isinstance(receipt.get("kernel_release"), str)
+          assert re.fullmatch(r"[A-Za-z0-9._+-]+", receipt["kernel_release"])
           assert receipt.get("kernel_release") == manifest.get("kernel_release")
           assert receipt.get("landlock_abi") == manifest.get("landlock_abi")
           assert receipt.get("full_descriptor_hygiene_coverage") is False
@@ -323,6 +348,7 @@ attest-main-evidence:
           assert context["clippy_outcome"] == "success"
           print("PASS: validated exact-head receipt and all evidence controls before signing")
           PY
+          sha256sum -c SHA256SUMS
 
       - name: Create keyless Sigstore provenance attestation
         id: attest
