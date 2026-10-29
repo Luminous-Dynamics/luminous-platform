@@ -21,7 +21,6 @@ struct Timespec {
 }
 
 const AT_FDCWD: c_int = -100;
-const UTIME_OMIT: i64 = 1_073_741_822;
 const ENODATA_ERRNO: i32 = 61;
 
 unsafe extern "C" {
@@ -264,14 +263,14 @@ fn run_parent() -> io::Result<()> {
         if unsafe { removexattr(fixture_c.as_ptr(), xattr_name.as_ptr()) } != 0 {
             return Err(io::Error::last_os_error());
         }
-        let unchanged_times = [
+        let positive_control_times = [
             Timespec {
-                tv_sec: 0,
-                tv_nsec: UTIME_OMIT,
+                tv_sec: 1,
+                tv_nsec: 0,
             },
             Timespec {
-                tv_sec: 0,
-                tv_nsec: UTIME_OMIT,
+                tv_sec: 1,
+                tv_nsec: 0,
             },
         ];
         // SAFETY: path and the two-entry timestamps array are valid for this call.
@@ -279,12 +278,24 @@ fn run_parent() -> io::Result<()> {
             utimensat(
                 AT_FDCWD,
                 fixture_c.as_ptr(),
-                unchanged_times.as_ptr(),
+                positive_control_times.as_ptr(),
                 0,
             )
         } != 0
         {
             return Err(io::Error::last_os_error());
+        }
+        let control_mtime = fs::metadata(&fixture_path)?.modified()?;
+        if control_mtime
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| io::Error::new(ErrorKind::InvalidData, "positive-control mtime predates epoch"))?
+            .as_secs()
+            != 1
+        {
+            return Err(io::Error::new(
+                ErrorKind::InvalidData,
+                "timestamp positive control did not update mtime to the requested value",
+            ));
         }
         fs::write(blocked.join("outside-canary.txt"), "forbidden-outside-canary")?;
         Ok::<(), io::Error>(())
