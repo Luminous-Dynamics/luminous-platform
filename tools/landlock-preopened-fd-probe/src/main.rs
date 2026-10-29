@@ -265,7 +265,7 @@ fn worker(mode: &str, fd: RawFd, path: &Path) -> io::Result<()> {
     }
 }
 
-fn run_worker(executable: &Path, mode: &str, fd: RawFd, path: &Path) -> io::Result<()> {
+fn run_worker(executable: &Path, mode: &str, fd: RawFd, path: &Path) -> io::Result<i32> {
     let output = Command::new(executable)
         .arg("--worker")
         .arg(mode)
@@ -301,13 +301,13 @@ fn run_worker(executable: &Path, mode: &str, fd: RawFd, path: &Path) -> io::Resu
             format!("worker {mode} omitted expected marker {expected}"),
         ));
     }
-    let _abi = stdout
+    let abi = stdout
         .lines()
         .find_map(|line| line.strip_prefix("LANDLOCK_ABI="))
         .and_then(|value| value.parse::<i32>().ok())
         .filter(|value| *value >= 3)
         .ok_or_else(|| io::Error::new(ErrorKind::InvalidData, "missing supported Landlock ABI"))?;
-    Ok(())
+    Ok(abi)
 }
 
 fn read_exact_file(path: &Path) -> io::Result<Vec<u8>> {
@@ -316,7 +316,7 @@ fn read_exact_file(path: &Path) -> io::Result<Vec<u8>> {
     Ok(bytes)
 }
 
-fn run_parent() -> io::Result<()> {
+fn run_parent() -> io::Result<i32> {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|error| io::Error::other(format!("system clock before Unix epoch: {error}")))?
@@ -350,7 +350,7 @@ fn run_parent() -> io::Result<()> {
         // Negative-control experiment: opening the writable object precedes
         // Landlock. The child should be able to mutate through that descriptor.
         let inherited = duplicate_descriptor(file.as_raw_fd(), false)?;
-        run_worker(
+        let exposure_abi = run_worker(
             &env::current_exe()?,
             "expect-preopened-write",
             inherited.raw(),
@@ -373,12 +373,20 @@ fn run_parent() -> io::Result<()> {
         // Mitigation control: the same kind of writable descriptor is marked
         // close-on-exec before launch; new pathname write-open must be denied.
         let protected_fd = duplicate_descriptor(file.as_raw_fd(), true)?;
-        run_worker(
+        let mitigation_abi = run_worker(
             &env::current_exe()?,
             "expect-closed-and-denied",
             protected_fd.raw(),
             &path,
         )?;
+        if exposure_abi != mitigation_abi {
+            return Err(io::Error::new(
+                ErrorKind::InvalidData,
+                format!(
+                    "Landlock ABI changed between experiment arms: {exposure_abi} vs {mitigation_abi}"
+                ),
+            ));
+        }
 
         // Parent independently checks the safe control's resulting file bytes.
         if read_exact_file(&path)? != BASELINE {
@@ -396,16 +404,16 @@ fn run_parent() -> io::Result<()> {
                 "parent oracle did not observe FD_CLOEXEC on protected descriptor",
             ));
         }
-        Ok(())
+        Ok(exposure_abi)
     })();
 
     let file_cleanup = fs::remove_file(&path);
     let directory_cleanup = fs::remove_dir(&root);
     match (result, file_cleanup, directory_cleanup) {
         (Err(error), _, _) => Err(error),
-        (Ok(()), Err(error), _) => Err(error),
-        (Ok(()), Ok(()), Err(error)) => Err(error),
-        (Ok(()), Ok(()), Ok(())) => Ok(()),
+        (Ok(_), Err(error), _) => Err(error),
+        (Ok(_), Ok(()), Err(error)) => Err(error),
+        (Ok(abi), Ok(()), Ok(())) => Ok(abi),
     }
 }
 
@@ -434,15 +442,19 @@ fn main() {
         return;
     }
 
-    if let Err(error) = run_parent() {
-        eprintln!("FAIL Landlock pre-opened-fd probe: {error}");
-        process::exit(1);
-    }
+    let landlock_abi = match run_parent() {
+        Ok(abi) => abi,
+        Err(error) => {
+            eprintln!("FAIL Landlock pre-opened-fd probe: {error}");
+            process::exit(1);
+        }
+    };
 
     println!(
         concat!(
             "{\"schema\":\"luminous.landlock-preopened-fd-result.v1\",",
             "\"status\":\"pass\",",
+            "\"landlock_abi\":{},",
             "\"preopened_write_succeeded_after_landlock\":true,",
             "\"parent_oracle_observed_preopened_write\":true,",
             "\"cloexec_descriptor_absent_after_exec\":true,",
@@ -451,7 +463,8 @@ fn main() {
             "\"parent_original_fd_cloexec\":true,",
             "\"full_descriptor_hygiene_coverage\":false,",
             "\"scope\":\"preopened_writable_fd_ordering_microtest\"}"
-        )
+        ),
+        landlock_abi
     );
 }
 
