@@ -1234,6 +1234,23 @@ mod tests {
     }
 
     #[test]
+    fn unknown_resource_kind_never_gets_generic_read_write_access() {
+        let mut req = request();
+        set_resource(&mut req, resource(ResourceKind::Other, 'c'));
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::Read,
+                arguments: ArgumentFacts::None,
+            },
+        );
+        assert_eq!(
+            denied_reason(&baseline_policy(), &req, &context()),
+            DenyReason::InvalidResourceKind
+        );
+    }
+
+    #[test]
     fn revoked_or_unknown_capability_never_allows() {
         let mut policy = baseline_policy();
         policy.capabilities[0].state = CapabilityState::Revoked;
