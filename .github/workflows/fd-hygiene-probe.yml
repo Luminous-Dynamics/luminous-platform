@@ -1,0 +1,383 @@
+name: fd inheritance boundary probe
+
+on:
+  pull_request:
+    paths:
+      - "tools/fd-hygiene-probe/**"
+      - ".github/workflows/fd-hygiene-probe.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tools/fd-hygiene-probe/**"
+      - ".github/workflows/fd-hygiene-probe.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fd-hygiene-probe-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-fd-boundary:
+    name: Verify inherited-fd controls on Linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact PR head (or pushed commit)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify the checked-out commit
+        env:
+          EXPECTED_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$EXPECTED_CHECKOUT_SHA"
+          echo "Exact source checkout verified: $actual"
+
+      - name: Initialize evidence bundle
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/luminous-evidence
+          : > /tmp/luminous-evidence/fd-hygiene-result.jsonl
+
+      - name: Install pinned Rust toolchain and components
+        uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
+        with:
+          toolchain: "1.96.0"
+          components: "rustfmt, clippy"
+          cache: false
+
+      - name: Mutation-test main-only attestation workflow contract
+        run: python3 tools/fd-hygiene-probe/test_attestation_workflow.py
+
+      - name: Check formatting
+        id: format_check
+        run: cargo fmt --manifest-path tools/fd-hygiene-probe/Cargo.toml -- --check
+
+      - name: Compile locked probe
+        id: rust_tests
+        run: cargo test --locked --manifest-path tools/fd-hygiene-probe/Cargo.toml
+        env:
+          CARGO_NET_OFFLINE: "true"
+
+      - name: Run inherited-descriptor negative and positive controls
+        id: runtime_test
+        run: |
+          set -euo pipefail
+          cargo run --quiet --locked --manifest-path tools/fd-hygiene-probe/Cargo.toml | tee /tmp/luminous-evidence/fd-hygiene-result.jsonl
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          lines = Path("/tmp/luminous-evidence/fd-hygiene-result.jsonl").read_text(encoding="utf-8").splitlines()
+          records = [line for line in lines if line.startswith("{") and line.endswith("}")]
+          assert len(records) == 1, f"expected one JSON record, got {len(records)}"
+          result = json.loads(records[0])
+          assert result.get("schema") == "luminous.fd-inheritance-boundary-result.v1"
+          assert result.get("status") == "pass"
+          expected_sha = os.environ["LUMINOUS_CHECKOUT_SHA"]
+          assert re.fullmatch(r"[0-9a-f]{40}", expected_sha)
+          assert result.get("checkout_sha") == expected_sha
+          assert isinstance(result.get("kernel_release"), str) and result["kernel_release"] != "unknown"
+          for field in (
+              "negative_control_inherited_fd_readable",
+              "cloexec_control_descriptor_absent_after_exec",
+              "parent_descriptor_survived_marking",
+              "parent_descriptor_cloexec_flag_set",
+              "close_range_unshare_enabled",
+              "close_range_cloexec_enabled",
+          ):
+              assert result.get(field) is True, f"missing or false evidence field: {field}"
+          assert result.get("scope") == "exec_boundary_descriptor_hygiene_probe_only"
+          print("PASS: inherited-fd negative control, CLOEXEC positive control, and parent-state oracle")
+          PY
+        env:
+          LUMINOUS_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Run Clippy with warnings denied
+        id: clippy
+        run: cargo clippy --locked --manifest-path tools/fd-hygiene-probe/Cargo.toml -- -D warnings
+        env:
+          CARGO_NET_OFFLINE: "true"
+
+      - name: Finalize evidence bundle
+        if: always()
+        env:
+          EXPECTED_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          RUNNER_OS: ${{ runner.os }}
+          RUNNER_ARCH: ${{ runner.arch }}
+          FORMAT_OUTCOME: ${{ steps.format_check.outcome || 'not_run' }}
+          RUST_TEST_OUTCOME: ${{ steps.rust_tests.outcome || 'not_run' }}
+          RUNTIME_TEST_OUTCOME: ${{ steps.runtime_test.outcome || 'not_run' }}
+          CLIPPY_OUTCOME: ${{ steps.clippy.outcome || 'not_run' }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/luminous-evidence
+          result=/tmp/luminous-evidence/fd-hygiene-result.jsonl
+          if [ ! -s "$result" ]; then
+            printf '%s\n' '{"schema":"luminous.fd-inheritance-boundary-result.v1","status":"not_emitted","scope":"exec_boundary_descriptor_hygiene_probe_only"}' > "$result"
+          fi
+          printf 'workflow_run_id=%s\nworkflow_run_attempt=%s\nevent_name=%s\nworkflow=%s\nexpected_checkout_sha=%s\nformat_outcome=%s\nrust_test_outcome=%s\nruntime_test_outcome=%s\nclippy_outcome=%s\n' \
+            "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_EVENT_NAME" "$GITHUB_WORKFLOW" "$EXPECTED_CHECKOUT_SHA" \
+            "$FORMAT_OUTCOME" "$RUST_TEST_OUTCOME" "$RUNTIME_TEST_OUTCOME" "$CLIPPY_OUTCOME" \
+            > /tmp/luminous-evidence/run-context.txt
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path("/tmp/luminous-evidence")
+          result_path = root / "fd-hygiene-result.jsonl"
+          raw = result_path.read_bytes()
+          lines = [line for line in raw.decode("utf-8", errors="replace").splitlines() if line.strip()]
+          receipt = None
+          parse_error = None
+          try:
+              if len(lines) != 1:
+                  raise ValueError(f"expected exactly one result line; found {len(lines)}")
+              receipt = json.loads(lines[0])
+          except (ValueError, json.JSONDecodeError) as exc:
+              parse_error = str(exc)
+
+          expected_sha = os.environ["EXPECTED_CHECKOUT_SHA"]
+          outcomes = {
+              "format": os.environ["FORMAT_OUTCOME"],
+              "rust_tests": os.environ["RUST_TEST_OUTCOME"],
+              "runtime_test": os.environ["RUNTIME_TEST_OUTCOME"],
+              "clippy": os.environ["CLIPPY_OUTCOME"],
+          }
+          receipt_status = receipt.get("status", "invalid_or_missing") if isinstance(receipt, dict) else "invalid_or_missing"
+          valid_receipt = (
+              isinstance(receipt, dict)
+              and receipt.get("schema") == "luminous.fd-inheritance-boundary-result.v1"
+              and receipt.get("status") == "pass"
+              and receipt.get("checkout_sha") == expected_sha
+              and isinstance(receipt.get("kernel_release"), str)
+              and receipt.get("kernel_release") != "unknown"
+              and all(
+                  receipt.get(field) is True
+                  for field in (
+                      "negative_control_inherited_fd_readable",
+                      "cloexec_control_descriptor_absent_after_exec",
+                      "parent_descriptor_survived_marking",
+                      "parent_descriptor_cloexec_flag_set",
+                      "close_range_unshare_enabled",
+                      "close_range_cloexec_enabled",
+                  )
+              )
+              and receipt.get("scope") == "exec_boundary_descriptor_hygiene_probe_only"
+          )
+          qualification = (
+              "candidate_pass_for_declared_microtest"
+              if valid_receipt and all(value == "success" for value in outcomes.values())
+              else "not_qualified"
+          )
+          manifest = {
+              "schema": "luminous.ci-evidence-bundle-manifest.v1",
+              "status": qualification,
+              "workflow": os.environ["GITHUB_WORKFLOW"],
+              "workflow_sha": os.environ.get("WORKFLOW_SHA", "unknown"),
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "workflow_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "event_name": os.environ["GITHUB_EVENT_NAME"],
+              "runner_os": os.environ.get("RUNNER_OS", "unknown"),
+              "runner_arch": os.environ.get("RUNNER_ARCH", "unknown"),
+              "expected_checkout_sha": expected_sha,
+              "step_outcomes": outcomes,
+              "receipt_path": result_path.name,
+              "receipt_sha256": hashlib.sha256(raw).hexdigest(),
+              "receipt_status": receipt_status,
+              "receipt_schema": receipt.get("schema") if isinstance(receipt, dict) else None,
+              "kernel_release": receipt.get("kernel_release") if isinstance(receipt, dict) else None,
+              "receipt_parse_error": parse_error,
+              "claim_ceiling": "one inherited descriptor and one exec boundary on the named Linux runner; not full descriptor hygiene",
+              "manifest_authenticity": "not_signed; checksum verifies bundle consistency only"
+          }
+          (root / "evidence-manifest.json").write_text(
+              json.dumps(manifest, sort_keys=True, separators=(",", ":")),
+              encoding="utf-8",
+          )
+          PY
+          cd /tmp/luminous-evidence
+          sha256sum fd-hygiene-result.jsonl run-context.txt evidence-manifest.json > SHA256SUMS
+
+      - name: Upload evidence bundle
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: fd-hygiene-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/luminous-evidence/*
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
+
+  attest-main-evidence:
+    name: Sign main-branch evidence manifest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: linux-fd-boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download exact run evidence artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: fd-hygiene-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence
+
+      - name: Verify evidence manifest before signing
+        env:
+          EXPECTED_CHECKOUT_SHA: ${{ github.sha }}
+          EXPECTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          EXPECTED_RUN_ID: ${{ github.run_id }}
+          EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          cd evidence
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          root = Path(".")
+          expected_files = {
+              "fd-hygiene-result.jsonl",
+              "run-context.txt",
+              "evidence-manifest.json",
+              "SHA256SUMS",
+          }
+          entries = list(root.iterdir())
+          assert {entry.name for entry in entries} == expected_files
+          assert all(entry.is_file() and not entry.is_symlink() for entry in entries)
+          checksum_lines = (root / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
+          checksum_names = set()
+          for line in checksum_lines:
+              match = re.fullmatch(r"([0-9a-f]{64})  ([A-Za-z0-9._-]+)", line)
+              assert match is not None
+              digest, filename = match.groups()
+              assert filename in expected_files - {"SHA256SUMS"}
+              assert filename not in checksum_names
+              checksum_names.add(filename)
+              assert hashlib.sha256((root / filename).read_bytes()).hexdigest() == digest
+          assert checksum_names == expected_files - {"SHA256SUMS"}
+          manifest = json.loads((root / "evidence-manifest.json").read_text(encoding="utf-8"))
+          assert manifest.get("schema") == "luminous.ci-evidence-bundle-manifest.v1"
+          assert manifest.get("status") == "candidate_pass_for_declared_microtest"
+          assert manifest.get("runner_os") == "Linux"
+          assert manifest.get("runner_arch") in {"X64", "ARM64"}
+          assert manifest.get("receipt_parse_error") is None
+          assert manifest.get("claim_ceiling") == "one inherited descriptor and one exec boundary on the named Linux runner; not full descriptor hygiene"
+          assert re.fullmatch(r"[0-9a-f]{40}", manifest.get("workflow_sha", ""))
+          assert manifest.get("receipt_schema") == "luminous.fd-inheritance-boundary-result.v1"
+          assert manifest.get("receipt_status") == "pass"
+          assert manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]
+          assert manifest.get("workflow_sha") == os.environ["EXPECTED_WORKFLOW_SHA"]
+          assert str(manifest.get("workflow_run_id")) == os.environ["EXPECTED_RUN_ID"]
+          assert str(manifest.get("workflow_run_attempt")) == os.environ["EXPECTED_RUN_ATTEMPT"]
+          assert manifest.get("event_name") == "push"
+          assert manifest.get("workflow") == "fd inheritance boundary probe"
+          assert manifest.get("manifest_authenticity") == "not_signed; checksum verifies bundle consistency only"
+          assert manifest.get("step_outcomes") == {
+              "format": "success",
+              "rust_tests": "success",
+              "runtime_test": "success",
+              "clippy": "success",
+          }
+
+          receipt_name = manifest.get("receipt_path")
+          assert receipt_name == "fd-hygiene-result.jsonl"
+          raw_receipt = (root / receipt_name).read_bytes()
+          assert hashlib.sha256(raw_receipt).hexdigest() == manifest.get("receipt_sha256")
+          lines = [line for line in raw_receipt.decode("utf-8").splitlines() if line.strip()]
+          assert len(lines) == 1
+          receipt = json.loads(lines[0])
+          assert receipt.get("schema") == "luminous.fd-inheritance-boundary-result.v1"
+          assert manifest.get("receipt_schema") == receipt.get("schema")
+          assert manifest.get("receipt_status") == receipt.get("status")
+          assert receipt.get("status") == "pass"
+          assert receipt.get("checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]
+          assert re.fullmatch(r"[0-9a-f]{40}", receipt.get("checkout_sha", ""))
+          assert isinstance(receipt.get("kernel_release"), str) and receipt["kernel_release"] != "unknown"
+          assert re.fullmatch(r"[A-Za-z0-9._+-]+", receipt["kernel_release"])
+          assert receipt.get("kernel_release") == manifest.get("kernel_release")
+          assert receipt.get("scope") == "exec_boundary_descriptor_hygiene_probe_only"
+          for field in (
+              "negative_control_inherited_fd_readable",
+              "cloexec_control_descriptor_absent_after_exec",
+              "parent_descriptor_survived_marking",
+              "parent_descriptor_cloexec_flag_set",
+              "close_range_unshare_enabled",
+              "close_range_cloexec_enabled",
+          ):
+              assert receipt.get(field) is True, f"required evidence is false: {field}"
+
+          context = {}
+          for line in (root / "run-context.txt").read_text(encoding="utf-8").splitlines():
+              key, value = line.split("=", 1)
+              assert key not in context
+              context[key] = value
+          assert set(context) == {
+              "workflow_run_id",
+              "workflow_run_attempt",
+              "event_name",
+              "workflow",
+              "expected_checkout_sha",
+              "format_outcome",
+              "rust_test_outcome",
+              "runtime_test_outcome",
+              "clippy_outcome",
+          }
+          assert context["workflow"] == manifest.get("workflow")
+          assert context["workflow_run_id"] == os.environ["EXPECTED_RUN_ID"]
+          assert context["workflow_run_attempt"] == os.environ["EXPECTED_RUN_ATTEMPT"]
+          assert context["event_name"] == "push"
+          assert context["expected_checkout_sha"] == os.environ["EXPECTED_CHECKOUT_SHA"]
+          assert context["format_outcome"] == "success"
+          assert context["rust_test_outcome"] == "success"
+          assert context["runtime_test_outcome"] == "success"
+          assert context["clippy_outcome"] == "success"
+          print("PASS: validated exact-head receipt and all evidence controls before signing")
+          PY
+          sha256sum -c SHA256SUMS
+
+      - name: Create keyless Sigstore provenance attestation
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: evidence/evidence-manifest.json
+
+      - name: Stage attestation bundle
+        env:
+          BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          test -s "$BUNDLE_PATH"
+          mkdir -p signed-evidence
+          cp -- "$BUNDLE_PATH" signed-evidence/evidence-manifest.sigstore.json
+          cd signed-evidence
+          sha256sum evidence-manifest.sigstore.json > SHA256SUMS
+
+      - name: Upload signed attestation bundle
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: fd-hygiene-attestation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: signed-evidence/*
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
