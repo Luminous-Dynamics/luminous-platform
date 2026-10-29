@@ -76,6 +76,31 @@ impl Drop for OwnedFd {
     }
 }
 
+fn ensure_cloexec(fd: RawFd) -> io::Result<()> {
+    // Ensure the parent-owned original descriptor cannot become an accidental
+    // second inheritance channel in either control arm.
+    // SAFETY: F_GETFD inspects an open descriptor owned by the caller.
+    let flags = unsafe { fcntl(fd, F_GETFD) };
+    if flags < 0 {
+        return Err(io::Error::last_os_error());
+    }
+    if flags & FD_CLOEXEC == 0 {
+        // SAFETY: F_SETFD updates flags on the same open descriptor.
+        if unsafe { fcntl(fd, F_SETFD, flags | FD_CLOEXEC) } != 0 {
+            return Err(io::Error::last_os_error());
+        }
+    }
+    // SAFETY: confirm the descriptor flag after setting it.
+    let confirmed = unsafe { fcntl(fd, F_GETFD) };
+    if confirmed < 0 || confirmed & FD_CLOEXEC == 0 {
+        return Err(io::Error::new(
+            ErrorKind::InvalidData,
+            "parent-owned original descriptor is not close-on-exec",
+        ));
+    }
+    Ok(())
+}
+
 fn duplicate_descriptor(source: RawFd, cloexec: bool) -> io::Result<OwnedFd> {
     // F_DUPFD creates a distinct descriptor without FD_CLOEXEC.
     // SAFETY: source is an open descriptor and the minimum is a valid integer.
@@ -320,6 +345,7 @@ fn run_parent() -> io::Result<()> {
         file.write_all(BASELINE)?;
         file.sync_all()?;
         fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
+        ensure_cloexec(file.as_raw_fd())?;
 
         // Negative-control experiment: opening the writable object precedes
         // Landlock. The child should be able to mutate through that descriptor.
