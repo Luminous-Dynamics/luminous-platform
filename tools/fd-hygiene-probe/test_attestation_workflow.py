@@ -241,6 +241,39 @@ class AttestationWorkflowContractTests(unittest.TestCase):
         )
         self.assert_contract_rejects(mutated, "attestation artifact is not separate and run-bound")
 
+    def test_manifest_receipt_schema_must_be_exact(self) -> None:
+        mutated = self.workflow.replace(
+            'receipt.get("schema") == "luminous.fd-inheritance-boundary-result.v1"',
+            'receipt.get("schema") == "luminous.other-result.v1"',
+            1,
+        )
+        self.assert_contract_rejects(
+            mutated,
+            'pre-signing verifier missing guard: receipt.get("schema") == "luminous.fd-inheritance-boundary-result.v1"',
+        )
+
+    def test_strict_checksum_inventory_is_required(self) -> None:
+        mutated = self.workflow.replace(
+            "checksum_names == expected_files - {\"SHA256SUMS\"}",
+            "checksum_names == set()",
+            1,
+        )
+        self.assert_contract_rejects(
+            mutated,
+            "pre-signing verifier must check exact checksum inventory",
+        )
+
+    def test_bundle_symlinks_are_rejected(self) -> None:
+        mutated = self.workflow.replace(
+            "entry.is_file() and not entry.is_symlink()",
+            "entry.is_file()",
+            1,
+        )
+        self.assert_contract_rejects(
+            mutated,
+            "pre-signing verifier must reject symlinked bundle entries",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
