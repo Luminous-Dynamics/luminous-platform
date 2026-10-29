@@ -176,7 +176,8 @@ fn run_parent() -> io::Result<()> {
 
         println!("PASS Landlock ABI >= 3 read-only fixture enforcement");
         println!(
-            "ORACLE read_allowed=true outside_read_denied=true existing_write_denied=true outside_create_denied=true"
+            "ORACLE read_allowed=true outside_read_denied=true existing_write_denied=true \
+             outside_create_denied=true"
         );
         println!(
             "SCOPE disposable_local_filesystem_fixture_only; no network or syscall-wide claim"
