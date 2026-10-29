@@ -1,0 +1,79 @@
+name: agentic endpoint assurance v1
+
+on:
+  pull_request:
+    paths:
+      - "docs/AGENTIC_ENDPOINT_SECURITY_BENCHMARK_V1.md"
+      - "benchmarks/agentic-endpoint-security-v1/**"
+      - "tools/agentic-endpoint-security-v1/**"
+      - ".github/workflows/agentic-endpoint-security-v1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/AGENTIC_ENDPOINT_SECURITY_BENCHMARK_V1.md"
+      - "benchmarks/agentic-endpoint-security-v1/**"
+      - "tools/agentic-endpoint-security-v1/**"
+      - ".github/workflows/agentic-endpoint-security-v1.yml"
+
+permissions:
+  contents: read
+
+# Keep one current validation run for this PR; old pending runs should not
+# accumulate while the branch is being actively amended.
+concurrency:
+  group: agentic-endpoint-security-v1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  corpus-and-reference-model:
+    name: Frozen corpus and Rust reference model
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Install pinned Rust toolchain and components
+        uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
+        with:
+          toolchain: "1.96.0"
+          components: "rustfmt, clippy"
+          cache: false
+
+      - name: Validate frozen corpus contract
+        run: python3 tools/agentic-endpoint-security-v1/check_corpus.py
+
+      - name: Validate adaptive red-team protocol
+        run: python3 tools/agentic-endpoint-security-v1/check_adaptive_protocol.py
+
+      - name: Run adaptive protocol mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_adaptive_protocol.py
+
+      - name: Run episode scorer contract and statistical tests
+        run: python3 tools/agentic-endpoint-security-v1/test_score_episodes.py
+
+      - name: Validate independent side-effect oracle contract
+        run: python3 tools/agentic-endpoint-security-v1/check_oracle_coverage.py
+
+      - name: Run oracle coverage mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_oracle_coverage.py
+
+      - name: Check Rust formatting
+        run: cargo fmt --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml -- --check
+
+      - name: Run dependency-locked reference model tests
+        run: cargo test --locked --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml
+        env:
+          CARGO_NET_OFFLINE: "true"
+
+      - name: Run Clippy with warnings denied
+        run: cargo clippy --locked --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml -- -D warnings
+        env:
+          CARGO_NET_OFFLINE: "true"
+
+      - name: Execute synthetic reference-model demo
+        run: cargo run --locked --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml
+        env:
+          CARGO_NET_OFFLINE: "true"

@@ -1,0 +1,13 @@
+[package]
+name = "agentic-endpoint-assurance-model"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Dependency-free reference model for adversarial endpoint/agent assurance contracts"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "agentic-endpoint-assurance-model"
+path = "src/main.rs"
