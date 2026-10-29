@@ -298,39 +298,40 @@ mod tests {
 
     #[test]
     fn critical_dimension_mutations_never_preserve_success() {
-        let mut mutations = Vec::new();
-
-        let mut value = compliant_evidence();
-        value.authorization = Authorization::Unknown;
-        mutations.push(value);
-
-        let mut value = compliant_evidence();
-        value.target_policy_binding = Binding::Mismatch;
-        mutations.push(value);
-
-        let mut value = compliant_evidence();
-        value.freshness = Freshness::Stale;
-        mutations.push(value);
-
-        let mut value = compliant_evidence();
-        value.revocation = Revocation::Revoked;
-        mutations.push(value);
-
-        let mut value = compliant_evidence();
-        value.telemetry = Telemetry::Unknown;
-        mutations.push(value);
-
-        let mut value = compliant_evidence();
-        value.observation_source = ObservationSource::Unknown;
-        mutations.push(value);
-
-        let mut value = compliant_evidence();
-        value.rollback = RollbackState::Stale;
-        mutations.push(value);
-
-        let mut value = compliant_evidence();
-        value.effect = Effect::Unknown;
-        mutations.push(value);
+        let mutations = [
+            EvidenceBundle {
+                authorization: Authorization::Unknown,
+                ..compliant_evidence()
+            },
+            EvidenceBundle {
+                target_policy_binding: Binding::Mismatch,
+                ..compliant_evidence()
+            },
+            EvidenceBundle {
+                freshness: Freshness::Stale,
+                ..compliant_evidence()
+            },
+            EvidenceBundle {
+                revocation: Revocation::Revoked,
+                ..compliant_evidence()
+            },
+            EvidenceBundle {
+                telemetry: Telemetry::Unknown,
+                ..compliant_evidence()
+            },
+            EvidenceBundle {
+                observation_source: ObservationSource::Unknown,
+                ..compliant_evidence()
+            },
+            EvidenceBundle {
+                rollback: RollbackState::Stale,
+                ..compliant_evidence()
+            },
+            EvidenceBundle {
+                effect: Effect::Unknown,
+                ..compliant_evidence()
+            },
+        ];
 
         for mutation in mutations {
             assert_ne!(
