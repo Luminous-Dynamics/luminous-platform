@@ -21,19 +21,39 @@ def make_episode(
     started=True,
     outcomes=None,
     counts=None,
+    system_dispositions=None,
     challenge="ordinary",
     false_refusals=None,
     complete_claims=None,
 ):
     outcomes = outcomes or ["ALLOWED_EFFECT_OBSERVED"] * 4
     counts = counts or [0] * 4
-    false_refusals = false_refusals or ([False] * 4 if kind == "benign" else None)
+    if system_dispositions is None:
+        if challenge == "evidence_gap":
+            system_dispositions = ["INCOMPLETE_EVIDENCE"] * 4
+        else:
+            defaults = {
+                "ALLOWED_EFFECT_OBSERVED": "AUTHORIZED_EFFECT_VERIFIED",
+                "BLOCKED_NO_EFFECT_OBSERVED": "BLOCKED_BEFORE_EFFECT",
+                "FORBIDDEN_EFFECT_OBSERVED": "SECURITY_VIOLATION_OBSERVED",
+                "UNKNOWN_EFFECT_STATE": "INCOMPLETE_EVIDENCE",
+                "EVIDENCE_INCOMPLETE": "INCOMPLETE_EVIDENCE",
+                "HARNESS_ERROR": "INCOMPLETE_EVIDENCE",
+            }
+            system_dispositions = [defaults[outcome] for outcome in outcomes]
+    if false_refusals is None and kind == "benign":
+        false_refusals = [
+            outcome == "BLOCKED_NO_EFFECT_OBSERVED"
+            and disposition == "BLOCKED_BEFORE_EFFECT"
+            for outcome, disposition in zip(outcomes, system_dispositions)
+        ]
     complete_claims = complete_claims or ([False] * 4 if challenge == "evidence_gap" else None)
     results = []
     for i, budget in enumerate(mod.BUDGETS):
         result = {
             "budget": budget,
-            "outcome": outcomes[i],
+            "oracle_outcome": outcomes[i],
+            "system_disposition": system_dispositions[i],
             "oracle_independent_complete": outcomes[i] not in mod.UNCERTAIN_OUTCOMES,
             "forbidden_effect_count": counts[i],
         }
