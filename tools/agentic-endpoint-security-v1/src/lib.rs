@@ -478,6 +478,147 @@ mod tests {
     }
 
     #[test]
+    fn exhaustive_finite_state_space_preserves_three_hard_outcome_invariants() {
+        let binding_states: [(Option<BindingTuple<'static>>, Binding); 3] = [
+            (Some(canonical_binding()), Binding::Match),
+            (
+                Some(BindingTuple {
+                    target_id: "endpoint-b",
+                    ..canonical_binding()
+                }),
+                Binding::Mismatch,
+            ),
+            (None, Binding::Unknown),
+        ];
+        let authorizations = [
+            Authorization::Allowed,
+            Authorization::Denied,
+            Authorization::Unknown,
+        ];
+        let freshness_states = [Freshness::Fresh, Freshness::Stale, Freshness::Unknown];
+        let revocation_states = [Revocation::Clear, Revocation::Revoked, Revocation::Unknown];
+        let telemetry_states = [
+            Telemetry::CompleteForDeclaredScope,
+            Telemetry::GapDetected,
+            Telemetry::Unknown,
+        ];
+        let effects = [
+            Effect::NoEffectObserved,
+            Effect::ExpectedEffectObserved,
+            Effect::ForbiddenEffectObserved,
+            Effect::Unknown,
+        ];
+        let observations = [
+            ObservationSource::Independent,
+            ObservationSource::SameTrustDomain,
+            ObservationSource::Unknown,
+        ];
+        let rollback_states = [
+            RollbackState::Current,
+            RollbackState::Stale,
+            RollbackState::WitnessUnavailable,
+            RollbackState::NotRequired,
+            RollbackState::Unknown,
+        ];
+        let witness_requirements = [false, true];
+        let mut states_checked = 0usize;
+
+        for authorization in authorizations.iter().copied() {
+            for (observed_binding, binding_state) in binding_states.iter().copied() {
+                for freshness in freshness_states.iter().copied() {
+                    for revocation in revocation_states.iter().copied() {
+                        for telemetry in telemetry_states.iter().copied() {
+                            for effect in effects.iter().copied() {
+                                for observation_source in observations.iter().copied() {
+                                    for rollback in rollback_states.iter().copied() {
+                                        for external_witness_required in
+                                            witness_requirements.iter().copied()
+                                        {
+                                            states_checked += 1;
+                                            let evidence = EvidenceBundle {
+                                                authorization,
+                                                expected_binding: canonical_binding(),
+                                                observed_binding,
+                                                freshness,
+                                                revocation,
+                                                telemetry,
+                                                effect,
+                                                observation_source,
+                                                rollback,
+                                                external_witness_required,
+                                            };
+                                            let result = evaluate(evidence);
+
+                                            let rollback_ok = match rollback {
+                                                RollbackState::Current => true,
+                                                RollbackState::NotRequired => {
+                                                    !external_witness_required
+                                                }
+                                                RollbackState::Stale
+                                                | RollbackState::WitnessUnavailable
+                                                | RollbackState::Unknown => false,
+                                            };
+                                            let blocking = authorization == Authorization::Denied
+                                                || binding_state == Binding::Mismatch
+                                                || freshness == Freshness::Stale
+                                                || revocation == Revocation::Revoked
+                                                || !rollback_ok;
+                                            let observation_complete = telemetry
+                                                == Telemetry::CompleteForDeclaredScope
+                                                && observation_source
+                                                    == ObservationSource::Independent;
+                                            let effect_occurred = matches!(
+                                                effect,
+                                                Effect::ExpectedEffectObserved
+                                                    | Effect::ForbiddenEffectObserved
+                                            );
+                                            let expected_violation = observation_complete
+                                                && effect_occurred
+                                                && (effect == Effect::ForbiddenEffectObserved
+                                                    || blocking);
+                                            let expected_block = blocking
+                                                && effect == Effect::NoEffectObserved
+                                                && observation_complete;
+                                            let expected_allowed = authorization
+                                                == Authorization::Allowed
+                                                && binding_state == Binding::Match
+                                                && freshness == Freshness::Fresh
+                                                && revocation == Revocation::Clear
+                                                && rollback_ok
+                                                && effect == Effect::ExpectedEffectObserved
+                                                && observation_complete;
+
+                                            assert_eq!(
+                                                result.disposition
+                                                    == Disposition::SecurityViolationObserved,
+                                                expected_violation,
+                                                "security-violation invariant failed at state {states_checked}"
+                                            );
+                                            assert_eq!(
+                                                result.disposition == Disposition::BlockedBeforeEffect,
+                                                expected_block,
+                                                "blocked-before-effect invariant failed at state {states_checked}"
+                                            );
+                                            assert_eq!(
+                                                result.disposition
+                                                    == Disposition::AuthorizedEffectVerified,
+                                                expected_allowed,
+                                                "qualified-allow invariant failed at state {states_checked}"
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        assert_eq!(states_checked, 29_160);
+    }
+
+    #[test]
     fn unknown_is_not_coerced_to_allowed_or_denied() {
         let mut facts = compliant_evidence();
         facts.authorization = Authorization::Unknown;
