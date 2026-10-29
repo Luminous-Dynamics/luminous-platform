@@ -588,22 +588,26 @@ mod tests {
                                                 && effect == Effect::ExpectedEffectObserved
                                                 && observation_complete;
 
+                                            let actual_violation = result.disposition
+                                                == Disposition::SecurityViolationObserved;
+                                            let actual_blocked = result.disposition
+                                                == Disposition::BlockedBeforeEffect;
+                                            let actual_allowed = result.disposition
+                                                == Disposition::AuthorizedEffectVerified;
                                             assert_eq!(
-                                                result.disposition
-                                                    == Disposition::SecurityViolationObserved,
+                                                actual_violation,
                                                 expected_violation,
-                                                "security-violation invariant failed at state {states_checked}"
+                                                "security-violation invariant failed"
                                             );
                                             assert_eq!(
-                                                result.disposition == Disposition::BlockedBeforeEffect,
+                                                actual_blocked,
                                                 expected_block,
-                                                "blocked-before-effect invariant failed at state {states_checked}"
+                                                "blocked-before-effect invariant failed"
                                             );
                                             assert_eq!(
-                                                result.disposition
-                                                    == Disposition::AuthorizedEffectVerified,
+                                                actual_allowed,
                                                 expected_allowed,
-                                                "qualified-allow invariant failed at state {states_checked}"
+                                                "qualified-allow invariant failed"
                                             );
                                         }
                                     }
