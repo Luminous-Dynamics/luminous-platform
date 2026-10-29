@@ -17,7 +17,7 @@ The Linux `close_range(2)` interface supports `CLOSE_RANGE_CLOEXEC` (Linux 5.11+
 5. **Positive control:** executes itself again and requires the descriptor to be absent in the child with `EBADF`, while the descriptor remains open and marked `FD_CLOEXEC` in the parent.
 6. Emits one JSON evidence record. CI checks its schema and all Boolean outcomes.
 
-The probe fails closed if `close_range`/the requested flags are unavailable. It does not fall back to a weaker behavior and call it success.
+The probe fails closed if `close_range`/the requested flags are unavailable. It does not fall back to a weaker behavior and call it success. The machine-readable receipt binds the exact checkout SHA provided by CI through `LUMINOUS_CHECKOUT_SHA` and the sanitized running-kernel release; absent checkout identity outside CI is labelled `unbound_local`, not treated as an exact-head qualification. The CI workflow checks out the PR head SHA explicitly and verifies `git rev-parse HEAD` before compiling or running tests.
 
 ## Scope and limitations
 
