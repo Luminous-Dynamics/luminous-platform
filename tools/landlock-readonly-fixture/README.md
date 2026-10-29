@@ -16,7 +16,7 @@ The child must then:
 3. fail to open the existing allowed canary for writing with PermissionDenied;
 4. fail to create a new file outside the allowed subtree with PermissionDenied.
 
-After the child exits, the unsandboxed parent independently checks the allowed canary is unchanged, the outside canary is still present and unchanged, and the forbidden new file does not exist. The parent is a separate state oracle, so this does not rely only on the restricted child's self-reported log. The temporary tree is removed on normal return paths.
+After the child exits, the unsandboxed parent independently checks the allowed canary is unchanged, the outside canary is still present and unchanged, and the forbidden new file does not exist. The program emits one JSON result line with the observed Landlock ABI, the child's denied/allowed operation checks, and three separate parent-state-oracle fields. These distinguish a child's self-report from independently verified fixture state. The temporary tree is removed on normal return paths.
 
 ## Run
 
