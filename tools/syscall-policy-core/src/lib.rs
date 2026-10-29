@@ -1032,9 +1032,8 @@ mod tests {
             DenyReason::UnverifiedObservedOperation
         );
         req = request();
-        req.observed = Fact::contradictory(
-            req.observed.value.clone().expect("test observation exists"),
-        );
+        req.observed =
+            Fact::contradictory(req.observed.value.clone().expect("test observation exists"));
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::ContradictoryObservedOperation
