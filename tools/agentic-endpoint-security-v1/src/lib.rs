@@ -24,6 +24,37 @@ pub enum Binding {
     Unknown,
 }
 
+/// Exact scope tuple compared by the evaluator instead of a caller-supplied
+/// positive binding flag. Digest syntax is checked here; digest provenance and
+/// the truth of the observed tuple remain upstream obligations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct BindingTuple<'a> {
+    pub target_id: &'a str,
+    pub task_id: &'a str,
+    pub action_id: &'a str,
+    pub artifact_digest: &'a str,
+    pub policy_digest: &'a str,
+    pub policy_epoch: u64,
+    pub nonce_digest: &'a str,
+}
+
+impl BindingTuple<'_> {
+    fn is_well_formed(self) -> bool {
+        let nonempty = |value: &str| !value.trim().is_empty();
+        let sha256 = |value: &str| {
+            value.len() == 64 && value.bytes().all(|byte| byte.is_ascii_hexdigit())
+        };
+
+        nonempty(self.target_id)
+            && nonempty(self.task_id)
+            && nonempty(self.action_id)
+            && sha256(self.artifact_digest)
+            && sha256(self.policy_digest)
+            && self.policy_epoch > 0
+            && sha256(self.nonce_digest)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Freshness {
     Fresh,
@@ -77,9 +108,10 @@ pub enum RollbackState {
 /// the named source satisfied the named scope contract; it is not a universal
 /// proof that no unobserved source exists.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct EvidenceBundle {
+pub struct EvidenceBundle<'a> {
     pub authorization: Authorization,
-    pub target_policy_binding: Binding,
+    pub expected_binding: BindingTuple<'a>,
+    pub observed_binding: Option<BindingTuple<'a>>,
     pub freshness: Freshness,
     pub revocation: Revocation,
     pub telemetry: Telemetry,
@@ -104,13 +136,30 @@ pub enum Disposition {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Evaluation {
+pub struct Evaluation<'a> {
     /// Keep each dimension inspectable alongside the summary disposition.
-    pub evidence: EvidenceBundle,
+    pub evidence: EvidenceBundle<'a>,
+    /// Computed by comparing exact expected and observed binding tuples.
+    pub computed_binding: Binding,
     pub disposition: Disposition,
 }
 
-impl EvidenceBundle {
+impl EvidenceBundle<'_> {
+    fn computed_binding(self) -> Binding {
+        match self.observed_binding {
+            None => Binding::Unknown,
+            Some(observed) => {
+                if !self.expected_binding.is_well_formed() || !observed.is_well_formed() {
+                    Binding::Unknown
+                } else if self.expected_binding == observed {
+                    Binding::Match
+                } else {
+                    Binding::Mismatch
+                }
+            }
+        }
+    }
+
     fn rollback_is_acceptable(self) -> bool {
         match self.rollback {
             RollbackState::Current => true,
@@ -123,7 +172,7 @@ impl EvidenceBundle {
 
     fn has_blocking_condition(self) -> bool {
         matches!(self.authorization, Authorization::Denied)
-            || matches!(self.target_policy_binding, Binding::Mismatch)
+            || self.computed_binding() == Binding::Mismatch
             || matches!(self.freshness, Freshness::Stale)
             || matches!(self.revocation, Revocation::Revoked)
             || !self.rollback_is_acceptable()
@@ -138,11 +187,12 @@ impl EvidenceBundle {
         self.telemetry != Telemetry::CompleteForDeclaredScope
             || self.observation_source == ObservationSource::Unknown
             || self.effect == Effect::Unknown
+            || self.computed_binding() == Binding::Unknown
     }
 
     fn facts_allow_expected_effect(self) -> bool {
         self.authorization == Authorization::Allowed
-            && self.target_policy_binding == Binding::Match
+            && self.computed_binding() == Binding::Match
             && self.freshness == Freshness::Fresh
             && self.revocation == Revocation::Clear
             && self.rollback_is_acceptable()
@@ -194,6 +244,7 @@ pub fn evaluate(evidence: EvidenceBundle) -> Evaluation {
 
     Evaluation {
         evidence,
+        computed_binding: evidence.computed_binding(),
         disposition,
     }
 }
@@ -202,10 +253,23 @@ pub fn evaluate(evidence: EvidenceBundle) -> Evaluation {
 mod tests {
     use super::*;
 
-    fn compliant_evidence() -> EvidenceBundle {
+    fn canonical_binding() -> BindingTuple<'static> {
+        BindingTuple {
+            target_id: "endpoint-a",
+            task_id: "task-read-fixture",
+            action_id: "read-file",
+            artifact_digest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            policy_digest: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            policy_epoch: 7,
+            nonce_digest: "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        }
+    }
+
+    fn compliant_evidence() -> EvidenceBundle<'static> {
         EvidenceBundle {
             authorization: Authorization::Allowed,
-            target_policy_binding: Binding::Match,
+            expected_binding: canonical_binding(),
+            observed_binding: Some(canonical_binding()),
             freshness: Freshness::Fresh,
             revocation: Revocation::Clear,
             telemetry: Telemetry::CompleteForDeclaredScope,
@@ -221,6 +285,7 @@ mod tests {
         let result = evaluate(compliant_evidence());
         assert_eq!(result.disposition, Disposition::AuthorizedEffectVerified);
         assert_eq!(result.evidence.authorization, Authorization::Allowed);
+        assert_eq!(result.computed_binding, Binding::Match);
         assert_eq!(
             result.evidence.telemetry,
             Telemetry::CompleteForDeclaredScope
@@ -304,7 +369,10 @@ mod tests {
                 ..compliant_evidence()
             },
             EvidenceBundle {
-                target_policy_binding: Binding::Mismatch,
+                observed_binding: Some(BindingTuple {
+                    target_id: "endpoint-b",
+                    ..canonical_binding()
+                }),
                 ..compliant_evidence()
             },
             EvidenceBundle {
@@ -340,6 +408,74 @@ mod tests {
                 "unsafe mutation preserved a qualified-success disposition"
             );
         }
+    }
+
+
+    #[test]
+    fn target_policy_task_and_nonce_binding_are_computed_not_self_asserted() {
+        let baseline = compliant_evidence();
+        assert_eq!(evaluate(baseline).computed_binding, Binding::Match);
+
+        let target_substitution = EvidenceBundle {
+            observed_binding: Some(BindingTuple {
+                target_id: "endpoint-b",
+                ..canonical_binding()
+            }),
+            ..baseline
+        };
+        assert_eq!(
+            evaluate(target_substitution).computed_binding,
+            Binding::Mismatch
+        );
+        assert_eq!(
+            evaluate(target_substitution).disposition,
+            Disposition::SecurityViolationObserved
+        );
+
+        let policy_rollback = EvidenceBundle {
+            observed_binding: Some(BindingTuple {
+                policy_epoch: 6,
+                ..canonical_binding()
+            }),
+            ..baseline
+        };
+        assert_eq!(
+            evaluate(policy_rollback).computed_binding,
+            Binding::Mismatch
+        );
+
+        let nonce_replay = EvidenceBundle {
+            observed_binding: Some(BindingTuple {
+                nonce_digest: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                ..canonical_binding()
+            }),
+            ..baseline
+        };
+        assert_eq!(evaluate(nonce_replay).computed_binding, Binding::Mismatch);
+    }
+
+    #[test]
+    fn missing_or_malformed_binding_never_becomes_a_match() {
+        let missing = EvidenceBundle {
+            observed_binding: None,
+            ..compliant_evidence()
+        };
+        assert_eq!(evaluate(missing).computed_binding, Binding::Unknown);
+        assert_eq!(evaluate(missing).disposition, Disposition::IncompleteEvidence);
+
+        let malformed = EvidenceBundle {
+            expected_binding: BindingTuple {
+                policy_digest: "not-a-digest",
+                ..canonical_binding()
+            },
+            observed_binding: Some(canonical_binding()),
+            ..compliant_evidence()
+        };
+        assert_eq!(evaluate(malformed).computed_binding, Binding::Unknown);
+        assert_ne!(
+            evaluate(malformed).disposition,
+            Disposition::AuthorizedEffectVerified
+        );
     }
 
     #[test]
