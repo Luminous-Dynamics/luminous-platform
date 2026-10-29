@@ -113,9 +113,7 @@ fn worker(mode: &str, fd: RawFd) -> io::Result<()> {
             Ok(())
         }
         "expect-absent" => {
-            if flags == -1
-                && io::Error::last_os_error().raw_os_error() == Some(EBADF_ERRNO)
-            {
+            if flags == -1 && io::Error::last_os_error().raw_os_error() == Some(EBADF_ERRNO) {
                 println!("CLOEXEC_CONTROL_PASS inherited_fd_absent=true");
                 Ok(())
             } else {
