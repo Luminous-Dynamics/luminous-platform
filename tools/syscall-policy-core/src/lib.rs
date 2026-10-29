@@ -779,20 +779,38 @@ mod tests {
 
     fn request() -> Request {
         Request {
-            target_id: Fact::verified("endpoint-a".into()),
-            subject_image_digest: Fact::verified(digest('b')),
-            resource: Fact::verified(resource(ResourceKind::File, 'c')),
-            call: Fact::verified(SyscallCall {
-                syscall: Syscall::OpenAt,
-                arguments: ArgumentFacts::Open(OpenArguments {
-                    access: OpenAccessMode::ReadOnly,
-                    create: false,
-                    truncate: false,
-                    append: false,
-                    unsupported_flags: false,
-                }),
+            observed: Fact::verified(ObservedOperation {
+                target_id: "endpoint-a".into(),
+                subject_image_digest: digest('b'),
+                resource: resource(ResourceKind::File, 'c'),
+                call: SyscallCall {
+                    syscall: Syscall::OpenAt,
+                    arguments: ArgumentFacts::Open(OpenArguments {
+                        access: OpenAccessMode::ReadOnly,
+                        create: false,
+                        truncate: false,
+                        append: false,
+                        unsupported_flags: false,
+                    }),
+                },
             }),
         }
+    }
+
+    fn set_call(request: &mut Request, call: SyscallCall) {
+        request.observed.value.as_mut().expect("test observation exists").call = call;
+    }
+
+    fn set_resource(request: &mut Request, resource: ResourceIdentity) {
+        request.observed.value.as_mut().expect("test observation exists").resource = resource;
+    }
+
+    fn set_target(request: &mut Request, target_id: &str) {
+        request.observed.value.as_mut().expect("test observation exists").target_id = target_id.into();
+    }
+
+    fn set_subject(request: &mut Request, subject_image_digest: Digest) {
+        request.observed.value.as_mut().expect("test observation exists").subject_image_digest = subject_image_digest;
     }
 
     fn context() -> EvaluationContext {
@@ -961,31 +979,25 @@ mod tests {
     }
 
     #[test]
-    fn missing_target_subject_resource_or_call_fails_closed() {
+    fn missing_unverified_or_contradictory_observation_fails_closed() {
         let policy = baseline_policy();
         let mut req = request();
-        req.target_id = Fact::missing();
+        req.observed = Fact::missing();
         assert_eq!(
             denied_reason(&policy, &req, &context()),
-            DenyReason::MissingTargetBinding
+            DenyReason::MissingObservedOperation
         );
         req = request();
-        req.subject_image_digest = Fact::unverified(digest('b'));
+        req.observed = Fact::unverified(req.observed.value.clone().expect("test observation exists"));
         assert_eq!(
             denied_reason(&policy, &req, &context()),
-            DenyReason::UnverifiedSubjectIdentity
+            DenyReason::UnverifiedObservedOperation
         );
         req = request();
-        req.resource = Fact::contradictory(resource(ResourceKind::File, 'c'));
+        req.observed = Fact::contradictory(req.observed.value.clone().expect("test observation exists"));
         assert_eq!(
             denied_reason(&policy, &req, &context()),
-            DenyReason::ContradictoryResourceIdentity
-        );
-        req = request();
-        req.call = Fact::missing();
-        assert_eq!(
-            denied_reason(&policy, &req, &context()),
-            DenyReason::MissingSyscallFacts
+            DenyReason::ContradictoryObservedOperation
         );
     }
 
@@ -993,13 +1005,13 @@ mod tests {
     fn wrong_target_or_subject_never_matches_capability() {
         let policy = baseline_policy();
         let mut req = request();
-        req.target_id = Fact::verified("endpoint-b".into());
+        set_target(&mut req, "endpoint-b");
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::TargetMismatch
         );
         req = request();
-        req.subject_image_digest = Fact::verified(digest('e'));
+        set_subject(&mut req, digest('e'));
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::NoMatchingCapability
@@ -1010,7 +1022,7 @@ mod tests {
     fn different_resource_identity_never_matches_capability() {
         let policy = baseline_policy();
         let mut req = request();
-        req.resource = Fact::verified(resource(ResourceKind::File, 'd'));
+        set_resource(&mut req, resource(ResourceKind::File, 'd'));
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::NoMatchingCapability
@@ -1025,7 +1037,7 @@ mod tests {
         write_only_capability.operations = vec![Operation::OpenWrite];
         policy.capabilities.push(write_only_capability);
         let mut req = request();
-        req.call = Fact::verified(SyscallCall {
+        set_call(&mut req, SyscallCall {
             syscall: Syscall::OpenAt,
             arguments: ArgumentFacts::Open(OpenArguments {
                 access: OpenAccessMode::ReadWrite,
@@ -1046,7 +1058,7 @@ mod tests {
         let mut policy = baseline_policy();
         policy.capabilities[0].operations = vec![Operation::OpenRead, Operation::OpenWrite];
         let mut req = request();
-        req.call = Fact::verified(SyscallCall {
+        set_call(&mut req, SyscallCall {
             syscall: Syscall::OpenAt,
             arguments: ArgumentFacts::Open(OpenArguments {
                 access: OpenAccessMode::ReadWrite,
@@ -1072,8 +1084,8 @@ mod tests {
             Operation::Truncate,
         ];
         let mut req = request();
-        req.resource = Fact::verified(resource(ResourceKind::DirectoryEntry, 'c'));
-        req.call = Fact::verified(SyscallCall {
+        set_resource(&mut req, resource(ResourceKind::DirectoryEntry, 'c'));
+        set_call(&mut req, SyscallCall {
             syscall: Syscall::OpenAt,
             arguments: ArgumentFacts::Open(OpenArguments {
                 access: OpenAccessMode::WriteOnly,
@@ -1099,7 +1111,7 @@ mod tests {
     fn unknown_open_flags_and_inconsistent_flags_fail_closed() {
         let policy = baseline_policy();
         let mut req = request();
-        req.call = Fact::verified(SyscallCall {
+        set_call(&mut req, SyscallCall {
             syscall: Syscall::OpenAt,
             arguments: ArgumentFacts::Open(OpenArguments {
                 access: OpenAccessMode::ReadOnly,
@@ -1113,7 +1125,7 @@ mod tests {
             denied_reason(&policy, &req, &context()),
             DenyReason::UnsupportedArgumentSemantics
         );
-        req.call = Fact::verified(SyscallCall {
+        set_call(&mut req, SyscallCall {
             syscall: Syscall::OpenAt,
             arguments: ArgumentFacts::Open(OpenArguments {
                 access: OpenAccessMode::ReadOnly,
@@ -1133,7 +1145,7 @@ mod tests {
     fn unsupported_unknown_syscalls_are_never_granted() {
         let policy = baseline_policy();
         let mut req = request();
-        req.call = Fact::verified(SyscallCall {
+        set_call(&mut req, SyscallCall {
             syscall: Syscall::Unknown(0xffff),
             arguments: ArgumentFacts::None,
         });
@@ -1147,7 +1159,7 @@ mod tests {
     fn operations_requiring_two_resources_are_denied_until_modeled() {
         let policy = baseline_policy();
         let mut req = request();
-        req.call = Fact::verified(SyscallCall {
+        set_call(&mut req, SyscallCall {
             syscall: Syscall::RenameAt2,
             arguments: ArgumentFacts::None,
         });
@@ -1155,7 +1167,7 @@ mod tests {
             denied_reason(&policy, &req, &context()),
             DenyReason::UnsupportedMultiResourceOperation
         );
-        req.call = Fact::verified(SyscallCall {
+        set_call(&mut req, SyscallCall {
             syscall: Syscall::Clone3,
             arguments: ArgumentFacts::None,
         });
@@ -1175,8 +1187,8 @@ mod tests {
             Operation::MemoryExecute,
         ];
         let mut req = request();
-        req.resource = Fact::verified(resource(ResourceKind::MemoryRegion, 'c'));
-        req.call = Fact::verified(SyscallCall {
+        set_resource(&mut req, resource(ResourceKind::MemoryRegion, 'c'));
+        set_call(&mut req, SyscallCall {
             syscall: Syscall::Mmap,
             arguments: ArgumentFacts::Memory(MemoryArguments {
                 read: true,
@@ -1195,7 +1207,7 @@ mod tests {
     fn unknown_memory_protection_bits_fail_closed() {
         let policy = baseline_policy();
         let mut req = request();
-        req.call = Fact::verified(SyscallCall {
+        set_call(&mut req, SyscallCall {
             syscall: Syscall::Mprotect,
             arguments: ArgumentFacts::Memory(MemoryArguments {
                 read: true,
@@ -1214,7 +1226,7 @@ mod tests {
     fn resource_kind_must_match_operation_family() {
         let policy = baseline_policy();
         let mut req = request();
-        req.resource = Fact::verified(resource(ResourceKind::NetworkEndpoint, 'c'));
+        set_resource(&mut req, resource(ResourceKind::NetworkEndpoint, 'c'));
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::InvalidResourceKind
@@ -1269,16 +1281,16 @@ mod tests {
     }
 
     #[test]
-    fn verified_status_without_a_value_is_still_missing_evidence() {
+    fn verified_status_without_an_observation_is_still_missing_evidence() {
         let policy = baseline_policy();
         let mut req = request();
-        req.resource = Fact {
+        req.observed = Fact {
             status: EvidenceStatus::Verified,
             value: None,
         };
         assert_eq!(
             denied_reason(&policy, &req, &context()),
-            DenyReason::MissingResourceIdentity
+            DenyReason::MissingObservedOperation
         );
     }
 
