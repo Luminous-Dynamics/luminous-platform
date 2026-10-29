@@ -257,6 +257,20 @@ class EvidenceBundleVerifierTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "do not authenticate"):
             verify_bundle(self.root, EXPECTED_SHA, EXPECTED_RUN_ID)
 
+    def test_manifest_landlock_abi_must_match_receipt(self):
+        self.write_bundle(
+            receipt_for("luminous.landlock-preopened-fd-result.v1"),
+            manifest_overrides={"landlock_abi": 9},
+        )
+        with self.assertRaisesRegex(ValueError, "ABI does not match"):
+            verify_bundle(self.root, EXPECTED_SHA, EXPECTED_RUN_ID)
+
+    def test_extra_files_are_not_silently_ignored(self):
+        self.write_bundle(receipt_for("luminous.fd-inheritance-boundary-result.v1"))
+        (self.root / "unexpected.txt").write_text("extra", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "unexpected files"):
+            verify_bundle(self.root, EXPECTED_SHA, EXPECTED_RUN_ID)
+
     def test_pathlike_checksum_entries_are_rejected(self):
         self.write_bundle(receipt_for("luminous.fd-inheritance-boundary-result.v1"))
         path = self.root / "SHA256SUMS"
