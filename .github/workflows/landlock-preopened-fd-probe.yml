@@ -26,8 +26,19 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Check out exact source
+      - name: Check out exact PR head (or pushed commit)
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify the checked-out commit
+        env:
+          EXPECTED_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$EXPECTED_CHECKOUT_SHA"
+          echo "Exact source checkout verified: $actual"
 
       - name: Install pinned Rust toolchain and components
         uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
@@ -50,6 +61,8 @@ jobs:
           cargo run --quiet --locked --manifest-path tools/landlock-preopened-fd-probe/Cargo.toml | tee /tmp/landlock-preopened-fd-result.jsonl
           python3 - <<'PY'
           import json
+          import os
+          import re
           from pathlib import Path
 
           lines = Path("/tmp/landlock-preopened-fd-result.jsonl").read_text(encoding="utf-8").splitlines()
@@ -58,6 +71,10 @@ jobs:
           result = json.loads(records[0])
           assert result.get("schema") == "luminous.landlock-preopened-fd-result.v1"
           assert result.get("status") == "pass"
+          expected_sha = os.environ["LUMINOUS_CHECKOUT_SHA"]
+          assert re.fullmatch(r"[0-9a-f]{40}", expected_sha)
+          assert result.get("checkout_sha") == expected_sha
+          assert isinstance(result.get("kernel_release"), str) and result["kernel_release"] != "unknown"
           assert type(result.get("landlock_abi")) is int and result["landlock_abi"] >= 3
           for field in (
               "preopened_write_succeeded_after_landlock",
@@ -73,6 +90,7 @@ jobs:
           print("PASS: expected-exposure control, CLOEXEC/path-denial control, parent oracle, and claim-boundary fields")
           PY
         env:
+          LUMINOUS_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           CARGO_NET_OFFLINE: "true"
 
       - name: Run Clippy with warnings denied
