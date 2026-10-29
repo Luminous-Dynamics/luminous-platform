@@ -180,3 +180,17 @@ The companion [Endpoint Assurance Benchmark Targets v1](ENDPOINT_ASSURANCE_BENCH
 
 Industry comparisons must include NVIDIA OpenShell as a genuine out-of-process sandbox/supervision baseline and CrowdStrike Falcon Guardian when an authorized tenant with the exact features is available. MITRE ATT&CK Evaluations Enterprise 2026 provides a useful protection/detection-quality and source-of-action reporting reference; use its published results only when available, and do not present announced features as measured capability. The current research target is not a broad EDR replacement claim but a falsifiable result about independently observed forbidden effects, evidence-gap detection, replay/revocation races, utility, latency and reproducibility.
 
+
+
+## 13. Launch-boundary descriptor contract (new candidate)
+
+The companion [Launch Boundary Descriptor Contract v1](../benchmarks/agentic-endpoint-security-v1/launch-boundary-contract.json) freezes one narrow, documented Linux behavior that matters for T1 enforcement: a writable descriptor acquired before Landlock restrictions can preserve authority after the child enters a restricted domain. The contract distinguishes two different outcomes:
+
+- **Deliberately weak control:** the pre-opened descriptor is inherited, an attempted write is expected to succeed, and a parent-side state oracle must observe the exact synthetic mutation. This is a successful exposure reproduction and a failed containment condition—not a security pass.
+- **Mitigation control:** the descriptor is marked close-on-exec, the restricted worker must observe the handle absent, a new path-based write-open must be denied, and the parent oracle must observe unchanged baseline bytes.
+
+It separately asserts that the original parent-owned descriptor is also close-on-exec, to exclude a second accidental inheritance channel. A missing Landlock ABI, missing worker marker, oracle error, or malformed result remains incomplete/failure evidence, never a zero-event pass.
+
+The contract checker requires a 13-field runtime receipt contract, including exact `checkout_sha`, `kernel_release`, Landlock ABI, the separate exposure and mitigation outcomes, the parent oracle result, and the explicit false value for full descriptor coverage. Thirteen authored unit tests validate the manifest and reject mutations to lab constraints, outcome semantics, parent-oracle requirements, mitigation coverage, claim ceilings, and receipt identity/completeness. They do not execute Landlock and do not count as T1 results. The dedicated runtime micro-test is [PR #145](https://github.com/Luminous-Dynamics/luminous-platform/pull/145); the related exec-boundary test is [PR #144](https://github.com/Luminous-Dynamics/luminous-platform/pull/144).
+
+The frozen v1 corpus stays unchanged. This launch-boundary manifest is a separately versioned supplement so existing corpus identities and raw-byte hashes remain stable. Until the Rust integration test executes on a named Linux runner with Landlock ABI >=3, the result remains a proposed contract rather than a demonstrated runtime finding. The intended claim ceiling is one file descriptor, one exec boundary, one filesystem and one runner configuration—not full descriptor hygiene, host-kernel integrity, or general endpoint security.

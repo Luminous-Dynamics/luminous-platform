@@ -1,0 +1,189 @@
+{
+  "schema": "luminous.endpoint-launch-boundary-contract.v1",
+  "version": 1,
+  "status": "proposed_not_executed",
+  "execution_constraints": {
+    "explicit_owner_authorization_required": true,
+    "isolated_disposable_lab_required": true,
+    "external_network_access": false,
+    "real_credentials_or_customer_data": false,
+    "host_mutation_outside_fixture": false,
+    "synthetic_canaries_only": true,
+    "unexpected_or_inconclusive_effect_state_fails": true,
+    "parent_or_external_state_oracle_required": true
+  },
+  "claim_scope": {
+    "assurance_tier": "T1",
+    "tested_platform": "Linux runner with Landlock ABI >= 3",
+    "host_kernel_in_trusted_computing_base": true,
+    "full_descriptor_hygiene_coverage": false,
+    "production_launcher_qualified": false,
+    "general_endpoint_security_qualified": false
+  },
+  "source_semantics": [
+    {
+      "id": "DOC-01",
+      "claim": "Files opened before Landlock sandboxing are not subject to later filesystem restrictions.",
+      "source": "https://docs.kernel.org/userspace-api/landlock.html"
+    },
+    {
+      "id": "DOC-02",
+      "claim": "WRITE_FILE is checked when opening files for writing; later writes use the access associated with the already-open descriptor.",
+      "source": "https://docs.kernel.org/userspace-api/landlock.html"
+    },
+    {
+      "id": "DOC-03",
+      "claim": "CLOSE_RANGE_CLOEXEC marks descriptors for closure on successful exec while retaining them in the caller; CLOSE_RANGE_UNSHARE avoids modifying a shared descriptor table.",
+      "source": "https://man7.org/linux/man-pages/man2/close_range.2.html"
+    }
+  ],
+  "fixtures": {
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "baseline_marker": "SAFE-CANARY-0000000000000000\n",
+    "mutation_marker": "EVIL-CANARY-0000000000000000\n",
+    "baseline_and_mutation_same_length": true,
+    "file_contains_only_synthetic_data": true,
+    "read_only_external_oracle": "parent reads fixture after child exits",
+    "parent_oracle_read_only_measurement": true,
+    "original_parent_descriptor_must_be_cloexec": true
+  },
+  "scenarios": [
+    {
+      "id": "LBC-001",
+      "name": "pre-opened writable descriptor is expected to retain its opened authority",
+      "arm": "deliberately_weak_control",
+      "expected_outcome": "FORBIDDEN_EFFECT_OBSERVED",
+      "required_assertions": [
+        "descriptor_is_opened_before_restriction",
+        "worker_confirms_landlock_abi_at_least_3",
+        "write_through_preopened_descriptor_succeeds",
+        "parent_oracle_observes_exact_mutation"
+      ],
+      "interpretation": "This is an exposure-control pass, not a security-containment pass.",
+      "claim_ceiling": "documented Landlock descriptor-ordering behavior for the tested operation"
+    },
+    {
+      "id": "LBC-002",
+      "name": "close-on-exec removes the intentionally delegated descriptor",
+      "arm": "mitigation_control",
+      "expected_outcome": "BLOCK_BEFORE_EFFECT",
+      "required_assertions": [
+        "parent_descriptor_has_cloexec_before_exec",
+        "worker_observes_ebadf_for_delegated_descriptor",
+        "parent_descriptor_remains_open",
+        "parent_oracle_observes_baseline_unchanged"
+      ],
+      "interpretation": "The close-on-exec flag applies at exec; it does not revoke the parent's descriptor.",
+      "claim_ceiling": "one tested descriptor and exec boundary"
+    },
+    {
+      "id": "LBC-003",
+      "name": "new pathname write-open is denied after Landlock restriction",
+      "arm": "mitigation_control",
+      "expected_outcome": "BLOCK_BEFORE_EFFECT",
+      "required_assertions": [
+        "landlock_handles_write_file_and_truncate",
+        "no_path_write_grant_is_added",
+        "new_write_open_fails_with_permission_denied",
+        "parent_oracle_observes_baseline_unchanged"
+      ],
+      "interpretation": "A failed open is not sufficient alone; parent-side state is also checked.",
+      "claim_ceiling": "tested path and filesystem on the named Linux runner"
+    },
+    {
+      "id": "LBC-004",
+      "name": "original parent descriptor does not create a second inheritance channel",
+      "arm": "fixture_integrity",
+      "expected_outcome": "ALLOW_AND_OBSERVE",
+      "required_assertions": [
+        "original_parent_descriptor_has_cloexec",
+        "only_explicit_duplicate_differs_in_cloexec_state",
+        "worker_uses_explicit_duplicate_number",
+        "claim_does_not_extend_to_other_fd_types"
+      ],
+      "interpretation": "Proves the negative and mitigation arms differ on the declared descriptor, not an unnoticed second handle.",
+      "claim_ceiling": "declared file descriptor only"
+    },
+    {
+      "id": "LBC-005",
+      "name": "infrastructure unavailability is not counted as containment",
+      "arm": "fault_control",
+      "expected_outcome": "BLOCKED_INCOMPLETE_EVIDENCE",
+      "required_assertions": [
+        "landlock_abi_unavailable_fails_probe",
+        "missing_worker_marker_fails_probe",
+        "parent_oracle_error_fails_probe",
+        "missing_or_malformed_json_fails_contract"
+      ],
+      "interpretation": "Unsupported or inconclusive is not a security pass and cannot be counted as zero effects.",
+      "claim_ceiling": "failure handling of this probe only"
+    }
+  ],
+  "mutation_controls": [
+    {
+      "id": "LBC-MUT-01",
+      "mutation": "remove the parent-side check for the expected mutation",
+      "expected_control": "contract_checker_rejects_missing_parent_oracle_assertion"
+    },
+    {
+      "id": "LBC-MUT-02",
+      "mutation": "change the deliberately weak control outcome to BLOCK_BEFORE_EFFECT",
+      "expected_control": "contract_checker_rejects_outcome_semantic_drift"
+    },
+    {
+      "id": "LBC-MUT-03",
+      "mutation": "set external_network_access true",
+      "expected_control": "contract_checker_rejects_unsafe_execution_constraint"
+    },
+    {
+      "id": "LBC-MUT-04",
+      "mutation": "change full_descriptor_hygiene_coverage to true",
+      "expected_control": "contract_checker_rejects_claim_ceiling_escalation"
+    },
+    {
+      "id": "LBC-MUT-05",
+      "mutation": "remove the close-on-exec positive control",
+      "expected_control": "contract_checker_rejects_missing_mitigation"
+    }
+  ],
+  "receipt_contract": {
+    "schema": "luminous.landlock-preopened-fd-result.v1",
+    "required_fields": [
+      "schema",
+      "status",
+      "checkout_sha",
+      "kernel_release",
+      "landlock_abi",
+      "preopened_write_succeeded_after_landlock",
+      "parent_oracle_observed_preopened_write",
+      "cloexec_descriptor_absent_after_exec",
+      "new_path_write_open_denied_after_landlock",
+      "parent_oracle_safe_control_unchanged",
+      "parent_original_fd_cloexec",
+      "full_descriptor_hygiene_coverage",
+      "scope"
+    ],
+    "expected_values": {
+      "status": "pass",
+      "full_descriptor_hygiene_coverage": false,
+      "scope": "preopened_writable_fd_ordering_microtest"
+    },
+    "identity_requirements": {
+      "checkout_sha": "40 lowercase hexadecimal characters",
+      "kernel_release": "nonempty sanitized release string",
+      "landlock_abi_minimum": 3,
+      "both_arms_must_report_same_landlock_abi": true
+    }
+  },
+  "reporting_requirements": {
+    "preserve_expected_exposure_as_exposure_not_success": true,
+    "parent_oracle_is_independent_of_child_stdout": true,
+    "unknown_or_missing_result_is_incomplete": true,
+    "do_not_aggregate_away_forbidden_effect": true,
+    "bind_exact_checkout_sha_in_report": true,
+    "record_kernel_and_landlock_abi": true,
+    "record_all_trials_and_failures": true
+  },
+  "claim_ceiling": "T1 micro-test for one file descriptor ordering and exec boundary; does not establish full descriptor hygiene, all Landlock behavior, production launcher safety, host-kernel integrity, or general endpoint security"
+}

@@ -32,8 +32,19 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Check out exact source
+      - name: Check out exact PR head (or pushed commit)
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify the checked-out commit
+        env:
+          EXPECTED_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$EXPECTED_CHECKOUT_SHA"
+          echo "Exact source checkout verified: $actual"
 
       - name: Install pinned Rust toolchain and components
         uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
@@ -59,6 +70,12 @@ jobs:
 
       - name: Run oracle coverage mutation tests
         run: python3 tools/agentic-endpoint-security-v1/test_oracle_coverage.py
+
+      - name: Validate Landlock launch-boundary descriptor contract
+        run: python3 tools/agentic-endpoint-security-v1/check_launch_boundary.py
+
+      - name: Run launch-boundary contract mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_launch_boundary.py
 
       - name: Check Rust formatting
         run: cargo fmt --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml -- --check
