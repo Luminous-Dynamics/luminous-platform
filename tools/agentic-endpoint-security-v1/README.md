@@ -3,3 +3,11 @@ This crate intentionally has no third-party dependencies. Both evaluators accept
 The standard-library Python checkers are test tooling only: one freezes the 20 fixed-corpus IDs/outcomes and lab constraints; the other freezes adaptive attack families, query budgets, comparison arms, sample-size rules, and anti-gaming constraints. Mutation tests ensure key adaptive protocol requirements cannot silently be weakened. The PR workflow uses pinned action commits, Rust 1.96.0, offline Cargo test/build steps, and read-only repository permissions.
 
 The Rust suite contains **28 authored tests** across the evidence-dimension evaluator and [ordered trace oracle](../../docs/ENDPOINT_TRACE_ORACLE_V1.md), including binding-field mutations, trace-order/replay/gap/no-effect cases, and an exhaustive 29,160-state contract matrix. Authored tests have not been compiled or run locally; use the exact-head workflow result before marking them passed. The models compare exact tuples and trace order but do not authenticate sources, consume nonces durably, observe real OS effects, or prevent actions. Runtime prevention still requires a T1+ lab adapter and an independent effect observer.
+
+## Ordered trace oracle and episode scoring
+
+- [Ordered trace oracle v1](../../docs/ENDPOINT_TRACE_ORACLE_V1.md) defines the normalized grant/deny/attempt/revocation/effect/checkpoint model and its claim limits.
+- [Episode scoring v1](../../docs/ENDPOINT_EPISODE_SCORING_V1.md) documents the JSONL result contract and interpretation of adaptive violation rate, assurance failure rate, false refusal, evidence gaps, and exact confidence bounds.
+- `score_episodes.py` validates submitted episodes and emits stratified JSON metrics. It requires independent known outcomes to be explicitly marked, prevents a cumulative forbidden effect from disappearing at later budgets, counts unknown/incomplete/harness-error outcomes as assurance failures, and does not qualify a zero-event critical claim unless the per-stratum denominator reaches 2,995 with no uncertainty.
+- Local authoring prototype: 18 standard-library unit tests passed. The committed scorer/tests still require exact-head CI execution; no real endpoint or adaptive attack result is implied.
+
