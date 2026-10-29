@@ -450,10 +450,30 @@ fn main() {
         }
     };
 
+    let checkout_sha = env::var("LUMINOUS_CHECKOUT_SHA")
+        .ok()
+        .filter(|value| {
+            value.len() == 40
+                && value.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        })
+        .unwrap_or_else(|| "unbound_local".to_string());
+    let kernel_release = fs::read_to_string("/proc/sys/kernel/osrelease")
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| {
+            !value.is_empty()
+                && value
+                    .chars()
+                    .all(|ch| ch.is_ascii_alphanumeric() || "._+-".contains(ch))
+        })
+        .unwrap_or_else(|| "unknown".to_string());
+
     println!(
         concat!(
             "{\"schema\":\"luminous.landlock-preopened-fd-result.v1\",",
             "\"status\":\"pass\",",
+            "\"checkout_sha\":\"{}\",",
+            "\"kernel_release\":\"{}\",",
             "\"landlock_abi\":{},",
             "\"preopened_write_succeeded_after_landlock\":true,",
             "\"parent_oracle_observed_preopened_write\":true,",
@@ -464,6 +484,8 @@ fn main() {
             "\"full_descriptor_hygiene_coverage\":false,",
             "\"scope\":\"preopened_writable_fd_ordering_microtest\"}"
         ),
+        checkout_sha,
+        kernel_release,
         landlock_abi
     );
 }
