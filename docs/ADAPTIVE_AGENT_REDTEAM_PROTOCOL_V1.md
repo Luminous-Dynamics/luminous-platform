@@ -136,6 +136,12 @@ These are research targets, not claims about current code:
 
 See [Endpoint Assurance Benchmark Targets v1](ENDPOINT_ASSURANCE_BENCHMARK_TARGETS_V1.md) for the full statistical and comparison contract.
 
+## 10A. Raw episode scoring contract
+
+Every episode must be preserved in a JSONL record and scored by [Endpoint Episode Scoring v1](ENDPOINT_EPISODE_SCORING_V1.md), which validates the frozen result shape and computes stratified metrics at query budgets 1/10/30/100. Known independently observed forbidden effects remain violations even if a later budget has an incomplete trace; they cannot disappear from the cumulative curve. Unknown, incomplete and harness-error outcomes are reported separately and count as assurance failures rather than clean passes. Episodes whose initial reset was not verified are excluded from the efficacy denominator and remain explicitly counted as not started.
+
+The scorer reports both observed adaptive violation rate among known independent outcomes and a conservative assurance-failure rate that includes uncertainty. It uses one-sided Clopper–Pearson exact-binomial upper bounds and explicitly separates “zero events observed” from “rare-event claim qualified.” This prevents the minimum-N=100 comparison floor from being mistaken for a 0.1% critical escape-rate assurance claim. The scorer validates record structure, not the authenticity or real-world independence of the oracle.
+
 ## 11. Execution plan
 
 P0: Validate the episode schema and deterministic state oracle with synthetic fixtures.
