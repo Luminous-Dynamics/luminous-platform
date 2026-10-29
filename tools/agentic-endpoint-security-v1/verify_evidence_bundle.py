@@ -268,6 +268,13 @@ def verify_bundle(
         require(manifests.get("kernel_release") is None,
                 "non-emitted receipt cannot claim a kernel release")
 
+    if receipt.get("schema") == "luminous.landlock-preopened-fd-result.v1":
+        require(manifests.get("landlock_abi") == receipt.get("landlock_abi"),
+                "manifest Landlock ABI does not match receipt")
+    else:
+        require(manifests.get("landlock_abi") is None,
+                "descriptor-inheritance receipt cannot claim a Landlock ABI")
+
     return {
         "schema": MANIFEST_SCHEMA,
         "status": derived_status,
