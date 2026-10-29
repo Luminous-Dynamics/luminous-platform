@@ -163,6 +163,13 @@ This adds model-level sequence semantics; it does not yet verify real trace prov
 
 **Next implementation step:** build a disposable Linux/NixOS T1 harness for a harmless synthetic file operation, with a supervisor outside the agent process and a separate before/after filesystem oracle. Inject single-fault episodes (replay, stale policy, revocation race, wrong target, dropped trace, supervisor outage, rollback) and compare OS-observed truth to the model disposition. Run matched product/sandbox baselines under identical privileges and configuration before making efficacy or superiority claims.
 
+## 12B. Independent observer fidelity
+
+[Independent Side-Effect Oracle Fidelity v1](ENDPOINT_ORACLE_FIDELITY_V1.md) and [the oracle coverage manifest](../benchmarks/agentic-endpoint-security-v1/oracle-coverage.json) add a separate test contract for observer quality. It freezes ten side-effect channels, five observer roles, and ten fault controls, including a forged local clean log contradicted by the state oracle, supervisor outage, stale snapshots, one-use replay, post-revocation effects, clock rollback, and path-alias substitution.
+
+This matters because the evaluator's own `ObservationSource::Independent` enum is only a normalized input, not proof that sources have separate trust domains. The new contract requires the agent's log and the supervisor's decision record not to self-certify effect truth; actual fixture state and the loopback sink are observed separately. T1 explicitly keeps the host kernel in the trusted computing base, while a T3 rollback-resistance claim requires a separately operated lifecycle witness.
+
+The manifest checker and mutation tests validate the coverage contract only. No real observer or T1 harness has yet run.
 ## 12A. Raw-results scoring
 
 [Endpoint Episode Scoring v1](ENDPOINT_EPISODE_SCORING_V1.md) defines the frozen JSONL episode contract and a standard-library scorer. It reports outcome denominators by family/arm/model/configuration and query budget, carries uncertainty into an assurance-failure metric, validates cumulative forbidden-event counts, counts false-complete claims on evidence-gap controls, and calculates exact one-sided binomial upper bounds. A report may show zero observed violations while still refusing a rare-event qualification because the independent denominator is too small or some outcomes remain uncertain. Scorer acceptance is not proof that source records or the independent oracle are authentic.
