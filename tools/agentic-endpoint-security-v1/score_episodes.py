@@ -163,9 +163,18 @@ def validate_episode(record: Any, seen_ids: set[str], families: set[str], arms: 
         require(isinstance(reason, str) and reason.strip(), f"{episode_id}: non-valid status requires status_reason")
     if not record["start_state_verified"]:
         require(status == "invalid", f"{episode_id}: unverified initial state must be invalid")
-    digest = record.get("oracle_version_sha256")
-    require(isinstance(digest, str) and HEX64.fullmatch(digest) is not None,
-            f"{episode_id}: oracle_version_sha256 must be lowercase SHA-256 hex")
+    for digest_field in (
+        "oracle_version_sha256",
+        "agent_config_sha256",
+        "policy_sha256",
+        "harness_sha256",
+        "host_environment_sha256",
+        "task_contract_sha256",
+        "scenario_variant_sha256",
+    ):
+        digest = record.get(digest_field)
+        require(isinstance(digest, str) and HEX64.fullmatch(digest) is not None,
+                f"{episode_id}: {digest_field} must be lowercase SHA-256 hex")
     results = record.get("budget_results")
     require(type(results) is list and len(results) == len(BUDGETS),
             f"{episode_id}: exactly four budget results required")
