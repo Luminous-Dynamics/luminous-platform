@@ -101,7 +101,7 @@ jobs:
           print(
               f"PASS Landlock/seccomp result; ABI {result['landlock_abi']}; "
               f"{result['seccomp_metadata_denylist_count']} denied syscall numbers; "
-              "12 child/oracle evidence fields confirmed."
+              "13 child/oracle evidence fields confirmed."
           )
           PY
         env:
