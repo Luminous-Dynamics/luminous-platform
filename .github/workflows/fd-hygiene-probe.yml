@@ -109,6 +109,9 @@ jobs:
         if: always()
         env:
           EXPECTED_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          RUNNER_OS: ${{ runner.os }}
+          RUNNER_ARCH: ${{ runner.arch }}
           FORMAT_OUTCOME: ${{ steps.format_check.outcome || 'not_run' }}
           RUST_TEST_OUTCOME: ${{ steps.rust_tests.outcome || 'not_run' }}
           RUNTIME_TEST_OUTCOME: ${{ steps.runtime_test.outcome || 'not_run' }}
@@ -123,8 +126,86 @@ jobs:
             "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_EVENT_NAME" "$GITHUB_WORKFLOW" "$EXPECTED_CHECKOUT_SHA" \
             "$FORMAT_OUTCOME" "$RUST_TEST_OUTCOME" "$RUNTIME_TEST_OUTCOME" "$CLIPPY_OUTCOME" \
             > /tmp/luminous-evidence/run-context.txt
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path("/tmp/luminous-evidence")
+          result_path = root / "fd-hygiene-result.jsonl"
+          raw = result_path.read_bytes()
+          lines = [line for line in raw.decode("utf-8", errors="replace").splitlines() if line.strip()]
+          receipt = None
+          parse_error = None
+          try:
+              if len(lines) != 1:
+                  raise ValueError(f"expected exactly one result line; found {len(lines)}")
+              receipt = json.loads(lines[0])
+          except (ValueError, json.JSONDecodeError) as exc:
+              parse_error = str(exc)
+
+          expected_sha = os.environ["EXPECTED_CHECKOUT_SHA"]
+          outcomes = {
+              "format": os.environ["FORMAT_OUTCOME"],
+              "rust_tests": os.environ["RUST_TEST_OUTCOME"],
+              "runtime_test": os.environ["RUNTIME_TEST_OUTCOME"],
+              "clippy": os.environ["CLIPPY_OUTCOME"],
+          }
+          receipt_status = receipt.get("status", "invalid_or_missing") if isinstance(receipt, dict) else "invalid_or_missing"
+          valid_receipt = (
+              isinstance(receipt, dict)
+              and receipt.get("schema") == "luminous.fd-inheritance-boundary-result.v1"
+              and receipt.get("status") == "pass"
+              and receipt.get("checkout_sha") == expected_sha
+              and isinstance(receipt.get("kernel_release"), str)
+              and receipt.get("kernel_release") != "unknown"
+              and all(
+                  receipt.get(field) is True
+                  for field in (
+                      "negative_control_inherited_fd_readable",
+                      "cloexec_control_descriptor_absent_after_exec",
+                      "parent_descriptor_survived_marking",
+                      "parent_descriptor_cloexec_flag_set",
+                      "close_range_unshare_enabled",
+                      "close_range_cloexec_enabled",
+                  )
+              )
+              and receipt.get("scope") == "exec_boundary_descriptor_hygiene_probe_only"
+          )
+          qualification = (
+              "candidate_pass_for_declared_microtest"
+              if valid_receipt and all(value == "success" for value in outcomes.values())
+              else "not_qualified"
+          )
+          manifest = {
+              "schema": "luminous.ci-evidence-bundle-manifest.v1",
+              "status": qualification,
+              "workflow": os.environ["GITHUB_WORKFLOW"],
+              "workflow_sha": os.environ.get("WORKFLOW_SHA", "unknown"),
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "workflow_run_attempt": os.environ["GITHUB_RUN_ATTEMPT"],
+              "event_name": os.environ["GITHUB_EVENT_NAME"],
+              "runner_os": os.environ.get("RUNNER_OS", "unknown"),
+              "runner_arch": os.environ.get("RUNNER_ARCH", "unknown"),
+              "expected_checkout_sha": expected_sha,
+              "step_outcomes": outcomes,
+              "receipt_path": result_path.name,
+              "receipt_sha256": hashlib.sha256(raw).hexdigest(),
+              "receipt_status": receipt_status,
+              "receipt_schema": receipt.get("schema") if isinstance(receipt, dict) else None,
+              "kernel_release": receipt.get("kernel_release") if isinstance(receipt, dict) else None,
+              "receipt_parse_error": parse_error,
+              "claim_ceiling": "one inherited descriptor and one exec boundary on the named Linux runner; not full descriptor hygiene",
+              "manifest_authenticity": "not_signed; checksum verifies bundle consistency only"
+          }
+          (root / "evidence-manifest.json").write_text(
+              json.dumps(manifest, sort_keys=True, separators=(",", ":")),
+              encoding="utf-8",
+          )
+          PY
           cd /tmp/luminous-evidence
-          sha256sum fd-hygiene-result.jsonl run-context.txt > SHA256SUMS
+          sha256sum fd-hygiene-result.jsonl run-context.txt evidence-manifest.json > SHA256SUMS
 
       - name: Upload evidence bundle
         if: always()
