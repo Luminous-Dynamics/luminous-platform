@@ -279,6 +279,15 @@ class AttestedEvidenceVerifierTests(unittest.TestCase):
         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
         manifest["workflow"] = "unrelated workflow"
         manifest_file.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+        context_path = self.evidence_dir / "run-context.txt"
+        context_path.write_text(
+            context_path.read_text(encoding="utf-8").replace(
+                "workflow=" + PROBES["landlock"]["workflow"],
+                "workflow=unrelated workflow",
+            ),
+            encoding="utf-8",
+        )
+        self._refresh_context_checksum()
         self._refresh_manifest_checksum()
         with self.assertRaisesRegex(ValueError, "manifest workflow"):
             verify_attested_bundle(
