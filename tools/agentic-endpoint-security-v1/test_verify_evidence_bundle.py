@@ -136,7 +136,11 @@ class EvidenceBundleVerifierTests(unittest.TestCase):
             "kernel_release": receipt.get("kernel_release"),
             "landlock_abi": receipt.get("landlock_abi"),
             "receipt_parse_error": None,
-            "claim_ceiling": "one operation and one exec boundary; not full descriptor hygiene",
+            "claim_ceiling": (
+                "one file-descriptor ordering and exec boundary on the named Linux runner; not full descriptor hygiene"
+                if receipt.get("schema") == "luminous.landlock-preopened-fd-result.v1"
+                else "one inherited descriptor and one exec boundary on the named Linux runner; not full descriptor hygiene"
+            ),
             "manifest_authenticity": "not_signed; checksum verifies bundle consistency only",
         }
         if manifest_overrides:
@@ -263,6 +267,14 @@ class EvidenceBundleVerifierTests(unittest.TestCase):
             manifest_overrides={"landlock_abi": 9},
         )
         with self.assertRaisesRegex(ValueError, "ABI does not match"):
+            verify_bundle(self.root, EXPECTED_SHA, EXPECTED_RUN_ID)
+
+    def test_claim_ceiling_cannot_be_escalated(self):
+        self.write_bundle(
+            receipt_for("luminous.fd-inheritance-boundary-result.v1"),
+            manifest_overrides={"claim_ceiling": "proves complete endpoint security"},
+        )
+        with self.assertRaisesRegex(ValueError, "claim ceiling"):
             verify_bundle(self.root, EXPECTED_SHA, EXPECTED_RUN_ID)
 
     def test_extra_files_are_not_silently_ignored(self):
