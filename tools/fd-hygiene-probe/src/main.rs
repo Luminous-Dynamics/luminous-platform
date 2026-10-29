@@ -298,7 +298,7 @@ fn main() {
 
     println!(
         concat!(
-            "{\"schema\":\"luminous.fd-inheritance-boundary-result.v1\",",
+            "{{\"schema\":\"luminous.fd-inheritance-boundary-result.v1\",",
             "\"status\":\"pass\",",
             "\"checkout_sha\":\"{}\",",
             "\"kernel_release\":\"{}\",",
@@ -308,7 +308,7 @@ fn main() {
             "\"parent_descriptor_cloexec_flag_set\":true,",
             "\"close_range_unshare_enabled\":true,",
             "\"close_range_cloexec_enabled\":true,",
-            "\"scope\":\"exec_boundary_descriptor_hygiene_probe_only\"}"
+            "\"scope\":\"exec_boundary_descriptor_hygiene_probe_only\"}}"
         ),
         checkout_sha, kernel_release
     );
