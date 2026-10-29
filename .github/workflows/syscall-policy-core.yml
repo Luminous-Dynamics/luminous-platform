@@ -10,6 +10,7 @@ on:
     branches: [main]
     paths:
       - "tools/syscall-policy-core/**"
+      - "tools/landlock-readonly-fixture/**"
       - ".github/workflows/syscall-policy-core.yml"
 
 permissions:
