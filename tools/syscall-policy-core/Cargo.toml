@@ -1,0 +1,13 @@
+[package]
+name = "luminous-syscall-policy-core"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Fail-closed, dependency-free decision core for a Linux syscall sandbox adapter"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "syscall-policy-demo"
+path = "src/main.rs"
