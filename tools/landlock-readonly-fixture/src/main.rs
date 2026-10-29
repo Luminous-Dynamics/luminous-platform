@@ -29,8 +29,7 @@ fn worker(allowed_root: &Path, denied_write_target: &Path) -> io::Result<()> {
         Err(error) => return Err(error),
         Ok(file) => {
             drop(file);
-            return Err(io::Error::new(
-                ErrorKind::Other,
+            return Err(io::Error::other(
                 "Landlock unexpectedly allowed opening the read-only fixture for writing",
             ));
         }
@@ -47,8 +46,7 @@ fn worker(allowed_root: &Path, denied_write_target: &Path) -> io::Result<()> {
         Err(error) => return Err(error),
         Ok(file) => {
             drop(file);
-            return Err(io::Error::new(
-                ErrorKind::Other,
+            return Err(io::Error::other(
                 "Landlock unexpectedly allowed creating a file outside the allowed subtree",
             ));
         }
