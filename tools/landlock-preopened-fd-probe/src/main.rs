@@ -301,7 +301,7 @@ fn run_worker(executable: &Path, mode: &str, fd: RawFd, path: &Path) -> io::Resu
             format!("worker {mode} omitted expected marker {expected}"),
         ));
     }
-    let abi = stdout
+    let _abi = stdout
         .lines()
         .find_map(|line| line.strip_prefix("LANDLOCK_ABI="))
         .and_then(|value| value.parse::<i32>().ok())
