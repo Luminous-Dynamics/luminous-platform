@@ -74,8 +74,9 @@ def run_differential(max_states: int=100_000, mismatch_limit: int=10) -> dict[st
     comparisons=0
     by_tier={"exhaustive_2op":0,"sampled_3op":0,"sampled_4op":0}
     status_counts={"optimized_linearizable":0,"optimized_non_linearizable":0,"optimized_unknown_limit":0,
-                   "reference_linearizable":0,"reference_non_linearizable":0}
+                   "optimized_invalid_history":0,"reference_linearizable":0,"reference_non_linearizable":0}
     disagreements=[]
+    disagreement_count=0
     corpus_hash=hashlib.sha256()
     for tier,history in deterministic_corpus():
         comparisons+=1
@@ -89,8 +90,10 @@ def run_differential(max_states: int=100_000, mismatch_limit: int=10) -> dict[st
             status_counts["optimized_linearizable"]+=1
         elif optimized["status"]=="NON_LINEARIZABLE":
             status_counts["optimized_non_linearizable"]+=1
-        else:
+        elif optimized["status"]=="UNKNOWN_LIMIT":
             status_counts["optimized_unknown_limit"]+=1
+        else:
+            status_counts["optimized_invalid_history"]+=1
         status_counts["reference_linearizable" if reference else "reference_non_linearizable"]+=1
         reason=None
         if optimized["status"] in {"UNKNOWN_LIMIT","INVALID_HISTORY"}:
@@ -99,18 +102,22 @@ def run_differential(max_states: int=100_000, mismatch_limit: int=10) -> dict[st
             reason="linearizability_decision_disagreement"
         elif positive and not reference_accepts_witness(history,optimized["linearization"]):
             reason="optimized_witness_rejected_by_reference"
+        if reason:
+            disagreement_count+=1
         if reason and len(disagreements)<mismatch_limit:
             disagreements.append({"reason":reason,"tier":tier,"history_sha256":canonical_hash(history),
                 "history":history,"optimized_status":optimized["status"],"optimized_witness":optimized["linearization"],
                 "reference_has_linearization":reference,"reference_witness":reference_witness})
-    expected_total=5184+by_tier["sampled_3op"]+by_tier["sampled_4op"]
+    expected_total=5824
+    expected_tiers={"exhaustive_2op":5184,"sampled_3op":512,"sampled_4op":128}
     return {
-        "schema":SCHEMA,"status":"PASS" if comparisons==expected_total and not disagreements else "FAIL",
+        "schema":SCHEMA,"status":"PASS" if comparisons==expected_total and by_tier==expected_tiers and disagreement_count==0 else "FAIL",
         "qualification_status":"BLOCKED","claim_ceiling":"none","scope":"differential_check_of_bounded_linearizability_model_only",
         "comparisons":comparisons,"expected_comparisons":expected_total,"history_counts_by_tier":by_tier,
         "operation_shape_count":72,"exhaustive_two_operation_pair_count":5184,
         "sampled_three_operation_histories":by_tier["sampled_3op"],"sampled_four_operation_histories":by_tier["sampled_4op"],
-        "comparison_status_counts":status_counts,"disagreement_count_observed":len(disagreements),"disagreements":disagreements,
+        "comparison_status_counts":status_counts,"disagreement_count_observed":disagreement_count,
+        "disagreement_examples_retained":len(disagreements),"disagreements":disagreements,
         "history_corpus_sha256":corpus_hash.hexdigest(),"max_states_per_history":max_states,
         "workflow_event_sha":os.environ.get("GITHUB_SHA"),
         "harness_commit_sha":os.environ.get("SRQ_DIFF_CHECKOUT_SHA") or os.environ.get("GITHUB_SHA"),
