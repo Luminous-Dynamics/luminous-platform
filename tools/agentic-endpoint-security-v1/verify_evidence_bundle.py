@@ -256,6 +256,14 @@ def verify_bundle(
             "manifest and runtime receipt schema disagree")
 
     receipt_pass = runtime_receipt_qualifies(receipt, expected_checkout_sha)
+    expected_claim_ceiling = {
+        "luminous.landlock-preopened-fd-result.v1":
+            "one file-descriptor ordering and exec boundary on the named Linux runner; not full descriptor hygiene",
+        "luminous.fd-inheritance-boundary-result.v1":
+            "one inherited descriptor and one exec boundary on the named Linux runner; not full descriptor hygiene",
+    }[receipt["schema"]]
+    require(manifests.get("claim_ceiling") == expected_claim_ceiling,
+            "manifest claim ceiling does not match the receipt's narrow contract")
     steps_pass = all(value == "success" for value in outcomes.values())
     derived_status = (
         "candidate_pass_for_declared_microtest"
