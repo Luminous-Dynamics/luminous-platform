@@ -18,6 +18,12 @@ on:
 permissions:
   contents: read
 
+# Keep one current validation run for this PR; old pending runs should not
+# accumulate while the branch is being actively amended.
+concurrency:
+  group: agentic-endpoint-security-v1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   corpus-and-reference-model:
     name: Frozen corpus and Rust reference model
