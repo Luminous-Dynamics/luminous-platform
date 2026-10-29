@@ -267,6 +267,7 @@ attest-main-evidence:
           manifest = json.loads((root / "evidence-manifest.json").read_text(encoding="utf-8"))
           assert manifest.get("schema") == "luminous.ci-evidence-bundle-manifest.v1"
           assert manifest.get("status") == "candidate_pass_for_declared_microtest"
+          assert manifest.get("claim_ceiling") == "one file-descriptor ordering and exec boundary on the named Linux runner; not full descriptor hygiene"
           assert manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]
           assert manifest.get("workflow_sha") == os.environ["EXPECTED_WORKFLOW_SHA"]
           assert str(manifest.get("workflow_run_id")) == os.environ["EXPECTED_RUN_ID"]
