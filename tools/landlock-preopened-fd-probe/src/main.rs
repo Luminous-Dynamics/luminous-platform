@@ -466,7 +466,7 @@ fn main() {
 
     println!(
         concat!(
-            "{\"schema\":\"luminous.landlock-preopened-fd-result.v1\",",
+            "{{\"schema\":\"luminous.landlock-preopened-fd-result.v1\",",
             "\"status\":\"pass\",",
             "\"checkout_sha\":\"{}\",",
             "\"kernel_release\":\"{}\",",
@@ -478,7 +478,7 @@ fn main() {
             "\"parent_oracle_safe_control_unchanged\":true,",
             "\"parent_original_fd_cloexec\":true,",
             "\"full_descriptor_hygiene_coverage\":false,",
-            "\"scope\":\"preopened_writable_fd_ordering_microtest\"}"
+            "\"scope\":\"preopened_writable_fd_ordering_microtest\"}}"
         ),
         checkout_sha, kernel_release, landlock_abi
     );
