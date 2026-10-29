@@ -1,0 +1,52 @@
+{
+  "schema": "srq-linearizability-differential-protocol-v1",
+  "version": 1,
+  "purpose": "Compare the optimized bounded linearizability checker with an independent brute-force sequential reference over a frozen small-history corpus.",
+  "independence": {
+    "reused": "Input schema decoding only (parse_history).",
+    "reference_algorithm": "Enumerate every permutation; reject permutations violating real-time precedence; apply separately implemented transitions with nondeterministic unknown outcomes.",
+    "optimized_algorithm": "Depth-first eligible-operation search with cached remaining-set/state pairs.",
+    "warning": "Agreement on a finite corpus is evidence, not proof."
+  },
+  "corpus": {
+    "operation_shape_count": 72,
+    "exhaustive_ordered_two_operation_histories": 5184,
+    "deterministic_three_operation_sample": 512,
+    "deterministic_four_operation_sample": 128,
+    "total_histories": 5824,
+    "shape_factors": {
+      "key_count": 2,
+      "intent_count": 2,
+      "interval_count": 3,
+      "result_shapes": 6
+    }
+  },
+  "comparison": {
+    "expected": "Reference has any legal linearization.",
+    "actual": "Optimized checker returns LINEARIZABLE.",
+    "failure": "Decision disagreement, witness rejected by reference, invalid history, or UNKNOWN_LIMIT.",
+    "witness": "Independently replay every positive witness through the reference contract."
+  },
+  "acceptance": {
+    "comparisons": 5824,
+    "decision_disagreements": 0,
+    "invalid_histories": 0,
+    "unexpected_search_limits": 0,
+    "optimized_witnesses_rejected_by_reference": 0,
+    "corpus_hash_required": true
+  },
+  "provenance": [
+    "history_corpus_sha256",
+    "source_sha256",
+    "workflow_event_sha",
+    "harness_commit_sha",
+    "source_head_sha"
+  ],
+  "explicit_non_claims": [
+    "Does not qualify a real sink or prove production linearizability.",
+    "Does not prove either checker or the shared contract correct.",
+    "The three- and four-operation tiers are deterministic samples, not exhaustive.",
+    "Raw timestamps are meaningful only under the single-observer monotonic clock contract.",
+    "No performance comparison with Porcupine is conducted."
+  ]
+}

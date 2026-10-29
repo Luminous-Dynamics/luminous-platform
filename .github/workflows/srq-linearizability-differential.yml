@@ -1,0 +1,58 @@
+name: SRQ linearizability differential qualification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/srq-linearizability-differential.yml'
+      - 'benchmarks/srq-lifecycle-interop/guarantee-vector/linearizability-oracle/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  differential:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact PR source head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run differential unit tests
+        run: python -m unittest discover -s benchmarks/srq-lifecycle-interop/guarantee-vector/linearizability-oracle -p 'test_*.py' -v
+      - name: Compare 5,824 histories against brute-force reference
+        env:
+          SRQ_DIFF_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SRQ_DIFF_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 benchmarks/srq-lifecycle-interop/guarantee-vector/linearizability-oracle/differential_qualification.py --output "$RUNNER_TEMP/srq-linearizability-differential.json"
+          python3 - "$RUNNER_TEMP/srq-linearizability-differential.json" <<'PY'
+          import json, os, sys
+          from pathlib import Path
+          report = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert report["schema"] == "srq-linearizability-differential-report-v1"
+          assert report["status"] == "PASS"
+          assert report["qualification_status"] == "BLOCKED"
+          assert report["claim_ceiling"] == "none"
+          assert report["comparisons"] == report["expected_comparisons"] == 5824
+          assert report["history_counts_by_tier"] == {"exhaustive_2op": 5184, "sampled_3op": 512, "sampled_4op": 128}
+          assert report["disagreement_count_observed"] == 0
+          assert report["comparison_status_counts"]["optimized_unknown_limit"] == 0
+          assert report["harness_commit_sha"] == os.environ["SRQ_DIFF_CHECKOUT_SHA"]
+          assert report["source_head_sha"] == os.environ["SRQ_DIFF_PR_HEAD_SHA"]
+          assert report["workflow_event_sha"] == os.environ["GITHUB_SHA"]
+          assert len(report["history_corpus_sha256"]) == 64
+          assert all(len(value) == 64 for value in report["source_sha256"].values())
+          PY
+      - name: Retain differential report even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: srq-linearizability-differential-${{ github.sha }}
+          path: ${{ runner.temp }}/srq-linearizability-differential.json
+          if-no-files-found: warn
+          retention-days: 30
