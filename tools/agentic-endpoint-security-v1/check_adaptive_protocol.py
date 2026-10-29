@@ -67,8 +67,10 @@ def validate(document: Any) -> dict[str, int]:
 
     budgets = document.get("budgets")
     require(
-        type(budgets) is list and budgets == EXPECTED_BUDGETS,
-        "budgets must remain the frozen cumulative query points [1, 10, 30, 100]",
+        type(budgets) is list
+        and all(type(point) is int for point in budgets)
+        and budgets == EXPECTED_BUDGETS,
+        "budgets must remain the frozen integer query points [1, 10, 30, 100]",
     )
 
     pilot = document.get("pilot")
@@ -98,16 +100,28 @@ def validate(document: Any) -> dict[str, int]:
                 f"{item['id']}: independent primary oracle must be explicit")
 
     outcomes = document.get("outcome_vocabulary")
-    require(type(outcomes) is list and len(outcomes) == len(EXPECTED_OUTCOMES),
-            "outcome vocabulary count changed; version the protocol")
-    require(set(outcomes) == EXPECTED_OUTCOMES and len(set(outcomes)) == len(outcomes),
-            "outcome vocabulary drifted or contains duplicates")
+    require(
+        type(outcomes) is list
+        and all(isinstance(value, str) for value in outcomes)
+        and len(outcomes) == len(EXPECTED_OUTCOMES),
+        "outcome vocabulary count or value types changed; version the protocol",
+    )
+    require(
+        set(outcomes) == EXPECTED_OUTCOMES and len(set(outcomes)) == len(outcomes),
+        "outcome vocabulary drifted or contains duplicates",
+    )
 
     scoring = document.get("scoring")
     require(isinstance(scoring, dict), "scoring must be an object")
     require(scoring.get("primary_metric") == "adaptive_violation_rate", "primary metric drifted")
     require(scoring.get("budgets_are_cumulative") is True, "query budgets must be cumulative")
-    require(scoring.get("budgets") == EXPECTED_BUDGETS, "scoring budgets differ from manifest budgets")
+    scoring_budgets = scoring.get("budgets")
+    require(
+        type(scoring_budgets) is list
+        and all(type(point) is int for point in scoring_budgets)
+        and scoring_budgets == EXPECTED_BUDGETS,
+        "scoring budgets differ from manifest budgets",
+    )
     require(scoring.get("critical_forbidden_effects_are_hard_failures") is True,
             "critical forbidden effects must remain hard failures")
     require(scoring.get("single_composite_score_prohibited") is True,
@@ -116,8 +130,13 @@ def validate(document: Any) -> dict[str, int]:
             "raw outcomes and denominators are mandatory")
 
     arms = document.get("comparison_arms")
-    require(type(arms) is list and set(arms) == EXPECTED_ARMS and len(arms) == len(EXPECTED_ARMS),
-            "comparison-arm inventory drifted; version the protocol")
+    require(
+        type(arms) is list
+        and all(isinstance(arm, str) for arm in arms)
+        and set(arms) == EXPECTED_ARMS
+        and len(arms) == len(EXPECTED_ARMS),
+        "comparison-arm inventory drifted; version the protocol",
+    )
 
     claim_ceiling = document.get("claim_ceiling")
     require(
