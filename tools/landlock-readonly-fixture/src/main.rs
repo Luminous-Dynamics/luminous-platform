@@ -117,12 +117,18 @@ fn run_parent() -> io::Result<()> {
             .output()?;
 
         if !output.status.success() {
-            eprintln!("Landlock worker failed; stdout={:?}", String::from_utf8_lossy(&output.stdout));
-            eprintln!("Landlock worker stderr={:?}", String::from_utf8_lossy(&output.stderr));
-            return Err(io::Error::new(
-                ErrorKind::Other,
-                format!("Landlock worker exited with {}", output.status),
-            ));
+            eprintln!(
+                "Landlock worker failed; stdout={:?}",
+                String::from_utf8_lossy(&output.stdout)
+            );
+            eprintln!(
+                "Landlock worker stderr={:?}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            return Err(io::Error::other(format!(
+                "Landlock worker exited with {}",
+                output.status
+            )));
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -169,8 +175,12 @@ fn run_parent() -> io::Result<()> {
         }
 
         println!("PASS Landlock ABI >= 3 read-only fixture enforcement");
-        println!("ORACLE read_allowed=true outside_read_denied=true existing_write_denied=true outside_create_denied=true");
-        println!("SCOPE disposable_local_filesystem_fixture_only; no network or syscall-wide claim");
+        println!(
+            "ORACLE read_allowed=true outside_read_denied=true existing_write_denied=true outside_create_denied=true"
+        );
+        println!(
+            "SCOPE disposable_local_filesystem_fixture_only; no network or syscall-wide claim"
+        );
         Ok(())
     });
 
@@ -191,7 +201,11 @@ fn main() -> ExitCode {
                 "worker requires allowed-root, outside-read-canary, and outside-write-target paths",
             ))
         } else {
-            worker(Path::new(&args[2]), Path::new(&args[3]), Path::new(&args[4]))
+            worker(
+                Path::new(&args[2]),
+                Path::new(&args[3]),
+                Path::new(&args[4]),
+            )
         }
     } else {
         run_parent()
