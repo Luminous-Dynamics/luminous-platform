@@ -53,6 +53,9 @@ jobs:
           components: "rustfmt, clippy"
           cache: false
 
+      - name: Mutation-test main-only attestation workflow contract
+        run: python3 tools/landlock-preopened-fd-probe/test_attestation_workflow.py
+
       - name: Check formatting
         id: format_check
         run: cargo fmt --manifest-path tools/landlock-preopened-fd-probe/Cargo.toml -- --check
