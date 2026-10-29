@@ -7,10 +7,11 @@ fn example<'a>(label: &str, evidence: EvidenceBundle<'a>) {
     let result = evaluate(evidence);
     println!(
         concat!(
-            "{label}: disposition={:?}; authorization={:?}; binding={:?}; ",
+            "{}: disposition={:?}; authorization={:?}; binding={:?}; ",
             "freshness={:?}; revocation={:?}; telemetry={:?}; effect={:?}; ",
             "observation={:?}; rollback={:?}"
         ),
+        label,
         result.disposition,
         result.evidence.authorization,
         result.computed_binding,
