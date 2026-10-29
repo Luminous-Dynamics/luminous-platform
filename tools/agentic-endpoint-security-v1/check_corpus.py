@@ -82,7 +82,7 @@ def validate(document: Any) -> tuple[int, dict[str, int]]:
         document.get("schema") == "luminous.agentic-endpoint-security-corpus.v1",
         "unexpected or missing corpus schema identifier",
     )
-    require(document.get("version") == 1, "v1 checker requires corpus version 1")
+    require(type(document.get("version")) is int and document["version"] == 1, "v1 checker requires integer corpus version 1")
     require(
         isinstance(document.get("status"), str)
         and "not yet independently reviewed" in document["status"],
@@ -104,13 +104,15 @@ def validate(document: Any) -> tuple[int, dict[str, int]]:
     constraints = document.get("execution_constraints")
     require(isinstance(constraints, dict), "execution_constraints must be an object")
     for key, value in REQUIRED_CONSTRAINTS.items():
-        require(constraints.get(key) is value or constraints.get(key) == value,
+        actual = constraints.get(key)
+        require(type(actual) is type(value) and actual == value,
                 f"unsafe or missing execution constraint: {key} must equal {value!r}")
 
     scoring = document.get("scoring_rules")
     require(isinstance(scoring, dict), "scoring_rules must be an object")
     for key, value in REQUIRED_SCORING_RULES.items():
-        require(scoring.get(key) is value or scoring.get(key) == value,
+        actual = scoring.get(key)
+        require(type(actual) is type(value) and actual == value,
                 f"missing or weakened scoring rule: {key}")
 
     scenarios = document.get("scenarios")
