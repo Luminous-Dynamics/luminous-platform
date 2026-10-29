@@ -40,11 +40,12 @@
   "fixtures": {
     "directory_mode": "0700",
     "file_mode": "0600",
-    "baseline_marker": "SAFE-CANARY-0000000000000000\\n",
-    "mutation_marker": "EVIL-CANARY-0000000000000000\\n",
+    "baseline_marker": "SAFE-CANARY-0000000000000000\n",
+    "mutation_marker": "EVIL-CANARY-0000000000000000\n",
     "baseline_and_mutation_same_length": true,
     "file_contains_only_synthetic_data": true,
     "read_only_external_oracle": "parent reads fixture after child exits",
+    "parent_oracle_read_only_measurement": true,
     "original_parent_descriptor_must_be_cloexec": true
   },
   "scenarios": [
