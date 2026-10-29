@@ -54,6 +54,12 @@ jobs:
       - name: Run episode scorer contract and statistical tests
         run: python3 tools/agentic-endpoint-security-v1/test_score_episodes.py
 
+      - name: Validate independent side-effect oracle contract
+        run: python3 tools/agentic-endpoint-security-v1/check_oracle_coverage.py
+
+      - name: Run oracle coverage mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_oracle_coverage.py
+
       - name: Check Rust formatting
         run: cargo fmt --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml -- --check
 
