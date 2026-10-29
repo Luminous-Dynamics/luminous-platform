@@ -8,7 +8,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 const FIXTURE_CONTENT: &str = "luminous-landlock-synthetic-canary-v1";
 
-fn worker(allowed_root: &Path, denied_write_target: &Path) -> io::Result<()> {
+fn worker(
+    allowed_root: &Path,
+    denied_read_target: &Path,
+    denied_write_target: &Path,
+) -> io::Result<()> {
     // Install the restriction before opening the fixture or attempting effects.
     apply_read_only_directory(allowed_root)?;
 
@@ -21,6 +25,18 @@ fn worker(allowed_root: &Path, denied_write_target: &Path) -> io::Result<()> {
         ));
     }
     println!("ALLOW_READ_OK");
+
+    match fs::read_to_string(denied_read_target) {
+        Err(error) if error.kind() == ErrorKind::PermissionDenied => {
+            println!("DENY_READ_OUTSIDE_OK");
+        }
+        Err(error) => return Err(error),
+        Ok(_) => {
+            return Err(io::Error::other(
+                "Landlock unexpectedly allowed reading outside the allowed subtree",
+            ));
+        }
+    }
 
     match OpenOptions::new().write(true).open(&fixture) {
         Err(error) if error.kind() == ErrorKind::PermissionDenied => {
@@ -87,6 +103,7 @@ fn run_parent() -> io::Result<()> {
         fs::create_dir(&allowed)?;
         fs::create_dir(&blocked)?;
         fs::write(allowed.join("fixture.txt"), FIXTURE_CONTENT)?;
+        fs::write(blocked.join("outside-canary.txt"), "forbidden-outside-canary")?;
         Ok::<(), io::Error>(())
     })();
 
@@ -95,6 +112,7 @@ fn run_parent() -> io::Result<()> {
         let output = Command::new(executable)
             .arg("--worker")
             .arg(&allowed)
+            .arg(blocked.join("outside-canary.txt"))
             .arg(blocked.join("must-not-exist.txt"))
             .output()?;
 
@@ -108,7 +126,12 @@ fn run_parent() -> io::Result<()> {
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        for marker in ["ALLOW_READ_OK", "DENY_WRITE_EXISTING_OK", "DENY_CREATE_OUTSIDE_OK"] {
+        for marker in [
+            "ALLOW_READ_OK",
+            "DENY_READ_OUTSIDE_OK",
+            "DENY_WRITE_EXISTING_OK",
+            "DENY_CREATE_OUTSIDE_OK",
+        ] {
             if !stdout.lines().any(|line| line == marker) {
                 return Err(io::Error::new(
                     ErrorKind::InvalidData,
@@ -124,6 +147,20 @@ fn run_parent() -> io::Result<()> {
                 "read-only fixture changed after worker execution",
             ));
         }
+        if blocked.join("outside-canary.txt").exists() {
+            let outside = fs::read_to_string(blocked.join("outside-canary.txt"))?;
+            if outside != "forbidden-outside-canary" {
+                return Err(io::Error::new(
+                    ErrorKind::InvalidData,
+                    "independent parent oracle observed unexpected outside-canary mutation",
+                ));
+            }
+        } else {
+            return Err(io::Error::new(
+                ErrorKind::NotFound,
+                "independent parent oracle could not find the external read-canary",
+            ));
+        }
         if blocked.join("must-not-exist.txt").exists() {
             return Err(io::Error::new(
                 ErrorKind::PermissionDenied,
@@ -132,7 +169,7 @@ fn run_parent() -> io::Result<()> {
         }
 
         println!("PASS Landlock ABI >= 3 read-only fixture enforcement");
-        println!("ORACLE read_allowed=true existing_write_denied=true outside_create_denied=true");
+        println!("ORACLE read_allowed=true outside_read_denied=true existing_write_denied=true outside_create_denied=true");
         println!("SCOPE disposable_local_filesystem_fixture_only; no network or syscall-wide claim");
         Ok(())
     });
@@ -148,10 +185,13 @@ fn run_parent() -> io::Result<()> {
 fn main() -> ExitCode {
     let args: Vec<_> = std::env::args_os().collect();
     let result = if args.get(1).and_then(|value| value.to_str()) == Some("--worker") {
-        if args.len() != 4 {
-            Err(io::Error::new(ErrorKind::InvalidInput, "worker requires allowed-root and denied-target paths"))
+        if args.len() != 5 {
+            Err(io::Error::new(
+                ErrorKind::InvalidInput,
+                "worker requires allowed-root, outside-read-canary, and outside-write-target paths",
+            ))
         } else {
-            worker(Path::new(&args[2]), Path::new(&args[3]))
+            worker(Path::new(&args[2]), Path::new(&args[3]), Path::new(&args[4]))
         }
     } else {
         run_parent()
