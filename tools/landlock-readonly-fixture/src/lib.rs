@@ -140,7 +140,7 @@ fn open_path(path: &Path) -> io::Result<OwnedFd> {
 /// Important: call this before opening any sensitive file descriptors or running
 /// any untrusted task. Landlock restricts the current thread and its future
 /// children; it does not revoke access through descriptors opened beforehand.
-pub fn apply_read_only_directory(allowed_root: &Path) -> io::Result<()> {
+pub fn apply_read_only_directory(allowed_root: &Path) -> io::Result<i32> {
     let abi = {
         // SAFETY: LANDLOCK_CREATE_RULESET_VERSION requires a null attr, size zero,
         // and flag 1 as documented by the Linux Landlock userspace API.
@@ -220,5 +220,5 @@ pub fn apply_read_only_directory(allowed_root: &Path) -> io::Result<()> {
         return Err(io::Error::last_os_error());
     }
     drop(ruleset_fd);
-    Ok(())
+    Ok(abi as i32)
 }
