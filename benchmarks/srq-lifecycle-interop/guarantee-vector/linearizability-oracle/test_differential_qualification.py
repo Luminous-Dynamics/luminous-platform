@@ -1,5 +1,7 @@
+import hashlib
 import json
 import unittest
+from pathlib import Path
 from differential_reference import reference_accepts_witness, reference_has_linearization
 from differential_qualification import deterministic_corpus, history_from_shapes, operation_shape
 from linearizability_oracle import check_history
@@ -43,6 +45,15 @@ class DifferentialQualificationTests(unittest.TestCase):
         self.assertEqual(len(records),5824)
         fingerprints={json.dumps(history,sort_keys=True) for _,history in records}
         self.assertEqual(len(fingerprints),5824)
+
+    def test_canonical_corpus_hash_matches_frozen_protocol(self):
+        root = Path(__file__).resolve().parent
+        protocol = json.loads((root / "differential-protocol-v1.json").read_text(encoding="utf-8"))
+        digest = hashlib.sha256()
+        for _, history in deterministic_corpus():
+            canonical = json.dumps(history, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+            digest.update(canonical.encode("utf-8") + b"\\n")
+        self.assertEqual(digest.hexdigest(), protocol["corpus_sha256"])
 
     def test_selected_corpus_slice_agrees(self):
         for tier,history in list(deterministic_corpus())[:160]:
