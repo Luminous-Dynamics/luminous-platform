@@ -5,7 +5,7 @@ compile_error!("luminous-landlock-preopened-fd-probe is Linux-only");
 
 use std::env;
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, ErrorKind, Read, Write};
+use std::io::{self, ErrorKind, Read, Seek, SeekFrom, Write};
 use std::os::fd::{AsRawFd, RawFd};
 use std::os::raw::{c_int, c_long};
 use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
@@ -303,6 +303,12 @@ fn run_parent() -> io::Result<()> {
     let path = root.join("victim.txt");
 
     let result = (|| {
+        if BASELINE.len() != MUTATED.len() {
+            return Err(io::Error::new(
+                ErrorKind::InvalidData,
+                "negative-control marker must preserve the baseline file length",
+            ));
+        }
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -331,6 +337,7 @@ fn run_parent() -> io::Result<()> {
 
         // Reset outside the restricted child. This is a separate safe control.
         file.set_len(0)?;
+        file.seek(SeekFrom::Start(0))?;
         file.write_all(BASELINE)?;
         file.sync_all()?;
 
