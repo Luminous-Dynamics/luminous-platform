@@ -14,7 +14,8 @@ fn worker(
     denied_write_target: &Path,
 ) -> io::Result<()> {
     // Install the restriction before opening the fixture or attempting effects.
-    apply_read_only_directory(allowed_root)?;
+    let landlock_abi = apply_read_only_directory(allowed_root)?;
+    println!("LANDLOCK_ABI={landlock_abi}");
 
     let fixture = allowed_root.join("fixture.txt");
     let contents = fs::read_to_string(&fixture)?;
@@ -145,6 +146,17 @@ fn run_parent() -> io::Result<()> {
                 ));
             }
         }
+        let landlock_abi = stdout
+            .lines()
+            .find_map(|line| line.strip_prefix("LANDLOCK_ABI="))
+            .and_then(|value| value.parse::<i32>().ok())
+            .filter(|abi| *abi >= 3)
+            .ok_or_else(|| {
+                io::Error::new(
+                    ErrorKind::InvalidData,
+                    "worker did not report a supported Landlock ABI version",
+                )
+            })?;
 
         let unchanged = fs::read_to_string(allowed.join("fixture.txt"))?;
         if unchanged != FIXTURE_CONTENT {
@@ -174,10 +186,8 @@ fn run_parent() -> io::Result<()> {
             ));
         }
 
-        println!("PASS Landlock ABI >= 3 read-only fixture enforcement");
         println!(
-            "ORACLE read_allowed=true outside_read_denied=true existing_write_denied=true \
-             outside_create_denied=true"
+            "{{\"schema\":\"luminous.landlock-readonly-fixture-result.v1\",\"status\":\"pass\",\"landlock_abi\":{landlock_abi},\"allowed_read\":true,\"outside_read_denied\":true,\"existing_write_denied\":true,\"outside_create_denied\":true,\"parent_state_oracle\":\"pass\",\"scope\":\"disposable_local_filesystem_fixture_only\"}}"
         );
         println!(
             "SCOPE disposable_local_filesystem_fixture_only; no network or syscall-wide claim"
