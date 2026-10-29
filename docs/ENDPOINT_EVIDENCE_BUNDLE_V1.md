@@ -109,3 +109,33 @@ Move the evidence manifest, its original evidence files, the .sigstore.json bund
 Use the FD workflow path instead for an FD-inheritance manifest. For long-lived or higher-assurance archival, also retain the verified source repository ID and trusted-root version; offline certificate-name matching alone cannot detect a later repository rename or name reuse. See [GitHub's offline attestation verification instructions](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/verify-attestations-offline) and [gh attestation verify](https://cli.github.com/manual/gh_attestation_verify).
 
 **Trust ceiling:** an attestation establishes who/which workflow signed the manifest and binds its digest under the accepted trust policy. It does not make the workflow's own predicate magically truthful, prove the host kernel uncompromised, broaden the runtime test, or establish SOTA superiority.
+
+## One-command verification of signed evidence
+
+The new [signed evidence verifier](../tools/agentic-endpoint-security-v1/verify_attested_evidence_bundle.py) composes the checks above with GitHub CLI's Sigstore verification. It requires the evidence bundle, the separate attestation bundle, the Sigstore trusted root, the independently expected checkout SHA, the Actions run ID, and the expected GitHub repository ID. It chooses the expected workflow identity from the probe type and requires the main-branch source ref.
+
+First, download and unpack both the evidence artifact and the matching attestation artifact from the same successful main-push run. On an online staging machine, capture the trusted root and repository ID:
+
+```sh
+gh attestation trusted-root > trusted_root.jsonl
+gh api repos/Luminous-Dynamics/luminous-platform --jq .id > repository_id.txt
+```
+
+Then use the signed verifier in the trusted repository checkout (or copy the verifier and its sibling offline verifier to the verification host):
+
+```sh
+python3 tools/agentic-endpoint-security-v1/verify_attested_evidence_bundle.py \
+  --evidence-dir ./landlock-evidence \
+  --attestation-dir ./landlock-attestation \
+  --trusted-root ./trusted_root.jsonl \
+  --expected-checkout-sha "$EXPECTED_CHECKOUT_SHA" \
+  --expected-run-id "$EXPECTED_RUN_ID" \
+  --expected-repo-id "$(cat repository_id.txt)" \
+  --probe landlock
+```
+
+Use --probe fd for the inherited-descriptor workflow. The expected source SHA and run ID must be obtained independently from the run/commit page; the expected repository ID must be obtained independently from the GitHub API. Do not copy those expectations out of the evidence bundle.
+
+The verifier checks the evidence bundle's exact inventory and checksums, binds source SHA and run ID, enforces the probe-specific claim ceiling, runs gh attestation verify with the pinned expected signer workflow, source ref and source digest, and then verifies the attested manifest digest and certificate's source repository ID. It returns exit 0 only for a signed, provenance-verified candidate pass for the named micro-test; invalid evidence returns exit 2. Internally consistent but nonqualified evidence is rejected before invoking the signature verifier.
+
+The test suite uses synthetic attestation JSON and a mocked GitHub CLI process; it does not generate signatures or replace a real Sigstore verification. The real verifier always invokes GitHub CLI on the supplied bundle and trusted root.
