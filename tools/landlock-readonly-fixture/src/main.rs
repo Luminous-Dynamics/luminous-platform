@@ -1,15 +1,56 @@
 use luminous_landlock_readonly_fixture::{
     apply_common_metadata_deny_filter, apply_read_only_directory,
 };
+use std::ffi::CString;
 use std::fs::{self, OpenOptions};
 use std::io;
 use std::io::ErrorKind;
+use std::os::raw::{c_char, c_int, c_void};
+use std::os::unix::ffi::OsStrExt;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
-use std::os::unix::fs::PermissionsExt;
 use std::process::{Command, ExitCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const FIXTURE_CONTENT: &str = "luminous-landlock-synthetic-canary-v1";
+
+#[repr(C)]
+struct Timespec {
+    tv_sec: i64,
+    tv_nsec: i64,
+}
+
+const AT_FDCWD: c_int = -100;
+const UTIME_OMIT: i64 = 1_073_741_822;
+const ENODATA_ERRNO: i32 = 61;
+
+unsafe extern "C" {
+    fn setxattr(
+        path: *const c_char,
+        name: *const c_char,
+        value: *const c_void,
+        size: usize,
+        flags: c_int,
+    ) -> c_int;
+    fn getxattr(
+        path: *const c_char,
+        name: *const c_char,
+        value: *mut c_void,
+        size: usize,
+    ) -> isize;
+    fn removexattr(path: *const c_char, name: *const c_char) -> c_int;
+    fn utimensat(
+        dirfd: c_int,
+        pathname: *const c_char,
+        times: *const Timespec,
+        flags: c_int,
+    ) -> c_int;
+}
+
+fn c_path(path: &Path) -> io::Result<CString> {
+    CString::new(path.as_os_str().as_bytes())
+        .map_err(|_| io::Error::new(ErrorKind::InvalidInput, "path contains NUL"))
+}
 
 fn worker(
     allowed_root: &Path,
@@ -86,6 +127,64 @@ fn worker(
         }
     }
 
+    let fixture_c = c_path(&fixture)?;
+    let xattr_name = CString::new("user.luminous_probe").expect("literal has no NUL");
+    let xattr_value = b"x";
+    // SAFETY: C strings and the value slice remain valid for the duration of the call.
+    let set_result = unsafe {
+        setxattr(
+            fixture_c.as_ptr(),
+            xattr_name.as_ptr(),
+            xattr_value.as_ptr().cast(),
+            xattr_value.len(),
+            0,
+        )
+    };
+    if set_result == -1 && io::Error::last_os_error().kind() == ErrorKind::PermissionDenied {
+        println!("DENY_SETXATTR_OK");
+    } else if set_result == 0 {
+        return Err(io::Error::other(
+            "seccomp unexpectedly allowed setting a user xattr",
+        ));
+    } else {
+        return Err(io::Error::other(format!(
+            "setxattr failed for an unexpected reason: {}",
+            io::Error::last_os_error()
+        )));
+    }
+
+    let requested_times = [
+        Timespec {
+            tv_sec: 1,
+            tv_nsec: 0,
+        },
+        Timespec {
+            tv_sec: 1,
+            tv_nsec: 0,
+        },
+    ];
+    // SAFETY: fixture_c and the two-entry times array remain valid for this call.
+    let time_result = unsafe {
+        utimensat(
+            AT_FDCWD,
+            fixture_c.as_ptr(),
+            requested_times.as_ptr(),
+            0,
+        )
+    };
+    if time_result == -1 && io::Error::last_os_error().kind() == ErrorKind::PermissionDenied {
+        println!("DENY_UTIMENSAT_OK");
+    } else if time_result == 0 {
+        return Err(io::Error::other(
+            "seccomp unexpectedly allowed changing fixture timestamps",
+        ));
+    } else {
+        return Err(io::Error::other(format!(
+            "utimensat failed for an unexpected reason: {}",
+            io::Error::last_os_error()
+        )));
+    }
+
     Ok(())
 }
 
@@ -125,6 +224,68 @@ fn run_parent() -> io::Result<()> {
             allowed.join("fixture.txt"),
             fs::Permissions::from_mode(0o644),
         )?;
+        // Positive controls ensure that xattr and timestamp APIs work on this
+        // filesystem before the restricted child starts.
+        let fixture_path = allowed.join("fixture.txt");
+        let fixture_c = c_path(&fixture_path)?;
+        let xattr_name = CString::new("user.luminous_probe").expect("literal has no NUL");
+        let control_value = b"control";
+        // SAFETY: all pointers refer to live NUL-terminated strings or byte slices.
+        if unsafe {
+            setxattr(
+                fixture_c.as_ptr(),
+                xattr_name.as_ptr(),
+                control_value.as_ptr().cast(),
+                control_value.len(),
+                0,
+            )
+        } != 0 {
+            return Err(io::Error::last_os_error());
+        }
+        let mut verify_value = [0_u8; 16];
+        // SAFETY: output buffer is writable for its full declared size.
+        let read_len = unsafe {
+            getxattr(
+                fixture_c.as_ptr(),
+                xattr_name.as_ptr(),
+                verify_value.as_mut_ptr().cast(),
+                verify_value.len(),
+            )
+        };
+        if read_len != control_value.len() as isize
+            || &verify_value[..control_value.len()] != control_value
+        {
+            return Err(io::Error::new(
+                ErrorKind::InvalidData,
+                "xattr positive control did not round-trip",
+            ));
+        }
+        // SAFETY: both C strings are valid and live.
+        if unsafe { removexattr(fixture_c.as_ptr(), xattr_name.as_ptr()) } != 0 {
+            return Err(io::Error::last_os_error());
+        }
+        let unchanged_times = [
+            Timespec {
+                tv_sec: 0,
+                tv_nsec: UTIME_OMIT,
+            },
+            Timespec {
+                tv_sec: 0,
+                tv_nsec: UTIME_OMIT,
+            },
+        ];
+        // SAFETY: path and the two-entry timestamps array are valid for this call.
+        if unsafe {
+            utimensat(
+                AT_FDCWD,
+                fixture_c.as_ptr(),
+                unchanged_times.as_ptr(),
+                0,
+            )
+        } != 0
+        {
+            return Err(io::Error::last_os_error());
+        }
         fs::write(blocked.join("outside-canary.txt"), "forbidden-outside-canary")?;
         Ok::<(), io::Error>(())
     })();
@@ -160,6 +321,8 @@ fn run_parent() -> io::Result<()> {
             "DENY_WRITE_EXISTING_OK",
             "DENY_CREATE_OUTSIDE_OK",
             "DENY_CHMOD_OK",
+            "DENY_SETXATTR_OK",
+            "DENY_UTIMENSAT_OK",
         ] {
             if !stdout.lines().any(|line| line == marker) {
                 return Err(io::Error::new(
@@ -191,7 +354,11 @@ fn run_parent() -> io::Result<()> {
                 )
             })?;
 
-        let unchanged = fs::read_to_string(allowed.join("fixture.txt"))?;
+        let fixture_path = allowed.join("fixture.txt");
+        let before_metadata = fs::metadata(&fixture_path)?;
+        let original_mode = before_metadata.permissions().mode() & 0o7777;
+        let original_mtime = before_metadata.modified()?;
+        let unchanged = fs::read_to_string(&fixture_path)?;
         if unchanged != FIXTURE_CONTENT {
             return Err(io::Error::new(
                 ErrorKind::InvalidData,
@@ -200,10 +367,36 @@ fn run_parent() -> io::Result<()> {
         }
         let final_mode =
             fs::metadata(allowed.join("fixture.txt"))?.permissions().mode() & 0o7777;
-        if final_mode != 0o644 {
+        if final_mode != 0o644 || final_mode != original_mode {
             return Err(io::Error::new(
                 ErrorKind::PermissionDenied,
                 "independent parent oracle observed an unexpected mode mutation",
+            ));
+        }
+        if fs::metadata(&fixture_path)?.modified()? != original_mtime {
+            return Err(io::Error::new(
+                ErrorKind::InvalidData,
+                "independent parent oracle observed an unexpected timestamp mutation",
+            ));
+        }
+        let fixture_c = c_path(&fixture_path)?;
+        let xattr_name = CString::new("user.luminous_probe").expect("literal has no NUL");
+        let mut xattr_buffer = [0_u8; 16];
+        // SAFETY: output buffer is writable for its full declared size.
+        let xattr_result = unsafe {
+            getxattr(
+                fixture_c.as_ptr(),
+                xattr_name.as_ptr(),
+                xattr_buffer.as_mut_ptr().cast(),
+                xattr_buffer.len(),
+            )
+        };
+        if xattr_result != -1
+            || io::Error::last_os_error().raw_os_error() != Some(ENODATA_ERRNO)
+        {
+            return Err(io::Error::new(
+                ErrorKind::InvalidData,
+                "independent parent oracle found a user xattr or could not verify its absence",
             ));
         }
         if blocked.join("outside-canary.txt").exists() {
@@ -229,7 +422,7 @@ fn run_parent() -> io::Result<()> {
 
         println!(
             concat!(
-                "{{\"schema\":\"luminous.landlock-seccomp-fixture-result.v1\",",
+                "{{\"schema\":\"luminous.landlock-seccomp-fixture-result.v2\",",
                 "\"status\":\"pass\",",
                 "\"landlock_abi\":{},",
                 "\"seccomp_metadata_denylist_count\":{},",
@@ -238,18 +431,22 @@ fn run_parent() -> io::Result<()> {
                 "\"existing_write_denied_by_child\":true,",
                 "\"outside_create_denied_by_child\":true,",
                 "\"chmod_denied_by_seccomp\":true,",
+                "\"setxattr_denied_by_seccomp\":true,",
+                "\"utimensat_denied_by_seccomp\":true,",
                 "\"parent_oracle_allowed_canary_unchanged\":true,",
                 "\"parent_oracle_outside_canary_unchanged\":true,",
                 "\"parent_oracle_forbidden_output_absent\":true,",
                 "\"parent_oracle_mode_unchanged\":true,",
+                "\"parent_oracle_mtime_unchanged\":true,",
+                "\"parent_oracle_xattr_absent\":true,",
                 "\"full_metadata_mutation_coverage\":false,",
-                "\"scope\":\"read_only_file_content_plus_tested_chmod_guard\"}}"
+                "\"scope\":\"read_only_file_content_plus_tested_metadata_guards\"}}"
             ),
             landlock_abi,
             metadata_denylist_count
         );
         println!(
-            "SCOPE read_only_file_content_plus_tested_chmod_guard; \
+            "SCOPE read_only_file_content_plus_tested_metadata_guards; \
              full metadata coverage and network are out of scope"
         );
         Ok(())
