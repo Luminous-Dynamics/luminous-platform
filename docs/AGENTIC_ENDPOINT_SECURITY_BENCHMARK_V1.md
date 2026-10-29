@@ -42,6 +42,10 @@ Sources:
 - [OWASP Top 10 for Agentic Applications 2026](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/)
 - [MITRE CALDERA](https://www.mitre.org/our-impact/intellectual-property/caldera) and [Falco documentation](https://falco.org/docs/)
 
+
+
+**Competitive correction (2026-10-29).** Do not present out-of-band enforcement, sandboxing, or verifiable policy as unique differentiators by themselves. NVIDIA explicitly describes OpenShell policy enforcement outside the agent process, formal policy verification, and an Open Agent Safety Platform design that adds an out-of-band BlueField/DPU watchdog. CrowdStrike Falcon Guardian also targets endpoint runtime visibility and enforcement for AI agents. Those are competitive baselines, not whitespace. The narrower hypothesis to test is whether Luminous can publish a portable, open, independently reproducible contract that checks **policy decision → actual side effect → evidence completeness → revocation/rollback state** across heterogeneous hosts and product adapters. That advantage is not established until an independent comparison demonstrates it.
+
 ## 3. Architecture hypothesis
 
 Keep these responsibilities distinct even if an early prototype combines them:
