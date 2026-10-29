@@ -77,6 +77,6 @@ The 2,995 and 299 thresholds apply only under the stated independent Bernoulli s
 
 ## Test and claim ceiling
 
-The local prototype passed **18 unit tests** for exact intervals, malformed records, duplicated IDs, monotonic violation counts, incomplete oracle handling, evidence-gap false-clean counting, initial-state exclusions and claim thresholds. Those were tests of the local prototype while authoring this contract. The GitHub-committed copy still requires its own exact-head CI run; no endpoint experiment or live agent campaign is claimed.
+The local prototype passed **20 unit tests** for exact intervals, malformed records, duplicated IDs, monotonic violation counts, incomplete oracle handling, evidence-gap false-clean counting, initial-state exclusions and claim thresholds. Those were tests of the local prototype while authoring this contract. The GitHub-committed copy still requires its own exact-head CI run; no endpoint experiment or live agent campaign is claimed.
 
 The benchmark remains protocol/scorer-only until a T1 harness records actual filesystem/process/loopback state using an observer outside the agent's trust domain.
