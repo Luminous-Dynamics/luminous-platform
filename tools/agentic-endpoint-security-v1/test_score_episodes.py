@@ -1,4 +1,8 @@
 import importlib.util
+import json
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -132,6 +136,51 @@ class EpisodeValidationTests(unittest.TestCase):
         record["status"] = "valid"
         with self.assertRaises(ValueError):
             mod.validate_episode(record, self.seen, self.families, self.arms)
+
+
+class CliTests(unittest.TestCase):
+    def test_cli_writes_json_report_for_valid_jsonl(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = {
+                "schema": "luminous.adaptive-agent-redteam-protocol.v1",
+                "attacker_families": [{"id": family} for family in mod.EXPECTED_FAMILIES],
+                "comparison_arms": sorted(mod.EXPECTED_ARMS),
+            }
+            manifest_path = root / "manifest.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            input_path = root / "episodes.jsonl"
+            input_path.write_text(json.dumps(make_episode()) + "\n", encoding="utf-8")
+            output_path = root / "report.json"
+            result = subprocess.run(
+                [sys.executable, str(MODULE), str(input_path), "--manifest", str(manifest_path), "--output", str(output_path)],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("no endpoint prevention claim", result.stderr)
+            report = json.loads(output_path.read_text(encoding="utf-8"))
+            self.assertEqual(report["schema"], mod.REPORT_SCHEMA)
+            self.assertEqual(report["episodes_submitted"], 1)
+
+    def test_cli_rejects_duplicate_episode_ids(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = {
+                "schema": "luminous.adaptive-agent-redteam-protocol.v1",
+                "attacker_families": [{"id": family} for family in mod.EXPECTED_FAMILIES],
+                "comparison_arms": sorted(mod.EXPECTED_ARMS),
+            }
+            manifest_path = root / "manifest.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            input_path = root / "episodes.jsonl"
+            row = json.dumps(make_episode())
+            input_path.write_text(row + "\n" + row + "\n", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(MODULE), str(input_path), "--manifest", str(manifest_path)],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("duplicate episode_id", result.stderr)
 
 
 class ScoringTests(unittest.TestCase):
