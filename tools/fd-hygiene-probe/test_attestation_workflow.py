@@ -213,8 +213,8 @@ class AttestationWorkflowContractTests(unittest.TestCase):
 
     def test_missing_receipt_control_is_rejected(self) -> None:
         mutated = self.mutate_attestation_job(
-            f'receipt.get("{REQUIRED_RECEIPT_FIELDS[0]}") is True,',
-            '"unrelated check": True,',
+            '"' + REQUIRED_RECEIPT_FIELDS[0] + '",',
+            '"unrelated check",',
         )
         self.assert_contract_rejects(
             mutated,
