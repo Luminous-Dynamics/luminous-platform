@@ -288,10 +288,30 @@ fn main() {
         process::exit(1);
     }
 
+    let checkout_sha = env::var("LUMINOUS_CHECKOUT_SHA")
+        .ok()
+        .filter(|value| {
+            value.len() == 40
+                && value.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        })
+        .unwrap_or_else(|| "unbound_local".to_string());
+    let kernel_release = fs::read_to_string("/proc/sys/kernel/osrelease")
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| {
+            !value.is_empty()
+                && value
+                    .chars()
+                    .all(|ch| ch.is_ascii_alphanumeric() || "._+-".contains(ch))
+        })
+        .unwrap_or_else(|| "unknown".to_string());
+
     println!(
         concat!(
             "{\"schema\":\"luminous.fd-inheritance-boundary-result.v1\",",
             "\"status\":\"pass\",",
+            "\"checkout_sha\":\"{}\",",
+            "\"kernel_release\":\"{}\",",
             "\"negative_control_inherited_fd_readable\":true,",
             "\"cloexec_control_descriptor_absent_after_exec\":true,",
             "\"parent_descriptor_survived_marking\":true,",
@@ -299,6 +319,8 @@ fn main() {
             "\"close_range_unshare_enabled\":true,",
             "\"close_range_cloexec_enabled\":true,",
             "\"scope\":\"exec_boundary_descriptor_hygiene_probe_only\"}"
-        )
+        ),
+        checkout_sha,
+        kernel_release
     );
 }
