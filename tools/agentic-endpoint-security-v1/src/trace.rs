@@ -243,7 +243,7 @@ pub fn evaluate_trace(evidence: TraceEvidence<'_>) -> TraceEvaluation {
                 || !grant_indices
                     .first()
                     .zip(attempt_indices.first())
-                    .is_some_and(|(grant, attempt)| grant < attempt && attempt < effect_index))
+                    .is_some_and(|(grant, attempt)| *grant < *attempt && *attempt < effect_index))
         {
             return make_evaluation(evidence, TraceDisposition::SecurityViolationObserved);
         }
