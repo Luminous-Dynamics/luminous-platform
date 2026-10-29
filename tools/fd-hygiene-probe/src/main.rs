@@ -8,6 +8,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
 use std::os::fd::{AsRawFd, RawFd};
 use std::os::raw::{c_int, c_uint, c_void};
+use std::os::unix::fs::DirBuilderExt;
 use std::path::{Path, PathBuf};
 use std::process::{self, Command};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -169,10 +170,14 @@ fn run_parent() -> io::Result<()> {
         .duration_since(UNIX_EPOCH)
         .map_err(|error| io::Error::other(format!("system clock before Unix epoch: {error}")))?
         .as_nanos();
-    let path: PathBuf = env::temp_dir().join(format!(
-        "luminous-fd-hygiene-{}-{timestamp}.canary",
+    let root: PathBuf = env::temp_dir().join(format!(
+        "luminous-fd-hygiene-{}-{timestamp}",
         process::id()
     ));
+    let path = root.join("canary");
+    let mut directory = fs::DirBuilder::new();
+    directory.mode(0o700);
+    directory.create(&root)?;
 
     let result = (|| {
         let mut writer = OpenOptions::new()
@@ -243,11 +248,13 @@ fn run_parent() -> io::Result<()> {
         Ok(())
     })();
 
-    let cleanup = fs::remove_file(&path);
-    match (result, cleanup) {
-        (Err(error), _) => Err(error),
-        (Ok(()), Err(error)) => Err(error),
-        (Ok(()), Ok(())) => Ok(()),
+    let file_cleanup = fs::remove_file(&path);
+    let directory_cleanup = fs::remove_dir(&root);
+    match (result, file_cleanup, directory_cleanup) {
+        (Err(error), _, _) => Err(error),
+        (Ok(()), Err(error), _) => Err(error),
+        (Ok(()), Ok(()), Err(error)) => Err(error),
+        (Ok(()), Ok(()), Ok(())) => Ok(()),
     }
 }
 
