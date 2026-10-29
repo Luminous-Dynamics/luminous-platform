@@ -823,11 +823,21 @@ mod tests {
     }
 
     fn set_target(request: &mut Request, target_id: &str) {
-        request.observed.value.as_mut().expect("test observation exists").target_id = target_id.into();
+        request
+            .observed
+            .value
+            .as_mut()
+            .expect("test observation exists")
+            .target_id = target_id.into();
     }
 
     fn set_subject(request: &mut Request, subject_image_digest: Digest) {
-        request.observed.value.as_mut().expect("test observation exists").subject_image_digest = subject_image_digest;
+        request
+            .observed
+            .value
+            .as_mut()
+            .expect("test observation exists")
+            .subject_image_digest = subject_image_digest;
     }
 
     fn context() -> EvaluationContext {
@@ -1005,13 +1015,17 @@ mod tests {
             DenyReason::MissingObservedOperation
         );
         req = request();
-        req.observed = Fact::unverified(req.observed.value.clone().expect("test observation exists"));
+        req.observed = Fact::unverified(
+            req.observed.value.clone().expect("test observation exists"),
+        );
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::UnverifiedObservedOperation
         );
         req = request();
-        req.observed = Fact::contradictory(req.observed.value.clone().expect("test observation exists"));
+        req.observed = Fact::contradictory(
+            req.observed.value.clone().expect("test observation exists"),
+        );
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::ContradictoryObservedOperation
