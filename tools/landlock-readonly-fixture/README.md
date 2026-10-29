@@ -16,8 +16,10 @@ The child must then:
 3. Receive PermissionDenied when opening the permitted canary for writing.
 4. Receive PermissionDenied when creating a new file outside the permitted subtree.
 5. Receive PermissionDenied when attempting to change the permitted canary's mode through chmod.
+6. Receive PermissionDenied when attempting to set a user extended attribute.
+7. Receive PermissionDenied when attempting to change the file timestamps.
 
-After the child exits, the unsandboxed parent independently verifies that the allowed canary's bytes and mode remain unchanged, the outside canary remains present and unchanged, and the forbidden new file does not exist. A machine-readable JSON result includes the observed Landlock ABI, the seccomp denylist size, child checks, and separate parent-state-oracle checks. The CI workflow validates this result schema and all required fields; it does not accept process exit status alone as evidence. The temporary fixture is removed on normal return paths.
+The parent first verifies that xattrs and timestamp APIs work on the fixture filesystem. After the child exits, the unsandboxed parent independently verifies that the allowed canary's bytes, mode, and modification time remain unchanged; the tested xattr is absent; the outside canary remains present and unchanged; and the forbidden new file does not exist. A machine-readable JSON result includes the observed Landlock ABI, the seccomp denylist size, child checks, and separate parent-state-oracle checks. The CI workflow validates this versioned result schema and all required fields; it does not accept process exit status alone as evidence. The temporary fixture is removed on normal return paths.
 
 ## Run
 
@@ -32,7 +34,7 @@ The CI workflow runs this integration binary on the hosted Linux runner. The tes
 
 The implementation uses direct Linux syscalls with a tiny FFI surface and no third-party dependencies. It calls PR_SET_NO_NEW_PRIVS, creates a ruleset, adds an O_PATH-anchored subtree rule, and calls landlock_restrict_self. ABI >= 3 is required because older ABI versions could not restrict truncation. See the official Linux Landlock userspace API: https://docs.kernel.org/userspace-api/landlock.html
 
-This test demonstrates only the named kernel's file-content access controls and the tested chmod denial for this fixture under this runner configuration. It is **not** a complete read-only filesystem sandbox. The seccomp filter denies a fixed list of syscall numbers on the compiled architecture; it does not cover every metadata-changing route, filesystem-specific ioctl, device/IPC path, or unlisted syscall. The JSON record explicitly sets `full_metadata_mutation_coverage` to `false`.
+This test demonstrates only the named kernel's Landlock file-content controls plus the tested chmod, setxattr, and utimensat denials for this fixture under this runner configuration. It is **not** a complete read-only filesystem sandbox. The seccomp filter denies a fixed list of syscall numbers on the compiled architecture; it does not cover every metadata-changing route, filesystem-specific ioctl, device/IPC path, or unlisted syscall. The JSON record explicitly sets `full_metadata_mutation_coverage` to `false`.
 
 It also does not:
 - integrate the full syscall-policy core into a general process launcher;
@@ -41,4 +43,4 @@ It also does not:
 - defeat a compromised kernel, host administrator, or access through an already-open sensitive file descriptor;
 - establish production isolation, cross-kernel portability, or superiority over commercial sandbox products.
 
-Call the result `read_only_file_content_plus_tested_chmod_guard`; do not describe it as complete metadata protection or general endpoint prevention.
+Call the result `read_only_file_content_plus_tested_metadata_guards`; do not describe it as complete metadata protection or general endpoint prevention.
