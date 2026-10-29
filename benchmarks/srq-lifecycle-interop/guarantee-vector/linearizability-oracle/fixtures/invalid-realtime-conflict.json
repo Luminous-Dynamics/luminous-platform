@@ -1,0 +1,29 @@
+{
+  "schema": "srq-linearizability-history-v1",
+  "clock_domain": "single_observer_monotonic",
+  "sink_identity_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "operations": [
+    {
+      "op_id": "create",
+      "start_ns": 10,
+      "end_ns": 20,
+      "idempotency_key": "key-1",
+      "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "result": "committed",
+      "effect_id": "effect-1",
+      "receipt_id": "receipt-1",
+      "request_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    {
+      "op_id": "conflict-too-early",
+      "start_ns": 1,
+      "end_ns": 5,
+      "idempotency_key": "key-1",
+      "effect_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "result": "key_conflict",
+      "request_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ]
+}

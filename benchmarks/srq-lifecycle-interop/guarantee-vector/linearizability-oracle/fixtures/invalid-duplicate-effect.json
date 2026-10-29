@@ -1,0 +1,31 @@
+{
+  "schema": "srq-linearizability-history-v1",
+  "clock_domain": "single_observer_monotonic",
+  "sink_identity_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "operations": [
+    {
+      "op_id": "first",
+      "start_ns": 10,
+      "end_ns": 50,
+      "idempotency_key": "key-1",
+      "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "result": "committed",
+      "effect_id": "effect-1",
+      "receipt_id": "receipt-1",
+      "request_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    },
+    {
+      "op_id": "retry",
+      "start_ns": 12,
+      "end_ns": 40,
+      "idempotency_key": "key-1",
+      "effect_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "result": "committed",
+      "effect_id": "effect-2",
+      "receipt_id": "receipt-2",
+      "request_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ]
+}

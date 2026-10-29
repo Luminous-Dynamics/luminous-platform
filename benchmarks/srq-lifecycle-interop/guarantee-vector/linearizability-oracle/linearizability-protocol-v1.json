@@ -1,0 +1,54 @@
+{
+  "schema": "srq-linearizability-protocol-v1",
+  "version": 1,
+  "purpose": "Determine whether invocation/completion intervals admit a legal sequential explanation under the simplified idempotent-sink contract.",
+  "clock_contract": {
+    "domain": "single_observer_monotonic",
+    "intervals": "start_ns and end_ns use the same monotonic observer clock.",
+    "real_time_order": "If A.end_ns < B.start_ns, A must precede B. Equal boundaries remain unordered because clock resolution may be ambiguous.",
+    "limitation": "Do not compare raw timestamps from unsynchronized hosts. A distributed exporter must provide a justified clock mapping with uncertainty bounds or causal/happens-before data."
+  },
+  "operation_fields": [
+    "op_id",
+    "start_ns",
+    "end_ns",
+    "idempotency_key",
+    "request_digest",
+    "effect_digest",
+    "policy_digest",
+    "result"
+  ],
+  "result_variants": {
+    "committed": [
+      "effect_id",
+      "receipt_id"
+    ],
+    "unknown": [],
+    "key_conflict": []
+  },
+  "abstract_contract": [
+    "A committed operation binds a key to a request/effect/policy intent and observed effect/receipt identifiers.",
+    "A committed retry with the same key and intent returns the same effect and receipt identifiers.",
+    "A different intent under an existing key may return key_conflict but must not commit.",
+    "An unknown result may be unprocessed, may reserve the key without an effect, or may have committed with identifiers not observed by the caller.",
+    "Distinct keys cannot reuse an observed effect ID or receipt ID.",
+    "A witness must respect strict real-time precedence for non-overlapping intervals and every transition in the sequential model."
+  ],
+  "status_semantics": {
+    "LINEARIZABLE": "A concrete witness was found within the bounded search.",
+    "NON_LINEARIZABLE": "Exhaustive bounded search found no legal witness for this finite trace and model.",
+    "UNKNOWN_LIMIT": "Search budget exhausted; inconclusive.",
+    "INVALID_HISTORY": "Input malformed or outside the frozen protocol."
+  },
+  "bounds": {
+    "max_operations": 64,
+    "default_max_search_states": 100000
+  },
+  "explicit_non_claims": [
+    "Does not authenticate trace records or prove operations were not omitted.",
+    "Does not prove sink durability, distributed consensus, or production correctness.",
+    "A result applies only to the supplied finite history and simplified contract.",
+    "Search-limit exhaustion is inconclusive, never a pass or failure.",
+    "Raw timestamps from unsynchronized hosts are invalid for this protocol."
+  ]
+}
