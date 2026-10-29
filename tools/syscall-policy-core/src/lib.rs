@@ -647,7 +647,13 @@ pub fn evaluate(
         return Decision::Deny(DenyReason::InvalidResourceKind);
     }
 
-    let mut deferred_reason = None;
+    // Choose a stable denial reason independent of policy vector ordering.
+    // Any matching capability that is revoked/unknown/temporally invalid still
+    // denies; the precedence only makes the receipt deterministic for auditors.
+    let mut saw_revoked = false;
+    let mut saw_unknown_state = false;
+    let mut saw_not_yet_valid = false;
+    let mut saw_expired = false;
     for capability in &policy.capabilities {
         if capability.target_id != *target_id
             || capability.subject_image_digest != *subject_digest
@@ -661,21 +667,21 @@ pub fn evaluate(
 
         match capability.state {
             CapabilityState::Revoked => {
-                deferred_reason = Some(DenyReason::CapabilityRevoked);
+                saw_revoked = true;
                 continue;
             }
             CapabilityState::Unknown => {
-                deferred_reason = Some(DenyReason::CapabilityRevocationUnknown);
+                saw_unknown_state = true;
                 continue;
             }
             CapabilityState::Active => {}
         }
         if now_ms < capability.valid_from_ms {
-            deferred_reason = Some(DenyReason::CapabilityNotYetValid);
+            saw_not_yet_valid = true;
             continue;
         }
         if now_ms >= capability.expires_at_ms {
-            deferred_reason = Some(DenyReason::CapabilityExpired);
+            saw_expired = true;
             continue;
         }
 
@@ -692,7 +698,18 @@ pub fn evaluate(
         });
     }
 
-    Decision::Deny(deferred_reason.unwrap_or(DenyReason::NoMatchingCapability))
+    let reason = if saw_unknown_state {
+        DenyReason::CapabilityRevocationUnknown
+    } else if saw_revoked {
+        DenyReason::CapabilityRevoked
+    } else if saw_not_yet_valid {
+        DenyReason::CapabilityNotYetValid
+    } else if saw_expired {
+        DenyReason::CapabilityExpired
+    } else {
+        DenyReason::NoMatchingCapability
+    };
+    Decision::Deny(reason)
 }
 
 fn fact_ref<'a, T>(
@@ -1263,6 +1280,24 @@ mod tests {
             denied_reason(&policy, &request(), &context()),
             DenyReason::CapabilityRevocationUnknown
         );
+    }
+
+    #[test]
+    fn denial_reason_is_independent_of_matching_capability_order() {
+        let mut policy = baseline_policy();
+        let mut unknown = policy.capabilities[0].clone();
+        unknown.id = "unknown-state".into();
+        unknown.state = CapabilityState::Unknown;
+        let mut expired = policy.capabilities[0].clone();
+        expired.id = "expired-state".into();
+        expired.state = CapabilityState::Active;
+        expired.expires_at_ms = 1_500;
+        policy.capabilities = vec![unknown.clone(), expired.clone()];
+        let first = denied_reason(&policy, &request(), &context());
+        policy.capabilities = vec![expired, unknown];
+        let second = denied_reason(&policy, &request(), &context());
+        assert_eq!(first, DenyReason::CapabilityRevocationUnknown);
+        assert_eq!(second, first);
     }
 
     #[test]
