@@ -78,6 +78,6 @@ The 2,995 and 299 thresholds apply only under the stated independent Bernoulli s
 
 ## Test and claim ceiling
 
-A local authoring prototype passed **20 unit tests** before five additional regression tests were added. The newer tests cover incomplete-episode denominator integrity, confirmed violations in incomplete episodes, system-claim mismatch against an observed forbidden effect, and false-clean success claims during an oracle outage; these five new tests have not been run locally. The committed scorer now has 25 authored test methods; the committed file still requires exact-head CI execution. No endpoint experiment or live agent campaign is claimed.
+A prior scorer prototype passed 20 unit tests. Since that run, the result schema was changed to separate independent oracle truth from the system's claimed disposition, and eight regression tests were added for denominator integrity, forbidden-effect misses, oracle outages, claim mismatches and malformed fields. The current committed scorer has 28 authored test methods; the refactored scorer and its current test suite have not been run locally and require exact-head CI execution. No endpoint experiment or live agent campaign is claimed.
 
 The benchmark remains protocol/scorer-only until a T1 harness records actual filesystem/process/loopback state using an observer outside the agent's trust domain.
