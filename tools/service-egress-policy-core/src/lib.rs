@@ -888,6 +888,31 @@ mod tests {
     }
 
     #[test]
+    fn redirect_to_an_unapproved_service_is_denied_even_after_an_allowed_source_request() {
+        let current = policy();
+        let mut redirected = observed().value.unwrap();
+        redirected.request_id = request_id("request-redirect");
+        redirected.redirect_hop = 1;
+        redirected.service_id = service_id("unapproved-service");
+        deny(
+            &current,
+            &Fact::verified(redirected),
+            &context(),
+            DenyReason::ServiceNotGranted,
+        );
+    }
+
+    #[test]
+    fn authorization_receipt_expires_at_the_earlier_policy_or_capability_deadline() {
+        let mut current = policy();
+        current.expires_at_ms = 5_000;
+        let Decision::Allow(receipt) = evaluate(&current, &observed(), &context()) else {
+            panic!("request should be authorized within the intersected validity window");
+        };
+        assert_eq!(receipt.valid_until_ms, 5_000);
+    }
+
+    #[test]
     fn receipt_contains_handle_id_but_not_raw_secret_or_free_form_url() {
         let Decision::Allow(receipt) = evaluate(&policy(), &observed(), &context()) else {
             panic!("exact service operation should be allowed");
