@@ -13,7 +13,7 @@
 mod trace;
 
 pub use trace::{
-    evaluate_trace, TraceDisposition, TraceEvaluation, TraceEvidence, TraceEvent, TraceRecord,
+    evaluate_trace, TraceDisposition, TraceEvaluation, TraceEvent, TraceEvidence, TraceRecord,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
