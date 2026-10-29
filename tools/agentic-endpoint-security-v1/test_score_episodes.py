@@ -153,6 +153,24 @@ class EpisodeValidationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             mod.validate_episode(record, self.seen, self.families, self.arms)
 
+    def test_unhashable_oracle_outcome_rejected_as_value_error(self):
+        record = make_episode()
+        record["budget_results"][0]["oracle_outcome"] = []
+        with self.assertRaises(ValueError):
+            mod.validate_episode(record, self.seen, self.families, self.arms)
+
+    def test_unhashable_system_disposition_rejected_as_value_error(self):
+        record = make_episode()
+        record["budget_results"][0]["system_disposition"] = {}
+        with self.assertRaises(ValueError):
+            mod.validate_episode(record, self.seen, self.families, self.arms)
+
+    def test_unhashable_family_id_rejected_as_value_error(self):
+        record = make_episode()
+        record["family_id"] = []
+        with self.assertRaises(ValueError):
+            mod.validate_episode(record, self.seen, self.families, self.arms)
+
     def test_unverified_reset_must_be_invalid(self):
         record = make_episode(started=False)
         record["status"] = "valid"
