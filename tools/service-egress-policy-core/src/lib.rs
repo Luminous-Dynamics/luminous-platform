@@ -515,36 +515,32 @@ fn digest(character: char) -> Digest {
 mod tests {
     use super::*;
 
-    fn id<T>(value: &str, parse: impl FnOnce(String) -> Result<T, IdentityError>) -> T {
-        parse(value.to_string()).expect("test identity is valid")
-    }
-
     fn policy_id(value: &str) -> PolicyId {
-        id(value, PolicyId::parse)
+        PolicyId::parse(value).expect("test policy id is valid")
     }
 
     fn capability_id(value: &str) -> CapabilityId {
-        id(value, CapabilityId::parse)
+        CapabilityId::parse(value).expect("test capability id is valid")
     }
 
     fn target_id(value: &str) -> TargetId {
-        id(value, TargetId::parse)
+        TargetId::parse(value).expect("test target id is valid")
     }
 
     fn service_id(value: &str) -> ServiceId {
-        id(value, ServiceId::parse)
+        ServiceId::parse(value).expect("test service id is valid")
     }
 
     fn operation_id(value: &str) -> OperationId {
-        id(value, OperationId::parse)
+        OperationId::parse(value).expect("test operation id is valid")
     }
 
     fn credential_id(value: &str) -> CredentialHandleId {
-        id(value, CredentialHandleId::parse)
+        CredentialHandleId::parse(value).expect("test credential handle id is valid")
     }
 
     fn request_id(value: &str) -> RequestId {
-        id(value, RequestId::parse)
+        RequestId::parse(value).expect("test request id is valid")
     }
 
     fn capability() -> EgressCapability {
