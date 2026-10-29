@@ -122,8 +122,11 @@ def verify_checksums(root: Path) -> None:
         require(filename in BUNDLE_FILES, f"unexpected checksum path: {filename}")
         require(filename not in expected, f"duplicate checksum entry: {filename}")
         expected[filename] = digest
-    require(set(expected) == BUNDLE_FILES,
-            f"SHA256SUMS must cover exactly: {sorted(BUNDLE_FILES)}")
+    checksum_names = set(expected)
+    result_names = checksum_names & RESULT_FILES
+    required_names = {"run-context.txt", "evidence-manifest.json"}
+    require(checksum_names == required_names | result_names and len(result_names) == 1,
+            "SHA256SUMS must cover run-context, evidence-manifest, and exactly one runtime receipt")
 
     for filename, expected_digest in expected.items():
         path = root / filename
