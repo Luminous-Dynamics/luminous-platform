@@ -77,6 +77,24 @@ class LaunchBoundaryContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(mutated)
 
+    def test_receipt_must_bind_exact_checkout_sha(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["receipt_contract"]["required_fields"].remove("checkout_sha")
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+    def test_receipt_must_identify_kernel_and_landlock_abi(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["receipt_contract"]["required_fields"].remove("kernel_release")
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+    def test_receipt_cannot_claim_complete_descriptor_hygiene(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["receipt_contract"]["expected_values"]["full_descriptor_hygiene_coverage"] = True
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
 
 if __name__ == "__main__":
     unittest.main()
