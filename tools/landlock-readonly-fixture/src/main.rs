@@ -249,7 +249,8 @@ fn run_parent() -> io::Result<()> {
             metadata_denylist_count
         );
         println!(
-            "SCOPE read_only_file_content_plus_tested_chmod_guard; full metadata coverage and network are out of scope"
+            "SCOPE read_only_file_content_plus_tested_chmod_guard; \
+             full metadata coverage and network are out of scope"
         );
         Ok(())
     });
