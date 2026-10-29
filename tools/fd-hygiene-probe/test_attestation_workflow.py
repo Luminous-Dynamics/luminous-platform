@@ -94,6 +94,10 @@ def validate_contract(workflow: str) -> list[str]:
         "EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}",
         'manifest.get("status") == "candidate_pass_for_declared_microtest"',
         'manifest.get("claim_ceiling") == "one inherited descriptor and one exec boundary on the named Linux runner; not full descriptor hygiene"',
+        'manifest.get("runner_os") == "Linux"',
+        'manifest.get("runner_arch") in {"X64", "ARM64"}',
+        'manifest.get("receipt_parse_error") is None',
+        're.fullmatch(r"[0-9a-f]{40}", manifest.get("workflow_sha", ""))',
         'manifest.get("receipt_schema") == "luminous.fd-inheritance-boundary-result.v1"',
         'manifest.get("receipt_status") == "pass"',
         'manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]',
@@ -104,6 +108,8 @@ def validate_contract(workflow: str) -> list[str]:
         'manifest.get("receipt_status") == receipt.get("status")',
         'receipt.get("status") == "pass"',
         'receipt.get("scope") == "exec_boundary_descriptor_hygiene_probe_only"',
+        'assert set(context) == {',
+        'context["workflow"] == manifest.get("workflow")',
         'context["workflow_run_id"] == os.environ["EXPECTED_RUN_ID"]',
     ):
         if required not in verify_step:
@@ -274,6 +280,26 @@ class AttestationWorkflowContractTests(unittest.TestCase):
         self.assert_contract_rejects(
             mutated,
             "pre-signing verifier must reject symlinked bundle entries",
+        )
+
+    def test_runner_identity_is_required(self) -> None:
+        mutated = self.mutate_attestation_job(
+            'manifest.get("runner_os") == "Linux"',
+            'manifest.get("runner_os") == "Windows"',
+        )
+        self.assert_contract_rejects(
+            mutated,
+            'pre-signing verifier missing guard: manifest.get("runner_os") == "Linux"',
+        )
+
+    def test_run_context_must_match_manifest_workflow(self) -> None:
+        mutated = self.mutate_attestation_job(
+            'context["workflow"] == manifest.get("workflow")',
+            'context["workflow"] == "trust-me"',
+        )
+        self.assert_contract_rejects(
+            mutated,
+            'pre-signing verifier missing guard: context["workflow"] == manifest.get("workflow")',
         )
 
 
