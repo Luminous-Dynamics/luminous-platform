@@ -53,3 +53,21 @@ jobs:
         run: cargo run --locked --manifest-path tools/syscall-policy-core/Cargo.toml
         env:
           CARGO_NET_OFFLINE: "true"
+
+      - name: Check Landlock fixture formatting
+        run: cargo fmt --manifest-path tools/landlock-readonly-fixture/Cargo.toml -- --check
+
+      - name: Build and test Landlock fixture adapter
+        run: cargo test --locked --manifest-path tools/landlock-readonly-fixture/Cargo.toml
+        env:
+          CARGO_NET_OFFLINE: "true"
+
+      - name: Run Landlock fixture integration test
+        run: cargo run --locked --manifest-path tools/landlock-readonly-fixture/Cargo.toml
+        env:
+          CARGO_NET_OFFLINE: "true"
+
+      - name: Run Landlock adapter Clippy
+        run: cargo clippy --locked --manifest-path tools/landlock-readonly-fixture/Cargo.toml -- -D warnings
+        env:
+          CARGO_NET_OFFLINE: "true"
