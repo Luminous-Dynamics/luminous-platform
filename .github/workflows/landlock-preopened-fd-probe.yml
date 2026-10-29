@@ -165,6 +165,17 @@ jobs:
               and receipt.get("kernel_release") != "unknown"
               and type(receipt.get("landlock_abi")) is int
               and receipt["landlock_abi"] >= 3
+              and all(
+                  receipt.get(field) is True
+                  for field in (
+                      "preopened_write_succeeded_after_landlock",
+                      "parent_oracle_observed_preopened_write",
+                      "cloexec_descriptor_absent_after_exec",
+                      "new_path_write_open_denied_after_landlock",
+                      "parent_oracle_safe_control_unchanged",
+                      "parent_original_fd_cloexec",
+                  )
+              )
               and receipt.get("full_descriptor_hygiene_coverage") is False
               and receipt.get("scope") == "preopened_writable_fd_ordering_microtest"
           )
