@@ -10,6 +10,10 @@
 //! guarantee dimension. It does not compress authorization, freshness, scope,
 //! completeness, observation trust, and rollback into one proof-like Boolean.
 
+mod trace;
+
+pub use trace::{evaluate_trace, TraceDisposition, TraceEvaluation, TraceEvidence, TraceEvent, TraceRecord};
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Authorization {
     Allowed,
