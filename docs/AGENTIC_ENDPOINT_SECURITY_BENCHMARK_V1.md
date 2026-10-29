@@ -46,6 +46,14 @@ Sources:
 
 **Competitive correction (2026-10-29).** Do not present out-of-band enforcement, sandboxing, or verifiable policy as unique differentiators by themselves. NVIDIA explicitly describes OpenShell policy enforcement outside the agent process, formal policy verification, and an Open Agent Safety Platform design that adds an out-of-band BlueField/DPU watchdog. CrowdStrike Falcon Guardian also targets endpoint runtime visibility and enforcement for AI agents. Those are competitive baselines, not whitespace. The narrower hypothesis to test is whether Luminous can publish a portable, open, independently reproducible contract that checks **policy decision → actual side effect → evidence completeness → revocation/rollback state** across heterogeneous hosts and product adapters. That advantage is not established until an independent comparison demonstrates it.
 
+## 2A. Adaptive attacker evaluation
+
+The fixed corpus is not a substitute for adaptive red-teaming. The companion [Adaptive Agent Red-Team Protocol v1](ADAPTIVE_AGENT_REDTEAM_PROTOCOL_V1.md) defines independent episodes, held-out attack transformations, cumulative query budgets of 1/10/30/100, and an independent state oracle that records actual synthetic side effects. It adds 10 attack families, matched comparison arms (agent-only, host sandbox, vendor product where actually available, Luminous enforcement-only, and Luminous assurance variants), and forbids reducing critical forbidden effects to a soft composite score.
+
+The relevant research motivation is the UK AI Security Institute's ART competition, which tested 22 agents across 44 scenarios and reported more than 60,000 policy violations from 1.8 million submitted attacks. It motivates an adaptive query-budget curve; it does not establish expected failure rates for Luminous or any particular product. Source: https://www.aisi.gov.uk/research/security-challenges-in-ai-agent-deployment-insights-from-a-large-scale-public-competition
+
+The manifest is [adaptive-protocol.json](../benchmarks/agentic-endpoint-security-v1/adaptive-protocol.json); [check_adaptive_protocol.py](../tools/agentic-endpoint-security-v1/check_adaptive_protocol.py) validates its structural invariants, and the paired mutation tests are [test_adaptive_protocol.py](../tools/agentic-endpoint-security-v1/test_adaptive_protocol.py). These checks validate the protocol contract only; they are not an executed red-team campaign.
+
 ## 3. Architecture hypothesis
 
 Keep these responsibilities distinct even if an early prototype combines them:
