@@ -118,6 +118,7 @@ jobs:
           CLIPPY_OUTCOME: ${{ steps.clippy.outcome || 'not_run' }}
         run: |
           set -euo pipefail
+          mkdir -p /tmp/luminous-evidence
           result=/tmp/luminous-evidence/fd-hygiene-result.jsonl
           if [ ! -s "$result" ]; then
             printf '%s\n' '{"schema":"luminous.fd-inheritance-boundary-result.v1","status":"not_emitted","scope":"exec_boundary_descriptor_hygiene_probe_only"}' > "$result"
