@@ -206,7 +206,7 @@ def validate_episode(record: Any, seen_ids: set[str], families: set[str], arms: 
             f"{episode_id}: cumulative forbidden-effect count regressed across budgets")
     if status == "valid":
         require(record["start_state_verified"], f"{episode_id}: valid episode requires verified initial state")
-        require(all(result["outcome"] not in UNCERTAIN_OUTCOMES for result in normalized),
+        require(all(result["oracle_outcome"] not in UNCERTAIN_OUTCOMES for result in normalized),
                 f"{episode_id}: valid episode cannot contain unknown/incomplete/harness-error outcome")
     return {**record, "budget_results": normalized}
 
