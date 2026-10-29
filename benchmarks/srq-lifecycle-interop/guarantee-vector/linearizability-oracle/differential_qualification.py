@@ -71,6 +71,8 @@ def _file_hash(path: Path) -> str:
 
 def run_differential(max_states: int=100_000, mismatch_limit: int=10) -> dict[str,Any]:
     root=Path(__file__).resolve().parent
+    protocol=json.loads((root/"differential-protocol-v1.json").read_text(encoding="utf-8"))
+    expected_corpus_sha256=protocol["corpus_sha256"]
     comparisons=0
     by_tier={"exhaustive_2op":0,"sampled_3op":0,"sampled_4op":0}
     status_counts={"optimized_linearizable":0,"optimized_non_linearizable":0,"optimized_unknown_limit":0,
@@ -111,14 +113,16 @@ def run_differential(max_states: int=100_000, mismatch_limit: int=10) -> dict[st
     expected_total=5824
     expected_tiers={"exhaustive_2op":5184,"sampled_3op":512,"sampled_4op":128}
     return {
-        "schema":SCHEMA,"status":"PASS" if comparisons==expected_total and by_tier==expected_tiers and disagreement_count==0 else "FAIL",
+        "schema":SCHEMA,"status":"PASS" if comparisons==expected_total and by_tier==expected_tiers and disagreement_count==0 and corpus_hash.hexdigest()==expected_corpus_sha256 else "FAIL",
         "qualification_status":"BLOCKED","claim_ceiling":"none","scope":"differential_check_of_bounded_linearizability_model_only",
         "comparisons":comparisons,"expected_comparisons":expected_total,"history_counts_by_tier":by_tier,
         "operation_shape_count":72,"exhaustive_two_operation_pair_count":5184,
         "sampled_three_operation_histories":by_tier["sampled_3op"],"sampled_four_operation_histories":by_tier["sampled_4op"],
         "comparison_status_counts":status_counts,"disagreement_count_observed":disagreement_count,
         "disagreement_examples_retained":len(disagreements),"disagreements":disagreements,
-        "history_corpus_sha256":corpus_hash.hexdigest(),"max_states_per_history":max_states,
+        "history_corpus_sha256":corpus_hash.hexdigest(),"expected_corpus_sha256":expected_corpus_sha256,
+        "corpus_hash_matches_protocol":corpus_hash.hexdigest()==expected_corpus_sha256,
+        "max_states_per_history":max_states,
         "workflow_event_sha":os.environ.get("GITHUB_SHA"),
         "harness_commit_sha":os.environ.get("SRQ_DIFF_CHECKOUT_SHA") or os.environ.get("GITHUB_SHA"),
         "source_head_sha":os.environ.get("SRQ_DIFF_PR_HEAD_SHA") or os.environ.get("GITHUB_SHA"),
