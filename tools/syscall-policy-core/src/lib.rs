@@ -737,7 +737,10 @@ fn resource_kind_compatible(operation: Operation, kind: ResourceKind) -> bool {
     use ResourceKind as Kind;
 
     match operation {
-        Op::Read | Op::Write => true,
+        Op::Read | Op::Write => matches!(
+            kind,
+            Kind::File | Kind::DirectoryEntry | Kind::NetworkEndpoint | Kind::KernelObject
+        ),
         Op::OpenRead | Op::OpenWrite | Op::Truncate => {
             matches!(kind, Kind::File | Kind::DirectoryEntry)
         }
@@ -1039,7 +1042,11 @@ mod tests {
 
     #[test]
     fn read_write_open_needs_one_capability_for_both_operations() {
-        let policy = baseline_policy();
+        let mut policy = baseline_policy();
+        let mut write_only_capability = policy.capabilities[0].clone();
+        write_only_capability.id = "write-canary".into();
+        write_only_capability.operations = vec![Operation::OpenWrite];
+        policy.capabilities.push(write_only_capability);
         let mut req = request();
         req.call = Fact::verified(SyscallCall {
             syscall: Syscall::OpenAt,
