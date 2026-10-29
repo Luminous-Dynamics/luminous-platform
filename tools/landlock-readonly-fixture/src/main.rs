@@ -1,8 +1,11 @@
-use luminous_landlock_readonly_fixture::apply_read_only_directory;
+use luminous_landlock_readonly_fixture::{
+    apply_common_metadata_deny_filter, apply_read_only_directory,
+};
 use std::fs::{self, OpenOptions};
 use std::io;
 use std::io::ErrorKind;
 use std::path::{Path, PathBuf};
+use std::os::unix::fs::PermissionsExt;
 use std::process::{Command, ExitCode};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -16,6 +19,8 @@ fn worker(
     // Install the restriction before opening the fixture or attempting effects.
     let landlock_abi = apply_read_only_directory(allowed_root)?;
     println!("LANDLOCK_ABI={landlock_abi}");
+    let metadata_denylist_count = apply_common_metadata_deny_filter()?;
+    println!("SECCOMP_METADATA_FILTER_COUNT={metadata_denylist_count}");
 
     let fixture = allowed_root.join("fixture.txt");
     let contents = fs::read_to_string(&fixture)?;
@@ -69,6 +74,18 @@ fn worker(
         }
     }
 
+    match fs::set_permissions(&fixture, fs::Permissions::from_mode(0o600)) {
+        Err(error) if error.kind() == ErrorKind::PermissionDenied => {
+            println!("DENY_CHMOD_OK");
+        }
+        Err(error) => return Err(error),
+        Ok(()) => {
+            return Err(io::Error::other(
+                "seccomp unexpectedly allowed changing fixture permissions",
+            ));
+        }
+    }
+
     Ok(())
 }
 
@@ -104,6 +121,10 @@ fn run_parent() -> io::Result<()> {
         fs::create_dir(&allowed)?;
         fs::create_dir(&blocked)?;
         fs::write(allowed.join("fixture.txt"), FIXTURE_CONTENT)?;
+        fs::set_permissions(
+            allowed.join("fixture.txt"),
+            fs::Permissions::from_mode(0o644),
+        )?;
         fs::write(blocked.join("outside-canary.txt"), "forbidden-outside-canary")?;
         Ok::<(), io::Error>(())
     })();
@@ -138,6 +159,7 @@ fn run_parent() -> io::Result<()> {
             "DENY_READ_OUTSIDE_OK",
             "DENY_WRITE_EXISTING_OK",
             "DENY_CREATE_OUTSIDE_OK",
+            "DENY_CHMOD_OK",
         ] {
             if !stdout.lines().any(|line| line == marker) {
                 return Err(io::Error::new(
@@ -157,12 +179,31 @@ fn run_parent() -> io::Result<()> {
                     "worker did not report a supported Landlock ABI version",
                 )
             })?;
+        let metadata_denylist_count = stdout
+            .lines()
+            .find_map(|line| line.strip_prefix("SECCOMP_METADATA_FILTER_COUNT="))
+            .and_then(|value| value.parse::<usize>().ok())
+            .filter(|count| *count >= 10)
+            .ok_or_else(|| {
+                io::Error::new(
+                    ErrorKind::InvalidData,
+                    "worker did not report the supported seccomp metadata denylist",
+                )
+            })?;
 
         let unchanged = fs::read_to_string(allowed.join("fixture.txt"))?;
         if unchanged != FIXTURE_CONTENT {
             return Err(io::Error::new(
                 ErrorKind::InvalidData,
                 "read-only fixture changed after worker execution",
+            ));
+        }
+        let final_mode =
+            fs::metadata(allowed.join("fixture.txt"))?.permissions().mode() & 0o7777;
+        if final_mode != 0o644 {
+            return Err(io::Error::new(
+                ErrorKind::PermissionDenied,
+                "independent parent oracle observed an unexpected mode mutation",
             ));
         }
         if blocked.join("outside-canary.txt").exists() {
@@ -188,23 +229,27 @@ fn run_parent() -> io::Result<()> {
 
         println!(
             concat!(
-                "{{\"schema\":\"luminous.landlock-readonly-fixture-result.v1\",",
+                "{{\"schema\":\"luminous.landlock-seccomp-fixture-result.v1\",",
                 "\"status\":\"pass\",",
                 "\"landlock_abi\":{},",
+                "\"seccomp_metadata_denylist_count\":{},",
                 "\"allowed_read_by_child\":true,",
                 "\"outside_read_denied_by_child\":true,",
                 "\"existing_write_denied_by_child\":true,",
                 "\"outside_create_denied_by_child\":true,",
+                "\"chmod_denied_by_seccomp\":true,",
                 "\"parent_oracle_allowed_canary_unchanged\":true,",
                 "\"parent_oracle_outside_canary_unchanged\":true,",
                 "\"parent_oracle_forbidden_output_absent\":true,",
-                "\"landlock_metadata_mutation_syscalls_covered\":false,",
-                "\"scope\":\"disposable_file_content_access_fixture_only\"}}"
+                "\"parent_oracle_mode_unchanged\":true,",
+                "\"full_metadata_mutation_coverage\":false,",
+                "\"scope\":\"read_only_file_content_plus_tested_chmod_guard\"}}"
             ),
-            landlock_abi
+            landlock_abi,
+            metadata_denylist_count
         );
         println!(
-            "SCOPE disposable_file_content_access_fixture_only; metadata mutations and network are out of scope"
+            "SCOPE read_only_file_content_plus_tested_chmod_guard; full metadata coverage and network are out of scope"
         );
         Ok(())
     });
