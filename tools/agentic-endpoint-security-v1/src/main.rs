@@ -32,7 +32,9 @@ fn main() {
         external_witness_required: true,
     };
 
-    println!("REFERENCE MODEL ONLY: examples are synthetic facts, not endpoint tests or security proof.");
+    println!(
+        "REFERENCE MODEL ONLY: examples are synthetic facts, not endpoint tests or security proof."
+    );
     example("conforming fixture", baseline);
     example(
         "denied fixture with no independently observed effect",
