@@ -279,6 +279,7 @@ class AttestedEvidenceVerifierTests(unittest.TestCase):
         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
         manifest["workflow"] = "unrelated workflow"
         manifest_file.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+        self._refresh_manifest_checksum()
         with self.assertRaisesRegex(ValueError, "manifest workflow"):
             verify_attested_bundle(
                 evidence_dir=self.evidence_dir,
@@ -294,8 +295,16 @@ class AttestedEvidenceVerifierTests(unittest.TestCase):
         manifest_file = self.evidence_dir / "evidence-manifest.json"
         manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
         manifest["status"] = "not_qualified"
+        manifest["step_outcomes"]["clippy"] = "failure"
         manifest_file.write_text(json.dumps(manifest, sort_keys=True, separators=(",", ":")), encoding="utf-8")
+        context_path = self.evidence_dir / "run-context.txt"
+        context = context_path.read_text(encoding="utf-8").replace(
+            "clippy_outcome=success",
+            "clippy_outcome=failure",
+        )
+        context_path.write_text(context, encoding="utf-8")
         self._refresh_manifest_checksum()
+        self._refresh_context_checksum()
         with patch("verify_attested_evidence_bundle.subprocess.run") as run:
             with self.assertRaisesRegex(ValueError, "not qualified"):
                 verify_attested_bundle(
@@ -308,6 +317,17 @@ class AttestedEvidenceVerifierTests(unittest.TestCase):
                     probe="landlock",
                 )
         run.assert_not_called()
+
+    def _refresh_context_checksum(self) -> None:
+        checksum_path = self.evidence_dir / "SHA256SUMS"
+        entries = checksum_path.read_text(encoding="utf-8").splitlines()
+        updated = []
+        for line in entries:
+            digest, filename = line.split("  ", 1)
+            if filename == "run-context.txt":
+                digest = hashlib.sha256((self.evidence_dir / filename).read_bytes()).hexdigest()
+            updated.append(f"{digest}  {filename}\n")
+        checksum_path.write_text("".join(updated), encoding="utf-8")
 
     def _refresh_manifest_checksum(self) -> None:
         checksum_path = self.evidence_dir / "SHA256SUMS"
