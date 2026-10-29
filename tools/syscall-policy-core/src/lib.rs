@@ -474,12 +474,19 @@ impl PolicySnapshot {
     }
 }
 
+/// All facts for a single syscall attempt are bundled together so callers cannot
+/// accidentally combine a resource from one event with syscall facts from another.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ObservedOperation {
+    pub target_id: String,
+    pub subject_image_digest: Digest,
+    pub resource: ResourceIdentity,
+    pub call: SyscallCall,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Request {
-    pub target_id: Fact<String>,
-    pub subject_image_digest: Fact<Digest>,
-    pub resource: Fact<ResourceIdentity>,
-    pub call: Fact<SyscallCall>,
+    pub observed: Fact<ObservedOperation>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -510,19 +517,11 @@ pub enum DenyReason {
     PolicyRevocationUnknown,
     PolicyNotYetValid,
     PolicyExpired,
+    MissingObservedOperation,
+    UnverifiedObservedOperation,
+    ContradictoryObservedOperation,
     MissingTargetBinding,
-    UnverifiedTargetBinding,
-    ContradictoryTargetBinding,
     TargetMismatch,
-    MissingSubjectIdentity,
-    UnverifiedSubjectIdentity,
-    ContradictorySubjectIdentity,
-    MissingResourceIdentity,
-    UnverifiedResourceIdentity,
-    ContradictoryResourceIdentity,
-    MissingSyscallFacts,
-    UnverifiedSyscallFacts,
-    ContradictorySyscallFacts,
     UnknownSyscall,
     MissingOrUnexpectedArgumentFacts,
     UnsupportedArgumentSemantics,
@@ -615,49 +614,27 @@ pub fn evaluate(
         return Decision::Deny(DenyReason::PolicyExpired);
     }
 
-    let target_id = match fact_ref(
-        &request.target_id,
-        DenyReason::MissingTargetBinding,
-        DenyReason::UnverifiedTargetBinding,
-        DenyReason::ContradictoryTargetBinding,
+    let observed = match fact_ref(
+        &request.observed,
+        DenyReason::MissingObservedOperation,
+        DenyReason::UnverifiedObservedOperation,
+        DenyReason::ContradictoryObservedOperation,
     ) {
-        Ok(value) if !value.trim().is_empty() => value,
-        Ok(_) => return Decision::Deny(DenyReason::MissingTargetBinding),
+        Ok(value) => value,
         Err(reason) => return Decision::Deny(reason),
     };
+
+    let target_id = &observed.target_id;
+    if target_id.trim().is_empty() {
+        return Decision::Deny(DenyReason::MissingTargetBinding);
+    }
     if target_id != &policy.target_id {
         return Decision::Deny(DenyReason::TargetMismatch);
     }
 
-    let subject_digest = match fact_ref(
-        &request.subject_image_digest,
-        DenyReason::MissingSubjectIdentity,
-        DenyReason::UnverifiedSubjectIdentity,
-        DenyReason::ContradictorySubjectIdentity,
-    ) {
-        Ok(value) => value,
-        Err(reason) => return Decision::Deny(reason),
-    };
-
-    let resource = match fact_ref(
-        &request.resource,
-        DenyReason::MissingResourceIdentity,
-        DenyReason::UnverifiedResourceIdentity,
-        DenyReason::ContradictoryResourceIdentity,
-    ) {
-        Ok(value) => value,
-        Err(reason) => return Decision::Deny(reason),
-    };
-
-    let call = match fact_ref(
-        &request.call,
-        DenyReason::MissingSyscallFacts,
-        DenyReason::UnverifiedSyscallFacts,
-        DenyReason::ContradictorySyscallFacts,
-    ) {
-        Ok(value) => value,
-        Err(reason) => return Decision::Deny(reason),
-    };
+    let subject_digest = &observed.subject_image_digest;
+    let resource = &observed.resource;
+    let call = &observed.call;
 
     let operations = match call.required_operations() {
         Ok(operations) => operations,
