@@ -200,6 +200,8 @@ def validate(document: Any) -> dict[str, int]:
         "query_budget_points": len(budgets),
         "comparison_arms": len(arms),
         "confirmatory_minimum": sample_size,
+        "critical_zero_event_minimum": critical_n,
+        "benign_zero_false_refusal_minimum": benign_n,
     }
 
 
@@ -223,7 +225,9 @@ def main() -> int:
         f"{result['attacker_families']} attack families, "
         f"{result['query_budget_points']} cumulative query budgets, "
         f"{result['comparison_arms']} comparison arms; "
-        f"confirmatory N >= {result['confirmatory_minimum']} per stratum."
+        f"comparison floor N >= {result['confirmatory_minimum']}; "
+        f"critical zero-event claim N >= {result['critical_zero_event_minimum']} per stratum; "
+        f"zero-false-refusal 1% bound N >= {result['benign_zero_false_refusal_minimum']} per task family."
     )
     print("SCOPE: protocol-manifest integrity only; no attack campaign or prevention result.")
     return 0
