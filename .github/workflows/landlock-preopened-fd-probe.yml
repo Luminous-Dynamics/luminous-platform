@@ -54,14 +54,17 @@ jobs:
           cache: false
 
       - name: Check formatting
+        id: format_check
         run: cargo fmt --manifest-path tools/landlock-preopened-fd-probe/Cargo.toml -- --check
 
       - name: Build and run locked tests
+        id: rust_tests
         run: cargo test --locked --manifest-path tools/landlock-preopened-fd-probe/Cargo.toml
         env:
           CARGO_NET_OFFLINE: "true"
 
       - name: Run exposure and mitigation controls; validate JSON evidence
+        id: runtime_test
         run: |
           set -euo pipefail
           cargo run --quiet --locked --manifest-path tools/landlock-preopened-fd-probe/Cargo.toml | tee /tmp/luminous-evidence/landlock-preopened-fd-result.jsonl
@@ -100,6 +103,7 @@ jobs:
           CARGO_NET_OFFLINE: "true"
 
       - name: Run Clippy with warnings denied
+        id: clippy
         run: cargo clippy --locked --manifest-path tools/landlock-preopened-fd-probe/Cargo.toml -- -D warnings
         env:
           CARGO_NET_OFFLINE: "true"
@@ -108,14 +112,19 @@ jobs:
         if: always()
         env:
           EXPECTED_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORMAT_OUTCOME: ${{ steps.format_check.outcome || 'not_run' }}
+          RUST_TEST_OUTCOME: ${{ steps.rust_tests.outcome || 'not_run' }}
+          RUNTIME_TEST_OUTCOME: ${{ steps.runtime_test.outcome || 'not_run' }}
+          CLIPPY_OUTCOME: ${{ steps.clippy.outcome || 'not_run' }}
         run: |
           set -euo pipefail
           result=/tmp/luminous-evidence/landlock-preopened-fd-result.jsonl
           if [ ! -s "$result" ]; then
             printf '%s\n' '{"schema":"luminous.landlock-preopened-fd-result.v1","status":"not_emitted","full_descriptor_hygiene_coverage":false,"scope":"preopened_writable_fd_ordering_microtest"}' > "$result"
           fi
-          printf 'workflow_run_id=%s\nworkflow_run_attempt=%s\nevent_name=%s\nworkflow=%s\nexpected_checkout_sha=%s\n' \
+          printf 'workflow_run_id=%s\nworkflow_run_attempt=%s\nevent_name=%s\nworkflow=%s\nexpected_checkout_sha=%s\nformat_outcome=%s\nrust_test_outcome=%s\nruntime_test_outcome=%s\nclippy_outcome=%s\n' \
             "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$GITHUB_EVENT_NAME" "$GITHUB_WORKFLOW" "$EXPECTED_CHECKOUT_SHA" \
+            "$FORMAT_OUTCOME" "$RUST_TEST_OUTCOME" "$RUNTIME_TEST_OUTCOME" "$CLIPPY_OUTCOME" \
             > /tmp/luminous-evidence/run-context.txt
           cd /tmp/luminous-evidence
           sha256sum landlock-preopened-fd-result.jsonl run-context.txt > SHA256SUMS
