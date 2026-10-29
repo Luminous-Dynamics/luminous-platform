@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "tools/syscall-policy-core/**"
+      - "tools/landlock-readonly-fixture/**"
       - ".github/workflows/syscall-policy-core.yml"
   push:
     branches: [main]
