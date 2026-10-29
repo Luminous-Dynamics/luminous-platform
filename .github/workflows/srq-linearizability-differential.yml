@@ -42,6 +42,7 @@ jobs:
           assert report["history_counts_by_tier"] == {"exhaustive_2op": 5184, "sampled_3op": 512, "sampled_4op": 128}
           assert report["disagreement_count_observed"] == 0
           assert report["comparison_status_counts"]["optimized_unknown_limit"] == 0
+          assert report["comparison_status_counts"]["optimized_invalid_history"] == 0
           assert report["harness_commit_sha"] == os.environ["SRQ_DIFF_CHECKOUT_SHA"]
           assert report["source_head_sha"] == os.environ["SRQ_DIFF_PR_HEAD_SHA"]
           assert report["workflow_event_sha"] == os.environ["GITHUB_SHA"]
