@@ -147,6 +147,35 @@
       "expected_control": "contract_checker_rejects_missing_mitigation"
     }
   ],
+  "receipt_contract": {
+    "schema": "luminous.landlock-preopened-fd-result.v1",
+    "required_fields": [
+      "schema",
+      "status",
+      "checkout_sha",
+      "kernel_release",
+      "landlock_abi",
+      "preopened_write_succeeded_after_landlock",
+      "parent_oracle_observed_preopened_write",
+      "cloexec_descriptor_absent_after_exec",
+      "new_path_write_open_denied_after_landlock",
+      "parent_oracle_safe_control_unchanged",
+      "parent_original_fd_cloexec",
+      "full_descriptor_hygiene_coverage",
+      "scope"
+    ],
+    "expected_values": {
+      "status": "pass",
+      "full_descriptor_hygiene_coverage": false,
+      "scope": "preopened_writable_fd_ordering_microtest"
+    },
+    "identity_requirements": {
+      "checkout_sha": "40 lowercase hexadecimal characters",
+      "kernel_release": "nonempty sanitized release string",
+      "landlock_abi_minimum": 3,
+      "both_arms_must_report_same_landlock_abi": true
+    }
+  },
   "reporting_requirements": {
     "preserve_expected_exposure_as_exposure_not_success": true,
     "parent_oracle_is_independent_of_child_stdout": true,
