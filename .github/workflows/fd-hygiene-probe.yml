@@ -279,7 +279,14 @@ jobs:
           manifest = json.loads((root / "evidence-manifest.json").read_text(encoding="utf-8"))
           assert manifest.get("schema") == "luminous.ci-evidence-bundle-manifest.v1"
           assert manifest.get("status") == "candidate_pass_for_declared_microtest"
+          assert manifest.get("runner_os") == "Linux"
+          assert manifest.get("runner_arch") in {"X64", "ARM64"}
+          assert manifest.get("receipt_parse_error") is None
           assert manifest.get("claim_ceiling") == "one inherited descriptor and one exec boundary on the named Linux runner; not full descriptor hygiene"
+          assert re.fullmatch(r"[0-9a-f]{40}", manifest.get("workflow_sha", ""))
+          assert manifest.get("runner_os") == "Linux"
+          assert manifest.get("runner_arch") in {"X64", "ARM64"}
+          assert manifest.get("receipt_parse_error") is None
           assert manifest.get("receipt_schema") == "luminous.fd-inheritance-boundary-result.v1"
           assert manifest.get("receipt_status") == "pass"
           assert manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]
@@ -328,6 +335,18 @@ jobs:
               key, value = line.split("=", 1)
               assert key not in context
               context[key] = value
+          assert set(context) == {
+              "workflow_run_id",
+              "workflow_run_attempt",
+              "event_name",
+              "workflow",
+              "expected_checkout_sha",
+              "format_outcome",
+              "rust_test_outcome",
+              "runtime_test_outcome",
+              "clippy_outcome",
+          }
+          assert context["workflow"] == manifest.get("workflow")
           assert context["workflow_run_id"] == os.environ["EXPECTED_RUN_ID"]
           assert context["workflow_run_attempt"] == os.environ["EXPECTED_RUN_ATTEMPT"]
           assert context["event_name"] == "push"
