@@ -288,7 +288,12 @@ fn run_parent() -> io::Result<()> {
         let control_mtime = fs::metadata(&fixture_path)?.modified()?;
         if control_mtime
             .duration_since(UNIX_EPOCH)
-            .map_err(|_| io::Error::new(ErrorKind::InvalidData, "positive-control mtime predates epoch"))?
+            .map_err(|_| {
+                io::Error::new(
+                    ErrorKind::InvalidData,
+                    "positive-control mtime predates epoch",
+                )
+            })?
             .as_secs()
             != 1
         {
