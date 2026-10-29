@@ -39,6 +39,12 @@ jobs:
       - name: Validate frozen corpus contract
         run: python3 tools/agentic-endpoint-security-v1/check_corpus.py
 
+      - name: Validate adaptive red-team protocol
+        run: python3 tools/agentic-endpoint-security-v1/check_adaptive_protocol.py
+
+      - name: Run adaptive protocol mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_adaptive_protocol.py
+
       - name: Check Rust formatting
         run: cargo fmt --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml -- --check
 
