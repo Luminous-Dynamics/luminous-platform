@@ -411,46 +411,53 @@ mod tests {
 
 
     #[test]
-    fn target_policy_task_and_nonce_binding_are_computed_not_self_asserted() {
+    fn every_binding_field_is_compared_not_self_asserted() {
         let baseline = compliant_evidence();
         assert_eq!(evaluate(baseline).computed_binding, Binding::Match);
 
-        let target_substitution = EvidenceBundle {
-            observed_binding: Some(BindingTuple {
+        let substitutions = [
+            BindingTuple {
                 target_id: "endpoint-b",
                 ..canonical_binding()
-            }),
-            ..baseline
-        };
-        assert_eq!(
-            evaluate(target_substitution).computed_binding,
-            Binding::Mismatch
-        );
-        assert_eq!(
-            evaluate(target_substitution).disposition,
-            Disposition::SecurityViolationObserved
-        );
-
-        let policy_rollback = EvidenceBundle {
-            observed_binding: Some(BindingTuple {
+            },
+            BindingTuple {
+                task_id: "task-other",
+                ..canonical_binding()
+            },
+            BindingTuple {
+                action_id: "write-file",
+                ..canonical_binding()
+            },
+            BindingTuple {
+                artifact_digest: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+                ..canonical_binding()
+            },
+            BindingTuple {
+                policy_digest: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                ..canonical_binding()
+            },
+            BindingTuple {
                 policy_epoch: 6,
                 ..canonical_binding()
-            }),
-            ..baseline
-        };
-        assert_eq!(
-            evaluate(policy_rollback).computed_binding,
-            Binding::Mismatch
-        );
-
-        let nonce_replay = EvidenceBundle {
-            observed_binding: Some(BindingTuple {
-                nonce_digest: "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            },
+            BindingTuple {
+                nonce_digest: "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
                 ..canonical_binding()
-            }),
-            ..baseline
-        };
-        assert_eq!(evaluate(nonce_replay).computed_binding, Binding::Mismatch);
+            },
+        ];
+
+        for substituted in substitutions {
+            let evidence = EvidenceBundle {
+                observed_binding: Some(substituted),
+                ..baseline
+            };
+            let result = evaluate(evidence);
+            assert_eq!(result.computed_binding, Binding::Mismatch);
+            assert_eq!(
+                result.disposition,
+                Disposition::SecurityViolationObserved
+            );
+        }
     }
 
     #[test]
