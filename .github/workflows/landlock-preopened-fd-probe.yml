@@ -196,7 +196,7 @@ jobs:
               "manifest_authenticity": "not_signed; checksum verifies bundle consistency only"
           }
           (root / "evidence-manifest.json").write_text(
-              json.dumps(manifest, sort_keys=True, separators=(",", ":")) + "\\n",
+              json.dumps(manifest, sort_keys=True, separators=(",", ":")),
               encoding="utf-8",
           )
           PY
