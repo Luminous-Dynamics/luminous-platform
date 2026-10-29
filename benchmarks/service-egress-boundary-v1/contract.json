@@ -1,0 +1,119 @@
+{
+  "schema": "luminous.service-egress-boundary-benchmark.v1",
+  "version": 1,
+  "claim_ceiling": "policy-decision model only; no network confinement is implemented by this contract",
+  "decision_core": {
+    "crate": "tools/service-egress-policy-core",
+    "dependencies": [],
+    "credential_material_present": false,
+    "free_form_urls_accepted": false,
+    "opaque_service_and_operation_ids_required": true
+  },
+  "model_cases": [
+    {
+      "id": "MODEL-ALLOW-EXACT-READ",
+      "category": "positive-control",
+      "expected": "allow",
+      "requirement": "one active capability binds exact target, subject digest, service, operation and credential handle"
+    },
+    {
+      "id": "MODEL-DENY-UNKNOWN-SERVICE",
+      "category": "scope-mismatch",
+      "expected": "deny",
+      "reason": "ServiceNotGranted"
+    },
+    {
+      "id": "MODEL-DENY-UNGRANTED-OPERATION",
+      "category": "scope-mismatch",
+      "expected": "deny",
+      "reason": "OperationNotGranted"
+    },
+    {
+      "id": "MODEL-DENY-CREDENTIAL-MISMATCH",
+      "category": "credential-isolation",
+      "expected": "deny",
+      "reason": "CredentialHandleMismatch"
+    },
+    {
+      "id": "MODEL-DENY-UNIONED-GRANTS",
+      "category": "capability-composition",
+      "expected": "deny",
+      "requirement": "operation and credential must be authorized by the same capability"
+    },
+    {
+      "id": "MODEL-DENY-STALE-POLICY",
+      "category": "temporal-validity",
+      "expected": "deny",
+      "requirement": "minimum accepted epoch and exact policy digest are checked"
+    },
+    {
+      "id": "MODEL-DENY-UNKNOWN-REVOCATION",
+      "category": "revocation",
+      "expected": "deny",
+      "requirement": "unknown policy or capability revocation state never authorizes"
+    },
+    {
+      "id": "MODEL-DENY-UNVERIFIED-ATTEMPT",
+      "category": "evidence-integrity",
+      "expected": "deny",
+      "requirement": "missing, unverified and contradictory request facts fail closed"
+    }
+  ],
+  "runtime_cases": [
+    {
+      "id": "RUNTIME-BLOCK-DIRECT-SOCKET",
+      "category": "egress-bypass",
+      "status": "not_implemented",
+      "expected": "block",
+      "positive_control": "approved broker operation succeeds",
+      "independent_oracle": "packet capture outside workload plus server-side request log"
+    },
+    {
+      "id": "RUNTIME-BLOCK-DNS-REBIND",
+      "category": "destination-binding",
+      "status": "not_implemented",
+      "expected": "block",
+      "positive_control": "approved hostname resolves to the pinned allowed destination",
+      "independent_oracle": "resolver trace, connect peer address and packet capture"
+    },
+    {
+      "id": "RUNTIME-REAUTHORIZE-REDIRECT",
+      "category": "redirect-scope",
+      "status": "not_implemented",
+      "expected": "block_unapproved_hop",
+      "positive_control": "redirect to a separately authorized service succeeds",
+      "independent_oracle": "proxy request log plus external endpoint logs"
+    },
+    {
+      "id": "RUNTIME-NO-SECRET-LEAK",
+      "category": "credential-isolation",
+      "status": "not_implemented",
+      "expected": "no_unauthorized_disclosure",
+      "positive_control": "opaque handle accesses only its intended broker operation",
+      "independent_oracle": "canary secret sinks, environment/argv inventory and packet capture"
+    },
+    {
+      "id": "RUNTIME-REJECT-REPLAY",
+      "category": "replay",
+      "status": "not_implemented",
+      "expected": "block_replay",
+      "positive_control": "fresh request identity is accepted once",
+      "independent_oracle": "durable broker nonce ledger and server-side request log"
+    },
+    {
+      "id": "RUNTIME-DENY-UNKNOWN-OUTCOME",
+      "category": "oracle-integrity",
+      "status": "not_implemented",
+      "expected": "not_qualified",
+      "positive_control": "oracle observes a seeded forbidden request",
+      "independent_oracle": "independently controlled packet sink and server-side effect oracle"
+    }
+  ],
+  "qualification_rules": {
+    "model_tests_do_not_qualify_runtime_cases": true,
+    "positive_controls_required_for_every_runtime_case": true,
+    "oracle_must_run_outside_subject_workload": true,
+    "missing_or_unavailable_oracle_means_not_qualified": true,
+    "unsupported_environment_means_not_tested": true
+  }
+}
