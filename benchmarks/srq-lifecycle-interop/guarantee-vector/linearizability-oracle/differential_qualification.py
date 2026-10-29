@@ -5,7 +5,7 @@ import argparse, hashlib, itertools, json, os
 from pathlib import Path
 from typing import Any, Iterable
 from differential_reference import reference_accepts_witness, reference_has_linearization
-from linearizability_oracle import check_history
+from linearizability_oracle import InvalidHistory, check_history
 
 SCHEMA = "srq-linearizability-differential-report-v1"
 DIGESTS = {"request_0":"b"*64,"effect_0":"c"*64,"policy_0":"d"*64,
@@ -85,7 +85,16 @@ def run_differential(max_states: int=100_000, mismatch_limit: int=10) -> dict[st
         by_tier[tier]+=1
         canonical=json.dumps(history,sort_keys=True,separators=(",",":"),ensure_ascii=False)
         corpus_hash.update(canonical.encode("utf-8")+b"\n")
-        optimized=check_history(history,max_states=max_states)
+        try:
+            optimized=check_history(history,max_states=max_states)
+        except InvalidHistory as exc:
+            status_counts["optimized_invalid_history"]+=1
+            disagreement_count+=1
+            if len(disagreements)<mismatch_limit:
+                disagreements.append({"reason":"generated_history_invalid","tier":tier,
+                    "history_sha256":canonical_hash(history),"history":history,
+                    "optimized_status":"INVALID_HISTORY","error":str(exc)})
+            continue
         reference,reference_witness=reference_has_linearization(history)
         positive=optimized["status"]=="LINEARIZABLE"
         if optimized["status"]=="LINEARIZABLE":
