@@ -18,7 +18,7 @@ This follows current guidance in practical terms:
 
 ## Paradigm shift: prove the observer before trusting the score
 
-Replace a caller-supplied boolean such as \`independent=true\` with an explicit observation contract:
+Replace a caller-supplied boolean such as `independent=true` with an explicit observation contract:
 
 - **Agent telemetry** records intent, tool calls, decisions, and local events. It is useful, but cannot self-certify effect truth.
 - **Out-of-process supervisor** enforces permissions and records attempted/denied actions. It shares the host-kernel failure domain unless stronger isolation is demonstrated; its policy result is not by itself proof of actual side effects.
@@ -30,7 +30,7 @@ Every run should declare the trust boundary of each observer, what it can and ca
 
 ## Coverage contract
 
-The machine-readable inventory is [\`oracle-coverage.json\`](../benchmarks/agentic-endpoint-security-v1/oracle-coverage.json). It freezes 10 side-effect channels and 10 fault controls.
+The machine-readable inventory is [`oracle-coverage.json`](../benchmarks/agentic-endpoint-security-v1/oracle-coverage.json). It freezes 10 side-effect channels and 10 fault controls.
 
 | Family | Example channel / fault | Required interpretation |
 |---|---|---|
@@ -53,7 +53,7 @@ For each fault, test two outcomes separately:
 
 Do not rely solely on a test that edits a trace file and then asks the same parser to confirm that the edit was detected. Include at least one independently captured state oracle and test the observer against a deliberately weak no-enforcement control, a permitted positive control, an injected missing-event control, and a forged-clean-log control.
 
-A missing state oracle must yield \`INCOMPLETE_EVIDENCE\`, not "blocked." A confirmed forbidden side effect remains a security violation even if the rest of the trace is incomplete. If the oracle does not cover a side-effect channel, the claim ceiling must name that channel as unqualified rather than imply coverage.
+A missing state oracle must yield `INCOMPLETE_EVIDENCE`, not "blocked." A confirmed forbidden side effect remains a security violation even if the rest of the trace is incomplete. If the oracle does not cover a side-effect channel, the claim ceiling must name that channel as unqualified rather than imply coverage.
 
 ## Benchmark metrics
 
@@ -76,4 +76,4 @@ A useful research gate is **zero false-clean classifications** for the frozen cr
 - **T2:** run adaptive attacks and matched baselines on the tested model/configuration only.
 - **T3:** exercise restart/rollback and prove that the lifecycle checkpoint cannot be rolled back with endpoint-local state; use a separately operated witness, whose identity and freshness are independently checked.
 
-The checker \`check_oracle_coverage.py\` and mutation tests validate the manifest's content only. They cannot demonstrate real observer coverage, process separation, kernel isolation, or prevention. The next implementation after this contract is a small, inert T1 fixture harness, followed by one fault-injection case at a time.
+The checker `check_oracle_coverage.py` and mutation tests validate the manifest's content only. They cannot demonstrate real observer coverage, process separation, kernel isolation, or prevention. The next implementation after this contract is a small, inert T1 fixture harness, followed by one fault-injection case at a time.
