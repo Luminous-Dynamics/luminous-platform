@@ -53,6 +53,7 @@ const SECCOMP_RET_ALLOW: u32 = 0x7fff_0000;
 const SECCOMP_ERRNO_EPERM: u32 = 1;
 const SECCOMP_DATA_NR_OFFSET: u32 = 0;
 const SECCOMP_DATA_ARCH_OFFSET: u32 = 4;
+#[cfg(target_arch = "x86_64")]
 const X32_SYSCALL_BIT: u32 = 0x4000_0000;
 
 #[cfg(target_arch = "x86_64")]
@@ -390,14 +391,17 @@ mod seccomp_tests {
     }
 
     #[test]
-    fn common_chmod_and_xattr_mutators_are_in_the_denylist() {
+    fn common_chmod_xattr_and_timestamp_mutators_are_in_the_denylist() {
         #[cfg(target_arch = "x86_64")]
-        for syscall_number in [90, 91, 188, 189, 190, 197, 198, 199, 268, 452] {
+        for syscall_number in [
+            90, 91, 92, 93, 94, 132, 188, 189, 190, 197, 198, 199, 235, 260, 261, 268,
+            280, 452,
+        ] {
             assert!(METADATA_MUTATOR_SYSCALLS.contains(&syscall_number));
         }
 
         #[cfg(target_arch = "aarch64")]
-        for syscall_number in [52, 53, 5, 6, 7, 14, 15, 16, 452] {
+        for syscall_number in [5, 6, 7, 14, 15, 16, 52, 53, 54, 55, 88, 452] {
             assert!(METADATA_MUTATOR_SYSCALLS.contains(&syscall_number));
         }
     }
