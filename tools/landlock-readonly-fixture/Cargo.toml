@@ -1,0 +1,13 @@
+[package]
+name = "luminous-landlock-readonly-fixture"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Linux Landlock integration proof for a read-only disposable fixture"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "landlock-readonly-fixture"
+path = "src/main.rs"
