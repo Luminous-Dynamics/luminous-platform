@@ -38,7 +38,7 @@ pub struct BindingTuple<'a> {
     pub nonce_digest: &'a str,
 }
 
-impl BindingTuple<'_> {
+impl<'a> BindingTuple<'a> {
     fn is_well_formed(self) -> bool {
         let nonempty = |value: &str| !value.trim().is_empty();
         let sha256 = |value: &str| {
@@ -144,7 +144,7 @@ pub struct Evaluation<'a> {
     pub disposition: Disposition,
 }
 
-impl EvidenceBundle<'_> {
+impl<'a> EvidenceBundle<'a> {
     fn computed_binding(self) -> Binding {
         match self.observed_binding {
             None => Binding::Unknown,
@@ -232,7 +232,6 @@ pub fn evaluate<'a>(evidence: EvidenceBundle<'a>) -> Evaluation<'a> {
         Disposition::AuthorizedEffectVerified
     } else if evidence.critical_observation_is_unknown()
         || evidence.authorization == Authorization::Unknown
-        || evidence.target_policy_binding == Binding::Unknown
         || evidence.freshness == Freshness::Unknown
         || evidence.revocation == Revocation::Unknown
         || evidence.rollback == RollbackState::Unknown
