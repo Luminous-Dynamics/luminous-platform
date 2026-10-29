@@ -66,6 +66,21 @@ EXPECTED_MUTATIONS = {
     "LBC-MUT-04": "contract_checker_rejects_claim_ceiling_escalation",
     "LBC-MUT-05": "contract_checker_rejects_missing_mitigation",
 }
+RECEIPT_FIELDS = (
+    "schema",
+    "status",
+    "checkout_sha",
+    "kernel_release",
+    "landlock_abi",
+    "preopened_write_succeeded_after_landlock",
+    "parent_oracle_observed_preopened_write",
+    "cloexec_descriptor_absent_after_exec",
+    "new_path_write_open_denied_after_landlock",
+    "parent_oracle_safe_control_unchanged",
+    "parent_original_fd_cloexec",
+    "full_descriptor_hygiene_coverage",
+    "scope",
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -163,6 +178,33 @@ def validate(document: Any) -> dict[str, int]:
         require(isinstance(row.get("mutation"), str) and row["mutation"].strip(),
                 f"{case_id}: mutation description is required")
 
+    receipt = document.get("receipt_contract")
+    require(isinstance(receipt, dict), "receipt_contract must be an object")
+    require(receipt.get("schema") == "luminous.landlock-preopened-fd-result.v1",
+            "runtime receipt schema drifted")
+    receipt_fields = receipt.get("required_fields")
+    require(type(receipt_fields) is list and tuple(receipt_fields) == RECEIPT_FIELDS,
+            "runtime receipt field inventory/order drifted")
+    receipt_values = receipt.get("expected_values")
+    require(isinstance(receipt_values, dict), "receipt expected_values must be an object")
+    require(receipt_values.get("status") == "pass",
+            "qualified micro-test receipt status must remain pass")
+    require(receipt_values.get("full_descriptor_hygiene_coverage") is False,
+            "receipt cannot claim complete descriptor hygiene")
+    require(receipt_values.get("scope") == "preopened_writable_fd_ordering_microtest",
+            "receipt scope cannot be widened")
+    identity = receipt.get("identity_requirements")
+    require(isinstance(identity, dict), "receipt identity_requirements must be an object")
+    require(identity.get("checkout_sha") == "40 lowercase hexadecimal characters",
+            "receipt must bind an exact source checkout SHA")
+    require(identity.get("kernel_release") == "nonempty sanitized release string",
+            "receipt must identify the runtime kernel")
+    require(type(identity.get("landlock_abi_minimum")) is int
+            and identity["landlock_abi_minimum"] >= 3,
+            "receipt must record the supported Landlock ABI floor")
+    require(identity.get("both_arms_must_report_same_landlock_abi") is True,
+            "both experiment arms must use the same Landlock ABI")
+
     reporting = document.get("reporting_requirements")
     require(isinstance(reporting, dict), "reporting_requirements must be an object")
     for key in (
@@ -182,7 +224,7 @@ def validate(document: Any) -> dict[str, int]:
             and "host-kernel integrity" in ceiling,
             "global claim ceiling must retain explicit limitations")
     return {"scenarios": len(scenarios), "mutation_controls": len(mutations),
-            "source_semantics": len(sources)}
+            "source_semantics": len(sources), "receipt_fields": len(receipt_fields)}
 
 
 def main() -> int:
