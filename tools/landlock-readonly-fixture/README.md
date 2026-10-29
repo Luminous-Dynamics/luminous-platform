@@ -6,16 +6,17 @@ This is a small, real-kernel T1 integration probe—not a simulation of a policy
 
 The parent creates a disposable temporary directory containing:
 - an allowed-read-only directory with one synthetic canary file;
-- a separate writable blocked-write-target directory.
+- a separate blocked directory containing a second synthetic canary and a path where a forbidden new file must not appear.
 
 It launches a child process. Before the child opens the canary, the child installs a Landlock filesystem ruleset with ABI >= 3. The ruleset handles file execution, writes, reads, directory reads, removals, creation, rename/link transitions, and truncation. The only path-beneath rule grants READ_FILE and READ_DIR inside the allowed subtree.
 
 The child must then:
 1. read the expected synthetic canary successfully;
-2. fail to open the existing canary for writing with PermissionDenied;
-3. fail to create a new file outside the allowed subtree with PermissionDenied.
+2. fail to read the second canary outside the allowed subtree with PermissionDenied;
+3. fail to open the existing allowed canary for writing with PermissionDenied;
+4. fail to create a new file outside the allowed subtree with PermissionDenied.
 
-After the child exits, the unsandboxed parent checks the original canary bytes are unchanged and the outside file does not exist. The parent is a separate state oracle, so this does not rely only on the restricted child's self-reported log. The temporary tree is removed on normal return paths.
+After the child exits, the unsandboxed parent independently checks the allowed canary is unchanged, the outside canary is still present and unchanged, and the forbidden new file does not exist. The parent is a separate state oracle, so this does not rely only on the restricted child's self-reported log. The temporary tree is removed on normal return paths.
 
 ## Run
 
@@ -24,7 +25,7 @@ After the child exits, the unsandboxed parent checks the original canary bytes a
     cargo run --locked --manifest-path tools/landlock-readonly-fixture/Cargo.toml
     cargo clippy --locked --manifest-path tools/landlock-readonly-fixture/Cargo.toml -- -D warnings
 
-The CI workflow runs this integration binary on the hosted Linux runner. The test intentionally fails if Landlock is unavailable or the kernel ABI is below version 3; lack of support is not silently converted to a pass.
+The CI workflow runs this integration binary on the hosted Linux runner. The test intentionally fails if Landlock is unavailable or the kernel ABI is below version 3; lack of support is not silently converted to a pass. The successful run prints distinct markers for allowed read, denied outside read, denied write to the existing fixture, and denied creation outside the subtree.
 
 ## Security boundary
 
