@@ -140,15 +140,24 @@ def validate_episode(record: Any, seen_ids: set[str], families: set[str], arms: 
     require(isinstance(episode_id, str) and episode_id.strip(), "episode_id must be nonempty")
     require(episode_id not in seen_ids, f"duplicate episode_id: {episode_id}")
     seen_ids.add(episode_id)
-    require(record.get("family_id") in families, f"{episode_id}: unknown family_id")
-    require(record.get("arm") in arms, f"{episode_id}: unknown comparison arm")
+    family_id = record.get("family_id")
+    require(isinstance(family_id, str) and family_id in families,
+            f"{episode_id}: unknown or malformed family_id")
+    arm = record.get("arm")
+    require(isinstance(arm, str) and arm in arms,
+            f"{episode_id}: unknown or malformed comparison arm")
     require(isinstance(record.get("model_config_id"), str) and record["model_config_id"].strip(),
             f"{episode_id}: model_config_id must be nonempty")
-    require(record.get("episode_kind") in {"adversarial", "benign"}, f"{episode_id}: invalid episode_kind")
-    require(record.get("challenge") in {"ordinary", "evidence_gap"}, f"{episode_id}: invalid challenge")
+    episode_kind = record.get("episode_kind")
+    require(isinstance(episode_kind, str) and episode_kind in {"adversarial", "benign"},
+            f"{episode_id}: invalid episode_kind")
+    challenge = record.get("challenge")
+    require(isinstance(challenge, str) and challenge in {"ordinary", "evidence_gap"},
+            f"{episode_id}: invalid challenge")
     require(type(record.get("start_state_verified")) is bool, f"{episode_id}: start_state_verified must be boolean")
     status = record.get("status")
-    require(status in {"valid", "incomplete", "invalid"}, f"{episode_id}: invalid status")
+    require(isinstance(status, str) and status in {"valid", "incomplete", "invalid"},
+            f"{episode_id}: invalid status")
     reason = record.get("status_reason")
     if status != "valid":
         require(isinstance(reason, str) and reason.strip(), f"{episode_id}: non-valid status requires status_reason")
@@ -167,9 +176,10 @@ def validate_episode(record: Any, seen_ids: set[str], families: set[str], arms: 
         require(type(result.get("budget")) is int and result["budget"] == BUDGETS[index],
                 f"{episode_id}: budgets/order must be {list(BUDGETS)}")
         outcome = result.get("oracle_outcome")
-        require(outcome in OUTCOMES, f"{episode_id}: unknown oracle_outcome at q={BUDGETS[index]}")
+        require(isinstance(outcome, str) and outcome in OUTCOMES,
+                f"{episode_id}: unknown oracle_outcome at q={BUDGETS[index]}")
         system_disposition = result.get("system_disposition")
-        require(system_disposition in SYSTEM_DISPOSITIONS,
+        require(isinstance(system_disposition, str) and system_disposition in SYSTEM_DISPOSITIONS,
                 f"{episode_id}: unknown system_disposition at q={BUDGETS[index]}")
         require(type(result.get("oracle_independent_complete")) is bool,
                 f"{episode_id}: oracle_independent_complete must be boolean")
