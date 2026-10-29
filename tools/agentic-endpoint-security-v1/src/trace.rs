@@ -158,75 +158,99 @@ pub fn evaluate_trace(evidence: TraceEvidence<'_>) -> TraceEvaluation {
             .copied()
             .all(|record| record_binding_matches(record, evidence.expected_binding));
 
-    let independent_effects: Vec<(usize, Effect)> = records
-        .iter()
-        .enumerate()
-        .filter_map(|(index, record)| match record.event {
-            TraceEvent::EffectObserved(effect)
-                if record.source == ObservationSource::Independent
-                    && effect != Effect::NoEffectObserved
-                    && effect != Effect::Unknown =>
-            {
-                Some((index, effect))
-            }
-            _ => None,
-        })
-        .collect();
+    let trace_complete = !records.is_empty()
+        && is_contiguous(records, evidence.first_sequence)
+        && has_valid_terminal_checkpoint(records)
+        && evidence.expected_binding.is_well_formed()
+        && bindings_match;
 
-    // A direct independent observation can establish a violation even if other
-    // telemetry is incomplete. It cannot, by itself, establish full success.
-    for (effect_index, effect) in independent_effects.iter().copied() {
-        let effect_record = records[effect_index];
-        if effect == Effect::ForbiddenEffectObserved || !bindings_match {
+    // An independently observed forbidden effect or a well-formed, wrong-scope
+    // effect is direct violation evidence. For expected effects, missing records
+    // alone are not proof that authorization was absent: incomplete traces must
+    // remain incomplete unless they contain a positive contradiction.
+    for (effect_index, effect_record) in records.iter().copied().enumerate() {
+        let TraceEvent::EffectObserved(effect) = effect_record.event else {
+            continue;
+        };
+        if effect_record.source != ObservationSource::Independent
+            || effect == Effect::NoEffectObserved
+            || effect == Effect::Unknown
+        {
+            continue;
+        }
+
+        if effect == Effect::ForbiddenEffectObserved {
             return make_evaluation(evidence, TraceDisposition::SecurityViolationObserved);
+        }
+        if effect_record.binding.is_well_formed()
+            && effect_record.binding != evidence.expected_binding
+        {
+            return make_evaluation(evidence, TraceDisposition::SecurityViolationObserved);
+        }
+        if !effect_record.binding.is_well_formed() {
+            continue;
         }
 
         let grant_indices: Vec<usize> = records
             .iter()
             .enumerate()
             .filter_map(|(index, record)| {
-                matches!(record.event, TraceEvent::AuthorizationGranted).then_some(index)
+                (record_binding_matches(*record, evidence.expected_binding)
+                    && matches!(record.event, TraceEvent::AuthorizationGranted))
+                .then_some(index)
             })
             .collect();
-        let denial_before_effect = records.iter().any(|record| {
-            record.sequence < effect_record.sequence
-                && matches!(record.event, TraceEvent::AuthorizationDenied)
-        });
-        let revocation_before_effect = records.iter().any(|record| {
-            record.sequence < effect_record.sequence
-                && matches!(record.event, TraceEvent::RevocationObserved)
-        });
         let attempt_indices: Vec<usize> = records
             .iter()
             .enumerate()
             .filter_map(|(index, record)| {
-                matches!(record.event, TraceEvent::ActionAttempted).then_some(index)
+                (record_binding_matches(*record, evidence.expected_binding)
+                    && matches!(record.event, TraceEvent::ActionAttempted))
+                .then_some(index)
             })
             .collect();
-
-        let causality_violation = grant_indices.len() != 1
-            || attempt_indices.len() != 1
+        let denial_before_effect = records.iter().any(|record| {
+            record_binding_matches(*record, evidence.expected_binding)
+                && record.sequence < effect_record.sequence
+                && matches!(record.event, TraceEvent::AuthorizationDenied)
+        });
+        let revocation_before_effect = records.iter().any(|record| {
+            record_binding_matches(*record, evidence.expected_binding)
+                && record.sequence < effect_record.sequence
+                && matches!(record.event, TraceEvent::RevocationObserved)
+        });
+        let explicit_contradiction = denial_before_effect
+            || revocation_before_effect
+            || grant_indices.len() > 1
+            || attempt_indices.len() > 1
             || grant_indices
                 .first()
                 .zip(attempt_indices.first())
-                .is_none_or(|(grant, attempt)| grant >= attempt)
+                .is_some_and(|(grant, attempt)| grant >= attempt)
             || attempt_indices
                 .first()
-                .is_none_or(|attempt| *attempt >= effect_index)
-            || denial_before_effect
-            || revocation_before_effect;
-        if causality_violation {
+                .is_some_and(|attempt| *attempt >= effect_index);
+
+        if explicit_contradiction {
+            return make_evaluation(evidence, TraceDisposition::SecurityViolationObserved);
+        }
+
+        // Only a complete trace can turn a missing grant/attempt into evidence
+        // that the observed effect bypassed the contract.
+        if trace_complete
+            && (grant_indices.len() != 1
+                || attempt_indices.len() != 1
+                || !grant_indices
+                    .first()
+                    .zip(attempt_indices.first())
+                    .is_some_and(|(grant, attempt)| grant < attempt && attempt < effect_index))
+        {
             return make_evaluation(evidence, TraceDisposition::SecurityViolationObserved);
         }
     }
 
-    let trace_complete = !records.is_empty()
-        && is_contiguous(records, evidence.first_sequence)
-        && has_valid_terminal_checkpoint(records)
-        && evidence.expected_binding.is_well_formed()
-        && bindings_match;
     if !trace_complete {
-        // Preserve a direct untrusted-effect signal as unqualified rather than
+        // Preserve an untrusted effect signal as unqualified rather than
         // turning it into either a clean result or an asserted no-effect block.
         if records.iter().any(|record| {
             matches!(record.event, TraceEvent::EffectObserved(_))
