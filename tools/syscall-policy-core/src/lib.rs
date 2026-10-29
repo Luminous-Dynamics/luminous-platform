@@ -815,11 +815,21 @@ mod tests {
     }
 
     fn set_call(request: &mut Request, call: SyscallCall) {
-        request.observed.value.as_mut().expect("test observation exists").call = call;
+        request
+            .observed
+            .value
+            .as_mut()
+            .expect("test observation exists")
+            .call = call;
     }
 
     fn set_resource(request: &mut Request, resource: ResourceIdentity) {
-        request.observed.value.as_mut().expect("test observation exists").resource = resource;
+        request
+            .observed
+            .value
+            .as_mut()
+            .expect("test observation exists")
+            .resource = resource;
     }
 
     fn set_target(request: &mut Request, target_id: &str) {
@@ -1015,9 +1025,8 @@ mod tests {
             DenyReason::MissingObservedOperation
         );
         req = request();
-        req.observed = Fact::unverified(
-            req.observed.value.clone().expect("test observation exists"),
-        );
+        req.observed =
+            Fact::unverified(req.observed.value.clone().expect("test observation exists"));
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::UnverifiedObservedOperation
@@ -1068,16 +1077,19 @@ mod tests {
         write_only_capability.operations = vec![Operation::OpenWrite];
         policy.capabilities.push(write_only_capability);
         let mut req = request();
-        set_call(&mut req, SyscallCall {
-            syscall: Syscall::OpenAt,
-            arguments: ArgumentFacts::Open(OpenArguments {
-                access: OpenAccessMode::ReadWrite,
-                create: false,
-                truncate: false,
-                append: false,
-                unsupported_flags: false,
-            }),
-        });
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::OpenAt,
+                arguments: ArgumentFacts::Open(OpenArguments {
+                    access: OpenAccessMode::ReadWrite,
+                    create: false,
+                    truncate: false,
+                    append: false,
+                    unsupported_flags: false,
+                }),
+            },
+        );
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::NoMatchingCapability
@@ -1089,16 +1101,19 @@ mod tests {
         let mut policy = baseline_policy();
         policy.capabilities[0].operations = vec![Operation::OpenRead, Operation::OpenWrite];
         let mut req = request();
-        set_call(&mut req, SyscallCall {
-            syscall: Syscall::OpenAt,
-            arguments: ArgumentFacts::Open(OpenArguments {
-                access: OpenAccessMode::ReadWrite,
-                create: false,
-                truncate: false,
-                append: false,
-                unsupported_flags: false,
-            }),
-        });
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::OpenAt,
+                arguments: ArgumentFacts::Open(OpenArguments {
+                    access: OpenAccessMode::ReadWrite,
+                    create: false,
+                    truncate: false,
+                    append: false,
+                    unsupported_flags: false,
+                }),
+            },
+        );
         assert!(matches!(
             evaluate(&policy, &req, &context()),
             Decision::Allow(_)
@@ -1109,23 +1124,23 @@ mod tests {
     fn create_and_truncate_require_additional_scoped_rights() {
         let mut policy = baseline_policy();
         policy.capabilities[0].resource = resource(ResourceKind::DirectoryEntry, 'c');
-        policy.capabilities[0].operations = vec![
-            Operation::OpenWrite,
-            Operation::Create,
-            Operation::Truncate,
-        ];
+        policy.capabilities[0].operations =
+            vec![Operation::OpenWrite, Operation::Create, Operation::Truncate];
         let mut req = request();
         set_resource(&mut req, resource(ResourceKind::DirectoryEntry, 'c'));
-        set_call(&mut req, SyscallCall {
-            syscall: Syscall::OpenAt,
-            arguments: ArgumentFacts::Open(OpenArguments {
-                access: OpenAccessMode::WriteOnly,
-                create: true,
-                truncate: true,
-                append: false,
-                unsupported_flags: false,
-            }),
-        });
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::OpenAt,
+                arguments: ArgumentFacts::Open(OpenArguments {
+                    access: OpenAccessMode::WriteOnly,
+                    create: true,
+                    truncate: true,
+                    append: false,
+                    unsupported_flags: false,
+                }),
+            },
+        );
         assert!(matches!(
             evaluate(&policy, &req, &context()),
             Decision::Allow(_)
@@ -1142,30 +1157,36 @@ mod tests {
     fn unknown_open_flags_and_inconsistent_flags_fail_closed() {
         let policy = baseline_policy();
         let mut req = request();
-        set_call(&mut req, SyscallCall {
-            syscall: Syscall::OpenAt,
-            arguments: ArgumentFacts::Open(OpenArguments {
-                access: OpenAccessMode::ReadOnly,
-                create: false,
-                truncate: false,
-                append: false,
-                unsupported_flags: true,
-            }),
-        });
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::OpenAt,
+                arguments: ArgumentFacts::Open(OpenArguments {
+                    access: OpenAccessMode::ReadOnly,
+                    create: false,
+                    truncate: false,
+                    append: false,
+                    unsupported_flags: true,
+                }),
+            },
+        );
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::UnsupportedArgumentSemantics
         );
-        set_call(&mut req, SyscallCall {
-            syscall: Syscall::OpenAt,
-            arguments: ArgumentFacts::Open(OpenArguments {
-                access: OpenAccessMode::ReadOnly,
-                create: false,
-                truncate: true,
-                append: false,
-                unsupported_flags: false,
-            }),
-        });
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::OpenAt,
+                arguments: ArgumentFacts::Open(OpenArguments {
+                    access: OpenAccessMode::ReadOnly,
+                    create: false,
+                    truncate: true,
+                    append: false,
+                    unsupported_flags: false,
+                }),
+            },
+        );
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::InconsistentArgumentFacts
@@ -1176,10 +1197,13 @@ mod tests {
     fn unsupported_unknown_syscalls_are_never_granted() {
         let policy = baseline_policy();
         let mut req = request();
-        set_call(&mut req, SyscallCall {
-            syscall: Syscall::Unknown(0xffff),
-            arguments: ArgumentFacts::None,
-        });
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::Unknown(0xffff),
+                arguments: ArgumentFacts::None,
+            },
+        );
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::UnknownSyscall
@@ -1190,18 +1214,24 @@ mod tests {
     fn operations_requiring_two_resources_are_denied_until_modeled() {
         let policy = baseline_policy();
         let mut req = request();
-        set_call(&mut req, SyscallCall {
-            syscall: Syscall::RenameAt2,
-            arguments: ArgumentFacts::None,
-        });
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::RenameAt2,
+                arguments: ArgumentFacts::None,
+            },
+        );
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::UnsupportedMultiResourceOperation
         );
-        set_call(&mut req, SyscallCall {
-            syscall: Syscall::Clone3,
-            arguments: ArgumentFacts::None,
-        });
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::Clone3,
+                arguments: ArgumentFacts::None,
+            },
+        );
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::UnsupportedMultiResourceOperation
@@ -1219,15 +1249,18 @@ mod tests {
         ];
         let mut req = request();
         set_resource(&mut req, resource(ResourceKind::MemoryRegion, 'c'));
-        set_call(&mut req, SyscallCall {
-            syscall: Syscall::Mmap,
-            arguments: ArgumentFacts::Memory(MemoryArguments {
-                read: true,
-                write: true,
-                execute: true,
-                unsupported_protection_bits: false,
-            }),
-        });
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::Mmap,
+                arguments: ArgumentFacts::Memory(MemoryArguments {
+                    read: true,
+                    write: true,
+                    execute: true,
+                    unsupported_protection_bits: false,
+                }),
+            },
+        );
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::WritableExecutableMemory
@@ -1238,15 +1271,18 @@ mod tests {
     fn unknown_memory_protection_bits_fail_closed() {
         let policy = baseline_policy();
         let mut req = request();
-        set_call(&mut req, SyscallCall {
-            syscall: Syscall::Mprotect,
-            arguments: ArgumentFacts::Memory(MemoryArguments {
-                read: true,
-                write: false,
-                execute: false,
-                unsupported_protection_bits: true,
-            }),
-        });
+        set_call(
+            &mut req,
+            SyscallCall {
+                syscall: Syscall::Mprotect,
+                arguments: ArgumentFacts::Memory(MemoryArguments {
+                    read: true,
+                    write: false,
+                    execute: false,
+                    unsupported_protection_bits: true,
+                }),
+            },
+        );
         assert_eq!(
             denied_reason(&policy, &req, &context()),
             DenyReason::UnsupportedArgumentSemantics
