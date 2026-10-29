@@ -1,0 +1,88 @@
+name: service egress policy core
+
+on:
+  pull_request:
+    paths:
+      - "tools/service-egress-policy-core/**"
+      - "benchmarks/service-egress-boundary-v1/**"
+      - "docs/architecture/SERVICE_AWARE_EGRESS_BOUNDARY_V1.md"
+      - ".github/workflows/service-egress-policy-core.yml"
+  push:
+    branches: [main]
+    paths:
+      - "tools/service-egress-policy-core/**"
+      - "benchmarks/service-egress-boundary-v1/**"
+      - "docs/architecture/SERVICE_AWARE_EGRESS_BOUNDARY_V1.md"
+      - ".github/workflows/service-egress-policy-core.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: service-egress-policy-core-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  egress-policy-core:
+    name: Verify service-aware egress decision model
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact PR head (or pushed commit)
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify the checked-out commit
+        env:
+          EXPECTED_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$EXPECTED_CHECKOUT_SHA"
+          echo "Exact source checkout verified: $actual"
+
+      - name: Install pinned Rust toolchain and components
+        uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
+        with:
+          toolchain: "1.96.0"
+          components: "rustfmt, clippy"
+          cache: false
+
+      - name: Check formatting
+        run: cargo fmt --manifest-path tools/service-egress-policy-core/Cargo.toml -- --check
+
+      - name: Run locked decision and adversarial tests
+        run: cargo test --locked --manifest-path tools/service-egress-policy-core/Cargo.toml
+        env:
+          CARGO_NET_OFFLINE: "true"
+
+      - name: Run Clippy with warnings denied
+        run: cargo clippy --locked --manifest-path tools/service-egress-policy-core/Cargo.toml -- -D warnings
+        env:
+          CARGO_NET_OFFLINE: "true"
+
+      - name: Run synthetic policy demo
+        run: cargo run --locked --manifest-path tools/service-egress-policy-core/Cargo.toml --bin service-egress-policy-demo
+        env:
+          CARGO_NET_OFFLINE: "true"
+
+      - name: Validate frozen egress benchmark contract
+        run: |
+          set -euo pipefail
+          python3 -m json.tool benchmarks/service-egress-boundary-v1/contract.json > /dev/null
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          contract = json.loads(Path("benchmarks/service-egress-boundary-v1/contract.json").read_text())
+          assert contract["claim_ceiling"] == "policy-decision model only; no network confinement is implemented by this contract"
+          assert contract["qualification_rules"]["model_tests_do_not_qualify_runtime_cases"] is True
+          assert contract["qualification_rules"]["positive_controls_required_for_every_runtime_case"] is True
+          assert all(case["status"] == "not_implemented" for case in contract["runtime_cases"])
+          assert len({case["id"] for case in contract["model_cases"]}) == len(contract["model_cases"])
+          assert len({case["id"] for case in contract["runtime_cases"]}) == len(contract["runtime_cases"])
+          print(f"PASS frozen contract: {len(contract['model_cases'])} model cases; {len(contract['runtime_cases'])} runtime gates explicitly not implemented")
+          PY

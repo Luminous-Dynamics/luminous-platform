@@ -1,0 +1,15 @@
+[package]
+name = "luminous-service-egress-policy-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.96"
+license = "MIT OR Apache-2.0"
+description = "Fail-closed decision model for broker-defined service egress operations"
+
+[lib]
+name = "luminous_service_egress_policy_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "service-egress-policy-demo"
+path = "src/main.rs"
