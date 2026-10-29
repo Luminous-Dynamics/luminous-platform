@@ -239,7 +239,8 @@ def main() -> int:
         return 1
     print("PASS launch-boundary contract: "
           f"{counts['scenarios']} scenarios, {counts['mutation_controls']} mutation controls, "
-          f"{counts['source_semantics']} source-semantic records.")
+          f"{counts['source_semantics']} source-semantic records, "
+          f"{counts['receipt_fields']} required receipt fields.")
     print("SCOPE: contract consistency only; no Landlock execution or endpoint protection result.")
     return 0
 
