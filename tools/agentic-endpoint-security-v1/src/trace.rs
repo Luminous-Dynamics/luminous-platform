@@ -106,9 +106,9 @@ fn is_contiguous(records: &[TraceRecord<'_>], first_sequence: u64) -> bool {
     if first.sequence != first_sequence {
         return false;
     }
-    records.windows(2).all(|pair| {
-        pair[0].sequence.checked_add(1) == Some(pair[1].sequence)
-    })
+    records
+        .windows(2)
+        .all(|pair| pair[0].sequence.checked_add(1) == Some(pair[1].sequence))
 }
 
 fn make_evaluation<'a>(
@@ -243,7 +243,7 @@ pub fn evaluate_trace(evidence: TraceEvidence<'_>) -> TraceEvaluation {
                 || !grant_indices
                     .first()
                     .zip(attempt_indices.first())
-                    .is_some_and(|(grant, attempt)| grant < attempt && attempt < effect_index))
+                    .is_some_and(|(grant, attempt)| *grant < *attempt && *attempt < effect_index))
         {
             return make_evaluation(evidence, TraceDisposition::SecurityViolationObserved);
         }
@@ -290,9 +290,10 @@ pub fn evaluate_trace(evidence: TraceEvidence<'_>) -> TraceEvaluation {
         let attempt_index = records
             .iter()
             .position(|record| matches!(record.event, TraceEvent::ActionAttempted));
-        if grant_index.zip(attempt_index).is_some_and(|(grant, attempt)| {
-            grant < attempt && attempt < effect_index
-        }) {
+        if grant_index
+            .zip(attempt_index)
+            .is_some_and(|(grant, attempt)| grant < attempt && attempt < effect_index)
+        {
             return make_evaluation(evidence, TraceDisposition::AuthorizedEffectVerified);
         }
         return make_evaluation(evidence, TraceDisposition::SecurityViolationObserved);
@@ -311,15 +312,13 @@ pub fn evaluate_trace(evidence: TraceEvidence<'_>) -> TraceEvaluation {
         .any(|record| matches!(record.event, TraceEvent::AuthorizationDenied));
     let revoked_before_attempt = records.iter().any(|record| {
         matches!(record.event, TraceEvent::RevocationObserved)
-            && attempt_index.is_some_and(|attempt| {
-                records[attempt].sequence > record.sequence
-            })
+            && attempt_index.is_some_and(|attempt| records[attempt].sequence > record.sequence)
     });
-    let attempted_without_prior_grant = attempt_index.is_some_and(|attempt| {
-        grant_index.is_none_or(|grant| grant >= attempt)
-    });
+    let attempted_without_prior_grant =
+        attempt_index.is_some_and(|attempt| grant_index.is_none_or(|grant| grant >= attempt));
     let contradictory_decision = denied && grant_index.is_some();
-    if !contradictory_decision && (denied || revoked_before_attempt || attempted_without_prior_grant)
+    if !contradictory_decision
+        && (denied || revoked_before_attempt || attempted_without_prior_grant)
     {
         make_evaluation(evidence, TraceDisposition::BlockedBeforeEffect)
     } else {
@@ -386,7 +385,10 @@ mod tests {
         let records = with_checkpoint(vec![
             record(10, TraceEvent::AuthorizationGranted),
             record(11, TraceEvent::ActionAttempted),
-            record(12, TraceEvent::EffectObserved(Effect::ExpectedEffectObserved)),
+            record(
+                12,
+                TraceEvent::EffectObserved(Effect::ExpectedEffectObserved),
+            ),
         ]);
         assert_eq!(
             evaluate(&records, 10).disposition,
@@ -412,7 +414,10 @@ mod tests {
             record(10, TraceEvent::AuthorizationGranted),
             record(11, TraceEvent::ActionAttempted),
             record(12, TraceEvent::RevocationObserved),
-            record(13, TraceEvent::EffectObserved(Effect::ExpectedEffectObserved)),
+            record(
+                13,
+                TraceEvent::EffectObserved(Effect::ExpectedEffectObserved),
+            ),
         ]);
         assert_eq!(
             evaluate(&records, 10).disposition,
@@ -424,7 +429,10 @@ mod tests {
     fn independently_observed_effect_without_grant_is_a_violation() {
         let records = with_checkpoint(vec![
             record(10, TraceEvent::ActionAttempted),
-            record(11, TraceEvent::EffectObserved(Effect::ExpectedEffectObserved)),
+            record(
+                11,
+                TraceEvent::EffectObserved(Effect::ExpectedEffectObserved),
+            ),
         ]);
         assert_eq!(
             evaluate(&records, 10).disposition,
@@ -438,7 +446,10 @@ mod tests {
             record(10, TraceEvent::AuthorizationGranted),
             record(11, TraceEvent::ActionAttempted),
             record(12, TraceEvent::ActionAttempted),
-            record(13, TraceEvent::EffectObserved(Effect::ExpectedEffectObserved)),
+            record(
+                13,
+                TraceEvent::EffectObserved(Effect::ExpectedEffectObserved),
+            ),
         ]);
         assert_eq!(
             evaluate(&records, 10).disposition,
@@ -463,7 +474,10 @@ mod tests {
         let records = vec![
             record(10, TraceEvent::AuthorizationGranted),
             record(11, TraceEvent::ActionAttempted),
-            record(13, TraceEvent::EffectObserved(Effect::ExpectedEffectObserved)),
+            record(
+                13,
+                TraceEvent::EffectObserved(Effect::ExpectedEffectObserved),
+            ),
             record(
                 14,
                 TraceEvent::Checkpoint {
@@ -504,7 +518,10 @@ mod tests {
         let mut records = with_checkpoint(vec![
             record(10, TraceEvent::AuthorizationGranted),
             record(11, TraceEvent::ActionAttempted),
-            record(12, TraceEvent::EffectObserved(Effect::ExpectedEffectObserved)),
+            record(
+                12,
+                TraceEvent::EffectObserved(Effect::ExpectedEffectObserved),
+            ),
         ]);
         records[2].source = ObservationSource::SameTrustDomain;
         assert_eq!(
@@ -536,9 +553,7 @@ mod tests {
 
     #[test]
     fn missing_explicit_effect_observation_is_incomplete_not_no_effect() {
-        let records = with_checkpoint(vec![
-            record(10, TraceEvent::AuthorizationDenied),
-        ]);
+        let records = with_checkpoint(vec![record(10, TraceEvent::AuthorizationDenied)]);
         assert_eq!(
             evaluate(&records, 10).disposition,
             TraceDisposition::IncompleteEvidence
@@ -562,7 +577,10 @@ mod tests {
     fn a_gap_that_hides_a_possible_grant_is_incomplete_not_a_violation() {
         let records = vec![
             record(10, TraceEvent::ActionAttempted),
-            record(12, TraceEvent::EffectObserved(Effect::ExpectedEffectObserved)),
+            record(
+                12,
+                TraceEvent::EffectObserved(Effect::ExpectedEffectObserved),
+            ),
             record(
                 13,
                 TraceEvent::Checkpoint {
@@ -589,5 +607,4 @@ mod tests {
             TraceDisposition::Unqualified
         );
     }
-
 }
