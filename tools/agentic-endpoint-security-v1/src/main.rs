@@ -1,15 +1,15 @@
 use agentic_endpoint_assurance_model::{
-    evaluate, Authorization, Binding, Disposition, Effect, EvidenceBundle, Freshness,
+    evaluate, Authorization, BindingTuple, Disposition, Effect, EvidenceBundle, Freshness,
     ObservationSource, Revocation, RollbackState, Telemetry,
 };
 
-fn example(label: &str, evidence: EvidenceBundle) {
+fn example<'a>(label: &str, evidence: EvidenceBundle<'a>) {
     let result = evaluate(evidence);
     println!(
         "{label}: disposition={:?}; authorization={:?}; binding={:?}; freshness={:?}; revocation={:?}; telemetry={:?}; effect={:?}; observation={:?}; rollback={:?}",
         result.disposition,
         result.evidence.authorization,
-        result.evidence.target_policy_binding,
+        result.computed_binding,
         result.evidence.freshness,
         result.evidence.revocation,
         result.evidence.telemetry,
@@ -20,9 +20,19 @@ fn example(label: &str, evidence: EvidenceBundle) {
 }
 
 fn main() {
+    let binding = BindingTuple {
+        target_id: "endpoint-a",
+        task_id: "task-read-fixture",
+        action_id: "read-file",
+        artifact_digest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        policy_digest: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        policy_epoch: 7,
+        nonce_digest: "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    };
     let baseline = EvidenceBundle {
         authorization: Authorization::Allowed,
-        target_policy_binding: Binding::Match,
+        expected_binding: binding,
+        observed_binding: Some(binding),
         freshness: Freshness::Fresh,
         revocation: Revocation::Clear,
         telemetry: Telemetry::CompleteForDeclaredScope,
