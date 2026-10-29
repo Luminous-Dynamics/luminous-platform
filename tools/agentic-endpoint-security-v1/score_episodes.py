@@ -264,11 +264,10 @@ def score(records: list[dict[str, Any]], alpha: float = ALPHA) -> dict[str, Any]
                     result["system_disposition"] == "BLOCKED_BEFORE_EFFECT"
                     and result["oracle_outcome"] != "BLOCKED_NO_EFFECT_OBSERVED"
                 )
-                for result in started_results
-            )
-            false_clean_claims += sum(
-                result.get("evidence_complete_claim") is True
-                and result["oracle_outcome"] in UNCERTAIN_OUTCOMES
+                or (
+                    result.get("evidence_complete_claim") is True
+                    and result["oracle_outcome"] in UNCERTAIN_OUTCOMES
+                )
                 for result in started_results
             )
             missed_forbidden_effects = sum(
