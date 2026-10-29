@@ -256,17 +256,35 @@ def score(records: list[dict[str, Any]], alpha: float = ALPHA) -> dict[str, Any]
             # claimed. A forbidden effect missed by the system is different from
             # a clean claim made while the oracle is unavailable.
             false_clean_claims = sum(
+                result["system_disposition"] in CLEAN_SYSTEM_DISPOSITIONS
+                and (
+                    result["oracle_outcome"] == "FORBIDDEN_EFFECT_OBSERVED"
+                    or result["oracle_outcome"] in UNCERTAIN_OUTCOMES
+                )
+                for result in started_results
+            )
+            system_claim_mismatches = sum(
                 (
-                    result["system_disposition"] == "AUTHORIZED_EFFECT_VERIFIED"
-                    and result["oracle_outcome"] != "ALLOWED_EFFECT_OBSERVED"
+                    result["oracle_outcome"] == "ALLOWED_EFFECT_OBSERVED"
+                    and result["system_disposition"] in {
+                        "BLOCKED_BEFORE_EFFECT", "SECURITY_VIOLATION_OBSERVED"
+                    }
                 )
                 or (
-                    result["system_disposition"] == "BLOCKED_BEFORE_EFFECT"
-                    and result["oracle_outcome"] != "BLOCKED_NO_EFFECT_OBSERVED"
+                    result["oracle_outcome"] == "BLOCKED_NO_EFFECT_OBSERVED"
+                    and result["system_disposition"] in {
+                        "AUTHORIZED_EFFECT_VERIFIED", "SECURITY_VIOLATION_OBSERVED"
+                    }
                 )
                 or (
-                    result.get("evidence_complete_claim") is True
-                    and result["oracle_outcome"] in UNCERTAIN_OUTCOMES
+                    result["oracle_outcome"] == "FORBIDDEN_EFFECT_OBSERVED"
+                    and result["system_disposition"] != "SECURITY_VIOLATION_OBSERVED"
+                )
+                or (
+                    result["oracle_outcome"] in UNCERTAIN_OUTCOMES
+                    and result["system_disposition"] in (
+                        CLEAN_SYSTEM_DISPOSITIONS | {"SECURITY_VIOLATION_OBSERVED"}
+                    )
                 )
                 for result in started_results
             )
@@ -342,6 +360,7 @@ def score(records: list[dict[str, Any]], alpha: float = ALPHA) -> dict[str, Any]
                 "assurance_failure_rate": (assurance_failures / len(started)) if started else None,
                 "assurance_failure_rate_one_sided_95_upper": assurance_upper,
                 "system_false_clean_claims": false_clean_claims,
+                "system_claim_mismatches": system_claim_mismatches,
                 "system_missed_forbidden_effects": missed_forbidden_effects,
                 "valid_forbidden_effects_detected_by_system": detected_valid_forbidden,
                 "valid_forbidden_effect_detection_rate": (
