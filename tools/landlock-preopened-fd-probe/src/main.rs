@@ -34,13 +34,7 @@ const EBADF_ERRNO: i32 = 9;
 
 unsafe extern "C" {
     fn syscall(number: c_long, ...) -> c_long;
-    fn prctl(
-        option: c_int,
-        arg2: c_long,
-        arg3: c_long,
-        arg4: c_long,
-        arg5: c_long,
-    ) -> c_int;
+    fn prctl(option: c_int, arg2: c_long, arg3: c_long, arg4: c_long, arg5: c_long) -> c_int;
     fn fcntl(fd: c_int, command: c_int, ...) -> c_int;
     fn pwrite(fd: c_int, buffer: *const u8, count: usize, offset: i64) -> isize;
     fn close(fd: c_int) -> c_int;
@@ -454,7 +448,9 @@ fn main() {
         .ok()
         .filter(|value| {
             value.len() == 40
-                && value.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+                && value
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
         })
         .unwrap_or_else(|| "unbound_local".to_string());
     let kernel_release = fs::read_to_string("/proc/sys/kernel/osrelease")
@@ -484,12 +480,9 @@ fn main() {
             "\"full_descriptor_hygiene_coverage\":false,",
             "\"scope\":\"preopened_writable_fd_ordering_microtest\"}"
         ),
-        checkout_sha,
-        kernel_release,
-        landlock_abi
+        checkout_sha, kernel_release, landlock_abi
     );
 }
-
 
 #[cfg(test)]
 mod tests {
