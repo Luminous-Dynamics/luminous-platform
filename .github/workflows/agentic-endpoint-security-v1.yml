@@ -77,6 +77,9 @@ jobs:
       - name: Run launch-boundary contract mutation tests
         run: python3 tools/agentic-endpoint-security-v1/test_launch_boundary.py
 
+      - name: Run offline evidence-bundle verifier mutation tests
+        run: python3 tools/agentic-endpoint-security-v1/test_verify_evidence_bundle.py
+
       - name: Check Rust formatting
         run: cargo fmt --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml -- --check
 
