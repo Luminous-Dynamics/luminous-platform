@@ -140,6 +140,12 @@ class AttestationWorkflowContractTests(unittest.TestCase):
         errors = validate_contract(mutated)
         self.assertIn(expected_error, errors, errors)
 
+    def mutate_attestation_job(self, old: str, new: str) -> str:
+        job = extract_attestation_job(self.workflow)
+        self.assertIn(old, job)
+        mutated_job = job.replace(old, new, 1)
+        return self.workflow.replace(job, mutated_job, 1)
+
     def test_real_workflow_satisfies_contract(self) -> None:
         self.assertEqual(validate_contract(self.workflow), [])
 
@@ -190,10 +196,9 @@ class AttestationWorkflowContractTests(unittest.TestCase):
         self.assert_contract_rejects(mutated, "attestation subject is not the evidence manifest")
 
     def test_claim_ceiling_must_be_rechecked_before_signing(self) -> None:
-        mutated = self.workflow.replace(
+        mutated = self.mutate_attestation_job(
             'manifest.get("claim_ceiling") == "one inherited descriptor and one exec boundary on the named Linux runner; not full descriptor hygiene"',
             'manifest.get("claim_ceiling") == "proves all sandbox escapes impossible"',
-            1,
         )
         self.assert_contract_rejects(
             mutated,
@@ -201,10 +206,9 @@ class AttestationWorkflowContractTests(unittest.TestCase):
         )
 
     def test_missing_receipt_control_is_rejected(self) -> None:
-        mutated = self.workflow.replace(
+        mutated = self.mutate_attestation_job(
             f'receipt.get("{REQUIRED_RECEIPT_FIELDS[0]}") is True,',
             '"unrelated check": True,',
-            1,
         )
         self.assert_contract_rejects(
             mutated,
@@ -212,10 +216,9 @@ class AttestationWorkflowContractTests(unittest.TestCase):
         )
 
     def test_wrong_source_binding_is_rejected(self) -> None:
-        mutated = self.workflow.replace(
+        mutated = self.mutate_attestation_job(
             'manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]',
             'manifest.get("expected_checkout_sha") == "trust-me"',
-            1,
         )
         self.assert_contract_rejects(
             mutated,
@@ -242,10 +245,9 @@ class AttestationWorkflowContractTests(unittest.TestCase):
         self.assert_contract_rejects(mutated, "attestation artifact is not separate and run-bound")
 
     def test_manifest_receipt_schema_must_be_exact(self) -> None:
-        mutated = self.workflow.replace(
+        mutated = self.mutate_attestation_job(
             'receipt.get("schema") == "luminous.fd-inheritance-boundary-result.v1"',
             'receipt.get("schema") == "luminous.other-result.v1"',
-            1,
         )
         self.assert_contract_rejects(
             mutated,
