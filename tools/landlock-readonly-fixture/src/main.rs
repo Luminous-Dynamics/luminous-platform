@@ -291,6 +291,12 @@ fn run_parent() -> io::Result<()> {
     })();
 
     let result = prepare.and_then(|()| {
+        // Capture ground truth before the restricted child starts, not after it.
+        let fixture_path = allowed.join("fixture.txt");
+        let before_metadata = fs::metadata(&fixture_path)?;
+        let original_mode = before_metadata.permissions().mode() & 0o7777;
+        let original_mtime = before_metadata.modified()?;
+
         let executable = std::env::current_exe()?;
         let output = Command::new(executable)
             .arg("--worker")
@@ -354,10 +360,6 @@ fn run_parent() -> io::Result<()> {
                 )
             })?;
 
-        let fixture_path = allowed.join("fixture.txt");
-        let before_metadata = fs::metadata(&fixture_path)?;
-        let original_mode = before_metadata.permissions().mode() & 0o7777;
-        let original_mtime = before_metadata.modified()?;
         let unchanged = fs::read_to_string(&fixture_path)?;
         if unchanged != FIXTURE_CONTENT {
             return Err(io::Error::new(
