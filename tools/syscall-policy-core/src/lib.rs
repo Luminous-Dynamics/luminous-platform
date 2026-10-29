@@ -254,7 +254,7 @@ pub struct SyscallCall {
 
 impl SyscallCall {
     fn required_operations(self) -> Result<Vec<Operation>, DenyReason> {
-        use ArgumentFacts::{Memory, None, Open};
+        use ArgumentFacts::{Memory, Open};
         use Operation as Op;
         use Syscall as Sc;
 
