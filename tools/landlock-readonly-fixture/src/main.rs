@@ -31,12 +31,8 @@ unsafe extern "C" {
         size: usize,
         flags: c_int,
     ) -> c_int;
-    fn getxattr(
-        path: *const c_char,
-        name: *const c_char,
-        value: *mut c_void,
-        size: usize,
-    ) -> isize;
+    fn getxattr(path: *const c_char, name: *const c_char, value: *mut c_void, size: usize)
+        -> isize;
     fn removexattr(path: *const c_char, name: *const c_char) -> c_int;
     fn utimensat(
         dirfd: c_int,
@@ -163,14 +159,8 @@ fn worker(
         },
     ];
     // SAFETY: fixture_c and the two-entry times array remain valid for this call.
-    let time_result = unsafe {
-        utimensat(
-            AT_FDCWD,
-            fixture_c.as_ptr(),
-            requested_times.as_ptr(),
-            0,
-        )
-    };
+    let time_result =
+        unsafe { utimensat(AT_FDCWD, fixture_c.as_ptr(), requested_times.as_ptr(), 0) };
     if time_result == -1 && io::Error::last_os_error().kind() == ErrorKind::PermissionDenied {
         println!("DENY_UTIMENSAT_OK");
     } else if time_result == 0 {
@@ -238,7 +228,8 @@ fn run_parent() -> io::Result<()> {
                 control_value.len(),
                 0,
             )
-        } != 0 {
+        } != 0
+        {
             return Err(io::Error::last_os_error());
         }
         let mut verify_value = [0_u8; 16];
@@ -302,7 +293,10 @@ fn run_parent() -> io::Result<()> {
                 "timestamp positive control did not update mtime to the requested value",
             ));
         }
-        fs::write(blocked.join("outside-canary.txt"), "forbidden-outside-canary")?;
+        fs::write(
+            blocked.join("outside-canary.txt"),
+            "forbidden-outside-canary",
+        )?;
         Ok::<(), io::Error>(())
     })();
 
@@ -383,8 +377,10 @@ fn run_parent() -> io::Result<()> {
                 "read-only fixture changed after worker execution",
             ));
         }
-        let final_mode =
-            fs::metadata(allowed.join("fixture.txt"))?.permissions().mode() & 0o7777;
+        let final_mode = fs::metadata(allowed.join("fixture.txt"))?
+            .permissions()
+            .mode()
+            & 0o7777;
         if final_mode != 0o644 || final_mode != original_mode {
             return Err(io::Error::new(
                 ErrorKind::PermissionDenied,
@@ -409,9 +405,7 @@ fn run_parent() -> io::Result<()> {
                 xattr_buffer.len(),
             )
         };
-        if xattr_result != -1
-            || io::Error::last_os_error().raw_os_error() != Some(ENODATA_ERRNO)
-        {
+        if xattr_result != -1 || io::Error::last_os_error().raw_os_error() != Some(ENODATA_ERRNO) {
             return Err(io::Error::new(
                 ErrorKind::InvalidData,
                 "independent parent oracle found a user xattr or could not verify its absence",
@@ -460,8 +454,7 @@ fn run_parent() -> io::Result<()> {
                 "\"full_metadata_mutation_coverage\":false,",
                 "\"scope\":\"read_only_file_content_plus_tested_metadata_guards\"}}"
             ),
-            landlock_abi,
-            metadata_denylist_count
+            landlock_abi, metadata_denylist_count
         );
         println!(
             "SCOPE read_only_file_content_plus_tested_metadata_guards; \
