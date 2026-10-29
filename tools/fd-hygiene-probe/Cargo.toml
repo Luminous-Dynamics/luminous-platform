@@ -1,0 +1,10 @@
+[package]
+name = "luminous-fd-hygiene-probe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Linux exec-boundary probe for inherited file-descriptor hygiene"
+
+[[bin]]
+name = "fd-hygiene-probe"
+path = "src/main.rs"
