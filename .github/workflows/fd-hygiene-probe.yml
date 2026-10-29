@@ -217,3 +217,122 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           compression-level: 9
+
+attest-main-evidence:
+    name: Sign main-branch evidence manifest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: linux-fd-boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download exact run evidence artifact
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+        with:
+          name: fd-hygiene-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence
+
+      - name: Verify evidence manifest before signing
+        env:
+          EXPECTED_CHECKOUT_SHA: ${{ github.sha }}
+          EXPECTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+          EXPECTED_RUN_ID: ${{ github.run_id }}
+          EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          cd evidence
+          sha256sum -c SHA256SUMS
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import re
+          from pathlib import Path
+
+          root = Path(".")
+          manifest = json.loads((root / "evidence-manifest.json").read_text(encoding="utf-8"))
+          assert manifest.get("schema") == "luminous.ci-evidence-bundle-manifest.v1"
+          assert manifest.get("status") == "candidate_pass_for_declared_microtest"
+          assert manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]
+          assert manifest.get("workflow_sha") == os.environ["EXPECTED_WORKFLOW_SHA"]
+          assert str(manifest.get("workflow_run_id")) == os.environ["EXPECTED_RUN_ID"]
+          assert str(manifest.get("workflow_run_attempt")) == os.environ["EXPECTED_RUN_ATTEMPT"]
+          assert manifest.get("event_name") == "push"
+          assert manifest.get("workflow") == "fd inheritance boundary probe"
+          assert manifest.get("manifest_authenticity") == "not_signed; checksum verifies bundle consistency only"
+          assert manifest.get("step_outcomes") == {
+              "format": "success",
+              "rust_tests": "success",
+              "runtime_test": "success",
+              "clippy": "success",
+          }
+
+          receipt_name = manifest.get("receipt_path")
+          assert receipt_name == "fd-hygiene-result.jsonl"
+          raw_receipt = (root / receipt_name).read_bytes()
+          assert hashlib.sha256(raw_receipt).hexdigest() == manifest.get("receipt_sha256")
+          lines = [line for line in raw_receipt.decode("utf-8").splitlines() if line.strip()]
+          assert len(lines) == 1
+          receipt = json.loads(lines[0])
+          assert receipt.get("schema") == "luminous.fd-inheritance-boundary-result.v1"
+          assert receipt.get("status") == "pass"
+          assert receipt.get("checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]
+          assert re.fullmatch(r"[0-9a-f]{40}", receipt.get("checkout_sha", ""))
+          assert isinstance(receipt.get("kernel_release"), str) and receipt["kernel_release"] != "unknown"
+          assert receipt.get("kernel_release") == manifest.get("kernel_release")
+          assert receipt.get("scope") == "exec_boundary_descriptor_hygiene_probe_only"
+          for field in (
+              "negative_control_inherited_fd_readable",
+              "cloexec_control_descriptor_absent_after_exec",
+              "parent_descriptor_survived_marking",
+              "parent_descriptor_cloexec_flag_set",
+              "close_range_unshare_enabled",
+              "close_range_cloexec_enabled",
+          ):
+              assert receipt.get(field) is True, f"required evidence is false: {field}"
+
+          context = {}
+          for line in (root / "run-context.txt").read_text(encoding="utf-8").splitlines():
+              key, value = line.split("=", 1)
+              assert key not in context
+              context[key] = value
+          assert context["workflow_run_id"] == os.environ["EXPECTED_RUN_ID"]
+          assert context["workflow_run_attempt"] == os.environ["EXPECTED_RUN_ATTEMPT"]
+          assert context["event_name"] == "push"
+          assert context["expected_checkout_sha"] == os.environ["EXPECTED_CHECKOUT_SHA"]
+          assert context["format_outcome"] == "success"
+          assert context["rust_test_outcome"] == "success"
+          assert context["runtime_test_outcome"] == "success"
+          assert context["clippy_outcome"] == "success"
+          print("PASS: validated exact-head receipt and all evidence controls before signing")
+          PY
+
+      - name: Create keyless Sigstore provenance attestation
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+        with:
+          subject-path: evidence/evidence-manifest.json
+
+      - name: Stage attestation bundle
+        env:
+          BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          test -s "$BUNDLE_PATH"
+          mkdir -p signed-evidence
+          cp -- "$BUNDLE_PATH" signed-evidence/evidence-manifest.sigstore.json
+          cd signed-evidence
+          sha256sum evidence-manifest.sigstore.json > SHA256SUMS
+
+      - name: Upload signed attestation bundle
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: fd-hygiene-attestation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: signed-evidence/*
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
