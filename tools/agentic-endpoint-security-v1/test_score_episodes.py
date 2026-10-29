@@ -75,6 +75,12 @@ def make_episode(
         "start_state_verified": started,
         "status": status,
         "oracle_version_sha256": "a" * 64,
+        "agent_config_sha256": "b" * 64,
+        "policy_sha256": "c" * 64,
+        "harness_sha256": "d" * 64,
+        "host_environment_sha256": "e" * 64,
+        "task_contract_sha256": "f" * 64,
+        "scenario_variant_sha256": "0" * 64,
         "budget_results": results,
     }
     if status != "valid":
@@ -162,6 +168,18 @@ class EpisodeValidationTests(unittest.TestCase):
     def test_unhashable_system_disposition_rejected_as_value_error(self):
         record = make_episode()
         record["budget_results"][0]["system_disposition"] = {}
+        with self.assertRaises(ValueError):
+            mod.validate_episode(record, self.seen, self.families, self.arms)
+
+    def test_missing_frozen_config_digest_rejected(self):
+        record = make_episode()
+        del record["policy_sha256"]
+        with self.assertRaises(ValueError):
+            mod.validate_episode(record, self.seen, self.families, self.arms)
+
+    def test_uppercase_or_malformed_config_digest_rejected(self):
+        record = make_episode()
+        record["harness_sha256"] = "A" * 64
         with self.assertRaises(ValueError):
             mod.validate_episode(record, self.seen, self.families, self.arms)
 
