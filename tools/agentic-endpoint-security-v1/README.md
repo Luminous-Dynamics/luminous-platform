@@ -9,5 +9,5 @@ The Rust suite contains **28 authored tests** across the evidence-dimension eval
 - [Ordered trace oracle v1](../../docs/ENDPOINT_TRACE_ORACLE_V1.md) defines the normalized grant/deny/attempt/revocation/effect/checkpoint model and its claim limits.
 - [Episode scoring v1](../../docs/ENDPOINT_EPISODE_SCORING_V1.md) documents the JSONL result contract and interpretation of adaptive violation rate, assurance failure rate, false refusal, evidence gaps, and exact confidence bounds.
 - `score_episodes.py` validates submitted episodes and emits stratified JSON metrics. It requires independent known outcomes to be explicitly marked, prevents a cumulative forbidden effect from disappearing at later budgets, counts unknown/incomplete/harness-error outcomes as assurance failures, and does not qualify a zero-event critical claim unless the per-stratum denominator reaches 2,995 with no uncertainty.
-- Local authoring prototype: 18 standard-library unit tests passed. The committed scorer/tests still require exact-head CI execution; no real endpoint or adaptive attack result is implied.
+- Local authoring prototype: 20 standard-library unit tests passed, including CLI/report generation and duplicate-ID rejection. The committed scorer/tests still require exact-head CI execution; no real endpoint or adaptive attack result is implied.
 
