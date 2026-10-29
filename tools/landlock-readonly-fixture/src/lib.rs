@@ -132,13 +132,7 @@ unsafe extern "C" {
     fn syscall(number: c_long, ...) -> c_long;
     fn open(path: *const c_char, flags: c_int, ...) -> c_int;
     fn close(fd: c_int) -> c_int;
-    fn prctl(
-        option: c_int,
-        arg2: c_ulong,
-        arg3: c_ulong,
-        arg4: c_ulong,
-        arg5: c_ulong,
-    ) -> c_int;
+    fn prctl(option: c_int, arg2: c_ulong, arg3: c_ulong, arg4: c_ulong, arg5: c_ulong) -> c_int;
 }
 
 struct OwnedFd(c_int);
@@ -259,7 +253,13 @@ pub fn apply_read_only_directory(allowed_root: &Path) -> io::Result<i32> {
 
     let restrict_result = {
         // SAFETY: ruleset_fd is a live descriptor created above and flags are zero.
-        unsafe { syscall(SYS_LANDLOCK_RESTRICT_SELF, ruleset_fd.raw() as c_long, 0 as c_long) }
+        unsafe {
+            syscall(
+                SYS_LANDLOCK_RESTRICT_SELF,
+                ruleset_fd.raw() as c_long,
+                0 as c_long,
+            )
+        }
     };
     if restrict_result < 0 {
         return Err(io::Error::last_os_error());
@@ -395,8 +395,7 @@ mod seccomp_tests {
     fn common_chmod_xattr_and_timestamp_mutators_are_in_the_denylist() {
         #[cfg(target_arch = "x86_64")]
         for syscall_number in [
-            90, 91, 92, 93, 94, 132, 188, 189, 190, 197, 198, 199, 235, 260, 261, 268,
-            280, 452,
+            90, 91, 92, 93, 94, 132, 188, 189, 190, 197, 198, 199, 235, 260, 261, 268, 280, 452,
         ] {
             assert!(METADATA_MUTATOR_SYSCALLS.contains(&syscall_number));
         }
