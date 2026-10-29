@@ -33,7 +33,8 @@
     "invalid_histories": 0,
     "unexpected_search_limits": 0,
     "optimized_witnesses_rejected_by_reference": 0,
-    "corpus_hash_required": true
+    "corpus_hash_required": true,
+    "corpus_sha256_must_match_protocol": true
   },
   "provenance": [
     "history_corpus_sha256",
@@ -48,5 +49,6 @@
     "The three- and four-operation tiers are deterministic samples, not exhaustive.",
     "Raw timestamps are meaningful only under the single-observer monotonic clock contract.",
     "No performance comparison with Porcupine is conducted."
-  ]
+  ],
+  "corpus_sha256": "e4cbe892b7b654389b6dc9031bfaf859f455d995832c031c326f405474eb657c"
 }
