@@ -712,12 +712,12 @@ pub fn evaluate(
     Decision::Deny(reason)
 }
 
-fn fact_ref<'a, T>(
-    fact: &'a Fact<T>,
+fn fact_ref<T>(
+    fact: &Fact<T>,
     missing: DenyReason,
     unverified: DenyReason,
     contradictory: DenyReason,
-) -> Result<&'a T, DenyReason> {
+) -> Result<&T, DenyReason> {
     match fact.status {
         EvidenceStatus::Missing => Err(missing),
         EvidenceStatus::Unverified => Err(unverified),
