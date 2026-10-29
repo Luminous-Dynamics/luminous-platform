@@ -94,9 +94,14 @@ def validate_contract(workflow: str) -> list[str]:
         "EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}",
         'manifest.get("status") == "candidate_pass_for_declared_microtest"',
         'manifest.get("claim_ceiling") == "one inherited descriptor and one exec boundary on the named Linux runner; not full descriptor hygiene"',
+        'manifest.get("receipt_schema") == "luminous.fd-inheritance-boundary-result.v1"',
+        'manifest.get("receipt_status") == "pass"',
         'manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]',
         'manifest.get("workflow_sha") == os.environ["EXPECTED_WORKFLOW_SHA"]',
         'manifest.get("event_name") == "push"',
+        'receipt.get("schema") == "luminous.fd-inheritance-boundary-result.v1"',
+        'manifest.get("receipt_schema") == receipt.get("schema")',
+        'manifest.get("receipt_status") == receipt.get("status")',
         'receipt.get("status") == "pass"',
         'receipt.get("scope") == "exec_boundary_descriptor_hygiene_probe_only"',
         'context["workflow_run_id"] == os.environ["EXPECTED_RUN_ID"]',
@@ -113,6 +118,14 @@ def validate_contract(workflow: str) -> list[str]:
         errors.append("producer workflow must not invoke an ad-hoc post-signing trust shortcut")
     if "pull_request_target:" in workflow:
         errors.append("privileged workflow must not use pull_request_target")
+    if "expected_files = {" not in verify_step:
+        errors.append("pre-signing verifier must pin the complete bundle inventory")
+    if "entry.is_file() and not entry.is_symlink()" not in verify_step:
+        errors.append("pre-signing verifier must reject symlinked bundle entries")
+    if "checksum_names == expected_files - {" not in verify_step:
+        errors.append("pre-signing verifier must check exact checksum inventory")
+    if "sha256sum -c SHA256SUMS" not in verify_step:
+        errors.append("pre-signing verifier must cross-check checksums with sha256sum")
     if "retention-days: 14" not in job:
         errors.append("signed evidence artifact retention must remain explicit")
     return errors
