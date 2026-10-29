@@ -1,7 +1,8 @@
 use luminous_syscall_policy_core::{
     evaluate, ArgumentFacts, AuthenticationState, Capability, CapabilityState, ClockState, Decision,
     Digest, EvaluationContext, Fact, OpenAccessMode, OpenArguments, Operation, PolicySnapshot,
-    Request, ResourceIdentity, ResourceKind, RevocationState, Syscall, SyscallCall,
+    ObservedOperation, Request, ResourceIdentity, ResourceKind, RevocationState, Syscall,
+    SyscallCall,
 };
 
 fn digest(ch: char) -> Digest {
@@ -33,21 +34,23 @@ fn main() {
         }],
     };
     let request = Request {
-        target_id: Fact::verified("demo-endpoint".into()),
-        subject_image_digest: Fact::verified(digest('b')),
-        resource: Fact::verified(ResourceIdentity {
-            kind: ResourceKind::File,
-            stable_digest: digest('c'),
-        }),
-        call: Fact::verified(SyscallCall {
-            syscall: Syscall::OpenAt,
-            arguments: ArgumentFacts::Open(OpenArguments {
-                access: OpenAccessMode::ReadOnly,
-                create: false,
-                truncate: false,
-                append: false,
-                unsupported_flags: false,
-            }),
+        observed: Fact::verified(ObservedOperation {
+            target_id: "demo-endpoint".into(),
+            subject_image_digest: digest('b'),
+            resource: ResourceIdentity {
+                kind: ResourceKind::File,
+                stable_digest: digest('c'),
+            },
+            call: SyscallCall {
+                syscall: Syscall::OpenAt,
+                arguments: ArgumentFacts::Open(OpenArguments {
+                    access: OpenAccessMode::ReadOnly,
+                    create: false,
+                    truncate: false,
+                    append: false,
+                    unsupported_flags: false,
+                }),
+            },
         }),
     };
     let context = EvaluationContext {
@@ -61,7 +64,12 @@ fn main() {
     println!("matching read capability: {:?}", evaluate(&policy, &request, &context));
 
     let mut write_request = request;
-    write_request.call = Fact::verified(SyscallCall {
+    let mut write_observation = write_request
+        .observed
+        .value
+        .clone()
+        .expect("demo observation is present");
+    write_observation.call = SyscallCall {
         syscall: Syscall::OpenAt,
         arguments: ArgumentFacts::Open(OpenArguments {
             access: OpenAccessMode::WriteOnly,
@@ -70,7 +78,8 @@ fn main() {
             append: false,
             unsupported_flags: false,
         }),
-    });
+    };
+    write_request.observed = Fact::verified(write_observation);
     let result = evaluate(&policy, &write_request, &context);
     println!("write without a write capability: {result:?}");
     assert!(matches!(result, Decision::Deny(_)));
