@@ -557,4 +557,37 @@ mod tests {
             TraceDisposition::Unqualified
         );
     }
+
+    #[test]
+    fn a_gap_that_hides_a_possible_grant_is_incomplete_not_a_violation() {
+        let records = vec![
+            record(10, TraceEvent::ActionAttempted),
+            record(12, TraceEvent::EffectObserved(Effect::ExpectedEffectObserved)),
+            record(
+                13,
+                TraceEvent::Checkpoint {
+                    complete_through_sequence: 13,
+                    dropped_records: 0,
+                },
+            ),
+        ];
+        assert_eq!(
+            evaluate(&records, 10).disposition,
+            TraceDisposition::IncompleteEvidence
+        );
+    }
+
+    #[test]
+    fn no_effect_without_a_blocking_condition_is_unqualified() {
+        let records = with_checkpoint(vec![
+            record(10, TraceEvent::AuthorizationGranted),
+            record(11, TraceEvent::ActionAttempted),
+            record(12, TraceEvent::EffectObserved(Effect::NoEffectObserved)),
+        ]);
+        assert_eq!(
+            evaluate(&records, 10).disposition,
+            TraceDisposition::Unqualified
+        );
+    }
+
 }
