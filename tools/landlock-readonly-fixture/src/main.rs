@@ -187,7 +187,20 @@ fn run_parent() -> io::Result<()> {
         }
 
         println!(
-            "{{\"schema\":\"luminous.landlock-readonly-fixture-result.v1\",\"status\":\"pass\",\"landlock_abi\":{landlock_abi},\"allowed_read\":true,\"outside_read_denied\":true,\"existing_write_denied\":true,\"outside_create_denied\":true,\"parent_state_oracle\":\"pass\",\"scope\":\"disposable_local_filesystem_fixture_only\"}}"
+            concat!(
+                "{{\"schema\":\"luminous.landlock-readonly-fixture-result.v1\",",
+                "\"status\":\"pass\",",
+                "\"landlock_abi\":{},",
+                "\"allowed_read_by_child\":true,",
+                "\"outside_read_denied_by_child\":true,",
+                "\"existing_write_denied_by_child\":true,",
+                "\"outside_create_denied_by_child\":true,",
+                "\"parent_oracle_allowed_canary_unchanged\":true,",
+                "\"parent_oracle_outside_canary_unchanged\":true,",
+                "\"parent_oracle_forbidden_output_absent\":true,",
+                "\"scope\":\"disposable_local_filesystem_fixture_only\"}}"
+            ),
+            landlock_abi
         );
         println!(
             "SCOPE disposable_local_filesystem_fixture_only; no network or syscall-wide claim"
