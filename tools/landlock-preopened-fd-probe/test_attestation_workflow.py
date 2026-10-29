@@ -93,6 +93,7 @@ def validate_contract(workflow: str) -> list[str]:
         "EXPECTED_RUN_ID: ${{ github.run_id }}",
         "EXPECTED_RUN_ATTEMPT: ${{ github.run_attempt }}",
         'manifest.get("status") == "candidate_pass_for_declared_microtest"',
+        'manifest.get("claim_ceiling") == "one file-descriptor ordering and exec boundary on the named Linux runner; not full descriptor hygiene"',
         'manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]',
         'manifest.get("workflow_sha") == os.environ["EXPECTED_WORKFLOW_SHA"]',
         'manifest.get("event_name") == "push"',
@@ -175,6 +176,17 @@ class AttestationWorkflowContractTests(unittest.TestCase):
             1,
         )
         self.assert_contract_rejects(mutated, "attestation subject is not the evidence manifest")
+
+    def test_claim_ceiling_must_be_rechecked_before_signing(self) -> None:
+        mutated = self.workflow.replace(
+            'manifest.get("claim_ceiling") == "one file-descriptor ordering and exec boundary on the named Linux runner; not full descriptor hygiene"',
+            'manifest.get("claim_ceiling") == "proves all sandbox escapes impossible"',
+            1,
+        )
+        self.assert_contract_rejects(
+            mutated,
+            'pre-signing verifier missing guard: manifest.get("claim_ceiling") == "one file-descriptor ordering and exec boundary on the named Linux runner; not full descriptor hygiene"',
+        )
 
     def test_missing_receipt_control_is_rejected(self) -> None:
         mutated = self.workflow.replace(
