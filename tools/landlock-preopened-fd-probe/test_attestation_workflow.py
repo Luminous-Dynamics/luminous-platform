@@ -103,8 +103,10 @@ def validate_contract(workflow: str) -> list[str]:
     ):
         if required not in verify_step:
             errors.append("pre-signing verifier missing guard: " + required)
+    if "assert receipt.get(field) is True" not in verify_step:
+        errors.append("pre-signing verifier does not require each receipt control to be true")
     for field in REQUIRED_RECEIPT_FIELDS:
-        if f'receipt.get("{field}") is True' not in verify_step:
+        if field not in verify_step:
             errors.append("pre-signing verifier omits receipt control: " + field)
 
     if "gh attestation" in workflow:
