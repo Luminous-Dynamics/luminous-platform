@@ -1,7 +1,7 @@
 use luminous_syscall_policy_core::{
-    evaluate, ArgumentFacts, AuthenticationState, Capability, CapabilityState, ClockState, Decision,
-    Digest, EvaluationContext, Fact, OpenAccessMode, OpenArguments, Operation, PolicySnapshot,
-    ObservedOperation, Request, ResourceIdentity, ResourceKind, RevocationState, Syscall,
+    evaluate, ArgumentFacts, AuthenticationState, Capability, CapabilityState, ClockState,
+    Decision, Digest, EvaluationContext, Fact, ObservedOperation, OpenAccessMode, OpenArguments,
+    Operation, PolicySnapshot, Request, ResourceIdentity, ResourceKind, RevocationState, Syscall,
     SyscallCall,
 };
 
@@ -61,7 +61,10 @@ fn main() {
     };
 
     println!("SYNTHETIC POLICY DEMO ONLY — no kernel hook is installed.");
-    println!("matching read capability: {:?}", evaluate(&policy, &request, &context));
+    println!(
+        "matching read capability: {:?}",
+        evaluate(&policy, &request, &context)
+    );
 
     let mut write_request = request;
     let mut write_observation = write_request
