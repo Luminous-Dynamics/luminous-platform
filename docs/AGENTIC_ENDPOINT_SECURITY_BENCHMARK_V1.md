@@ -131,8 +131,16 @@ Do not claim superiority because the verifier passes its own fixtures, a signed 
 
 **P6 — baselines and independent replication.** Begin with open local telemetry/control tools; compare Falcon Guardian and other licensed systems only after confirming feature availability, permission, equivalent configuration and lab terms. Align reporting with MITRE's detection/protection quality and source-of-action transparency.
 
-## 9. Limits and failure modes
+## 9. Reference-model conformance slice
+
+The dependency-free Rust reference model at [tools/agentic-endpoint-security-v1](../tools/agentic-endpoint-security-v1/) now compares an expected and observed binding tuple directly: target ID, task ID, action ID, artifact SHA-256, policy SHA-256, policy epoch, and nonce SHA-256. It no longer accepts a caller-supplied positive binding enum. This checks equality and digest-string shape only; it does not authenticate who supplied either tuple or prove the source facts are true.
+
+Its authored exhaustive unit test enumerates **29,160** combinations across authorization, binding, freshness, revocation, telemetry completeness, effect, observation source, rollback state, and whether an external witness is required. It asserts three hard classification invariants: a qualified allow must meet every prerequisite, a block-before-effect claim requires a blocking condition plus complete independent no-effect evidence, and an independently observed forbidden/post-denial effect must be classified as a violation. Additional tests mutate each binding field and cover missing/malformed binding.
+
+**Execution status:** the corpus itself was parsed and its 20 IDs/outcomes/constraints were checked through the repository API. The Rust source/tests and pinned CI workflow have been committed, but the Rust compiler was unavailable in this environment and the Rust tests have not been compiled or run locally. No result from a hosted runner is claimed. The 29,160-state matrix is a proposed T0 conformance check until it executes successfully on an exact source head. It does not test cryptographic provenance, the truth of real endpoint observations, actual OS enforcement, cross-process replay races, or a real external rollback witness.
+
+## 10. Limits and failure modes
 
 A compromised kernel/root can falsify local observations or bypass local controls; claims must use an independent boundary or be narrowed. An external witness is only as strong as its identity, freshness, retention and recovery. If the implementation defines its own expected outcomes, the benchmark can self-confirm a flawed policy. Signatures prove origin under a key policy, not semantic truth/completeness. Excessive false refusals cause operators to disable controls, so benign task behavior and labor must be measured without relaxing critical safety gates.
 
-**Next objective:** implement a dependency-minimal Rust evaluator with deterministic mutation tests, then execute initial T0/T1 scenarios locally before integrating live endpoint products or expanding claims.
+**Next objective:** execute the dependency-free Rust T0 suite on an exact source head, then implement the T1 Linux/NixOS sandbox adapter with independent filesystem/process/loopback observation before integrating live endpoint products or expanding claims.
