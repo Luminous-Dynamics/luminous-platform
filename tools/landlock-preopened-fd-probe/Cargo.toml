@@ -1,0 +1,10 @@
+[package]
+name = "luminous-landlock-preopened-fd-probe"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Linux integration probe for file descriptors acquired before Landlock enforcement"
+
+[[bin]]
+name = "landlock-preopened-fd-probe"
+path = "src/main.rs"
