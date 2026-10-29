@@ -33,6 +33,49 @@ const SYS_LANDLOCK_RESTRICT_SELF: c_long = 446;
 const LANDLOCK_CREATE_RULESET_VERSION: c_int = 1;
 const LANDLOCK_RULE_PATH_BENEATH: c_int = 1;
 
+#[cfg(target_arch = "x86_64")]
+const SYS_SECCOMP: c_long = 317;
+#[cfg(target_arch = "aarch64")]
+const SYS_SECCOMP: c_long = 277;
+#[cfg(target_arch = "x86_64")]
+const AUDIT_ARCH: u32 = 0xc000_003e;
+#[cfg(target_arch = "aarch64")]
+const AUDIT_ARCH: u32 = 0xc000_00b7;
+
+const SECCOMP_SET_MODE_FILTER: c_long = 1;
+const BPF_LD_W_ABS: u16 = 0x20;
+const BPF_JMP_JEQ_K: u16 = 0x15;
+const BPF_JMP_JSET_K: u16 = 0x45;
+const BPF_RET_K: u16 = 0x06;
+const SECCOMP_RET_KILL_PROCESS: u32 = 0x8000_0000;
+const SECCOMP_RET_ERRNO: u32 = 0x0005_0000;
+const SECCOMP_RET_ALLOW: u32 = 0x7fff_0000;
+const SECCOMP_ERRNO_EPERM: u32 = 1;
+const SECCOMP_DATA_NR_OFFSET: u32 = 0;
+const SECCOMP_DATA_ARCH_OFFSET: u32 = 4;
+const X32_SYSCALL_BIT: u32 = 0x4000_0000;
+
+#[cfg(target_arch = "x86_64")]
+const METADATA_MUTATOR_SYSCALLS: &[u32] = &[
+    90, 91, 92, 93, 94, 132, 188, 189, 190, 197, 198, 199, 235, 260, 261, 268, 280, 452,
+];
+#[cfg(target_arch = "aarch64")]
+const METADATA_MUTATOR_SYSCALLS: &[u32] = &[5, 6, 7, 14, 15, 16, 52, 53, 54, 55, 88, 452];
+
+#[repr(C)]
+struct SockFilter {
+    code: u16,
+    jt: u8,
+    jf: u8,
+    k: u32,
+}
+
+#[repr(C)]
+struct SockFprog {
+    len: u16,
+    filter: *const SockFilter,
+}
+
 const PR_SET_NO_NEW_PRIVS: c_int = 38;
 const O_CLOEXEC: c_int = 0o2000000;
 const O_PATH: c_int = 0o10000000;
@@ -221,4 +264,141 @@ pub fn apply_read_only_directory(allowed_root: &Path) -> io::Result<i32> {
     }
     drop(ruleset_fd);
     Ok(abi as i32)
+}
+
+/// Install a denylist for common filesystem metadata mutation syscalls.
+///
+/// This is a deliberately narrow seccomp layer, not a complete filesystem
+/// sandbox and not a general syscall allowlist. It denies common chmod/chown,
+/// xattr mutation, and timestamp mutation syscall variants on the supported
+/// architectures. Operations outside this list (including filesystem-specific
+/// ioctls) are not covered. The caller must also apply the Landlock ruleset and
+/// independently verify actual state. The filter is inherited by future children.
+pub fn apply_common_metadata_deny_filter() -> io::Result<usize> {
+    let mut filter = vec![
+        // Verify the syscall ABI before interpreting syscall numbers.
+        SockFilter {
+            code: BPF_LD_W_ABS,
+            jt: 0,
+            jf: 0,
+            k: SECCOMP_DATA_ARCH_OFFSET,
+        },
+        SockFilter {
+            code: BPF_JMP_JEQ_K,
+            jt: 1,
+            jf: 0,
+            k: AUDIT_ARCH,
+        },
+        SockFilter {
+            code: BPF_RET_K,
+            jt: 0,
+            jf: 0,
+            k: SECCOMP_RET_KILL_PROCESS,
+        },
+        SockFilter {
+            code: BPF_LD_W_ABS,
+            jt: 0,
+            jf: 0,
+            k: SECCOMP_DATA_NR_OFFSET,
+        },
+    ];
+
+    #[cfg(target_arch = "x86_64")]
+    {
+        // x32 uses the x86-64 audit architecture but sets this bit in syscall
+        // numbers. Reject it rather than allowing it to bypass the denylist.
+        filter.push(SockFilter {
+            code: BPF_JMP_JSET_K,
+            jt: 0,
+            jf: 1,
+            k: X32_SYSCALL_BIT,
+        });
+        filter.push(SockFilter {
+            code: BPF_RET_K,
+            jt: 0,
+            jf: 0,
+            k: SECCOMP_RET_ERRNO | SECCOMP_ERRNO_EPERM,
+        });
+    }
+
+    for syscall_number in METADATA_MUTATOR_SYSCALLS {
+        filter.push(SockFilter {
+            code: BPF_JMP_JEQ_K,
+            jt: 0,
+            jf: 1,
+            k: *syscall_number,
+        });
+        filter.push(SockFilter {
+            code: BPF_RET_K,
+            jt: 0,
+            jf: 0,
+            k: SECCOMP_RET_ERRNO | SECCOMP_ERRNO_EPERM,
+        });
+    }
+
+    filter.push(SockFilter {
+        code: BPF_RET_K,
+        jt: 0,
+        jf: 0,
+        k: SECCOMP_RET_ALLOW,
+    });
+
+    let filter_program = SockFprog {
+        len: u16::try_from(filter.len()).map_err(|_| {
+            io::Error::new(io::ErrorKind::InvalidInput, "seccomp filter is too large")
+        })?,
+        filter: filter.as_ptr(),
+    };
+
+    // Landlock installation already sets no_new_privs; set it again here so the
+    // seccomp installer is safe to call independently of call ordering.
+    let no_new_privs = unsafe { prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) };
+    if no_new_privs != 0 {
+        return Err(io::Error::last_os_error());
+    }
+
+    // SAFETY: filter_program points to a valid, live repr(C) sock_fprog whose
+    // instruction buffer remains owned by the vector for the full syscall.
+    // The BPF validates the architecture and rejects only the declared syscall
+    // numbers; unsupported architectures are compile-time rejected above.
+    let result = unsafe {
+        syscall(
+            SYS_SECCOMP,
+            SECCOMP_SET_MODE_FILTER,
+            0 as c_long,
+            &filter_program as *const SockFprog,
+        )
+    };
+    if result < 0 {
+        return Err(io::Error::last_os_error());
+    }
+
+    Ok(METADATA_MUTATOR_SYSCALLS.len())
+}
+
+#[cfg(test)]
+mod seccomp_tests {
+    use super::*;
+
+    #[test]
+    fn metadata_denylist_is_nonempty_and_filter_length_is_bounded() {
+        assert!(!METADATA_MUTATOR_SYSCALLS.is_empty());
+        let instruction_count = 5
+            + if cfg!(target_arch = "x86_64") { 2 } else { 0 }
+            + 2 * METADATA_MUTATOR_SYSCALLS.len();
+        assert!(instruction_count < usize::from(u16::MAX));
+    }
+
+    #[test]
+    fn common_chmod_and_xattr_mutators_are_in_the_denylist() {
+        #[cfg(target_arch = "x86_64")]
+        for syscall_number in [90, 91, 188, 189, 190, 197, 198, 199, 268, 452] {
+            assert!(METADATA_MUTATOR_SYSCALLS.contains(&syscall_number));
+        }
+
+        #[cfg(target_arch = "aarch64")]
+        for syscall_number in [52, 53, 5, 6, 7, 14, 15, 16, 452] {
+            assert!(METADATA_MUTATOR_SYSCALLS.contains(&syscall_number));
+        }
+    }
 }
