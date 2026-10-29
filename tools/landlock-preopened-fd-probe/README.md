@@ -19,7 +19,7 @@ The parent creates a private temporary directory (mode 0700) and a file containi
 3. **Mitigation positive control:** an otherwise equivalent writable descriptor is marked FD_CLOEXEC. The child applies the same Landlock ruleset; it must observe that the descriptor is absent (EBADF), and opening the file by pathname for writing must be denied.
 4. The parent verifies that the file remains byte-for-byte unchanged and that the descriptor remains open with FD_CLOEXEC in the parent.
 
-The experiment requires Landlock ABI >= 3 because it handles the truncation right. Unsupported or inconclusive results fail the probe; they are never reported as successful containment.
+The experiment requires Landlock ABI >= 3 because it handles the truncation right. Both arms must report the same ABI. The final JSON receipt records the runtime Landlock ABI, sanitized kernel release, and the exact checkout SHA supplied by CI through `LUMINOUS_CHECKOUT_SHA`. Outside CI, absent checkout identity is labelled `unbound_local`, not a qualified exact-head result. Unsupported or inconclusive results fail the probe; they are never reported as successful containment.
 
 ## Claim boundary
 
