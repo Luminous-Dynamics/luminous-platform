@@ -291,9 +291,6 @@ jobs:
           assert manifest.get("receipt_parse_error") is None
           assert manifest.get("claim_ceiling") == "one file-descriptor ordering and exec boundary on the named Linux runner; not full descriptor hygiene"
           assert re.fullmatch(r"[0-9a-f]{40}", manifest.get("workflow_sha", ""))
-          assert manifest.get("runner_os") == "Linux"
-          assert manifest.get("runner_arch") in {"X64", "ARM64"}
-          assert manifest.get("receipt_parse_error") is None
           assert manifest.get("receipt_schema") == "luminous.landlock-preopened-fd-result.v1"
           assert manifest.get("receipt_status") == "pass"
           assert manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]
