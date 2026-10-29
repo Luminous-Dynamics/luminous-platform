@@ -88,7 +88,8 @@ jobs:
               "parent_oracle_forbidden_output_absent",
           ):
               assert result.get(field) is True, f"missing or false evidence field: {field}"
-          assert result.get("scope") == "disposable_local_filesystem_fixture_only"
+          assert result.get("landlock_metadata_mutation_syscalls_covered") is False
+          assert result.get("scope") == "disposable_file_content_access_fixture_only"
           print(f"PASS Landlock result schema; ABI {result['landlock_abi']}; 7 evidence fields confirmed.")
           PY
         env:
