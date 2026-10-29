@@ -1,0 +1,57 @@
+import copy
+import json
+import unittest
+from pathlib import Path
+
+from check_adaptive_protocol import validate
+
+
+ROOT = Path(__file__).resolve().parents[2]
+MANIFEST = ROOT / "benchmarks" / "agentic-endpoint-security-v1" / "adaptive-protocol.json"
+
+
+class AdaptiveProtocolContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.document = json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+    def test_checked_in_manifest_satisfies_contract(self):
+        result = validate(self.document)
+        self.assertEqual(result["attacker_families"], 10)
+        self.assertEqual(result["query_budget_points"], 4)
+        self.assertEqual(result["comparison_arms"], 6)
+        self.assertGreaterEqual(result["confirmatory_minimum"], 100)
+
+    def test_external_network_cannot_be_enabled(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["constraints"]["external_network_access"] = True
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+    def test_pilot_cannot_be_promoted_to_efficacy_evidence(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["pilot"]["efficacy_claims_allowed"] = True
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+    def test_query_budgets_are_frozen_and_cumulative(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["budgets"] = [1, 10, 25, 100]
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+    def test_critical_failure_cannot_become_a_soft_score(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["scoring"]["critical_forbidden_effects_are_hard_failures"] = False
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+    def test_missing_independent_oracle_is_rejected(self):
+        mutated = copy.deepcopy(self.document)
+        mutated["attacker_families"][0]["primary_oracle"] = ""
+        with self.assertRaises(ValueError):
+            validate(mutated)
+
+
+if __name__ == "__main__":
+    unittest.main()
