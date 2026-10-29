@@ -52,7 +52,7 @@ class DifferentialQualificationTests(unittest.TestCase):
         digest = hashlib.sha256()
         for _, history in deterministic_corpus():
             canonical = json.dumps(history, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-            digest.update(canonical.encode("utf-8") + b"\\n")
+            digest.update(canonical.encode("utf-8") + b"\n")
         self.assertEqual(digest.hexdigest(), protocol["corpus_sha256"])
 
     def test_selected_corpus_slice_agrees(self):
