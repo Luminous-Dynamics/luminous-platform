@@ -424,3 +424,23 @@ fn main() {
         )
     );
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mutation_control_preserves_file_length() {
+        assert_eq!(BASELINE.len(), MUTATED.len());
+    }
+
+    #[test]
+    fn ruleset_handles_only_write_and_truncate_bits() {
+        assert_eq!(
+            ACCESS_FS_WRITE_FILE | ACCESS_FS_TRUNCATE,
+            0x4002,
+            "probe must not silently add unrelated filesystem restrictions"
+        );
+    }
+}
