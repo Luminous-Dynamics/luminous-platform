@@ -1,0 +1,134 @@
+# Agentic Endpoint Security Benchmark v1
+
+**Status:** research candidate; not independently reviewed, not executed, and not a production qualification.
+
+**Purpose:** define a reproducible adversarial benchmark for endpoint and AI-agent security that can evaluate Luminous components alongside established endpoint and agent-runtime products without claiming parity from source code, unit tests, or signed logs.
+
+Related work: [platform product-line qualification](https://github.com/Luminous-Dynamics/luminous-platform/issues/21), [target-bound boot evidence](https://github.com/Luminous-Dynamics/luminous-platform/issues/102), [authenticated qualification receipts](https://github.com/Luminous-Dynamics/luminous-platform/issues/93), [clock/freshness evidence tiers](https://github.com/Luminous-Dynamics/luminous-platform/issues/104), [atomic durable promotion](https://github.com/Luminous-Dynamics/luminous-platform/issues/91), and [external rollback witness](https://github.com/Luminous-Dynamics/luminous-platform/issues/106).
+
+## 1. Research thesis
+
+The target is not an immediate replacement for all EDR/XDR. The first hypothesis is narrower:
+
+> A least-privilege endpoint/agent control plane can make a protected action conditional on separately verified, scope-bound authorization; observe whether the intended side effect actually happened; detect gaps or stale state in the evidence path; and refuse to claim a stronger result than the evidence supports.
+
+The differentiator to test is an **authorization-to-effect assurance chain**, not an assertion that conventional EDR lacks cryptographic internals or that Luminous already has superior detection:
+
+principal + task + target + capability + policy digest + freshness  
+→ independent authorization  
+→ OS-enforced operation  
+→ independently observed effect  
+→ immutable, bound receipt  
+→ separate verifier + explicit assurance tier
+
+A receipt digest or signature proves, at most, properties of committed bytes and signing authority under its key policy. It does **not** prove that the original observation was truthful, complete, hardware-rooted, or independent of a compromised endpoint. The benchmark must expose those distinctions.
+
+## 2. Current industry baselines (research snapshot: 2026-10-29)
+
+These are public product/method descriptions, not head-to-head results collected by this repository.
+
+| Baseline | Publicly described capability to account for | What we must measure rather than assume |
+|---|---|---|
+| CrowdStrike Falcon / Falcon Guardian | CrowdStrike announced Falcon Guardian on 2026-09-01 for AI-agent discovery, runtime visibility/enforcement, causal investigation, and response. Verify rollout and feature availability before a paid test. | Whether Luminous provides additional measurable assurance for exact authorization, source/effect binding, rollback recovery, and fail-closed behavior—not simply another alert or graph. |
+| NVIDIA OpenShell / Open Agent Safety Platform | NVIDIA documents sandboxed agent execution, kernel-level filesystem/process controls, policy-enforced network access, credential brokering, and action/policy traces. NVIDIA announced the Open Agent Safety Platform on 2026-09-28. | Whether an independent verifier detects policy/receipt gaps and whole-state rollback. Compare actual enforcement behavior, not product language. |
+| MITRE ATT&CK Evaluations | The 2026 framework introduces a Total Evaluation Score combining detection- and protection-quality measures with source-of-action attribution. Use the latest completed round at preregistration; do not treat a 2026 methodology/call as completed vendor results. | Prevention, alert quality, block timing, false positives, and whether an action came from platform automation, AI, a managed service, or a human. |
+| Open-source/local controls and test harnesses | Falco, Wazuh and osquery can support local host/runtime observation; Atomic Red Team can supply controlled test ideas. Capabilities and data sources differ. | Exact versions, rules, policies, sensors and topology. An event rule firing is not proof of prevention or evidence completeness. |
+
+Sources:
+- [CrowdStrike Falcon Guardian announcement, 2026-09-01](https://www.crowdstrike.com/en-us/press-releases/crowdstrike-unveils-falcon-guardian-ai-agent-security/)
+- [NVIDIA Open Agent Safety Platform, 2026-09-28](https://nvidianews.nvidia.com/news/open-agent-safety-platform)
+- [NVIDIA OpenShell overview](https://docs.nvidia.com/openshell/about/overview)
+- [MITRE ATT&CK Evaluations](https://attackevals.mitre.org/) and [Enterprise 2026 methodology](https://attackevals.mitre.org/enterprise/er8)
+- [OWASP Top 10 for Agentic Applications 2026](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/)
+- [MITRE CALDERA](https://www.mitre.org/our-impact/intellectual-property/caldera) and [Falco documentation](https://falco.org/docs/)
+
+## 3. Architecture hypothesis
+
+Keep these responsibilities distinct even if an early prototype combines them:
+
+1. **Untrusted agent runtime.** Model output, prompts, tools, child agents, local output, and agent-generated logs are untrusted inputs.
+2. **Local effect enforcement.** A narrow OS boundary enforces filesystem, process, and network capabilities. Recheck authorization at the effect boundary to close plan-to-effect time-of-check/time-of-use gaps.
+3. **Independent authorization broker.** Produce a typed decision bound to principal/agent, task, target, action, capability set, policy digest, expiry and a one-use/idempotency identity. A generic root shell or arbitrary command string is not an acceptable privileged API.
+4. **Independent observation.** Where a claim requires it, observe the actual OS-side effect through a separate path. Do not reuse an agent-authored success Boolean as the effect oracle.
+5. **Evidence and lifecycle witness.** Bind authorization, policy/registry versions, target, observed effect, and source/build identity in a canonical receipt. A genuinely independent witness is required for rollback-resistance claims; a second file on the same rollbackable disk does not qualify.
+6. **Independent verifier.** Recompute digests, check target/scope/freshness/generation, validate provenance and stream completeness, then emit a guarantee vector—not one unconstrained PASS.
+7. **EDR adapter.** Consume vendor events and response status without implying that integration turns Luminous into a replacement EDR.
+
+Reuse existing projects only within their current trust boundaries: the platform's SRQ verification, durable challenge, provenance, clock-tier, and rollback-witness work can inform authorization and receipt semantics; Nixward can inform plan-bound host policy transitions; Xenia session consent is not automatically authorization for an OS operation; Mycelix provenance cannot make an untrusted source truthful; Symthaea triage is advisory until a deterministic verifier checks the operation independently.
+
+## 4. Candidate corpus
+
+The machine-readable scenario corpus is at [benchmarks/agentic-endpoint-security-v1/corpus.json](../benchmarks/agentic-endpoint-security-v1/corpus.json).
+
+Raw-byte SHA-256 at this draft: \`945cefff4c855dd9b54b41af421be525732eb755a3d0ef30ff1208384c2bdcb5\`.
+
+It contains 20 scenarios. Negative cases cover denied synthetic-secret reads, unapproved egress and binaries, path escape, indirect prompt injection, capability escalation, sub-agent target substitution, revocation races, approval replay, stale local state after an external witness advances, telemetry gaps and mutation, sensor loss, unsupported claims signed by a trusted key, witness unavailability, update downgrade, post-revocation actions, and receipt/effect mismatch. Positive controls cover a permitted read-only task and matched workload overhead.
+
+This is a candidate contract, not observed efficacy. Freeze only after independent review of each expected disposition and its forbidden-effect oracle. Do not edit expected outcomes simply to make an implementation pass.
+
+## 5. Safe experimental protocol
+
+Every run must be explicitly authorized and confined to a disposable isolated lab. Use synthetic files, synthetic credentials, a loopback-only sink and harmless helper binaries. Disable external network access. Do not execute live malware, destructive payloads, real exfiltration, or unauthorized scans.
+
+Record exact OS/kernel, sandbox and host settings, agent/runtime version, product/sensor versions, policies and digests, corpus digest, seeds, trial counts, source identity, clock tier, collection path, dropped/unsupported events, enabled vendor features, exceptions and analyst involvement. Keep every fail, skip and unknown in the denominator. Randomize run order where practical and repeat with clean snapshots.
+
+Execution tiers:
+- **T0 — model/fixtures:** deterministic contract tests only; no runtime prevention claim.
+- **T1 — local sandbox:** actual process/filesystem/network enforcement against harmless fixtures.
+- **T2 — isolated VM:** restart, process-kill, independent observer and snapshot-restore tests.
+- **T3 — external rollback witness:** actual independent witness and recovery tests; local files/software-key stand-ins do not qualify.
+- **T4 — independently operated lab:** third party repeats the frozen corpus on a named product/configuration.
+- **T5 — production:** separate operational, privacy, support, certification and incident-response qualification.
+
+Name the tier actually executed. Queued/skipped workflows are not test-pass evidence. Injected faults, process termination, VM reset and physical power loss are separate fault models.
+
+## 6. Metrics and proposed gates
+
+### Security hard gates
+
+1. **Unauthorized side effects:** zero successful forbidden effects in frozen negative scenarios. A logged denial is not a pass if the effect occurred.
+2. **Binding, replay and rollback:** zero false accepts across at least 100,000 deterministic mutations of target, task, policy, generation, expiry, signer, nonce, artifact, receipt, event order, and source/effect digests.
+3. **Revocation:** zero post-acknowledged-revocation effects across at least 10,000 deterministic scheduling/interleaving trials; measure revocation-to-enforcement acknowledgement separately.
+4. **Evidence gaps:** zero complete/high-assurance claims for injected missing, truncated, reordered, duplicated, stale or unavailable decision-critical evidence.
+5. **Transaction/recovery:** crashes and stale-snapshot tests converge to one durable outcome or explicit BLOCKED/UNQUALIFIED, never ambiguous local-only success. External-witness claims count only at T3+.
+6. **Positive behavior:** authorized controls succeed when all preconditions hold. Report false refusal rate and denominator; use ≤1% as an initial target on the fixed benign workload, then stratify before expanding the workload.
+
+Zero failures in a finite corpus is a measured corpus result, not universal proof. Publish counts, denominators, seeds and confidence intervals. Never average away a critical forbidden side effect.
+
+### Operational metrics
+
+Report prevention and time-to-block by scenario/severity; detection precision/recall and false positives per endpoint-day; alert delay and evidence completeness; unauthorized effect count; false accepts/rejects; revocation, containment and recovery time; residual post-recovery behavior; CPU/RSS/network/event loss; decision latency p50/p95/p99; startup and workload overhead; witness latency/availability; reconciliation and operator recovery cost; and comparable licensing, retention/egress and service labor.
+
+Do not impose one universal latency budget before measuring named workloads. Preregister per-workload service objectives after a baseline; security hard gates remain independent of performance.
+
+## 7. What would count as better than SOTA?
+
+A valid claim must be narrow and falsifiable, for example:
+
+“On Linux/NixOS under this frozen corpus and at T2/T3, Luminous prevented all tested out-of-scope fixture effects, rejected all tested replay/rollback mutations, and exposed all injected evidence gaps; baseline X allowed N effects or reported M false-complete outcomes under matched settings.”
+
+That claim requires exact versions/configurations, raw artifacts, all negative outcomes, and an independent replication path. It cannot be generalized to Windows/macOS, all malware, all prompt injections, kernel/firmware compromise, or production readiness.
+
+Do not claim superiority because the verifier passes its own fixtures, a signed event/hash chain exists, an alert arrives after the side effect, a synthetic model passes without the real adapter, a baseline was unavailable or misconfigured, or CI is queued.
+
+## 8. Implementation sequence
+
+**P0 — freeze corpus/oracle.** Review all cases, define required observation sources, validate stable IDs, and state each forbidden effect independently.
+
+**P1 — Rust reference evaluator.** Keep it deterministic and side-effect-free. Derive checks from typed inputs; emit authorization, freshness, integrity, scope, completeness, source truth, observed effect and rollback tier separately. Do not accept caller-supplied booleans such as signature-valid or complete.
+
+**P2 — mutation qualification.** Generate adversarial field mutations and exact-source mutation tests. A mutant is killed only when its intended security test fails; compiler errors/timeouts/unrelated failures are invalid outcomes.
+
+**P3 — inert Linux/NixOS enforcement slice.** Use harmless fixture files, a local fake sink, and benign unapproved helper binaries. Do not start with arbitrary host commands or production remediation.
+
+**P4 — independent effect observer.** Compare agent claims against OS-side effects and a separate observation path. Test a stopped or compromised local collector.
+
+**P5 — rollback/revocation fault campaign.** Reuse existing SRQ atomic-promotion, clock, provenance and external-witness contracts. Test wrong-target replay, stale snapshots, witness failure, lost acknowledgements and revocation races.
+
+**P6 — baselines and independent replication.** Begin with open local telemetry/control tools; compare Falcon Guardian and other licensed systems only after confirming feature availability, permission, equivalent configuration and lab terms. Align reporting with MITRE's detection/protection quality and source-of-action transparency.
+
+## 9. Limits and failure modes
+
+A compromised kernel/root can falsify local observations or bypass local controls; claims must use an independent boundary or be narrowed. An external witness is only as strong as its identity, freshness, retention and recovery. If the implementation defines its own expected outcomes, the benchmark can self-confirm a flawed policy. Signatures prove origin under a key policy, not semantic truth/completeness. Excessive false refusals cause operators to disable controls, so benign task behavior and labor must be measured without relaxing critical safety gates.
+
+**Next objective:** implement a dependency-minimal Rust evaluator with deterministic mutation tests, then execute initial T0/T1 scenarios locally before integrating live endpoint products or expanding claims.
