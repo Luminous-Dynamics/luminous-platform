@@ -64,8 +64,33 @@ jobs:
         env:
           CARGO_NET_OFFLINE: "true"
 
-      - name: Run Landlock fixture integration test
-        run: cargo run --locked --manifest-path tools/landlock-readonly-fixture/Cargo.toml
+      - name: Run Landlock fixture and validate its JSON evidence
+        run: |
+          cargo run --quiet --locked --manifest-path tools/landlock-readonly-fixture/Cargo.toml | tee /tmp/landlock-fixture-output.txt
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          lines = Path("/tmp/landlock-fixture-output.txt").read_text(encoding="utf-8").splitlines()
+          records = [line for line in lines if line.startswith("{") and line.endswith("}")]
+          assert len(records) == 1, f"expected one JSON result record, got {len(records)}"
+          result = json.loads(records[0])
+          assert result.get("schema") == "luminous.landlock-readonly-fixture-result.v1"
+          assert result.get("status") == "pass"
+          assert type(result.get("landlock_abi")) is int and result["landlock_abi"] >= 3
+          for field in (
+              "allowed_read_by_child",
+              "outside_read_denied_by_child",
+              "existing_write_denied_by_child",
+              "outside_create_denied_by_child",
+              "parent_oracle_allowed_canary_unchanged",
+              "parent_oracle_outside_canary_unchanged",
+              "parent_oracle_forbidden_output_absent",
+          ):
+              assert result.get(field) is True, f"missing or false evidence field: {field}"
+          assert result.get("scope") == "disposable_local_filesystem_fixture_only"
+          print(f"PASS Landlock result schema; ABI {result['landlock_abi']}; 7 evidence fields confirmed.")
+          PY
         env:
           CARGO_NET_OFFLINE: "true"
 
