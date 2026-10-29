@@ -12,7 +12,7 @@ The reference shares only input decoding with the optimized checker. It does not
 - Exhaustively enumerate every ordered two-operation pair: 72 squared = 5,184.
 - Add 512 deterministic three-operation histories and 128 deterministic four-operation histories.
 - Total: 5,824 histories per run.
-- Record the canonical corpus SHA-256 and disagreement examples with raw histories and digests, as well as source hashes and exact checkout/head provenance.
+- Pin the canonical corpus SHA-256 in the versioned protocol and fail if regeneration differs; also retain disagreement examples with raw histories and digests, source hashes and exact checkout/head provenance.
 
 The three- and four-operation tiers are deterministic samples, not exhaustive. The two-operation tier is exhaustive over the declared finite shape domain.
 
@@ -21,7 +21,7 @@ The three- and four-operation tiers are deterministic samples, not exhaustive. T
     python3 -m unittest discover -s benchmarks/srq-lifecycle-interop/guarantee-vector/linearizability-oracle -p 'test_*.py' -v
     python3 benchmarks/srq-lifecycle-interop/guarantee-vector/linearizability-oracle/differential_qualification.py --output /tmp/srq-linearizability-differential.json
 
-Acceptance is exact agreement across all 5,824 histories, no invalid inputs, no unexpected search limits, and no optimized witness rejected by the reference. The corpus hash identifies the experiment.
+Acceptance is exact agreement across all 5,824 histories, no invalid inputs, no unexpected search limits, no optimized witness rejected by the reference, and a canonical corpus digest equal to the protocol's pinned value. The hash prevents a silent generator change from redefining the experiment.
 
 ## Industry relationship
 
