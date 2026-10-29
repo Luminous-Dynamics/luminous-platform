@@ -13,6 +13,9 @@ use std::path::{Path, PathBuf};
 use std::process::{self, Command};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+compile_error!("Landlock syscall numbers are configured only for x86_64 and aarch64");
+
 const BASELINE: &[u8] = b"SAFE-CANARY-0000000000000000\n";
 const MUTATED: &[u8] = b"EVIL-CANARY-0000000000000000\n";
 
