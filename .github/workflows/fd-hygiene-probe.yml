@@ -26,8 +26,19 @@ jobs:
     permissions:
       contents: read
     steps:
-      - name: Check out exact source
+      - name: Check out exact PR head (or pushed commit)
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify the checked-out commit
+        env:
+          EXPECTED_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$EXPECTED_CHECKOUT_SHA"
+          echo "Exact source checkout verified: $actual"
 
       - name: Install pinned Rust toolchain and components
         uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6
@@ -50,6 +61,8 @@ jobs:
           cargo run --quiet --locked --manifest-path tools/fd-hygiene-probe/Cargo.toml | tee /tmp/fd-hygiene-result.jsonl
           python3 - <<'PY'
           import json
+          import os
+          import re
           from pathlib import Path
 
           lines = Path("/tmp/fd-hygiene-result.jsonl").read_text(encoding="utf-8").splitlines()
@@ -58,6 +71,10 @@ jobs:
           result = json.loads(records[0])
           assert result.get("schema") == "luminous.fd-inheritance-boundary-result.v1"
           assert result.get("status") == "pass"
+          expected_sha = os.environ["LUMINOUS_CHECKOUT_SHA"]
+          assert re.fullmatch(r"[0-9a-f]{40}", expected_sha)
+          assert result.get("checkout_sha") == expected_sha
+          assert isinstance(result.get("kernel_release"), str) and result["kernel_release"] != "unknown"
           for field in (
               "negative_control_inherited_fd_readable",
               "cloexec_control_descriptor_absent_after_exec",
@@ -70,6 +87,8 @@ jobs:
           assert result.get("scope") == "exec_boundary_descriptor_hygiene_probe_only"
           print("PASS: inherited-fd negative control, CLOEXEC positive control, and parent-state oracle")
           PY
+        env:
+          LUMINOUS_CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Run Clippy with warnings denied
         run: cargo clippy --locked --manifest-path tools/fd-hygiene-probe/Cargo.toml -- -D warnings
