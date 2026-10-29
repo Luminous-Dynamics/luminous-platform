@@ -127,6 +127,10 @@ def verify_checksums(root: Path) -> None:
     required_names = {"run-context.txt", "evidence-manifest.json"}
     require(checksum_names == required_names | result_names and len(result_names) == 1,
             "SHA256SUMS must cover run-context, evidence-manifest, and exactly one runtime receipt")
+    expected_inventory = required_names | result_names | {"SHA256SUMS"}
+    actual_inventory = {path.name for path in root.iterdir()}
+    require(actual_inventory == expected_inventory,
+            "bundle directory contains missing or unexpected files")
 
     for filename, expected_digest in expected.items():
         path = root / filename
