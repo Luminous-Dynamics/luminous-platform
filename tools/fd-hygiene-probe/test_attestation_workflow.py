@@ -110,7 +110,21 @@ def validate_contract(workflow: str) -> list[str]:
         'receipt.get("scope") == "exec_boundary_descriptor_hygiene_probe_only"',
         'assert set(context) == {',
         'context["workflow"] == manifest.get("workflow")',
+        'manifest.get("step_outcomes") == {',
+        '"format": "success"',
+        '"rust_tests": "success"',
+        '"runtime_test": "success"',
+        '"clippy": "success"',
+        'hashlib.sha256(raw_receipt).hexdigest() == manifest.get("receipt_sha256")',
+        'receipt.get("kernel_release") == manifest.get("kernel_release")',
         'context["workflow_run_id"] == os.environ["EXPECTED_RUN_ID"]',
+        'context["workflow_run_attempt"] == os.environ["EXPECTED_RUN_ATTEMPT"]',
+        'context["event_name"] == "push"',
+        'context["expected_checkout_sha"] == os.environ["EXPECTED_CHECKOUT_SHA"]',
+        'context["format_outcome"] == "success"',
+        'context["rust_test_outcome"] == "success"',
+        'context["runtime_test_outcome"] == "success"',
+        'context["clippy_outcome"] == "success"',
     ):
         if required not in verify_step:
             errors.append("pre-signing verifier missing guard: " + required)
@@ -301,6 +315,28 @@ class AttestationWorkflowContractTests(unittest.TestCase):
             mutated,
             'pre-signing verifier missing guard: context["workflow"] == manifest.get("workflow")',
         )
+
+
+
+    def test_receipt_digest_must_be_rechecked_before_signing(self) -> None:
+        old = 'hashlib.sha256(raw_receipt).hexdigest() == manifest.get("receipt_sha256")'
+        mutated = self.mutate_attestation_job(old, 'hashlib.sha256(raw_receipt).hexdigest() == "trust-me"')
+        self.assert_contract_rejects(mutated, "pre-signing verifier missing guard: " + old)
+
+    def test_run_attempt_must_match_expected_attempt(self) -> None:
+        old = 'context["workflow_run_attempt"] == os.environ["EXPECTED_RUN_ATTEMPT"]'
+        mutated = self.mutate_attestation_job(old, 'context["workflow_run_attempt"] == "1"')
+        self.assert_contract_rejects(mutated, "pre-signing verifier missing guard: " + old)
+
+    def test_every_ci_outcome_must_be_successful(self) -> None:
+        old = '"clippy": "success"'
+        mutated = self.mutate_attestation_job(old, '"clippy": "skipped"')
+        self.assert_contract_rejects(mutated, 'pre-signing verifier missing guard: "clippy": "success"')
+
+    def test_kernel_release_must_match_manifest(self) -> None:
+        old = 'receipt.get("kernel_release") == manifest.get("kernel_release")'
+        mutated = self.mutate_attestation_job(old, 'receipt.get("kernel_release") == "trust-me"')
+        self.assert_contract_rejects(mutated, "pre-signing verifier missing guard: " + old)
 
 
 if __name__ == "__main__":
