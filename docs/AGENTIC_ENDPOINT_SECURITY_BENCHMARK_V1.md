@@ -163,6 +163,10 @@ This adds model-level sequence semantics; it does not yet verify real trace prov
 
 **Next implementation step:** build a disposable Linux/NixOS T1 harness for a harmless synthetic file operation, with a supervisor outside the agent process and a separate before/after filesystem oracle. Inject single-fault episodes (replay, stale policy, revocation race, wrong target, dropped trace, supervisor outage, rollback) and compare OS-observed truth to the model disposition. Run matched product/sandbox baselines under identical privileges and configuration before making efficacy or superiority claims.
 
+## 12A. Raw-results scoring
+
+[Endpoint Episode Scoring v1](ENDPOINT_EPISODE_SCORING_V1.md) defines the frozen JSONL episode contract and a standard-library scorer. It reports outcome denominators by family/arm/model/configuration and query budget, carries uncertainty into an assurance-failure metric, validates cumulative forbidden-event counts, counts false-complete claims on evidence-gap controls, and calculates exact one-sided binomial upper bounds. A report may show zero observed violations while still refusing a rare-event qualification because the independent denominator is too small or some outcomes remain uncertain. Scorer acceptance is not proof that source records or the independent oracle are authentic.
+
 ## 12. Statistical targets and industry comparison
 
 The companion [Endpoint Assurance Benchmark Targets v1](ENDPOINT_ASSURANCE_BENCHMARK_TARGETS_V1.md) separates hard critical-effect gates from confidence-bound claims and performance stretch targets. The adaptive manifest now freezes the distinction between the initial comparative floor (N ≥100 per stratum) and the zero-event sample size required for a one-sided 95% upper bound below 0.1% (N ≥2,995 per critical stratum). It also requires an exact-binomial upper-bound goal for benign false refusal, matched-baseline latency budgets, and a stretch target for adaptive violation-rate reduction. Manifest checks enforce these gates, but do not generate experimental efficacy evidence.
