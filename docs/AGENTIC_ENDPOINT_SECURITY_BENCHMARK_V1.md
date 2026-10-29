@@ -205,3 +205,16 @@ The companion [Offline CI Evidence Bundle v1](ENDPOINT_EVIDENCE_BUNDLE_V1.md) an
 Its statuses are deliberately distinct: exit 0 means candidate pass for the declared micro-test; exit 1 means internally consistent but not qualified; exit 2 means malformed, tampered, mismatched, or claim-inflated evidence. The verifier states explicitly that a same-artifact SHA-256 file is not an independent signature or proof of publisher identity. A genuine external trust root or signature is a separate future requirement.
 
 Synthetic mutation tests cover both supported runtime receipt schemas, wrong external SHA/run ID, byte mutation, omitted checksum entries, false controls, failed CI steps, false pass labels, receipt digest mismatch, unsupported schemas, not-emitted results, and claim escalation. These are verifier contract tests, not execution of the Landlock experiment and not endpoint-security qualification.
+
+## 15. Authenticated provenance for evidence manifests
+
+The runtime workflow drafts [#144](https://github.com/Luminous-Dynamics/luminous-platform/pull/144) and [#145](https://github.com/Luminous-Dynamics/luminous-platform/pull/145) now propose a separate keyless Sigstore attestation job for successful pushes to main only. The PR test job keeps read-only repository permissions; it does not receive an OIDC token or attestation-write permission. The privileged attestation job is isolated from PR execution, downloads the same run/attempt artifact, validates the receipt/run/source binding and required controls before signing, and attests the evidence-manifest JSON. The resulting Sigstore bundle is uploaded separately.
+
+The workflow uses pinned actions: actions/attest commit 1e69f48acb82d1966a394da916b4c1698aa569d6, actions/download-artifact commit 634f93cb2916e3fdff6788551b99b062d0335ce0, and actions/upload-artifact commit cf430e030ddbb5b0abf93d22962f4752f3646cd9.
+
+This adds three separate properties to evidence handling:
+- Bundle checksums establish internal byte consistency when compared with the bundle's own digest list.
+- GitHub artifact attestation can authenticate the manifest's provenance under the accepted Sigstore trust policy and bind its digest to a repository workflow/source identity.
+- The underlying security claim still depends on the test itself, source integrity, runner/kernel trust, observation design, and the declared claim ceiling. A signature cannot prove a workflow's predicate truthful or establish host-kernel integrity.
+
+Attestation generation has not yet executed on main because these workflow changes are still draft PRs. Existing successful PR-run artifacts remain checksummed but not signed. After the runtime workflow changes merge and a successful main push generates the attestation, a reviewer should verify the signed evidence manifest with GitHub CLI before using the offline consistency verifier. See [Offline CI Evidence Bundle v1](ENDPOINT_EVIDENCE_BUNDLE_V1.md), [GitHub's artifact-attestation overview](https://docs.github.com/en/actions/concepts/security/artifact-attestations), and [offline verification instructions](https://docs.github.com/en/actions/how-tos/secure-your-work/use-artifact-attestations/verify-attestations-offline).
