@@ -207,7 +207,7 @@ impl EvidenceBundle<'_> {
 /// 3. only a fully bound expected effect can be qualified as allowed;
 /// 4. all ambiguous cases remain incomplete or unqualified.
 #[must_use]
-pub fn evaluate(evidence: EvidenceBundle) -> Evaluation {
+pub fn evaluate<'a>(evidence: EvidenceBundle<'a>) -> Evaluation<'a> {
     let independently_observed_effect =
         evidence.observation_is_complete_and_independent()
             && matches!(
