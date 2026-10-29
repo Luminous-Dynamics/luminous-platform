@@ -149,7 +149,7 @@ pub fn apply_read_only_directory(allowed_root: &Path) -> io::Result<()> {
                 SYS_LANDLOCK_CREATE_RULESET,
                 std::ptr::null::<LandlockRulesetAttr>(),
                 0usize,
-                LANDLOCK_CREATE_RULESET_VERSION,
+                LANDLOCK_CREATE_RULESET_VERSION as c_long,
             )
         }
     };
@@ -174,7 +174,7 @@ pub fn apply_read_only_directory(allowed_root: &Path) -> io::Result<()> {
                 SYS_LANDLOCK_CREATE_RULESET,
                 &ruleset_attr as *const LandlockRulesetAttr,
                 size_of::<LandlockRulesetAttr>(),
-                0u32,
+                0 as c_long,
             )
         };
         OwnedFd::new(fd as c_int)?
@@ -192,10 +192,10 @@ pub fn apply_read_only_directory(allowed_root: &Path) -> io::Result<()> {
         unsafe {
             syscall(
                 SYS_LANDLOCK_ADD_RULE,
-                ruleset_fd.raw(),
-                LANDLOCK_RULE_PATH_BENEATH,
+                ruleset_fd.raw() as c_long,
+                LANDLOCK_RULE_PATH_BENEATH as c_long,
                 &rule as *const LandlockPathBeneathAttr,
-                0u32,
+                0 as c_long,
             )
         }
     };
@@ -214,7 +214,7 @@ pub fn apply_read_only_directory(allowed_root: &Path) -> io::Result<()> {
 
     let restrict_result = {
         // SAFETY: ruleset_fd is a live descriptor created above and flags are zero.
-        unsafe { syscall(SYS_LANDLOCK_RESTRICT_SELF, ruleset_fd.raw(), 0u32) }
+        unsafe { syscall(SYS_LANDLOCK_RESTRICT_SELF, ruleset_fd.raw() as c_long, 0 as c_long) }
     };
     if restrict_result < 0 {
         return Err(io::Error::last_os_error());
