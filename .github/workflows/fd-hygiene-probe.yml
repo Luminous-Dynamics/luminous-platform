@@ -53,6 +53,9 @@ jobs:
           components: "rustfmt, clippy"
           cache: false
 
+      - name: Mutation-test main-only attestation workflow contract
+        run: python3 tools/fd-hygiene-probe/test_attestation_workflow.py
+
       - name: Check formatting
         id: format_check
         run: cargo fmt --manifest-path tools/fd-hygiene-probe/Cargo.toml -- --check
@@ -257,6 +260,7 @@ attest-main-evidence:
           manifest = json.loads((root / "evidence-manifest.json").read_text(encoding="utf-8"))
           assert manifest.get("schema") == "luminous.ci-evidence-bundle-manifest.v1"
           assert manifest.get("status") == "candidate_pass_for_declared_microtest"
+          assert manifest.get("claim_ceiling") == "one inherited descriptor and one exec boundary on the named Linux runner; not full descriptor hygiene"
           assert manifest.get("expected_checkout_sha") == os.environ["EXPECTED_CHECKOUT_SHA"]
           assert manifest.get("workflow_sha") == os.environ["EXPECTED_WORKFLOW_SHA"]
           assert str(manifest.get("workflow_run_id")) == os.environ["EXPECTED_RUN_ID"]
