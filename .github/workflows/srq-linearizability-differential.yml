@@ -47,6 +47,9 @@ jobs:
           assert report["source_head_sha"] == os.environ["SRQ_DIFF_PR_HEAD_SHA"]
           assert report["workflow_event_sha"] == os.environ["GITHUB_SHA"]
           assert len(report["history_corpus_sha256"]) == 64
+          protocol = json.loads(Path("benchmarks/srq-lifecycle-interop/guarantee-vector/linearizability-oracle/differential-protocol-v1.json").read_text(encoding="utf-8"))
+          assert report["expected_corpus_sha256"] == protocol["corpus_sha256"]
+          assert report["corpus_hash_matches_protocol"] is True
           assert all(len(value) == 64 for value in report["source_sha256"].values())
           PY
       - name: Retain differential report even on failure
