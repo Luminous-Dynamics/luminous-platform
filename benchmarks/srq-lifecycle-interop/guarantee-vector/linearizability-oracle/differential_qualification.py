@@ -69,6 +69,45 @@ def _file_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def compare_history(history: dict[str, Any], *, max_states: int=100_000, optimized_checker=None) -> dict[str, Any]:
+    """Compare one history; optimized_checker is injectable only to test gate sensitivity."""
+    checker = optimized_checker or check_history
+    try:
+        optimized = checker(history, max_states=max_states)
+    except InvalidHistory as exc:
+        return {
+            "optimized": None,
+            "optimized_status": "INVALID_HISTORY",
+            "reference_has_linearization": None,
+            "reference_witness": None,
+            "reason": "generated_history_invalid",
+            "error": str(exc),
+        }
+
+    reference, reference_witness = reference_has_linearization(history)
+    status = optimized.get("status")
+    positive = status == "LINEARIZABLE"
+    reason = None
+    if status == "UNKNOWN_LIMIT":
+        reason = "optimized_checker_unknown_limit"
+    elif status == "INVALID_HISTORY":
+        reason = "optimized_checker_invalid_history"
+    elif status not in {"LINEARIZABLE", "NON_LINEARIZABLE"}:
+        reason = "optimized_checker_unrecognized_status"
+    elif positive != reference:
+        reason = "linearizability_decision_disagreement"
+    elif positive and not reference_accepts_witness(history, optimized.get("linearization", [])):
+        reason = "optimized_witness_rejected_by_reference"
+
+    return {
+        "optimized": optimized,
+        "optimized_status": status,
+        "reference_has_linearization": reference,
+        "reference_witness": reference_witness,
+        "reason": reason,
+    }
+
+
 def run_differential(max_states: int=100_000, mismatch_limit: int=10) -> dict[str,Any]:
     root=Path(__file__).resolve().parent
     protocol=json.loads((root/"differential-protocol-v1.json").read_text(encoding="utf-8"))
@@ -85,19 +124,12 @@ def run_differential(max_states: int=100_000, mismatch_limit: int=10) -> dict[st
         by_tier[tier]+=1
         canonical=json.dumps(history,sort_keys=True,separators=(",",":"),ensure_ascii=False)
         corpus_hash.update(canonical.encode("utf-8")+b"\n")
-        try:
-            optimized=check_history(history,max_states=max_states)
-        except InvalidHistory as exc:
+        comparison=compare_history(history,max_states=max_states)
+        optimized=comparison["optimized"]
+        reason=comparison["reason"]
+        if optimized is None:
             status_counts["optimized_invalid_history"]+=1
-            disagreement_count+=1
-            if len(disagreements)<mismatch_limit:
-                disagreements.append({"reason":"generated_history_invalid","tier":tier,
-                    "history_sha256":canonical_hash(history),"history":history,
-                    "optimized_status":"INVALID_HISTORY","error":str(exc)})
-            continue
-        reference,reference_witness=reference_has_linearization(history)
-        positive=optimized["status"]=="LINEARIZABLE"
-        if optimized["status"]=="LINEARIZABLE":
+        elif optimized["status"]=="LINEARIZABLE":
             status_counts["optimized_linearizable"]+=1
         elif optimized["status"]=="NON_LINEARIZABLE":
             status_counts["optimized_non_linearizable"]+=1
@@ -105,20 +137,23 @@ def run_differential(max_states: int=100_000, mismatch_limit: int=10) -> dict[st
             status_counts["optimized_unknown_limit"]+=1
         else:
             status_counts["optimized_invalid_history"]+=1
-        status_counts["reference_linearizable" if reference else "reference_non_linearizable"]+=1
-        reason=None
-        if optimized["status"] in {"UNKNOWN_LIMIT","INVALID_HISTORY"}:
-            reason=f"optimized_checker_{optimized['status'].lower()}"
-        elif positive!=reference:
-            reason="linearizability_decision_disagreement"
-        elif positive and not reference_accepts_witness(history,optimized["linearization"]):
-            reason="optimized_witness_rejected_by_reference"
+        reference=comparison["reference_has_linearization"]
+        reference_witness=comparison["reference_witness"]
+        if reference is not None:
+            status_counts["reference_linearizable" if reference else "reference_non_linearizable"]+=1
         if reason:
             disagreement_count+=1
         if reason and len(disagreements)<mismatch_limit:
-            disagreements.append({"reason":reason,"tier":tier,"history_sha256":canonical_hash(history),
-                "history":history,"optimized_status":optimized["status"],"optimized_witness":optimized["linearization"],
-                "reference_has_linearization":reference,"reference_witness":reference_witness})
+            entry={"reason":reason,"tier":tier,"history_sha256":canonical_hash(history),"history":history,
+                   "optimized_status":comparison["optimized_status"]}
+            if optimized is not None:
+                entry["optimized_witness"]=optimized.get("linearization")
+            else:
+                entry["error"]=comparison.get("error")
+            if reference is not None:
+                entry["reference_has_linearization"]=reference
+                entry["reference_witness"]=reference_witness
+            disagreements.append(entry)
     expected_total=5824
     expected_tiers={"exhaustive_2op":5184,"sampled_3op":512,"sampled_4op":128}
     return {
