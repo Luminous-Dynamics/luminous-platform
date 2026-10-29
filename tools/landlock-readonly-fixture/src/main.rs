@@ -198,12 +198,13 @@ fn run_parent() -> io::Result<()> {
                 "\"parent_oracle_allowed_canary_unchanged\":true,",
                 "\"parent_oracle_outside_canary_unchanged\":true,",
                 "\"parent_oracle_forbidden_output_absent\":true,",
-                "\"scope\":\"disposable_local_filesystem_fixture_only\"}}"
+                "\"landlock_metadata_mutation_syscalls_covered\":false,",
+                "\"scope\":\"disposable_file_content_access_fixture_only\"}}"
             ),
             landlock_abi
         );
         println!(
-            "SCOPE disposable_local_filesystem_fixture_only; no network or syscall-wide claim"
+            "SCOPE disposable_file_content_access_fixture_only; metadata mutations and network are out of scope"
         );
         Ok(())
     });
