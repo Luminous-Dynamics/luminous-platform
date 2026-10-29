@@ -93,13 +93,8 @@ fn worker(mode: &str, fd: RawFd) -> io::Result<()> {
 
             let mut observed = vec![0_u8; CANARY.len()];
             // SAFETY: observed is writable for observed.len() bytes.
-            let read_len = unsafe {
-                read(
-                    fd,
-                    observed.as_mut_ptr().cast::<c_void>(),
-                    observed.len(),
-                )
-            };
+            let read_len =
+                unsafe { read(fd, observed.as_mut_ptr().cast::<c_void>(), observed.len()) };
             if read_len < 0 {
                 return Err(io::Error::last_os_error());
             }
@@ -134,12 +129,7 @@ fn worker(mode: &str, fd: RawFd) -> io::Result<()> {
     }
 }
 
-fn run_worker(
-    executable: &Path,
-    mode: &str,
-    fd: RawFd,
-    expected_marker: &str,
-) -> io::Result<()> {
+fn run_worker(executable: &Path, mode: &str, fd: RawFd, expected_marker: &str) -> io::Result<()> {
     let output = Command::new(executable)
         .arg("--worker")
         .arg(mode)
@@ -170,10 +160,8 @@ fn run_parent() -> io::Result<()> {
         .duration_since(UNIX_EPOCH)
         .map_err(|error| io::Error::other(format!("system clock before Unix epoch: {error}")))?
         .as_nanos();
-    let root: PathBuf = env::temp_dir().join(format!(
-        "luminous-fd-hygiene-{}-{timestamp}",
-        process::id()
-    ));
+    let root: PathBuf =
+        env::temp_dir().join(format!("luminous-fd-hygiene-{}-{timestamp}", process::id()));
     let path = root.join("canary");
     let mut directory = fs::DirBuilder::new();
     directory.mode(0o700);
@@ -292,7 +280,9 @@ fn main() {
         .ok()
         .filter(|value| {
             value.len() == 40
-                && value.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+                && value
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
         })
         .unwrap_or_else(|| "unbound_local".to_string());
     let kernel_release = fs::read_to_string("/proc/sys/kernel/osrelease")
@@ -320,7 +310,6 @@ fn main() {
             "\"close_range_cloexec_enabled\":true,",
             "\"scope\":\"exec_boundary_descriptor_hygiene_probe_only\"}"
         ),
-        checkout_sha,
-        kernel_release
+        checkout_sha, kernel_release
     );
 }
