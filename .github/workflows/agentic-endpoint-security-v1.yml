@@ -80,6 +80,9 @@ jobs:
       - name: Run offline evidence-bundle verifier mutation tests
         run: python3 tools/agentic-endpoint-security-v1/test_verify_evidence_bundle.py
 
+      - name: Run signed-evidence verifier contract tests
+        run: python3 tools/agentic-endpoint-security-v1/test_verify_attested_evidence_bundle.py
+
       - name: Check Rust formatting
         run: cargo fmt --manifest-path tools/agentic-endpoint-security-v1/Cargo.toml -- --check
 
