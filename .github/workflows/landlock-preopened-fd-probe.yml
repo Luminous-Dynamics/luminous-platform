@@ -58,6 +58,7 @@ jobs:
           result = json.loads(records[0])
           assert result.get("schema") == "luminous.landlock-preopened-fd-result.v1"
           assert result.get("status") == "pass"
+          assert type(result.get("landlock_abi")) is int and result["landlock_abi"] >= 3
           for field in (
               "preopened_write_succeeded_after_landlock",
               "parent_oracle_observed_preopened_write",
