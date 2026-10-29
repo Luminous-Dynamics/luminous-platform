@@ -448,6 +448,7 @@ fn main() {
             "\"cloexec_descriptor_absent_after_exec\":true,",
             "\"new_path_write_open_denied_after_landlock\":true,",
             "\"parent_oracle_safe_control_unchanged\":true,",
+            "\"parent_original_fd_cloexec\":true,",
             "\"full_descriptor_hygiene_coverage\":false,",
             "\"scope\":\"preopened_writable_fd_ordering_microtest\"}"
         )
