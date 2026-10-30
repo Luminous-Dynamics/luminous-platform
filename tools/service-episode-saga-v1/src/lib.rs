@@ -388,6 +388,7 @@ pub enum TransitionError {
     DependencyNotVerified(String),
     InvalidObserver,
     AttemptMismatch,
+    StaleEvidence,
     Cancelled,
     CompensationUnavailable,
     ServicePreconditionsNotMet,
@@ -1763,7 +1764,7 @@ mod tests {
             .expect("ticket verified");
 
         assert_eq!(
-            ep.verify_service(ep.revision(), &evidence),
+            ep.verify_service(ep.revision(), &evidence, 100),
             Err(TransitionError::InvalidObserver)
         );
     }
@@ -1796,9 +1797,11 @@ mod tests {
             consistency: Consistency::Strong,
             postcondition_digest: Some(digest(22)),
             no_effect_basis: None,
+            observed_at_ms: 50,
+            valid_until_ms: 200,
             evidence_digest: digest(72),
         };
-        ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence)
+        ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence, 100)
             .expect("ticket postcondition");
 
         let mut service_evidence = ServiceObservation {
@@ -1817,9 +1820,111 @@ mod tests {
             .expect("mismatch remains indeterminate");
         assert_eq!(ep.disposition(), EpisodeDisposition::Indeterminate);
 
-        service_evidence.observed_service_digest = Some(digest(90));
-        ep.verify_service(ep.revision(), &service_evidence, 101)
+        let fresh_service_evidence = ServiceObservation {
+            observer_id: "external-http-probe".into(),
+            trust_domain_id: "independent-probe".into(),
+            service_id: "payments-api".into(),
+            plan_digest: digest(100),
+            health: ServiceHealth::Healthy,
+            consistency: Consistency::Strong,
+            observed_service_digest: Some(digest(90)),
+            observed_at_ms: 101,
+            valid_until_ms: 250,
+            evidence_digest: digest(74),
+        };
+        ep.verify_service(ep.revision(), &fresh_service_evidence, 102)
             .expect("fresh exact service observation");
         assert_eq!(ep.disposition(), EpisodeDisposition::Resolved);
     }
+    #[test]
+    fn stale_step_evidence_and_wrong_plan_service_evidence_are_rejected() {
+        let mut ep = episode();
+        authorize_and_dispatch_host(&mut ep);
+
+        let mut stale = observer(
+            "attempt-host-1",
+            "host-repair",
+            ObservedEffect::ExpectedPostcondition,
+            Consistency::Strong,
+            Some(digest(21)),
+        );
+        stale.valid_until_ms = 99;
+        assert_eq!(
+            ep.record_observation(ep.revision(), "host-repair", &stale, 100),
+            Err(TransitionError::StaleEvidence)
+        );
+        assert!(matches!(
+            ep.step_status("host-repair"),
+            Some(StepStatus::DispatchIntentPersisted { .. })
+        ));
+
+        let fresh = observer(
+            "attempt-host-1",
+            "host-repair",
+            ObservedEffect::ExpectedPostcondition,
+            Consistency::Strong,
+            Some(digest(21)),
+        );
+        ep.record_observation(ep.revision(), "host-repair", &fresh, 100)
+            .expect("fresh step observation");
+        ep.authorize_step(
+            ep.revision(),
+            "ticket-update",
+            &grant("ticket-update", false, "grant-ticket", 10_000),
+            101,
+        )
+        .expect("ticket grant");
+        ep.persist_dispatch_intent(
+            ep.revision(),
+            "ticket-update",
+            "attempt-ticket-1",
+            "idem-ticket",
+        )
+        .expect("ticket dispatch intent");
+        let ticket_evidence = ObserverEvidence {
+            observer_id: "itsm-readback".into(),
+            trust_domain_id: "itsm-audit".into(),
+            attempt_id: "attempt-ticket-1".into(),
+            target_id: "itsm-case-42".into(),
+            binding_digest: digest(12),
+            effect: ObservedEffect::ExpectedPostcondition,
+            consistency: Consistency::Strong,
+            postcondition_digest: Some(digest(22)),
+            no_effect_basis: None,
+            observed_at_ms: 50,
+            valid_until_ms: 200,
+            evidence_digest: digest(72),
+        };
+        ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence, 102)
+            .expect("ticket postcondition");
+
+        let wrong_plan = ServiceObservation {
+            observer_id: "external-http-probe".into(),
+            trust_domain_id: "independent-probe".into(),
+            service_id: "payments-api".into(),
+            plan_digest: digest(99),
+            health: ServiceHealth::Healthy,
+            consistency: Consistency::Strong,
+            observed_service_digest: Some(digest(90)),
+            observed_at_ms: 50,
+            valid_until_ms: 200,
+            evidence_digest: digest(73),
+        };
+        assert_eq!(
+            ep.verify_service(ep.revision(), &wrong_plan, 103),
+            Err(TransitionError::InvalidObserver)
+        );
+
+        let stale_global = ServiceObservation {
+            plan_digest: digest(100),
+            valid_until_ms: 99,
+            ..wrong_plan
+        };
+        assert_eq!(
+            ep.verify_service(ep.revision(), &stale_global, 103),
+            Err(TransitionError::StaleEvidence)
+        );
+        assert_eq!(ep.disposition(), EpisodeDisposition::AwaitingServiceVerification);
+    }
+
 }
