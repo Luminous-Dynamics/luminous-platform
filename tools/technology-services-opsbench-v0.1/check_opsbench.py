@@ -223,8 +223,8 @@ def validate_episode_contract(schema: Any, example: Any) -> dict[str, int]:
                           .get("oracle_outcome", {}).get("enum", []))
     require(system_dispositions and oracle_outcomes,
             "system disposition and oracle outcome vocabularies are required")
-    require(system_dispositions.isdisjoint(oracle_outcomes),
-            "system-reported dispositions must remain distinct from oracle outcomes")
+    require(system_dispositions.intersection(oracle_outcomes).issubset({"indeterminate"}),
+            "system-reported dispositions may share only the neutral indeterminate outcome with oracle outcomes")
 
     action_schema = props.get("actions", {}).get("items", {})
     action_required = set(action_schema.get("required", []))
