@@ -234,6 +234,15 @@ pub enum ObservedEffect {
     Unknown,
 }
 
+/// A current-state read that finds no change is not proof that a dispatched
+/// request was never accepted. Only an attempt-specific authoritative ledger
+/// result can clear the ambiguous attempt for a new authorized retry.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum NoEffectBasis {
+    AuthoritativeAttemptLedgerNeverAccepted,
+    StateReadbackOnly,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ObserverEvidence {
     pub observer_id: String,
@@ -244,6 +253,7 @@ pub struct ObserverEvidence {
     pub effect: ObservedEffect,
     pub consistency: Consistency,
     pub postcondition_digest: Option<Digest>,
+    pub no_effect_basis: Option<NoEffectBasis>,
     pub evidence_digest: Digest,
 }
 
@@ -733,7 +743,11 @@ impl SagaEpisode {
                     evidence_digest: evidence.evidence_digest,
                 }
             }
-            ObservedEffect::NoEffect if evidence.consistency == Consistency::Strong => {
+            ObservedEffect::NoEffect
+                if evidence.consistency == Consistency::Strong
+                    && evidence.no_effect_basis
+                        == Some(NoEffectBasis::AuthoritativeAttemptLedgerNeverAccepted) =>
+            {
                 StepStatus::NoEffectConfirmed {
                     attempt_id: current_attempt.clone(),
                     evidence_digest: evidence.evidence_digest,
@@ -769,6 +783,9 @@ impl SagaEpisode {
         now_ms: u64,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
+        if self.cancelled {
+            return Err(TransitionError::Cancelled);
+        }
         let step = self
             .plan
             .step(step_id)
@@ -1245,6 +1262,7 @@ mod tests {
             effect,
             consistency,
             postcondition_digest,
+            no_effect_basis: None,
             evidence_digest: digest(70),
         }
     }
@@ -1403,18 +1421,32 @@ mod tests {
             Some(StepStatus::Indeterminate { .. })
         ));
 
-        ep.record_observation(
-            ep.revision(),
+        let mut readback_only = observer(
+            "attempt-host-1",
             "host-repair",
-            &observer(
-                "attempt-host-1",
-                "host-repair",
-                ObservedEffect::NoEffect,
-                Consistency::Strong,
-                None,
-            ),
-        )
-        .expect("strong absence permits reconciliation");
+            ObservedEffect::NoEffect,
+            Consistency::Strong,
+            None,
+        );
+        readback_only.no_effect_basis = Some(NoEffectBasis::StateReadbackOnly);
+        ep.record_observation(ep.revision(), "host-repair", &readback_only)
+            .expect("unchanged state alone remains insufficient");
+        assert!(matches!(
+            ep.step_status("host-repair"),
+            Some(StepStatus::Indeterminate { .. })
+        ));
+
+        let mut ledger_proof = observer(
+            "attempt-host-1",
+            "host-repair",
+            ObservedEffect::NoEffect,
+            Consistency::Strong,
+            None,
+        );
+        ledger_proof.no_effect_basis =
+            Some(NoEffectBasis::AuthoritativeAttemptLedgerNeverAccepted);
+        ep.record_observation(ep.revision(), "host-repair", &ledger_proof)
+            .expect("attempt-specific never-accepted proof permits reconciliation");
         assert!(matches!(
             ep.step_status("host-repair"),
             Some(StepStatus::NoEffectConfirmed { .. })
@@ -1579,6 +1611,7 @@ mod tests {
             effect: ObservedEffect::ExpectedPostcondition,
             consistency: Consistency::Strong,
             postcondition_digest: Some(spec.expected_postcondition_digest),
+            no_effect_basis: None,
             evidence_digest: digest(71),
         };
         ep.record_compensation_observation(ep.revision(), "host-repair", &evidence)
@@ -1617,6 +1650,7 @@ mod tests {
             effect: ObservedEffect::ExpectedPostcondition,
             consistency: Consistency::Strong,
             postcondition_digest: Some(digest(22)),
+            no_effect_basis: None,
             evidence_digest: digest(72),
         };
         ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence)
