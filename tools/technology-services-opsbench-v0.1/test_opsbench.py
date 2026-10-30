@@ -8,13 +8,14 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 
-from check_opsbench import load_json, validate, validate_episode_contract
+from check_opsbench import load_json, validate, validate_episode_contract, validate_crosswalk
 
 
 CORPUS_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "corpus.json"
 SCHEMA_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "schema.json"
 EPISODE_SCHEMA_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "episode-result.schema.json"
 EPISODE_EXAMPLE_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "episode-result.example.json"
+CROSSWALK_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "external-benchmark-crosswalk.json"
 
 
 class OpsBenchContractTests(unittest.TestCase):
@@ -24,6 +25,7 @@ class OpsBenchContractTests(unittest.TestCase):
         cls.schema = load_json(SCHEMA_PATH)
         cls.episode_schema = load_json(EPISODE_SCHEMA_PATH)
         cls.episode_example = load_json(EPISODE_EXAMPLE_PATH)
+        cls.crosswalk = load_json(CROSSWALK_PATH)
 
 
     def test_episode_evidence_envelope_keeps_oracle_separate(self):
@@ -63,6 +65,42 @@ class OpsBenchContractTests(unittest.TestCase):
         gate["then"]["properties"]["observations"]["minItems"] = 0
         with self.assertRaises(ValueError):
             validate_episode_contract(changed, self.episode_example)
+
+
+    def test_external_benchmark_crosswalk_is_non_equivalent_and_pinned(self):
+        result = validate_crosswalk(self.crosswalk)
+        self.assertEqual(result["external_benchmark_count"], 4)
+        self.assertEqual(result["common_core_rules"], 9)
+
+    def test_external_crosswalk_cannot_claim_direct_score_superiority(self):
+        changed = copy.deepcopy(self.crosswalk)
+        changed["benchmarks"][0]["direct_score_comparison_allowed"] = True
+        with self.assertRaises(ValueError):
+            validate_crosswalk(changed)
+
+    def test_external_crosswalk_cannot_drop_benchmark_limitations(self):
+        changed = copy.deepcopy(self.crosswalk)
+        changed["benchmarks"][2]["limits"] = []
+        with self.assertRaises(ValueError):
+            validate_crosswalk(changed)
+
+    def test_external_scenario_mapping_must_reference_opsbench_cases(self):
+        changed = copy.deepcopy(self.crosswalk)
+        changed["benchmarks"][0]["opsbench_related_cases"].append("FAKE-999")
+        with self.assertRaises(ValueError):
+            validate_crosswalk(changed)
+
+    def test_upstream_benchmark_commit_and_license_are_pinned(self):
+        changed = copy.deepcopy(self.crosswalk)
+        changed["benchmarks"][2]["repository_commit"] = "main"
+        with self.assertRaises(ValueError):
+            validate_crosswalk(changed)
+
+    def test_common_core_fairness_protocol_cannot_be_weakened(self):
+        changed = copy.deepcopy(self.crosswalk)
+        changed["common_core_protocol"]["no_cross_benchmark_score_translation"] = False
+        with self.assertRaises(ValueError):
+            validate_crosswalk(changed)
 
     def mutated(self):
         return copy.deepcopy(self.corpus)
