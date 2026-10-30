@@ -12,7 +12,8 @@
     "required_episode_bindings",
     "hard_gates",
     "cases",
-    "execution_constraints"
+    "execution_constraints",
+    "visibility"
   ],
   "properties": {
     "schema": {
@@ -247,6 +248,9 @@
         }
       },
       "additionalProperties": false
+    },
+    "visibility": {
+      "const": "evaluator_authoring_only_not_runtime_input"
     }
   },
   "additionalProperties": false
