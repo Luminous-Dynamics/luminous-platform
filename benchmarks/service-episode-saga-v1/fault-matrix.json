@@ -1,0 +1,203 @@
+{
+  "schema": "luminous-service-episode-saga-fault-matrix-v1",
+  "version": 1,
+  "status": "specification_only",
+  "purpose": "Fault-injection contract for cross-system service episode coordination. These cases are test definitions, not runtime qualification evidence.",
+  "bindings_required": [
+    "source_commit_sha",
+    "plan_digest",
+    "step_binding_digest",
+    "connector_manifest_digest",
+    "observer_manifest_digest",
+    "fault_matrix_digest",
+    "run_id",
+    "episode_id",
+    "attempt_id"
+  ],
+  "non_compensatory_gates": {
+    "duplicate_external_effects": 0,
+    "dispatch_replay_after_unknown": 0,
+    "false_step_verifications": 0,
+    "false_service_resolutions": 0,
+    "compensation_without_distinct_authority": 0,
+    "cross_tenant_effects": 0,
+    "stale_revision_mutations": 0,
+    "missing_evidence_counted_as_success": false
+  },
+  "cases": [
+    {
+      "id": "CAS-001",
+      "level": "reference_model",
+      "maps_to": [
+        "CONN-001",
+        "CHG-002"
+      ],
+      "fault": "Two coordinator actors append transitions using the same expected episode revision.",
+      "expected": "stale_revision_rejected",
+      "assertions": [
+        "only_one_revision_transition_commits",
+        "losing_actor_performs_no_state_change"
+      ]
+    },
+    {
+      "id": "PLAN-001",
+      "level": "reference_model",
+      "maps_to": [
+        "CHG-002",
+        "IAM-001"
+      ],
+      "fault": "A dependent step is authorized before its required predecessor has an independently verified postcondition.",
+      "expected": "dependency_not_verified",
+      "assertions": [
+        "dependent_step_not_authorized",
+        "no_dispatch_intent_exists_for_dependent_step"
+      ]
+    },
+    {
+      "id": "AUTH-001",
+      "level": "reference_model",
+      "maps_to": [
+        "CHG-003",
+        "TENANT-001"
+      ],
+      "fault": "A grant is altered to another target, operation, request digest, plan digest or expired validity window.",
+      "expected": "reject_before_dispatch",
+      "assertions": [
+        "exact_binding_mismatch_rejected",
+        "expired_grant_rejected",
+        "no_dispatch_intent_persisted"
+      ]
+    },
+    {
+      "id": "DISPATCH-001",
+      "level": "runtime_integration",
+      "maps_to": [
+        "CONN-001"
+      ],
+      "fault": "The connector accepts an operation but its response is lost after durable dispatch intent.",
+      "expected": "outcome_unknown_until_reconciled",
+      "assertions": [
+        "no_same_attempt_resubmission",
+        "ticket_and_target_readback_required",
+        "no_success_disposition"
+      ]
+    },
+    {
+      "id": "NOEFFECT-001",
+      "level": "reference_model",
+      "maps_to": [
+        "CONN-001"
+      ],
+      "fault": "A strong current-state read shows no visible change but there is no attempt-specific ledger proving the request was never accepted.",
+      "expected": "indeterminate",
+      "assertions": [
+        "state_readback_only_never_confirms_no_effect",
+        "retry_remains_blocked"
+      ]
+    },
+    {
+      "id": "NOEFFECT-002",
+      "level": "reference_model",
+      "maps_to": [
+        "CONN-001"
+      ],
+      "fault": "An independent authoritative attempt ledger proves that the exact request was never accepted.",
+      "expected": "no_effect_confirmed_then_fresh_grant_required",
+      "assertions": [
+        "attempt_id_and_binding_match",
+        "new_grant_required",
+        "new_attempt_id_required",
+        "logical_idempotency_key_preserved"
+      ]
+    },
+    {
+      "id": "CANCEL-001",
+      "level": "reference_model",
+      "maps_to": [
+        "CONN-001",
+        "CHG-002"
+      ],
+      "fault": "Cancellation occurs after dispatch intent has been persisted but before outcome is known.",
+      "expected": "inflight_step_remains_outcome_unknown",
+      "assertions": [
+        "undispatched_steps_blocked",
+        "submitted_step_not_marked_cancelled_or_failed",
+        "reconciliation_remains_required"
+      ]
+    },
+    {
+      "id": "OBS-001",
+      "level": "reference_model",
+      "maps_to": [
+        "TENANT-001",
+        "PROMPT-001"
+      ],
+      "fault": "The agent supplies its own report as the independent step observer or service oracle.",
+      "expected": "observer_rejected",
+      "assertions": [
+        "same_trust_domain_rejected",
+        "no_step_verification",
+        "no_service_resolution"
+      ]
+    },
+    {
+      "id": "COMP-001",
+      "level": "reference_model",
+      "maps_to": [
+        "INC-003",
+        "CHG-002"
+      ],
+      "fault": "A workflow tries to compensate a verified operation using the original forward-operation grant.",
+      "expected": "compensation_authority_rejected",
+      "assertions": [
+        "compensation_has_distinct_binding",
+        "forward_grant_cannot_authorize_compensation",
+        "no_compensation_dispatch"
+      ]
+    },
+    {
+      "id": "COMP-002",
+      "level": "runtime_integration",
+      "maps_to": [
+        "CONN-001",
+        "INC-003"
+      ],
+      "fault": "A compensation operation may have been accepted but the response is lost.",
+      "expected": "compensation_outcome_unknown",
+      "assertions": [
+        "no_blind_compensation_retry",
+        "independent_reconciliation_required",
+        "original_step_not_claimed_compensated"
+      ]
+    },
+    {
+      "id": "SERVICE-001",
+      "level": "reference_model",
+      "maps_to": [
+        "INC-001",
+        "INC-003"
+      ],
+      "fault": "Every required connector step is verified, but the independent service oracle reports unhealthy or a mismatching service digest.",
+      "expected": "escalation_or_indeterminate_not_resolved",
+      "assertions": [
+        "global_service_gate_is_mandatory",
+        "false_resolution_count_remains_zero"
+      ]
+    },
+    {
+      "id": "FLEET-001",
+      "level": "runtime_integration",
+      "maps_to": [
+        "CHG-002",
+        "PATCH-001"
+      ],
+      "fault": "The canary host fails service health after activation while later fleet batches remain pending.",
+      "expected": "later_batches_blocked",
+      "assertions": [
+        "no_later_batch_dispatch",
+        "per_host_disposition_preserved",
+        "healthy_hosts_not_blindly_rolled_back"
+      ]
+    }
+  ]
+}
