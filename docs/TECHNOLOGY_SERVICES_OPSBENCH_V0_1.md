@@ -178,7 +178,27 @@ Feature tables are not benchmark results. Run direct head-to-head tests only whe
 
 The strongest plausible differentiation is a **cross-vendor service assurance layer**: keep existing ITSM/monitoring/identity/cloud tools as systems of record and compose them through capability-limited connectors, transaction semantics and independent evidence. Do not attempt to replace ServiceNow's CMDB, Atlassian's ticketing, Datadog's observability or Ansible's mature automation engine before proving a smaller wedge.
 
-## 8. Interoperability rather than reinvention
+## 8. Benchmark ecosystem and non-duplication
+
+OpsBench must not claim novelty merely because it tests AI-assisted incident resolution. Two important external benchmark families already exist and should become comparison anchors:
+
+- **ITBench (IBM Research / UIUC):** a 102-scenario benchmark spanning SRE incident repair, CISO compliance/policy tasks and FinOps, with live Kubernetes environments and state-check/automated-test grading. Its public SRE leaderboard surfaced in May 2025 and should not be treated as a current 2026 model ranking. The public leaderboard's 25% entry and the paper's 11.4% headline use different scenario sets/agents and are not directly comparable. Reuse the public scenario/environment subset where licensing and access allow; do not copy hidden answer keys or represent an OpsBench synthetic pass as an ITBench result.
+- **PagerDuty's 2026 SRE-agent benchmark report:** reports a Kubernetes microservice fault-injection harness and a 17-scenario comparison scoring localization, diagnosis, mitigation, evidence grounding, explanation quality, misdirection and latency. PagerDuty states the presented sweep was one trial per agent and acknowledges the statistical limitation. The study is vendor-authored; treat its published findings as a useful methodology and capability reference, not an independently verified leaderboard or a directly comparable OpsBench score.
+
+These benchmarks establish that incident localization, root-cause reasoning, mitigation quality, evidence grounding and cost/latency are already active competitive areas. OpsBench should preserve those measures for the incident subset, while adding the dimensions missing from a narrow SRE-agent task:
+
+1. Customer intent and service-contract fidelity, including SLA clocks and user communication.
+2. Exact authorization-to-effect correspondence across ticketing, identity, host and connector systems.
+3. Tenant isolation, secret handling and untrusted operational-data attacks.
+4. Ambiguous API outcomes, idempotency, restart reconciliation and duplicate-effect prevention.
+5. Independent postcondition verification and truthful resolved / mitigated / escalated / indeterminate dispositions.
+6. Human intervention, end-to-end elapsed time, rework, customer effort and total cost per verified resolution.
+
+A future v0.2 should include a pre-registered **common-core bridge**: identify a subset of OpsBench incidents expressible in the ITBench and PagerDuty task formats, run the same candidate arms on identical snapshots/tool scopes/oracle outcomes, and publish both common-core and OpsBench-only results. Where a common run is unavailable, report a capability/methodology comparison rather than a score comparison. No score should be translated across different scenario sets, judging rubrics, model versions, agent permissions or trial counts.
+
+ServiceNow is also a product baseline, not merely a ticket database: its September 2026 ITSM documentation lists autonomous workflows for incident triage/investigation/resolution, change plans, change-conflict assessment, endpoint diagnosis and resolution, among others. Jira Service Management continues to document incident-triggered automation, coordination and incident-specific actions. OpsBench's claim must therefore be about independently verified cross-system outcomes under explicit authority—not the presence of AI agents or workflow automation.
+
+## 9. Interoperability rather than reinvention
 
 Prefer:
 
@@ -191,7 +211,7 @@ Prefer:
 
 A trace proves that an instrumented operation was recorded; it does not by itself prove external state. A signed receipt proves a signer attested to bytes; it does not prove the attested event was true. A model explanation proves neither. The independent oracle and claim ceiling must remain explicit.
 
-## 9. Implementation sequence
+## 10. Implementation sequence
 
 ### P0 — freeze the service episode contract
 
@@ -224,7 +244,7 @@ Start with Linux/NixOS estates where customers already value declarative configu
 
 Add Windows/macOS endpoint management, cloud/IAM/database connectors, security operations and physical infrastructure only when the corresponding task corpus, permission model, independent observer and recovery path exist. Bring Symtropy into the loop only for specific physical domains with independently validated models.
 
-## 10. Release claim policy
+## 11. Release claim policy
 
 A benchmark result must state exactly what it establishes:
 
@@ -239,6 +259,9 @@ Do not promote a lower tier into a higher one. A green unit-test suite is not a 
 
 ## References
 
+- [PagerDuty — A Better Benchmark Harness for SRE Agents (2026)](https://www.pagerduty.com/resources/ai/learn/sre-agent-benchmark-report/)
+- [ITBench — IBM Research / UIUC benchmark overview](https://arxiv.org/abs/2502.08013)
+- [ServiceNow agentic ITSM workflows, September 2026 documentation](https://www.servicenow.com/docs/r/it-service-management/now-assist-for-it-service-management-itsm/now-assist-itsm-ai-agents-use-cases.html)
 - [ServiceNow ITSM](https://www.servicenow.com/products/itsm.html)
 - [Atlassian Jira Service Management incident automation](https://support.atlassian.com/jira-service-management-cloud/docs/automate-incident-management-in-jira-service-management/)
 - [Datadog incident workflow automations](https://docs.datadoghq.com/incident_response/incident_management/setup_and_configuration/automations/)
