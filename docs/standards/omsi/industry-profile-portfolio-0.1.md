@@ -305,3 +305,26 @@ Never silently rewrite past benchmark outputs. Preserve the exact profile, sourc
 Adopt the OMSI profile-first direction as the working architecture proposal. Continue the manufacturing validator as the first implementation of the shared evidence/adapter patterns. Use the three flagship pilots to test profile reuse, not to create three competing core frameworks.
 
 **No industry, solver, adapter, dataset or product is promoted by this portfolio document.** All stage claims must be supported by the exact artifact, independent verification and evidence appropriate to that claim.
+
+## 14. Active execution slices — 30 October 2026
+
+The following work items make the portfolio actionable. They remain in design, review or implementation status according to their linked artifacts; none is promoted to field qualification by being listed here.
+
+### Cross-industry framework
+- [OMSI industry profile admission issue #154](https://github.com/Luminous-Dynamics/luminous-platform/issues/154) and [portfolio protocol PR #157](https://github.com/Luminous-Dynamics/luminous-platform/pull/157) define the profile register, evidence stages, fair benchmark policy and no-duplication map.
+- The first cross-industry implementation remains the manufacturing profile/adapter work in [PR #52](https://github.com/Luminous-Dynamics/luminous-platform/pull/52) and [PR #53](https://github.com/Luminous-Dynamics/luminous-platform/pull/53). The latter still requires its exact-head validator/formatter checks and independent review; its presence is not a vendor conformance or production qualification.
+
+### Agriculture and water–food–energy
+- [OMSI Agricultural Decision Evidence Profile PR #158](https://github.com/Luminous-Dynamics/luminous-platform/pull/158) adds a read-only profile and ten synthetic conformance vectors. It keeps measured observations, forecasts, modelled advice, farmer choice, actions and outcomes distinct. Its vector schema is structural; no semantic adapter or farm validation is claimed.
+- [WFE-COUPLING-001 / Sol-Atlas #326](https://github.com/Luminous-Dynamics/sol-atlas-leptos/issues/326) defines the cross-project benchmark that composes Sol-Atlas water/pump constraints, Symtropy supplied-flux soil accounting, CropFoundry irrigation candidates, and Mycelix farmer/outcome semantics. EPANET, AquaCrop 7.3 and WaPOR v3 remain separate reference/data lanes, not one merged model.
+- Continue to track the owner implementations separately: [CropFoundry PR #8046](https://github.com/Luminous-Dynamics/symthaea/pull/8046), [Symtropy soil-water PR #2848](https://github.com/Luminous-Dynamics/symtropy/pull/2848) and [Mycelix Terra Preta PR #5513](https://github.com/Luminous-Dynamics/mycelix/pull/5513). Do not treat their synthetic, arithmetic or proxy outputs as agronomic field efficacy.
+
+### Telecommunications resilience
+- [CONNECT-RES-001 / Sol-Atlas PR #324](https://github.com/Luminous-Dynamics/sol-atlas-leptos/pull/324) defines the profile, and [CONNECT-RES-002 / issue #325](https://github.com/Luminous-Dynamics/sol-atlas-leptos/issues/325) specifies the adapter on top of existing service-network, failure-sweep and service-equity evaluators. The profile is not an RF propagation or operator QoS solution.
+
+### Industrial maintenance
+- [EV-CBM-A1 / Symtropy issue #3014](https://github.com/Luminous-Dynamics/symtropy/issues/3014) and [PR #3015](https://github.com/Luminous-Dynamics/symtropy/pull/3015) add a deterministic single-machine event reference under the wider [EV-FACTORY-CBM-001 #2619](https://github.com/Luminous-Dynamics/symtropy/issues/2619). This Tier-A oracle is deliberately not a degradation predictor, maintenance policy engine or factory DES. It establishes state-transition and horizon-accounting semantics first.
+
+### Portfolio control
+
+When a new vertical is proposed, update this register only after the profile has a decision owner, domain boundary, reference model, source-rights inventory, negative controls, independent verifier and explicit evidence ceiling. A new issue or PR is a work item, not an evidence-stage promotion.
