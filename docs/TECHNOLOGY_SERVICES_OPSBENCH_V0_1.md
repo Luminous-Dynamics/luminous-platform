@@ -197,6 +197,8 @@ The strongest plausible differentiation is a **cross-vendor service assurance la
 
 ## 8. Benchmark ecosystem and non-duplication
 
+The machine-readable comparison map and non-equivalence rules are frozen in [external-benchmark-crosswalk.json](../benchmarks/technology-services-ops-v0.1/external-benchmark-crosswalk.json).
+
 OpsBench must not claim novelty merely because it tests AI-assisted incident resolution. Two important external benchmark families already exist and should become comparison anchors:
 
 - **ITBench (IBM Research / UIUC):** a 102-scenario benchmark spanning SRE, CISO and FinOps, with live Kubernetes environments and automated/state-check grading. The ICML 2025 paper reports initial resolution rates of 11.4% for SRE, 25.2% for CISO and 25.8% for FinOps (excluding anomaly detection). These are release-specific research results, not a current 2026 model leaderboard. Reuse an eligible public scenario/environment subset where licensing and access allow; do not copy hidden answer keys or represent an OpsBench result as an ITBench result.
@@ -209,8 +211,7 @@ Two additional October 2026 benchmarks make the diagnostic layer more competitiv
 - **Edge Delta AI SRE Arena v1:** 21 injected Kubernetes faults in an OpenTelemetry Demo shop and 72 judged investigations across Edge Delta, Grafana and Claude controls. It measures detection, root cause, blast radius, supported mitigation, readiness and unsafe advice. Its public README explicitly states that mitigation/readiness are proposal grades—not executed repairs or verified recovery—and its v1 uses a single GPT-6-Astra judge without time/cost measurement or published human-grader validation. The fixture is open under MIT; pin upstream commit `fc232a3fb38b2d49d5fbc8589071623e13f2c963` before any reproduction.
 - **Edge Delta RootCauseBench:** a Terminal-Bench/Harbor benchmark for identifying the exact commit that caused a frozen production incident. Its 36-scenario release includes 12 adversarial scenarios for misleading deploys, delayed onset, degraded telemetry, oversized context and no-code-cause abstention. The current published board shows multiple models at the 108-trial ceiling on this particular task set. This means OpsBench should not try to win by reinventing a commit-attribution leaderboard; use it as a diagnostic sub-benchmark, and do not confuse a saturated commit-attribution result with successful service operation.
 
-The concrete OpsBench boundary is therefore narrower and stronger: **diagnosis is a replaceable input; authorized, cross-system execution and independently verified service outcomes are the product claim.** We should run a diagnosis-only common-core arm on Project Arena, then separately run an approved-remediation arm that records actual effects and recovery. Do not combine those two result types.
- OpsBench should preserve those measures for the incident subset, while adding the dimensions missing from a narrow SRE-agent task:
+OpsBench should preserve incident-localization, root-cause, blast-radius, mitigation-quality and evidence-grounding measures as diagnostic subscores on a matched incident subset, while adding the dimensions missing from a narrow SRE-agent task:
 
 1. Customer intent and service-contract fidelity, including SLA clocks and user communication.
 2. Exact authorization-to-effect correspondence across ticketing, identity, host and connector systems.
@@ -218,6 +219,8 @@ The concrete OpsBench boundary is therefore narrower and stronger: **diagnosis i
 4. Ambiguous API outcomes, idempotency, restart reconciliation and duplicate-effect prevention.
 5. Independent postcondition verification and truthful resolved / mitigated / escalated / indeterminate dispositions.
 6. Human intervention, end-to-end elapsed time, rework, customer effort and total cost per verified resolution.
+
+The concrete OpsBench boundary is therefore narrower and stronger: **diagnosis is a replaceable input; authorized, cross-system execution and independently verified service outcomes are the product claim.** Run a diagnosis-only common-core arm on Project Arena, then a separate approved-remediation arm that records actual effects and recovery. Do not combine those result types.
 
 A future v0.2 should include a pre-registered **common-core bridge**: identify a subset of OpsBench incidents expressible in the ITBench and PagerDuty task formats, run the same candidate arms on identical snapshots/tool scopes/oracle outcomes, and publish both common-core and OpsBench-only results. Where a common run is unavailable, report a capability/methodology comparison rather than a score comparison. No score should be translated across different scenario sets, judging rubrics, model versions, agent permissions or trial counts.
 
