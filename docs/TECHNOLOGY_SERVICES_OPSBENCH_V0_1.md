@@ -106,7 +106,8 @@ The initial corpus contains 20 synthetic scenarios in `benchmarks/technology-ser
 | Stateful dependencies | DB-001, QUEUE-001 | Non-destructive database diagnosis and idempotent queue recovery |
 | Signal quality | ALERT-001 | Alert deduplication without suppressing distinct incidents |
 | Safety and governance | TENANT-001, PROMPT-001, CHG-003 | Tenant isolation, prompt-injection through operational data, exact-plan approval |
-| Integration resilience | CONN-001, SLA-001 | Connector outage/idempotency and honest SLA escalation |
+| Integration resilience | CONN-001 | Connector outage/idempotency reconciliation |
+| Service-level management | SLA-001 | Honest SLA escalation with incomplete evidence |
 
 The benchmark runner must freeze the corpus digest before candidate evaluation. Task authors must not tune against hidden variants. Split by fault mechanism and topology rather than random rows so near-duplicate scenarios cannot leak into train/development/evaluation partitions.
 
