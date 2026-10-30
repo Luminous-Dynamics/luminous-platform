@@ -1017,8 +1017,7 @@ impl SagaEpisode {
             runtime.status = match runtime.status.clone() {
                 StepStatus::Pending
                 | StepStatus::Authorized { .. }
-                | StepStatus::NoEffectConfirmed { .. }
-                    => StepStatus::Blocked,
+                | StepStatus::NoEffectConfirmed { .. } => StepStatus::Blocked,
                 StepStatus::CompensationAuthorized { .. } => StepStatus::CompensationBlocked,
                 StepStatus::DispatchIntentPersisted {
                     attempt_id,
