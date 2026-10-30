@@ -2040,3 +2040,6 @@ mod tests {
         assert_eq!(ep.step_status("host-repair"), Some(&StepStatus::Pending));
     }
 }
+
+#[cfg(test)]
+mod mock_connector;
