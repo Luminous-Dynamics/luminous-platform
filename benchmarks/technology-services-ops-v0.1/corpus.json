@@ -813,5 +813,6 @@
     "direct_agent_privileged_access": false,
     "independent_oracle_outside_agent_trust_domain": true,
     "human_approval_for_state_changing_host_actions": true
-  }
+  },
+  "visibility": "evaluator_authoring_only_not_runtime_input"
 }
