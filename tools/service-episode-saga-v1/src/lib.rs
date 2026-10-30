@@ -1286,6 +1286,8 @@ mod tests {
             consistency,
             postcondition_digest,
             no_effect_basis: None,
+            observed_at_ms: 50,
+            valid_until_ms: 200,
             evidence_digest: digest(70),
         }
     }
@@ -1309,6 +1311,7 @@ mod tests {
                 Consistency::Strong,
                 Some(digest(21)),
             ),
+            100,
         )
         .expect("host postcondition");
     }
@@ -1437,6 +1440,7 @@ mod tests {
                 Consistency::Eventual,
                 None,
             ),
+            100,
         )
         .expect("eventual absence stays ambiguous");
         assert!(matches!(
@@ -1452,7 +1456,7 @@ mod tests {
             None,
         );
         readback_only.no_effect_basis = Some(NoEffectBasis::StateReadbackOnly);
-        ep.record_observation(ep.revision(), "host-repair", &readback_only)
+        ep.record_observation(ep.revision(), "host-repair", &readback_only, 100)
             .expect("unchanged state alone remains insufficient");
         assert!(matches!(
             ep.step_status("host-repair"),
@@ -1468,7 +1472,7 @@ mod tests {
         );
         ledger_proof.no_effect_basis =
             Some(NoEffectBasis::AuthoritativeAttemptLedgerNeverAccepted);
-        ep.record_observation(ep.revision(), "host-repair", &ledger_proof)
+        ep.record_observation(ep.revision(), "host-repair", &ledger_proof, 100)
             .expect("attempt-specific never-accepted proof permits reconciliation");
         assert!(matches!(
             ep.step_status("host-repair"),
@@ -1533,7 +1537,7 @@ mod tests {
         );
         evidence.trust_domain_id = "agent-runtime".into();
         assert_eq!(
-            ep.record_observation(ep.revision(), "host-repair", &evidence),
+            ep.record_observation(ep.revision(), "host-repair", &evidence, 100),
             Err(TransitionError::InvalidObserver)
         );
     }
@@ -1552,6 +1556,7 @@ mod tests {
                 Consistency::Strong,
                 None,
             ),
+            100,
         )
         .expect("forbidden effect recorded");
         assert_eq!(
@@ -1635,9 +1640,11 @@ mod tests {
             consistency: Consistency::Strong,
             postcondition_digest: Some(spec.expected_postcondition_digest),
             no_effect_basis: None,
+            observed_at_ms: 50,
+            valid_until_ms: 200,
             evidence_digest: digest(71),
         };
-        ep.record_compensation_observation(ep.revision(), "host-repair", &evidence)
+        ep.record_compensation_observation(ep.revision(), "host-repair", &evidence, 100)
             .expect("compensation independently observed");
         assert!(matches!(
             ep.step_status("host-repair"),
@@ -1674,9 +1681,11 @@ mod tests {
             consistency: Consistency::Strong,
             postcondition_digest: Some(digest(22)),
             no_effect_basis: None,
+            observed_at_ms: 50,
+            valid_until_ms: 200,
             evidence_digest: digest(72),
         };
-        ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence)
+        ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence, 100)
             .expect("ticket postcondition");
         assert_eq!(
             ep.disposition(),
@@ -1687,12 +1696,15 @@ mod tests {
             observer_id: "external-http-probe".into(),
             trust_domain_id: "independent-probe".into(),
             service_id: "payments-api".into(),
+            plan_digest: digest(100),
             health: ServiceHealth::Healthy,
             consistency: Consistency::Strong,
             observed_service_digest: Some(digest(90)),
+            observed_at_ms: 50,
+            valid_until_ms: 200,
             evidence_digest: digest(73),
         };
-        ep.verify_service(ep.revision(), &service_evidence)
+        ep.verify_service(ep.revision(), &service_evidence, 100)
             .expect("independent service check");
         assert_eq!(ep.disposition(), EpisodeDisposition::Resolved);
         assert_eq!(ep.revision(), ep.events().last().expect("events").revision);
@@ -1706,13 +1718,16 @@ mod tests {
             observer_id: "agent-self-report".into(),
             trust_domain_id: "agent-runtime".into(),
             service_id: "payments-api".into(),
+            plan_digest: digest(100),
             health: ServiceHealth::Healthy,
             consistency: Consistency::Strong,
             observed_service_digest: Some(digest(90)),
+            observed_at_ms: 50,
+            valid_until_ms: 200,
             evidence_digest: digest(80),
         };
         assert_eq!(
-            ep.verify_service(ep.revision(), &evidence),
+            ep.verify_service(ep.revision(), &evidence, 100),
             Err(TransitionError::ServicePreconditionsNotMet)
         );
 
@@ -1740,9 +1755,11 @@ mod tests {
             consistency: Consistency::Strong,
             postcondition_digest: Some(digest(22)),
             no_effect_basis: None,
+            observed_at_ms: 50,
+            valid_until_ms: 200,
             evidence_digest: digest(72),
         };
-        ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence)
+        ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence, 100)
             .expect("ticket verified");
 
         assert_eq!(
@@ -1788,17 +1805,20 @@ mod tests {
             observer_id: "external-http-probe".into(),
             trust_domain_id: "independent-probe".into(),
             service_id: "payments-api".into(),
+            plan_digest: digest(100),
             health: ServiceHealth::Healthy,
             consistency: Consistency::Strong,
             observed_service_digest: Some(digest(91)),
+            observed_at_ms: 50,
+            valid_until_ms: 200,
             evidence_digest: digest(73),
         };
-        ep.verify_service(ep.revision(), &service_evidence)
+        ep.verify_service(ep.revision(), &service_evidence, 100)
             .expect("mismatch remains indeterminate");
         assert_eq!(ep.disposition(), EpisodeDisposition::Indeterminate);
 
         service_evidence.observed_service_digest = Some(digest(90));
-        ep.verify_service(ep.revision(), &service_evidence)
+        ep.verify_service(ep.revision(), &service_evidence, 101)
             .expect("fresh exact service observation");
         assert_eq!(ep.disposition(), EpisodeDisposition::Resolved);
     }
