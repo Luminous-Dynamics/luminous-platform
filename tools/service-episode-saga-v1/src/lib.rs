@@ -1707,11 +1707,24 @@ mod tests {
             "idem-ticket",
         )
         .expect("ticket dispatch intent");
-        let mut complete = evidence;
-        complete.trust_domain_id = "independent-probe".into();
+        let ticket_evidence = ObserverEvidence {
+            observer_id: "itsm-readback".into(),
+            trust_domain_id: "itsm-audit".into(),
+            attempt_id: "attempt-ticket-1".into(),
+            target_id: "itsm-case-42".into(),
+            binding_digest: digest(12),
+            effect: ObservedEffect::ExpectedPostcondition,
+            consistency: Consistency::Strong,
+            postcondition_digest: Some(digest(22)),
+            no_effect_basis: None,
+            evidence_digest: digest(72),
+        };
+        ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence)
+            .expect("ticket verified");
+
         assert_eq!(
-            ep.verify_service(ep.revision(), &complete),
-            Err(TransitionError::ServicePreconditionsNotMet)
+            ep.verify_service(ep.revision(), &evidence),
+            Err(TransitionError::InvalidObserver)
         );
     }
 
@@ -1742,6 +1755,7 @@ mod tests {
             effect: ObservedEffect::ExpectedPostcondition,
             consistency: Consistency::Strong,
             postcondition_digest: Some(digest(22)),
+            no_effect_basis: None,
             evidence_digest: digest(72),
         };
         ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence)
