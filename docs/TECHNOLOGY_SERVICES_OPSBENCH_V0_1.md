@@ -230,6 +230,8 @@ The machine-readable comparison map and non-equivalence rules are frozen in [ext
 OpsBench must not claim novelty merely because it tests AI-assisted incident resolution. Two important external benchmark families already exist and should become comparison anchors:
 
 - **ITBench (IBM Research / UIUC):** a 102-scenario benchmark spanning SRE, CISO and FinOps, with live Kubernetes environments and automated/state-check grading. The ICML 2025 paper reports initial resolution rates of 11.4% for SRE, 25.2% for CISO and 25.8% for FinOps (excluding anomaly detection). These are release-specific research results, not a current 2026 model leaderboard. Reuse an eligible public scenario/environment subset where licensing and access allow; do not copy hidden answer keys or represent an OpsBench result as an ITBench result.
+- **ITBench-AA (Artificial Analysis, 2026):** the newer SRE-only evaluation uses 59 scenarios (40 public, 19 private), three repeats per task and offline Kubernetes incident snapshots. Its primary metric is average precision at full recall for root-cause entity attribution—not the original ITBench paper's task-resolution percentage. Its current displayed leader is 56.2% on that diagnostic metric. Use it as a diagnostic comparator, never translate its score into service-resolution success.
+- **EnterpriseOps-Gym-AA (ServiceNow / Artificial Analysis, 2026):** the closest current public benchmark for multi-application enterprise workflow execution. ServiceNow's environment contains 1,150 tasks across eight domains, 512 tools and 164 database tables; tasks average 9.15 steps and 5.3 verification conditions. Artificial Analysis reports three attempts per task and strict success determined by SQL checks of final database state, with a current displayed top result of 51.1%. This is much closer to OpsBench's cross-system workflow scope than a narrow incident diagnostic benchmark. Its final-database-state oracle is valuable, but it does not by itself establish live host health, safe privileged effects, network reachability or rollback/recovery.
 - **PagerDuty's 2026 SRE-agent benchmark report:** reports a Kubernetes microservice fault-injection harness and a 17-scenario comparison scoring localization, diagnosis, mitigation, evidence grounding, explanation quality, misdirection and latency. PagerDuty states the presented sweep was one trial per agent and acknowledges the statistical limitation. The study is vendor-authored; treat its published findings as a useful methodology and capability reference, not an independently verified leaderboard or a directly comparable OpsBench score.
 
 These benchmarks establish that incident localization, root-cause reasoning, mitigation quality, evidence grounding and cost/latency are already active competitive areas.
@@ -243,7 +245,7 @@ OpsBench should preserve incident-localization, root-cause, blast-radius, mitiga
 
 1. Customer intent and service-contract fidelity, including SLA clocks and user communication.
 2. Calibrated multi-fault diagnosis, abstention and cost-aware observation selection (reusing Symthaea #1103 / #1136 rather than duplicating the Bayesian EIG kernel).
-2. Exact authorization-to-effect correspondence across ticketing, identity, host and connector systems.
+3. Exact authorization-to-effect correspondence across ticketing, identity, host and connector systems.
 4. Tenant isolation, secret handling and untrusted operational-data attacks.
 5. Ambiguous API outcomes, idempotency, restart reconciliation and duplicate-effect prevention.
 6. Independent postcondition verification and truthful resolved / mitigated / escalated / indeterminate dispositions.
@@ -316,6 +318,10 @@ Do not promote a lower tier into a higher one. A green unit-test suite is not a 
 
 ## References
 
+- [Artificial Analysis — ITBench-AA](https://artificialanalysis.ai/evaluations/itbench-aa)
+- [Artificial Analysis — EnterpriseOps-Gym-AA](https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa)
+- [ServiceNow EnterpriseOps-Gym (Apache-2.0)](https://github.com/ServiceNow/EnterpriseOps-Gym)
+- [ITBench source repository (Apache-2.0)](https://github.com/itbench-hub/ITBench)
 - [Edge Delta AI SRE Arena v1 (October 2026)](https://edgedelta.com/arena) and [MIT-licensed Project Arena implementation](https://github.com/edgedelta/project-arena)
 - [Edge Delta RootCauseBench (October 2026)](https://edgedelta.com/benchmark/rca-bench) and [Apache-2.0 implementation](https://github.com/edgedelta/root-cause-bench)
 - [PagerDuty — A Better Benchmark Harness for SRE Agents (2026)](https://www.pagerduty.com/resources/ai/learn/sre-agent-benchmark-report/)
