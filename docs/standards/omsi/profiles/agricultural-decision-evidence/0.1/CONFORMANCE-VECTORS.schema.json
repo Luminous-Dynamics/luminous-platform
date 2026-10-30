@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:luminous-dynamics:omsi:agricultural-conformance-vectors:0.1",
+  "title": "OMSI Agricultural Decision Evidence synthetic conformance vectors",
+  "description": "Structural schema for the synthetic vector collection only; not the OMSI interchange envelope, domain record schema or evidence of execution.",
+  "type": "object",
+  "required": [
+    "format",
+    "format_version",
+    "status",
+    "profile",
+    "common_rules",
+    "vectors"
+  ],
+  "properties": {
+    "format": {
+      "const": "omsi-agricultural-decision-conformance-vectors"
+    },
+    "format_version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic research fixture set; not a normative OMSI wire schema"
+    },
+    "profile": {
+      "const": "agricultural-decision-evidence/0.1-incubation"
+    },
+    "common_rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "vectors": {
+      "type": "array",
+      "minItems": 10,
+      "items": {
+        "$ref": "#/$defs/vector"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vector": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "classification",
+        "input",
+        "expected"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "classification": {
+          "enum": [
+            "positive",
+            "negative_control"
+          ]
+        },
+        "input": {
+          "type": "object"
+        },
+        "expected": {
+          "type": "object",
+          "required": [
+            "outcome"
+          ],
+          "properties": {
+            "outcome": {
+              "enum": [
+                "accepted_projection",
+                "preserve_with_conflict",
+                "preserve_with_indeterminate",
+                "reject"
+              ]
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
