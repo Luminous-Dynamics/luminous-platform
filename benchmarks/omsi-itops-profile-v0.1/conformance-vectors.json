@@ -522,5 +522,7 @@
         "service_restored"
       ]
     }
-  ]
+  ],
+  "visibility": "profile_evaluator_only_not_sut_input",
+  "upstream_crosswalk": "upstream-crosswalk.json"
 }
