@@ -197,6 +197,7 @@ pub struct AuthorityGrant {
 }
 
 impl AuthorityGrant {
+    #[allow(clippy::too_many_arguments)]
     fn matches(
         &self,
         plan: &ServicePlan,
@@ -538,6 +539,7 @@ impl SagaEpisode {
         now_ms: u64,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
+        self.ensure_not_resolved()?;
         if self.cancelled {
             return Err(TransitionError::Cancelled);
         }
@@ -610,6 +612,7 @@ impl SagaEpisode {
         idempotency_key: &str,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
+        self.ensure_not_resolved()?;
         if attempt_id.trim().is_empty() || idempotency_key.trim().is_empty() {
             return Err(TransitionError::InvalidAttemptOrKey);
         }
@@ -661,6 +664,7 @@ impl SagaEpisode {
         step_id: &str,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
+        self.ensure_not_resolved()?;
         let status = self
             .step_status(step_id)
             .cloned()
@@ -698,6 +702,7 @@ impl SagaEpisode {
         now_ms: u64,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
+        self.ensure_not_resolved()?;
         let step = self
             .plan
             .step(step_id)
@@ -791,6 +796,7 @@ impl SagaEpisode {
         now_ms: u64,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
+        self.ensure_not_resolved()?;
         if self.cancelled {
             return Err(TransitionError::Cancelled);
         }
@@ -852,6 +858,7 @@ impl SagaEpisode {
         idempotency_key: &str,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
+        self.ensure_not_resolved()?;
         if attempt_id.trim().is_empty() || idempotency_key.trim().is_empty() {
             return Err(TransitionError::InvalidAttemptOrKey);
         }
@@ -902,6 +909,7 @@ impl SagaEpisode {
         step_id: &str,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
+        self.ensure_not_resolved()?;
         let status = self
             .step_status(step_id)
             .cloned()
@@ -939,6 +947,7 @@ impl SagaEpisode {
         now_ms: u64,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
+        self.ensure_not_resolved()?;
         let step = self
             .plan
             .step(step_id)
@@ -1066,12 +1075,31 @@ impl SagaEpisode {
         if self.service_verification == Some(ServiceVerification::VerifiedHealthy) {
             return Err(TransitionError::AlreadyResolved);
         }
-        if !self.plan.steps.iter().filter(|step| step.required).all(|step| {
-            matches!(
-                self.step_status(&step.id),
-                Some(StepStatus::Verified { .. })
-            )
-        }) {
+        if self.cancelled
+            || !self.plan.steps.iter().filter(|step| step.required).all(|step| {
+                matches!(
+                    self.step_status(&step.id),
+                    Some(StepStatus::Verified { .. })
+                )
+            })
+            || self.steps.values().any(|runtime| {
+                matches!(
+                    runtime.status,
+                    StepStatus::Authorized { .. }
+                        | StepStatus::DispatchIntentPersisted { .. }
+                        | StepStatus::OutcomeUnknown { .. }
+                        | StepStatus::Indeterminate { .. }
+                        | StepStatus::PostconditionMismatch { .. }
+                        | StepStatus::ViolationObserved { .. }
+                        | StepStatus::CompensationAuthorized { .. }
+                        | StepStatus::CompensationBlocked
+                        | StepStatus::CompensationDispatchIntentPersisted { .. }
+                        | StepStatus::CompensationOutcomeUnknown { .. }
+                        | StepStatus::CompensationIndeterminate { .. }
+                        | StepStatus::Compensated { .. }
+                )
+            })
+        {
             return Err(TransitionError::ServicePreconditionsNotMet);
         }
         if evidence.observer_id.trim().is_empty()
@@ -1108,6 +1136,13 @@ impl SagaEpisode {
             EventKind::ServiceVerificationRecorded,
             Some(evidence.evidence_digest),
         );
+        Ok(())
+    }
+
+    fn ensure_not_resolved(&self) -> Result<(), TransitionError> {
+        if self.service_verification == Some(ServiceVerification::VerifiedHealthy) {
+            return Err(TransitionError::AlreadyResolved);
+        }
         Ok(())
     }
 
@@ -1804,7 +1839,7 @@ mod tests {
         ep.record_observation(ep.revision(), "ticket-update", &ticket_evidence, 100)
             .expect("ticket postcondition");
 
-        let mut service_evidence = ServiceObservation {
+        let service_evidence = ServiceObservation {
             observer_id: "external-http-probe".into(),
             trust_domain_id: "independent-probe".into(),
             service_id: "payments-api".into(),
