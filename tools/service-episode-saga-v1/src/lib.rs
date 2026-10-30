@@ -106,9 +106,10 @@ impl ServicePlan {
             if let Some(compensation) = &step.compensation {
                 if compensation.target_id.trim().is_empty()
                     || compensation.operation_id.trim().is_empty()
-                    || compensation.operation_id == step.operation_id
                     || compensation.request_digest.is_zero()
+                    || compensation.request_digest == step.request_digest
                     || compensation.binding_digest.is_zero()
+                    || compensation.binding_digest == step.binding_digest
                     || compensation.expected_postcondition_digest.is_zero()
                 {
                     return Err(PlanValidationError::InvalidCompensation(
@@ -390,6 +391,7 @@ pub enum TransitionError {
     InvalidObserver,
     AttemptMismatch,
     StaleEvidence,
+    RevisionExhausted,
     Cancelled,
     CompensationUnavailable,
     ServicePreconditionsNotMet,
@@ -1164,6 +1166,9 @@ impl SagaEpisode {
                 expected: expected_revision,
                 actual: self.revision,
             });
+        }
+        if self.revision.checked_add(1).is_none() {
+            return Err(TransitionError::RevisionExhausted);
         }
         Ok(())
     }
