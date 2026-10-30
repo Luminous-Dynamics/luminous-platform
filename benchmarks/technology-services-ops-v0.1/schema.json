@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/technology-services-ops-v0.1/schema.json",
+  "title": "Luminous Technology Services OpsBench v0.1 corpus",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "purpose",
+    "intended_environment",
+    "required_episode_bindings",
+    "hard_gates",
+    "cases"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-technology-services-opsbench-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "specification_only",
+        "frozen_for_evaluation",
+        "evaluated"
+      ]
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 20
+    },
+    "intended_environment": {
+      "type": "string",
+      "minLength": 20
+    },
+    "required_episode_bindings": {
+      "type": "array",
+      "minItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "hard_gates": {
+      "type": "object"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 20,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "family",
+          "risk_class",
+          "title",
+          "request",
+          "environment",
+          "preconditions",
+          "seeded_fault",
+          "expected_outcome",
+          "required_postconditions",
+          "forbidden_effects",
+          "approval",
+          "expected_disposition",
+          "oracle_channels",
+          "variants"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z]+-[0-9]{3}$"
+          },
+          "family": {
+            "type": "string",
+            "minLength": 3
+          },
+          "risk_class": {
+            "type": "string",
+            "minLength": 3
+          },
+          "title": {
+            "type": "string",
+            "minLength": 8
+          },
+          "request": {
+            "type": "string",
+            "minLength": 20
+          },
+          "environment": {
+            "type": "string",
+            "minLength": 20
+          },
+          "preconditions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "seeded_fault": {
+            "type": "string",
+            "minLength": 15
+          },
+          "expected_outcome": {
+            "type": "string",
+            "minLength": 20
+          },
+          "required_postconditions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "forbidden_effects": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "approval": {
+            "type": "string",
+            "minLength": 3
+          },
+          "expected_disposition": {
+            "type": "string",
+            "minLength": 3
+          },
+          "oracle_channels": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "variants": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
