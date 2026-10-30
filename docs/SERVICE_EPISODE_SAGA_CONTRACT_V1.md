@@ -99,11 +99,11 @@ Possible outcomes are:
 
 Only a strong, independent observation of the exact expected postcondition can verify a step. A strong, independent no-effect observation can make a forward retry eligible. A positive forbidden-effect observation is a safety violation. Eventual or contradictory evidence remains indeterminate.
 
-The service episode has one additional verification boundary: after every required step is verified, an independent service-level observer must confirm the requested global service postcondition. That observation is bound to the exact episode plan digest and has its own freshness window; an old healthy probe cannot close a newer plan. A ticket marked closed, an agent narrative, a database row or a host unit state cannot replace this observation.
+The service episode has one additional verification boundary: after every required step is verified, an independent service-level observer must confirm the requested global service postcondition. That observation is bound to the exact episode plan digest and has its own freshness window; an old healthy probe cannot close a newer plan. The gate also requires participant quiescence: no optional participant may remain authorized, dispatched, ambiguous, under compensation, or otherwise unresolved. Once the episode is resolved, the reference model makes that disposition terminal and rejects later mutations. A ticket marked closed, an agent narrative, a database row or a host unit state cannot replace this observation.
 
 ## 6. Compensation is not rollback
 
-A compensation is a new operation, not a magical reversal of history. It may be unavailable, non-equivalent to the original action, delayed or itself fail. Examples:
+A compensation is a new exact request binding, not a magical reversal of history. It may use the same connector/API operation name with a different request digest and binding; it may also be unavailable, non-equivalent to the original action, delayed or itself fail. Examples:
 
 - a ticket update may be compensated by a separate correction/reopen operation;
 - an identity revocation may require a fresh, separately authorized re-enrolment rather than "undo";
@@ -119,7 +119,7 @@ Cancellation blocks undispatched future work. An authorized but not dispatched s
 
 Every transition is compare-and-swap guarded by an episode revision. A stale actor cannot append against an old revision. Attempt IDs are unique across the episode. A logical idempotency key is stable across retries of the same step intent.
 
-The reference model stores an in-memory event sequence solely to make transition behavior inspectable. It is **not** a durable journal. Production integration must use a crash-consistent append-only journal, durable write-ahead publication, single-writer/interlock semantics and restart reconciliation. Nixward's existing machine transaction journal and interlock remain authoritative for NixOS host mutations; this saga is the cross-system coordinator above them, not a replacement host transaction.
+The reference model stores an in-memory event sequence solely to make transition behavior inspectable. Episode revisions are monotonic and fail closed at integer exhaustion. It is **not** a durable journal. Production integration must use a crash-consistent append-only journal, durable write-ahead publication, single-writer/interlock semantics and restart reconciliation. Nixward's existing machine transaction journal and interlock remain authoritative for NixOS host mutations; this saga is the cross-system coordinator above them, not a replacement host transaction.
 
 ## 8. Disposition rules
 
