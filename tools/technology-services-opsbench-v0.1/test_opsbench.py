@@ -8,7 +8,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 
-from check_opsbench import load_json, validate, validate_episode_contract, validate_crosswalk
+from check_opsbench import load_json, validate, validate_episode_contract, validate_crosswalk, validate_task_manifest
 
 
 CORPUS_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "corpus.json"
@@ -16,6 +16,8 @@ SCHEMA_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "schema.jso
 EPISODE_SCHEMA_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "episode-result.schema.json"
 EPISODE_EXAMPLE_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "episode-result.example.json"
 CROSSWALK_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "external-benchmark-crosswalk.json"
+TASK_MANIFEST_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "task-manifest.json"
+TASK_SCHEMA_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "task-manifest.schema.json"
 
 
 class OpsBenchContractTests(unittest.TestCase):
@@ -26,6 +28,8 @@ class OpsBenchContractTests(unittest.TestCase):
         cls.episode_schema = load_json(EPISODE_SCHEMA_PATH)
         cls.episode_example = load_json(EPISODE_EXAMPLE_PATH)
         cls.crosswalk = load_json(CROSSWALK_PATH)
+        cls.task_manifest = load_json(TASK_MANIFEST_PATH)
+        cls.task_schema = load_json(TASK_SCHEMA_PATH)
 
 
     def test_episode_evidence_envelope_keeps_oracle_separate(self):
@@ -101,6 +105,48 @@ class OpsBenchContractTests(unittest.TestCase):
         changed["common_core_protocol"]["no_cross_benchmark_score_translation"] = False
         with self.assertRaises(ValueError):
             validate_crosswalk(changed)
+
+
+    def test_sanitized_task_manifest_passes_and_matches_authoring_data(self):
+        result = validate_task_manifest(self.task_manifest, self.task_schema, self.corpus)
+        self.assertEqual(result["public_task_count"], 20)
+        self.assertEqual(result["task_rule_count"], 5)
+
+    def test_seeded_fault_cannot_leak_into_task_manifest(self):
+        changed = copy.deepcopy(self.task_manifest)
+        changed["cases"][0]["seeded_fault"] = "hidden cause"
+        with self.assertRaises(ValueError):
+            validate_task_manifest(changed, self.task_schema, self.corpus)
+
+    def test_expected_outcome_cannot_leak_into_task_manifest(self):
+        changed = copy.deepcopy(self.task_manifest)
+        changed["cases"][0]["expected_outcome"] = "hidden answer"
+        with self.assertRaises(ValueError):
+            validate_task_manifest(changed, self.task_schema, self.corpus)
+
+    def test_task_manifest_cannot_weaken_evaluator_isolation_rules(self):
+        changed = copy.deepcopy(self.task_manifest)
+        changed["task_rules"]["evaluator_authoring_corpus_must_not_be_mounted_or_sent_to_the_system_under_test"] = False
+        with self.assertRaises(ValueError):
+            validate_task_manifest(changed, self.task_schema, self.corpus)
+
+    def test_task_manifest_must_match_frozen_authoring_contract(self):
+        changed = copy.deepcopy(self.task_manifest)
+        changed["cases"][0]["request"] = "different task"
+        with self.assertRaises(ValueError):
+            validate_task_manifest(changed, self.task_schema, self.corpus)
+
+    def test_task_manifest_schema_cannot_allow_hidden_fields(self):
+        changed = copy.deepcopy(self.task_schema)
+        changed["properties"]["cases"]["items"]["additionalProperties"] = True
+        with self.assertRaises(ValueError):
+            validate_task_manifest(self.task_manifest, changed, self.corpus)
+
+    def test_authoring_corpus_must_not_claim_runtime_visibility(self):
+        changed = self.mutated()
+        changed["visibility"] = "system_under_test_input_only"
+        with self.assertRaises(ValueError):
+            validate(changed, self.schema)
 
     def mutated(self):
         return copy.deepcopy(self.corpus)
