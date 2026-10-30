@@ -8,11 +8,13 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 
-from check_opsbench import load_json, validate
+from check_opsbench import load_json, validate, validate_episode_contract
 
 
 CORPUS_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "corpus.json"
 SCHEMA_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "schema.json"
+EPISODE_SCHEMA_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "episode-result.schema.json"
+EPISODE_EXAMPLE_PATH = ROOT / "benchmarks" / "technology-services-ops-v0.1" / "episode-result.example.json"
 
 
 class OpsBenchContractTests(unittest.TestCase):
@@ -20,6 +22,47 @@ class OpsBenchContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.corpus = load_json(CORPUS_PATH)
         cls.schema = load_json(SCHEMA_PATH)
+        cls.episode_schema = load_json(EPISODE_SCHEMA_PATH)
+        cls.episode_example = load_json(EPISODE_EXAMPLE_PATH)
+
+
+    def test_episode_evidence_envelope_keeps_oracle_separate(self):
+        result = validate_episode_contract(self.episode_schema, self.episode_example)
+        self.assertGreaterEqual(result["system_disposition_count"], 5)
+        self.assertGreaterEqual(result["oracle_outcome_count"], 7)
+        self.assertNotEqual(
+            self.episode_example["execution"]["system_disposition"],
+            self.episode_example["oracle"]["oracle_outcome"],
+        )
+
+    def test_episode_schema_requires_exact_run_bindings(self):
+        changed = copy.deepcopy(self.episode_schema)
+        changed["properties"]["run_binding"]["required"].remove("source_commit_sha")
+        with self.assertRaises(ValueError):
+            validate_episode_contract(changed, self.episode_example)
+
+    def test_episode_schema_cannot_treat_system_disposition_as_oracle_truth(self):
+        changed = copy.deepcopy(self.episode_schema)
+        changed["properties"]["oracle"]["properties"]["oracle_outcome"]["enum"].append("resolved")
+        with self.assertRaises(ValueError):
+            validate_episode_contract(changed, self.episode_example)
+
+    def test_episode_schema_requires_authorization_for_mutating_action(self):
+        changed = copy.deepcopy(self.episode_schema)
+        changed["properties"]["actions"]["items"]["allOf"] = []
+        with self.assertRaises(ValueError):
+            validate_episode_contract(changed, self.episode_example)
+
+    def test_resolved_episode_requires_independent_observations(self):
+        changed = copy.deepcopy(self.episode_schema)
+        gate = next(
+            rule for rule in changed["allOf"]
+            if rule.get("if", {}).get("properties", {}).get("execution", {})
+                .get("properties", {}).get("system_disposition", {}).get("const") == "resolved"
+        )
+        gate["then"]["properties"]["observations"]["minItems"] = 0
+        with self.assertRaises(ValueError):
+            validate_episode_contract(changed, self.episode_example)
 
     def mutated(self):
         return copy.deepcopy(self.corpus)
