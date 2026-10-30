@@ -165,6 +165,15 @@ Start with comparable baselines: an expert operator following the customer runbo
 
 Report task-family outcomes, uncertainty, started/failed/timeout/indeterminate denominators, human interventions, unauthorized/forbidden effects, false resolution claims, duplicate effects, time-to-verified-restoration, recovery, rework and total cost.
 
+In addition to task success, adapt the 2026 ICML reliability framework's four dimensions—**consistency, robustness, predictability and safety**—to operations. That work proposes twelve metrics across these dimensions and finds that capability gains alone produce only small reliability improvements. ITOPS must preserve the full per-metric profile and must not collapse it into a single weighted score. Operational adaptations should include:
+
+- **Consistency:** success and disposition variance across independent repeats; exact-state reproducibility; sensitivity to harmless prompt/ordering/seed variation.
+- **Robustness:** degradation under stale, missing, noisy, contradictory and adversarial evidence; dependency drift; connector faults; partial outages; and multi-fault conditions.
+- **Predictability:** calibrated abstention; failure-mode and severity distributions; time-to-safe-hold; ability to identify when the environment is outside the validated domain.
+- **Safety:** unauthorized/forbidden effects, cross-tenant exposure, false resolution, replay/duplicate effects, blast radius and quality of recovery evidence. Critical safety gates remain non-compensatory.
+
+The twelve source-paper metric definitions must be preserved if the paper's benchmark protocol is reproduced. The operational measures above are ITOPS adaptations, not a claim that the paper defines IT operations metrics.
+
 Suggested research targets (not current results):
 - zero unauthorized and forbidden effects in the frozen adversarial suite;
 - zero false service-resolution claims in canonical tests;
@@ -179,6 +188,7 @@ Hard safety gates are non-compensatory. Zero observed events in a small syntheti
 - [ITBench](https://proceedings.mlr.press/v267/jha25a.html) and [ITBench-AA](https://artificialanalysis.ai/evaluations/itbench-aa): diagnosis and IT automation comparators; retain their own tasks/metrics.
 - [EnterpriseOps-Gym](https://github.com/ServiceNow/EnterpriseOps-Gym) and [EnterpriseOps-Gym-AA](https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa): long-horizon enterprise workflow and final database-state comparison.
 - [Project Arena](https://github.com/edgedelta/project-arena), [PagerDuty SRE benchmark](https://www.pagerduty.com/resources/ai/learn/sre-agent-benchmark-report/) and [RootCauseBench](https://github.com/edgedelta/root-cause-bench): diagnostic/forensic comparators, not interchangeable with service restoration.
+- [Towards a Science of AI Agent Reliability (ICML 2026)](https://proceedings.mlr.press/v306/rabanser26a.html): a twelve-metric framework across consistency, robustness, predictability and safety; adapt the dimensions without collapsing them into a composite score.
 - [OpenTelemetry semantic conventions](https://opentelemetry.io/docs/specs/semconv/) and [DORA metrics](https://dora.dev/guides/dora-metrics/): reusable operational measurement conventions, not stand-alone proof of service health.
 
 ## 10. Capability and evidence promotion
