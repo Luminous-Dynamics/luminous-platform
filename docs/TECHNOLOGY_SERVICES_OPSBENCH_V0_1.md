@@ -111,7 +111,13 @@ The structural checker verifies the envelope's separation and required gates. It
 
 ## 4. Frozen v0.1 scenario corpus
 
-The initial corpus contains 20 synthetic scenarios in `benchmarks/technology-services-ops-v0.1/corpus.json`. It is a task definition, not a run result. Each scenario defines the requested outcome, preconditions, seeded fault, expected postconditions, forbidden effects, approval requirement and independent oracle channels.
+The initial public synthetic suite contains 20 service contracts. The files have deliberately different visibility roles:
+
+- `task-manifest.json` is the **only scenario input** the system under test may receive. It contains the customer request, environment description, declared preconditions, required postconditions, forbidden effects, risk class and approval boundary.
+- `task-manifest.schema.json` validates the sanitized input contract and rejects additional fields.
+- `corpus.json` is the full **evaluator-authoring record**. It contains seeded fault descriptions, expected outcomes, evaluator oracle channels and scenario variants. Its `visibility` label is `evaluator_authoring_only_not_runtime_input`; it must never be mounted, passed in prompts, exposed through an API/tool, or made reachable from the agent's environment.
+
+The public authoring file is intentionally in source control for transparent review, so the 20 v0.1 examples are **not a blind holdout** and cannot support a hidden-test generalization claim. The runner must provide the system only the sanitized task manifest and its normal observable fixture; it must keep ground truth outside the system's trust domain. Any confirmatory or blind evaluation must use separately controlled, non-public scenario variants in an evaluator-owned store, commit the corpus/variant digest before trials, and disclose the sealed set only after the evaluation is complete. A public hash does not make a public answer key secret.
 
 | Family | Case IDs | What it tests |
 |---|---|---|
@@ -179,6 +185,28 @@ Use DORA's five delivery-performance measures where the evaluated service includ
 
 For critical-event rates, publish numerator, denominator, independence assumptions and a one-sided exact confidence bound. With zero observed critical events, 2,995 independent episodes in a stratum are needed for an approximate one-sided 95% upper bound below 0.1%; this is a statistical planning target, not proof of zero risk. Repeated episodes on one VM or one failure seed are correlated and must not be represented as 2,995 independent trials.
 
+### Diagnostic quality: calibration, value of information and probe externality
+
+The service benchmark should not give Symthaea credit simply for producing a plausible root-cause paragraph. It should measure how well the reasoning system decides **what it knows, what it does not know, and which observation is worth acquiring next**.
+
+This extension is designed to consume the existing Symthaea support work rather than duplicate it: [IT systems intelligence program #1103](https://github.com/Luminous-Dynamics/symthaea/issues/1103) defines ITK-17 diagnostic utility across information gain, time, execution cost and operational risk; [PR #1136](https://github.com/Luminous-Dynamics/symthaea/pull/1136) adds evidence-bound causal hypotheses, posterior updates and actual Shannon expected information gain. OpsBench supplies an applied service-episode evaluation domain.
+
+Report these diagnostic measures separately from service-resolution and hard safety gates:
+
+| Measure | Evaluation method |
+|---|---|
+| Probability calibration | Score cause-probability forecasts with proper scores such as Brier score and log loss against evaluator-held-out causes; show calibration plots and base-rate baselines. Expected calibration error can be supplementary, never the sole calibration metric. |
+| Multi-fault coverage | Score each causal fault independently with precision/recall and probability calibration. Do not force simultaneous faults into mutually exclusive single-cause hypotheses. |
+| Selective risk / abstention | Plot diagnosis error against coverage as the system answers, requests evidence, or escalates. Report false confident diagnoses, safe abstentions, correct escalations and time-to-escalation separately. |
+| Decision-relevant information value | Compare true EIG and, where a downstream action loss is defined, expected value of sample information against entropy-only, fixed-order, random and passive-observation policies. The primary utility is reduction in downstream decision regret, not entropy reduction for its own sake. |
+| Observation efficiency | At matched task accuracy and safety, report the number of observations, tool/API calls, elapsed time and direct cost required to reach a supported decision. Report p50/p95 and cost–quality Pareto frontiers. |
+| Probe externality | Distinguish read-only observations from probes that can mutate, disrupt or load the target. Any state-disturbing probe requires a separate bounded authorization and an independent measurement of collateral state change; an unapproved probe effect is a hard failure. |
+
+A proposed research target is at least 10% lower held-out decision regret than the strongest fixed/random/entropy-only diagnostic baseline at the same observation and cost budget, while preserving calibration and abstention quality. This is an unmeasured hypothesis, not a v0.1 result or a reason to weaken any safety gate.
+
+The current episode envelope records general tool/API activity, elapsed time, human effort and direct cost. A subsequent version should add an explicit diagnostic forecast/decision trace (cause probabilities, selected observation, predicted outcome distribution, reported EIG/EVSI and declared probe cost/risk) so calibration and decision value can be recomputed by the evaluator. Until that trace exists and is independently checked, do not claim that a posterior or EIG metric has been measured from an OpsBench episode.
+
+
 ## 7. Industry comparison: where incumbents are already strong
 
 This benchmark deliberately acknowledges that existing vendors already provide broad service workflows:
@@ -214,11 +242,12 @@ Two additional October 2026 benchmarks make the diagnostic layer more competitiv
 OpsBench should preserve incident-localization, root-cause, blast-radius, mitigation-quality and evidence-grounding measures as diagnostic subscores on a matched incident subset, while adding the dimensions missing from a narrow SRE-agent task:
 
 1. Customer intent and service-contract fidelity, including SLA clocks and user communication.
+2. Calibrated multi-fault diagnosis, abstention and cost-aware observation selection (reusing Symthaea #1103 / #1136 rather than duplicating the Bayesian EIG kernel).
 2. Exact authorization-to-effect correspondence across ticketing, identity, host and connector systems.
-3. Tenant isolation, secret handling and untrusted operational-data attacks.
-4. Ambiguous API outcomes, idempotency, restart reconciliation and duplicate-effect prevention.
-5. Independent postcondition verification and truthful resolved / mitigated / escalated / indeterminate dispositions.
-6. Human intervention, end-to-end elapsed time, rework, customer effort and total cost per verified resolution.
+4. Tenant isolation, secret handling and untrusted operational-data attacks.
+5. Ambiguous API outcomes, idempotency, restart reconciliation and duplicate-effect prevention.
+6. Independent postcondition verification and truthful resolved / mitigated / escalated / indeterminate dispositions.
+7. Human intervention, end-to-end elapsed time, rework, customer effort and total cost per verified resolution.
 
 The concrete OpsBench boundary is therefore narrower and stronger: **diagnosis is a replaceable input; authorized, cross-system execution and independently verified service outcomes are the product claim.** Run a diagnosis-only common-core arm on Project Arena, then a separate approved-remediation arm that records actual effects and recovery. Do not combine those result types.
 
