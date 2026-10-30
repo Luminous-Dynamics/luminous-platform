@@ -1,0 +1,199 @@
+{
+  "schema": "luminous-technology-services-benchmark-crosswalk-v0.1",
+  "version": 1,
+  "status": "research_mapping_only",
+  "as_of": "2026-10-30",
+  "purpose": "Record adjacent public benchmark scopes, avoid claiming novelty for overlapping SRE/incident diagnosis, and define fair common-core integration targets. No benchmark score is asserted to be an OpsBench result.",
+  "comparison_rules": {
+    "cross_benchmark_scores_comparable_without_common_task_snapshot_rubric_permissions_and_judge": false,
+    "external_vendor_published_results_are_independent_audits": false,
+    "no_external_benchmark_run_claimed": true,
+    "preserve_upstream_license_notices_when_reusing_assets": true
+  },
+  "benchmarks": [
+    {
+      "id": "itbench_icml_2025",
+      "title": "ITBench: Evaluating AI Agents across Diverse Real-World IT Automation Tasks",
+      "publisher": "IBM Research / UIUC",
+      "source_url": "https://proceedings.mlr.press/v267/jha25a.html",
+      "paper_url": "https://arxiv.org/abs/2502.05352",
+      "license": "Apache-2.0",
+      "published": "2025-07-13",
+      "reported_scope": {
+        "scenario_count": 102,
+        "domains": [
+          "SRE",
+          "CISO",
+          "FinOps"
+        ],
+        "environment": "live Kubernetes IT automation scenarios"
+      },
+      "published_initial_results": {
+        "sre_resolved_percent": 11.4,
+        "ciso_resolved_percent": 25.2,
+        "finops_resolved_percent_excluding_anomaly_detection": 25.8
+      },
+      "limits": [
+        "Initial paper results are tied to the paper's evaluated agents and benchmark release, not a 2026 general SOTA leaderboard.",
+        "Different tasks and agents must not be mixed into one headline rate.",
+        "An OpsBench synthetic result is not an ITBench result."
+      ],
+      "opsbench_related_cases": [
+        "INC-001",
+        "INC-003",
+        "CHG-002",
+        "PATCH-001",
+        "IAM-001",
+        "IAM-002",
+        "TENANT-001",
+        "PROMPT-001",
+        "DB-001",
+        "QUEUE-001"
+      ],
+      "mapping_status": "task_family_analogy_only",
+      "direct_score_comparison_allowed": false,
+      "next_step": "Select eligible public SRE/CISO scenarios and implement an adapter/runner that preserves ITBench task identity, initial snapshots, evaluator and permissions; publish a separate common-core result."
+    },
+    {
+      "id": "pagerduty_sre_agent_benchmark_2026",
+      "title": "A Better Benchmark Harness for SRE Agents",
+      "publisher": "PagerDuty",
+      "source_url": "https://www.pagerduty.com/resources/ai/learn/sre-agent-benchmark-report/",
+      "published": "2026",
+      "reported_scope": {
+        "scenario_count": 17,
+        "environment": "Kubernetes microservice application with injected faults",
+        "metrics": [
+          "localization",
+          "root cause",
+          "mitigation",
+          "evidence grounding",
+          "explanation",
+          "misdirection",
+          "latency"
+        ]
+      },
+      "reported_method": {
+        "trials_per_agent_per_scenario": 1,
+        "agent_comparison": "PagerDuty SRE Agent, Claude Code and Codex configurations",
+        "judging": "multi-model judge panel"
+      },
+      "limits": [
+        "PagerDuty-authored benchmark report; not an independent vendor audit.",
+        "The reported sweep is one trial per agent; the report itself flags this statistical limitation.",
+        "The evaluated scope is diagnostic and recommendation quality; do not infer cross-customer SLA or enterprise service workflow performance."
+      ],
+      "opsbench_related_cases": [
+        "INC-001",
+        "INC-003",
+        "NET-001",
+        "DB-001",
+        "QUEUE-001"
+      ],
+      "mapping_status": "methodology_and_scenario_family_analogy",
+      "direct_score_comparison_allowed": false,
+      "next_step": "Use its incident dimensions as a diagnostic subscore in matched experiments, while preserving OpsBench's independent postcondition and service-episode scoring."
+    },
+    {
+      "id": "edge_delta_ai_sre_arena_v1",
+      "title": "AI SRE Arena",
+      "publisher": "Edge Delta Research",
+      "source_url": "https://edgedelta.com/arena",
+      "repository_url": "https://github.com/edgedelta/project-arena",
+      "repository_commit": "fc232a3fb38b2d49d5fbc8589071623e13f2c963",
+      "license": "MIT",
+      "published": "2026-10-01",
+      "reported_scope": {
+        "scenario_count": 21,
+        "judged_investigations": 72,
+        "environment": "OpenTelemetry Demo shop on Kubernetes",
+        "configurations": [
+          "Edge Delta native",
+          "Grafana native",
+          "Claude + Edge Delta CLI",
+          "Claude + Grafana CLI"
+        ],
+        "judge": "GPT-6-Astra"
+      },
+      "reported_metrics": [
+        "detection",
+        "root cause",
+        "blast radius",
+        "supported final mitigation",
+        "implementation readiness",
+        "unsafe advice"
+      ],
+      "limits": [
+        "The project explicitly states mitigation/readiness grade proposals, not executed repairs or verified recovery.",
+        "The published v1 uses one AI judge and reports no human-grader validation.",
+        "The published v1 does not measure time or cost.",
+        "The benchmark is product-authored and results reflect the published harness/configuration."
+      ],
+      "opsbench_related_cases": [
+        "INC-001",
+        "INC-003",
+        "CHG-002",
+        "NET-001",
+        "DNS-001",
+        "CERT-001",
+        "DB-001",
+        "QUEUE-001",
+        "ALERT-001"
+      ],
+      "mapping_status": "direct_common_core_candidate_after_adapter",
+      "direct_score_comparison_allowed": false,
+      "next_step": "Pin the MIT Project Arena commit and reproduce a diagnosis-only common-core arm; separately extend selected cases with exact-plan approved repair, independent service health oracle and recovery verification."
+    },
+    {
+      "id": "edge_delta_rootcausebench_2026",
+      "title": "RootCauseBench — Can AI find the commit that broke prod?",
+      "publisher": "Edge Delta Research",
+      "source_url": "https://edgedelta.com/benchmark/rca-bench",
+      "repository_url": "https://github.com/edgedelta/root-cause-bench",
+      "repository_commit": "180f4e48471e760bf86967e14f91cfac74d89dfc",
+      "license": "Apache-2.0",
+      "updated": "2026-10-14",
+      "reported_scope": {
+        "scenario_count": 36,
+        "attempts_per_scenario_model": 3,
+        "adversarial_scenarios": 12,
+        "environment": "frozen incident evidence and code/change context in Terminal-Bench/Harbor tasks",
+        "primary_metric": "exact culprit commit attribution"
+      },
+      "reported_method": "The benchmark page reports 108 trials per fully evaluated model; top entries have reached the benchmark's 1.000 reward ceiling on that task set.",
+      "limits": [
+        "It measures root-cause commit attribution, not execution of remediation or verified service restoration.",
+        "A saturated task set does not imply general SRE or IT operations are solved.",
+        "Commit attribution results should be used as a diagnostic/forensic sub-benchmark, not an OpsBench service-resolution score."
+      ],
+      "opsbench_related_cases": [
+        "INC-001",
+        "INC-003",
+        "PATCH-001"
+      ],
+      "mapping_status": "diagnostic_subtask_only",
+      "direct_score_comparison_allowed": false,
+      "next_step": "Use as an external diagnostic capability check for code/deploy-causality tasks; do not build a competing commit-attribution leaderboard inside OpsBench."
+    }
+  ],
+  "opsbench_nonduplicative_claim_surface": [
+    "Customer service contract, SLA and escalation correctness across systems of record.",
+    "Exact authorization-to-effect binding across host, identity, ticket and connector operations.",
+    "Tenant isolation and secret handling across connector boundaries.",
+    "Ambiguous external responses, idempotency and no-blind-retry reconciliation.",
+    "Executed remediation with independent postcondition and recovery verification.",
+    "Truthful resolved, mitigated, escalated, safe-refusal and indeterminate outcomes.",
+    "Operator effort, elapsed time, rework, customer effort and total cost per verified resolution."
+  ],
+  "common_core_protocol": {
+    "freeze_upstream_commit_and_corpus_digest": true,
+    "freeze_task_variant_and_initial_snapshot": true,
+    "identical_tool_permissions_context_and_time_budget": true,
+    "use_same_judge_rubric_version_and_settings": true,
+    "include_all_started_episodes_and_failures": true,
+    "preserve_undetected_and_unscored_denominators": true,
+    "run_read_only_diagnosis_arm_separately_from_authorized_repair_arm": true,
+    "independent_service_oracle_for_any_resolution_claim": true,
+    "no_cross_benchmark_score_translation": true
+  }
+}
