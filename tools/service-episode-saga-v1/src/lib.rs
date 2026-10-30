@@ -874,9 +874,7 @@ impl SagaEpisode {
             ));
         }
         if self.attempt_ids.contains(attempt_id) {
-            return Err(TransitionError::DuplicateAttempt(
-                attempt_id.to_owned(),
-            ));
+            return Err(TransitionError::DuplicateAttempt(attempt_id.to_owned()));
         }
         let runtime = self
             .steps
