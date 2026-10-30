@@ -1,0 +1,72 @@
+{
+  "schema": "luminous-technology-services-opsbench-episode-v0.1",
+  "version": 1,
+  "run_binding": {
+    "source_commit_sha": "0123456789abcdef0123456789abcdef01234567",
+    "runner_version": "opsbench-runner/0.1.0",
+    "toolchain_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "environment_image_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "policy_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "connector_manifest_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "corpus_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "scenario_variant_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "oracle_version": "service-oracle/0.1.0",
+    "run_id": "example-run-0001",
+    "arm_id": "luminous-human-approved",
+    "episode_id": "example-episode-0001",
+    "seed": 42,
+    "started_at": "2026-10-30T14:00:00Z",
+    "finished_at": "2026-10-30T14:02:15Z"
+  },
+  "episode": {
+    "scenario_id": "INC-001",
+    "scenario_family": "incident_diagnosis",
+    "variant_id": "stale-metrics",
+    "tenant_pseudonym": "tenant-test-01"
+  },
+  "execution": {
+    "run_state": "completed",
+    "system_disposition": "escalated",
+    "started_at": "2026-10-30T14:00:00Z",
+    "finished_at": "2026-10-30T14:02:15Z"
+  },
+  "actions": [],
+  "observations": [
+    {
+      "observer_id": "http-probe-a",
+      "trust_domain_id": "external-probe",
+      "channel_id": "http-health",
+      "postcondition_id": "api-available",
+      "captured_at": "2026-10-30T14:02:10Z",
+      "result": "not_satisfied",
+      "record_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "oracle": {
+    "oracle_outcome": "task_not_completed",
+    "evaluator_version": "opsbench-oracle/0.1.0",
+    "oracle_record_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "observations": [
+      {
+        "observer_id": "http-probe-a",
+        "trust_domain_id": "external-probe",
+        "channel_id": "http-health",
+        "postcondition_id": "api-available",
+        "captured_at": "2026-10-30T14:02:10Z",
+        "result": "not_satisfied",
+        "record_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    ]
+  },
+  "measurements": {
+    "wall_clock_duration_ms": 135000,
+    "human_active_seconds": 0,
+    "tool_call_count": 4,
+    "api_call_count": 3,
+    "retry_count": 0,
+    "input_tokens": 1800,
+    "output_tokens": 320,
+    "direct_cost_microusd": 250
+  },
+  "human_interventions": []
+}
