@@ -46,6 +46,8 @@ An OMSI mapping must be loss-aware. If a source system does not expose tenant id
 
 The profile does not mandate a vendor, transport or orchestration product. OpenTelemetry, existing ITSM APIs, OIDC, systemd/D-Bus, NixOS and established durable workflow runtimes should be reused where fit.
 
+For host participants, the Platform saga stores references to Nixward's existing [System Transaction Wire v1](https://github.com/Luminous-Dynamics/nixward/blob/main/docs/SYSTEM_TRANSACTION_WIRE_V1.md), exact ChangePlan/transaction identity, target-machine digest, attempt identity and Nixward-owned receipt digests. It must not mirror Nixward's journal, interlock, authorization verifier or worker ledger. The Platform adapter contract is tracked in [issue #162](https://github.com/Luminous-Dynamics/luminous-platform/issues/162); implementation depends on Nixward's [journal-owned worker recovery issue #96](https://github.com/Luminous-Dynamics/nixward/issues/96). Until that work is implemented and independently qualified, a host participant adapter remains read-only/reference-only.
+
 ## 4. Evidence classes and semantic distinctions
 
 | Class | Meaning | Not equivalent to |
