@@ -9,7 +9,9 @@
     "status",
     "purpose",
     "common_rules",
-    "vectors"
+    "vectors",
+    "visibility",
+    "upstream_crosswalk"
   ],
   "properties": {
     "schema": {
@@ -135,6 +137,12 @@
         },
         "additionalProperties": false
       }
+    },
+    "visibility": {
+      "const": "profile_evaluator_only_not_sut_input"
+    },
+    "upstream_crosswalk": {
+      "const": "upstream-crosswalk.json"
     }
   },
   "additionalProperties": false
