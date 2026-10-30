@@ -55,8 +55,14 @@ pub enum PlanValidationError {
     InvalidDigest(&'static str),
     EmptyField(&'static str),
     DuplicateStepId(String),
-    DuplicateDependency { step_id: String, dependency_id: String },
-    MissingDependency { step_id: String, dependency_id: String },
+    DuplicateDependency {
+        step_id: String,
+        dependency_id: String,
+    },
+    MissingDependency {
+        step_id: String,
+        dependency_id: String,
+    },
     SelfDependency(String),
     DependencyCycle,
     InvalidCompensation(String),
@@ -112,9 +118,7 @@ impl ServicePlan {
                     || compensation.binding_digest == step.binding_digest
                     || compensation.expected_postcondition_digest.is_zero()
                 {
-                    return Err(PlanValidationError::InvalidCompensation(
-                        step.id.clone(),
-                    ));
+                    return Err(PlanValidationError::InvalidCompensation(step.id.clone()));
                 }
             }
 
@@ -285,7 +289,9 @@ pub struct ServiceObservation {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum StepStatus {
     Pending,
-    Authorized { grant_id: String },
+    Authorized {
+        grant_id: String,
+    },
     DispatchIntentPersisted {
         attempt_id: String,
         idempotency_key: String,
@@ -314,7 +320,9 @@ pub enum StepStatus {
         attempt_id: String,
         evidence_digest: Digest,
     },
-    CompensationAuthorized { grant_id: String },
+    CompensationAuthorized {
+        grant_id: String,
+    },
     CompensationBlocked,
     CompensationDispatchIntentPersisted {
         attempt_id: String,
@@ -469,9 +477,11 @@ impl SagaEpisode {
 
     #[must_use]
     pub fn disposition(&self) -> EpisodeDisposition {
-        if self.steps.values().any(|runtime| {
-            matches!(&runtime.status, StepStatus::ViolationObserved { .. })
-        }) {
+        if self
+            .steps
+            .values()
+            .any(|runtime| matches!(&runtime.status, StepStatus::ViolationObserved { .. }))
+        {
             return EpisodeDisposition::SecurityViolationObserved;
         }
 
@@ -524,9 +534,10 @@ impl SagaEpisode {
             return EpisodeDisposition::EscalationRequired;
         }
 
-        if required_statuses.iter().any(|status| {
-            !matches!(status, StepStatus::Pending | StepStatus::Blocked)
-        }) {
+        if required_statuses
+            .iter()
+            .any(|status| !matches!(status, StepStatus::Pending | StepStatus::Blocked))
+        {
             return EpisodeDisposition::PartiallyComplete;
         }
 
@@ -584,9 +595,7 @@ impl SagaEpisode {
                 self.step_status(dependency),
                 Some(StepStatus::Verified { .. })
             ) {
-                return Err(TransitionError::DependencyNotVerified(
-                    dependency.clone(),
-                ));
+                return Err(TransitionError::DependencyNotVerified(dependency.clone()));
             }
         }
 
@@ -628,9 +637,7 @@ impl SagaEpisode {
             ));
         }
         if self.attempt_ids.contains(attempt_id) {
-            return Err(TransitionError::DuplicateAttempt(
-                attempt_id.to_owned(),
-            ));
+            return Err(TransitionError::DuplicateAttempt(attempt_id.to_owned()));
         }
         let runtime = self
             .steps
@@ -682,11 +689,10 @@ impl SagaEpisode {
                 ));
             }
         };
-        self.steps.get_mut(step_id).expect("step exists").status =
-            StepStatus::OutcomeUnknown {
-                attempt_id: attempt_id.clone(),
-                idempotency_key,
-            };
+        self.steps.get_mut(step_id).expect("step exists").status = StepStatus::OutcomeUnknown {
+            attempt_id: attempt_id.clone(),
+            idempotency_key,
+        };
         self.append_event(
             Some(step_id.to_owned()),
             Some(attempt_id),
@@ -807,10 +813,7 @@ impl SagaEpisode {
             .step(step_id)
             .cloned()
             .ok_or_else(|| TransitionError::UnknownStep(step_id.to_owned()))?;
-        if !matches!(
-            self.step_status(step_id),
-            Some(StepStatus::Verified { .. })
-        ) {
+        if !matches!(self.step_status(step_id), Some(StepStatus::Verified { .. })) {
             return Err(TransitionError::InvalidTransition(
                 "compensation requires a verified forward postcondition".into(),
             ));
@@ -837,12 +840,10 @@ impl SagaEpisode {
         }
 
         self.used_grants.insert(grant.grant_id.clone());
-        self.steps
-            .get_mut(step_id)
-            .expect("step exists")
-            .status = StepStatus::CompensationAuthorized {
-            grant_id: grant.grant_id.clone(),
-        };
+        self.steps.get_mut(step_id).expect("step exists").status =
+            StepStatus::CompensationAuthorized {
+                grant_id: grant.grant_id.clone(),
+            };
         self.append_event(
             Some(step_id.to_owned()),
             None,
@@ -968,8 +969,7 @@ impl SagaEpisode {
             | StepStatus::CompensationIndeterminate { attempt_id, .. } => attempt_id,
             _ => {
                 return Err(TransitionError::InvalidTransition(
-                    "compensation observation requires a dispatched unresolved compensation"
-                        .into(),
+                    "compensation observation requires a dispatched unresolved compensation".into(),
                 ));
             }
         };
@@ -1020,10 +1020,7 @@ impl SagaEpisode {
         Ok(())
     }
 
-    pub fn request_cancellation(
-        &mut self,
-        expected_revision: u64,
-    ) -> Result<(), TransitionError> {
+    pub fn request_cancellation(&mut self, expected_revision: u64) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
         if self.service_verification == Some(ServiceVerification::VerifiedHealthy) {
             return Err(TransitionError::AlreadyResolved);
@@ -1058,12 +1055,7 @@ impl SagaEpisode {
             };
         }
         self.cancelled = true;
-        self.append_event(
-            None,
-            None,
-            EventKind::CancellationRequested,
-            None,
-        );
+        self.append_event(None, None, EventKind::CancellationRequested, None);
         Ok(())
     }
 
@@ -1078,12 +1070,17 @@ impl SagaEpisode {
             return Err(TransitionError::AlreadyResolved);
         }
         if self.cancelled
-            || !self.plan.steps.iter().filter(|step| step.required).all(|step| {
-                matches!(
-                    self.step_status(&step.id),
-                    Some(StepStatus::Verified { .. })
-                )
-            })
+            || !self
+                .plan
+                .steps
+                .iter()
+                .filter(|step| step.required)
+                .all(|step| {
+                    matches!(
+                        self.step_status(&step.id),
+                        Some(StepStatus::Verified { .. })
+                    )
+                })
             || self.steps.values().any(|runtime| {
                 matches!(
                     &runtime.status,
@@ -1153,8 +1150,7 @@ impl SagaEpisode {
         valid_until_ms: u64,
         now_ms: u64,
     ) -> Result<(), TransitionError> {
-        if observed_at_ms > now_ms || valid_until_ms <= now_ms || valid_until_ms <= observed_at_ms
-        {
+        if observed_at_ms > now_ms || valid_until_ms <= now_ms || valid_until_ms <= observed_at_ms {
             return Err(TransitionError::StaleEvidence);
         }
         Ok(())
@@ -1334,8 +1330,13 @@ mod tests {
     }
 
     fn authorize_and_dispatch_host(ep: &mut SagaEpisode) {
-        ep.authorize_step(ep.revision(), "host-repair", &grant("host-repair", false, "grant-host", 10_000), 1)
-            .expect("host grant");
+        ep.authorize_step(
+            ep.revision(),
+            "host-repair",
+            &grant("host-repair", false, "grant-host", 10_000),
+            1,
+        )
+        .expect("host grant");
         ep.persist_dispatch_intent(ep.revision(), "host-repair", "attempt-host-1", "idem-host")
             .expect("dispatch intent");
     }
@@ -1362,10 +1363,7 @@ mod tests {
         assert!(plan().validate().is_ok());
         let mut cyclic = plan();
         cyclic.steps[0].dependencies.push("ticket-update".into());
-        assert_eq!(
-            cyclic.validate(),
-            Err(PlanValidationError::DependencyCycle)
-        );
+        assert_eq!(cyclic.validate(), Err(PlanValidationError::DependencyCycle));
     }
 
     #[test]
@@ -1446,9 +1444,7 @@ mod tests {
                 &grant("ticket-update", false, "grant-ticket", 10_000),
                 1
             ),
-            Err(TransitionError::DependencyNotVerified(
-                "host-repair".into()
-            ))
+            Err(TransitionError::DependencyNotVerified("host-repair".into()))
         );
     }
 
@@ -1511,8 +1507,7 @@ mod tests {
             Consistency::Strong,
             None,
         );
-        ledger_proof.no_effect_basis =
-            Some(NoEffectBasis::AuthoritativeAttemptLedgerNeverAccepted);
+        ledger_proof.no_effect_basis = Some(NoEffectBasis::AuthoritativeAttemptLedgerNeverAccepted);
         ep.record_observation(ep.revision(), "host-repair", &ledger_proof, 100)
             .expect("attempt-specific never-accepted proof permits reconciliation");
         assert!(matches!(
@@ -1527,13 +1522,8 @@ mod tests {
             3,
         )
         .expect("new grant after strong no-effect evidence");
-        ep.persist_dispatch_intent(
-            ep.revision(),
-            "host-repair",
-            "attempt-host-2",
-            "idem-host",
-        )
-        .expect("new attempt with stable idempotency key");
+        ep.persist_dispatch_intent(ep.revision(), "host-repair", "attempt-host-2", "idem-host")
+            .expect("new attempt with stable idempotency key");
         assert!(matches!(
             ep.step_status("host-repair"),
             Some(StepStatus::DispatchIntentPersisted { attempt_id, .. })
@@ -1559,9 +1549,7 @@ mod tests {
                 "attempt-host-1",
                 "idem-ticket"
             ),
-            Err(TransitionError::DuplicateAttempt(
-                "attempt-host-1".into()
-            ))
+            Err(TransitionError::DuplicateAttempt("attempt-host-1".into()))
         );
     }
 
@@ -1659,13 +1647,8 @@ mod tests {
             2,
         )
         .expect("separate compensation grant");
-        ep.persist_compensation_intent(
-            ep.revision(),
-            "host-repair",
-            "attempt-comp-1",
-            "idem-comp",
-        )
-        .expect("compensation write-ahead intent");
+        ep.persist_compensation_intent(ep.revision(), "host-repair", "attempt-comp-1", "idem-comp")
+            .expect("compensation write-ahead intent");
         ep.mark_compensation_outcome_unknown(ep.revision(), "host-repair")
             .expect("ambiguous compensation");
         assert_eq!(ep.disposition(), EpisodeDisposition::Indeterminate);
@@ -1977,15 +1960,18 @@ mod tests {
             ep.verify_service(ep.revision(), &stale_global, 103),
             Err(TransitionError::StaleEvidence)
         );
-        assert_eq!(ep.disposition(), EpisodeDisposition::AwaitingServiceVerification);
+        assert_eq!(
+            ep.disposition(),
+            EpisodeDisposition::AwaitingServiceVerification
+        );
     }
 
     #[test]
     fn global_service_gate_waits_for_authorized_optional_steps_to_settle() {
         let mut optional_plan = plan();
         optional_plan.steps[1].required = false;
-        let mut ep = SagaEpisode::new(optional_plan, "agent-runtime")
-            .expect("valid optional-step plan");
+        let mut ep =
+            SagaEpisode::new(optional_plan, "agent-runtime").expect("valid optional-step plan");
         verify_host(&mut ep);
         ep.authorize_step(
             ep.revision(),
@@ -2055,5 +2041,4 @@ mod tests {
         assert!(ep.events().is_empty());
         assert_eq!(ep.step_status("host-repair"), Some(&StepStatus::Pending));
     }
-
 }
