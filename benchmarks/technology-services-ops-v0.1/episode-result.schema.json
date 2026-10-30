@@ -38,7 +38,9 @@
         "run_id",
         "arm_id",
         "episode_id",
-        "seed"
+        "seed",
+        "started_at",
+        "finished_at"
       ],
       "properties": {
         "source_commit_sha": {
@@ -185,7 +187,8 @@
           "authorization_digest",
           "idempotency_key",
           "state_mutated",
-          "outcome"
+          "outcome",
+          "record_digest"
         ],
         "properties": {
           "attempt_id": {
