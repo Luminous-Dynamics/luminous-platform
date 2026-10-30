@@ -183,6 +183,23 @@ Suggested research targets (not current results):
 
 Hard safety gates are non-compensatory. Zero observed events in a small synthetic suite is not a fleet-wide safety guarantee. Publish exact counts, confidence intervals and trial independence assumptions.
 
+### Public baseline snapshot — 30 October 2026
+
+- **EnterpriseOps-Gym-AA:** Artificial Analysis reports a top strict task-success score of **51.1%** in its current all-domain leaderboard. The underlying ServiceNow benchmark describes 1,150 tasks across eight domains, 512 tools and 164 database tables. A task receives no partial credit when a required final-state verifier fails. This is the closest public comparator for long-horizon enterprise workflows, but the aggregate is not an ITSM-only score and a passing database-state verifier is not automatically an external Linux/service-health or Nixward recovery certificate. See [the live evaluation](https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa) and [the benchmark repository](https://github.com/ServiceNow/EnterpriseOps-Gym). <https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa>
+- **ITBench-AA:** the current diagnostic evaluation contains 59 Kubernetes incident snapshots (40 public and 19 private) with three repeats per task. Its headline is average precision at full recall for root-cause entity attribution; the current displayed leader is **56.2%**. This is a diagnosis metric, not an end-to-end service-resolution rate. The benchmark's own page distinguishes the original ITBench paper's resolution-rate metric from its new root-cause metric. See [ITBench-AA methodology and results](https://artificialanalysis.ai/evaluations/itbench-aa). <https://artificialanalysis.ai/evaluations/itbench-aa>
+- **Agent reliability:** the ICML 2026 reliability study proposes twelve metrics across consistency, robustness, predictability and safety, and finds that higher task capability has translated into only small gains in reliability. ITOPS therefore keeps a multi-dimensional reliability profile beside task-success reporting; it does not create one weighted winner. See [Rabanser et al., PMLR 306 (2026)](https://proceedings.mlr.press/v306/rabanser26a.html). <https://proceedings.mlr.press/v306/rabanser26a.html>
+
+### Competitive targets (research goals, not results)
+
+For a preregistered ITSM/Hybrid common-core subset, target:
+- **At least 60% strict end-to-end task completion** on a held-out evaluation slice after the adapter and execution semantics are stable.
+- **At least 10 percentage points absolute improvement** over the strongest matched baseline under identical task snapshots, permissions, tool schemas, model/run budgets, evaluator and repetitions.
+- **No weakening of hard gates:** zero unauthorized effects, cross-tenant disclosure, forbidden side effects or false service-resolution claims in the qualification corpus.
+- **100% independent postcondition evidence** for every resolved episode; all started failures, timeouts and indeterminate outcomes remain in denominators.
+- **At least 20% lower total cost per independently verified outcome** and 30% lower median human-active time in a matched prospective pilot, after including review, escalation, integration and rework.
+
+The 60%/10-point goals are not a direct claim against EnterpriseOps-Gym's 51.1% full-suite headline or ITBench-AA's 56.2% diagnostic score. Only a task-matched common-core trial can support an improvement claim. Do not publish a full-suite comparison from an ITSM/Hybrid subset.
+
 ### Relevant common benchmarks
 
 - [ITBench](https://proceedings.mlr.press/v267/jha25a.html) and [ITBench-AA](https://artificialanalysis.ai/evaluations/itbench-aa): diagnosis and IT automation comparators; retain their own tasks/metrics.
