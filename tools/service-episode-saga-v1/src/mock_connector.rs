@@ -8,12 +8,12 @@
 
 use super::{
     Consistency, Digest, NoEffectBasis, ObservedEffect, ObserverEvidence,
-    SagaEpisode, ServicePlan, OperationSpec, AuthorityGrant, TransitionError,
+    SagaEpisode, ServicePlan, OperationSpec, AuthorityGrant, StepStatus,
 };
 use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MockRequest {
+struct MockRequest {
     pub attempt_id: String,
     pub idempotency_key: String,
     pub target_id: String,
@@ -45,7 +45,7 @@ impl MockRequest {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum FaultMode {
+enum FaultMode {
     Normal,
     BeforeAdmission,
     AfterAdmissionBeforeEffect,
@@ -53,7 +53,7 @@ pub enum FaultMode {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MockReceipt {
+struct MockReceipt {
     pub attempt_id: String,
     pub idempotency_key: String,
     pub request_digest: Digest,
@@ -76,7 +76,7 @@ struct AttemptRecord {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum TransportOutcome {
+enum TransportOutcome {
     Acknowledged(MockReceipt),
     TimedOut,
     AcceptedPending,
@@ -88,14 +88,14 @@ pub enum TransportOutcome {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum LedgerConsistency {
+enum LedgerConsistency {
     Strong,
     Eventual,
     Unavailable,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum AttemptLedgerObservation {
+enum AttemptLedgerObservation {
     NeverAccepted,
     AcceptedPending,
     EffectCommitted(MockReceipt),
@@ -116,7 +116,7 @@ struct ConnectorSnapshot {
 /// an operation cannot be accepted or create an effect before its attempt row
 /// and idempotency-key reservation exist.
 #[derive(Clone, Debug, Default)]
-pub struct MockConnector {
+struct MockConnector {
     attempts: BTreeMap<String, AttemptRecord>,
     idempotency_index: BTreeMap<String, String>,
     effect_count: u64,
@@ -125,7 +125,7 @@ pub struct MockConnector {
 
 impl MockConnector {
     /// Simulate a request and independently choose where the reply is lost.
-    pub fn submit(&mut self, request: MockRequest, fault: FaultMode) -> TransportOutcome {
+    fn submit(&mut self, request: MockRequest, fault: FaultMode) -> TransportOutcome {
         if !request.is_valid() {
             return TransportOutcome::InvalidRequest;
         }
@@ -191,7 +191,7 @@ impl MockConnector {
 
     /// Complete an admitted operation. Re-delivery or duplicate worker signals
     /// return the same receipt and never create another business effect.
-    pub fn complete_pending(&mut self, attempt_id: &str) -> Option<MockReceipt> {
+    fn complete_pending(&mut self, attempt_id: &str) -> Option<MockReceipt> {
         let record = self.attempts.get(attempt_id)?.clone();
         if let AttemptState::EffectCommitted(receipt) = record.state {
             return Some(receipt);
@@ -223,7 +223,7 @@ impl MockConnector {
 
     /// Query the connector-owned attempt ledger, not the client response and not
     /// the current business state. Only a strong query can return NeverAccepted.
-    pub fn query_attempt(
+    fn query_attempt(
         &self,
         request: &MockRequest,
         consistency: LedgerConsistency,
@@ -268,7 +268,7 @@ impl MockConnector {
 
     /// Map connector-owned ledger evidence to the Saga's existing typed
     /// observation. This fixture uses a distinct observer/trust-domain label.
-    pub fn observer_evidence(
+    fn observer_evidence(
         &self,
         request: &MockRequest,
         consistency: LedgerConsistency,
@@ -349,14 +349,14 @@ impl MockConnector {
     /// Independent server-side effect oracle. It is not derived from the
     /// transport result or the agent's interpretation of the response.
     #[must_use]
-    pub fn business_effect_count(&self) -> u64 {
+    fn business_effect_count(&self) -> u64 {
         self.effect_count
     }
 
     /// Capture server-owned state. This models a durable backend snapshot for
     /// restart tests; it does not exercise filesystem sync or power-loss safety.
     #[must_use]
-    pub fn snapshot(&self) -> ConnectorSnapshot {
+    fn snapshot(&self) -> ConnectorSnapshot {
         ConnectorSnapshot {
             attempts: self.attempts.clone(),
             idempotency_index: self.idempotency_index.clone(),
@@ -367,7 +367,7 @@ impl MockConnector {
 
     /// Reconstruct the fixture after a simulated connector process restart.
     #[must_use]
-    pub fn restart(snapshot: ConnectorSnapshot) -> Self {
+    fn restart(snapshot: ConnectorSnapshot) -> Self {
         Self {
             attempts: snapshot.attempts,
             idempotency_index: snapshot.idempotency_index,
@@ -656,7 +656,7 @@ mod tests {
             .expect("attempt-specific ledger proof reconciles the dispatched step");
         assert!(matches!(
             saga.step_status("ticket-step"),
-            Some(super::StepStatus::NoEffectConfirmed { .. })
+            Some(StepStatus::NoEffectConfirmed { .. })
         ));
 
         let second_grant = AuthorityGrant {
