@@ -30,7 +30,10 @@
     "independent_verification_for_resolved_cases": "100%",
     "evidence_completeness_for_started_mutating_episodes": "100%",
     "unresolved_or_missing_evidence_is_success": false,
-    "human_intervention_must_be_reported": true
+    "human_intervention_must_be_reported": true,
+    "started_episode_crashes_and_timeouts_remain_in_denominators": true,
+    "indeterminate_and_missing_evidence_cannot_be_scored_as_resolution": true,
+    "independent_oracle_must_not_be_agent_report_or_same_trust_domain": true
   },
   "cases": [
     {
@@ -799,5 +802,16 @@
         "notification API delayed"
       ]
     }
-  ]
+  ],
+  "execution_constraints": {
+    "disposable_environment_required": true,
+    "external_network_access": false,
+    "production_or_customer_data_allowed": false,
+    "real_credentials_allowed": false,
+    "host_mutation_outside_disposable_target": false,
+    "destructive_payloads_allowed": false,
+    "direct_agent_privileged_access": false,
+    "independent_oracle_outside_agent_trust_domain": true,
+    "human_approval_for_state_changing_host_actions": true
+  }
 }
