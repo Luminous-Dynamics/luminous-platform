@@ -2014,4 +2014,39 @@ mod tests {
         assert_eq!(ep.disposition(), EpisodeDisposition::PartiallyComplete);
     }
 
+    #[test]
+    fn compensation_may_reuse_connector_operation_with_distinct_request_binding() {
+        let mut candidate = plan();
+        let forward_operation = candidate.steps[0].operation_id.clone();
+        let compensation = candidate.steps[0]
+            .compensation
+            .as_mut()
+            .expect("compensation exists");
+        compensation.operation_id = forward_operation;
+        assert!(candidate.validate().is_ok());
+
+        compensation.binding_digest = candidate.steps[0].binding_digest;
+        assert!(matches!(
+            candidate.validate(),
+            Err(PlanValidationError::InvalidCompensation(_))
+        ));
+    }
+
+    #[test]
+    fn revision_exhaustion_fails_closed_before_mutating_state() {
+        let mut ep = episode();
+        ep.revision = u64::MAX;
+        assert_eq!(
+            ep.authorize_step(
+                u64::MAX,
+                "host-repair",
+                &grant("host-repair", false, "grant-host", 10_000),
+                1
+            ),
+            Err(TransitionError::RevisionExhausted)
+        );
+        assert!(ep.events().is_empty());
+        assert_eq!(ep.step_status("host-repair"), Some(&StepStatus::Pending));
+    }
+
 }
