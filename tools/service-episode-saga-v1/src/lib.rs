@@ -1084,7 +1084,7 @@ impl SagaEpisode {
             })
             || self.steps.values().any(|runtime| {
                 matches!(
-                    runtime.status,
+                    &runtime.status,
                     StepStatus::Authorized { .. }
                         | StepStatus::DispatchIntentPersisted { .. }
                         | StepStatus::OutcomeUnknown { .. }
@@ -1743,6 +1743,19 @@ mod tests {
         ep.verify_service(ep.revision(), &service_evidence, 100)
             .expect("independent service check");
         assert_eq!(ep.disposition(), EpisodeDisposition::Resolved);
+        assert_eq!(
+            ep.authorize_step(
+                ep.revision(),
+                "host-repair",
+                &grant("host-repair", false, "late-grant", 10_000),
+                103,
+            ),
+            Err(TransitionError::AlreadyResolved)
+        );
+        assert_eq!(
+            ep.request_cancellation(ep.revision()),
+            Err(TransitionError::AlreadyResolved)
+        );
         assert_eq!(ep.revision(), ep.events().last().expect("events").revision);
     }
 
@@ -1960,6 +1973,40 @@ mod tests {
             Err(TransitionError::StaleEvidence)
         );
         assert_eq!(ep.disposition(), EpisodeDisposition::AwaitingServiceVerification);
+    }
+
+    #[test]
+    fn global_service_gate_waits_for_authorized_optional_steps_to_settle() {
+        let mut optional_plan = plan();
+        optional_plan.steps[1].required = false;
+        let mut ep = SagaEpisode::new(optional_plan, "agent-runtime")
+            .expect("valid optional-step plan");
+        verify_host(&mut ep);
+        ep.authorize_step(
+            ep.revision(),
+            "ticket-update",
+            &grant("ticket-update", false, "optional-ticket-grant", 10_000),
+            101,
+        )
+        .expect("optional participant authorized");
+
+        let service_evidence = ServiceObservation {
+            observer_id: "external-http-probe".into(),
+            trust_domain_id: "independent-probe".into(),
+            service_id: "payments-api".into(),
+            plan_digest: digest(100),
+            health: ServiceHealth::Healthy,
+            consistency: Consistency::Strong,
+            observed_service_digest: Some(digest(90)),
+            observed_at_ms: 50,
+            valid_until_ms: 200,
+            evidence_digest: digest(73),
+        };
+        assert_eq!(
+            ep.verify_service(ep.revision(), &service_evidence, 102),
+            Err(TransitionError::ServicePreconditionsNotMet)
+        );
+        assert_eq!(ep.disposition(), EpisodeDisposition::PartiallyComplete);
     }
 
 }
