@@ -58,6 +58,119 @@
       "repository_commit": "d6e33587852a2c2d3039ca64415afcdaeed86320"
     },
     {
+      "id": "itbench_aa_2026",
+      "title": "ITBench-AA — Artificial Analysis independent ITBench SRE evaluation",
+      "publisher": "Artificial Analysis, using IBM/ITBench public scenarios and additional private scenarios shared by ITBench authors",
+      "source_url": "https://artificialanalysis.ai/evaluations/itbench-aa",
+      "published": "2026",
+      "as_of": "2026-10-30",
+      "reported_scope": {
+        "scenario_count": 59,
+        "public_scenarios": 40,
+        "private_scenarios": 19,
+        "repeats_per_task": 3,
+        "environment": "offline Kubernetes incident snapshots containing alerts, events, traces, metrics and topology",
+        "primary_metric": "average precision at full recall for root-cause entity attribution",
+        "displayed_model_count": 27,
+        "total_models_in_evaluation": 45
+      },
+      "reported_current_results": {
+        "top_score_percent": 56.2,
+        "top_displayed_model": "GPT-5.6 Sol (Max)",
+        "next_displayed_scores": [
+          {
+            "model": "Step 5 Preview",
+            "score_percent": 55.6
+          },
+          {
+            "model": "Gemini 3.8 Flash (High)",
+            "score_percent": 52.5
+          }
+        ]
+      },
+      "limits": [
+        "This is an incident diagnosis/root-cause entity attribution evaluation on offline snapshots, not live remediation or independently verified service restoration.",
+        "Its average-precision-at-full-recall metric is not the original ITBench paper's task-resolution percentage.",
+        "Private scenarios and three repeats are part of the evaluator's own implementation; do not infer access to private cases from the public GitHub repository."
+      ],
+      "opsbench_related_cases": [
+        "INC-001",
+        "INC-003",
+        "NET-001",
+        "DB-001",
+        "QUEUE-001"
+      ],
+      "mapping_status": "diagnostic_subtask_only",
+      "direct_score_comparison_allowed": false,
+      "next_step": "Use the public 40-scenario-compatible subset as a diagnostic-only common-core candidate if the artifact/license/access terms permit; preserve AP@full-recall separately from OpsBench service outcome scores."
+    },
+    {
+      "id": "servicenow_enterpriseops_gym_aa_2026",
+      "title": "EnterpriseOps-Gym-AA — Artificial Analysis evaluation of ServiceNow EnterpriseOps-Gym",
+      "publisher": "ServiceNow AI Research benchmark; independently evaluated by Artificial Analysis",
+      "source_url": "https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa",
+      "repository_url": "https://github.com/ServiceNow/EnterpriseOps-Gym",
+      "repository_commit": "271f2c357f763376997dfd16807fcde2474ae41b",
+      "license": "Apache-2.0",
+      "published": "2026",
+      "as_of": "2026-10-30",
+      "reported_scope": {
+        "task_count": 1150,
+        "domains": [
+          "Calendar",
+          "Customer Service Management",
+          "Drive",
+          "Email",
+          "HR",
+          "ITSM",
+          "Teams",
+          "Hybrid"
+        ],
+        "tools": 512,
+        "database_tables": 164,
+        "average_steps_per_task": 9.15,
+        "average_verification_conditions": 5.3,
+        "repeats_per_task": 3,
+        "environment": "containerized, resettable enterprise simulation with live MCP servers",
+        "grading": "strict task success; SQL verifiers inspect final database state; no partial credit",
+        "displayed_model_count": 27,
+        "total_models_in_evaluation": 50
+      },
+      "reported_current_results": {
+        "top_task_success_percent": 51.1,
+        "top_displayed_model": "Claude Fable 5 (Max, Opus 4.8 Fallback)",
+        "next_displayed_scores": [
+          {
+            "model": "Gemini 3.7 Flash (Medium)",
+            "score_percent": 50.4
+          },
+          {
+            "model": "Gemini 3.5 Flash (High)",
+            "score_percent": 50.1
+          }
+        ]
+      },
+      "limits": [
+        "The benchmark exercises multi-step enterprise workflows and final database-state verifiers, but a database-state pass is not by itself proof of external host/service health, safe operating-system effects or recovery.",
+        "ServiceNow authored the benchmark environment/dataset; Artificial Analysis independently implements and evaluates it. Neither is an independent audit of all product deployments.",
+        "The reported headline is an all-domain aggregate; compare only matching domain/task subsets with the same tool policy, dataset release, agent harness and repetitions."
+      ],
+      "opsbench_related_cases": [
+        "INC-001",
+        "INC-003",
+        "CHG-001",
+        "CHG-002",
+        "IAM-001",
+        "IAM-002",
+        "SLA-001",
+        "CONN-001",
+        "TENANT-001"
+      ],
+      "mapping_status": "direct_common_core_candidate_after_adapter",
+      "direct_score_comparison_allowed": false,
+      "next_step": "Build a domain-scoped common-core adapter for ITSM and Hybrid tasks first; preserve the SQL verifier and task identities, then add separate independent service/host oracles only for OpsBench-owned remediation extensions."
+    },
+    {
       "id": "pagerduty_sre_agent_benchmark_2026",
       "title": "A Better Benchmark Harness for SRE Agents",
       "publisher": "PagerDuty",
