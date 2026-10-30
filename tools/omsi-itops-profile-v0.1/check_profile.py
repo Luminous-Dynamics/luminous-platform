@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[2]
+ROOT = HERE.parents[1]
 VECTOR_PATH = ROOT / "benchmarks" / "omsi-itops-profile-v0.1" / "conformance-vectors.json"
 SCHEMA_PATH = ROOT / "benchmarks" / "omsi-itops-profile-v0.1" / "schema.json"
 REFERENCES_PATH = ROOT / "benchmarks" / "omsi-itops-profile-v0.1" / "upstream-crosswalk.json"
