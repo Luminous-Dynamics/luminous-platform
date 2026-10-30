@@ -195,6 +195,9 @@ def validate(corpus: Any, schema: Any) -> dict[str, Any]:
             "schema must declare Draft 2020-12")
     require(schema.get("properties", {}).get("schema", {}).get("const") == EXPECTED_SCHEMA,
             "JSON Schema identifier does not match the corpus")
+    require(schema.get("properties", {}).get("visibility", {}).get("const")
+            == "evaluator_authoring_only_not_runtime_input",
+            "JSON Schema must keep the authoring corpus out of system-under-test input")
     schema_cases = schema.get("properties", {}).get("cases", {})
     require(schema_cases.get("minItems") == EXPECTED_CASE_COUNT
             and schema_cases.get("maxItems") == EXPECTED_CASE_COUNT,
@@ -355,8 +358,13 @@ def validate_crosswalk(document: Any) -> dict[str, int]:
             "diagnostic_subtask_only",
         }, f"{benchmark_id}: mapping status is not declared")
 
+    itbench = next(x for x in benchmarks if x["id"] == "itbench_icml_2025")
     project_arena = next(x for x in benchmarks if x["id"] == "edge_delta_ai_sre_arena_v1")
     rootcause = next(x for x in benchmarks if x["id"] == "edge_delta_rootcausebench_2026")
+    require(itbench.get("license") == "Apache-2.0"
+            and itbench.get("repository_url") == "https://github.com/itbench-hub/ITBench"
+            and re.fullmatch(r"[a-f0-9]{40}", itbench.get("repository_commit", "")) is not None,
+            "ITBench code reuse must preserve Apache-2.0 license and an immutable upstream commit")
     require(project_arena.get("license") == "MIT"
             and re.fullmatch(r"[a-f0-9]{40}", project_arena.get("repository_commit", "")) is not None,
             "Project Arena reuse must preserve MIT license and an immutable upstream commit")
