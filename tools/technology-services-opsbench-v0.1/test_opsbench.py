@@ -82,8 +82,15 @@ class OpsBenchContractTests(unittest.TestCase):
         self.assertEqual(result["external_benchmark_count"], 6)
         itbench_aa = next(x for x in self.crosswalk["benchmarks"] if x["id"] == "itbench_aa_2026")
         self.assertEqual(itbench_aa["reported_scope"]["scenario_count"], 59)
-        self.assertEqual(itbench_aa["reported_scope"]["primary_metric"], "average precision at full recall")
+        self.assertEqual(itbench_aa["reported_scope"]["primary_metric"], "average precision at full recall for root-cause entity attribution")
         self.assertFalse(itbench_aa["direct_score_comparison_allowed"])
+
+    def test_itbench_aa_cannot_be_mislabelled_as_task_resolution(self):
+        changed = copy.deepcopy(self.crosswalk)
+        changed_item = next(x for x in changed["benchmarks"] if x["id"] == "itbench_aa_2026")
+        changed_item["reported_scope"]["primary_metric"] = "task resolution rate"
+        with self.assertRaises(ValueError):
+            validate_crosswalk(changed)
 
     def test_enterpriseops_gym_final_state_baseline_is_pinned(self):
         result = validate_crosswalk(self.crosswalk)
