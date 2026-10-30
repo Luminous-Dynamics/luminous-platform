@@ -1,0 +1,669 @@
+{
+  "format": "omsi-agricultural-decision-conformance-vectors",
+  "format_version": "0.1",
+  "status": "synthetic research fixture set; not a normative OMSI wire schema",
+  "profile": "agricultural-decision-evidence/0.1-incubation",
+  "common_rules": [
+    "Source observations, forecasts, modelled outputs, derived accounting, advice, farmer decisions, actions and outcomes remain separate evidence kinds.",
+    "Projection is read-only and conveys no irrigation, procurement, booking, payment, notification, data-training or physical actuation authority.",
+    "Farmer-declined or deferred advice is preserved without a trust penalty or fabricated negative outcome.",
+    "Unknown, stale, conflicting, missing or quarantined evidence must not become a favorable numeric result or a successful outcome.",
+    "Source readability or public availability does not imply redistribution, evaluation or training permission.",
+    "Farm/plot references supplied by a source are not authorization or ownership evidence.",
+    "Digests establish byte identity only; they do not establish source authenticity, measurement truth or causal effect."
+  ],
+  "vectors": [
+    {
+      "id": "AGR-EVD-001",
+      "label": "Measured soil observation with declared depth, method, unit and source time",
+      "classification": "positive",
+      "input": {
+        "source": {
+          "system": "synthetic-farm-journal",
+          "instance_namespace": "synthetic-farm://cooperative-a",
+          "source_contract": "farm-record-fixture/0.1",
+          "object_type": "SoilObservation",
+          "external_id": "SOIL-OBS-007",
+          "record_revision": "rev-1"
+        },
+        "scope_binding": {
+          "binding_id": "binding-coop-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-coop-a",
+          "source_farm_ref": "farm-a"
+        },
+        "times": {
+          "observed_at": "2026-10-12T08:00:00+02:00",
+          "effective_at": "2026-10-12T08:00:00+02:00",
+          "source_modified_at": "2026-10-12T08:05:00+02:00",
+          "exported_at": "2026-10-12T06:07:00Z"
+        },
+        "plot_ref": {
+          "source_instance": "synthetic-farm://cooperative-a",
+          "object_type": "Plot",
+          "external_id": "PLOT-07",
+          "tenant_ref": "tenant:synthetic-coop-a"
+        },
+        "evidence": {
+          "kind": "measured",
+          "quality_state": "source_reported",
+          "training_permission": "disabled",
+          "data_rights": "synthetic_only"
+        },
+        "measurement": {
+          "quantity_kind": "volumetric_water_content",
+          "value_decimal": "0.21",
+          "unit_system": "UCUM",
+          "unit_code": "m3/m3",
+          "measurement_basis": "volumetric_fraction",
+          "depth_interval": {
+            "lower_decimal": "0.15",
+            "upper_decimal": "0.30",
+            "unit_code": "m"
+          },
+          "method_ref": "synthetic-method:probe-reading-v1",
+          "instrument_ref": {
+            "source_instance": "synthetic-farm://cooperative-a",
+            "object_type": "SoilProbe",
+            "external_id": "PROBE-07"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-farm://cooperative-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-PROBE-07"
+          },
+          "uncertainty": {
+            "value_decimal": "0.02",
+            "unit_code": "m3/m3",
+            "meaning": "synthetic expanded uncertainty; coverage convention unspecified"
+          }
+        }
+      },
+      "expected": {
+        "outcome": "accepted_projection",
+        "evidence_kind": "measured",
+        "projection_emitted": true,
+        "decision_authority": "none",
+        "action_authority": "none",
+        "training_authority": "none",
+        "assertions": [
+          "source revision and trusted scope are preserved",
+          "volumetric measurement basis and depth interval are preserved",
+          "observed, effective, modified and exported times remain distinct",
+          "calibration is a source reference and is not authenticated by the adapter",
+          "training permission remains disabled"
+        ]
+      }
+    },
+    {
+      "id": "AGR-EVD-002",
+      "label": "Weather forecast remains a forecast and is not relabelled as an observation",
+      "classification": "positive",
+      "input": {
+        "source": {
+          "system": "synthetic-farm-journal",
+          "instance_namespace": "synthetic-farm://cooperative-a",
+          "source_contract": "farm-record-fixture/0.1",
+          "object_type": "WeatherForecast",
+          "external_id": "WX-FC-001",
+          "record_revision": "rev-1"
+        },
+        "scope_binding": {
+          "binding_id": "binding-coop-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-coop-a",
+          "source_farm_ref": "farm-a"
+        },
+        "times": {
+          "issued_at": "2026-10-12T06:00:00Z",
+          "valid_from": "2026-10-13T00:00:00Z",
+          "valid_until": "2026-10-14T00:00:00Z",
+          "source_modified_at": "2026-10-12T06:02:00Z",
+          "exported_at": "2026-10-12T06:07:00Z"
+        },
+        "plot_ref": {
+          "source_instance": "synthetic-farm://cooperative-a",
+          "object_type": "Plot",
+          "external_id": "PLOT-07",
+          "tenant_ref": "tenant:synthetic-coop-a"
+        },
+        "evidence": {
+          "kind": "forecast",
+          "model_ref": "synthetic-weather-model/0.1",
+          "training_permission": "disabled"
+        },
+        "forecast": {
+          "variable": "precipitation_amount",
+          "value_lower_decimal": "2.0",
+          "value_upper_decimal": "8.0",
+          "unit_code": "mm",
+          "aggregation_period": "24h",
+          "forecast_issue_time": "2026-10-12T06:00:00Z",
+          "valid_from": "2026-10-13T00:00:00Z",
+          "valid_until": "2026-10-14T00:00:00Z"
+        }
+      },
+      "expected": {
+        "outcome": "accepted_projection",
+        "evidence_kind": "forecast",
+        "projection_emitted": true,
+        "decision_authority": "none",
+        "action_authority": "none",
+        "assertions": [
+          "forecast issue time is distinct from valid time",
+          "forecast is not a measured rainfall observation",
+          "interval bounds and accumulation period are preserved"
+        ]
+      }
+    },
+    {
+      "id": "AGR-ADV-001",
+      "label": "Modelled irrigation advice retains premises and carries no action authority",
+      "classification": "positive",
+      "input": {
+        "source": {
+          "system": "synthetic-farm-journal",
+          "instance_namespace": "synthetic-farm://cooperative-a",
+          "source_contract": "farm-record-fixture/0.1",
+          "object_type": "AgronomicAdvice",
+          "external_id": "ADVICE-001",
+          "record_revision": "rev-1"
+        },
+        "scope_binding": {
+          "binding_id": "binding-coop-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-coop-a",
+          "source_farm_ref": "farm-a"
+        },
+        "times": {
+          "issued_at": "2026-10-12T06:30:00Z",
+          "valid_until": "2026-10-12T18:00:00Z",
+          "source_modified_at": "2026-10-12T06:30:00Z",
+          "exported_at": "2026-10-12T06:31:00Z"
+        },
+        "plot_ref": {
+          "source_instance": "synthetic-farm://cooperative-a",
+          "object_type": "Plot",
+          "external_id": "PLOT-07",
+          "tenant_ref": "tenant:synthetic-coop-a"
+        },
+        "evidence": {
+          "kind": "modelled",
+          "model_name": "CropFoundry-synthetic-policy",
+          "model_version": "0.1",
+          "training_permission": "disabled"
+        },
+        "advice": {
+          "advice_episode_id": "advice-episode-001",
+          "status": "proposed",
+          "action_type": "irrigation_application",
+          "amount_lower_decimal": "3.0",
+          "amount_upper_decimal": "4.0",
+          "unit_code": "mm",
+          "premise_refs": [
+            "SOIL-OBS-007",
+            "WX-FC-001",
+            "PUMP-STATE-001"
+          ],
+          "hard_constraints": [
+            "daily_water_cap",
+            "pump_power_bound"
+          ],
+          "applicability": "synthetic fixture only",
+          "uncertainty": "scenario interval; not a calibrated probability"
+        },
+        "farmer_decision": null,
+        "action": null,
+        "outcome": null
+      },
+      "expected": {
+        "outcome": "accepted_projection",
+        "evidence_kind": "modelled",
+        "advice_status": "proposed",
+        "projection_emitted": true,
+        "decision_authority": "none",
+        "action_authority": "none",
+        "assertions": [
+          "model and premise lineage are preserved",
+          "proposed advice is not a farmer decision",
+          "no work order, irrigation actuation or service request is emitted",
+          "no agronomic efficacy or yield claim is made"
+        ]
+      }
+    },
+    {
+      "id": "AGR-FARM-001",
+      "label": "Farmer declines advice without a trust penalty or fabricated outcome",
+      "classification": "positive",
+      "input": {
+        "source": {
+          "system": "synthetic-farm-journal",
+          "instance_namespace": "synthetic-farm://cooperative-a",
+          "source_contract": "farm-record-fixture/0.1",
+          "object_type": "FarmerDecision",
+          "external_id": "FARMER-CHOICE-001",
+          "record_revision": "rev-1"
+        },
+        "scope_binding": {
+          "binding_id": "binding-coop-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-coop-a",
+          "source_farm_ref": "farm-a"
+        },
+        "times": {
+          "decided_at": "2026-10-12T07:00:00Z",
+          "recorded_at": "2026-10-12T07:01:00Z",
+          "exported_at": "2026-10-12T07:02:00Z"
+        },
+        "plot_ref": {
+          "source_instance": "synthetic-farm://cooperative-a",
+          "object_type": "Plot",
+          "external_id": "PLOT-07",
+          "tenant_ref": "tenant:synthetic-coop-a"
+        },
+        "evidence": {
+          "kind": "farmer_reported",
+          "training_permission": "disabled"
+        },
+        "advice_ref": "advice-episode-001",
+        "farmer_decision": {
+          "choice": "declined",
+          "reason_code": null,
+          "consent_scope": "this_advice_episode_only",
+          "actor_ref": "farmer:synthetic-actor-1"
+        },
+        "action": null,
+        "outcome": null
+      },
+      "expected": {
+        "outcome": "accepted_projection",
+        "farmer_choice": "declined",
+        "projection_emitted": true,
+        "trust_penalty": false,
+        "decision_authority": "none",
+        "action_authority": "none",
+        "assertions": [
+          "decline is preserved as an autonomous decision",
+          "no trust/reputation decrement is inferred",
+          "no action is inferred from the decision",
+          "absence of outcome remains unknown"
+        ]
+      }
+    },
+    {
+      "id": "AGR-OUT-001",
+      "label": "Action acknowledgement with unresolved biological outcome remains unknown",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-farm-journal",
+          "instance_namespace": "synthetic-farm://cooperative-a",
+          "source_contract": "farm-record-fixture/0.1",
+          "object_type": "FarmActionReceipt",
+          "external_id": "IRR-ACTION-001",
+          "record_revision": "rev-1"
+        },
+        "scope_binding": {
+          "binding_id": "binding-coop-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-coop-a",
+          "source_farm_ref": "farm-a"
+        },
+        "times": {
+          "submitted_at": "2026-10-12T07:10:00Z",
+          "acknowledged_at": "2026-10-12T07:11:00Z",
+          "exported_at": "2026-10-12T07:12:00Z"
+        },
+        "plot_ref": {
+          "source_instance": "synthetic-farm://cooperative-a",
+          "object_type": "Plot",
+          "external_id": "PLOT-07",
+          "tenant_ref": "tenant:synthetic-coop-a"
+        },
+        "evidence": {
+          "kind": "reported",
+          "training_permission": "disabled"
+        },
+        "action": {
+          "operation_id": "operation-001",
+          "action_type": "irrigation_application",
+          "state": "acknowledged",
+          "volume_applied": null,
+          "unit_code": "m3"
+        },
+        "outcome": {
+          "state": "unknown",
+          "measurement_ref": null,
+          "observed_at": null
+        }
+      },
+      "expected": {
+        "outcome": "preserve_with_indeterminate",
+        "action_state": "acknowledged",
+        "outcome_state": "unknown",
+        "projection_emitted": true,
+        "decision_authority": "none",
+        "action_authority": "none",
+        "assertions": [
+          "acknowledgement is not proof of physical delivery",
+          "unknown applied volume is not zero",
+          "unknown outcome is neither success nor failure",
+          "no yield or causal benefit is inferred"
+        ]
+      }
+    },
+    {
+      "id": "AGR-CONFLICT-001",
+      "label": "Conflicting plot observations are both retained without silent winner",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-farm-journal",
+          "instance_namespace": "synthetic-farm://cooperative-a",
+          "source_contract": "farm-record-fixture/0.1",
+          "object_type": "ObservationConflictSet",
+          "external_id": "SOIL-CONFLICT-001",
+          "record_revision": "rev-1"
+        },
+        "scope_binding": {
+          "binding_id": "binding-coop-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-coop-a",
+          "source_farm_ref": "farm-a"
+        },
+        "times": {
+          "observed_at": "2026-10-12T08:00:00+02:00",
+          "effective_at": "2026-10-12T08:00:00+02:00",
+          "source_modified_at": "2026-10-12T08:05:00+02:00",
+          "exported_at": "2026-10-12T06:07:00Z"
+        },
+        "plot_ref": {
+          "source_instance": "synthetic-farm://cooperative-a",
+          "object_type": "Plot",
+          "external_id": "PLOT-07",
+          "tenant_ref": "tenant:synthetic-coop-a"
+        },
+        "evidence": {
+          "kind": "conflicting",
+          "training_permission": "disabled"
+        },
+        "observations": [
+          {
+            "evidence_id": "SOIL-A",
+            "source_ref": "sensor-a",
+            "observed_at": "2026-10-12T08:00:00Z",
+            "value_decimal": "0.21",
+            "unit_code": "m3/m3"
+          },
+          {
+            "evidence_id": "SOIL-B",
+            "source_ref": "sensor-b",
+            "observed_at": "2026-10-12T08:00:00Z",
+            "value_decimal": "0.34",
+            "unit_code": "m3/m3"
+          }
+        ]
+      },
+      "expected": {
+        "outcome": "preserve_with_conflict",
+        "projection_emitted": true,
+        "conflict_count": 1,
+        "selected_winner": null,
+        "assertions": [
+          "both source observations remain addressable",
+          "same-time disagreement is not averaged away",
+          "no model or source is silently promoted to truth"
+        ]
+      }
+    },
+    {
+      "id": "AGR-RIGHTS-001",
+      "label": "Training-disabled or quarantined source cannot become training-authorized",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-farm-journal",
+          "instance_namespace": "synthetic-farm://cooperative-a",
+          "source_contract": "farm-record-fixture/0.1",
+          "object_type": "ResearchDatasetRecord",
+          "external_id": "DATASET-Q-001",
+          "record_revision": "rev-1"
+        },
+        "scope_binding": {
+          "binding_id": "binding-coop-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-coop-a",
+          "source_farm_ref": "farm-a"
+        },
+        "times": {
+          "observed_at": "2026-10-12T08:00:00+02:00",
+          "effective_at": "2026-10-12T08:00:00+02:00",
+          "source_modified_at": "2026-10-12T08:05:00+02:00",
+          "exported_at": "2026-10-12T06:07:00Z"
+        },
+        "plot_ref": {
+          "source_instance": "synthetic-farm://cooperative-a",
+          "object_type": "Plot",
+          "external_id": "PLOT-07",
+          "tenant_ref": "tenant:synthetic-coop-a"
+        },
+        "evidence": {
+          "kind": "reported",
+          "training_permission": "disabled",
+          "redistribution_permission": "unknown",
+          "artifact_rights_state": "quarantined",
+          "source_registry_ref": "cropfoundry-source-registry-v0"
+        },
+        "measurement": null
+      },
+      "expected": {
+        "outcome": "accepted_projection",
+        "projection_emitted": true,
+        "training_authority": "none",
+        "training_permission": "disabled",
+        "assertions": [
+          "source rights state is preserved exactly",
+          "projection does not imply access permission beyond the recorded scope",
+          "no training or redistribution permission is generated"
+        ]
+      }
+    },
+    {
+      "id": "AGR-SCOPE-001",
+      "label": "Cross-tenant plot reference is rejected",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-farm-journal",
+          "instance_namespace": "synthetic-farm://cooperative-a",
+          "source_contract": "farm-record-fixture/0.1",
+          "object_type": "SoilObservation",
+          "external_id": "SOIL-OBS-CROSS-001",
+          "record_revision": "rev-1"
+        },
+        "scope_binding": {
+          "binding_id": "binding-coop-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-coop-a",
+          "source_farm_ref": "farm-a"
+        },
+        "times": {
+          "observed_at": "2026-10-12T08:00:00+02:00",
+          "effective_at": "2026-10-12T08:00:00+02:00",
+          "source_modified_at": "2026-10-12T08:05:00+02:00",
+          "exported_at": "2026-10-12T06:07:00Z"
+        },
+        "plot_ref": {
+          "source_instance": "synthetic-farm://cooperative-a",
+          "object_type": "Plot",
+          "external_id": "PLOT-07",
+          "tenant_ref": "tenant:synthetic-coop-b"
+        },
+        "evidence": {
+          "kind": "measured",
+          "training_permission": "disabled"
+        },
+        "measurement": {
+          "quantity_kind": "volumetric_water_content",
+          "value_decimal": "0.21",
+          "unit_system": "UCUM",
+          "unit_code": "m3/m3",
+          "measurement_basis": "volumetric_fraction",
+          "depth_interval": {
+            "lower_decimal": "0.15",
+            "upper_decimal": "0.30",
+            "unit_code": "m"
+          },
+          "method_ref": "synthetic-method:probe-reading-v1",
+          "instrument_ref": {
+            "source_instance": "synthetic-farm://cooperative-a",
+            "object_type": "SoilProbe",
+            "external_id": "PROBE-07"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-farm://cooperative-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-PROBE-07"
+          },
+          "uncertainty": {
+            "value_decimal": "0.02",
+            "unit_code": "m3/m3",
+            "meaning": "synthetic expanded uncertainty; coverage convention unspecified"
+          }
+        }
+      },
+      "expected": {
+        "outcome": "reject",
+        "projection_emitted": false,
+        "decision_authority": "none",
+        "action_authority": "none",
+        "assertions": [
+          "source plot tenant does not match trusted scope",
+          "the adapter does not fetch or resolve across tenant boundaries"
+        ]
+      }
+    },
+    {
+      "id": "AGR-UNIT-001",
+      "label": "Missing soil moisture unit is preserved but non-evaluable",
+      "classification": "negative_control",
+      "input": {
+        "source": {
+          "system": "synthetic-farm-journal",
+          "instance_namespace": "synthetic-farm://cooperative-a",
+          "source_contract": "farm-record-fixture/0.1",
+          "object_type": "SoilObservation",
+          "external_id": "SOIL-OBS-UNIT-001",
+          "record_revision": "rev-1"
+        },
+        "scope_binding": {
+          "binding_id": "binding-coop-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-coop-a",
+          "source_farm_ref": "farm-a"
+        },
+        "times": {
+          "observed_at": "2026-10-12T08:00:00+02:00",
+          "effective_at": "2026-10-12T08:00:00+02:00",
+          "source_modified_at": "2026-10-12T08:05:00+02:00",
+          "exported_at": "2026-10-12T06:07:00Z"
+        },
+        "plot_ref": {
+          "source_instance": "synthetic-farm://cooperative-a",
+          "object_type": "Plot",
+          "external_id": "PLOT-07",
+          "tenant_ref": "tenant:synthetic-coop-a"
+        },
+        "evidence": {
+          "kind": "measured",
+          "training_permission": "disabled"
+        },
+        "measurement": {
+          "quantity_kind": "volumetric_water_content",
+          "value_decimal": "0.21",
+          "unit_system": "UCUM",
+          "unit_code": null,
+          "measurement_basis": "volumetric_fraction",
+          "depth_interval": {
+            "lower_decimal": "0.15",
+            "upper_decimal": "0.30",
+            "unit_code": "m"
+          },
+          "method_ref": "synthetic-method:probe-reading-v1",
+          "instrument_ref": {
+            "source_instance": "synthetic-farm://cooperative-a",
+            "object_type": "SoilProbe",
+            "external_id": "PROBE-07"
+          },
+          "calibration_ref": {
+            "source_instance": "synthetic-farm://cooperative-a",
+            "object_type": "CalibrationRecord",
+            "external_id": "CAL-PROBE-07"
+          },
+          "uncertainty": {
+            "value_decimal": "0.02",
+            "unit_code": "m3/m3",
+            "meaning": "synthetic expanded uncertainty; coverage convention unspecified"
+          }
+        }
+      },
+      "expected": {
+        "outcome": "preserve_with_conflict",
+        "measurement_evaluation": "not_evaluable",
+        "projection_emitted": true,
+        "decision_authority": "none",
+        "action_authority": "none",
+        "assertions": [
+          "numeric value is not compared without a unit",
+          "no unit or depth interpretation is inferred"
+        ]
+      }
+    },
+    {
+      "id": "AGR-RETRACTION-001",
+      "label": "Correction appends a new claim and leaves prior source statement intact",
+      "classification": "positive",
+      "input": {
+        "source": {
+          "system": "synthetic-farm-journal",
+          "instance_namespace": "synthetic-farm://cooperative-a",
+          "source_contract": "farm-record-fixture/0.1",
+          "object_type": "EvidenceCorrection",
+          "external_id": "SOIL-CORRECTION-001",
+          "record_revision": "rev-1"
+        },
+        "scope_binding": {
+          "binding_id": "binding-coop-a-v1",
+          "trusted_tenant_id": "tenant:synthetic-coop-a",
+          "source_farm_ref": "farm-a"
+        },
+        "times": {
+          "observed_at": "2026-10-12T08:00:00+02:00",
+          "effective_at": "2026-10-12T08:00:00+02:00",
+          "source_modified_at": "2026-10-12T08:05:00+02:00",
+          "exported_at": "2026-10-12T06:07:00Z"
+        },
+        "plot_ref": {
+          "source_instance": "synthetic-farm://cooperative-a",
+          "object_type": "Plot",
+          "external_id": "PLOT-07",
+          "tenant_ref": "tenant:synthetic-coop-a"
+        },
+        "evidence": {
+          "kind": "reported",
+          "training_permission": "disabled"
+        },
+        "correction": {
+          "operation": "retract_and_supersede",
+          "target_evidence_id": "SOIL-OBS-007",
+          "new_evidence_id": "SOIL-OBS-007-CORR",
+          "reason_code": "source_record_corrected",
+          "corrected_value_decimal": "0.19",
+          "unit_code": "m3/m3",
+          "corrected_observed_at": "2026-10-12T08:00:00Z"
+        }
+      },
+      "expected": {
+        "outcome": "accepted_projection",
+        "projection_emitted": true,
+        "assertions": [
+          "original evidence remains immutable and addressable",
+          "correction links to the original source claim",
+          "historical reports are not rewritten silently",
+          "corrected record has its own source revision and as-of time"
+        ]
+      }
+    }
+  ]
+}
