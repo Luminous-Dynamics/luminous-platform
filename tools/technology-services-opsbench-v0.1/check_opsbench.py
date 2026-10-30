@@ -19,6 +19,12 @@ EXPECTED_EXTERNAL_BENCHMARK_IDS = {
     "edge_delta_ai_sre_arena_v1",
     "edge_delta_rootcausebench_2026",
 }
+EXPECTED_COMPARISON_RULES = {
+    "cross_benchmark_scores_comparable_without_common_task_snapshot_rubric_permissions_and_judge": False,
+    "external_vendor_published_results_are_independent_audits": False,
+    "no_external_benchmark_run_claimed": True,
+    "preserve_upstream_license_notices_when_reusing_assets": True,
+}
 EXPECTED_COMMON_CORE_RULES = {
     "freeze_upstream_commit_and_corpus_digest",
     "freeze_task_variant_and_initial_snapshot",
@@ -314,14 +320,8 @@ def validate_crosswalk(document: Any) -> dict[str, int]:
 
     rules = document.get("comparison_rules")
     require(isinstance(rules, dict), "crosswalk comparison_rules are required")
-    for key in (
-        "cross_benchmark_scores_comparable_without_common_task_snapshot_rubric_permissions_and_judge",
-        "external_vendor_published_results_are_independent_audits",
-        "no_external_benchmark_run_claimed",
-        "preserve_upstream_license_notices_when_reusing_assets",
-    ):
-        require(rules.get(key) is False if key != "preserve_upstream_license_notices_when_reusing_assets"
-                else rules.get(key) is True, f"comparison rule weakened: {key}")
+    require(rules == EXPECTED_COMPARISON_RULES,
+            "cross-benchmark equivalence or claim-ceiling rules drifted")
 
     benchmarks = document.get("benchmarks")
     require(isinstance(benchmarks, list), "benchmarks must be an array")
