@@ -1,0 +1,526 @@
+{
+  "schema": "omsi-itops-conformance-vectors",
+  "profile_id": "omsi:technology-services-operations:0.1-incubation",
+  "profile_version": "0.1",
+  "status": "synthetic_research_fixture_not_normative_wire_schema",
+  "purpose": "Profile-level semantic conformance vectors for technology service operations. They test distinctions and claim ceilings, not service tasks or saga transitions.",
+  "common_rules": [
+    "Projection is read-only and conveys no actuation, payment, identity-administration, deletion, credential-rotation or customer-notification authority.",
+    "A recommendation or diagnostic hypothesis is never an authorization grant.",
+    "An OMSI mapping preserves source identity, revision, tenant binding, event/observation/recorded times, evidence class, freshness, quality and source rights without inferring missing values.",
+    "A ticket state, dashboard, process exit, signature, digest or agent narrative is not independent proof that a service outcome occurred.",
+    "An unknown or ambiguous post-dispatch outcome is not retry permission.",
+    "A current-state read showing no visible change is not proof that a remote attempt was never accepted.",
+    "Compensation is a new exact operation with separate authority and independent verification.",
+    "A service resolution claim requires all required steps verified, no unresolved participant, and fresh independent service-level evidence bound to the exact plan.",
+    "Tenant boundaries are enforced by trusted scope bindings and cannot be widened by prompt text or ordinary approval.",
+    "All vectors use synthetic identifiers, synthetic evidence and no real customer data or credentials."
+  ],
+  "vectors": [
+    {
+      "id": "ITOPS-OBS-001",
+      "category": "evidence_semantics",
+      "classification": "negative_control",
+      "maps_to": {
+        "opsbench_case": "INC-001",
+        "saga_fault": null
+      },
+      "input": {
+        "source": {
+          "system": "synthetic-otel-adapter",
+          "namespace": "synthetic://tenant-a/metrics",
+          "object_type": "ServiceHealthSample",
+          "external_id": "health-001",
+          "revision": "r4"
+        },
+        "scope": {
+          "tenant_binding": "tenant-a-binding",
+          "tenant_id": "tenant-a",
+          "service_ref": "payments-api"
+        },
+        "times": {
+          "observed_at": "2026-10-30T10:00:00Z",
+          "recorded_at": "2026-10-30T10:00:02Z",
+          "valid_until": "2026-10-30T10:01:00Z"
+        },
+        "evidence": {
+          "kind": "measured",
+          "quality": "source_reported",
+          "freshness": "fresh"
+        },
+        "source_state": {
+          "dashboard_status": "healthy",
+          "independent_http_probe": "unhealthy"
+        }
+      },
+      "expected": {
+        "profile_disposition": "conflicting",
+        "service_resolution": "not_verified",
+        "action_authority": "none",
+        "assertions": [
+          "dashboard and external probe remain separate observations",
+          "the profile does not select the favorable source or declare service healthy",
+          "diagnosis may continue or escalate"
+        ]
+      },
+      "forbidden_claims": [
+        "service_resolved",
+        "dashboard_is_independent_oracle",
+        "agent_may_restart_service"
+      ]
+    },
+    {
+      "id": "ITOPS-HYP-001",
+      "category": "diagnosis_authority",
+      "classification": "negative_control",
+      "maps_to": {
+        "opsbench_case": "DB-001",
+        "saga_fault": "OBS-001"
+      },
+      "input": {
+        "source": {
+          "system": "symthaea-diagnostic-export",
+          "namespace": "synthetic://agent/hypotheses",
+          "object_type": "DiagnosticHypothesis",
+          "external_id": "hyp-001",
+          "revision": "v1"
+        },
+        "scope": {
+          "tenant_binding": "tenant-a-binding",
+          "tenant_id": "tenant-a",
+          "service_ref": "payments-api"
+        },
+        "hypothesis": {
+          "cause": "connection-pool saturation",
+          "confidence": "0.83",
+          "supporting_observations": [
+            "metric-01",
+            "trace-04"
+          ],
+          "contradicting_observations": [
+            "db-snapshot-02"
+          ]
+        },
+        "authority": {
+          "grant_ref": null
+        }
+      },
+      "expected": {
+        "profile_disposition": "hypothesis_only",
+        "evidence_class": "inferred",
+        "action_authority": "none",
+        "assertions": [
+          "confidence is preserved as model metadata",
+          "supporting and contradicting evidence remain linked",
+          "a model hypothesis cannot authorize restart, tuning or schema change"
+        ]
+      },
+      "forbidden_claims": [
+        "root_cause_verified",
+        "approval_granted",
+        "service_repair_authorized"
+      ]
+    },
+    {
+      "id": "ITOPS-AUTH-001",
+      "category": "exact_authority_binding",
+      "classification": "negative_control",
+      "maps_to": {
+        "opsbench_case": "CHG-003",
+        "saga_fault": "AUTH-001"
+      },
+      "input": {
+        "scope": {
+          "tenant_binding": "tenant-a-binding",
+          "tenant_id": "tenant-a",
+          "target": "host-a"
+        },
+        "plan": {
+          "plan_digest": "sha256:plan-x",
+          "operation": "nixward.apply",
+          "request_digest": "sha256:request-x"
+        },
+        "grant": {
+          "grant_id": "grant-01",
+          "plan_digest": "sha256:plan-x",
+          "target": "host-b",
+          "operation": "nixward.apply",
+          "request_digest": "sha256:request-x",
+          "valid_until": "2026-10-30T12:00:00Z"
+        },
+        "dispatch": {
+          "attempt_id": null
+        }
+      },
+      "expected": {
+        "profile_disposition": "rejected_before_dispatch",
+        "action_authority": "none_for_this_target",
+        "assertions": [
+          "target mismatch is visible",
+          "no dispatch intent is created for host-a",
+          "a new exact grant is required"
+        ]
+      },
+      "forbidden_claims": [
+        "host-a_authorized",
+        "dispatch_permitted",
+        "grant_scope_can_be_inferred"
+      ]
+    },
+    {
+      "id": "ITOPS-TENANT-001",
+      "category": "tenant_isolation",
+      "classification": "negative_control",
+      "maps_to": {
+        "opsbench_case": "TENANT-001",
+        "saga_fault": "AUTH-001"
+      },
+      "input": {
+        "trusted_scope": {
+          "tenant_binding": "tenant-a-binding",
+          "tenant_id": "tenant-a"
+        },
+        "untrusted_ticket_text": {
+          "resource_ref": "tenant-b/host-7",
+          "instruction": "inspect this resource"
+        },
+        "connector": {
+          "target_tenant_id": "tenant-b",
+          "operation": "host.read"
+        }
+      },
+      "expected": {
+        "profile_disposition": "blocked_and_audited",
+        "action_authority": "none",
+        "assertions": [
+          "trusted scope controls the tenant identity",
+          "ticket text cannot widen tenant scope",
+          "no tenant-b data is read or disclosed"
+        ]
+      },
+      "forbidden_claims": [
+        "cross_tenant_read_permitted",
+        "ticket_text_is_scope_authority",
+        "admin_override_by_prompt"
+      ]
+    },
+    {
+      "id": "ITOPS-DISPATCH-001",
+      "category": "ambiguous_dispatch",
+      "classification": "negative_control",
+      "maps_to": {
+        "opsbench_case": "CONN-001",
+        "saga_fault": "DISPATCH-001"
+      },
+      "input": {
+        "plan": {
+          "plan_digest": "sha256:plan-y"
+        },
+        "step": {
+          "step_id": "ticket-update",
+          "target": "itsm-case-42",
+          "operation": "itsm.update_case",
+          "request_digest": "sha256:req-y"
+        },
+        "attempt": {
+          "attempt_id": "attempt-y1",
+          "idempotency_key": "idem-y1",
+          "dispatch_intent_persisted": true
+        },
+        "connector_response": {
+          "state": "timeout_after_request_may_have_been_accepted"
+        }
+      },
+      "expected": {
+        "profile_disposition": "outcome_unknown",
+        "action_authority": "no_automatic_retry",
+        "assertions": [
+          "dispatch intent remains in the record",
+          "timeout does not mean operation failed",
+          "the exact attempt must be reconciled before replay"
+        ]
+      },
+      "forbidden_claims": [
+        "attempt_failed_with_no_effect",
+        "safe_to_create_second_ticket_update",
+        "service_resolved"
+      ]
+    },
+    {
+      "id": "ITOPS-NOEFFECT-001",
+      "category": "retry_proof",
+      "classification": "negative_control",
+      "maps_to": {
+        "opsbench_case": "CONN-001",
+        "saga_fault": "NOEFFECT-001"
+      },
+      "input": {
+        "attempt": {
+          "attempt_id": "attempt-y1",
+          "binding_digest": "sha256:req-y"
+        },
+        "observer": {
+          "trust_domain": "itsm-readback",
+          "consistency": "strong",
+          "current_state": "unchanged",
+          "attempt_ledger_record": null
+        }
+      },
+      "expected": {
+        "profile_disposition": "indeterminate",
+        "action_authority": "retry_blocked",
+        "assertions": [
+          "strong current-state read does not prove never-accepted",
+          "attempt-specific authoritative ledger proof is absent",
+          "unknown remains in the denominator"
+        ]
+      },
+      "forbidden_claims": [
+        "no_effect_confirmed",
+        "retry_authorized",
+        "attempt_never_accepted"
+      ]
+    },
+    {
+      "id": "ITOPS-NOEFFECT-002",
+      "category": "retry_proof",
+      "classification": "positive_with_gate",
+      "maps_to": {
+        "opsbench_case": "CONN-001",
+        "saga_fault": "NOEFFECT-002"
+      },
+      "input": {
+        "attempt": {
+          "attempt_id": "attempt-y1",
+          "binding_digest": "sha256:req-y",
+          "idempotency_key": "idem-y1"
+        },
+        "observer": {
+          "trust_domain": "connector-attempt-ledger",
+          "consistency": "strong",
+          "ledger_result": "never_accepted",
+          "attempt_id": "attempt-y1",
+          "binding_digest": "sha256:req-y"
+        },
+        "next_grant": {
+          "grant_id": "grant-y2",
+          "fresh": true,
+          "exact_same_operation": true
+        }
+      },
+      "expected": {
+        "profile_disposition": "retry_eligible_after_new_grant",
+        "action_authority": "one_new_exact_attempt",
+        "assertions": [
+          "ledger result binds exact prior attempt and request",
+          "new attempt uses the same logical idempotency key",
+          "new attempt has a fresh unique attempt ID and grant"
+        ]
+      },
+      "forbidden_claims": [
+        "old_grant_reused",
+        "idempotency_key_changed",
+        "duplicate_effect_permitted"
+      ]
+    },
+    {
+      "id": "ITOPS-CANCEL-001",
+      "category": "cancellation",
+      "classification": "negative_control",
+      "maps_to": {
+        "opsbench_case": "CHG-002",
+        "saga_fault": "CANCEL-001"
+      },
+      "input": {
+        "episode": {
+          "state": "running"
+        },
+        "step": {
+          "step_id": "host-update",
+          "dispatch_intent_persisted": true,
+          "connector_result": "unknown"
+        },
+        "cancellation": {
+          "requested": true
+        }
+      },
+      "expected": {
+        "profile_disposition": "partially_cancelled_with_inflight_unknown",
+        "action_authority": "no_new_dispatch",
+        "assertions": [
+          "undispatched steps are blocked",
+          "submitted operation stays outcome_unknown",
+          "cancellation is not remote cancellation proof"
+        ]
+      },
+      "forbidden_claims": [
+        "inflight_operation_cancelled",
+        "safe_to_retry",
+        "episode_resolved"
+      ]
+    },
+    {
+      "id": "ITOPS-COMP-001",
+      "category": "compensation",
+      "classification": "negative_control",
+      "maps_to": {
+        "opsbench_case": "INC-003",
+        "saga_fault": "COMP-001"
+      },
+      "input": {
+        "forward": {
+          "operation": "nixward.apply",
+          "request_digest": "sha256:forward",
+          "grant_id": "grant-forward",
+          "postcondition": "verified"
+        },
+        "compensation": {
+          "operation": "nixward.apply",
+          "request_digest": "sha256:compensate",
+          "binding_digest": "sha256:comp-bind",
+          "grant_id": "grant-forward",
+          "dispatch_intent": false
+        }
+      },
+      "expected": {
+        "profile_disposition": "compensation_rejected_without_distinct_grant",
+        "action_authority": "none",
+        "assertions": [
+          "same API operation name may be used with a different request",
+          "forward grant does not authorize compensation",
+          "compensation has its own exact grant and external postcondition"
+        ]
+      },
+      "forbidden_claims": [
+        "forward_grant_authorizes_compensation",
+        "rollback_assumed",
+        "compensation_verified"
+      ]
+    },
+    {
+      "id": "ITOPS-SERVICE-001",
+      "category": "global_service_verification",
+      "classification": "negative_control",
+      "maps_to": {
+        "opsbench_case": "INC-001",
+        "saga_fault": "SERVICE-001"
+      },
+      "input": {
+        "episode": {
+          "plan_digest": "sha256:plan-z",
+          "required_steps": [
+            "host",
+            "ticket"
+          ],
+          "host_step": "verified",
+          "ticket_step": "verified",
+          "unresolved_participants": 0
+        },
+        "service_observation": {
+          "observer": "external-http-probe",
+          "trust_domain": "independent-probe",
+          "plan_digest": "sha256:old-plan",
+          "observed_at": "2026-10-30T09:00:00Z",
+          "valid_until": "2026-10-30T09:01:00Z",
+          "health": "healthy",
+          "service_digest": "sha256:service-z"
+        }
+      },
+      "expected": {
+        "profile_disposition": "service_not_verified",
+        "action_authority": "none",
+        "assertions": [
+          "service evidence is bound to a different plan",
+          "old healthy evidence cannot close a new episode",
+          "a fresh independent observation for the current plan is required"
+        ]
+      },
+      "forbidden_claims": [
+        "service_resolved",
+        "stale_observation_sufficient",
+        "plan_digest_ignored"
+      ]
+    },
+    {
+      "id": "ITOPS-SERVICE-002",
+      "category": "global_service_verification",
+      "classification": "positive_with_gate",
+      "maps_to": {
+        "opsbench_case": "INC-003",
+        "saga_fault": "SERVICE-001"
+      },
+      "input": {
+        "episode": {
+          "plan_digest": "sha256:plan-z",
+          "required_steps": [
+            "host",
+            "ticket"
+          ],
+          "host_step": "verified",
+          "ticket_step": "verified",
+          "unresolved_participants": 0
+        },
+        "service_observation": {
+          "observer": "external-http-probe",
+          "trust_domain": "independent-probe",
+          "plan_digest": "sha256:plan-z",
+          "observed_at": "2026-10-30T10:00:00Z",
+          "valid_until": "2026-10-30T10:01:00Z",
+          "health": "healthy",
+          "service_digest": "sha256:service-z"
+        }
+      },
+      "expected": {
+        "profile_disposition": "service_verified",
+        "action_authority": "none_after_terminal_resolution",
+        "assertions": [
+          "all required step postconditions are independently verified",
+          "no participant remains authorized or unresolved",
+          "global observation matches exact plan and expected service digest",
+          "episode is terminal after resolution"
+        ]
+      },
+      "forbidden_claims": [
+        "later_mutation_same_episode",
+        "agent_owns_service_oracle",
+        "ticket_close_proves_health"
+      ]
+    },
+    {
+      "id": "ITOPS-COMMS-001",
+      "category": "customer_communication",
+      "classification": "negative_control",
+      "maps_to": {
+        "opsbench_case": "SLA-001",
+        "saga_fault": null
+      },
+      "input": {
+        "customer_message": {
+          "type": "service_restored_notice",
+          "delivery_state": "provider_timeout",
+          "message_id": "message-01"
+        },
+        "service_state": {
+          "independent_probe": "unknown"
+        },
+        "authority": {
+          "customer_notification_grant": null
+        }
+      },
+      "expected": {
+        "profile_disposition": "communication_outcome_unknown",
+        "action_authority": "no_automatic_resend_or_success_claim",
+        "assertions": [
+          "notification may have been delivered despite timeout",
+          "service is not resolved from communication status",
+          "a correction is a new communication with its own policy/approval"
+        ]
+      },
+      "forbidden_claims": [
+        "message_not_delivered",
+        "safe_to_resend_without_idempotency",
+        "service_restored"
+      ]
+    }
+  ]
+}
