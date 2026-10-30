@@ -298,6 +298,7 @@ pub enum StepStatus {
         evidence_digest: Digest,
     },
     CompensationAuthorized { grant_id: String },
+    CompensationBlocked,
     CompensationDispatchIntentPersisted {
         attempt_id: String,
         idempotency_key: String,
@@ -372,7 +373,6 @@ pub enum TransitionError {
     DependencyNotVerified(String),
     InvalidObserver,
     AttemptMismatch,
-    WeakNoEffectEvidence,
     Cancelled,
     CompensationUnavailable,
     ServicePreconditionsNotMet,
@@ -451,7 +451,7 @@ impl SagaEpisode {
     #[must_use]
     pub fn disposition(&self) -> EpisodeDisposition {
         if self.steps.values().any(|runtime| {
-            matches!(runtime.status, StepStatus::ViolationObserved { .. })
+            matches!(&runtime.status, StepStatus::ViolationObserved { .. })
         }) {
             return EpisodeDisposition::SecurityViolationObserved;
         }
@@ -1001,7 +1001,8 @@ impl SagaEpisode {
                 StepStatus::Pending
                 | StepStatus::Authorized { .. }
                 | StepStatus::NoEffectConfirmed { .. }
-                | StepStatus::CompensationAuthorized { .. } => StepStatus::Blocked,
+                    => StepStatus::Blocked,
+                StepStatus::CompensationAuthorized { .. } => StepStatus::CompensationBlocked,
                 StepStatus::DispatchIntentPersisted {
                     attempt_id,
                     idempotency_key,
@@ -1188,11 +1189,11 @@ mod tests {
 
     fn grant(
         step_id: &str,
-        compensation: bool,
+        is_compensation: bool,
         grant_id: &str,
         valid_until_ms: u64,
     ) -> AuthorityGrant {
-        if compensation {
+        if is_compensation {
             let spec = compensation();
             AuthorityGrant {
                 grant_id: grant_id.into(),
