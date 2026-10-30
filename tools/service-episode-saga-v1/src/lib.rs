@@ -2018,14 +2018,21 @@ mod tests {
     fn compensation_may_reuse_connector_operation_with_distinct_request_binding() {
         let mut candidate = plan();
         let forward_operation = candidate.steps[0].operation_id.clone();
-        let compensation = candidate.steps[0]
-            .compensation
-            .as_mut()
-            .expect("compensation exists");
-        compensation.operation_id = forward_operation;
+        {
+            let compensation = candidate.steps[0]
+                .compensation
+                .as_mut()
+                .expect("compensation exists");
+            compensation.operation_id = forward_operation;
+        }
         assert!(candidate.validate().is_ok());
 
-        compensation.binding_digest = candidate.steps[0].binding_digest;
+        let forward_binding = candidate.steps[0].binding_digest;
+        candidate.steps[0]
+            .compensation
+            .as_mut()
+            .expect("compensation exists")
+            .binding_digest = forward_binding;
         assert!(matches!(
             candidate.validate(),
             Err(PlanValidationError::InvalidCompensation(_))
