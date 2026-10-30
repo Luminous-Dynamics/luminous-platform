@@ -73,9 +73,9 @@ The attempt becomes `outcome_unknown`. It stays unresolved until independent evi
 A retry is permitted only after one of these conditions is established:
 
 1. the connector's documented idempotency contract guarantees repeated submission with the **same idempotency key and exact request binding** cannot create a duplicate effect; or
-2. a sufficiently strong independent read proves the previous attempt had no effect, under that connector's stated consistency semantics, and a new attempt receives the required authority.
+2. an independent, attempt-specific authoritative connector ledger proves that this exact request/attempt was never accepted, and a new attempt receives the required authority.
 
-An eventual-consistency "not found" result is not proof of no effect. The v1 reference model takes the conservative path: a retry requires a strong independent no-effect observation and a fresh exact-operation grant. It preserves the original logical idempotency key and assigns a new attempt ID. Production adapters may add a connector-specific idempotency proof, but must not weaken the default.
+An unchanged current-state read, even from a strongly consistent database, does not prove that the request was never accepted or that no transient side effect occurred. An eventual-consistency "not found" result is also insufficient. The v1 reference model therefore accepts retry eligibility only from an independent, attempt-specific authoritative ledger result that says this exact attempt was never accepted, bound to the original attempt ID and operation digest, plus a fresh exact-operation grant. It preserves the original logical idempotency key and assigns a new attempt ID. Production adapters may add a connector-specific idempotency proof, but must not weaken the default.
 
 ## 5. Independent observation and verification
 
@@ -139,7 +139,7 @@ These dispositions are not collapsed into a weighted score. A safe refusal or un
 
 ## 9. Reference model boundary
 
-`tools/service-episode-saga-v1` is a dependency-free Rust reference state machine for plan-DAG validation and the transitions above. It checks exact metadata binding, revisions, attempt uniqueness, strong no-effect reconciliation, separate compensation authority and the final service verification gate.
+`tools/service-episode-saga-v1` is a dependency-free Rust reference state machine for plan-DAG validation and the transitions above. It checks exact metadata binding, revisions, attempt uniqueness, attempt-ledger-backed no-effect reconciliation, separate compensation authority and the final service verification gate.
 
 It does **not**:
 
