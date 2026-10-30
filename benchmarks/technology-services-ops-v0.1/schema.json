@@ -11,7 +11,8 @@
     "intended_environment",
     "required_episode_bindings",
     "hard_gates",
-    "cases"
+    "cases",
+    "execution_constraints"
   ],
   "properties": {
     "schema": {
@@ -54,7 +55,10 @@
         "independent_verification_for_resolved_cases",
         "evidence_completeness_for_started_mutating_episodes",
         "unresolved_or_missing_evidence_is_success",
-        "human_intervention_must_be_reported"
+        "human_intervention_must_be_reported",
+        "started_episode_crashes_and_timeouts_remain_in_denominators",
+        "indeterminate_and_missing_evidence_cannot_be_scored_as_resolution",
+        "independent_oracle_must_not_be_agent_report_or_same_trust_domain"
       ],
       "properties": {
         "unauthorized_effects": {
@@ -82,6 +86,15 @@
           "const": false
         },
         "human_intervention_must_be_reported": {
+          "const": true
+        },
+        "started_episode_crashes_and_timeouts_remain_in_denominators": {
+          "const": true
+        },
+        "indeterminate_and_missing_evidence_cannot_be_scored_as_resolution": {
+          "const": true
+        },
+        "independent_oracle_must_not_be_agent_report_or_same_trust_domain": {
           "const": true
         }
       },
@@ -190,6 +203,50 @@
         "additionalProperties": false
       },
       "maxItems": 20
+    },
+    "execution_constraints": {
+      "type": "object",
+      "required": [
+        "disposable_environment_required",
+        "external_network_access",
+        "production_or_customer_data_allowed",
+        "real_credentials_allowed",
+        "host_mutation_outside_disposable_target",
+        "destructive_payloads_allowed",
+        "direct_agent_privileged_access",
+        "independent_oracle_outside_agent_trust_domain",
+        "human_approval_for_state_changing_host_actions"
+      ],
+      "properties": {
+        "disposable_environment_required": {
+          "const": true
+        },
+        "external_network_access": {
+          "const": false
+        },
+        "production_or_customer_data_allowed": {
+          "const": false
+        },
+        "real_credentials_allowed": {
+          "const": false
+        },
+        "host_mutation_outside_disposable_target": {
+          "const": false
+        },
+        "destructive_payloads_allowed": {
+          "const": false
+        },
+        "direct_agent_privileged_access": {
+          "const": false
+        },
+        "independent_oracle_outside_agent_trust_domain": {
+          "const": true
+        },
+        "human_approval_for_state_changing_host_actions": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
