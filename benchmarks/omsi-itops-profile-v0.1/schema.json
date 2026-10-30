@@ -121,6 +121,10 @@
               },
               "evidence_class": {
                 "type": "string"
+              },
+              "service_resolution": {
+                "type": "string",
+                "minLength": 3
               }
             },
             "additionalProperties": false
