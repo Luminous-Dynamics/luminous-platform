@@ -73,8 +73,28 @@ class OpsBenchContractTests(unittest.TestCase):
 
     def test_external_benchmark_crosswalk_is_non_equivalent_and_pinned(self):
         result = validate_crosswalk(self.crosswalk)
-        self.assertEqual(result["external_benchmark_count"], 4)
+        self.assertEqual(result["external_benchmark_count"], 6)
         self.assertEqual(result["common_core_rules"], 9)
+
+
+    def test_itbench_aa_is_scored_as_diagnosis_not_resolution(self):
+        result = validate_crosswalk(self.crosswalk)
+        self.assertEqual(result["external_benchmark_count"], 6)
+        itbench_aa = next(x for x in self.crosswalk["benchmarks"] if x["id"] == "itbench_aa_2026")
+        self.assertEqual(itbench_aa["reported_scope"]["scenario_count"], 59)
+        self.assertEqual(itbench_aa["reported_scope"]["primary_metric"], "average precision at full recall")
+        self.assertFalse(itbench_aa["direct_score_comparison_allowed"])
+
+    def test_enterpriseops_gym_final_state_baseline_is_pinned(self):
+        result = validate_crosswalk(self.crosswalk)
+        self.assertEqual(result["external_benchmark_count"], 6)
+        baseline = next(x for x in self.crosswalk["benchmarks"]
+                        if x["id"] == "servicenow_enterpriseops_gym_aa_2026")
+        self.assertEqual(baseline["reported_scope"]["task_count"], 1150)
+        self.assertEqual(baseline["reported_scope"]["tools"], 512)
+        self.assertEqual(baseline["reported_scope"]["database_tables"], 164)
+        self.assertEqual(baseline["license"], "Apache-2.0")
+        self.assertFalse(baseline["direct_score_comparison_allowed"])
 
     def test_external_crosswalk_cannot_claim_direct_score_superiority(self):
         changed = copy.deepcopy(self.crosswalk)
@@ -96,7 +116,7 @@ class OpsBenchContractTests(unittest.TestCase):
 
     def test_upstream_benchmark_commit_and_license_are_pinned(self):
         changed = copy.deepcopy(self.crosswalk)
-        changed["benchmarks"][2]["repository_commit"] = "main"
+        changed["benchmarks"][4]["repository_commit"] = "main"
         with self.assertRaises(ValueError):
             validate_crosswalk(changed)
 

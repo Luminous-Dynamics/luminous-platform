@@ -15,6 +15,8 @@ from typing import Any
 
 EXPECTED_EXTERNAL_BENCHMARK_IDS = {
     "itbench_icml_2025",
+    "itbench_aa_2026",
+    "servicenow_enterpriseops_gym_aa_2026",
     "pagerduty_sre_agent_benchmark_2026",
     "edge_delta_ai_sre_arena_v1",
     "edge_delta_rootcausebench_2026",
@@ -359,12 +361,32 @@ def validate_crosswalk(document: Any) -> dict[str, int]:
         }, f"{benchmark_id}: mapping status is not declared")
 
     itbench = next(x for x in benchmarks if x["id"] == "itbench_icml_2025")
+    itbench_aa = next(x for x in benchmarks if x["id"] == "itbench_aa_2026")
+    enterpriseops = next(x for x in benchmarks if x["id"] == "servicenow_enterpriseops_gym_aa_2026")
     project_arena = next(x for x in benchmarks if x["id"] == "edge_delta_ai_sre_arena_v1")
     rootcause = next(x for x in benchmarks if x["id"] == "edge_delta_rootcausebench_2026")
     require(itbench.get("license") == "Apache-2.0"
             and itbench.get("repository_url") == "https://github.com/itbench-hub/ITBench"
             and re.fullmatch(r"[a-f0-9]{40}", itbench.get("repository_commit", "")) is not None,
             "ITBench code reuse must preserve Apache-2.0 license and an immutable upstream commit")
+    require(itbench_aa.get("reported_scope", {}).get("scenario_count") == 59
+            and itbench_aa.get("reported_scope", {}).get("public_scenarios") == 40
+            and itbench_aa.get("reported_scope", {}).get("private_scenarios") == 19
+            and itbench_aa.get("reported_scope", {}).get("repeats_per_task") == 3
+            and itbench_aa.get("reported_scope", {}).get("primary_metric")
+                == "average precision at full recall",
+            "ITBench-AA diagnostic scope or metric drifted")
+    require(enterpriseops.get("license") == "Apache-2.0"
+            and enterpriseops.get("repository_url") == "https://github.com/ServiceNow/EnterpriseOps-Gym"
+            and re.fullmatch(r"[a-f0-9]{40}", enterpriseops.get("repository_commit", "")) is not None,
+            "EnterpriseOps-Gym reuse must preserve Apache-2.0 license and an immutable upstream commit")
+    enterprise_scope = enterpriseops.get("reported_scope", {})
+    require(enterprise_scope.get("task_count") == 1150
+            and enterprise_scope.get("tools") == 512
+            and enterprise_scope.get("database_tables") == 164
+            and enterprise_scope.get("repeats_per_task") == 3
+            and enterprise_scope.get("grading") == "strict task success; SQL verifiers inspect final database state; no partial credit",
+            "EnterpriseOps-Gym scope or final-state grading contract drifted")
     require(project_arena.get("license") == "MIT"
             and re.fullmatch(r"[a-f0-9]{40}", project_arena.get("repository_commit", "")) is not None,
             "Project Arena reuse must preserve MIT license and an immutable upstream commit")
