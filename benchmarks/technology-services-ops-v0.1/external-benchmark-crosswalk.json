@@ -36,7 +36,8 @@
       "limits": [
         "Initial paper results are tied to the paper's evaluated agents and benchmark release, not a 2026 general SOTA leaderboard.",
         "Different tasks and agents must not be mixed into one headline rate.",
-        "An OpsBench synthetic result is not an ITBench result."
+        "An OpsBench synthetic result is not an ITBench result.",
+        "The code repository is pinned separately from the paper snapshot; public repository changes do not imply that the original paper's scores have been rerun."
       ],
       "opsbench_related_cases": [
         "INC-001",
@@ -52,7 +53,9 @@
       ],
       "mapping_status": "task_family_analogy_only",
       "direct_score_comparison_allowed": false,
-      "next_step": "Select eligible public SRE/CISO scenarios and implement an adapter/runner that preserves ITBench task identity, initial snapshots, evaluator and permissions; publish a separate common-core result."
+      "next_step": "Select eligible public SRE/CISO scenarios and implement an adapter/runner that preserves ITBench task identity, initial snapshots, evaluator and permissions; publish a separate common-core result.",
+      "repository_url": "https://github.com/itbench-hub/ITBench",
+      "repository_commit": "d6e33587852a2c2d3039ca64415afcdaeed86320"
     },
     {
       "id": "pagerduty_sre_agent_benchmark_2026",
