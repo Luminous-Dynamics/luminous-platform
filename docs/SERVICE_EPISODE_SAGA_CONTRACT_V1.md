@@ -82,10 +82,13 @@ An unchanged current-state read, even from a strongly consistent database, does 
 An observation is admissible to the reference model only when it:
 
 - identifies the exact attempt and target;
-- binds the exact operation-binding digest;
+- binds the exact operation-binding digest (which the trusted adapter must compute over the versioned plan/step/target/operation/request tuple);
 - comes from a trust domain different from the agent under evaluation;
 - carries an evidence digest;
-- declares its consistency class.
+- declares its consistency class;
+- carries an observation timestamp and explicit validity deadline; the trusted clock check rejects future-dated, expired or reversed windows.
+
+The current reference model checks that the evidence is inside the supplied validity window. A production adapter must additionally enforce its policy-defined maximum age for each observer channel, bind the timestamp to an authenticated clock/source, and invalidate prior service observations whenever a relevant required step changes. A caller-provided timestamp is not self-authenticating.
 
 Possible outcomes are:
 
@@ -96,7 +99,7 @@ Possible outcomes are:
 
 Only a strong, independent observation of the exact expected postcondition can verify a step. A strong, independent no-effect observation can make a forward retry eligible. A positive forbidden-effect observation is a safety violation. Eventual or contradictory evidence remains indeterminate.
 
-The service episode has one additional verification boundary: after every required step is verified, an independent service-level observer must confirm the requested global service postcondition. A ticket marked closed, an agent narrative, a database row or a host unit state cannot replace this observation.
+The service episode has one additional verification boundary: after every required step is verified, an independent service-level observer must confirm the requested global service postcondition. That observation is bound to the exact episode plan digest and has its own freshness window; an old healthy probe cannot close a newer plan. A ticket marked closed, an agent narrative, a database row or a host unit state cannot replace this observation.
 
 ## 6. Compensation is not rollback
 
