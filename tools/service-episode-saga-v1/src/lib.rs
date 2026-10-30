@@ -254,6 +254,8 @@ pub struct ObserverEvidence {
     pub consistency: Consistency,
     pub postcondition_digest: Option<Digest>,
     pub no_effect_basis: Option<NoEffectBasis>,
+    pub observed_at_ms: u64,
+    pub valid_until_ms: u64,
     pub evidence_digest: Digest,
 }
 
@@ -269,9 +271,12 @@ pub struct ServiceObservation {
     pub observer_id: String,
     pub trust_domain_id: String,
     pub service_id: String,
+    pub plan_digest: Digest,
     pub health: ServiceHealth,
     pub consistency: Consistency,
     pub observed_service_digest: Option<Digest>,
+    pub observed_at_ms: u64,
+    pub valid_until_ms: u64,
     pub evidence_digest: Digest,
 }
 
@@ -689,6 +694,7 @@ impl SagaEpisode {
         expected_revision: u64,
         step_id: &str,
         evidence: &ObserverEvidence,
+        now_ms: u64,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
         let step = self
@@ -723,6 +729,7 @@ impl SagaEpisode {
         if evidence.attempt_id != current_attempt {
             return Err(TransitionError::AttemptMismatch);
         }
+        Self::validate_freshness(evidence.observed_at_ms, evidence.valid_until_ms, now_ms)?;
 
         let next_status = match evidence.effect {
             ObservedEffect::ExpectedPostcondition
@@ -928,6 +935,7 @@ impl SagaEpisode {
         expected_revision: u64,
         step_id: &str,
         evidence: &ObserverEvidence,
+        now_ms: u64,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
         let step = self
@@ -965,6 +973,7 @@ impl SagaEpisode {
         if evidence.attempt_id != current_attempt {
             return Err(TransitionError::AttemptMismatch);
         }
+        Self::validate_freshness(evidence.observed_at_ms, evidence.valid_until_ms, now_ms)?;
 
         let next_status = match evidence.effect {
             ObservedEffect::ExpectedPostcondition
@@ -1050,6 +1059,7 @@ impl SagaEpisode {
         &mut self,
         expected_revision: u64,
         evidence: &ServiceObservation,
+        now_ms: u64,
     ) -> Result<(), TransitionError> {
         self.check_revision(expected_revision)?;
         if self.service_verification == Some(ServiceVerification::VerifiedHealthy) {
@@ -1067,10 +1077,12 @@ impl SagaEpisode {
             || evidence.trust_domain_id.trim().is_empty()
             || evidence.trust_domain_id == self.agent_trust_domain_id
             || evidence.service_id != self.plan.service_id
+            || evidence.plan_digest != self.plan.plan_digest
             || evidence.evidence_digest.is_zero()
         {
             return Err(TransitionError::InvalidObserver);
         }
+        Self::validate_freshness(evidence.observed_at_ms, evidence.valid_until_ms, now_ms)?;
 
         let verification = if evidence.consistency != Consistency::Strong {
             ServiceVerification::Indeterminate
@@ -1095,6 +1107,18 @@ impl SagaEpisode {
             EventKind::ServiceVerificationRecorded,
             Some(evidence.evidence_digest),
         );
+        Ok(())
+    }
+
+    fn validate_freshness(
+        observed_at_ms: u64,
+        valid_until_ms: u64,
+        now_ms: u64,
+    ) -> Result<(), TransitionError> {
+        if observed_at_ms > now_ms || valid_until_ms <= now_ms || valid_until_ms <= observed_at_ms
+        {
+            return Err(TransitionError::StaleEvidence);
+        }
         Ok(())
     }
 
