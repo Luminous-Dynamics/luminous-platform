@@ -201,6 +201,88 @@ def validate(corpus: Any, schema: Any) -> dict[str, Any]:
     }
 
 
+
+def validate_episode_contract(schema: Any, example: Any) -> dict[str, int]:
+    """Check the portable episode schema's safety-critical separation rules."""
+    require(isinstance(schema, dict), "episode-result schema root must be an object")
+    require(schema.get("$schema") == "https://json-schema.org/draft/2020-12/schema",
+            "episode-result schema must declare Draft 2020-12")
+    require(schema.get("properties", {}).get("schema", {}).get("const")
+            == "luminous-technology-services-opsbench-episode-v0.1",
+            "unexpected episode-result schema identifier")
+    required_root = {
+        "schema", "version", "run_binding", "episode", "execution",
+        "actions", "observations", "oracle", "measurements", "human_interventions",
+    }
+    require(set(schema.get("required", [])) == required_root,
+            "episode-result root must require the complete evidence envelope")
+    props = schema.get("properties", {})
+    system_dispositions = set(props.get("execution", {}).get("properties", {})
+                              .get("system_disposition", {}).get("enum", []))
+    oracle_outcomes = set(props.get("oracle", {}).get("properties", {})
+                          .get("oracle_outcome", {}).get("enum", []))
+    require(system_dispositions and oracle_outcomes,
+            "system disposition and oracle outcome vocabularies are required")
+    require(system_dispositions.isdisjoint(oracle_outcomes),
+            "system-reported dispositions must remain distinct from oracle outcomes")
+
+    action_schema = props.get("actions", {}).get("items", {})
+    action_required = set(action_schema.get("required", []))
+    require({"attempt_id", "plan_digest", "authorization_digest", "idempotency_key",
+             "state_mutated", "outcome", "record_digest"}.issubset(action_required),
+            "action records must bind attempt, authorization, idempotency and receipt")
+    action_gates = action_schema.get("allOf", [])
+    require(any(
+        gate.get("if", {}).get("properties", {}).get("state_mutated", {}).get("const") is True
+        and "authorization_digest" in gate.get("then", {}).get("properties", {})
+        for gate in action_gates
+    ), "state-mutating action records must require an authorization digest")
+
+    root_gates = schema.get("allOf", [])
+    resolved_gate = next((
+        gate for gate in root_gates
+        if gate.get("if", {}).get("properties", {}).get("execution", {})
+             .get("properties", {}).get("system_disposition", {}).get("const") == "resolved"
+    ), None)
+    require(resolved_gate is not None, "resolved disposition needs an explicit verification gate")
+    then = resolved_gate.get("then", {}).get("properties", {})
+    require(then.get("observations", {}).get("minItems", 0) >= 1,
+            "resolved episodes must require independent observation records")
+    require(then.get("oracle", {}).get("properties", {}).get("observations", {}).get("minItems", 0) >= 1,
+            "resolved episodes must require evaluator-owned oracle observations")
+
+    require(isinstance(example, dict), "episode-result example must be an object")
+    require(example.get("schema") == "luminous-technology-services-opsbench-episode-v0.1",
+            "example has wrong episode-result schema identifier")
+    require(example.get("version") == 1, "example has unsupported episode-result version")
+    require(set(example) == required_root, "example must contain exactly the required root fields")
+    execution = example.get("execution", {})
+    oracle = example.get("oracle", {})
+    require(execution.get("system_disposition") in system_dispositions,
+            "example system disposition is not declared")
+    require(oracle.get("oracle_outcome") in oracle_outcomes,
+            "example oracle outcome is not declared")
+    require(execution.get("system_disposition") != oracle.get("oracle_outcome"),
+            "example must demonstrate distinct system and oracle vocabularies")
+    require(isinstance(oracle.get("observations"), list),
+            "example oracle observations must be an array")
+    require(isinstance(example.get("observations"), list),
+            "example system observations must be an array")
+    binding = example.get("run_binding", {})
+    require(all(binding.get(key) is not None for key in (
+        "source_commit_sha", "toolchain_digest", "environment_image_digest",
+        "policy_digest", "connector_manifest_digest", "corpus_digest",
+        "scenario_variant_digest", "oracle_version", "run_id", "arm_id",
+        "episode_id", "seed", "started_at", "finished_at",
+    )), "example is missing mandatory exact-run bindings")
+
+    return {
+        "system_disposition_count": len(system_dispositions),
+        "oracle_outcome_count": len(oracle_outcomes),
+        "action_binding_fields": len(action_required),
+    }
+
+
 def main() -> int:
     root = Path(__file__).resolve().parents[2]
     corpus_path = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else (
@@ -209,8 +291,17 @@ def main() -> int:
     schema_path = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else (
         root / "benchmarks" / "technology-services-ops-v0.1" / "schema.json"
     )
+    episode_schema_path = Path(sys.argv[3]).resolve() if len(sys.argv) > 3 else (
+        root / "benchmarks" / "technology-services-ops-v0.1" / "episode-result.schema.json"
+    )
+    episode_example_path = Path(sys.argv[4]).resolve() if len(sys.argv) > 4 else (
+        root / "benchmarks" / "technology-services-ops-v0.1" / "episode-result.example.json"
+    )
     try:
         summary = validate(load_json(corpus_path), load_json(schema_path))
+        episode_summary = validate_episode_contract(
+            load_json(episode_schema_path), load_json(episode_example_path)
+        )
     except ValueError as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
@@ -219,6 +310,12 @@ def main() -> int:
         f"{summary['case_count']} cases; {summary['family_count']} families; "
         f"{summary['hard_gate_count']} hard gates; "
         f"{summary['execution_constraint_count']} lab constraints."
+    )
+    print(
+        "Episode envelope: "
+        f"{episode_summary['system_disposition_count']} system dispositions; "
+        f"{episode_summary['oracle_outcome_count']} oracle outcomes; "
+        f"{episode_summary['action_binding_fields']} action binding fields."
     )
     print("SCOPE: frozen specification integrity only; no runtime or service outcome qualification.")
     return 0
