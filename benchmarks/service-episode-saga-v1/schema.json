@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Service episode saga fault matrix v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "purpose",
+    "bindings_required",
+    "non_compensatory_gates",
+    "cases"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-service-episode-saga-fault-matrix-v1"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "const": "specification_only"
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 20
+    },
+    "bindings_required": {
+      "type": "array",
+      "minItems": 8,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "non_compensatory_gates": {
+      "type": "object"
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "level",
+          "maps_to",
+          "fault",
+          "expected",
+          "assertions"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z]+-[0-9]{3}$"
+          },
+          "level": {
+            "enum": [
+              "reference_model",
+              "runtime_integration"
+            ]
+          },
+          "maps_to": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "fault": {
+            "type": "string",
+            "minLength": 10
+          },
+          "expected": {
+            "type": "string",
+            "minLength": 5
+          },
+          "assertions": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
