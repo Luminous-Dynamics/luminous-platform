@@ -199,10 +199,18 @@ The strongest plausible differentiation is a **cross-vendor service assurance la
 
 OpsBench must not claim novelty merely because it tests AI-assisted incident resolution. Two important external benchmark families already exist and should become comparison anchors:
 
-- **ITBench (IBM Research / UIUC):** a 102-scenario benchmark spanning SRE incident repair, CISO compliance/policy tasks and FinOps, with live Kubernetes environments and state-check/automated-test grading. Its public SRE leaderboard surfaced in May 2025 and should not be treated as a current 2026 model ranking. The public leaderboard's 25% entry and the paper's 11.4% headline use different scenario sets/agents and are not directly comparable. Reuse the public scenario/environment subset where licensing and access allow; do not copy hidden answer keys or represent an OpsBench synthetic pass as an ITBench result.
+- **ITBench (IBM Research / UIUC):** a 102-scenario benchmark spanning SRE, CISO and FinOps, with live Kubernetes environments and automated/state-check grading. The ICML 2025 paper reports initial resolution rates of 11.4% for SRE, 25.2% for CISO and 25.8% for FinOps (excluding anomaly detection). These are release-specific research results, not a current 2026 model leaderboard. Reuse an eligible public scenario/environment subset where licensing and access allow; do not copy hidden answer keys or represent an OpsBench result as an ITBench result.
 - **PagerDuty's 2026 SRE-agent benchmark report:** reports a Kubernetes microservice fault-injection harness and a 17-scenario comparison scoring localization, diagnosis, mitigation, evidence grounding, explanation quality, misdirection and latency. PagerDuty states the presented sweep was one trial per agent and acknowledges the statistical limitation. The study is vendor-authored; treat its published findings as a useful methodology and capability reference, not an independently verified leaderboard or a directly comparable OpsBench score.
 
-These benchmarks establish that incident localization, root-cause reasoning, mitigation quality, evidence grounding and cost/latency are already active competitive areas. OpsBench should preserve those measures for the incident subset, while adding the dimensions missing from a narrow SRE-agent task:
+These benchmarks establish that incident localization, root-cause reasoning, mitigation quality, evidence grounding and cost/latency are already active competitive areas.
+
+Two additional October 2026 benchmarks make the diagnostic layer more competitive than the original v0.1 framing assumed:
+
+- **Edge Delta AI SRE Arena v1:** 21 injected Kubernetes faults in an OpenTelemetry Demo shop and 72 judged investigations across Edge Delta, Grafana and Claude controls. It measures detection, root cause, blast radius, supported mitigation, readiness and unsafe advice. Its public README explicitly states that mitigation/readiness are proposal grades—not executed repairs or verified recovery—and its v1 uses a single GPT-6-Astra judge without time/cost measurement or published human-grader validation. The fixture is open under MIT; pin upstream commit `fc232a3fb38b2d49d5fbc8589071623e13f2c963` before any reproduction.
+- **Edge Delta RootCauseBench:** a Terminal-Bench/Harbor benchmark for identifying the exact commit that caused a frozen production incident. Its 36-scenario release includes 12 adversarial scenarios for misleading deploys, delayed onset, degraded telemetry, oversized context and no-code-cause abstention. The current published board shows multiple models at the 108-trial ceiling on this particular task set. This means OpsBench should not try to win by reinventing a commit-attribution leaderboard; use it as a diagnostic sub-benchmark, and do not confuse a saturated commit-attribution result with successful service operation.
+
+The concrete OpsBench boundary is therefore narrower and stronger: **diagnosis is a replaceable input; authorized, cross-system execution and independently verified service outcomes are the product claim.** We should run a diagnosis-only common-core arm on Project Arena, then separately run an approved-remediation arm that records actual effects and recovery. Do not combine those two result types.
+ OpsBench should preserve those measures for the incident subset, while adding the dimensions missing from a narrow SRE-agent task:
 
 1. Customer intent and service-contract fidelity, including SLA clocks and user communication.
 2. Exact authorization-to-effect correspondence across ticketing, identity, host and connector systems.
@@ -276,8 +284,10 @@ Do not promote a lower tier into a higher one. A green unit-test suite is not a 
 
 ## References
 
+- [Edge Delta AI SRE Arena v1 (October 2026)](https://edgedelta.com/arena) and [MIT-licensed Project Arena implementation](https://github.com/edgedelta/project-arena)
+- [Edge Delta RootCauseBench (October 2026)](https://edgedelta.com/benchmark/rca-bench) and [Apache-2.0 implementation](https://github.com/edgedelta/root-cause-bench)
 - [PagerDuty — A Better Benchmark Harness for SRE Agents (2026)](https://www.pagerduty.com/resources/ai/learn/sre-agent-benchmark-report/)
-- [ITBench — IBM Research / UIUC benchmark overview](https://arxiv.org/abs/2502.08013)
+- [ITBench — ICML 2025 paper](https://proceedings.mlr.press/v267/jha25a.html)
 - [ServiceNow agentic ITSM workflows, September 2026 documentation](https://www.servicenow.com/docs/r/it-service-management/now-assist-for-it-service-management-itsm/now-assist-itsm-ai-agents-use-cases.html)
 - [ServiceNow ITSM](https://www.servicenow.com/products/itsm.html)
 - [Atlassian Jira Service Management incident automation](https://support.atlassian.com/jira-service-management-cloud/docs/automate-incident-management-in-jira-service-management/)
