@@ -374,7 +374,7 @@ def validate_crosswalk(document: Any) -> dict[str, int]:
             and itbench_aa.get("reported_scope", {}).get("private_scenarios") == 19
             and itbench_aa.get("reported_scope", {}).get("repeats_per_task") == 3
             and itbench_aa.get("reported_scope", {}).get("primary_metric")
-                == "average precision at full recall",
+                == "average precision at full recall for root-cause entity attribution",
             "ITBench-AA diagnostic scope or metric drifted")
     require(enterpriseops.get("license") == "Apache-2.0"
             and enterpriseops.get("repository_url") == "https://github.com/ServiceNow/EnterpriseOps-Gym"
