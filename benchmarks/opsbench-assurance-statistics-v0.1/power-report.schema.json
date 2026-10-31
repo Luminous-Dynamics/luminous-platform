@@ -1,0 +1,50 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://luminousdynamics.io/schemas/opsbench-paired-power-report-v0.1.json",
+  "title":"OpsBench paired scenario-cluster power report v0.1",
+  "type":"object","additionalProperties":false,
+  "required":["schema","version","status","study_id","plan_sha256","preregistration_sha256","pilot_split","pilot_scenario_cluster_count","pilot_nested_seed_total_not_inferential_n","baseline_arm_id","candidate_arm_ids","analysis_unit","candidate_plans","sensitivity_grid","recommendation","assumptions_and_limits","claim_ceiling","report_sha256"],
+  "properties":{
+    "schema":{"const":"luminous-opsbench-paired-power-report-v0.1"},
+    "version":{"const":1},
+    "status":{"enum":["example_only","planning_only_not_registered_confirmatory"]},
+    "study_id":{"type":"string","minLength":1},
+    "plan_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "preregistration_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "pilot_split":{"const":"screening"},
+    "pilot_scenario_cluster_count":{"type":"integer","minimum":5},
+    "pilot_nested_seed_total_not_inferential_n":{"type":"integer","minimum":5},
+    "baseline_arm_id":{"type":"string","minLength":1},
+    "candidate_arm_ids":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "analysis_unit":{"const":"scenario_id; repeated seeds/variants are nested and do not increase inferential cluster count"},
+    "candidate_plans":{
+      "type":"object","minProperties":1,
+      "additionalProperties":{
+        "type":"object","additionalProperties":false,
+        "required":["pilot_paired_cluster_count","pilot_unmatched_cluster_count","pilot_unmatched_scenario_ids","pilot_paired_mean_difference","pilot_paired_sd","planning_sd_after_variance_floor","variance_degenerate","pilot_paired_effect_min","pilot_paired_effect_max","normal_approximation_scenario_clusters","after_safety_margin_scenario_clusters","minimum_confirmatory_floor","recommended_confirmatory_scenario_clusters","gaussian_scenario_cluster_simulated_power","simulated_power_is_planning_diagnostic_only"],
+        "properties":{
+          "pilot_paired_cluster_count":{"type":"integer","minimum":5},
+          "pilot_unmatched_cluster_count":{"type":"integer","minimum":0},
+          "pilot_unmatched_scenario_ids":{"type":"array","uniqueItems":true,"items":{"type":"string"}},
+          "pilot_paired_mean_difference":{"type":"number","minimum":-1,"maximum":1},
+          "pilot_paired_sd":{"type":"number","minimum":0,"maximum":2},
+          "planning_sd_after_variance_floor":{"type":"number","exclusiveMinimum":0,"maximum":2},
+          "variance_degenerate":{"type":"boolean"},
+          "pilot_paired_effect_min":{"type":"number","minimum":-1,"maximum":1},
+          "pilot_paired_effect_max":{"type":"number","minimum":-1,"maximum":1},
+          "normal_approximation_scenario_clusters":{"type":"integer","minimum":2},
+          "after_safety_margin_scenario_clusters":{"type":"integer","minimum":2},
+          "minimum_confirmatory_floor":{"type":"integer","minimum":100},
+          "recommended_confirmatory_scenario_clusters":{"type":"integer","minimum":100},
+          "gaussian_scenario_cluster_simulated_power":{"type":"number","minimum":0,"maximum":1},
+          "simulated_power_is_planning_diagnostic_only":{"const":true}
+        }
+      }
+    },
+    "sensitivity_grid":{"type":"array","minItems":1,"items":{"type":"object","required":["variance_sd_assumption","target_effect","target_power","candidate_comparison_count","per_comparison_two_sided_alpha","z_critical","normal_approximation_scenario_clusters","after_safety_margin_scenario_clusters","recommended_with_floor"],"properties":{"variance_sd_assumption":{"type":"number","exclusiveMinimum":0},"target_effect":{"type":"number","exclusiveMinimum":0},"target_power":{"type":"number","exclusiveMinimum":0.5,"exclusiveMaximum":1},"candidate_comparison_count":{"type":"integer","minimum":1},"per_comparison_two_sided_alpha":{"type":"number","exclusiveMinimum":0},"z_critical":{"type":"number","exclusiveMinimum":0},"normal_approximation_scenario_clusters":{"type":"integer","minimum":2},"after_safety_margin_scenario_clusters":{"type":"integer","minimum":2},"recommended_with_floor":{"type":"integer","minimum":100}}}},
+    "recommendation":{"type":"object","additionalProperties":false,"required":["minimum_confirmatory_scenario_floor","required_scenario_count","safety_margin_fraction","selection_rule"],"properties":{"minimum_confirmatory_scenario_floor":{"type":"integer","minimum":100},"required_scenario_count":{"type":"integer","minimum":100},"safety_margin_fraction":{"type":"number","minimum":0},"selection_rule":{"type":"string","minLength":20}}},
+    "assumptions_and_limits":{"type":"array","minItems":5,"items":{"type":"string","minLength":10}},
+    "claim_ceiling":{"type":"string","minLength":30},
+    "report_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}
+  }
+}
