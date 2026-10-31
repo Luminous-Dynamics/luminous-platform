@@ -45,7 +45,7 @@
         },
         "tenant_commitment": {
           "type": "string",
-          "pattern": "^sha256:[a-f0-9]{64}$"
+          "pattern": "^(hmac-sha256|opaque):[A-Za-z0-9_-]{32,128}$"
         },
         "plan_digest": {
           "type": "string",
