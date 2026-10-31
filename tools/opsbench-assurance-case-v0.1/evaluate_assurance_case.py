@@ -106,7 +106,7 @@ def _validate_case(case: dict):
         require(isinstance(case.get(field), str) and case[field], f"case.{field}: non-empty string required")
     require(case["attempt_id"] is None or (isinstance(case["attempt_id"], str) and case["attempt_id"]), "case.attempt_id: string or null required")
     attempt_ids = case["attempt_ids"]
-    require(isinstance(attempt_ids, list) and len(attempt_ids) == len(set(attempt_ids)) and all(isinstance(x, str) and x for x in attempt_ids), "case.attempt_ids: unique non-empty attempt IDs required")
+    require(isinstance(attempt_ids, list) and len(attempt_ids) >= 1 and len(attempt_ids) == len(set(attempt_ids)) and all(isinstance(x, str) and x for x in attempt_ids), "case.attempt_ids: at least one unique non-empty attempt ID required")
     if case["attempt_id"] is not None:
         require(case["attempt_id"] in attempt_ids, "case.attempt_id must be included in attempt_ids")
     evaluated_at = _parse_time(case["evaluated_at"], "case.evaluated_at")
@@ -214,7 +214,8 @@ def _validate_case(case: dict):
         reviewed = _parse_time(assumption["reviewed_at"], f"assumptions.{assumption_id}.reviewed_at")
         require(reviewed <= evaluated_at, f"assumptions.{assumption_id}: reviewed after evaluation time")
         if assumption["expires_at"] is not None:
-            _parse_time(assumption["expires_at"], f"assumptions.{assumption_id}.expires_at")
+            expires = _parse_time(assumption["expires_at"], f"assumptions.{assumption_id}.expires_at")
+            require(expires >= reviewed, f"assumptions.{assumption_id}: expiry precedes review time")
 
     for defeater_id, defeater in defeaters.items():
         exact = {"defeater_id", "target_claim_id", "description", "critical", "status", "evidence_ids"}
