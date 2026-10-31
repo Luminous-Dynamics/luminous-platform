@@ -182,5 +182,18 @@ class SustainedSloRecoveryTests(unittest.TestCase):
             evaluate(contract, serialize(contract), observations, observations_bytes)
 
 
+    def test_boolean_gap_value_cannot_masquerade_as_zero(self):
+        contract, _contract_bytes, observations, observations_bytes = fixtures()
+        contract["timeline"]["maximum_gap_seconds"] = False
+        with self.assertRaisesRegex(ContractError, "zero permitted observation gap"):
+            evaluate(contract, serialize(contract), observations, observations_bytes)
+
+    def test_observation_lifecycle_must_match_contract_status(self):
+        contract, contract_bytes, observations, _ = fixtures()
+        observations["status"] = "captured"
+        with self.assertRaisesRegex(ContractError, "status does not match frozen contract lifecycle"):
+            evaluate(contract, contract_bytes, observations, serialize(observations))
+
+
 if __name__ == "__main__":
     unittest.main()
