@@ -107,5 +107,27 @@ class PowerPlannerTests(unittest.TestCase):
                 json.loads(payload, object_pairs_hook=strict_object, parse_constant=reject_constant)
 
 
+    def test_real_screening_requires_prior_immutable_registration(self):
+        pilot, prereg, _ = fixture()
+        pilot["status"] = "screening"
+        prereg["status"] = "registered_before_trials"
+        prereg["registered_at"] = "2026-10-31T12:00:00Z"
+        prereg_bytes = json.dumps(prereg, sort_keys=True).encode()
+        pilot["preregistration_sha256"] = hashlib.sha256(prereg_bytes).hexdigest()
+        pilot["pilot_started_at"] = "2026-10-31T13:00:00Z"
+        self.assertGreaterEqual(plan(pilot, prereg, prereg_bytes)["recommended_confirmatory_scenario_count"], 500)
+
+    def test_screening_started_before_registration_is_rejected(self):
+        pilot, prereg, _ = fixture()
+        pilot["status"] = "screening"
+        prereg["status"] = "registered_before_trials"
+        prereg["registered_at"] = "2026-10-31T14:00:00Z"
+        prereg_bytes = json.dumps(prereg, sort_keys=True).encode()
+        pilot["preregistration_sha256"] = hashlib.sha256(prereg_bytes).hexdigest()
+        pilot["pilot_started_at"] = "2026-10-31T13:00:00Z"
+        with self.assertRaisesRegex(PlanningError, "preregistration must predate screening pilot start"):
+            plan(pilot, prereg, prereg_bytes)
+
+
 if __name__ == "__main__":
     unittest.main()
