@@ -193,12 +193,35 @@ def validate(vectors: Any, predicate: Any, bundle: Any, vector_schema: Any) -> d
     require("nonce" in freshness_props and "issuer_sequence" in freshness_props,
             "signed nonce and issuer sequence are required")
 
+    require(pred_props.get("episode", {}).get("properties", {}).get("tenant_commitment", {}).get("pattern") ==
+            "^(hmac-sha256|opaque):[A-Za-z0-9_-]{32,128}$",
+            "tenant identity must use a keyed or opaque privacy commitment")
+    benchmark_schema = pred_props.get("benchmark_binding", {})
+    benchmark_required = {
+        "source_commit_sha", "runner_version", "toolchain_digest", "environment_image_digest",
+        "policy_digest", "connector_manifest_digest", "corpus_digest", "scenario_variant_digest",
+        "oracle_version", "run_id", "arm_id", "episode_id", "seed", "started_at", "finished_at",
+    }
+    require(set(benchmark_schema.get("required", [])) == benchmark_required,
+            "benchmark-derived evidence must bind every exact-run provenance field")
+    authorization_schema = pred_props.get("authorization", {})
+    require(set(authorization_schema.get("required", [])) ==
+            {"grant_ref", "grant_digest", "scope_digest", "issued_at", "expires_at"},
+            "authority grants must bind exact scope and validity")
+    authority_rule = next((rule for rule in predicate.get("allOf", [])
+                           if rule.get("if", {}).get("properties", {}).get("claim_kind", {}).get("const") == "authority_grant"), None)
+    require(authority_rule is not None and "authorization" in authority_rule.get("then", {}).get("required", []),
+            "authority claim must require an exact authorization grant")
+
     require(bundle.get("$schema") == "https://json-schema.org/draft/2020-12/schema",
             "bundle schema must be Draft 2020-12")
     bundle_props = bundle.get("properties", {})
     require(bundle.get("additionalProperties") is False, "bundle schema must reject unknown fields")
     require(bundle_props.get("payload_type", {}).get("const") == "application/vnd.in-toto+json",
             "DSSE payload type is not pinned")
+    require(bundle_props.get("episode_binding", {}).get("properties", {}).get("tenant_commitment", {}).get("pattern") ==
+            "^(hmac-sha256|opaque):[A-Za-z0-9_-]{32,128}$",
+            "bundle tenant binding must be privacy preserving")
     require(bundle_props.get("required_roles", {}).get("const") == [
         "coordinator","participant","independent_observer","authority"
     ], "bundle schema must require four roles")
