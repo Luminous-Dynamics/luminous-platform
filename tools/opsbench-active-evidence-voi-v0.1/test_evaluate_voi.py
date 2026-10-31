@@ -159,7 +159,7 @@ class ActiveEvidenceVOITests(unittest.TestCase):
         distribution = study["scenarios"][0]["prior"]
         info = probe_information(distribution, study["probes"][1], {
             a["action_id"]: a for a in study["actions"]
-        }, study["policy"]["max_action_risk"])
+        }, study["policy"])
         self.assertGreater(info["entropy_reduction"], 0.0)
         self.assertEqual(info["evsi"], 0.0)
         self.assertLessEqual(info["net_value"], 0.0)
