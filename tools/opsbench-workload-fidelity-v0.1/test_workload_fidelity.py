@@ -241,9 +241,8 @@ class WorkloadFidelityTests(unittest.TestCase):
 
     def test_artifact_digest_mismatch_rejected_without_rebinding(self):
         docs, raw = fixtures()
-        contract_bytes = raw["contract"]
-        report = None
         docs["contract"]["profile_sha256"] = "0" * 64
+        contract_bytes = encode(docs["contract"])
         with self.assertRaisesRegex(ContractError, "exact raw artifact digest mismatch"):
             evaluate(
                 docs["contract"], contract_bytes,
@@ -281,6 +280,45 @@ class WorkloadFidelityTests(unittest.TestCase):
         second = run(copy.deepcopy(docs))
         self.assertEqual(first["report_sha256"], second["report_sha256"])
         self.assertEqual(first["windows"], second["windows"])
+
+
+    def test_payload_profile_substitution_rejected(self):
+        docs, _ = fixtures()
+        record(docs, "nominal", "critical-payment", "load")["payload_profile_id"] = "easy-read-payload"
+        with self.assertRaisesRegex(ContractError, "payload profile substitution"):
+            run(docs)
+
+    def test_client_timeout_substitution_rejected(self):
+        docs, _ = fixtures()
+        record(docs, "nominal", "critical-payment", "load")["client_timeout_ms"] = 5000
+        with self.assertRaisesRegex(ContractError, "client timeout differs"):
+            run(docs)
+
+    def test_concurrency_outside_frozen_range_rejected(self):
+        docs, _ = fixtures()
+        record(docs, "nominal", "critical-payment", "load")["peak_concurrency"] = 50
+        with self.assertRaisesRegex(ContractError, "peak concurrency outside frozen class range"):
+            run(docs)
+
+    def test_fault_action_digest_mismatch_rejected(self):
+        docs, _ = fixtures()
+        record(docs, "retry-pressure", None, "faults")["action_digest"] = "c" * 64
+        with self.assertRaisesRegex(ContractError, "fault action digest does not match frozen schedule"):
+            run(docs)
+
+    def test_raw_object_mismatch_is_rejected_before_semantic_evaluation(self):
+        docs, raw = fixtures()
+        wrong_profile = copy.deepcopy(docs["profile"])
+        wrong_profile["profile_id"] = "mutated-in-memory"
+        with self.assertRaisesRegex(ContractError, "profile: decoded object does not match exact supplied bytes"):
+            evaluate(
+                docs["contract"], raw["contract"],
+                wrong_profile, raw["profile"],
+                docs["schedule"], raw["schedule"],
+                docs["load"], raw["load"],
+                docs["observations"], raw["observations"],
+                docs["faults"], raw["faults"],
+            )
 
 
 if __name__ == "__main__":
