@@ -139,16 +139,55 @@ def validate(matrix: Any, schema: Any) -> dict[str, int]:
 
     require(isinstance(schema, dict) and schema.get("$schema") ==
             "https://json-schema.org/draft/2020-12/schema", "schema must be Draft 2020-12")
-    require(schema.get("properties", {}).get("cases", {}).get("minItems") == 24 and
-            schema.get("properties", {}).get("cases", {}).get("maxItems") == 24,
-            "JSON Schema must freeze exactly 24 crash cases")
+    schema_props = schema.get("properties", {})
+    require(set(schema.get("required", [])) == TOP_KEYS and set(schema_props) == TOP_KEYS,
+            "JSON Schema root must require and define the complete frozen envelope")
     require(schema.get("additionalProperties") is False, "schema must reject unknown top-level fields")
-    item_schema = schema.get("properties", {}).get("cases", {}).get("items", {})
-    require(set(item_schema.get("properties", {})) == CASE_KEYS and
-            item_schema.get("additionalProperties") is False,
-            "JSON Schema case field inventory drifted")
-    require(item_schema.get("properties", {}).get("automatic_external_replay", {}).get("const") is False,
+    require(schema_props.get("schema", {}).get("const") == matrix["schema"]
+            and schema_props.get("version", {}).get("const") == matrix["version"],
+            "JSON Schema must pin the exact matrix identity and version")
+    require(schema_props.get("status", {}).get("const") == matrix["status"]
+            and schema_props.get("claim_ceiling", {}).get("const") == matrix["claim_ceiling"]
+            and schema_props.get("recovery_unit", {}).get("const") == matrix["recovery_unit"],
+            "JSON Schema must pin evaluator visibility, claim ceiling and recovery unit")
+
+    gate_props = schema_props.get("hard_gates", {}).get("properties", {})
+    require(set(gate_props) == set(EXPECTED_GATES)
+            and all(gate_props[key].get("const") == value for key, value in EXPECTED_GATES.items()),
+            "JSON Schema may not weaken any hard safety gate")
+    target_props = schema_props.get("initial_targets_not_results", {}).get("properties", {})
+    require(set(target_props) == set(EXPECTED_TARGETS)
+            and all(target_props[key].get("const") == value for key, value in EXPECTED_TARGETS.items()),
+            "JSON Schema must freeze the explicitly unmeasured target hypotheses")
+    require(schema_props.get("metrics", {}).get("minItems") == 12
+            and schema_props.get("metrics", {}).get("maxItems") == 12,
+            "JSON Schema must freeze the separate metric inventory")
+
+    arm_schema = schema_props.get("baseline_arms", {})
+    require(arm_schema.get("minItems") == 5 and arm_schema.get("maxItems") == 5,
+            "JSON Schema must freeze all five comparison arms")
+    arm_item = arm_schema.get("items", {})
+    require(set(arm_item.get("required", [])) == {"id", "role"}
+            and set(arm_item.get("properties", {})) == {"id", "role"}
+            and arm_item.get("additionalProperties") is False,
+            "JSON Schema comparison-arm envelope drifted")
+
+    case_array = schema_props.get("cases", {})
+    require(case_array.get("minItems") == 24 and case_array.get("maxItems") == 24,
+            "JSON Schema must freeze exactly 24 crash cases")
+    item_schema = case_array.get("items", {})
+    item_props = item_schema.get("properties", {})
+    require(set(item_schema.get("required", [])) == CASE_KEYS
+            and set(item_props) == CASE_KEYS
+            and item_schema.get("additionalProperties") is False,
+            "JSON Schema case field inventory or requirements drifted")
+    require(item_props.get("automatic_external_replay", {}).get("const") is False,
             "JSON Schema must forbid automatic external replay")
+    require(set(item_props.get("family", {}).get("enum", [])) == FAMILIES,
+            "JSON Schema must include exactly the eight failure families")
+    require(set(item_props.get("expected_recovery", {}).get("enum", [])) ==
+            {"safe_to_resume", "outcome_unknown", "quarantined", "fenced", "reconcile_required"},
+            "JSON Schema recovery disposition vocabulary drifted")
     return {"case_count":len(ids), "family_count":len(families), "metric_count":len(metrics),
             "hard_gate_count":len(matrix["hard_gates"]), "comparison_arm_count":len(arms)}
 
