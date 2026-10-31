@@ -1,0 +1,36 @@
+name: OpsBench power and MDE planner v0.1
+on:
+  pull_request:
+    paths:
+      - 'benchmarks/opsbench-power-mde-v0.1/**'
+      - 'benchmarks/opsbench-common-core-v0.1/preregistration.example.json'
+      - 'tools/opsbench-power-mde-v0.1/**'
+      - 'docs/OPSBENCH_POWER_MDE_PLANNER_V0_1.md'
+      - '.github/workflows/opsbench-power-mde-v0.1.yml'
+permissions:
+  contents: read
+concurrency:
+  group: opsbench-power-mde-\${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Compile planner and tests
+        run: python3 -m py_compile tools/opsbench-power-mde-v0.1/plan_power.py tools/opsbench-power-mde-v0.1/test_plan_power.py
+      - name: Validate JSON contracts and example
+        run: |
+          python3 -m json.tool benchmarks/opsbench-power-mde-v0.1/pilot.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-power-mde-v0.1/pilot.example.json >/dev/null
+      - name: Run screening-only example
+        run: |
+          python3 tools/opsbench-power-mde-v0.1/plan_power.py --output /tmp/power-plan-a.json
+          python3 tools/opsbench-power-mde-v0.1/plan_power.py --output /tmp/power-plan-b.json
+          cmp /tmp/power-plan-a.json /tmp/power-plan-b.json
+          python3 -c "import json; p=json.load(open('/tmp/power-plan-a.json')); assert p['status']=='example_only'; assert p['recommended_confirmatory_scenario_count']>=p['preregistered_confirmatory_floor']; assert p['pilot_scenario_cluster_count']==4"
+      - name: Run adversarial tests
+        run: python3 -m unittest discover -s tools/opsbench-power-mde-v0.1 -p 'test_plan_power.py' -v
