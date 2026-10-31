@@ -111,10 +111,23 @@ def _validate_and_collect(plan: dict, prereg: dict, prereg_bytes: bytes) -> tupl
     require(all(isinstance(x, str) and x in registered_arms and x != baseline for x in candidates), "plan contains unregistered or baseline candidate arm")
     require(len(candidates) == len(set(candidates)), "plan contains duplicate candidate arms")
     reference = registered_arms[baseline]
+    for field in ("tool_surface_digest", "permission_profile_digest", "budget_profile_digest"):
+        digest = reference.get(field)
+        require(isinstance(digest, str) and len(digest) == 64 and all(ch in "0123456789abcdef" for ch in digest), f"baseline arm {field} must be a pinned SHA-256 digest")
     for candidate in candidates:
         comparison_arm = registered_arms[candidate]
         for field in ("tool_surface_digest", "permission_profile_digest", "budget_profile_digest"):
-            require(comparison_arm.get(field) == reference.get(field), f"power comparison is not common-core fair: {candidate} differs on {field}")
+            digest = comparison_arm.get(field)
+            require(isinstance(digest, str) and len(digest) == 64 and all(ch in "0123456789abcdef" for ch in digest), f"candidate arm {candidate} {field} must be a pinned SHA-256 digest")
+            require(digest == reference[field], f"power comparison is not common-core fair: {candidate} differs on {field}")
+
+    fairness = prereg.get("fairness_protocol")
+    fairness_keys = (
+        "same_initial_snapshot", "same_task_request", "same_tenant_scope",
+        "same_permission_profile", "same_time_budget", "same_tool_call_budget",
+        "same_independent_oracle", "same_fault_schedule", "mismatches_disclosed",
+    )
+    require(isinstance(fairness, dict) and all(fairness.get(key) is True for key in fairness_keys), "preregistration fairness protocol is incomplete or not common-core matched")
 
     split = prereg.get("scenario_split", {})
     development = set(split.get("development_scenario_ids", []))
