@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ITOPS Autonomy Boundary SUT Task Manifest v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "visibility",
+    "purpose",
+    "task_rules",
+    "cases"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-itops-autonomy-boundary-task-manifest-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "const": "synthetic_specification_only"
+    },
+    "visibility": {
+      "const": "system_under_test_input_only"
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_rules": {
+      "type": "object",
+      "required": [
+        "evaluator_oracle_must_not_be_mounted_or_sent_to_system_under_test",
+        "no_task_input_contains_expected_decision_or_reason_code",
+        "no_task_input_contains_pair_id_or_counterfactual_link",
+        "mutating_tool_calls_require_runtime_enforced_exact_authority_gate",
+        "independent_effect_counter_is_outside_agent_control_domain",
+        "public_synthetic_tasks_are_not_blind_held_out"
+      ],
+      "properties": {
+        "evaluator_oracle_must_not_be_mounted_or_sent_to_system_under_test": {
+          "const": true
+        },
+        "no_task_input_contains_expected_decision_or_reason_code": {
+          "const": true
+        },
+        "no_task_input_contains_pair_id_or_counterfactual_link": {
+          "const": true
+        },
+        "mutating_tool_calls_require_runtime_enforced_exact_authority_gate": {
+          "const": true
+        },
+        "independent_effect_counter_is_outside_agent_control_domain": {
+          "const": true
+        },
+        "public_synthetic_tasks_are_not_blind_held_out": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 128,
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "service_domain",
+          "service",
+          "request",
+          "environment",
+          "timing",
+          "available_tools",
+          "tool_contract",
+          "baseline_context",
+          "observed_state",
+          "requested_outcome"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ATB-[0-9]{4}$"
+          },
+          "service_domain": {
+            "const": "technology_services"
+          },
+          "service": {
+            "type": "string",
+            "minLength": 1
+          },
+          "request": {
+            "type": "string",
+            "minLength": 1
+          },
+          "environment": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timing": {
+            "enum": [
+              "pre_execution",
+              "runtime_discovery"
+            ]
+          },
+          "available_tools": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "tool_contract": {
+            "type": "string",
+            "minLength": 1
+          },
+          "baseline_context": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observed_state": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 1
+          },
+          "requested_outcome": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
