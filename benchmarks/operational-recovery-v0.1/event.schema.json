@@ -16,7 +16,7 @@
     "source_epoch": {"type": "integer", "minimum": 0},
     "source_sequence": {"type": "integer", "minimum": 1},
     "previous_event_digest": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
-    "parent_event_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "parent_event_ids": {"type": "array", "maxItems": 64, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
     "event_type": {"enum": ["plan_authorized", "dispatch_intent_durable", "participant_accepted", "effect_committed", "transport_response_lost", "attempt_status_observed", "effect_reconciled", "step_postcondition_verified", "coordinator_restarted", "recovery_scan_completed", "service_outcome_verified", "agent_declared_resolved"]},
     "recorded_at": {"type": "string", "format": "date-time"},
     "attempt_id": {"type": ["string", "null"], "minLength": 1},
