@@ -206,5 +206,31 @@ class ActiveEvidenceVOITests(unittest.TestCase):
                                  [o["probe_id"] for o in right["observations"]])
 
 
+    def test_decision_voi_prefers_probe_that_can_cross_safety_threshold(self):
+        study = fixture()
+        report = evaluate(study)
+        risk_first = report["scenario_results"]["VOI-001"]["risk_adjusted_voi"]["observations"][0]["probe_id"]
+        cheap_first = report["scenario_results"]["VOI-001"]["cheapest_first"]["observations"][0]["probe_id"]
+        high_quality = {"dependency-trace", "deploy-runtime", "issuer-health", "network-path"}
+        low_cost = {"dependency-latency", "deploy-diff", "credential-audit", "network-route"}
+        self.assertIn(risk_first, high_quality)
+        self.assertIn(cheap_first, low_cost)
+
+    def test_voi_prediction_and_realized_decision_risk_are_reported_separately(self):
+        report = evaluate(fixture())
+        row = report["scenario_results"]["VOI-001"]["risk_adjusted_voi"]
+        self.assertIn("mean_predicted_evsi_per_probe", row)
+        self.assertIn("mean_realized_risk_reduction_per_probe", row)
+        strategy = report["strategies"]["risk_adjusted_voi"]
+        self.assertIn("mean_predicted_evsi_per_probe", strategy)
+        self.assertIn("mean_realized_risk_reduction_per_probe", strategy)
+
+    def test_report_never_authorizes_probe_or_remediation_execution(self):
+        report = evaluate(fixture())
+        self.assertIs(report["automatic_execution_authorized"], False)
+        self.assertEqual(report["status"], "example_only")
+
+
+
 if __name__ == "__main__":
     unittest.main()
