@@ -173,6 +173,36 @@ class ActiveEvidenceVOITests(unittest.TestCase):
                 self.assertFalse(scenario[strategy]["direct_recommendation"])
                 self.assertTrue(scenario[strategy]["escalated"])
 
+    def test_resource_cost_conversion_is_preregistered_and_used_in_net_voi(self):
+        study = fixture()
+        distribution = study["scenarios"][0]["prior"]
+        actions = {action["action_id"]: action for action in study["actions"]}
+        probe = study["probes"][1]
+        ordinary = probe_information(distribution, probe, actions, study["policy"])
+        changed_policy = dict(study["policy"])
+        changed_policy["cost_loss_per_unit"] = 10.0
+        expensive = probe_information(distribution, probe, actions, changed_policy)
+        self.assertAlmostEqual(
+            ordinary["net_value"] - expensive["net_value"],
+            probe["cost_units"] * 9.0,
+            places=12,
+        )
+
+    def test_privacy_penalty_conversion_is_preregistered_and_used_in_net_voi(self):
+        study = fixture()
+        distribution = study["scenarios"][0]["prior"]
+        actions = {action["action_id"]: action for action in study["actions"]}
+        probe = study["probes"][1]
+        ordinary = probe_information(distribution, probe, actions, study["policy"])
+        changed_policy = dict(study["policy"])
+        changed_policy["privacy_loss_per_unit"] = 8.0
+        private = probe_information(distribution, probe, actions, changed_policy)
+        self.assertAlmostEqual(
+            ordinary["net_value"] - private["net_value"],
+            probe["privacy_penalty_units"] * 7.0,
+            places=12,
+        )
+
     def test_probe_correlation_group_is_not_reused_within_one_strategy(self):
         study = fixture()
         report = evaluate(study)
