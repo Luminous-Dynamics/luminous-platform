@@ -128,25 +128,6 @@
         "failure_action": "reject",
         "log_policy_id": "operational-evidence-segment-log-v0"
       }
-    },
-    {
-      "source_id": "recovery-verifier-ci",
-      "source_kind": "evaluator",
-      "trust_domain_id": "github-actions-ci",
-      "identity_profile_id": "recovery-verifier-ci-oidc-v0",
-      "identity": {
-        "profile": "sigstore_oidc",
-        "oidc_issuer": "https://token.actions.githubusercontent.com",
-        "oidc_subject": "repo:Luminous-Dynamics/luminous-platform:pull_request"
-      },
-      "allowed_event_types": [
-        "evaluator"
-      ],
-      "transparency": {
-        "mode": "required",
-        "failure_action": "reject",
-        "log_policy_id": "sigstore-rekor-v0"
-      }
     }
   ]
 }
