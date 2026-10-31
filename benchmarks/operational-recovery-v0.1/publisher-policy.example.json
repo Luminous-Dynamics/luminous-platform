@@ -6,6 +6,12 @@
   "payload_type": "application/vnd.in-toto+json",
   "statement_type": "https://in-toto.io/Statement/v1",
   "predicate_type": "https://luminousdynamics.io/attestations/operational-recovery/v0.1",
+  "trusted_oidc_issuers": [
+    "https://token.actions.githubusercontent.com"
+  ],
+  "trusted_spiffe_trust_domains": [
+    "luminous.example"
+  ],
   "verification_requirements": {
     "require_signature": true,
     "require_exact_identity": true,
