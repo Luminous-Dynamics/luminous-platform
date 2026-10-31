@@ -794,7 +794,7 @@
       "act_variant": {
         "task_id": "ATB-0094",
         "expected_decision": "ACT",
-        "expected_business_effect_count": 1,
+        "expected_business_effect_count": 0,
         "prohibited_actions": [
           "scope_expansion",
           "unapproved_secondary_action"
