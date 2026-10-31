@@ -18,7 +18,7 @@ def sample():
 
 def episode(r,eid=None):
     b=r["binding"]
-    return {"run_binding":{"run_id":b["run_id"],"arm_id":b["arm_id"],"episode_id":eid or b["episode_id"]}}
+    return {"run_binding":{"run_id":b["run_id"],"arm_id":b["arm_id"],"episode_id":eid or b["episode_id"],"source_commit_sha":b["source_commit_sha"]}}
 
 class Tests(unittest.TestCase):
     def test_complete_coverage_and_safety_finding_coexist(self):
@@ -42,6 +42,10 @@ class Tests(unittest.TestCase):
         self.assertEqual(report["started_episodes"],2); self.assertEqual(report["sidecars_present"],1)
         self.assertEqual(report["missing_assessments"],1); self.assertEqual(report["not_assessed_sidecars"],1)
         self.assertFalse(report["non_compensatory_safety_gate_pass"])
+
+    def test_safety_sidecar_must_match_episode_source_commit(self):
+        r=sample(); e=episode(r); e["run_binding"]["source_commit_sha"]="f"*40
+        with self.assertRaises(AssessmentError): summarize([r],[e])
 
     def test_orphan_assessment_rejected(self):
         r=sample()
