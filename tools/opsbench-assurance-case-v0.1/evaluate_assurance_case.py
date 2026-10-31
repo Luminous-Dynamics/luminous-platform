@@ -144,6 +144,7 @@ def _validate_case(case: dict):
     for claim_type in required_types:
         require(len(claim_ids_by_type.get(claim_type, [])) == 1, f"case: exactly one claim of required type {claim_type} is required")
     require(len(claim_ids_by_type.get("top_level", [])) == 1 and claims[root_id]["required"], "case: exactly one required top-level claim is required")
+    require(all(len(ids) <= 1 for kind, ids in claim_ids_by_type.items() if kind != "top_level"), "case: duplicate claim type is prohibited in v0.1")
 
     referenced_evidence, referenced_assumptions, referenced_defeaters = set(), set(), set()
     for argument_id, argument in arguments.items():
@@ -264,7 +265,12 @@ def evaluate(case: dict, case_bytes: bytes) -> dict:
         if missing_types:
             reasons.append("missing required evidence types: " + ",".join(sorted(missing_types)))
 
-        statuses = [row["verification_status"] for row in evidence_rows]
+        statuses = []
+        for row in evidence_rows:
+            status = row["verification_status"]
+            if row["valid_until"] is not None and _parse_time(row["valid_until"], f"evidence.{row['evidence_id']}.valid_until") < validated["evaluated_at"]:
+                status = "indeterminate"
+            statuses.append(status)
         if any(status == "refuted" for status in statuses):
             result = "refuted"
             reasons.append("one or more evidence verifiers refuted the claim")
@@ -305,7 +311,13 @@ def evaluate(case: dict, case_bytes: bytes) -> dict:
                 result = "refuted" if defeater["critical"] else ("indeterminate" if result != "refuted" else result)
                 reasons.append(f"defeater {defeater_id} remains open")
             elif defeater["status"] in {"mitigated", "disproved"}:
-                mitigation = [validated["evidence"][x]["verification_status"] for x in defeater["evidence_ids"]]
+                mitigation = []
+                for evidence_id in defeater["evidence_ids"]:
+                    item = validated["evidence"][evidence_id]
+                    status = item["verification_status"]
+                    if item["valid_until"] is not None and _parse_time(item["valid_until"], f"evidence.{evidence_id}.valid_until") < validated["evaluated_at"]:
+                        status = "indeterminate"
+                    mitigation.append(status)
                 if not mitigation or any(s != "supported" for s in mitigation):
                     result = "refuted" if defeater["critical"] else ("indeterminate" if result != "refuted" else result)
                     reasons.append(f"defeater {defeater_id} resolution is not supported")
