@@ -1,0 +1,60 @@
+name: OpsBench sealed corpus and access audit v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/opsbench-sealed-corpus-v0.1/**"
+      - "benchmarks/opsbench-common-core-v0.1/preregistration.example.json"
+      - "tools/opsbench-sealed-corpus-v0.1/**"
+      - ".github/workflows/opsbench-sealed-corpus-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/opsbench-sealed-corpus-v0.1/**"
+      - "benchmarks/opsbench-common-core-v0.1/preregistration.example.json"
+      - "tools/opsbench-sealed-corpus-v0.1/**"
+      - ".github/workflows/opsbench-sealed-corpus-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opsbench-sealed-corpus-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sealed-corpus:
+    name: Corpus commitment, split leakage and access controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Compile checker and mutation tests
+        run: python3 -m py_compile tools/opsbench-sealed-corpus-v0.1/check_sealed_corpus.py tools/opsbench-sealed-corpus-v0.1/test_sealed_corpus.py
+      - name: Parse schemas and synthetic fixtures
+        run: |
+          python3 -m json.tool benchmarks/opsbench-sealed-corpus-v0.1/manifest.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sealed-corpus-v0.1/registration.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sealed-corpus-v0.1/access-policy.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sealed-corpus-v0.1/access-audit.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sealed-corpus-v0.1/manifest.example.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sealed-corpus-v0.1/registration.example.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sealed-corpus-v0.1/access-policy.example.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sealed-corpus-v0.1/access-audit.example.json >/dev/null
+      - name: Verify example commitment and access audit
+        run: |
+          python3 tools/opsbench-sealed-corpus-v0.1/check_sealed_corpus.py \
+            --manifest benchmarks/opsbench-sealed-corpus-v0.1/manifest.example.json \
+            --registration benchmarks/opsbench-sealed-corpus-v0.1/registration.example.json \
+            --salt-file benchmarks/opsbench-sealed-corpus-v0.1/salt.example.txt \
+            --preregistration benchmarks/opsbench-common-core-v0.1/preregistration.example.json \
+            --access-policy benchmarks/opsbench-sealed-corpus-v0.1/access-policy.example.json \
+            --access-audit benchmarks/opsbench-sealed-corpus-v0.1/access-audit.example.json \
+            --output sealed-corpus-report.json
+      - name: Run split leakage and access-control mutation suite
+        run: python3 -m unittest discover -s tools/opsbench-sealed-corpus-v0.1 -p 'test_sealed_corpus.py' -v
+      - name: Preserve example-only report
+        run: cat sealed-corpus-report.json
