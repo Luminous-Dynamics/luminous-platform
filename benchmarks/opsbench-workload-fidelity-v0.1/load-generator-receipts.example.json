@@ -49,7 +49,8 @@
             "count": 0
           }
         ]
-      }
+      },
+      "response_drop_count": 0
     },
     {
       "window_id": "window-nominal",
@@ -87,7 +88,8 @@
             "count": 0
           }
         ]
-      }
+      },
+      "response_drop_count": 0
     },
     {
       "window_id": "window-burst",
@@ -125,7 +127,8 @@
             "count": 0
           }
         ]
-      }
+      },
+      "response_drop_count": 0
     },
     {
       "window_id": "window-burst",
@@ -163,7 +166,8 @@
             "count": 0
           }
         ]
-      }
+      },
+      "response_drop_count": 0
     },
     {
       "window_id": "window-dependency-degradation",
@@ -201,7 +205,8 @@
             "count": 0
           }
         ]
-      }
+      },
+      "response_drop_count": 0
     },
     {
       "window_id": "window-dependency-degradation",
@@ -239,7 +244,8 @@
             "count": 0
           }
         ]
-      }
+      },
+      "response_drop_count": 0
     },
     {
       "window_id": "window-retry-pressure",
@@ -277,7 +283,8 @@
             "count": 0
           }
         ]
-      }
+      },
+      "response_drop_count": 0
     },
     {
       "window_id": "window-retry-pressure",
@@ -315,7 +322,8 @@
             "count": 0
           }
         ]
-      }
+      },
+      "response_drop_count": 0
     },
     {
       "window_id": "window-recovery-hold",
@@ -353,7 +361,8 @@
             "count": 0
           }
         ]
-      }
+      },
+      "response_drop_count": 0
     },
     {
       "window_id": "window-recovery-hold",
@@ -391,7 +400,8 @@
             "count": 0
           }
         ]
-      }
+      },
+      "response_drop_count": 0
     }
   ]
 }
