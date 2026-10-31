@@ -12,6 +12,8 @@ TASKS = ROOT / "benchmarks/itops-autonomy-boundary-v0.1/task-manifest.json"
 TASK_SCHEMA = ROOT / "benchmarks/itops-autonomy-boundary-v0.1/task-manifest.schema.json"
 ORACLE = ROOT / "benchmarks/itops-autonomy-boundary-v0.1/evaluator-corpus.json"
 ORACLE_SCHEMA = ROOT / "benchmarks/itops-autonomy-boundary-v0.1/evaluator-corpus.schema.json"
+RESULT_SCHEMA = ROOT / "benchmarks/itops-autonomy-boundary-v0.1/decision-result.schema.json"
+RESULT_EXAMPLE = ROOT / "benchmarks/itops-autonomy-boundary-v0.1/decision-result.example.json"
 EXPECTED_FAMILIES = {
  "authority-gap","specification-gap","evidence-gap","attempt-ambiguity",
  "irreversibility-risk","capability-gap","trust-domain-conflict","runtime-discovery-gap",
@@ -225,16 +227,65 @@ def validate(tasks: Any, task_schema: Any, oracle: Any, oracle_schema: Any) -> d
     return {"task_variants":len(task_ids),"pairs":len(pair_ids),"family_count":len(covered),
             "opsbench_crosswalk_ids":len(EXPECTED_OPSBENCH_IDS)}
 
+def validate_result(result: Any, schema: Any) -> dict[str, int]:
+    required_root = {
+        "schema","version","status","run_binding","task_binding","agent_decision",
+        "runtime_gate","participant_effect_oracle","service_observer","handoff","resource_usage",
+    }
+    require(isinstance(result, dict) and set(result) == required_root,
+            "decision result envelope drifted")
+    require(result["schema"] == "luminous-itops-autonomy-boundary-result-v0.1"
+            and result["version"] == 1, "decision result identity drifted")
+    required_run_binding = {
+        "source_commit_sha","runner_version","toolchain_digest","environment_image_digest",
+        "policy_digest","connector_manifest_digest","corpus_digest","scenario_variant_digest",
+        "oracle_version","run_id","arm_id","episode_id","seed","started_at","finished_at",
+    }
+    require(set(result["run_binding"]) == required_run_binding,
+            "decision result must carry the complete exact-run binding")
+    require(result["agent_decision"]["class"] in {
+        "ACT","CLARIFY","REQUEST_AUTHORITY","RECONCILE","ESCALATE","HALT"
+    }, "unknown agent decision class")
+    require(result["participant_effect_oracle"]["source"] ==
+            "participant_owned_attempt_ledger_or_side_effect_counter"
+            and result["participant_effect_oracle"]["independent_of_agent"] is True,
+            "participant effect result must come from an independent participant-owned oracle")
+    require(result["service_observer"]["independent_of_agent"] is True,
+            "service observer must be independent of the agent")
+    require(result["runtime_gate"]["new_attempts_while_unknown"] >= 0,
+            "runtime gate attempt metric must be present")
+    require(schema.get("$schema") == "https://json-schema.org/draft/2020-12/schema"
+            and schema.get("additionalProperties") is False,
+            "decision result schema must be strict Draft 2020-12")
+    props = schema.get("properties", {})
+    require(set(schema.get("required", [])) == required_root and set(props) == required_root,
+            "decision result schema must require every evidence layer")
+    require(set(props.get("run_binding", {}).get("required", [])) == required_run_binding,
+            "decision result schema must freeze exact run binding")
+    oracle_props = props.get("participant_effect_oracle", {}).get("properties", {})
+    require(oracle_props.get("source", {}).get("const") ==
+            "participant_owned_attempt_ledger_or_side_effect_counter"
+            and oracle_props.get("independent_of_agent", {}).get("const") is True,
+            "decision result schema must keep participant oracle independent")
+    observer_props = props.get("service_observer", {}).get("properties", {})
+    require(observer_props.get("independent_of_agent", {}).get("const") is True,
+            "decision result schema must require independent service observation")
+    return {"result_layers":4,"run_binding_fields":len(required_run_binding),
+            "resource_metrics":len(result["resource_usage"])}
+
 def main() -> int:
     try:
         result = validate(load(TASKS), load(TASK_SCHEMA), load(ORACLE), load(ORACLE_SCHEMA))
+        result_summary = validate_result(load(RESULT_EXAMPLE), load(RESULT_SCHEMA))
     except (ValueError, KeyError, TypeError, AttributeError) as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     print("PASS: ITOPS Autonomy Boundary v0.1 structural contract")
     for key, value in result.items():
         print(f"{key}={value}")
-    print("SCOPE: synthetic task/oracle structure only; no model or safety performance result.")
+    for key, value in result_summary.items():
+        print(f"{key}={value}")
+    print("SCOPE: synthetic task/oracle/result structure only; no model or safety performance result.")
     return 0
 
 if __name__ == "__main__":
