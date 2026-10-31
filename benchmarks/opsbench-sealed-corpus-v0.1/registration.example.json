@@ -1,0 +1,14 @@
+{
+  "schema": "luminous-opsbench-sealed-corpus-registration-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "study_id": "example-sealed-corpus-not-registered",
+  "preregistration_sha256": "2367a0a7527438e82c5d415e1e946c1b8945732f8971e5c830e0e2c012ab8f5d",
+  "manifest_sha256": "bceff559a60613fad5c363b551723efc82d4f3b50d596a283496bf41baabdab8",
+  "commitment_scheme": "sha256-domain-separated-secret-salt-v0.1",
+  "commitment_domain": "luminous-opsbench-sealed-corpus-v0.1",
+  "commitment_sha256": "fccc6c756026750a6326a35f03b94ef5044414f0262cf0e1af039aadafab2287",
+  "salt_sha256": "5aad5c28200a1712ace981d7a4335535ff43822460f2242082165f8382f5cce5",
+  "registered_at": "2026-10-31T13:00:00Z",
+  "first_trial_at": "2026-10-31T14:00:00Z"
+}
