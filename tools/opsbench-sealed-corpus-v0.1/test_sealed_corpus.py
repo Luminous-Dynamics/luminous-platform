@@ -172,7 +172,7 @@ class SealedCorpusTests(unittest.TestCase):
             "evidence_sha256": "6" * 64,
         })
         report = check_access_audit(changed, policy)
-        self.assertEqual(report["status"], "pass")
+        self.assertEqual(report["status"], "indeterminate")
         self.assertEqual(report["blocked_forbidden_access_attempts"], 1)
 
     def test_missing_access_channel_is_indeterminate(self):
