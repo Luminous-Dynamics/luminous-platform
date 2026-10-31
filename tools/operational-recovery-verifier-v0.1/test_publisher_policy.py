@@ -28,6 +28,8 @@ class PublisherPolicyTests(unittest.TestCase):
         statement, policy, manifest, segment, policy_bytes = fixtures()
         result = check_attestation(statement, policy, manifest, segment, policy_bytes)
         self.assertEqual(result["status"], "policy_match")
+        self.assertEqual(result["policy_status"], "example_only")
+        self.assertFalse(result["production_usable"])
         self.assertEqual(result["event_count"], 2)
         self.assertFalse(result["cryptographic_signature_verification_performed"])
         self.assertFalse(result["transparency_inclusion_verification_performed"])
@@ -159,6 +161,66 @@ class PublisherPolicyTests(unittest.TestCase):
         statement["subject"][1]["digest"]["sha256"] = hashlib.sha256(altered).hexdigest()
         with self.assertRaisesRegex(PolicyError, "source epoch/sequence gap"):
             check_attestation(statement, policy, manifest, altered, policy_bytes)
+
+
+    def test_manifest_root_must_be_object_even_when_digest_is_rebound(self):
+        statement, policy, _manifest, segment, policy_bytes = fixtures()
+        import hashlib
+        manifest = b"[]"
+        statement["subject"][0]["digest"]["sha256"] = hashlib.sha256(manifest).hexdigest()
+        with self.assertRaisesRegex(PolicyError, "manifest: expected object"):
+            check_attestation(statement, policy, manifest, segment, policy_bytes)
+
+    def test_manifest_run_binding_must_be_object(self):
+        statement, policy, manifest, segment, policy_bytes = fixtures()
+        import hashlib
+        changed_manifest = json.loads(manifest)
+        changed_manifest["run_binding"] = []
+        changed_bytes = json.dumps(changed_manifest, separators=(",", ":")).encode()
+        statement["subject"][0]["digest"]["sha256"] = hashlib.sha256(changed_bytes).hexdigest()
+        with self.assertRaisesRegex(PolicyError, "manifest.run_binding: expected object"):
+            check_attestation(statement, policy, changed_bytes, segment, policy_bytes)
+
+    def test_nonfinite_json_constants_are_rejected(self):
+        statement, policy, _manifest, segment, policy_bytes = fixtures()
+        import hashlib
+        manifest = b'{"schema":"luminous-operational-recovery-run-v0.1","version":1,"run_binding":NaN}'
+        statement["subject"][0]["digest"]["sha256"] = hashlib.sha256(manifest).hexdigest()
+        with self.assertRaisesRegex(PolicyError, "non-finite JSON number"):
+            check_attestation(statement, policy, manifest, segment, policy_bytes)
+
+    def test_artifact_subject_name_must_be_a_string(self):
+        statement, policy, manifest, segment, policy_bytes = fixtures()
+        statement["predicate"]["artifact_binding"]["manifest_subject_name"] = []
+        with self.assertRaisesRegex(PolicyError, "subject names must be non-empty strings"):
+            check_attestation(statement, policy, manifest, segment, policy_bytes)
+
+    def test_policy_transparency_object_rejects_unknown_fields(self):
+        statement, policy, manifest, segment, _policy_bytes = fixtures()
+        changed = copy.deepcopy(policy)
+        changed["publishers"][0]["transparency"]["allow_offline_accept"] = True
+        changed_bytes = json.dumps(changed, indent=2).encode() + b"\n"
+        import hashlib
+        statement = copy.deepcopy(statement)
+        statement["predicate"]["publisher_policy_sha256"] = hashlib.sha256(changed_bytes).hexdigest()
+        with self.assertRaisesRegex(PolicyError, "transparency inclusion must fail closed with exact fields"):
+            check_attestation(statement, changed, manifest, segment, changed_bytes)
+
+    def test_non_string_produced_at_is_rejected_as_policy_error(self):
+        statement, policy, manifest, segment, policy_bytes = fixtures()
+        statement["predicate"]["produced_at"] = 20261031
+        with self.assertRaisesRegex(PolicyError, "timestamp string required"):
+            check_attestation(statement, policy, manifest, segment, policy_bytes)
+
+    def test_oversized_event_segment_rejected_after_subject_is_rebound(self):
+        statement, policy, manifest, segment, policy_bytes = fixtures()
+        import hashlib
+        oversized = segment + (b" " * (8 * 1024 * 1024))
+        statement = copy.deepcopy(statement)
+        statement["subject"][1]["digest"]["sha256"] = hashlib.sha256(oversized).hexdigest()
+        with self.assertRaisesRegex(PolicyError, "event segment: document exceeds size limit"):
+            check_attestation(statement, policy, manifest, oversized, policy_bytes)
+
 
 
 if __name__ == "__main__":
