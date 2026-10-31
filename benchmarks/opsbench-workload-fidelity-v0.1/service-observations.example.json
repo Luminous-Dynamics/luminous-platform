@@ -1,0 +1,121 @@
+{
+  "schema": "luminous-opsbench-service-observations-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "study_id": "example-workload-fidelity-not-registered",
+  "run_id": "workload-run-001",
+  "episode_id": "workload-episode-001",
+  "service_id": "payments-api",
+  "observer": {
+    "source_id": "external-ingress-observer",
+    "trust_domain_id": "external-observation"
+  },
+  "business_oracle": {
+    "source_id": "payment-business-oracle",
+    "trust_domain_id": "business-oracle"
+  },
+  "profile_sha256": "70a896108d3ae247118fe355dd7c5353e8cca32c24221d4e72bfeb769ae617ae",
+  "phase_schedule_sha256": "4a7285c5a515b28970298dd085ba8d98c692df9ac2b4d30c4bdc3951f589bdfc",
+  "windows": [
+    {
+      "window_id": "window-nominal",
+      "phase_id": "nominal",
+      "class_id": "critical-payment",
+      "server_received_count": 600,
+      "server_rejected_count": 0,
+      "server_retry_attempt_count": 0,
+      "business_checked_count": 600,
+      "business_correct_count": 600
+    },
+    {
+      "window_id": "window-nominal",
+      "phase_id": "nominal",
+      "class_id": "routine-read",
+      "server_received_count": 5400,
+      "server_rejected_count": 0,
+      "server_retry_attempt_count": 0,
+      "business_checked_count": 5400,
+      "business_correct_count": 5400
+    },
+    {
+      "window_id": "window-burst",
+      "phase_id": "burst",
+      "class_id": "critical-payment",
+      "server_received_count": 900,
+      "server_rejected_count": 0,
+      "server_retry_attempt_count": 0,
+      "business_checked_count": 900,
+      "business_correct_count": 900
+    },
+    {
+      "window_id": "window-burst",
+      "phase_id": "burst",
+      "class_id": "routine-read",
+      "server_received_count": 8100,
+      "server_rejected_count": 0,
+      "server_retry_attempt_count": 0,
+      "business_checked_count": 8100,
+      "business_correct_count": 8100
+    },
+    {
+      "window_id": "window-dependency-degradation",
+      "phase_id": "dependency-degradation",
+      "class_id": "critical-payment",
+      "server_received_count": 600,
+      "server_rejected_count": 0,
+      "server_retry_attempt_count": 0,
+      "business_checked_count": 570,
+      "business_correct_count": 569
+    },
+    {
+      "window_id": "window-dependency-degradation",
+      "phase_id": "dependency-degradation",
+      "class_id": "routine-read",
+      "server_received_count": 5400,
+      "server_rejected_count": 0,
+      "server_retry_attempt_count": 0,
+      "business_checked_count": 5395,
+      "business_correct_count": 5395
+    },
+    {
+      "window_id": "window-retry-pressure",
+      "phase_id": "retry-pressure",
+      "class_id": "critical-payment",
+      "server_received_count": 600,
+      "server_rejected_count": 0,
+      "server_retry_attempt_count": 90,
+      "business_checked_count": 594,
+      "business_correct_count": 593
+    },
+    {
+      "window_id": "window-retry-pressure",
+      "phase_id": "retry-pressure",
+      "class_id": "routine-read",
+      "server_received_count": 5400,
+      "server_rejected_count": 0,
+      "server_retry_attempt_count": 320,
+      "business_checked_count": 5380,
+      "business_correct_count": 5380
+    },
+    {
+      "window_id": "window-recovery-hold",
+      "phase_id": "recovery-hold",
+      "class_id": "critical-payment",
+      "server_received_count": 600,
+      "server_rejected_count": 0,
+      "server_retry_attempt_count": 0,
+      "business_checked_count": 600,
+      "business_correct_count": 600
+    },
+    {
+      "window_id": "window-recovery-hold",
+      "phase_id": "recovery-hold",
+      "class_id": "routine-read",
+      "server_received_count": 5400,
+      "server_rejected_count": 0,
+      "server_retry_attempt_count": 0,
+      "business_checked_count": 5400,
+      "business_correct_count": 5400
+    }
+  ]
+}
