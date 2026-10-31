@@ -22,7 +22,7 @@
     "economic_claims_allowed":{"type":"boolean"},
     "required_claim_statuses":{"type":"object","additionalProperties":{"enum":["supported","refuted","indeterminate"]}},
     "claim_results":{"type":"object","additionalProperties":{"type":"object","additionalProperties":false,"required":["status","reasons"],"properties":{"status":{"enum":["supported","refuted","indeterminate"]},"reasons":{"type":"array","items":{"type":"string"}}}}},
-    "open_critical_defeaters":{"type":"array","uniqueItems":true,"items":{"type":"string"}},
+    "unresolved_critical_defeaters":{"type":"array","uniqueItems":true,"items":{"type":"string"}},
     "publisher_authenticity_cryptographically_verified_by_this_aggregator":{"const":false},
     "claim_ceiling":{"type":"string","minLength":30},
     "report_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}
