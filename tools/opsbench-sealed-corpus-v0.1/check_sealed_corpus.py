@@ -196,8 +196,11 @@ def check_access_audit(audit: dict, policy: dict) -> dict:
         allowed_actions[resource_class] = set(actions)
     require(set(allowed_actions) == set(allowed), "access policy: resource/action map must exactly cover allowed resource classes")
     require(isinstance(endpoints, list) and all(isinstance(x, str) and x for x in endpoints) and len(endpoints) == len(set(endpoints)), "access policy: invalid endpoint allowlist")
-    require(isinstance(channels, list) and channels and set(channels) == REQUIRED_COVERAGE, "access policy: required audit channels must cover all six v0.1 channels")
+    require(isinstance(channels, list) and channels and len(channels) == len(set(channels)) and set(channels) == REQUIRED_COVERAGE, "access policy: required audit channels must uniquely cover all six v0.1 channels")
 
+    for field in ("run_id", "arm_id", "scenario_id", "variant_id"):
+        require(isinstance(audit.get(field), str) and audit[field], f"audit.{field}: non-empty string required")
+    require(type(audit.get("seed")) is int and audit["seed"] >= 0, "audit.seed: non-negative integer required")
     coverage = audit.get("coverage")
     require(isinstance(coverage, dict) and set(coverage) == REQUIRED_COVERAGE, "audit.coverage: exact channel inventory required")
     require(all(type(coverage[channel]) is bool for channel in REQUIRED_COVERAGE), "audit.coverage: boolean status required")
