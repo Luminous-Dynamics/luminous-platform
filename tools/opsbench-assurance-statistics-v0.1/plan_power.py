@@ -110,6 +110,11 @@ def _validate_and_collect(plan: dict, prereg: dict, prereg_bytes: bytes) -> tupl
     require(isinstance(candidates, list) and 1 <= len(candidates) <= MAX_COMPARISONS, "plan.candidate_arm_ids outside supported bounds")
     require(all(isinstance(x, str) and x in registered_arms and x != baseline for x in candidates), "plan contains unregistered or baseline candidate arm")
     require(len(candidates) == len(set(candidates)), "plan contains duplicate candidate arms")
+    reference = registered_arms[baseline]
+    for candidate in candidates:
+        comparison_arm = registered_arms[candidate]
+        for field in ("tool_surface_digest", "permission_profile_digest", "budget_profile_digest"):
+            require(comparison_arm.get(field) == reference.get(field), f"power comparison is not common-core fair: {candidate} differs on {field}")
 
     split = prereg.get("scenario_split", {})
     development = set(split.get("development_scenario_ids", []))
@@ -302,16 +307,23 @@ def plan_power(plan: dict, plan_bytes: bytes, prereg: dict, prereg_bytes: bytes)
             "simulated_power_is_planning_diagnostic_only": True,
         }
 
+    conservative_sensitivity_sd = max(
+        max(
+            stdev(effects_by_candidate[candidate]) if len(effects_by_candidate[candidate]) >= 2 else 0.0,
+            params["variance_floor"],
+        )
+        for candidate in validated["candidate_arm_ids"]
+    )
     for effect in validated["sensitivity"]["effects"]:
         for power in validated["sensitivity"]["powers"]:
             for comparisons in validated["sensitivity"]["comparisons"]:
                 n_raw, zc, alpha_pc = _normal_required_n(
-                    params["variance_floor"], effect, power,
+                    conservative_sensitivity_sd, effect, power,
                     params["familywise_alpha"], comparisons
                 )
                 n_margin = math.ceil(n_raw * (1.0 + params["safety_margin_fraction"]))
                 sensitivity.append({
-                    "variance_sd_assumption": params["variance_floor"],
+                    "variance_sd_assumption": conservative_sensitivity_sd,
                     "target_effect": effect,
                     "target_power": power,
                     "candidate_comparison_count": comparisons,
@@ -372,7 +384,7 @@ def main(argv=None) -> int:
             sys.stdout.write(rendered)
         else:
             args.output.write_text(rendered, encoding="utf-8")
-        return 0 if report["status"] == "example_only" else 2
+        return 0
     except (OSError, PlanningError, AttributeError, KeyError, TypeError, ValueError, OverflowError, RecursionError) as exc:
         print(f"opsbench-power-plan: {exc}", file=sys.stderr)
         return 2
