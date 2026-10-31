@@ -3,7 +3,7 @@
   "$id":"https://luminousdynamics.io/schemas/opsbench-paired-power-plan-v0.1.json",
   "title":"OpsBench paired scenario-cluster power plan v0.1",
   "type":"object","additionalProperties":false,
-  "required":["schema","version","status","study_id","preregistration_sha256","pilot_started_at","baseline_arm_id","candidate_arm_id","pilot_scenario_ids","pilot_clusters","planning_parameters"],
+  "required":["schema","version","status","study_id","preregistration_sha256","pilot_started_at","baseline_arm_id","candidate_arm_ids","pilot_scenario_ids","pilot_clusters","planning_parameters"],
   "properties":{
     "schema":{"const":"luminous-opsbench-paired-power-plan-v0.1"},
     "version":{"const":1},
@@ -12,18 +12,17 @@
     "preregistration_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
     "pilot_started_at":{"type":"string","format":"date-time"},
     "baseline_arm_id":{"type":"string","minLength":1},
-    "candidate_arm_id":{"type":"string","minLength":1},
+    "candidate_arm_ids":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
     "pilot_scenario_ids":{"type":"array","minItems":5,"uniqueItems":true,"items":{"type":"string","minLength":1}},
     "pilot_clusters":{
       "type":"array","minItems":5,
       "items":{
         "type":"object","additionalProperties":false,
-        "required":["scenario_id","seed_count","baseline_success_rate","candidate_success_rate"],
+        "required":["scenario_id","seed_count","arm_success_rates"],
         "properties":{
           "scenario_id":{"type":"string","minLength":1},
           "seed_count":{"type":"integer","minimum":1},
-          "baseline_success_rate":{"type":["number","null"],"minimum":0,"maximum":1},
-          "candidate_success_rate":{"type":["number","null"],"minimum":0,"maximum":1}
+          "arm_success_rates":{"type":"object","minProperties":2,"additionalProperties":{"type":["number","null"],"minimum":0,"maximum":1}}
         }
       }
     },
