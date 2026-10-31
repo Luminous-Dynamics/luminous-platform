@@ -1,0 +1,76 @@
+name: OpsBench workload fidelity v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/opsbench-workload-fidelity-v0.1/**"
+      - "tools/opsbench-workload-fidelity-v0.1/**"
+      - "docs/OPSBENCH_WORKLOAD_FIDELITY_V0_1.md"
+      - ".github/workflows/opsbench-workload-fidelity-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/opsbench-workload-fidelity-v0.1/**"
+      - "tools/opsbench-workload-fidelity-v0.1/**"
+      - "docs/OPSBENCH_WORKLOAD_FIDELITY_V0_1.md"
+      - ".github/workflows/opsbench-workload-fidelity-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opsbench-workload-fidelity-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workload-fidelity:
+    name: Frozen demand envelope and service-class conformance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Compile evaluator and adversarial tests
+        run: python3 -m py_compile tools/opsbench-workload-fidelity-v0.1/evaluate_workload_fidelity.py tools/opsbench-workload-fidelity-v0.1/test_workload_fidelity.py
+      - name: Parse all workload schemas and fixtures
+        run: |
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/workload-profile.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/phase-schedule.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/workload-contract.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/load-generator-receipts.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/service-observations.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/fault-controller-receipts.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/report.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/workload-profile.example.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/phase-schedule.example.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/workload-contract.example.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/load-generator-receipts.example.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/service-observations.example.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-workload-fidelity-v0.1/fault-controller-receipts.example.json >/dev/null
+      - name: Run exact example evaluator
+        run: |
+          python3 tools/opsbench-workload-fidelity-v0.1/evaluate_workload_fidelity.py \
+            --contract benchmarks/opsbench-workload-fidelity-v0.1/workload-contract.example.json \
+            --profile benchmarks/opsbench-workload-fidelity-v0.1/workload-profile.example.json \
+            --schedule benchmarks/opsbench-workload-fidelity-v0.1/phase-schedule.example.json \
+            --load-receipts benchmarks/opsbench-workload-fidelity-v0.1/load-generator-receipts.example.json \
+            --service-observations benchmarks/opsbench-workload-fidelity-v0.1/service-observations.example.json \
+            --fault-receipts benchmarks/opsbench-workload-fidelity-v0.1/fault-controller-receipts.example.json \
+            --output /tmp/workload-fidelity-report-a.json
+      - name: Verify deterministic report bytes
+        run: |
+          python3 tools/opsbench-workload-fidelity-v0.1/evaluate_workload_fidelity.py \
+            --contract benchmarks/opsbench-workload-fidelity-v0.1/workload-contract.example.json \
+            --profile benchmarks/opsbench-workload-fidelity-v0.1/workload-profile.example.json \
+            --schedule benchmarks/opsbench-workload-fidelity-v0.1/phase-schedule.example.json \
+            --load-receipts benchmarks/opsbench-workload-fidelity-v0.1/load-generator-receipts.example.json \
+            --service-observations benchmarks/opsbench-workload-fidelity-v0.1/service-observations.example.json \
+            --fault-receipts benchmarks/opsbench-workload-fidelity-v0.1/fault-controller-receipts.example.json \
+            --output /tmp/workload-fidelity-report-b.json
+          cmp /tmp/workload-fidelity-report-a.json /tmp/workload-fidelity-report-b.json
+      - name: Run workload and Goodhart-resistance mutation tests
+        run: python3 -m unittest discover -s tools/opsbench-workload-fidelity-v0.1 -p 'test_workload_fidelity.py' -v
+      - name: Preserve explicitly example-only report
+        run: cat /tmp/workload-fidelity-report-a.json
