@@ -115,6 +115,8 @@ class PublisherPolicyTests(unittest.TestCase):
         changed = copy.deepcopy(policy)
         changed["publishers"][0]["allowed_event_types"] = ["service_outcome_verified"]
         changed_bytes = json.dumps(changed, indent=2).encode() + b"\n"
+        import hashlib
+        statement["predicate"]["publisher_policy_sha256"] = hashlib.sha256(changed_bytes).hexdigest()
         with self.assertRaisesRegex(PolicyError, "not authorized for publisher role"):
             check_attestation(statement, changed, manifest, segment, changed_bytes)
 
