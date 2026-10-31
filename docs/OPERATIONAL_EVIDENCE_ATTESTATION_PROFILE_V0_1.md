@@ -81,7 +81,7 @@ The policy must:
 - reject unknown publishers, unknown trust domains, mismatched policy digests and missing evidence;
 - be separately source-pinned and protected from the system under test.
 
-The checked-in publisher-policy.example.json is example_only. luminous.example and repeated-character trust-bundle digests are fictional fixture values. They are not deployable trust anchors, keys, service accounts or workload identities. The GitHub OIDC subject is an example pin and must be checked against the exact workflow event/ref subject before any live signing is enabled.
+The checked-in publisher-policy.example.json is example_only. luminous.example and repeated-character trust-bundle digests are fictional fixture values. They are not deployable trust anchors, keys, service accounts or workload identities. The example policy retains the GitHub OIDC issuer in its trusted-issuer allowlist, but this runtime source-segment fixture has no active OIDC publisher entry. Any future CI publisher must add its exact subject for the precise workflow event/ref before signing is enabled.
 
 ## 6. Observability is not attestation
 
