@@ -121,6 +121,7 @@ def _histogram_p95(histogram: dict, offered_count: int, where: str):
 
 
 def _validate_profile(profile: dict):
+    require(set(profile) == {"schema", "version", "status", "profile_id", "study_id", "window_seconds", "request_classes"}, "profile: unexpected or missing root fields")
     require(profile.get("schema") == "luminous-opsbench-workload-profile-v0.1" and type(profile.get("version")) is int and profile["version"] == 1, "profile: unsupported schema/version")
     require(profile.get("status") in {"example_only", "registered_profile"}, "profile: invalid status")
     for key in ("profile_id", "study_id"):
@@ -135,11 +136,16 @@ def _validate_profile(profile: dict):
             "class_id", "critical", "min_weight", "max_weight", "target_offered_rps",
             "min_success_ratio", "min_business_correctness_ratio", "min_business_check_count",
             "min_ingress_ratio", "max_p95_latency_seconds", "max_server_retry_attempts_per_100_offered",
+            "payload_profile_id", "min_concurrency", "max_concurrency", "client_timeout_ms",
         }
         require(isinstance(item, dict) and set(item) == required, f"{where}: unexpected or missing fields")
         class_id = item["class_id"]
         require(isinstance(class_id, str) and class_id and class_id not in class_map, f"{where}: duplicate/empty class ID")
         require(type(item["critical"]) is bool, f"{where}.critical must be boolean")
+        require(isinstance(item["payload_profile_id"], str) and item["payload_profile_id"], f"{where}.payload_profile_id required")
+        require(type(item["min_concurrency"]) is int and item["min_concurrency"] >= 1, f"{where}.min_concurrency must be positive")
+        require(type(item["max_concurrency"]) is int and item["max_concurrency"] >= item["min_concurrency"], f"{where}.max_concurrency must be >= min_concurrency")
+        require(type(item["client_timeout_ms"]) is int and item["client_timeout_ms"] >= 1, f"{where}.client_timeout_ms must be positive")
         minimum = finite(item["min_weight"], f"{where}.min_weight", minimum=0.0, maximum=1.0)
         maximum = finite(item["max_weight"], f"{where}.max_weight", minimum=0.0, maximum=1.0)
         require(minimum <= maximum and maximum > 0, f"{where}: invalid class share interval")
@@ -157,6 +163,7 @@ def _validate_profile(profile: dict):
 
 
 def _validate_schedule(schedule: dict, contract: dict, profile: dict):
+    require(set(schedule) == {"schema", "version", "status", "study_id", "profile_id", "window_seconds", "phases"}, "schedule: unexpected or missing root fields")
     require(schedule.get("schema") == "luminous-opsbench-workload-phase-schedule-v0.1" and type(schedule.get("version")) is int and schedule["version"] == 1, "schedule: unsupported schema/version")
     require(schedule.get("status") in {"example_only", "registered_schedule"}, "schedule: invalid status")
     require(schedule.get("study_id") == contract["study_id"] and schedule.get("profile_id") == profile["profile_id"], "schedule: study/profile identity mismatch")
@@ -168,7 +175,7 @@ def _validate_schedule(schedule: dict, contract: dict, profile: dict):
     phase_map, previous_end = {}, None
     for i, phase in enumerate(phases):
         where = f"schedule.phases[{i}]"
-        required = {"phase_id", "kind", "started_at", "ended_at", "rate_multiplier_min", "rate_multiplier_max", "fault_id", "fault_receipt_sha256"}
+        required = {"phase_id", "kind", "started_at", "ended_at", "rate_multiplier_min", "rate_multiplier_max", "fault_id", "fault_action_sha256"}
         require(set(phase) == required, f"{where}: unexpected or missing fields")
         phase_id = phase["phase_id"]
         require(isinstance(phase_id, str) and phase_id and phase_id not in phase_map, f"{where}: duplicate/empty phase ID")
@@ -183,9 +190,9 @@ def _validate_schedule(schedule: dict, contract: dict, profile: dict):
         faulted = phase["kind"] in {"dependency_degradation", "retry_pressure"}
         if faulted:
             require(isinstance(phase["fault_id"], str) and phase["fault_id"], f"{where}: fault phase requires a named fault")
-            _hex64(phase["fault_receipt_sha256"], f"{where}.fault_receipt_sha256")
+            _hex64(phase["fault_action_sha256"], f"{where}.fault_action_sha256")
         else:
-            require(phase["fault_id"] is None and phase["fault_receipt_sha256"] is None, f"{where}: non-fault phase cannot claim a fault receipt")
+            require(phase["fault_id"] is None and phase["fault_action_sha256"] is None, f"{where}: non-fault phase cannot claim a fault action")
         phase_map[phase_id] = phase
     return phase_map
 
@@ -206,6 +213,15 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
         _identity(contract.get(key), f"contract.{key}")
     domains = [contract[k]["trust_domain_id"] for k in ("executor", "load_generator", "observer", "business_oracle", "fault_controller")]
     require(len(domains) == len(set(domains)), "contract: executor, load generator, observer, business oracle and fault controller must use distinct trust domains")
+    for label, value, data in (
+        ("contract", contract, contract_bytes),
+        ("profile", profile, profile_bytes),
+        ("schedule", schedule, schedule_bytes),
+        ("load receipts", load_receipts, load_bytes),
+        ("service observations", observations, observation_bytes),
+        ("fault receipts", fault_receipts, fault_receipt_bytes),
+    ):
+        require(load_json(data, label) == value, f"{label}: decoded object does not match exact supplied bytes")
     for field, data in (
         ("profile_sha256", profile_bytes),
         ("phase_schedule_sha256", schedule_bytes),
@@ -225,6 +241,8 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
         require(component.get("study_id") == contract["study_id"] and component.get("run_id") == contract["run_id"] and component.get("episode_id") == contract["episode_id"] and component.get("service_id") == contract["service_id"], f"{label}: cross-run/service substitution")
         require(component.get("profile_sha256") == contract["profile_sha256"] and component.get("phase_schedule_sha256") == contract["phase_schedule_sha256"], f"{label}: profile/schedule digest mismatch")
 
+    require(set(load_receipts) == {"schema", "version", "status", "study_id", "run_id", "episode_id", "service_id", "load_generator", "profile_sha256", "phase_schedule_sha256", "windows"}, "load receipts: unexpected or missing root fields")
+    require(set(observations) == {"schema", "version", "status", "study_id", "run_id", "episode_id", "service_id", "observer", "business_oracle", "profile_sha256", "phase_schedule_sha256", "windows"}, "service observations: unexpected or missing root fields")
     require(load_receipts.get("schema") == "luminous-opsbench-load-generator-receipts-v0.1" and type(load_receipts.get("version")) is int and load_receipts["version"] == 1, "load receipts: unsupported schema/version")
     require(observations.get("schema") == "luminous-opsbench-service-observations-v0.1" and type(observations.get("version")) is int and observations["version"] == 1, "service observations: unsupported schema/version")
     require(set(fault_receipts) == {"schema", "version", "status", "study_id", "run_id", "episode_id", "service_id", "fault_controller", "phase_schedule_sha256", "receipts"}, "fault receipts: unexpected or missing root fields")
@@ -252,6 +270,7 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
         seen_fault_phases.add(phase_id)
         phase = faulted_phases[phase_id]
         require(receipt["fault_id"] == phase["fault_id"], f"{where}: fault ID does not match frozen schedule")
+        require(receipt["action_digest"] == phase["fault_action_sha256"], f"{where}: fault action digest does not match frozen schedule")
         require(receipt["started_at"] == phase["started_at"] and receipt["ended_at"] == phase["ended_at"], f"{where}: fault execution time does not match frozen phase window")
         require(isinstance(receipt["target_id"], str) and receipt["target_id"] and isinstance(receipt["action"], str) and receipt["action"], f"{where}: target/action required")
         _hex64(receipt["action_digest"], f"{where}.action_digest")
@@ -295,14 +314,16 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
             load = load_map[key]
             obs = observation_map[key]
             where = f"window[{phase_id}/{class_id}]"
-            required_load_fields = {"window_id", "phase_id", "class_id", "started_at", "ended_at", "offered_count", "offered_rps", "response_success_count", "response_error_count", "response_timeout_count", "response_drop_count", "peak_concurrency", "latency_histogram"}
+            required_load_fields = {"window_id", "phase_id", "class_id", "started_at", "ended_at", "offered_count", "offered_rps", "response_success_count", "response_error_count", "response_timeout_count", "response_drop_count", "peak_concurrency", "payload_profile_id", "client_timeout_ms", "latency_histogram"}
             require(set(load) == required_load_fields, f"{where}: unexpected/missing load receipt fields")
             require(type(load["offered_count"]) is int and load["offered_count"] > 0, f"{where}: positive offered count required")
             duration = profile["window_seconds"]
             expected_rps = load["offered_count"] / duration
             rps = finite(load["offered_rps"], f"{where}.offered_rps", minimum=0.000001)
             require(abs(rps-expected_rps) <= 1e-9, f"{where}: offered_rps does not reconcile to count/window duration")
-            require(type(load["peak_concurrency"]) is int and load["peak_concurrency"] > 0, f"{where}: peak concurrency required")
+            require(type(load["peak_concurrency"]) is int and cls["min_concurrency"] <= load["peak_concurrency"] <= cls["max_concurrency"], f"{where}: peak concurrency outside frozen class range")
+            require(load["payload_profile_id"] == cls["payload_profile_id"], f"{where}: payload profile substitution")
+            require(type(load["client_timeout_ms"]) is int and load["client_timeout_ms"] == cls["client_timeout_ms"], f"{where}: client timeout differs from frozen workload contract")
             counts = [load[k] for k in ("response_success_count", "response_error_count", "response_timeout_count", "response_drop_count")]
             require(all(type(x) is int and x >= 0 for x in counts) and sum(counts) == load["offered_count"], f"{where}: all offered requests must end in success/error/timeout/drop; no denominator loss")
             multiplier_low, multiplier_high = phase["rate_multiplier_min"], phase["rate_multiplier_max"]
