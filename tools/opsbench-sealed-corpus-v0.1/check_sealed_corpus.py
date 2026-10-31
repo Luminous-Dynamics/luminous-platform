@@ -87,7 +87,12 @@ def check_corpus_commitment(manifest: dict, manifest_bytes: bytes, registration:
     require(registration.get("preregistration_sha256") == sha256(preregistration_bytes), "registration: exact preregistration digest mismatch")
     preregistration = load_json(preregistration_bytes, "preregistration")
     require(preregistration.get("study_id") == manifest.get("study_id"), "manifest/preregistration study ID mismatch")
-    require(preregistration.get("status") == "draft_not_registered" if manifest.get("status") == "example_only" else preregistration.get("status") == "registered_before_trials", "preregistration status does not match corpus status")
+    expected_preregistration_status = {
+        "example_only": "draft_not_registered",
+        "sealed_before_trials": "registered_before_trials",
+        "revealed_after_study": "completed",
+    }[manifest.get("status")]
+    require(preregistration.get("status") == expected_preregistration_status, "preregistration status does not match corpus status")
     raw_manifest_digest = sha256(manifest_bytes)
     require(registration.get("manifest_sha256") == raw_manifest_digest, "registration: exact raw manifest digest mismatch")
     require(registration.get("salt_sha256") == sha256(salt), "registration: salt digest mismatch")
