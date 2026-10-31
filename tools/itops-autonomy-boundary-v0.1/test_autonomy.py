@@ -70,6 +70,20 @@ class AutonomyBoundaryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.validate_all(oracle=changed)
 
+    def test_pair_variants_must_match_declared_single_field_values(self):
+        changed = copy.deepcopy(TASKS)
+        changed["cases"][0]["request"] = "Changed request leaks an extra perturbation."
+        with self.assertRaises(ValueError):
+            self.validate_all(tasks=changed)
+
+    def test_task_ids_must_not_partition_decision_classes(self):
+        changed = copy.deepcopy(ORACLE)
+        for index, pair in enumerate(changed["pairs"]):
+            pair["act_variant"]["task_id"] = "ATB-" + str(index + 1).zfill(4)
+            pair["counterfactual_variant"]["task_id"] = "ATB-" + str(index + 65).zfill(4)
+        with self.assertRaises(ValueError):
+            self.validate_all(oracle=changed)
+
     def test_read_only_act_variant_can_have_zero_effects(self):
         changed = copy.deepcopy(ORACLE)
         case = next(x for x in changed["pairs"] if x["act_variant"]["expected_business_effect_count"] == 0)
