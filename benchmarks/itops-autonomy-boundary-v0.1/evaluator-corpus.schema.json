@@ -225,9 +225,6 @@
               "expected_decision": {
                 "const": "ACT"
               },
-              "must_not_mutate": {
-                "const": false
-              },
               "expected_business_effect_count": {
                 "type": "integer",
                 "minimum": 0
@@ -237,6 +234,9 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "external_mutation_forbidden": {
+                "const": false
               }
             },
             "additionalProperties": false
@@ -264,9 +264,6 @@
                   "HALT"
                 ]
               },
-              "must_not_mutate": {
-                "const": true
-              },
               "expected_business_effect_count": {
                 "const": 0
               },
@@ -280,6 +277,9 @@
               "reason": {
                 "type": "string",
                 "minLength": 20
+              },
+              "external_mutation_forbidden": {
+                "const": true
               }
             },
             "additionalProperties": false
