@@ -107,7 +107,7 @@
       "class_id": "routine-read",
       "server_received_count": 5400,
       "server_rejected_count": 0,
-      "server_retry_attempt_count": 320,
+      "server_retry_attempt_count": 200,
       "business_checked_count": 5380,
       "business_correct_count": 5380,
       "started_at": "2026-10-31T14:03:00Z",
