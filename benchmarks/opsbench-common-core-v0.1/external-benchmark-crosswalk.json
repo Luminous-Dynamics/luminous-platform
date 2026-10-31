@@ -1,0 +1,236 @@
+{
+  "schema": "luminous-external-operations-benchmark-crosswalk-v0.1",
+  "version": 1,
+  "status": "research_reference_only",
+  "as_of": "2026-10-31",
+  "rule": "External benchmark metrics are not directly comparable unless the same task variants, environment, permissions, budgets, repetitions, model/tool versions and independent evaluator are used. This crosswalk describes capability overlap and known limitations; it does not translate scores.",
+  "benchmarks": [
+    {
+      "id": "servicenow_enterpriseops_gym",
+      "name": "ServiceNow EnterpriseOps-Gym",
+      "evaluation_surface": "Stateful enterprise workflows across eight business domains",
+      "reported_scope": {
+        "task_count": 1150,
+        "domains": 8,
+        "tools": 512,
+        "database_tables": 164
+      },
+      "primary_metric": {
+        "name": "strict whole-task success",
+        "unit": "fraction of tasks",
+        "success_rule": "all required final-state verifiers pass"
+      },
+      "repeats": "Artificial Analysis oracle-mode evaluations report three repeats per task",
+      "capabilities": [
+        "tool orchestration",
+        "stateful database mutation",
+        "multi-step enterprise workflows",
+        "final-state verification"
+      ],
+      "limitations": [
+        "Full task success is not equivalent to independently restored IT infrastructure service",
+        "Launch-period domain rates are historical and must not be presented as current live domain leaderboard results"
+      ],
+      "direct_score_comparison_allowed": false,
+      "sources": [
+        "https://github.com/ServiceNow/EnterpriseOps-Gym",
+        "https://artificialanalysis.ai/evaluations/enterprise-ops-gym-aa",
+        "https://artificialanalysis.ai/blog/enterprisops-gym-launch-assessment"
+      ]
+    },
+    {
+      "id": "itbench",
+      "name": "ITBench / ITBench-AA",
+      "evaluation_surface": "Kubernetes SRE incident root-cause entity attribution",
+      "reported_scope": {
+        "scenario_count": 59,
+        "repeats_per_task": 3,
+        "task_domain": "Kubernetes incident diagnosis"
+      },
+      "primary_metric": {
+        "name": "average precision at full recall",
+        "unit": "average precision",
+        "success_rule": "rank root-cause entities while retaining full recall"
+      },
+      "capabilities": [
+        "root-cause localization",
+        "Kubernetes incident diagnosis",
+        "evidence attribution"
+      ],
+      "limitations": [
+        "Diagnosis/localization metric, not successful remediation, recovery or customer service restoration",
+        "Do not convert AP@full-recall into task-success percentage"
+      ],
+      "direct_score_comparison_allowed": false,
+      "sources": [
+        "https://github.com/itbench-hub/ITBench",
+        "https://artificialanalysis.ai/evaluations/itbench-aa",
+        "https://proceedings.mlr.press/v267/jha25a.html"
+      ]
+    },
+    {
+      "id": "edge_delta_ai_sre_arena_v1",
+      "name": "Edge Delta AI SRE Arena v1",
+      "evaluation_surface": "Injected Kubernetes faults; detection, investigation, mitigation proposals and unsafe final recommendations",
+      "reported_scope": {
+        "incident_templates": 21,
+        "judged_investigations": 72,
+        "judge_model": "GPT-6-Astra",
+        "matched_native_product_incidents": 12
+      },
+      "matched_subset_results": {
+        "root_cause_identification": {
+          "edge_delta": "11/12",
+          "grafana": "9/12"
+        },
+        "supported_fix": {
+          "edge_delta": "7/12",
+          "grafana": "5/12"
+        },
+        "unsafe_final_recommendations": {
+          "edge_delta": "0/18",
+          "grafana": "2/12"
+        }
+      },
+      "capabilities": [
+        "fault detection",
+        "root-cause investigation",
+        "mitigation recommendation",
+        "unsafe-advice review"
+      ],
+      "limitations": [
+        "Vendor-authored and vendor-run evaluation",
+        "Reports and final recommendations judged; remediation not executed and service recovery not verified",
+        "Single AI judge is disclosed; not a blinded independent assessment",
+        "Results are tied to the published matched subset and should not be generalized beyond it"
+      ],
+      "direct_score_comparison_allowed": false,
+      "sources": [
+        "https://edgedelta.com/arena",
+        "https://github.com/edgedelta/project-arena"
+      ]
+    },
+    {
+      "id": "pagerduty_sre_agent_benchmark_2026",
+      "name": "PagerDuty SRE Agent Benchmark (2026)",
+      "evaluation_surface": "Injected SRE scenarios with code, observability signals and judged diagnosis/mitigation recommendations",
+      "reported_scope": {
+        "scenario_count": 17,
+        "repeats_per_agent": 1,
+        "judge_ensemble_size": 3,
+        "fault_injection_methods": 4
+      },
+      "primary_metric": {
+        "name": "five-dimensional judged assessment",
+        "dimensions": [
+          "issue localization",
+          "diagnosis",
+          "mitigation",
+          "evidence grounding",
+          "explanation clarity"
+        ],
+        "unit": "five-dimension judged assessment vector",
+        "success_rule": "Report localization, diagnosis, mitigation, evidence grounding and explanation clarity separately; do not infer executed repair or restoration"
+      },
+      "capabilities": [
+        "incident localization",
+        "diagnosis",
+        "mitigation recommendation",
+        "evidence grounding"
+      ],
+      "limitations": [
+        "Published comparison uses one trial per agent, limiting statistical inference",
+        "Failed agent responses are excluded from some scoring analyses and must be reported separately in a fair common-core study",
+        "Recommendations do not establish successful execution or verified restoration"
+      ],
+      "direct_score_comparison_allowed": false,
+      "sources": [
+        "https://www.pagerduty.com/resources/ai/learn/sre-agent-benchmark-report/"
+      ]
+    },
+    {
+      "id": "luminous_opsbench_v0_1",
+      "name": "Luminous Technology-Services OpsBench v0.1",
+      "evaluation_surface": "Synthetic end-to-end technology-service episodes with participant effects and independent service oracle",
+      "reported_scope": {
+        "public_synthetic_task_definitions": 20,
+        "blind_holdout": false,
+        "status": "specification_only"
+      },
+      "primary_metric": {
+        "name": "strict independently verified service-task success",
+        "unit": "fraction of started non-evaluator-error episodes",
+        "success_rule": "evaluator-owned service oracle confirms task_completed"
+      },
+      "capabilities": [
+        "cross-system coordination",
+        "effect reconciliation",
+        "independent postcondition verification",
+        "service outcome verification",
+        "human intervention and economic accounting"
+      ],
+      "limitations": [
+        "Public authoring corpus is not a blind holdout",
+        "Reference model and connector fixture do not prove production disk durability",
+        "Must add private held-out variants before generalization or SOTA claims"
+      ],
+      "direct_score_comparison_allowed": false,
+      "sources": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/149",
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/153"
+      ]
+    },
+    {
+      "id": "luminous_itops_autonomy_boundary_v0_1",
+      "name": "Luminous ITOPS Autonomy Boundary v0.1",
+      "evaluation_surface": "Paired safe/unsafe decision tasks for act, clarify, request authority, reconcile, escalate and halt",
+      "reported_scope": {
+        "sut_task_variants": 128,
+        "evaluator_only_oracles": 64,
+        "performance_trials": 0,
+        "status": "specification_only"
+      },
+      "primary_metric": {
+        "name": "paired decision accuracy and safety boundary quality",
+        "unit": "fraction of paired decisions",
+        "success_rule": "decision matches evaluator-owned expected class and effect barrier is honored"
+      },
+      "capabilities": [
+        "risk-aware abstention",
+        "exact authority decisions",
+        "safe escalation",
+        "counterfactual stop behavior"
+      ],
+      "limitations": [
+        "No agent performance run is present in the draft benchmark",
+        "Proposed performance targets are hypotheses, not results"
+      ],
+      "direct_score_comparison_allowed": false,
+      "sources": [
+        "https://github.com/Luminous-Dynamics/luminous-platform/pull/167"
+      ]
+    }
+  ],
+  "comparison_contract": {
+    "common_core_required": [
+      "same scenario and variant",
+      "same initial snapshot",
+      "same tool surface and versions",
+      "same permissions and tenant scope",
+      "same model/token/tool/time budgets or separately reported unequal budget",
+      "same fault injection",
+      "same independent oracle",
+      "same evaluator version"
+    ],
+    "never_translate": [
+      "ITBench AP@full-recall to task success",
+      "recommendation acceptance to executed remediation",
+      "host transaction promotion to customer service restoration",
+      "workflow trace completeness to external effect truth"
+    ],
+    "analysis_unit": "scenario_id cluster; repeated seeds are nested within scenario",
+    "report_unmatched_trials": true,
+    "report_evaluator_errors": true,
+    "report_failed_crashed_timed_out_indeterminate_started_trials": true
+  }
+}

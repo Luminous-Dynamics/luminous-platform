@@ -1,0 +1,40 @@
+name: OpsBench common-core bridge v0.1
+
+on:
+  pull_request:
+    paths:
+      - "docs/OPSBENCH_COMMON_CORE_BRIDGE_V0_1.md"
+      - "benchmarks/opsbench-common-core-v0.1/**"
+      - "tools/opsbench-common-core-v0.1/**"
+      - ".github/workflows/opsbench-common-core-bridge-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/OPSBENCH_COMMON_CORE_BRIDGE_V0_1.md"
+      - "benchmarks/opsbench-common-core-v0.1/**"
+      - "tools/opsbench-common-core-v0.1/**"
+      - ".github/workflows/opsbench-common-core-bridge-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opsbench-common-core-bridge-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preregistration-contract:
+    name: Crosswalk and preregistration integrity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Compile checker and mutation tests
+        run: python3 -m py_compile tools/opsbench-common-core-v0.1/check_common_core.py tools/opsbench-common-core-v0.1/test_common_core.py
+      - name: Validate benchmark crosswalk and preregistration example
+        run: python3 tools/opsbench-common-core-v0.1/check_common_core.py
+      - name: Run adversarial contract tests
+        run: python3 -m unittest discover -s tools/opsbench-common-core-v0.1 -p 'test_*.py' -v

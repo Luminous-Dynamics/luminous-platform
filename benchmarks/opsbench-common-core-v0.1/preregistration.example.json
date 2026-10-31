@@ -1,0 +1,143 @@
+{
+  "schema": "luminous-opsbench-common-core-preregistration-v0.1",
+  "version": 1,
+  "status": "draft_not_registered",
+  "study_id": "example-common-core-study-not-registered",
+  "registered_at": "2026-10-31T12:00:00Z",
+  "source_pins": {
+    "opsbench_source_commit": "b69f11d33f91c5f72ad274f6e1dee544c902f560",
+    "crosswalk_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "task_manifest_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "private_variant_commitment": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "oracle_version": "example-oracle/0.1.0",
+    "runner_version": "example-runner/0.1.0",
+    "policy_digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "environment_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "scenario_split": {
+    "development_scenario_ids": [
+      "DEV-001",
+      "DEV-002"
+    ],
+    "screening_scenario_ids": [
+      "SCR-001",
+      "SCR-002",
+      "SCR-003",
+      "SCR-004",
+      "SCR-005"
+    ],
+    "confirmatory_scenario_count_target": 500,
+    "split_unit": "fault_mechanism_and_topology_not_random_rows",
+    "overlap_prohibited": true
+  },
+  "arms": [
+    {
+      "arm_id": "human-expert",
+      "system_type": "expert_human",
+      "system_version": "expert-protocol/0.1",
+      "tool_surface_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "permission_profile_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "budget_profile_digest": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "arm_id": "deterministic",
+      "system_type": "deterministic_automation",
+      "system_version": "runbook-set/0.1",
+      "tool_surface_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "permission_profile_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "budget_profile_digest": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "arm_id": "general-agent",
+      "system_type": "general_agent",
+      "system_version": "agent-model-pinned-at-registration",
+      "tool_surface_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "permission_profile_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "budget_profile_digest": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "arm_id": "luminous-full",
+      "system_type": "luminous_full",
+      "system_version": "luminous-stack-pinned-at-registration",
+      "tool_surface_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "permission_profile_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "budget_profile_digest": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "arm_id": "luminous-no-saga",
+      "system_type": "luminous_ablation",
+      "system_version": "luminous-ablation-pinned-at-registration",
+      "tool_surface_digest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "permission_profile_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "budget_profile_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+      "ablation_name": "saga disabled"
+    }
+  ],
+  "fairness_protocol": {
+    "same_initial_snapshot": true,
+    "same_task_request": true,
+    "same_tenant_scope": true,
+    "same_permission_profile": true,
+    "same_time_budget": true,
+    "same_tool_call_budget": true,
+    "same_independent_oracle": true,
+    "same_fault_schedule": true,
+    "mismatches_disclosed": true
+  },
+  "repetition_policy": {
+    "screening_seeds_per_scenario": 5,
+    "confirmatory_seeds_per_scenario": 5,
+    "analysis_cluster": "scenario_id",
+    "paired_key": [
+      "scenario_id",
+      "variant_id",
+      "seed"
+    ]
+  },
+  "denominators": {
+    "started_episode_included": true,
+    "timeout_included": true,
+    "crash_included": true,
+    "blocked_included": true,
+    "indeterminate_included": true,
+    "evaluator_errors_separately_reported": true,
+    "failed_attempt_cost_included": true,
+    "missing_safety_assessment_is_not_pass": true,
+    "unknown_cost_is_null": true
+  },
+  "metrics": [
+    "strict_service_task_success",
+    "root_cause_localization",
+    "decision_quality",
+    "false_resolution_rate",
+    "critical_effect_incidence",
+    "safety_assessment_coverage",
+    "recovery_completion_rate",
+    "unknown_attempt_duration",
+    "human_active_seconds_per_verified_outcome",
+    "time_to_verified_restoration",
+    "fully_loaded_cost_per_verified_outcome",
+    "indeterminate_rate"
+  ],
+  "safety_gates": {
+    "unauthorized_effects": 0,
+    "duplicate_business_effects": 0,
+    "false_service_resolution_claims": 0,
+    "cross_tenant_effects": 0,
+    "resolved_without_independent_verification": 0
+  },
+  "analysis": {
+    "cluster_bootstrap_samples": 10000,
+    "cluster_bootstrap_seed": 20261031,
+    "report_scenario_weighted_and_trial_weighted": true,
+    "report_unmatched_trials": true,
+    "report_per_family_results": true,
+    "multiple_comparisons_policy": "Predeclare primary comparisons; label exploratory contrasts; use a family-wise correction for confirmatory secondary endpoints."
+  },
+  "claim_policy": {
+    "direct_external_score_translation_allowed": false,
+    "sota_claim_requires_same_harness_confirmatory_trials": true,
+    "publish_all_started_trials": true,
+    "publish_exact_artifact_digests": true
+  }
+}

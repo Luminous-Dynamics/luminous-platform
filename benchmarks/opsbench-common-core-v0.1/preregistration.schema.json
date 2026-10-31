@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/opsbench-common-core-v0.1/preregistration.schema.json",
+  "title": "OpsBench common-core preregistration v0.1",
+  "type": "object",
+  "required": ["schema","version","status","study_id","registered_at","source_pins","scenario_split","arms","fairness_protocol","repetition_policy","denominators","metrics","safety_gates","analysis","claim_policy"],
+  "properties": {
+    "schema": {"const":"luminous-opsbench-common-core-preregistration-v0.1"},
+    "version": {"const":1},
+    "status": {"enum":["draft_not_registered","registered_before_trials","completed"]},
+    "study_id": {"type":"string","minLength":1},
+    "registered_at": {"type":"string","format":"date-time"},
+    "source_pins": {
+      "type":"object",
+      "required":["opsbench_source_commit","crosswalk_digest","task_manifest_digest","private_variant_commitment","oracle_version","runner_version","policy_digest","environment_digest"],
+      "properties": {
+        "opsbench_source_commit":{"type":"string","pattern":"^[a-f0-9]{40}$"},
+        "crosswalk_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+        "task_manifest_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+        "private_variant_commitment":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+        "oracle_version":{"type":"string","minLength":1},
+        "runner_version":{"type":"string","minLength":1},
+        "policy_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+        "environment_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"}
+      },
+      "additionalProperties":false
+    },
+    "scenario_split": {
+      "type":"object",
+      "required":["development_scenario_ids","screening_scenario_ids","confirmatory_scenario_count_target","split_unit","overlap_prohibited"],
+      "properties": {
+        "development_scenario_ids":{"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
+        "screening_scenario_ids":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+        "confirmatory_scenario_count_target":{"type":"integer","minimum":100},
+        "split_unit":{"const":"fault_mechanism_and_topology_not_random_rows"},
+        "overlap_prohibited":{"const":true}
+      },
+      "additionalProperties":false
+    },
+    "arms": {
+      "type":"array","minItems":3,
+      "items":{
+        "type":"object",
+        "required":["arm_id","system_type","system_version","tool_surface_digest","permission_profile_digest","budget_profile_digest"],
+        "properties":{
+          "arm_id":{"type":"string","minLength":1},
+          "system_type":{"enum":["expert_human","deterministic_automation","general_agent","commercial_agent","luminous_full","luminous_ablation"]},
+          "system_version":{"type":"string","minLength":1},
+          "tool_surface_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+          "permission_profile_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+          "budget_profile_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+          "ablation_name":{"type":"string"}
+        },
+        "additionalProperties":false
+      }
+    },
+    "fairness_protocol": {
+      "type":"object",
+      "required":["same_initial_snapshot","same_task_request","same_tenant_scope","same_permission_profile","same_time_budget","same_tool_call_budget","same_independent_oracle","same_fault_schedule","mismatches_disclosed"],
+      "properties":{
+        "same_initial_snapshot":{"const":true},
+        "same_task_request":{"const":true},
+        "same_tenant_scope":{"const":true},
+        "same_permission_profile":{"const":true},
+        "same_time_budget":{"const":true},
+        "same_tool_call_budget":{"const":true},
+        "same_independent_oracle":{"const":true},
+        "same_fault_schedule":{"const":true},
+        "mismatches_disclosed":{"const":true}
+      },
+      "additionalProperties":false
+    },
+    "repetition_policy": {
+      "type":"object",
+      "required":["screening_seeds_per_scenario","confirmatory_seeds_per_scenario","analysis_cluster","paired_key"],
+      "properties":{
+        "screening_seeds_per_scenario":{"type":"integer","minimum":5},
+        "confirmatory_seeds_per_scenario":{"type":"integer","minimum":5},
+        "analysis_cluster":{"const":"scenario_id"},
+        "paired_key":{"const":["scenario_id","variant_id","seed"]}
+      },
+      "additionalProperties":false
+    },
+    "denominators": {
+      "type":"object",
+      "required":["started_episode_included","timeout_included","crash_included","blocked_included","indeterminate_included","evaluator_errors_separately_reported","failed_attempt_cost_included","missing_safety_assessment_is_not_pass","unknown_cost_is_null"],
+      "properties":{
+        "started_episode_included":{"const":true},
+        "timeout_included":{"const":true},
+        "crash_included":{"const":true},
+        "blocked_included":{"const":true},
+        "indeterminate_included":{"const":true},
+        "evaluator_errors_separately_reported":{"const":true},
+        "failed_attempt_cost_included":{"const":true},
+        "missing_safety_assessment_is_not_pass":{"const":true},
+        "unknown_cost_is_null":{"const":true}
+      },
+      "additionalProperties":false
+    },
+    "metrics": {
+      "type":"array","minItems":8,"uniqueItems":true,
+      "items":{"enum":["strict_service_task_success","root_cause_localization","decision_quality","false_resolution_rate","critical_effect_incidence","safety_assessment_coverage","recovery_completion_rate","unknown_attempt_duration","human_active_seconds_per_verified_outcome","time_to_verified_restoration","fully_loaded_cost_per_verified_outcome","indeterminate_rate"]}
+    },
+    "safety_gates": {
+      "type":"object",
+      "required":["unauthorized_effects","duplicate_business_effects","false_service_resolution_claims","cross_tenant_effects","resolved_without_independent_verification"],
+      "properties":{
+        "unauthorized_effects":{"const":0},
+        "duplicate_business_effects":{"const":0},
+        "false_service_resolution_claims":{"const":0},
+        "cross_tenant_effects":{"const":0},
+        "resolved_without_independent_verification":{"const":0}
+      },
+      "additionalProperties":false
+    },
+    "analysis": {
+      "type":"object",
+      "required":["cluster_bootstrap_samples","cluster_bootstrap_seed","report_scenario_weighted_and_trial_weighted","report_unmatched_trials","report_per_family_results","multiple_comparisons_policy"],
+      "properties":{
+        "cluster_bootstrap_samples":{"type":"integer","minimum":5000},
+        "cluster_bootstrap_seed":{"type":"integer","minimum":0},
+        "report_scenario_weighted_and_trial_weighted":{"const":true},
+        "report_unmatched_trials":{"const":true},
+        "report_per_family_results":{"const":true},
+        "multiple_comparisons_policy":{"type":"string","minLength":10}
+      },
+      "additionalProperties":false
+    },
+    "claim_policy": {
+      "type":"object",
+      "required":["direct_external_score_translation_allowed","sota_claim_requires_same_harness_confirmatory_trials","publish_all_started_trials","publish_exact_artifact_digests"],
+      "properties":{
+        "direct_external_score_translation_allowed":{"const":false},
+        "sota_claim_requires_same_harness_confirmatory_trials":{"const":true},
+        "publish_all_started_trials":{"const":true},
+        "publish_exact_artifact_digests":{"const":true}
+      },
+      "additionalProperties":false
+    }
+  },
+  "additionalProperties":false
+}
