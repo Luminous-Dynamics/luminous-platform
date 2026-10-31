@@ -45,7 +45,7 @@ class AssuranceTests(unittest.TestCase):
         results, prereg, prereg_bytes = fixture()
         rows = arm_rows(results, "deterministic")
         rows = [r for r in rows if r["scenario_id"] == "EX-001"]
-        rows = rows[:1] * 5
+        rows = [copy.deepcopy(rows[0]) for _ in range(5)]
         for index, row in enumerate(rows):
             row["seed"] = index + 1
         report = assurance._arm_summary(rows, results["analysis"], 0)
