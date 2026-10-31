@@ -97,6 +97,17 @@ def sample_sd(values):
     return math.sqrt(sum((x-m)**2 for x in values) / (len(values)-1))
 
 
+def quantile(values, probability):
+    ordered = sorted(values)
+    position = (len(ordered) - 1) * probability
+    low = math.floor(position)
+    high = math.ceil(position)
+    if low == high:
+        return ordered[low]
+    weight = position - low
+    return ordered[low] * (1.0 - weight) + ordered[high] * weight
+
+
 def required_n(sd: float, effect: float, power: float, family_alpha: float, comparisons: int) -> int:
     adjusted_alpha = family_alpha / comparisons
     zcrit = normal_ppf(1.0 - adjusted_alpha / 2.0)
@@ -109,8 +120,13 @@ def simulate_power(sd: float, target_effect: float, n: int, power: float, alpha:
     rng = random.Random(seed)
     critical = normal_ppf(1.0 - (alpha / comparisons) / 2.0)
     successes = 0
+    # Resample centered screening-cluster residuals, preserving their empirical
+    # shape. A zero-variance pilot uses a disclosed symmetric floor residual.
+    residuals = getattr(simulate_power, "_pilot_residuals", None)
+    if not residuals:
+        residuals = [-sd, sd]
     for _ in range(replicates):
-        values = [rng.gauss(target_effect, sd) for _ in range(n)]
+        values = [target_effect + residuals[rng.randrange(len(residuals))] for _ in range(n)]
         statistic = mean(values) / (sd / math.sqrt(n))
         if abs(statistic) >= critical:
             successes += 1
@@ -181,6 +197,10 @@ def plan(pilot: dict, prereg: dict, prereg_bytes: bytes) -> dict:
     padded_n = math.ceil(raw_n * (1.0 + safety_margin))
     prereg_floor = int(prereg["scenario_split"]["confirmatory_scenario_count_target"])
     recommended = max(prereg_floor, padded_n)
+    residuals = [value - observed_mean for value in values]
+    if variance_degenerate:
+        residuals = [-VARIANCE_FLOOR, VARIANCE_FLOOR]
+    simulate_power._pilot_residuals = residuals
     simulation_power = simulate_power(
         planning_sd, target_effect, recommended, target_power, alpha, comparisons,
         settings["simulation_replicates"], settings["simulation_seed"],
@@ -208,6 +228,11 @@ def plan(pilot: dict, prereg: dict, prereg_bytes: bytes) -> dict:
         "pilot_scenario_cluster_count": len(values),
         "pilot_paired_mean_difference": observed_mean,
         "pilot_paired_sample_sd": observed_sd,
+        "pilot_paired_effect_quantiles": {
+            "p10": quantile(values, 0.10), "p25": quantile(values, 0.25),
+            "p50": quantile(values, 0.50), "p75": quantile(values, 0.75),
+            "p90": quantile(values, 0.90)
+        },
         "planning_standard_deviation": planning_sd,
         "variance_degenerate_floor_applied": variance_degenerate,
         "unmatched_candidate_scenario_ids": unmatched_candidate,
