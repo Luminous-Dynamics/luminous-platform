@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/service-episode-attestation-predicate-v0.1.json",
+  "title": "Luminous Service Episode Attestation Predicate v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "claim_kind",
+    "issuer",
+    "episode",
+    "binding",
+    "observation",
+    "freshness",
+    "claim_ceiling",
+    "verifier_policy_version"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-service-episode-attestation-predicate-v0.1"
+    },
+    "claim_kind": {
+      "enum": [
+        "coordinator_action",
+        "participant_effect",
+        "service_outcome",
+        "authority_grant"
+      ]
+    },
+    "issuer": {
+      "type": "object",
+      "required": [
+        "principal_ref",
+        "key_id",
+        "claimed_role",
+        "trust_registry_version"
+      ],
+      "properties": {
+        "principal_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "key_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claimed_role": {
+          "enum": [
+            "coordinator",
+            "participant",
+            "independent_observer",
+            "authority"
+          ]
+        },
+        "trust_registry_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "episode": {
+      "type": "object",
+      "required": [
+        "episode_id",
+        "tenant_commitment",
+        "plan_digest"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_commitment": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "binding": {
+      "type": "object",
+      "required": [
+        "service_ref",
+        "target_digest",
+        "step_id",
+        "operation_id",
+        "request_digest",
+        "logical_idempotency_key",
+        "attempt_id"
+      ],
+      "properties": {
+        "service_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "step_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "request_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "logical_idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "participant_transaction_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "observation": {
+      "type": "object",
+      "required": [
+        "effect",
+        "consistency",
+        "postcondition_digest",
+        "evidence_digest",
+        "observed_at",
+        "valid_until"
+      ],
+      "properties": {
+        "effect": {
+          "enum": [
+            "dispatch_intent",
+            "accepted_pending",
+            "never_accepted",
+            "effect_committed",
+            "outcome_unknown",
+            "conflicting",
+            "service_healthy",
+            "service_unhealthy",
+            "authority_granted",
+            "authority_revoked",
+            "not_applicable"
+          ]
+        },
+        "consistency": {
+          "enum": [
+            "strong",
+            "eventual",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "postcondition_digest": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "evidence_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "valid_until": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "freshness": {
+      "type": "object",
+      "required": [
+        "issued_at",
+        "expires_at",
+        "issuer_sequence",
+        "nonce"
+      ],
+      "properties": {
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "issuer_sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{22,86}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "claim_ceiling": {
+      "enum": [
+        "E0",
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ]
+    },
+    "verifier_policy_version": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "claim_kind": {
+            "const": "coordinator_action"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "issuer": {
+            "properties": {
+              "claimed_role": {
+                "const": "coordinator"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "claim_kind": {
+            "const": "participant_effect"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "issuer": {
+            "properties": {
+              "claimed_role": {
+                "const": "participant"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "claim_kind": {
+            "const": "service_outcome"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "issuer": {
+            "properties": {
+              "claimed_role": {
+                "const": "independent_observer"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "claim_kind": {
+            "const": "authority_grant"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "issuer": {
+            "properties": {
+              "claimed_role": {
+                "const": "authority"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
