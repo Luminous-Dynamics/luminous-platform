@@ -115,16 +115,13 @@ def required_n(sd: float, effect: float, power: float, family_alpha: float, comp
     return max(2, math.ceil(((zcrit + zpower) * sd / effect) ** 2))
 
 
-def simulate_power(sd: float, target_effect: float, n: int, power: float, alpha: float,
+def simulate_power(sd: float, residuals: list[float], target_effect: float, n: int, power: float, alpha: float,
                    comparisons: int, replicates: int, seed: int) -> float:
     rng = random.Random(seed)
     critical = normal_ppf(1.0 - (alpha / comparisons) / 2.0)
     successes = 0
     # Resample centered screening-cluster residuals, preserving their empirical
     # shape. A zero-variance pilot uses a disclosed symmetric floor residual.
-    residuals = getattr(simulate_power, "_pilot_residuals", None)
-    if not residuals:
-        residuals = [-sd, sd]
     for _ in range(replicates):
         values = [target_effect + residuals[rng.randrange(len(residuals))] for _ in range(n)]
         statistic = mean(values) / (sd / math.sqrt(n))
@@ -200,9 +197,8 @@ def plan(pilot: dict, prereg: dict, prereg_bytes: bytes) -> dict:
     residuals = [value - observed_mean for value in values]
     if variance_degenerate:
         residuals = [-VARIANCE_FLOOR, VARIANCE_FLOOR]
-    simulate_power._pilot_residuals = residuals
     simulation_power = simulate_power(
-        planning_sd, target_effect, recommended, target_power, alpha, comparisons,
+        planning_sd, residuals, target_effect, recommended, target_power, alpha, comparisons,
         settings["simulation_replicates"], settings["simulation_seed"],
     )
     sensitivity = []
