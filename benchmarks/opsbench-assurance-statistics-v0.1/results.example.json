@@ -72,7 +72,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 70,
-      "fully_loaded_cost_usd": 1
+      "fully_loaded_cost_usd": 1,
+      "time_to_verified_restoration_seconds": 127
     },
     {
       "scenario_id": "EX-001",
@@ -91,7 +92,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 60,
-      "fully_loaded_cost_usd": 1.1
+      "fully_loaded_cost_usd": 1.1,
+      "time_to_verified_restoration_seconds": 134
     },
     {
       "scenario_id": "EX-002",
@@ -110,7 +112,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 70,
-      "fully_loaded_cost_usd": 1
+      "fully_loaded_cost_usd": 1,
+      "time_to_verified_restoration_seconds": null
     },
     {
       "scenario_id": "EX-002",
@@ -129,7 +132,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 60,
-      "fully_loaded_cost_usd": 1.1
+      "fully_loaded_cost_usd": 1.1,
+      "time_to_verified_restoration_seconds": null
     },
     {
       "scenario_id": "EX-003",
@@ -148,7 +152,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 70,
-      "fully_loaded_cost_usd": 1
+      "fully_loaded_cost_usd": 1,
+      "time_to_verified_restoration_seconds": 127
     },
     {
       "scenario_id": "EX-003",
@@ -167,7 +172,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 60,
-      "fully_loaded_cost_usd": 1.1
+      "fully_loaded_cost_usd": 1.1,
+      "time_to_verified_restoration_seconds": null
     },
     {
       "scenario_id": "EX-004",
@@ -186,7 +192,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 70,
-      "fully_loaded_cost_usd": 1
+      "fully_loaded_cost_usd": 1,
+      "time_to_verified_restoration_seconds": null
     },
     {
       "scenario_id": "EX-004",
@@ -205,7 +212,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 60,
-      "fully_loaded_cost_usd": 1.1
+      "fully_loaded_cost_usd": 1.1,
+      "time_to_verified_restoration_seconds": null
     },
     {
       "scenario_id": "EX-001",
@@ -224,7 +232,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 55,
-      "fully_loaded_cost_usd": 0.8
+      "fully_loaded_cost_usd": 0.8,
+      "time_to_verified_restoration_seconds": 127
     },
     {
       "scenario_id": "EX-001",
@@ -243,7 +252,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 50,
-      "fully_loaded_cost_usd": 0.9
+      "fully_loaded_cost_usd": 0.9,
+      "time_to_verified_restoration_seconds": 134
     },
     {
       "scenario_id": "EX-002",
@@ -262,7 +272,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 55,
-      "fully_loaded_cost_usd": 0.8
+      "fully_loaded_cost_usd": 0.8,
+      "time_to_verified_restoration_seconds": 127
     },
     {
       "scenario_id": "EX-002",
@@ -281,7 +292,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 50,
-      "fully_loaded_cost_usd": 0.9
+      "fully_loaded_cost_usd": 0.9,
+      "time_to_verified_restoration_seconds": null
     },
     {
       "scenario_id": "EX-003",
@@ -300,7 +312,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 55,
-      "fully_loaded_cost_usd": null
+      "fully_loaded_cost_usd": null,
+      "time_to_verified_restoration_seconds": 127
     },
     {
       "scenario_id": "EX-003",
@@ -319,7 +332,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 50,
-      "fully_loaded_cost_usd": 0.9
+      "fully_loaded_cost_usd": 0.9,
+      "time_to_verified_restoration_seconds": null
     },
     {
       "scenario_id": "EX-004",
@@ -338,7 +352,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 55,
-      "fully_loaded_cost_usd": 0.8
+      "fully_loaded_cost_usd": 0.8,
+      "time_to_verified_restoration_seconds": 127
     },
     {
       "scenario_id": "EX-004",
@@ -357,7 +372,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 50,
-      "fully_loaded_cost_usd": 0.9
+      "fully_loaded_cost_usd": 0.9,
+      "time_to_verified_restoration_seconds": 134
     },
     {
       "scenario_id": "EX-001",
@@ -376,7 +392,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 60,
-      "fully_loaded_cost_usd": 0.75
+      "fully_loaded_cost_usd": 0.75,
+      "time_to_verified_restoration_seconds": 127
     },
     {
       "scenario_id": "EX-001",
@@ -395,7 +412,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 55,
-      "fully_loaded_cost_usd": 0.8
+      "fully_loaded_cost_usd": 0.8,
+      "time_to_verified_restoration_seconds": 134
     },
     {
       "scenario_id": "EX-002",
@@ -414,7 +432,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 60,
-      "fully_loaded_cost_usd": 0.75
+      "fully_loaded_cost_usd": 0.75,
+      "time_to_verified_restoration_seconds": null
     },
     {
       "scenario_id": "EX-002",
@@ -433,7 +452,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 55,
-      "fully_loaded_cost_usd": 0.8
+      "fully_loaded_cost_usd": 0.8,
+      "time_to_verified_restoration_seconds": null
     },
     {
       "scenario_id": "EX-003",
@@ -452,7 +472,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 60,
-      "fully_loaded_cost_usd": 0.75
+      "fully_loaded_cost_usd": 0.75,
+      "time_to_verified_restoration_seconds": 127
     },
     {
       "scenario_id": "EX-003",
@@ -471,7 +492,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 55,
-      "fully_loaded_cost_usd": 0.8
+      "fully_loaded_cost_usd": 0.8,
+      "time_to_verified_restoration_seconds": 134
     },
     {
       "scenario_id": "EX-004",
@@ -490,7 +512,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 60,
-      "fully_loaded_cost_usd": 0.75
+      "fully_loaded_cost_usd": 0.75,
+      "time_to_verified_restoration_seconds": 127
     },
     {
       "scenario_id": "EX-004",
@@ -509,7 +532,8 @@
         "resolved_without_independent_verification": 0
       },
       "human_active_seconds": 55,
-      "fully_loaded_cost_usd": 0.8
+      "fully_loaded_cost_usd": 0.8,
+      "time_to_verified_restoration_seconds": null
     }
   ]
 }
