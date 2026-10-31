@@ -270,5 +270,21 @@ class OperationalAssuranceCaseTests(unittest.TestCase):
             evaluate(case, serialize(case))
 
 
+    def test_unresolved_noncritical_defeater_on_optional_claim_is_indeterminate(self):
+        case, _ = fixtures()
+        case["defeaters"].append({
+            "defeater_id": "def-optional-context",
+            "target_claim_id": "claim-economics",
+            "description": "A non-critical rate-card provenance question remains unresolved.",
+            "critical": False,
+            "status": "open",
+            "evidence_ids": [],
+        })
+        argument(case, "arg-economics")["defeater_ids"].append("def-optional-context")
+        report = evaluate(case, serialize(case))
+        self.assertEqual(report["computed_disposition"], "indeterminate")
+        self.assertEqual(report["unresolved_defeaters"], ["def-optional-context"])
+
+
 if __name__ == "__main__":
     unittest.main()
