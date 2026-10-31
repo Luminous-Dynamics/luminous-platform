@@ -1,0 +1,380 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Service Episode Attestation Conformance v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "predicate_type",
+    "envelope_profile",
+    "claim_ceiling",
+    "trust_policy",
+    "vectors"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-service-episode-attestation-conformance-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "const": "synthetic_evaluator_only_not_runtime_input"
+    },
+    "predicate_type": {
+      "const": "https://luminousdynamics.io/attestations/service-episode/v0.1"
+    },
+    "envelope_profile": {
+      "const": "DSSE_v1.0_over_in_toto_Statement_v1"
+    },
+    "claim_ceiling": {
+      "const": "E0_E1_schema_and_synthetic_vectors_only"
+    },
+    "trust_policy": {
+      "type": "object",
+      "required": [
+        "policy_version",
+        "required_signer_roles",
+        "independent_observer_requires_distinct_control_domain",
+        "keyid_is_identity_proof",
+        "signed_effect_claim_requires_participant_role",
+        "service_resolution_requires_independent_observer_role",
+        "unknown_effect_never_resolves",
+        "unknown_major_version_fails_closed",
+        "anti_replay",
+        "transparency_mode"
+      ],
+      "properties": {
+        "policy_version": {
+          "const": "service-episode-trust-policy-v0.1"
+        },
+        "required_signer_roles": {
+          "const": [
+            "coordinator",
+            "participant",
+            "independent_observer",
+            "authority"
+          ]
+        },
+        "independent_observer_requires_distinct_control_domain": {
+          "const": true
+        },
+        "keyid_is_identity_proof": {
+          "const": false
+        },
+        "signed_effect_claim_requires_participant_role": {
+          "const": true
+        },
+        "service_resolution_requires_independent_observer_role": {
+          "const": true
+        },
+        "unknown_effect_never_resolves": {
+          "const": true
+        },
+        "unknown_major_version_fails_closed": {
+          "const": true
+        },
+        "anti_replay": {
+          "const": [
+            "nonce",
+            "monotonic_issuer_sequence",
+            "signed_expiry"
+          ]
+        },
+        "transparency_mode": {
+          "const": "optional_policy_gated"
+        }
+      },
+      "additionalProperties": false
+    },
+    "vectors": {
+      "type": "array",
+      "minItems": 33,
+      "maxItems": 33,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "category",
+          "visibility",
+          "input",
+          "expected"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^VSA-[A-Z]+-[0-9]{3}$"
+          },
+          "category": {
+            "enum": [
+              "valid-bundle",
+              "signature-integrity",
+              "issuer-trust",
+              "role-separation",
+              "episode-binding",
+              "freshness-replay",
+              "semantic-claims",
+              "schema-evolution",
+              "privacy",
+              "transparency"
+            ]
+          },
+          "visibility": {
+            "const": "evaluator_only_not_sut_input"
+          },
+          "input": {
+            "type": "object",
+            "required": [
+              "signature_integrity",
+              "payload_type_integrity",
+              "pae_valid",
+              "issuer_key_status",
+              "issuer_registry_status",
+              "trust_bundle_status",
+              "required_roles",
+              "claimed_role",
+              "role_claim_alignment",
+              "coordinator_observer_control_domains",
+              "tenant_binding",
+              "plan_binding",
+              "target_binding",
+              "operation_binding",
+              "request_binding",
+              "attempt_binding",
+              "idempotency_binding",
+              "freshness",
+              "nonce_state",
+              "issuer_sequence_state",
+              "effect",
+              "consistency",
+              "observer_evidence",
+              "postcondition_binding",
+              "predicate_version",
+              "transparency_requirement",
+              "transparency_proof",
+              "privacy_commitment",
+              "service_claim_signer_role",
+              "extra_signatures_from_same_role"
+            ],
+            "properties": {
+              "signature_integrity": {
+                "enum": [
+                  "valid",
+                  "tampered"
+                ]
+              },
+              "payload_type_integrity": {
+                "enum": [
+                  "valid",
+                  "tampered"
+                ]
+              },
+              "pae_valid": {
+                "type": "boolean"
+              },
+              "issuer_key_status": {
+                "enum": [
+                  "active",
+                  "revoked",
+                  "unknown"
+                ]
+              },
+              "issuer_registry_status": {
+                "enum": [
+                  "trusted",
+                  "unregistered"
+                ]
+              },
+              "trust_bundle_status": {
+                "enum": [
+                  "current",
+                  "stale"
+                ]
+              },
+              "required_roles": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "coordinator",
+                    "participant",
+                    "independent_observer",
+                    "authority"
+                  ]
+                }
+              },
+              "claimed_role": {
+                "enum": [
+                  "coordinator",
+                  "participant",
+                  "independent_observer",
+                  "authority"
+                ]
+              },
+              "role_claim_alignment": {
+                "enum": [
+                  "valid",
+                  "unauthorized_scope",
+                  "claim_kind_role_mismatch"
+                ]
+              },
+              "coordinator_observer_control_domains": {
+                "enum": [
+                  "independent",
+                  "shared"
+                ]
+              },
+              "tenant_binding": {
+                "enum": [
+                  "match",
+                  "mismatch"
+                ]
+              },
+              "plan_binding": {
+                "enum": [
+                  "match",
+                  "mismatch"
+                ]
+              },
+              "target_binding": {
+                "enum": [
+                  "match",
+                  "mismatch"
+                ]
+              },
+              "operation_binding": {
+                "enum": [
+                  "match",
+                  "mismatch"
+                ]
+              },
+              "request_binding": {
+                "enum": [
+                  "match",
+                  "mismatch"
+                ]
+              },
+              "attempt_binding": {
+                "enum": [
+                  "match",
+                  "mismatch"
+                ]
+              },
+              "idempotency_binding": {
+                "enum": [
+                  "match",
+                  "mismatch"
+                ]
+              },
+              "freshness": {
+                "enum": [
+                  "fresh",
+                  "expired",
+                  "future"
+                ]
+              },
+              "nonce_state": {
+                "enum": [
+                  "unique",
+                  "replayed"
+                ]
+              },
+              "issuer_sequence_state": {
+                "enum": [
+                  "next",
+                  "duplicate"
+                ]
+              },
+              "effect": {
+                "enum": [
+                  "effect_committed",
+                  "outcome_unknown"
+                ]
+              },
+              "consistency": {
+                "enum": [
+                  "strong",
+                  "eventual",
+                  "unknown"
+                ]
+              },
+              "observer_evidence": {
+                "enum": [
+                  "fresh",
+                  "stale"
+                ]
+              },
+              "postcondition_binding": {
+                "enum": [
+                  "match",
+                  "mismatch"
+                ]
+              },
+              "predicate_version": {
+                "enum": [
+                  "v0.1",
+                  "unknown_major"
+                ]
+              },
+              "transparency_requirement": {
+                "enum": [
+                  "not_required",
+                  "required"
+                ]
+              },
+              "transparency_proof": {
+                "enum": [
+                  "not_required",
+                  "present",
+                  "missing"
+                ]
+              },
+              "privacy_commitment": {
+                "enum": [
+                  "opaque_commitment",
+                  "low_entropy_plaintext"
+                ]
+              },
+              "service_claim_signer_role": {
+                "enum": [
+                  "coordinator",
+                  "participant",
+                  "independent_observer",
+                  "authority"
+                ]
+              },
+              "extra_signatures_from_same_role": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "expected": {
+            "type": "object",
+            "required": [
+              "decision",
+              "reason_code"
+            ],
+            "properties": {
+              "decision": {
+                "enum": [
+                  "accept",
+                  "reject",
+                  "indeterminate"
+                ]
+              },
+              "reason_code": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
