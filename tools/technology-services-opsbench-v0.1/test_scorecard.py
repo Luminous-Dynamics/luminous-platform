@@ -1,4 +1,5 @@
-import copy, unittest
+import copy, json, unittest
+from pathlib import Path
 from scorecard import CATS, ScorecardError, score, validate_episode, validate_cost, paired, wilson
 
 D="sha256:"+"a"*64
@@ -18,6 +19,16 @@ def cost(r, unknown=None):
       "components":[{"category":k,"status":"unknown" if k==unknown else "measured","amount_microusd":None if k==unknown else amounts[k],"evidence_record_digest":D} for k in CATS]}
 
 class Tests(unittest.TestCase):
+    def test_checked_in_episode_and_cost_fixtures_reconcile(self):
+        root=Path(__file__).resolve().parents[2]
+        episode_row=json.loads((root/"benchmarks/technology-services-ops-v0.1/episode-result.example.json").read_text(encoding="utf-8"))
+        cost_row=json.loads((root/"benchmarks/technology-services-ops-v0.1/economic-cost.example.json").read_text(encoding="utf-8"))
+        self.assertEqual(validate_cost(cost_row,1),("example-run-0001","luminous-human-approved","example-episode-0001"))
+        arm=score([episode_row],[cost_row])["arms"]["luminous-human-approved"]
+        self.assertEqual(arm["direct_cost_microusd_all_started"],250)
+        self.assertEqual(arm["full_cost_all_started_microusd"],340)
+        self.assertEqual(arm["fully_costed_started_trials"],1)
+
     def test_wilson_bounds_and_empty(self):
         self.assertIsNone(wilson(0,0)); self.assertAlmostEqual(wilson(10,10)[1],1)
 
