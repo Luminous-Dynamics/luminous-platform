@@ -360,6 +360,12 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
             if rejected > 0:
                 dispositions.append("fail")
                 reasons.append("service-side rejected requests are non-zero")
+            if load["response_timeout_count"] > 0:
+                dispositions.append("fail")
+                reasons.append("timed-out requests are non-zero")
+            if load["response_drop_count"] > 0:
+                dispositions.append("fail")
+                reasons.append("dropped requests are non-zero")
             if success_ratio < cls["min_success_ratio"]:
                 dispositions.append("fail")
                 reasons.append("externally observed response success ratio is below the class floor")
