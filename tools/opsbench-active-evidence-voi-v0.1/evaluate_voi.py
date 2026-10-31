@@ -500,7 +500,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
             # model/data contradiction. Preserve uncertainty and expose it.
             impossible = True
         after_risk = constrained_decision_risk(distribution, actions, policy["max_action_risk"])
-        realized_gain_values.append(max(0.0, before_risk - after_risk))
+        realized_gain_values.append(before_risk - after_risk)
         top_hypothesis, confidence = _argmax(distribution)
         prequential.append({
             "confidence": confidence,
@@ -516,7 +516,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
             "posterior_updated": updated,
             "predicted_evsi": predicted["evsi"],
             "predicted_entropy_reduction": predicted["entropy_reduction"],
-            "realized_bayes_risk_reduction": max(0.0, before_risk - after_risk),
+            "realized_bayes_risk_reduction": before_risk - after_risk,
             "posterior_after": dict(distribution),
         })
         stop_reason = "continue"
@@ -546,7 +546,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
         "human_seconds": spent["human_seconds"],
         "initial_bayes_risk": initial_risk,
         "final_bayes_risk": final_risk,
-        "total_realized_risk_reduction": max(0.0, initial_risk - final_risk),
+        "total_realized_risk_reduction": initial_risk - final_risk,
         "mean_predicted_evsi_per_probe": sum(predicted_gain_values) / len(predicted_gain_values) if predicted_gain_values else 0.0,
         "mean_realized_risk_reduction_per_probe": sum(realized_gain_values) / len(realized_gain_values) if realized_gain_values else 0.0,
         "mean_predicted_entropy_reduction": sum(x["predicted_entropy_reduction"] for x in observations) / len(observations) if observations else 0.0,
@@ -655,6 +655,7 @@ def evaluate(study: dict) -> dict:
         "schema": "luminous-opsbench-active-evidence-report-v0.1",
         "version": 1,
         "status": "example_only" if study["status"] == "example_only" else "analysis_only_not_a_policy_qualification",
+        "automatic_execution_authorized": False,
         "study_id": study["study_id"],
         "scenario_count": len(validated["scenarios"]),
         "strategies": {name: _summarize(rows) for name, rows in strategy_rows.items()},
