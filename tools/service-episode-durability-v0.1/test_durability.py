@@ -5,7 +5,7 @@ from check_durability import validate
 from pathlib import Path
 import json
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 MATRIX = json.loads((ROOT / "benchmarks" / "service-episode-durability-v0.1" / "crash-matrix.json").read_text())
 SCHEMA = json.loads((ROOT / "benchmarks" / "service-episode-durability-v0.1" / "crash-matrix.schema.json").read_text())
 
