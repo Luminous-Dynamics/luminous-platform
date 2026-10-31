@@ -29,7 +29,8 @@
   },
   "profile_sha256": "70a896108d3ae247118fe355dd7c5353e8cca32c24221d4e72bfeb769ae617ae",
   "phase_schedule_sha256": "4a7285c5a515b28970298dd085ba8d98c692df9ac2b4d30c4bdc3951f589bdfc",
-  "load_generator_receipts_sha256": "24cf92c488c2ba20c20f10a64d146955c07873698c95dd9ed2a64eb498802d5f",
-  "service_observations_sha256": "20cce7fb5f8b619154b2afc988d5d866fa333c7e73d0cd88305fd0a65fc34777",
-  "expected_phase_count": 5
+  "load_generator_receipts_sha256": "bb5776c49d4aedb0a547bed5b3b969b5b4e98c594cce6bd0af6b07ac4c5db626",
+  "service_observations_sha256": "0ebc2a33c4059f91fd842aed680ff0a9e0fabcd54197266c696cbebac7f464c2",
+  "expected_phase_count": 5,
+  "fault_controller_receipts_sha256": "1408e2ef6505643da6a789dcd59ffbabd1ad224d1b65a3ef30395660b4e8a76d"
 }
