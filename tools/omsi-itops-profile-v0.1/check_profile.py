@@ -19,9 +19,9 @@ SCHEMA_PATH = ROOT / "benchmarks" / "omsi-itops-profile-v0.1" / "schema.json"
 REFERENCES_PATH = ROOT / "benchmarks" / "omsi-itops-profile-v0.1" / "upstream-crosswalk.json"
 
 EXPECTED_PROFILE = "omsi:technology-services-operations:0.1-incubation"
-EXPECTED_OPSBENCH_COMMIT = "c3a746afd56f36b791783f49855cbf7736024f6f"
+EXPECTED_OPSBENCH_COMMIT = "b69f11d33f91c5f72ad274f6e1dee544c902f560"
 EXPECTED_OPSBENCH_BLOB = "1de8c499abb8ca995223bae8ef42037cc04fa34e"
-EXPECTED_SAGA_COMMIT = "0bdebbe5e6aa3cbb3e68a4df4e18c7407829c87d"
+EXPECTED_SAGA_COMMIT = "098d9840454d457658d101cca170f7ce67a3cd9b"
 EXPECTED_SAGA_BLOB = "ee0ed9c3e8e4d10bd165d3a2bde816f146aaa977"
 
 EXPECTED_OPSBENCH_IDS = {
