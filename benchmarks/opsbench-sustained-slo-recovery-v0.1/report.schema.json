@@ -1,0 +1,31 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://luminousdynamics.io/schemas/opsbench-sustained-recovery-report-v0.1.json",
+  "title":"OpsBench sustained SLO recovery report v0.1",
+  "type":"object","additionalProperties":false,
+  "required":["schema","version","status","contract_sha256","windows_sha256","window_count","sustained_recovery","claim_ceiling"],
+  "properties":{
+    "schema":{"const":"luminous-opsbench-sustained-recovery-report-v0.1"},
+    "version":{"const":1},
+    "status":{"enum":["example_only","sustained_recovery_verified","not_recovered","indeterminate"]},
+    "contract_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "windows_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "window_count":{"type":"integer","minimum":0},
+    "sustained_recovery":{
+      "type":"object","additionalProperties":false,
+      "required":["verified","candidate_window_id","sustained_from","sustained_until","hold_window_count","time_to_sustained_recovery_seconds","regression_count","indeterminate_window_count","window_results"],
+      "properties":{
+        "verified":{"type":"boolean"},
+        "candidate_window_id":{"type":["string","null"]},
+        "sustained_from":{"type":["string","null"]},
+        "sustained_until":{"type":["string","null"]},
+        "hold_window_count":{"type":"integer","minimum":1},
+        "time_to_sustained_recovery_seconds":{"type":["number","null"]},
+        "regression_count":{"type":"integer","minimum":0},
+        "indeterminate_window_count":{"type":"integer","minimum":0},
+        "window_results":{"type":"array","items":{"type":"object"}}
+      }
+    },
+    "claim_ceiling":{"type":"string","minLength":30}
+  }
+}
