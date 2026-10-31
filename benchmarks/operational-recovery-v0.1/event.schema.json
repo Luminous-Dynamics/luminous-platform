@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/operational-recovery-v0.1/event.schema.json",
+  "title": "Luminous operational recovery event v0.1",
+  "type": "object",
+  "required": ["schema", "event_id", "run_id", "episode_id", "plan_digest", "source_id", "source_kind", "trust_domain_id", "source_epoch", "source_sequence", "previous_event_digest", "parent_event_ids", "event_type", "recorded_at", "data", "event_digest"],
+  "properties": {
+    "schema": {"const": "luminous-operational-recovery-event-v0.1"},
+    "event_id": {"type": "string", "minLength": 1},
+    "run_id": {"type": "string", "minLength": 1},
+    "episode_id": {"type": "string", "minLength": 1},
+    "plan_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "source_id": {"type": "string", "minLength": 1},
+    "source_kind": {"enum": ["coordinator", "authority_adapter", "participant", "participant_ledger", "independent_observer", "evaluator"]},
+    "trust_domain_id": {"type": "string", "minLength": 1},
+    "source_epoch": {"type": "integer", "minimum": 0},
+    "source_sequence": {"type": "integer", "minimum": 1},
+    "previous_event_digest": {"oneOf": [{"type": "null"}, {"type": "string", "pattern": "^[a-f0-9]{64}$"}]},
+    "parent_event_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "event_type": {"enum": ["plan_authorized", "dispatch_intent_durable", "participant_accepted", "effect_committed", "transport_response_lost", "attempt_status_observed", "effect_reconciled", "step_postcondition_verified", "coordinator_restarted", "recovery_scan_completed", "service_outcome_verified", "agent_declared_resolved"]},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "attempt_id": {"type": ["string", "null"], "minLength": 1},
+    "step_id": {"type": ["string", "null"], "minLength": 1},
+    "data": {"type": "object"},
+    "event_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "allOf": [
+    {"if": {"properties": {"event_type": {"enum": ["plan_authorized", "dispatch_intent_durable", "participant_accepted", "effect_committed", "transport_response_lost", "attempt_status_observed", "effect_reconciled", "step_postcondition_verified"]}}, "required": ["event_type"]}, "then": {"required": ["attempt_id", "step_id"]}},
+    {"if": {"properties": {"event_type": {"const": "plan_authorized"}}, "required": ["event_type"]}, "then": {"properties": {"data": {"required": ["grant_digest", "authorization_valid", "target_digest", "operation_id", "request_digest", "operation_binding_digest", "idempotency_key_digest"]}}}},
+    {"if": {"properties": {"event_type": {"const": "dispatch_intent_durable"}}, "required": ["event_type"]}, "then": {"properties": {"data": {"required": ["grant_digest", "durability_attested", "target_digest", "operation_id", "request_digest", "operation_binding_digest", "idempotency_key_digest"]}}}},
+    {"if": {"properties": {"event_type": {"const": "participant_accepted"}}, "required": ["event_type"]}, "then": {"properties": {"data": {"required": ["request_digest", "target_digest", "operation_id", "operation_binding_digest", "idempotency_key_digest"]}}}},
+    {"if": {"properties": {"event_type": {"const": "effect_committed"}}, "required": ["event_type"]}, "then": {"properties": {"data": {"required": ["effect_id", "effect_digest", "request_digest", "target_digest", "operation_id", "operation_binding_digest", "idempotency_key_digest"]}}}},
+    {"if": {"properties": {"event_type": {"const": "attempt_status_observed"}}, "required": ["event_type"]}, "then": {"properties": {"data": {"required": ["outcome", "consistency", "authoritative", "request_digest", "operation_binding_digest", "idempotency_key_digest"]}}}},
+    {"if": {"properties": {"event_type": {"const": "effect_reconciled"}}, "required": ["event_type"]}, "then": {"properties": {"data": {"required": ["effect_id", "effect_digest", "request_digest", "target_digest", "operation_id", "operation_binding_digest", "idempotency_key_digest"]}}}},
+    {"if": {"properties": {"event_type": {"const": "step_postcondition_verified"}}, "required": ["event_type"]}, "then": {"properties": {"data": {"required": ["observer_id", "target_digest", "expected_postcondition_digest", "observed_postcondition_digest", "captured_at", "valid_until", "evidence_digest"]}}}},
+    {"if": {"properties": {"event_type": {"const": "recovery_scan_completed"}}, "required": ["event_type"]}, "then": {"properties": {"data": {"required": ["scanned_attempt_ids", "unresolved_attempt_ids", "reconciled_attempt_ids"]}}}},
+    {"if": {"properties": {"event_type": {"const": "service_outcome_verified"}}, "required": ["event_type"]}, "then": {"properties": {"data": {"required": ["observer_id", "expected_service_digest", "observed_service_digest", "captured_at", "valid_until", "evidence_digest"]}}}}
+  ],
+  "additionalProperties": false
+}
