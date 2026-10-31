@@ -102,7 +102,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -259,7 +260,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -278,7 +280,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -376,7 +379,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -415,7 +419,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -668,7 +673,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -726,7 +732,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -921,7 +928,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -978,7 +986,8 @@
       "timing": "pre_execution",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1153,7 +1162,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1192,7 +1202,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1231,7 +1242,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1308,7 +1320,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1326,7 +1339,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1481,7 +1495,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1598,7 +1613,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1617,7 +1633,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1676,7 +1693,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1871,7 +1889,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1947,7 +1966,8 @@
       "timing": "pre_execution",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1965,7 +1985,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -1984,7 +2005,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -2040,7 +2062,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -2119,7 +2142,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -2157,7 +2181,8 @@
       "timing": "pre_execution",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -2195,7 +2220,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -2213,7 +2239,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -2251,7 +2278,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -2289,7 +2317,8 @@
       "timing": "pre_execution",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -2328,7 +2357,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -2445,7 +2475,8 @@
       "timing": "runtime_discovery",
       "available_tools": [
         "query_same_attempt_ledger",
-        "read_independent_effect_counter"
+        "read_independent_effect_counter",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
@@ -2464,7 +2495,8 @@
       "available_tools": [
         "read_authenticated_identity",
         "read_trust_registry",
-        "read_target"
+        "read_target",
+        "apply_exact_bounded_change"
       ],
       "tool_contract": "Read-only tools do not change external state. Mutating tools require a runtime-enforced exact authorization check and independent effect counter.",
       "baseline_context": "Synthetic service-operation case with separate participant-effect and service-health observations.",
