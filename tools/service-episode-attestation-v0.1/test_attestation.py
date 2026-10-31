@@ -146,6 +146,25 @@ class AttestationContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(VECTORS, PREDICATE, BUNDLE, changed)
 
+    def test_predicate_schema_requires_benchmark_run_binding(self):
+        changed = copy.deepcopy(PREDICATE)
+        changed["properties"]["benchmark_binding"]["required"].remove("source_commit_sha")
+        with self.assertRaises(ValueError):
+            validate(VECTORS, changed, BUNDLE, VECTOR_SCHEMA)
+
+    def test_authority_claim_requires_exact_grant(self):
+        changed = copy.deepcopy(PREDICATE)
+        rule = next(x for x in changed["allOf"] if x["if"]["properties"]["claim_kind"].get("const") == "authority_grant")
+        rule["then"]["required"].remove("authorization")
+        with self.assertRaises(ValueError):
+            validate(VECTORS, changed, BUNDLE, VECTOR_SCHEMA)
+
+    def test_tenant_commitment_cannot_use_plain_sha256(self):
+        changed = copy.deepcopy(PREDICATE)
+        changed["properties"]["episode"]["properties"]["tenant_commitment"]["pattern"] = "^sha256:[a-f0-9]{64}$"
+        with self.assertRaises(ValueError):
+            validate(VECTORS, changed, BUNDLE, VECTOR_SCHEMA)
+
 
 if __name__ == "__main__":
     unittest.main()
