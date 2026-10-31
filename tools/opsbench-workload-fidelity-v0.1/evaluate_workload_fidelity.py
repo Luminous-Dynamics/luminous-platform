@@ -227,6 +227,7 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
 
     require(load_receipts.get("schema") == "luminous-opsbench-load-generator-receipts-v0.1" and type(load_receipts.get("version")) is int and load_receipts["version"] == 1, "load receipts: unsupported schema/version")
     require(observations.get("schema") == "luminous-opsbench-service-observations-v0.1" and type(observations.get("version")) is int and observations["version"] == 1, "service observations: unsupported schema/version")
+    require(set(fault_receipts) == {"schema", "version", "status", "study_id", "run_id", "episode_id", "service_id", "fault_controller", "phase_schedule_sha256", "receipts"}, "fault receipts: unexpected or missing root fields")
     require(fault_receipts.get("schema") == "luminous-opsbench-fault-controller-receipts-v0.1" and type(fault_receipts.get("version")) is int and fault_receipts["version"] == 1, "fault receipts: unsupported schema/version")
     _identity(load_receipts.get("load_generator"), "load receipts.load_generator")
     _identity(observations.get("observer"), "service observations.observer")
@@ -280,6 +281,7 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
     observation_map = map_records(observations, "service observations")
     report_windows, per_class = [], {}
     total_offered, total_success = 0, 0
+    total_errors = total_timeouts = total_drops = total_server_rejections = total_server_retries = 0
     critical_class_failure_count = 0
     for class_id, cls in class_map.items():
         per_class[class_id] = {"critical": cls["critical"], "offered_count": 0, "success_count": 0, "window_count": 0, "failed_window_count": 0, "indeterminate_window_count": 0}
@@ -313,11 +315,12 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
                 load_fidelity_reasons.append("request-class mix is outside the frozen profile band")
             p95_upper = _histogram_p95(load["latency_histogram"], load["offered_count"], where + ".latency_histogram")
 
-            required_obs = {"window_id", "phase_id", "class_id", "server_received_count", "server_rejected_count", "server_retry_attempt_count", "business_checked_count", "business_correct_count"}
+            required_obs = {"window_id", "phase_id", "class_id", "started_at", "ended_at", "server_received_count", "server_rejected_count", "server_retry_attempt_count", "business_checked_count", "business_correct_count"}
             require(set(obs) == required_obs, f"{where}: unexpected/missing observer fields")
             received, rejected, retries, checked, correct = [obs[k] for k in ("server_received_count", "server_rejected_count", "server_retry_attempt_count", "business_checked_count", "business_correct_count")]
             require(all(type(x) is int and x >= 0 for x in (received, rejected, retries, checked, correct)), f"{where}: non-negative observer counters required")
             require(received <= load["offered_count"] and rejected <= received, f"{where}: observer ingress/rejection counts inconsistent")
+            require(rejected <= load["response_error_count"], f"{where}: service-side rejections exceed externally observed response errors")
             require(correct <= checked <= load["response_success_count"], f"{where}: business oracle checks must bind to client-observed successful responses")
             require(obs["started_at"] == phase_map[phase_id]["started_at"] and obs["ended_at"] == phase_map[phase_id]["ended_at"], f"{where}: observer timestamps do not match frozen phase window")
 
@@ -360,6 +363,16 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
             class_report = per_class[class_id]
             class_report["offered_count"] += offered
             class_report["success_count"] += load["response_success_count"]
+            class_report["response_error_count"] = class_report.get("response_error_count", 0) + load["response_error_count"]
+            class_report["response_timeout_count"] = class_report.get("response_timeout_count", 0) + load["response_timeout_count"]
+            class_report["response_drop_count"] = class_report.get("response_drop_count", 0) + load["response_drop_count"]
+            class_report["server_rejected_count"] = class_report.get("server_rejected_count", 0) + rejected
+            class_report["server_retry_attempt_count"] = class_report.get("server_retry_attempt_count", 0) + retries
+            total_errors += load["response_error_count"]
+            total_timeouts += load["response_timeout_count"]
+            total_drops += load["response_drop_count"]
+            total_server_rejections += rejected
+            total_server_retries += retries
             class_report["window_count"] += 1
             class_report["failed_window_count"] += disposition == "fail"
             class_report["indeterminate_window_count"] += disposition == "indeterminate"
@@ -367,11 +380,26 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
                 critical_class_failure_count += 1
             report_windows.append({
                 "window_id": load["window_id"], "phase_id": phase_id, "phase_kind": phase["kind"], "class_id": class_id,
-                "offered_count": offered, "observed_server_received_count": received, "observed_response_success_count": load["response_success_count"],
+                "offered_count": offered,
+                "response_success_count": load["response_success_count"],
+                "response_error_count": load["response_error_count"],
+                "response_timeout_count": load["response_timeout_count"],
+                "response_drop_count": load["response_drop_count"],
+                "observed_server_received_count": received,
+                "observed_server_rejected_count": rejected,
+                "observed_response_success_count": load["response_success_count"],
                 "success_ratio": success_ratio, "ingress_ratio": ingress_ratio, "business_correctness_ratio": business_ratio,
                 "server_retry_attempts_per_100_offered": retry_rate, "p95_latency_upper_bound_seconds": p95_upper,
                 "load_fidelity_reasons": load_fidelity_reasons, "disposition": disposition, "reasons": reasons,
             })
+
+    for class_id, summary in per_class.items():
+        summary["response_success_ratio"] = summary["success_count"] / summary["offered_count"] if summary["offered_count"] else None
+        summary["response_error_ratio"] = summary.get("response_error_count", 0) / summary["offered_count"] if summary["offered_count"] else None
+        summary["response_timeout_ratio"] = summary.get("response_timeout_count", 0) / summary["offered_count"] if summary["offered_count"] else None
+        summary["response_drop_ratio"] = summary.get("response_drop_count", 0) / summary["offered_count"] if summary["offered_count"] else None
+        summary["server_rejected_ratio"] = summary.get("server_rejected_count", 0) / summary["offered_count"] if summary["offered_count"] else None
+        summary["disposition"] = "fail" if summary["failed_window_count"] else ("indeterminate" if summary["indeterminate_window_count"] else "pass")
 
     dispositions = [row["disposition"] for row in report_windows]
     computed = "fail" if "fail" in dispositions else ("indeterminate" if "indeterminate" in dispositions else "qualified")
@@ -388,6 +416,11 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
         "overall_aggregate_response_success_ratio": total_success / total_offered if total_offered else None,
         "total_offered_requests": total_offered,
         "total_successful_responses": total_success,
+        "total_response_errors": total_errors,
+        "total_response_timeouts": total_timeouts,
+        "total_response_drops": total_drops,
+        "total_server_rejections": total_server_rejections,
+        "total_server_retry_attempts": total_server_retries,
         "critical_class_failure_count": critical_class_failure_count,
         "per_class": per_class,
         "windows": report_windows,
