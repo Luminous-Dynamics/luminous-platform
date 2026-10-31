@@ -108,6 +108,7 @@ def validate_manifest(manifest: dict) -> dict:
         participants[item["source_id"]] = item
 
     observers = {}
+    observer_ids = set()
     if not isinstance(manifest["observers"], list) or not manifest["observers"]:
         raise TraceError("manifest.observers: expected non-empty array")
     for i, item in enumerate(manifest["observers"]):
@@ -117,6 +118,9 @@ def validate_manifest(manifest: dict) -> dict:
             raise TraceError(f"{w}: empty identity")
         if item["source_id"] in observers or item["source_id"] in participants or item["source_id"] in {executor["source_id"], authority["source_id"]}:
             raise TraceError(f"{w}: duplicate or reserved source_id")
+        if item["observer_id"] in observer_ids:
+            raise TraceError(f"{w}: duplicate observer_id")
+        observer_ids.add(item["observer_id"])
         participant_domains = {p["trust_domain_id"] for p in participants.values()}
         if item["trust_domain_id"] in participant_domains | {executor["trust_domain_id"], authority["trust_domain_id"]}:
             raise TraceError(f"{w}: observer must be in a distinct trust domain")
@@ -246,6 +250,22 @@ def verify(manifest: dict, events: list[dict]) -> dict:
                 raise TraceError(f"source stream {stream}: event does not causally follow prior source event")
             prior = row["event_digest"]
 
+    # A coordinator epoch transition must explicitly descend from the exact
+    # final record of the previous epoch, not merely an arbitrary old event.
+    coordinator_id = m["executor"]["source_id"]
+    coordinator_epochs = sorted(epoch for source, epoch in streams if source == coordinator_id)
+    if coordinator_epochs:
+        if coordinator_epochs[0] != 0 or coordinator_epochs != list(range(coordinator_epochs[-1] + 1)):
+            raise TraceError("coordinator source epochs must be contiguous from zero")
+        for epoch in coordinator_epochs[1:]:
+            prior_rows = streams[(coordinator_id, epoch - 1)]
+            current_rows = streams[(coordinator_id, epoch)]
+            first = current_rows[0]
+            if first["event_type"] != "coordinator_restarted":
+                raise TraceError(f"coordinator epoch {epoch}: first event must be coordinator_restarted")
+            if prior_rows[-1]["event_id"] not in first["parent_event_ids"]:
+                raise TraceError(f"coordinator epoch {epoch}: restart must link the prior epoch head")
+
     violations, indeterminate = [], []
     event_types = defaultdict(list)
     attempts = defaultdict(list)
@@ -342,6 +362,12 @@ def verify(manifest: dict, events: list[dict]) -> dict:
                         _add(violations, "attempt_status_binding_mismatch", e["event_id"], "ledger observation not bound to exact logical request")
                     if outcome == "never_accepted" and (data.get("consistency") != "strong" or data.get("authoritative") is not True):
                         _add(violations, "weak_no_effect_proof", e["event_id"], "only strong authoritative attempt-ledger evidence may prove never accepted")
+                    if outcome == "never_accepted":
+                        contradictory = [x for x in attempts.get(e.get("attempt_id"), [])
+                            if x["event_type"] in {"participant_accepted", "effect_committed"}]
+                        if contradictory:
+                            _add(violations, "never_accepted_contradicts_acceptance", e["event_id"],
+                                 "attempt ledger says never accepted despite a participant acceptance/effect record")
                 if typ == "effect_reconciled":
                     for key in ("request_digest", "target_digest", "operation_id", "operation_binding_digest", "idempotency_key_digest"):
                         if data.get(key) != step[key]:
