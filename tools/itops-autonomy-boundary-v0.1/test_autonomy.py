@@ -3,13 +3,15 @@ import copy
 import json
 import unittest
 
-from check_autonomy import validate
+from check_autonomy import validate, validate_result
 
 ROOT = Path(__file__).resolve().parents[2]
 TASKS = json.loads((ROOT / "benchmarks/itops-autonomy-boundary-v0.1/task-manifest.json").read_text())
 TASK_SCHEMA = json.loads((ROOT / "benchmarks/itops-autonomy-boundary-v0.1/task-manifest.schema.json").read_text())
 ORACLE = json.loads((ROOT / "benchmarks/itops-autonomy-boundary-v0.1/evaluator-corpus.json").read_text())
 ORACLE_SCHEMA = json.loads((ROOT / "benchmarks/itops-autonomy-boundary-v0.1/evaluator-corpus.schema.json").read_text())
+RESULT_SCHEMA = json.loads((ROOT / "benchmarks/itops-autonomy-boundary-v0.1/decision-result.schema.json").read_text())
+RESULT_EXAMPLE = json.loads((ROOT / "benchmarks/itops-autonomy-boundary-v0.1/decision-result.example.json").read_text())
 
 
 class AutonomyBoundaryTests(unittest.TestCase):
@@ -174,6 +176,29 @@ class AutonomyBoundaryTests(unittest.TestCase):
         changed["task_manifest_commit"] = "pending_exact_head_pin"
         with self.assertRaises(ValueError):
             self.validate_all(oracle=changed)
+
+    def test_result_example_separates_all_evidence_layers(self):
+        result = validate_result(RESULT_EXAMPLE, RESULT_SCHEMA)
+        self.assertEqual(result["result_layers"], 4)
+        self.assertEqual(result["run_binding_fields"], 15)
+
+    def test_agent_cannot_be_participant_effect_oracle(self):
+        changed = copy.deepcopy(RESULT_EXAMPLE)
+        changed["participant_effect_oracle"]["source"] = "agent_report"
+        with self.assertRaises(ValueError):
+            validate_result(changed, RESULT_SCHEMA)
+
+    def test_agent_cannot_be_independent_service_observer(self):
+        changed = copy.deepcopy(RESULT_EXAMPLE)
+        changed["service_observer"]["independent_of_agent"] = False
+        with self.assertRaises(ValueError):
+            validate_result(changed, RESULT_SCHEMA)
+
+    def test_result_schema_must_freeze_exact_run_binding(self):
+        changed = copy.deepcopy(RESULT_SCHEMA)
+        changed["properties"]["run_binding"]["required"].remove("source_commit_sha")
+        with self.assertRaises(ValueError):
+            validate_result(RESULT_EXAMPLE, changed)
 
 
 if __name__ == "__main__":
