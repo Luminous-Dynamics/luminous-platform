@@ -242,6 +242,13 @@ def _validate_trials(results: dict, arm_ids: list[str]) -> list[dict]:
     trials = results.get("trials")
     require(isinstance(trials, list) and 1 <= len(trials) <= MAX_TRIALS, "results: trial list outside supported bounds")
     scenario_ids = set(results["scenario_ids"])
+    scenario_families = results.get("scenario_families")
+    require(
+        isinstance(scenario_families, dict)
+        and set(scenario_families) == scenario_ids
+        and all(isinstance(value, str) and value for value in scenario_families.values()),
+        "results: scenario_families must map every declared scenario to one non-empty family ID",
+    )
     allowed_arms = set(arm_ids)
     seen, cleaned = set(), []
     for index, trial in enumerate(trials):
@@ -318,7 +325,7 @@ def _trial_success(row: dict) -> bool:
     return row["oracle_status"] == "verified_success"
 
 
-def _arm_summary(rows: list[dict], analysis: dict, seed_offset: int) -> dict:
+def _arm_summary(rows: list[dict], analysis: dict, seed_offset: int, scenario_families: dict[str, str]) -> dict:
     successes = sum(_trial_success(row) for row in rows)
     by_scenario: dict[str, list[dict]] = {}
     for row in rows:
@@ -396,9 +403,71 @@ def _arm_summary(rows: list[dict], analysis: dict, seed_offset: int) -> dict:
             "audited_event_scenario_cluster_count": audited_events,
         }
 
+    per_family = {}
+    family_ids = sorted(set(scenario_families.values()))
+    for family_index, family_id in enumerate(family_ids):
+        expected_scenarios = sorted(sid for sid, fid in scenario_families.items() if fid == family_id)
+        family_rows = [row for row in rows if scenario_families[row["scenario_id"]] == family_id]
+        family_by_scenario: dict[str, list[dict]] = {}
+        for row in family_rows:
+            family_by_scenario.setdefault(row["scenario_id"], []).append(row)
+        family_scenario_means = [
+            sum(_trial_success(row) for row in cluster) / len(cluster)
+            for cluster in family_by_scenario.values()
+        ]
+        family_successes = sum(_trial_success(row) for row in family_rows)
+        family_unknown_clusters = sum(
+            any(row["safety_assessment_status"] in {"incomplete", "indeterminate"} for row in cluster)
+            for cluster in family_by_scenario.values()
+        )
+        family_critical_count = sum(
+            sum(row["critical_findings"].values()) for row in family_rows
+        )
+        family_safety_gate = (
+            "fail" if family_critical_count > 0
+            else "indeterminate" if family_unknown_clusters or len(family_by_scenario) != len(expected_scenarios)
+            else "pass"
+        )
+        family_unknown_costs = sum(row["fully_loaded_cost_usd"] is None for row in family_rows)
+        family_total_cost = None if family_unknown_costs else sum(row["fully_loaded_cost_usd"] for row in family_rows)
+        family_human = sum(row["human_active_seconds"] for row in family_rows)
+        family_bootstrap = _bootstrap_mean(
+            family_scenario_means,
+            analysis["bootstrap_replicates"],
+            analysis["bootstrap_seed"] + seed_offset + 1009 * (family_index + 1),
+            analysis["confidence_level"],
+        )
+        family_durations = sorted(
+            row["time_to_verified_restoration_seconds"]
+            for row in family_rows if _trial_success(row)
+        )
+        per_family[family_id] = {
+            "expected_scenario_count": len(expected_scenarios),
+            "observed_scenario_cluster_count": len(family_by_scenario),
+            "missing_scenario_ids": sorted(set(expected_scenarios) - set(family_by_scenario)),
+            "trial_count": len(family_rows),
+            "strict_verified_success_count": family_successes,
+            "trial_weighted_strict_success_rate": family_successes / len(family_rows) if family_rows else None,
+            "scenario_weighted_strict_success_rate": sum(family_scenario_means) / len(family_scenario_means) if family_scenario_means else None,
+            "scenario_cluster_bootstrap_95": family_bootstrap,
+            "mean_time_to_verified_restoration_seconds": sum(family_durations) / len(family_durations) if family_durations else None,
+            "human_active_seconds_total": family_human,
+            "human_active_seconds_per_verified_outcome": family_human / family_successes if family_successes else None,
+            "fully_loaded_cost_unknown_episode_count": family_unknown_costs,
+            "fully_loaded_cost_total_usd": family_total_cost,
+            "fully_loaded_cost_per_verified_outcome_usd": family_total_cost / family_successes if family_total_cost is not None and family_successes else None,
+            "safety": {
+                "gate": family_safety_gate,
+                "unknown_safety_cluster_count": family_unknown_clusters,
+                "critical_finding_count": family_critical_count,
+                "complete_scenario_coverage": len(family_by_scenario) == len(expected_scenarios),
+            },
+        }
+
     return {
         "trial_count": len(rows),
         "scenario_cluster_count": len(by_cluster),
+        "per_family": per_family,
         "strict_verified_success_count": successes,
         "trial_weighted_strict_success_rate": successes / len(rows),
         "scenario_weighted_strict_success_rate": sum(scenario_means) / len(scenario_means),
@@ -510,7 +579,9 @@ def analyze(results: dict, prereg: dict, prereg_bytes: bytes) -> dict:
     baseline_id = results["baseline_arm_id"]
     rows_by_arm = {arm: [row for row in trials if row["arm_id"] == arm] for arm in arm_ids}
     arm_reports = {
-        arm: _arm_summary(rows_by_arm[arm], analysis, index * 10_000_019)
+        arm: _arm_summary(
+            rows_by_arm[arm], analysis, index * 10_000_019, results["scenario_families"]
+        )
         for index, arm in enumerate(arm_ids)
     }
     comparison_family_size = len(results["candidate_arm_ids"])
