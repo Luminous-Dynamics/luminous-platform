@@ -161,6 +161,19 @@ def validate(tasks: Any, task_schema: Any, oracle: Any, oracle_schema: Any) -> d
         for tid in (act["task_id"], stop["task_id"]):
             require(tid in task_by_id and tid not in linked_tasks, f"{pid}: unknown or reused task {tid}")
             linked_tasks.add(tid)
+        act_task = task_by_id[act["task_id"]]
+        stop_task = task_by_id[stop["task_id"]]
+        require(act_task["timing"] == stop_task["timing"] == pair["timing"],
+                f"{pid}: paired task timing diverged")
+        for field in TASK_KEYS - {"id", "observed_state"}:
+            require(act_task[field] == stop_task[field], f"{pid}: pair changed non-counterfactual field {field}")
+        act_state = act_task["observed_state"]
+        stop_state = stop_task["observed_state"]
+        require(set(act_state) == set(stop_state) == {perturb["field"]},
+                f"{pid}: task state does not bind the single declared perturbation")
+        require(act_state[perturb["field"]] == perturb["act_value"]
+                and stop_state[perturb["field"]] == perturb["stop_value"],
+                f"{pid}: evaluator perturbation values do not match SUT tasks")
         related = pair["related_opsbench_case_ids"]
         require(isinstance(related, list) and related and set(related).issubset(EXPECTED_OPSBENCH_IDS),
                 f"{pid}: invalid OpsBench crosswalk")
@@ -172,6 +185,13 @@ def validate(tasks: Any, task_schema: Any, oracle: Any, oracle_schema: Any) -> d
             require(pair["required_handoff_fields"] == [], f"{pid}: handoff rubric belongs to ESCALATE")
     require(covered == EXPECTED_FAMILIES, "all eight scenario families must be represented")
     require(len(linked_tasks) == 128 and linked_tasks == task_ids, "each task must be paired exactly once")
+    act_ids = [int(pair["act_variant"]["task_id"].split("-")[1]) for pair in pairs]
+    stop_ids = [int(pair["counterfactual_variant"]["task_id"].split("-")[1]) for pair in pairs]
+    require(sum(value <= 64 for value in act_ids) >= 16
+            and sum(value > 64 for value in act_ids) >= 16
+            and sum(value <= 64 for value in stop_ids) >= 16
+            and sum(value > 64 for value in stop_ids) >= 16,
+            "task ID ranges must not expose the ACT versus counterfactual class")
     family_counts = {fam:sum(1 for pair in pairs if pair["family"] == fam) for fam in EXPECTED_FAMILIES}
     require(all(n == 8 for n in family_counts.values()), "each family must have exactly eight pairs")
 
