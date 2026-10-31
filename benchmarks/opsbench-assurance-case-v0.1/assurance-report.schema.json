@@ -1,0 +1,30 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://luminousdynamics.io/schemas/opsbench-operational-assurance-report-v0.1.json",
+  "title":"OpsBench operational assurance report v0.1",
+  "type":"object","additionalProperties":false,
+  "required":["schema","version","status","computed_disposition","case_id","run_id","episode_id","arm_id","attempt_id","case_sha256","top_level_claim_id","top_level_claim_status","eligible_for_human_review","automatic_execution_authorized","economic_claims_allowed","required_claim_statuses","claim_results","open_critical_defeaters","publisher_authenticity_cryptographically_verified_by_this_aggregator","claim_ceiling","report_sha256"],
+  "properties":{
+    "schema":{"const":"luminous-opsbench-operational-assurance-report-v0.1"},
+    "version":{"const":1},
+    "status":{"enum":["example_only","blocked","indeterminate","eligible_for_human_review"]},
+    "computed_disposition":{"enum":["blocked","indeterminate","eligible_for_human_review"]},
+    "case_id":{"type":"string","minLength":1},
+    "run_id":{"type":"string","minLength":1},
+    "episode_id":{"type":"string","minLength":1},
+    "arm_id":{"type":"string","minLength":1},
+    "attempt_id":{"type":["string","null"]},
+    "case_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "top_level_claim_id":{"type":"string","minLength":1},
+    "top_level_claim_status":{"enum":["supported","refuted","indeterminate"]},
+    "eligible_for_human_review":{"type":"boolean"},
+    "automatic_execution_authorized":{"const":false},
+    "economic_claims_allowed":{"type":"boolean"},
+    "required_claim_statuses":{"type":"object","additionalProperties":{"enum":["supported","refuted","indeterminate"]}},
+    "claim_results":{"type":"object","additionalProperties":{"type":"object","additionalProperties":false,"required":["status","reasons"],"properties":{"status":{"enum":["supported","refuted","indeterminate"]},"reasons":{"type":"array","items":{"type":"string"}}}}},
+    "open_critical_defeaters":{"type":"array","uniqueItems":true,"items":{"type":"string"}},
+    "publisher_authenticity_cryptographically_verified_by_this_aggregator":{"const":false},
+    "claim_ceiling":{"type":"string","minLength":30},
+    "report_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}
+  }
+}
