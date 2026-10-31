@@ -47,6 +47,18 @@ class OpsBenchContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_episode_contract(changed, self.episode_example)
 
+    def test_episode_schema_requires_every_run_binding_property(self):
+        changed = copy.deepcopy(self.episode_schema)
+        del changed["properties"]["run_binding"]["properties"]["runner_version"]
+        with self.assertRaises(ValueError):
+            validate_episode_contract(changed, self.episode_example)
+
+    def test_episode_schema_requires_run_binding_digest_constraints(self):
+        changed = copy.deepcopy(self.episode_schema)
+        changed["properties"]["run_binding"]["properties"]["toolchain_digest"]["pattern"] = ".*"
+        with self.assertRaises(ValueError):
+            validate_episode_contract(changed, self.episode_example)
+
     def test_episode_schema_cannot_treat_system_disposition_as_oracle_truth(self):
         changed = copy.deepcopy(self.episode_schema)
         changed["properties"]["oracle"]["properties"]["oracle_outcome"]["enum"].append("resolved")
