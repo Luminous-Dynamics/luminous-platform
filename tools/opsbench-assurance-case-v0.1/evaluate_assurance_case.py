@@ -342,25 +342,26 @@ def evaluate(case: dict, case_bytes: bytes) -> dict:
         if claim["required"] and claim_id != validated["root_id"]
     }
     root_status = claim_status[validated["root_id"]]
+    unresolved_defeaters = []
     unresolved_critical = []
     for defeater_id, defeater in validated["defeaters"].items():
-        if not defeater["critical"]:
-            continue
-        if defeater["status"] == "open":
-            unresolved_critical.append(defeater_id)
-            continue
+        resolved = defeater["status"] in {"mitigated", "disproved"}
         mitigation_statuses = []
-        for evidence_id in defeater["evidence_ids"]:
-            item = validated["evidence"][evidence_id]
-            status = item["verification_status"]
-            if item["valid_until"] is not None and _parse_time(item["valid_until"], f"evidence.{evidence_id}.valid_until") < validated["evaluated_at"]:
-                status = "indeterminate"
-            mitigation_statuses.append(status)
-        if not mitigation_statuses or any(status != "supported" for status in mitigation_statuses):
-            unresolved_critical.append(defeater_id)
+        if resolved:
+            for evidence_id in defeater["evidence_ids"]:
+                item = validated["evidence"][evidence_id]
+                status = item["verification_status"]
+                if item["valid_until"] is not None and _parse_time(item["valid_until"], f"evidence.{evidence_id}.valid_until") < validated["evaluated_at"]:
+                    status = "indeterminate"
+                mitigation_statuses.append(status)
+            resolved = bool(mitigation_statuses) and all(status == "supported" for status in mitigation_statuses)
+        if not resolved:
+            unresolved_defeaters.append(defeater_id)
+            if defeater["critical"]:
+                unresolved_critical.append(defeater_id)
     if unresolved_critical or any(value == "refuted" for value in required_claim_statuses.values()) or root_status == "refuted":
         disposition = "blocked"
-    elif any(value != "supported" for value in required_claim_statuses.values()) or root_status != "supported":
+    elif unresolved_defeaters or any(value != "supported" for value in required_claim_statuses.values()) or root_status != "supported":
         disposition = "indeterminate"
     else:
         disposition = "eligible_for_human_review"
@@ -392,6 +393,7 @@ def evaluate(case: dict, case_bytes: bytes) -> dict:
             claim_id: {"status": claim_status[claim_id], "reasons": claim_reasons[claim_id]}
             for claim_id in validated["claims"]
         },
+        "unresolved_defeaters": sorted(unresolved_defeaters),
         "unresolved_critical_defeaters": sorted(unresolved_critical),
         "publisher_authenticity_cryptographically_verified_by_this_aggregator": False,
         "claim_ceiling": "Structured assurance-case consistency and evidence-result aggregation only. Does not authenticate artifact publishers, independently validate source verifiers, grant mutation authority, or certify production safety.",
