@@ -5,6 +5,7 @@ on:
     paths:
       - "benchmarks/opsbench-assurance-case-v0.1/**"
       - "tools/opsbench-assurance-case-v0.1/**"
+      - "docs/OPSBENCH_OPERATIONAL_ASSURANCE_CASE_V0_1.md"
       - ".github/workflows/opsbench-assurance-case-v0.1.yml"
   push:
     branches: [main]
