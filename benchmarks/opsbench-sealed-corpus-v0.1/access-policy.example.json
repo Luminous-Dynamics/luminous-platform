@@ -31,5 +31,42 @@
     "process",
     "secrets",
     "artifact_store"
+  ],
+  "sut_allowed_actions": [
+    {
+      "resource_class": "task_prompt",
+      "actions": [
+        "read"
+      ]
+    },
+    {
+      "resource_class": "permitted_telemetry",
+      "actions": [
+        "read"
+      ]
+    },
+    {
+      "resource_class": "task_api",
+      "actions": [
+        "read",
+        "write",
+        "execute"
+      ]
+    },
+    {
+      "resource_class": "allowed_service_endpoint",
+      "actions": [
+        "egress"
+      ]
+    },
+    {
+      "resource_class": "agent_workspace",
+      "actions": [
+        "read",
+        "write",
+        "mount",
+        "execute"
+      ]
+    }
   ]
 }
