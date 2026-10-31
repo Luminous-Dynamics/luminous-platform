@@ -3,7 +3,7 @@
   "$id":"https://luminousdynamics.io/schemas/opsbench-operational-assurance-case-v0.1.json",
   "title":"OpsBench operational assurance case v0.1",
   "type":"object","additionalProperties":false,
-  "required":["schema","version","status","case_id","study_id","run_id","episode_id","arm_id","attempt_id","evaluated_at","scope_sha256","executor","top_level_claim_id","required_claim_types","claims","arguments","evidence","assumptions","defeaters"],
+  "required":["schema","version","status","case_id","study_id","run_id","episode_id","arm_id","attempt_id","attempt_ids","evaluated_at","scope_sha256","executor","top_level_claim_id","required_claim_types","claims","arguments","evidence","assumptions","defeaters"],
   "properties":{
     "schema":{"const":"luminous-opsbench-operational-assurance-case-v0.1"},
     "version":{"const":1},
@@ -14,6 +14,7 @@
     "episode_id":{"type":"string","minLength":1},
     "arm_id":{"type":"string","minLength":1},
     "attempt_id":{"type":["string","null"]},
+    "attempt_ids":{"type":"array","uniqueItems":true,"items":{"type":"string","minLength":1}},
     "evaluated_at":{"type":"string","format":"date-time"},
     "scope_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
     "executor":{"type":"object","additionalProperties":false,"required":["source_id","trust_domain_id"],"properties":{"source_id":{"type":"string","minLength":1},"trust_domain_id":{"type":"string","minLength":1}}},
