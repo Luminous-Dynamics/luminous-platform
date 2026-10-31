@@ -55,7 +55,7 @@ The evaluator reports aggregate response success only as a descriptive measure. 
 
 ## 5. Example interpretation
 
-The synthetic example offers 27,000 requests across five phases and two classes. Aggregate response success remains above 99%, yet the critical payment class fails during dependency degradation because response success, business correctness and tail latency breach its frozen thresholds; the critical class fails again under retry pressure; and the routine class exceeds its retry budget under retry pressure.
+The synthetic example offers 27,000 requests across five phases and two classes. Aggregate response success remains above 99%, yet the critical payment class fails during dependency degradation because response success, business correctness and tail latency breach its frozen thresholds; the critical class fails again under retry pressure; while the high-volume routine-read class remains within its own request, correctness, latency and retry thresholds.
 
 The expected computed disposition is fail; the top-level report remains marked example_only. This demonstrates why aggregate service-health percentages are insufficient—it is not a Luminous, commercial-agent or production-capacity result.
 
