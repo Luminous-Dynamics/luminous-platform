@@ -1,0 +1,51 @@
+name: OpsBench sustained SLO recovery v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/opsbench-sustained-slo-recovery-v0.1/**"
+      - "tools/opsbench-sustained-slo-recovery-v0.1/**"
+      - ".github/workflows/opsbench-sustained-slo-recovery-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/opsbench-sustained-slo-recovery-v0.1/**"
+      - "tools/opsbench-sustained-slo-recovery-v0.1/**"
+      - ".github/workflows/opsbench-sustained-slo-recovery-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opsbench-sustained-slo-recovery-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  slo-recovery:
+    name: Sustained SLO recovery evaluator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Compile evaluator and adversarial suite
+        run: python3 -m py_compile tools/opsbench-sustained-slo-recovery-v0.1/evaluate_slo_recovery.py tools/opsbench-sustained-slo-recovery-v0.1/test_slo_recovery.py
+      - name: Parse contract, windows and report schemas
+        run: |
+          python3 -m json.tool benchmarks/opsbench-sustained-slo-recovery-v0.1/contract.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sustained-slo-recovery-v0.1/windows.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sustained-slo-recovery-v0.1/report.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sustained-slo-recovery-v0.1/contract.example.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-sustained-slo-recovery-v0.1/windows.example.json >/dev/null
+      - name: Evaluate sustained recovery across the declared hold window
+        run: |
+          python3 tools/opsbench-sustained-slo-recovery-v0.1/evaluate_slo_recovery.py \
+            --contract benchmarks/opsbench-sustained-slo-recovery-v0.1/contract.example.json \
+            --observations benchmarks/opsbench-sustained-slo-recovery-v0.1/windows.example.json \
+            --output sustained-recovery-report.json
+      - name: Run regression, missing-data and SLI mutation tests
+        run: python3 -m unittest discover -s tools/opsbench-sustained-slo-recovery-v0.1 -p 'test_slo_recovery.py' -v
+      - name: Preserve example-only SLO report
+        run: cat sustained-recovery-report.json
