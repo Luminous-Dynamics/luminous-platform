@@ -72,8 +72,11 @@ class PublisherPolicyTests(unittest.TestCase):
         statement, policy, manifest, segment, policy_bytes = fixtures()
         changed = copy.deepcopy(policy)
         changed["publishers"][0]["identity"]["spiffe_id"] = "spiffe://luminous.example/ns/*/sa/*"
+        changed_bytes = json.dumps(changed, indent=2).encode() + b"\n"
+        import hashlib
+        statement["predicate"]["publisher_policy_sha256"] = hashlib.sha256(changed_bytes).hexdigest()
         with self.assertRaisesRegex(PolicyError, "wildcard identity"):
-            check_attestation(statement, changed, manifest, segment, json.dumps(changed, indent=2).encode() + b"\n")
+            check_attestation(statement, changed, manifest, segment, changed_bytes)
 
     def test_untrusted_oidc_issuer_rejected(self):
         statement, policy, manifest, segment, policy_bytes = fixtures()
@@ -85,6 +88,8 @@ class PublisherPolicyTests(unittest.TestCase):
         }
         changed["trusted_oidc_issuers"] = ["https://token.actions.githubusercontent.com"]
         changed_bytes = json.dumps(changed, indent=2).encode() + b"\n"
+        import hashlib
+        statement["predicate"]["publisher_policy_sha256"] = hashlib.sha256(changed_bytes).hexdigest()
         with self.assertRaisesRegex(PolicyError, "not in the pinned trust allowlist"):
             check_attestation(statement, changed, manifest, segment, changed_bytes)
 
@@ -93,7 +98,9 @@ class PublisherPolicyTests(unittest.TestCase):
         changed = copy.deepcopy(policy)
         del changed["publishers"][0]["identity"]["spiffe_id"]
         changed_bytes = json.dumps(changed, indent=2).encode() + b"\n"
-        with self.assertRaises(PolicyError):
+        import hashlib
+        statement["predicate"]["publisher_policy_sha256"] = hashlib.sha256(changed_bytes).hexdigest()
+        with self.assertRaisesRegex(PolicyError, "SPIFFE identity fields must be exact"):
             check_attestation(statement, changed, manifest, segment, changed_bytes)
 
     def test_transparency_requirement_cannot_be_disabled(self):
@@ -101,6 +108,8 @@ class PublisherPolicyTests(unittest.TestCase):
         changed = copy.deepcopy(policy)
         changed["verification_requirements"]["require_transparency_inclusion"] = False
         changed_bytes = json.dumps(changed, indent=2).encode() + b"\n"
+        import hashlib
+        statement["predicate"]["publisher_policy_sha256"] = hashlib.sha256(changed_bytes).hexdigest()
         with self.assertRaisesRegex(PolicyError, "verification requirements must remain fail-closed"):
             check_attestation(statement, changed, manifest, segment, changed_bytes)
 
@@ -109,6 +118,8 @@ class PublisherPolicyTests(unittest.TestCase):
         changed = copy.deepcopy(policy)
         changed["verification_requirements"]["revocation_unavailable_result"] = "accept"
         changed_bytes = json.dumps(changed, indent=2).encode() + b"\n"
+        import hashlib
+        statement["predicate"]["publisher_policy_sha256"] = hashlib.sha256(changed_bytes).hexdigest()
         with self.assertRaisesRegex(PolicyError, "verification requirements must remain fail-closed"):
             check_attestation(statement, changed, manifest, segment, changed_bytes)
 
