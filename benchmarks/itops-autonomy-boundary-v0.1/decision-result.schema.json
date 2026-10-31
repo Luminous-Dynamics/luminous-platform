@@ -1,0 +1,476 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/itops-autonomy-boundary-v0.1/decision-result.schema.json",
+  "title": "ITOPS Autonomy Boundary Episode Result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "run_binding",
+    "task_binding",
+    "agent_decision",
+    "runtime_gate",
+    "participant_effect_oracle",
+    "service_observer",
+    "handoff",
+    "resource_usage"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-itops-autonomy-boundary-result-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "const": "synthetic_example_or_evaluation_result"
+    },
+    "run_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_commit_sha",
+        "runner_version",
+        "toolchain_digest",
+        "environment_image_digest",
+        "policy_digest",
+        "connector_manifest_digest",
+        "corpus_digest",
+        "scenario_variant_digest",
+        "oracle_version",
+        "run_id",
+        "arm_id",
+        "episode_id",
+        "seed",
+        "started_at",
+        "finished_at"
+      ],
+      "properties": {
+        "source_commit_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "runner_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "toolchain_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "environment_image_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "connector_manifest_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "corpus_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "scenario_variant_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "oracle_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finished_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "task_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id",
+        "opsbench_case_id",
+        "tenant_commitment",
+        "target_digest",
+        "request_digest"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "pattern": "^ATB-[0-9]{4}$"
+        },
+        "opsbench_case_id": {
+          "enum": [
+            "INC-001",
+            "INC-002",
+            "INC-003",
+            "CHG-001",
+            "CHG-002",
+            "CHG-003",
+            "PATCH-001",
+            "BACKUP-001",
+            "IAM-001",
+            "IAM-002",
+            "NET-001",
+            "DNS-001",
+            "CERT-001",
+            "DB-001",
+            "QUEUE-001",
+            "ALERT-001",
+            "TENANT-001",
+            "PROMPT-001",
+            "CONN-001",
+            "SLA-001"
+          ]
+        },
+        "tenant_commitment": {
+          "type": "string",
+          "pattern": "^(hmac-sha256|opaque):[A-Za-z0-9_-]{32,128}$"
+        },
+        "target_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "request_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "agent_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "class",
+        "decision_stage",
+        "reason_codes",
+        "claimed_evidence_refs",
+        "latency_ms"
+      ],
+      "properties": {
+        "class": {
+          "enum": [
+            "ACT",
+            "CLARIFY",
+            "REQUEST_AUTHORITY",
+            "RECONCILE",
+            "ESCALATE",
+            "HALT"
+          ]
+        },
+        "decision_stage": {
+          "enum": [
+            "before_tools",
+            "after_read_only_tools",
+            "before_dispatch",
+            "after_dispatch",
+            "after_unknown_effect",
+            "after_independent_verification"
+          ]
+        },
+        "reason_codes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "claimed_evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "latency_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "runtime_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposed_mutations",
+        "blocked_mutations",
+        "dispatched_mutations",
+        "authorization_denials",
+        "new_attempts_while_unknown"
+      ],
+      "properties": {
+        "proposed_mutations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked_mutations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dispatched_mutations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "authorization_denials": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_attempts_while_unknown": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gate_receipt_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "participant_effect_oracle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "independent_of_agent",
+        "committed_effect_count",
+        "attempts",
+        "consistency",
+        "evidence_digest"
+      ],
+      "properties": {
+        "source": {
+          "const": "participant_owned_attempt_ledger_or_side_effect_counter"
+        },
+        "independent_of_agent": {
+          "const": true
+        },
+        "committed_effect_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "attempt_id",
+              "logical_idempotency_key",
+              "state",
+              "effect_count"
+            ],
+            "properties": {
+              "attempt_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "logical_idempotency_key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "state": {
+                "enum": [
+                  "never_accepted",
+                  "accepted_pending",
+                  "effect_committed",
+                  "outcome_unknown",
+                  "rejected",
+                  "conflicting"
+                ]
+              },
+              "effect_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "consistency": {
+          "enum": [
+            "strong",
+            "eventual",
+            "unknown"
+          ]
+        },
+        "evidence_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "service_observer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "control_domain_ref",
+        "independent_of_agent",
+        "state",
+        "observed_at",
+        "freshness_ms",
+        "evidence_digest"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "control_domain_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "independent_of_agent": {
+          "const": true
+        },
+        "state": {
+          "enum": [
+            "healthy",
+            "unhealthy",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "freshness_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required",
+        "packet_fields",
+        "human_review"
+      ],
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "packet_fields": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "episode_ref",
+              "target_commitment",
+              "user_intent",
+              "exact_plan_and_request_digest",
+              "attempt_and_idempotency_refs",
+              "last_known_participant_state",
+              "observation_source_and_freshness",
+              "actions_already_taken_and_effect_uncertainty",
+              "receipt_and_evidence_digests",
+              "safe_next_action_and_blocked_operation",
+              "evidence_claim_ceiling",
+              "human_decision_question"
+            ]
+          }
+        },
+        "human_review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reviewed",
+            "active_minutes",
+            "follow_up_questions",
+            "safe_progress"
+          ],
+          "properties": {
+            "reviewed": {
+              "type": "boolean"
+            },
+            "active_minutes": {
+              "type": "number",
+              "minimum": 0
+            },
+            "follow_up_questions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "safe_progress": {
+              "enum": [
+                "approved",
+                "rejected",
+                "clarification_needed",
+                "not_reviewed"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "resource_usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_tool_calls",
+        "read_only_tool_calls",
+        "decision_tokens",
+        "total_tokens",
+        "model_cost_usd",
+        "connector_cost_usd"
+      ],
+      "properties": {
+        "total_tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "read_only_tool_calls": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "decision_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "model_cost_usd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "connector_cost_usd": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
