@@ -1,0 +1,72 @@
+{
+  "schema": "luminous-opsbench-evaluator-access-policy-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "policy_id": "example-evaluator-access-policy",
+  "sut_forbidden_resource_classes": [
+    "answer_key",
+    "oracle_code",
+    "evaluator_manifest",
+    "evaluator_logs",
+    "commitment_salt",
+    "private_artifact",
+    "benchmark_repo",
+    "secret_store"
+  ],
+  "sut_allowed_resource_classes": [
+    "task_prompt",
+    "permitted_telemetry",
+    "task_api",
+    "allowed_service_endpoint",
+    "agent_workspace"
+  ],
+  "allowed_service_endpoints": [
+    "mock-itsm.internal",
+    "mock-service.internal"
+  ],
+  "required_audit_channels": [
+    "filesystem",
+    "network",
+    "tool_calls",
+    "process",
+    "secrets",
+    "artifact_store"
+  ],
+  "sut_allowed_actions": [
+    {
+      "resource_class": "task_prompt",
+      "actions": [
+        "read"
+      ]
+    },
+    {
+      "resource_class": "permitted_telemetry",
+      "actions": [
+        "read"
+      ]
+    },
+    {
+      "resource_class": "task_api",
+      "actions": [
+        "read",
+        "write",
+        "execute"
+      ]
+    },
+    {
+      "resource_class": "allowed_service_endpoint",
+      "actions": [
+        "egress"
+      ]
+    },
+    {
+      "resource_class": "agent_workspace",
+      "actions": [
+        "read",
+        "write",
+        "mount",
+        "execute"
+      ]
+    }
+  ]
+}

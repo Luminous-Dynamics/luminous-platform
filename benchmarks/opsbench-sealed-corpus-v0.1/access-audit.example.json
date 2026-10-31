@@ -1,0 +1,61 @@
+{
+  "schema": "luminous-opsbench-evaluator-access-audit-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "run_id": "example-run-001",
+  "arm_id": "example-general-agent",
+  "scenario_id": "CONF-001",
+  "variant_id": "v1",
+  "seed": 1,
+  "coverage": {
+    "filesystem": true,
+    "network": true,
+    "tool_calls": true,
+    "process": true,
+    "secrets": true,
+    "artifact_store": true
+  },
+  "canary_hits": 0,
+  "events": [
+    {
+      "event_id": "evt-001",
+      "timestamp": "2026-10-31T14:00:01Z",
+      "principal_role": "sut",
+      "action": "read",
+      "resource_class": "task_prompt",
+      "disposition": "allowed",
+      "endpoint": null,
+      "evidence_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "event_id": "evt-002",
+      "timestamp": "2026-10-31T14:00:02Z",
+      "principal_role": "sut",
+      "action": "read",
+      "resource_class": "permitted_telemetry",
+      "disposition": "allowed",
+      "endpoint": null,
+      "evidence_sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "event_id": "evt-003",
+      "timestamp": "2026-10-31T14:00:03Z",
+      "principal_role": "sut",
+      "action": "egress",
+      "resource_class": "allowed_service_endpoint",
+      "disposition": "allowed",
+      "endpoint": "mock-itsm.internal",
+      "evidence_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    {
+      "event_id": "evt-004",
+      "timestamp": "2026-10-31T14:00:04Z",
+      "principal_role": "evaluator",
+      "action": "read",
+      "resource_class": "answer_key",
+      "disposition": "allowed",
+      "endpoint": null,
+      "evidence_sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    }
+  ]
+}

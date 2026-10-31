@@ -1,0 +1,47 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://luminousdynamics.io/schemas/opsbench-sealed-corpus-manifest-v0.1.json",
+  "title":"OpsBench sealed corpus manifest v0.1",
+  "type":"object","additionalProperties":false,
+  "required":["schema","version","status","study_id","preregistration_sha256","generator","split_unit","confirmatory_scenario_count_target","items"],
+  "properties":{
+    "schema":{"const":"luminous-opsbench-sealed-corpus-manifest-v0.1"},
+    "version":{"const":1},
+    "status":{"enum":["example_only","sealed_before_trials","revealed_after_study"]},
+    "study_id":{"type":"string","minLength":1},
+    "preregistration_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "generator":{
+      "type":"object","additionalProperties":false,
+      "required":["version","source_commit_sha","recipe_sha256","evaluator_sha256"],
+      "properties":{
+        "version":{"type":"string","minLength":1},
+        "source_commit_sha":{"type":"string","pattern":"^[a-f0-9]{40}$"},
+        "recipe_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+        "evaluator_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}
+      }
+    },
+    "split_unit":{"const":"fault_mechanism_and_topology_clusters"},
+    "confirmatory_scenario_count_target":{"type":"integer","minimum":500},
+    "items":{
+      "type":"array","minItems":1,
+      "items":{
+        "type":"object","additionalProperties":false,
+        "required":["scenario_id","variant_id","split","fault_family_group_id","topology_group_id","task_prompt_sha256","answer_key_sha256","oracle_sha256","environment_sha256","policy_sha256","tool_surface_sha256","license_id"],
+        "properties":{
+          "scenario_id":{"type":"string","minLength":1},
+          "variant_id":{"type":"string","minLength":1},
+          "split":{"enum":["development","screening","confirmatory"]},
+          "fault_family_group_id":{"type":"string","minLength":1},
+          "topology_group_id":{"type":"string","minLength":1},
+          "task_prompt_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+          "answer_key_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+          "oracle_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+          "environment_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+          "policy_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+          "tool_surface_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+          "license_id":{"type":"string","minLength":1}
+        }
+      }
+    }
+  }
+}
