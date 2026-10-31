@@ -76,7 +76,11 @@ class PublisherPolicyTests(unittest.TestCase):
     def test_untrusted_oidc_issuer_rejected(self):
         statement, policy, manifest, segment, policy_bytes = fixtures()
         changed = copy.deepcopy(policy)
-        changed["publishers"][-1]["identity"]["oidc_issuer"] = "https://attacker.invalid"
+        changed["publishers"][1]["identity"] = {
+            "profile": "sigstore_oidc",
+            "oidc_issuer": "https://attacker.invalid",
+            "oidc_subject": "repo:Luminous-Dynamics/luminous-platform:pull_request",
+        }
         changed["trusted_oidc_issuers"] = ["https://token.actions.githubusercontent.com"]
         changed_bytes = json.dumps(changed, indent=2).encode() + b"\n"
         with self.assertRaisesRegex(PolicyError, "not in the pinned trust allowlist"):
@@ -131,6 +135,28 @@ class PublisherPolicyTests(unittest.TestCase):
         statement["predicate"]["produced_at"] = "2026-10-31T10:00:00"
         with self.assertRaisesRegex(PolicyError, "timezone required"):
             check_attestation(statement, policy, manifest, segment, policy_bytes)
+
+    def test_event_run_binding_mismatch_rejected_even_when_segment_digest_is_rebound(self):
+        statement, policy, manifest, segment, policy_bytes = fixtures()
+        import hashlib
+        rows = [json.loads(line) for line in segment.splitlines()]
+        rows[0]["run_id"] = "different-run"
+        altered = b"\n".join(json.dumps(row, separators=(",", ":")).encode() for row in rows) + b"\n"
+        statement = copy.deepcopy(statement)
+        statement["subject"][1]["digest"]["sha256"] = hashlib.sha256(altered).hexdigest()
+        with self.assertRaisesRegex(PolicyError, "frozen run binding mismatch"):
+            check_attestation(statement, policy, manifest, altered, policy_bytes)
+
+    def test_source_sequence_gap_rejected_even_when_subject_digest_is_rebound(self):
+        statement, policy, manifest, segment, policy_bytes = fixtures()
+        import hashlib
+        rows = [json.loads(line) for line in segment.splitlines()]
+        rows[1]["source_sequence"] = 3
+        altered = b"\n".join(json.dumps(row, separators=(",", ":")).encode() for row in rows) + b"\n"
+        statement = copy.deepcopy(statement)
+        statement["subject"][1]["digest"]["sha256"] = hashlib.sha256(altered).hexdigest()
+        with self.assertRaisesRegex(PolicyError, "source epoch/sequence gap"):
+            check_attestation(statement, policy, manifest, altered, policy_bytes)
 
 
 if __name__ == "__main__":
