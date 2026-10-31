@@ -478,7 +478,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
         spent["human_seconds"] += probe["human_seconds"]
         deck_entry = deck[choice]
         before = dict(distribution)
-        before_risk, _ = bayes_risk(before, actions)
+        before_risk = constrained_decision_risk(before, actions, policy["max_action_risk"])
         predicted = probe_information(before, probe, actions, policy["max_action_risk"])
         predicted_gain_values.append(predicted["evsi"])
 
@@ -499,7 +499,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
             # An observation assigned zero probability by the model is a
             # model/data contradiction. Preserve uncertainty and expose it.
             impossible = True
-        after_risk, _ = bayes_risk(distribution, actions)
+        after_risk = constrained_decision_risk(distribution, actions, policy["max_action_risk"])
         realized_gain_values.append(max(0.0, before_risk - after_risk))
         top_hypothesis, confidence = _argmax(distribution)
         prequential.append({
