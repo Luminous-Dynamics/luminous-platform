@@ -86,6 +86,7 @@ def check_corpus_commitment(manifest: dict, manifest_bytes: bytes, registration:
     _hex64(registration.get("preregistration_sha256"), "registration.preregistration_sha256")
     require(registration.get("preregistration_sha256") == sha256(preregistration_bytes), "registration: exact preregistration digest mismatch")
     preregistration = load_json(preregistration_bytes, "preregistration")
+    require(preregistration.get("schema") == "luminous-opsbench-common-core-preregistration-v0.1" and type(preregistration.get("version")) is int and preregistration["version"] == 1, "preregistration: unsupported schema/version")
     require(preregistration.get("study_id") == manifest.get("study_id"), "manifest/preregistration study ID mismatch")
     expected_preregistration_status = {
         "example_only": "draft_not_registered",
@@ -115,7 +116,7 @@ def check_corpus_commitment(manifest: dict, manifest_bytes: bytes, registration:
     generator = manifest.get("generator")
     require(isinstance(generator, dict), "manifest.generator: expected object")
     require(isinstance(generator.get("version"), str) and generator["version"], "manifest.generator.version required")
-    require(isinstance(generator.get("source_commit_sha"), str) and len(generator["source_commit_sha"]) == 40, "manifest.generator.source_commit_sha must be a Git SHA")
+    require(isinstance(generator.get("source_commit_sha"), str) and len(generator["source_commit_sha"]) == 40 and all(c in "0123456789abcdef" for c in generator["source_commit_sha"]), "manifest.generator.source_commit_sha must be a lowercase Git SHA")
     _hex64(generator.get("recipe_sha256"), "manifest.generator.recipe_sha256")
     _hex64(generator.get("evaluator_sha256"), "manifest.generator.evaluator_sha256")
     require(manifest.get("split_unit") == "fault_mechanism_and_topology_clusters", "manifest: split must be by fault mechanism and topology clusters")
