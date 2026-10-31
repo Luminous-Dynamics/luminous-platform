@@ -12,6 +12,7 @@ on:
       - "research/service-episode-attestation-v0.1-2026-10-31"
     paths:
       - "docs/SERVICE_EPISODE_ATTESTATION_V0_1.md"
+      - "docs/ADR_ATTESTATION_VERIFIER_CRYPTO_LIB_0001.md"
       - "benchmarks/service-episode-attestation-v0.1/**"
       - "tools/service-episode-attestation-v0.1/**"
       - ".github/workflows/service-episode-attestation-v0.1.yml"
