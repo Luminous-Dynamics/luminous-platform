@@ -27,6 +27,11 @@ EVENT_TYPES = {
     "recovery_scan_completed", "service_outcome_verified", "agent_declared_resolved",
 }
 SOURCE_KINDS = {"coordinator", "authority_adapter", "participant", "participant_ledger", "independent_observer", "evaluator"}
+MAX_EVENTS = 4096
+MAX_PARENT_IDS = 64
+MAX_STEPS = 512
+MAX_PARTICIPANTS = 128
+MAX_OBSERVERS = 256
 
 class TraceError(ValueError):
     pass
@@ -37,6 +42,20 @@ def canonical_bytes(value: object) -> bytes:
 def digest_record(record: dict) -> str:
     unsigned = {k: v for k, v in record.items() if k != "event_digest"}
     return hashlib.sha256(canonical_bytes(unsigned)).hexdigest()
+
+def _strict_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise TraceError(f"duplicate JSON object key: {key}")
+        result[key] = value
+    return result
+
+def _json_loads(text, where):
+    try:
+        return json.loads(text, object_pairs_hook=_strict_object)
+    except json.JSONDecodeError as exc:
+        raise TraceError(f"{where}: invalid JSON: {exc}") from exc
 
 def _require(obj, keys, where):
     if not isinstance(obj, dict):
@@ -94,7 +113,7 @@ def validate_manifest(manifest: dict) -> dict:
         raise TraceError("manifest.authority: authority must be distinct from the executor")
 
     participants = {}
-    if not isinstance(manifest["participants"], list) or not manifest["participants"]:
+    if not isinstance(manifest["participants"], list) or not manifest["participants"] or len(manifest["participants"]) > MAX_PARTICIPANTS:
         raise TraceError("manifest.participants: expected non-empty array")
     for i, item in enumerate(manifest["participants"]):
         w = f"manifest.participants[{i}]"
@@ -109,7 +128,7 @@ def validate_manifest(manifest: dict) -> dict:
 
     observers = {}
     observer_ids = set()
-    if not isinstance(manifest["observers"], list) or not manifest["observers"]:
+    if not isinstance(manifest["observers"], list) or not manifest["observers"] or len(manifest["observers"]) > MAX_OBSERVERS:
         raise TraceError("manifest.observers: expected non-empty array")
     for i, item in enumerate(manifest["observers"]):
         w = f"manifest.observers[{i}]"
@@ -128,7 +147,7 @@ def validate_manifest(manifest: dict) -> dict:
         observers[item["source_id"]] = {**item, "scope_set": scope}
 
     steps = {}
-    if not isinstance(manifest["required_steps"], list) or not manifest["required_steps"]:
+    if not isinstance(manifest["required_steps"], list) or not manifest["required_steps"] or len(manifest["required_steps"]) > MAX_STEPS:
         raise TraceError("manifest.required_steps: expected non-empty array")
     for i, step in enumerate(manifest["required_steps"]):
         w = f"manifest.required_steps[{i}]"
@@ -168,6 +187,8 @@ def validate_event(event: dict, index: int, binding: dict):
     if event["previous_event_digest"] is not None:
         _sha(event["previous_event_digest"], w+".previous_event_digest")
     _strings(event["parent_event_ids"], w+".parent_event_ids", allow_empty=True)
+    if len(event["parent_event_ids"]) > MAX_PARENT_IDS:
+        raise TraceError(f"{w}.parent_event_ids: exceeds {MAX_PARENT_IDS} parents")
     _time(event["recorded_at"], w+".recorded_at")
     if not isinstance(event["data"], dict):
         raise TraceError(f"{w}.data: expected object")
@@ -200,6 +221,10 @@ def verifier_source_digest() -> str:
 
 def verify(manifest: dict, events: list[dict]) -> dict:
     m = validate_manifest(manifest)
+    if not isinstance(events, list):
+        raise TraceError("events: expected array")
+    if len(events) > MAX_EVENTS:
+        raise TraceError(f"events: exceeds maximum count of {MAX_EVENTS}")
     binding = m["binding"]
     if not isinstance(events, list) or not events:
         return {"schema": "luminous-operational-recovery-verification-v0.1", "version": 1, "status": "indeterminate",
@@ -593,8 +618,7 @@ def read_jsonl(path):
     with Path(path).open(encoding="utf-8") as f:
         for n,line in enumerate(f,1):
             if not line.strip(): continue
-            try: rows.append(json.loads(line))
-            except json.JSONDecodeError as exc: raise TraceError(f"{path} line {n}: {exc}") from exc
+            rows.append(_json_loads(line, f"{path} line {n}"))
     return rows
 
 def main(argv=None):
@@ -602,7 +626,7 @@ def main(argv=None):
     parser.add_argument("manifest"); parser.add_argument("events"); parser.add_argument("--output",default="-")
     args=parser.parse_args(argv)
     try:
-        manifest=json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+        manifest=_json_loads(Path(args.manifest).read_text(encoding="utf-8"), args.manifest)
         result=verify(manifest,read_jsonl(args.events))
         text=json.dumps(result,indent=2,sort_keys=True)+"\n"
         if args.output == "-": sys.stdout.write(text)
