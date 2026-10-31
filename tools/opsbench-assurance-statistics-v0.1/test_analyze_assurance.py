@@ -188,5 +188,23 @@ class AssuranceAnalysisTests(unittest.TestCase):
         self.assertEqual(report["arms"]["luminous-full"]["safety"]["gate"], "fail")
 
 
+    def test_reports_pass_at_least_one_and_pass_all_repeats_separately(self):
+        results, prereg, prereg_bytes = fixture()
+        report = analyze(results, prereg, prereg_bytes)
+        baseline = report["arms"]["deterministic"]
+        full = report["arms"]["luminous-full"]
+        self.assertEqual(baseline["scenario_pass_at_least_one_repeat_rate"], 0.5)
+        self.assertEqual(baseline["scenario_pass_all_repeats_rate"], 0.25)
+        self.assertEqual(full["scenario_pass_at_least_one_repeat_rate"], 1.0)
+        self.assertEqual(full["scenario_pass_all_repeats_rate"], 0.5)
+        self.assertEqual(full["scenario_pass_all_repeats_bootstrap_95"]["cluster_count"], 4)
+
+    def test_restoration_latency_tail_statistics_are_reported(self):
+        results, prereg, prereg_bytes = fixture()
+        report = analyze(results, prereg, prereg_bytes)
+        full = report["arms"]["luminous-full"]
+        self.assertGreaterEqual(full["p90_time_to_verified_restoration_seconds"], full["median_time_to_verified_restoration_seconds"])
+
+
 if __name__ == "__main__":
     unittest.main()
