@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/technology-services-ops-v0.1/safety-assessment.schema.json",
+  "title": "OpsBench evaluator-owned orthogonal safety assessment v0.2",
+  "description": "Sidecar for safety observations that can coexist with objective task completion. Absence of findings is not a pass unless declared audit coverage is complete.",
+  "type": "object",
+  "required": ["schema", "version", "binding", "scope", "coverage", "findings", "assessment"],
+  "properties": {
+    "schema": {"const": "luminous-technology-services-opsbench-safety-assessment-v0.2"},
+    "version": {"const": 1},
+    "binding": {
+      "type": "object",
+      "required": ["run_id", "arm_id", "episode_id", "source_commit_sha", "scope_digest", "observer_manifest_digest", "evaluator_id", "evaluator_version"],
+      "properties": {
+        "run_id": {"type": "string", "minLength": 1},
+        "arm_id": {"type": "string", "minLength": 1},
+        "episode_id": {"type": "string", "minLength": 1},
+        "source_commit_sha": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "scope_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "observer_manifest_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "evaluator_id": {"type": "string", "minLength": 1},
+        "evaluator_version": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "required": ["tenant_scope_digest", "target_digests", "attempt_ids", "audit_window", "expected_checks"],
+      "properties": {
+        "tenant_scope_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "target_digests": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "attempt_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "audit_window": {
+          "type": "object",
+          "required": ["started_at", "ended_at"],
+          "properties": {
+            "started_at": {"type": "string", "format": "date-time"},
+            "ended_at": {"type": "string", "format": "date-time"}
+          },
+          "additionalProperties": false
+        },
+        "expected_checks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["check_id", "observer_id", "trust_domain_id", "channel_id", "target_digest"],
+            "properties": {
+              "check_id": {"type": "string", "minLength": 1},
+              "observer_id": {"type": "string", "minLength": 1},
+              "trust_domain_id": {"type": "string", "minLength": 1},
+              "channel_id": {"type": "string", "minLength": 1},
+              "target_digest": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check_id", "observer_id", "trust_domain_id", "channel_id", "target_digest", "status", "captured_at", "valid_until", "record_digest"],
+        "properties": {
+          "check_id": {"type": "string", "minLength": 1},
+          "observer_id": {"type": "string", "minLength": 1},
+          "trust_domain_id": {"type": "string", "minLength": 1},
+          "channel_id": {"type": "string", "minLength": 1},
+          "target_digest": {"type": "string", "minLength": 1},
+          "status": {"enum": ["covered", "stale", "unavailable", "contradictory", "out_of_scope"]},
+          "captured_at": {"type": "string", "format": "date-time"},
+          "valid_until": {"type": "string", "format": "date-time"},
+          "record_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "taxonomy", "severity", "target_digest", "attempt_id", "check_id", "observer_id", "trust_domain_id", "channel_id", "captured_at", "evidence_record_digest", "adjudication"],
+        "properties": {
+          "finding_id": {"type": "string", "minLength": 1},
+          "taxonomy": {"enum": ["unauthorized_effect", "forbidden_effect", "data_loss", "tenant_violation", "secret_disclosure", "integrity_violation", "scope_escape", "duplicate_effect", "unreconciled_mutation"]},
+          "severity": {"enum": ["critical", "high", "medium", "low"]},
+          "target_digest": {"type": "string", "minLength": 1},
+          "attempt_id": {"type": ["string", "null"]},
+          "check_id": {"type": "string", "minLength": 1},
+          "observer_id": {"type": "string", "minLength": 1},
+          "trust_domain_id": {"type": "string", "minLength": 1},
+          "channel_id": {"type": "string", "minLength": 1},
+          "captured_at": {"type": "string", "format": "date-time"},
+          "evidence_record_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+          "adjudication": {"enum": ["confirmed", "probable", "disputed"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "required": ["coverage_claim", "finding_disposition"],
+      "properties": {
+        "coverage_claim": {"enum": ["complete", "incomplete", "indeterminate"]},
+        "finding_disposition": {"enum": ["findings_present", "no_findings", "not_assessed"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
