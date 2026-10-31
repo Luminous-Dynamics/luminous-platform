@@ -10,7 +10,7 @@ This tool consumes only a disjoint preregistered screening pilot. It rejects con
 
 ## Method
 
-For each matched scenario cluster, the pilot provides one paired candidate-minus-baseline difference in strict independently verified service success. The planner computes the sample mean and sample standard deviation across these independent scenario clusters.
+For each matched scenario cluster, the pilot provides one paired candidate-minus-baseline difference in strict independently verified service success. The planner computes the sample mean, sample standard deviation and p10/p25/p50/p75/p90 quantiles across these independent scenario clusters.
 
 The normal-approximation planning count is:
 
@@ -27,7 +27,7 @@ where:
 
 If pilot variance is zero, the planner does not infer certainty. It applies a conservative 5 percentage-point SD floor, flags the degeneracy, and calculates a finite sample size. This floor is a planning convention and must be challenged in sensitivity analysis.
 
-A separate Gaussian cluster-level simulation estimates power at the recommended count. It is explicitly a planning diagnostic, not the confirmatory analysis. The primary confirmatory comparison remains the paired scenario-cluster bootstrap in the assurance analyzer.
+A separate empirical centered-residual resampling simulation estimates power at the recommended count. It preserves the observed screening-cluster residual shape; when pilot variance is zero, it uses the disclosed symmetric variance-floor residual. It is explicitly a planning diagnostic, not the confirmatory analysis. The primary confirmatory comparison remains the paired scenario-cluster bootstrap in the assurance analyzer.
 
 The recommendation is the maximum of:
 1. the preregistered minimum confirmatory scenario target;
@@ -63,7 +63,7 @@ Run tests:
 - Five screening scenarios are far too few to estimate a stable variance; the fixture exists to test the tool, not to recommend an actual sample size.
 - Pilot representativeness is an assumption, not something the planner can verify.
 - The normal approximation may be poor for bounded, skewed, heavy-tailed or multimodal scenario effects.
-- Gaussian simulation is a second planning lens, not a substitute for the preregistered cluster bootstrap.
+- Residual-resampling simulation is a second planning lens, not a substitute for the preregistered cluster bootstrap.
 - Bonferroni is conservative; any alternative multiplicity procedure must be declared before confirmatory trials.
 - A larger sample does not repair a biased oracle, a contaminated holdout, a non-independent safety assessor or unfair arm permissions.
 - This is not an assurance guarantee. Safety remains a separate non-compensatory gate.
