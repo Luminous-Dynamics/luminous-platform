@@ -3,7 +3,7 @@
   "$id":"https://luminousdynamics.io/schemas/opsbench-sustained-recovery-report-v0.1.json",
   "title":"OpsBench sustained SLO recovery report v0.1",
   "type":"object","additionalProperties":false,
-  "required":["schema","version","status","contract_sha256","windows_sha256","window_count","sustained_recovery","claim_ceiling"],
+  "required":["schema","version","status","contract_sha256","windows_sha256","window_count","sustained_recovery","report_sha256","claim_ceiling"],
   "properties":{
     "schema":{"const":"luminous-opsbench-sustained-recovery-report-v0.1"},
     "version":{"const":1},
