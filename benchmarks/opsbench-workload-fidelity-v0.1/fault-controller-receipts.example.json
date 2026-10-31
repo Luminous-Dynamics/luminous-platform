@@ -1,0 +1,36 @@
+{
+  "schema": "luminous-opsbench-fault-controller-receipts-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "study_id": "example-workload-fidelity-not-registered",
+  "run_id": "workload-run-001",
+  "episode_id": "workload-episode-001",
+  "service_id": "payments-api",
+  "fault_controller": {
+    "source_id": "workload-fault-controller",
+    "trust_domain_id": "fault-injection"
+  },
+  "phase_schedule_sha256": "4a7285c5a515b28970298dd085ba8d98c692df9ac2b4d30c4bdc3951f589bdfc",
+  "receipts": [
+    {
+      "phase_id": "dependency-degradation",
+      "fault_id": "dependency-latency-pulse-01",
+      "started_at": "2026-10-31T14:02:00Z",
+      "ended_at": "2026-10-31T14:03:00Z",
+      "target_id": "mock-payment-dependency",
+      "action": "inject_latency_pulse",
+      "action_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "disposition": "injected"
+    },
+    {
+      "phase_id": "retry-pressure",
+      "fault_id": "bounded-retry-pressure-01",
+      "started_at": "2026-10-31T14:03:00Z",
+      "ended_at": "2026-10-31T14:04:00Z",
+      "target_id": "mock-payment-gateway",
+      "action": "inject_bounded_retry_pressure",
+      "action_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "disposition": "injected"
+    }
+  ]
+}
