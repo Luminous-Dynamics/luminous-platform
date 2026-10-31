@@ -3,12 +3,13 @@
   "$id":"https://luminousdynamics.io/schemas/opsbench-assurance-results-v0.1.json",
   "title":"OpsBench assurance statistics input v0.1",
   "type":"object","additionalProperties":false,
-  "required":["schema","version","status","study_id","preregistration_sha256","source_pins","arms","baseline_arm_id","candidate_arm_ids","scenario_ids","analysis","trials"],
+  "required":["schema","version","status","study_id","trial_started_at","preregistration_sha256","source_pins","arms","baseline_arm_id","candidate_arm_ids","scenario_ids","analysis","trials"],
   "properties":{
     "schema":{"const":"luminous-opsbench-assurance-results-v0.1"},
     "version":{"const":1},
     "status":{"enum":["example_only","screening","confirmatory"]},
     "study_id":{"type":"string","minLength":1},
+    "trial_started_at":{"type":"string","format":"date-time"},
     "preregistration_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
     "source_pins":{
       "type":"object","additionalProperties":false,
