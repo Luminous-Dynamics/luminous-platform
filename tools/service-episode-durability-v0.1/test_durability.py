@@ -129,5 +129,30 @@ class DurabilityContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(changed, SCHEMA)
 
+
+    def test_schema_cannot_weaken_duplicate_effect_gate(self):
+        changed = copy.deepcopy(SCHEMA)
+        changed["properties"]["hard_gates"]["properties"]["max_duplicate_business_effects"]["const"] = 1
+        with self.assertRaises(ValueError):
+            validate(MATRIX, changed)
+
+    def test_schema_must_require_complete_case_identity(self):
+        changed = copy.deepcopy(SCHEMA)
+        changed["properties"]["cases"]["items"]["required"].remove("participant_state")
+        with self.assertRaises(ValueError):
+            validate(MATRIX, changed)
+
+    def test_schema_must_preserve_all_eight_fault_families(self):
+        changed = copy.deepcopy(SCHEMA)
+        changed["properties"]["cases"]["items"]["properties"]["family"]["enum"].remove("snapshot-replay")
+        with self.assertRaises(ValueError):
+            validate(MATRIX, changed)
+
+    def test_schema_must_include_all_five_comparison_arms(self):
+        changed = copy.deepcopy(SCHEMA)
+        changed["properties"]["baseline_arms"]["maxItems"] = 4
+        with self.assertRaises(ValueError):
+            validate(MATRIX, changed)
+
 if __name__ == "__main__":
     unittest.main()
