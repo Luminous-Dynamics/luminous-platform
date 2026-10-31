@@ -75,7 +75,7 @@ def _hex64(value, where: str):
     require(isinstance(value, str) and len(value) == 64 and all(c in "0123456789abcdef" for c in value), f"{where}: lowercase SHA-256 digest required")
 
 
-def check_corpus_commitment(manifest: dict, manifest_bytes: bytes, registration: dict, salt: bytes) -> dict:
+def check_corpus_commitment(manifest: dict, manifest_bytes: bytes, registration: dict, salt: bytes, preregistration_bytes: bytes) -> dict:
     require(manifest.get("schema") == "luminous-opsbench-sealed-corpus-manifest-v0.1" and type(manifest.get("version")) is int and manifest["version"] == 1, "manifest: unsupported schema/version")
     require(registration.get("schema") == "luminous-opsbench-sealed-corpus-registration-v0.1" and type(registration.get("version")) is int and registration["version"] == 1, "registration: unsupported schema/version")
     require(registration.get("commitment_scheme") == "sha256-domain-separated-secret-salt-v0.1", "registration: unsupported commitment scheme")
@@ -84,6 +84,10 @@ def check_corpus_commitment(manifest: dict, manifest_bytes: bytes, registration:
     require(manifest.get("study_id") == registration.get("study_id"), "manifest/registration study ID mismatch")
     require(manifest.get("preregistration_sha256") == registration.get("preregistration_sha256"), "manifest/registration preregistration digest mismatch")
     _hex64(registration.get("preregistration_sha256"), "registration.preregistration_sha256")
+    require(registration.get("preregistration_sha256") == sha256(preregistration_bytes), "registration: exact preregistration digest mismatch")
+    preregistration = load_json(preregistration_bytes, "preregistration")
+    require(preregistration.get("study_id") == manifest.get("study_id"), "manifest/preregistration study ID mismatch")
+    require(preregistration.get("status") == "draft_not_registered" if manifest.get("status") == "example_only" else preregistration.get("status") == "registered_before_trials", "preregistration status does not match corpus status")
     raw_manifest_digest = sha256(manifest_bytes)
     require(registration.get("manifest_sha256") == raw_manifest_digest, "registration: exact raw manifest digest mismatch")
     require(registration.get("salt_sha256") == sha256(salt), "registration: salt digest mismatch")
@@ -149,6 +153,7 @@ def check_corpus_commitment(manifest: dict, manifest_bytes: bytes, registration:
         "status": "commitment_match",
         "study_id": manifest["study_id"],
         "manifest_sha256": raw_manifest_digest,
+        "preregistration_sha256": sha256(preregistration_bytes),
         "commitment_sha256": commitment,
         "salt_sha256": sha256(salt),
         "split_scenario_counts": {key: len(value) for key, value in split_counts.items()},
@@ -240,6 +245,7 @@ def main(argv=None) -> int:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--registration", type=Path, required=True)
     parser.add_argument("--salt-file", type=Path, required=True)
+    parser.add_argument("--preregistration", type=Path, required=True)
     parser.add_argument("--access-policy", type=Path, required=True)
     parser.add_argument("--access-audit", type=Path, required=True)
     parser.add_argument("--output", default="-")
@@ -252,7 +258,8 @@ def main(argv=None) -> int:
         registration = load_json(registration_bytes, "registration")
         policy = load_json(args.access_policy.read_bytes(), "access policy")
         audit = load_json(args.access_audit.read_bytes(), "access audit")
-        commitment_report = check_corpus_commitment(manifest, manifest_bytes, registration, salt)
+        preregistration_bytes = args.preregistration.read_bytes()
+        commitment_report = check_corpus_commitment(manifest, manifest_bytes, registration, salt, preregistration_bytes)
         audit_report = check_access_audit(audit, policy)
         overall = "fail" if audit_report["status"] == "fail" else ("indeterminate" if audit_report["status"] == "indeterminate" else "pass")
         report = {
