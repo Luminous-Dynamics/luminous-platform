@@ -565,6 +565,10 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
 
 def _oracle_upper_bound(study: dict, scenario: dict) -> dict:
     truth = scenario["truth_hypothesis"]
+    initial_risk = constrained_decision_risk(
+        scenario["prior"], {a["action_id"]: a for a in study["actions"]},
+        study["policy"]["max_action_risk"],
+    )
     action = next(
         a for a in study["actions"]
         if a["mutating"] and a["target_hypothesis"] == truth
@@ -586,12 +590,9 @@ def _oracle_upper_bound(study: dict, scenario: dict) -> dict:
         "latency_ms": 0,
         "privacy_penalty_units": 0.0,
         "human_seconds": 0.0,
-        "initial_bayes_risk": constrained_decision_risk(
-            scenario["prior"], {a["action_id"]: a for a in study["actions"]},
-            study["policy"]["max_action_risk"],
-        ),
+        "initial_bayes_risk": initial_risk,
         "final_bayes_risk": 0.0,
-        "total_realized_risk_reduction": 0.0,
+        "total_realized_risk_reduction": initial_risk,
         "mean_predicted_evsi_per_probe": 0.0,
         "mean_realized_risk_reduction_per_probe": 0.0,
         "mean_predicted_entropy_reduction": 0.0,
