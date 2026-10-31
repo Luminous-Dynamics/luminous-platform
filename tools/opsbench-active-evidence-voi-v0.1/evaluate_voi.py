@@ -389,7 +389,7 @@ def _strategy_choice(
         return None
     if strategy == "risk_adjusted_voi":
         ranked = [
-            (probe_information(distribution, probes[pid], actions, max_action_risk)["net_value"], pid)
+            (probe_information(distribution, probes[pid], actions, policy)["net_value"], pid)
             for pid in candidates
         ]
         value, pid = max(ranked, key=lambda item: (item[0], item[1]))
