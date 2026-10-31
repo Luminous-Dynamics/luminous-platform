@@ -206,6 +206,17 @@ def _validate_preregistration(results: dict, prereg: dict, prereg_bytes: bytes):
         require(prereg_status == "draft_not_registered", "example_only data must use an explicitly unregistered example preregistration")
     else:
         require(prereg_status == "registered_before_trials", "screening/confirmatory data require immutable preregistration before trials")
+        def parse_aware_timestamp(value, where):
+            require(isinstance(value, str), f"{where}: timezone-aware timestamp string required")
+            try:
+                parsed = __import__("datetime").datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise AnalysisError(f"{where}: invalid timestamp") from exc
+            require(parsed.tzinfo is not None, f"{where}: timezone offset required")
+            return parsed
+        registered_at = parse_aware_timestamp(prereg.get("registered_at"), "preregistration.registered_at")
+        trial_started_at = parse_aware_timestamp(results.get("trial_started_at"), "results.trial_started_at")
+        require(registered_at < trial_started_at, "preregistration must predate first trial start")
     analysis = results.get("analysis")
     prereg_analysis = prereg.get("analysis")
     require(isinstance(analysis, dict) and isinstance(prereg_analysis, dict), "analysis: both results and preregistration settings required")
