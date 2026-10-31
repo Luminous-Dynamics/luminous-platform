@@ -257,5 +257,18 @@ class OperationalAssuranceCaseTests(unittest.TestCase):
             evaluate(case, serialize(case))
 
 
+    def test_empty_attempt_set_rejected(self):
+        case, _ = fixtures()
+        case["attempt_ids"] = []
+        with self.assertRaisesRegex(CaseError, "at least one unique non-empty attempt ID"):
+            evaluate(case, serialize(case))
+
+    def test_assumption_expiry_before_review_rejected(self):
+        case, _ = fixtures()
+        case["assumptions"][0]["expires_at"] = "2026-10-31T14:00:00Z"
+        with self.assertRaisesRegex(CaseError, "expiry precedes review time"):
+            evaluate(case, serialize(case))
+
+
 if __name__ == "__main__":
     unittest.main()
