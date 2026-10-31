@@ -7,6 +7,7 @@ establish external population representativeness.
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import hashlib
 import json
 import math
@@ -136,7 +137,20 @@ def validate(pilot: dict, prereg: dict, prereg_bytes: bytes) -> list[float]:
     require(pilot.get("pilot_split") == "screening", "pilot must use the preregistered screening split")
     require(pilot.get("study_id") == prereg.get("study_id"), "pilot study_id does not match preregistration")
     require(pilot.get("preregistration_sha256") == digest(prereg_bytes), "pilot preregistration digest mismatch")
+    require(isinstance(pilot.get("pilot_started_at"), str), "pilot_started_at timestamp required")
+    try:
+        pilot_started = datetime.fromisoformat(pilot["pilot_started_at"].replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise PlanningError("pilot_started_at timestamp invalid") from exc
+    require(pilot_started.tzinfo is not None, "pilot_started_at must include an explicit timezone")
     require(prereg.get("schema") == "luminous-opsbench-common-core-preregistration-v0.1" and prereg.get("version") == 1, "preregistration schema/version unsupported")
+    if pilot["status"] == "screening":
+        require(prereg.get("status") in {"registered_before_trials", "completed"}, "screening pilot requires immutable preregistration before trials")
+        try:
+            registered_at = datetime.fromisoformat(prereg["registered_at"].replace("Z", "+00:00"))
+        except (KeyError, AttributeError, ValueError) as exc:
+            raise PlanningError("preregistration registered_at timestamp invalid") from exc
+        require(registered_at.tzinfo is not None and registered_at < pilot_started, "preregistration must predate screening pilot start")
     split = prereg.get("scenario_split", {})
     expected = split.get("screening_scenario_ids", [])
     development = set(split.get("development_scenario_ids", []))
@@ -221,6 +235,7 @@ def plan(pilot: dict, prereg: dict, prereg_bytes: bytes) -> dict:
         "pilot_artifact_id": pilot["pilot_artifact_id"],
         "pilot_sha256": digest(json.dumps(pilot, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()),
         "preregistration_sha256": digest(prereg_bytes),
+        "private_variant_commitment": prereg["source_pins"]["private_variant_commitment"],
         "pilot_scenario_cluster_count": len(values),
         "pilot_paired_mean_difference": observed_mean,
         "pilot_paired_sample_sd": observed_sd,
