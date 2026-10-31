@@ -1,0 +1,40 @@
+name: OMSI ITOPS profile v0.1
+
+on:
+  pull_request:
+    paths:
+      - "docs/standards/omsi/technology-services-operations-profile-0.1.md"
+      - "docs/standards/omsi/industry-profile-portfolio-0.1.md"
+      - "benchmarks/omsi-itops-profile-v0.1/**"
+      - "tools/omsi-itops-profile-v0.1/**"
+      - ".github/workflows/omsi-itops-profile-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/standards/omsi/technology-services-operations-profile-0.1.md"
+      - "docs/standards/omsi/industry-profile-portfolio-0.1.md"
+      - "benchmarks/omsi-itops-profile-v0.1/**"
+      - "tools/omsi-itops-profile-v0.1/**"
+      - ".github/workflows/omsi-itops-profile-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: omsi-itops-profile-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  profile-contract:
+    name: Frozen ITOPS profile and semantic mutation tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Validate ITOPS profile and pinned crosswalk
+        run: python3 tools/omsi-itops-profile-v0.1/check_profile.py
+      - name: Run negative profile mutation tests
+        run: python3 -m unittest discover -s tools/omsi-itops-profile-v0.1 -p 'test_*.py' -v
