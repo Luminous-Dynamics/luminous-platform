@@ -32,5 +32,6 @@
       "action_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "disposition": "injected"
     }
-  ]
+  ],
+  "profile_sha256": "d8ebba477bb19a31f347b4379c552f9d3fa05547a985595bea6f05e30b7d609a"
 }
