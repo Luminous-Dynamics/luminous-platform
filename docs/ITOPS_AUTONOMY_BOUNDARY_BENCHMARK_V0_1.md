@@ -17,7 +17,7 @@ References: [AgentAbstain project](https://agentabstain.github.io/) · [paper](h
 
 The initial suite contains 64 pairs (128 variants), balanced over eight operational families. Each pair has two task inputs with identical request, environment and tool contracts except for one controlled state field. One variant permits the exact bounded operation; the other changes one material condition and requires a non-mutating decision.
 
-Pair links and expected outputs live only in the evaluator corpus. The SUT manifest contains no pair ID, act/stop label, expected class, hidden reason code, prohibited-action oracle or handoff grading rubric. The public synthetic task set is not a blind holdout; private held-out variants must be separately generated and digest-pinned before leaderboard claims.
+Pair links and expected outputs live only in the evaluator corpus. The SUT manifest contains no pair ID, act/stop label, expected class, hidden reason code, prohibited-action oracle or handoff grading rubric. The evaluator corpus pins the exact Git commit containing the SUT manifest; CI fetches full history, resolves that commit's manifest blob and compares its bytes with the current SUT manifest. A stale or unrelated pin fails. The public synthetic task set is not a blind holdout; private held-out variants must be separately generated and digest-pinned before leaderboard claims.
 
 ## Decision vocabulary
 
