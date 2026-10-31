@@ -92,7 +92,9 @@
           "response_timeout_count",
           "peak_concurrency",
           "latency_histogram",
-          "response_drop_count"
+          "response_drop_count",
+          "payload_profile_id",
+          "client_timeout_ms"
         ],
         "properties": {
           "window_id": {
@@ -181,6 +183,14 @@
           "response_drop_count": {
             "type": "integer",
             "minimum": 0
+          },
+          "payload_profile_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "client_timeout_ms": {
+            "type": "integer",
+            "minimum": 1
           }
         }
       }
