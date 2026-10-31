@@ -103,7 +103,7 @@ status=policy_match means only:
 - the producer role maps to one exact identity profile in that policy;
 - the included source segment matches the declared producer, role, epoch, sequence and event digests.
 
-The output explicitly sets signature verification, transparency inclusion verification and full episode semantic verification to false. The checker does not authenticate a signature, validate a certificate, contact Rekor, check revocation, establish organizational independence or verify real service state.
+The output explicitly sets signature verification, transparency inclusion verification and full episode semantic verification to false, includes policy_status=example_only for the checked-in fixture, and sets production_usable=false. The checker rejects duplicate JSON keys, non-finite numeric constants, oversized documents/event segments, excessive event counts and overlong event lines. Its size bounds are 2 MiB for a manifest/policy document, 8 MiB for a segment, 4,096 events and 128 KiB per event line. The checker does not authenticate a signature, validate a certificate, contact Rekor, check revocation, establish organizational independence or verify real service state.
 
 ## 8. Promotion gates
 
