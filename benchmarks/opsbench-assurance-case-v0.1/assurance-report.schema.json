@@ -3,7 +3,7 @@
   "$id":"https://luminousdynamics.io/schemas/opsbench-operational-assurance-report-v0.1.json",
   "title":"OpsBench operational assurance report v0.1",
   "type":"object","additionalProperties":false,
-  "required":["schema","version","status","computed_disposition","case_id","run_id","episode_id","arm_id","attempt_id","case_sha256","top_level_claim_id","top_level_claim_status","eligible_for_human_review","automatic_execution_authorized","economic_claims_allowed","required_claim_statuses","claim_results","unresolved_critical_defeaters","publisher_authenticity_cryptographically_verified_by_this_aggregator","claim_ceiling","report_sha256"],
+  "required":["schema","version","status","computed_disposition","case_id","run_id","episode_id","arm_id","attempt_id","case_sha256","top_level_claim_id","top_level_claim_status","eligible_for_human_review","automatic_execution_authorized","economic_claims_allowed","required_claim_statuses","claim_results","unresolved_defeaters","unresolved_critical_defeaters","publisher_authenticity_cryptographically_verified_by_this_aggregator","claim_ceiling","report_sha256"],
   "properties":{
     "schema":{"const":"luminous-opsbench-operational-assurance-report-v0.1"},
     "version":{"const":1},
@@ -22,6 +22,7 @@
     "economic_claims_allowed":{"type":"boolean"},
     "required_claim_statuses":{"type":"object","additionalProperties":{"enum":["supported","refuted","indeterminate"]}},
     "claim_results":{"type":"object","additionalProperties":{"type":"object","additionalProperties":false,"required":["status","reasons"],"properties":{"status":{"enum":["supported","refuted","indeterminate"]},"reasons":{"type":"array","items":{"type":"string"}}}}},
+    "unresolved_defeaters":{"type":"array","uniqueItems":true,"items":{"type":"string"}},
     "unresolved_critical_defeaters":{"type":"array","uniqueItems":true,"items":{"type":"string"}},
     "publisher_authenticity_cryptographically_verified_by_this_aggregator":{"const":false},
     "claim_ceiling":{"type":"string","minLength":30},
