@@ -12,6 +12,7 @@ on:
       - "research/service-episode-durability-v0.1-2026-10-31"
     paths:
       - "docs/SERVICE_EPISODE_COORDINATOR_DURABILITY_V0_1.md"
+      - "docs/ADR_SERVICE_EPISODE_DURABLE_RUNTIME_0001.md"
       - "benchmarks/service-episode-durability-v0.1/**"
       - "tools/service-episode-durability-v0.1/**"
       - ".github/workflows/service-episode-durability-v0.1.yml"
