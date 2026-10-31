@@ -99,7 +99,7 @@ def validate(matrix: Any, schema: Any) -> dict[str, int]:
     arms = matrix["baseline_arms"]
     require(isinstance(arms, list) and {x.get("id") for x in arms} ==
             {"platform_minimal_coordinator_journal","temporal_event_history_replay",
-             "dbos_postgres_checkpoint_recovery","in_memory_reference"},
+             "dbos_postgres_checkpoint_recovery","restate_rust_sdk_0_13","in_memory_reference"},
             "fair comparison arms are incomplete")
     require(next(x for x in arms if x["id"] == "in_memory_reference")["role"] == "non_durable_control_only",
             "in-memory arm must remain a non-durable control")
