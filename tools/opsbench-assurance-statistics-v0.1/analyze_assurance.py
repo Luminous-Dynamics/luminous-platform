@@ -307,17 +307,37 @@ def _arm_summary(rows: list[dict], analysis: dict, seed_offset: int) -> dict:
         sum(_trial_success(row) for row in cluster) / len(cluster)
         for cluster in by_scenario.values()
     ]
+    scenario_pass_at_least_one = [
+        float(any(_trial_success(row) for row in cluster))
+        for cluster in by_scenario.values()
+    ]
+    scenario_pass_all_repeats = [
+        float(all(_trial_success(row) for row in cluster))
+        for cluster in by_scenario.values()
+    ]
     bootstrap = _bootstrap_mean(
         scenario_means,
         analysis["bootstrap_replicates"],
         analysis["bootstrap_seed"] + seed_offset,
         analysis["confidence_level"],
     )
+    pass_at_least_one_bootstrap = _bootstrap_mean(
+        scenario_pass_at_least_one,
+        analysis["bootstrap_replicates"],
+        analysis["bootstrap_seed"] + seed_offset + 17,
+        analysis["confidence_level"],
+    )
+    pass_all_repeats_bootstrap = _bootstrap_mean(
+        scenario_pass_all_repeats,
+        analysis["bootstrap_replicates"],
+        analysis["bootstrap_seed"] + seed_offset + 31,
+        analysis["confidence_level"],
+    )
 
     unknown_cost = sum(row["fully_loaded_cost_usd"] is None for row in rows)
     total_cost = None if unknown_cost else sum(row["fully_loaded_cost_usd"] for row in rows)
     total_human = sum(row["human_active_seconds"] for row in rows)
-    verified_durations = [row["time_to_verified_restoration_seconds"] for row in rows if _trial_success(row)]
+    verified_durations = sorted(row["time_to_verified_restoration_seconds"] for row in rows if _trial_success(row))
     false_resolution = sum(row["agent_reported_resolved"] and not _trial_success(row) for row in rows)
     episode_counts = {state: sum(row["episode_state"] == state for row in rows) for state in sorted(EPISODE_STATES)}
     objective_unknown = sum(row["oracle_status"] in {"indeterminate", "not_observed"} for row in rows)
@@ -363,9 +383,17 @@ def _arm_summary(rows: list[dict], analysis: dict, seed_offset: int) -> dict:
         "trial_weighted_strict_success_rate": successes / len(rows),
         "scenario_weighted_strict_success_rate": sum(scenario_means) / len(scenario_means),
         "scenario_cluster_bootstrap_95": bootstrap,
+        "scenario_pass_at_least_one_repeat_rate": sum(scenario_pass_at_least_one) / len(scenario_pass_at_least_one),
+        "scenario_pass_at_least_one_repeat_bootstrap_95": pass_at_least_one_bootstrap,
+        "scenario_pass_all_repeats_rate": sum(scenario_pass_all_repeats) / len(scenario_pass_all_repeats),
+        "scenario_pass_all_repeats_bootstrap_95": pass_all_repeats_bootstrap,
+        "repeats_per_scenario_min": min(len(cluster) for cluster in by_scenario.values()),
+        "repeats_per_scenario_max": max(len(cluster) for cluster in by_scenario.values()),
         "episode_state_counts": episode_counts,
         "objective_unknown_episode_count": objective_unknown,
         "mean_time_to_verified_restoration_seconds": (sum(verified_durations) / len(verified_durations)) if verified_durations else None,
+        "median_time_to_verified_restoration_seconds": _percentile(verified_durations, 0.50) if verified_durations else None,
+        "p90_time_to_verified_restoration_seconds": _percentile(verified_durations, 0.90) if verified_durations else None,
         "false_resolution_claim_count": false_resolution,
         "human_active_seconds_total": total_human,
         "human_active_seconds_per_verified_outcome": (total_human / successes) if successes else None,
