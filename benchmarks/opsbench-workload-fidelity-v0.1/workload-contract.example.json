@@ -1,0 +1,35 @@
+{
+  "schema": "luminous-opsbench-workload-fidelity-contract-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "study_id": "example-workload-fidelity-not-registered",
+  "run_id": "workload-run-001",
+  "episode_id": "workload-episode-001",
+  "service_id": "payments-api",
+  "service_digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "executor": {
+    "source_id": "platform-coordinator",
+    "trust_domain_id": "agent-runtime"
+  },
+  "load_generator": {
+    "source_id": "independent-load-generator",
+    "trust_domain_id": "load-generation"
+  },
+  "observer": {
+    "source_id": "external-ingress-observer",
+    "trust_domain_id": "external-observation"
+  },
+  "business_oracle": {
+    "source_id": "payment-business-oracle",
+    "trust_domain_id": "business-oracle"
+  },
+  "fault_controller": {
+    "source_id": "workload-fault-controller",
+    "trust_domain_id": "fault-injection"
+  },
+  "profile_sha256": "70a896108d3ae247118fe355dd7c5353e8cca32c24221d4e72bfeb769ae617ae",
+  "phase_schedule_sha256": "4a7285c5a515b28970298dd085ba8d98c692df9ac2b4d30c4bdc3951f589bdfc",
+  "load_generator_receipts_sha256": "24cf92c488c2ba20c20f10a64d146955c07873698c95dd9ed2a64eb498802d5f",
+  "service_observations_sha256": "20cce7fb5f8b619154b2afc988d5d866fa333c7e73d0cd88305fd0a65fc34777",
+  "expected_phase_count": 5
+}
