@@ -194,11 +194,12 @@ def validate_study(study: dict) -> dict:
     policy_keys = {
         "max_action_risk", "max_cost_units", "max_latency_ms",
         "max_privacy_penalty_units", "max_human_seconds", "max_probes", "random_seed",
+        "cost_loss_per_unit", "privacy_loss_per_unit",
     }
     require(isinstance(policy, dict) and set(policy) == policy_keys,
             "policy: unexpected or missing fields")
     finite(policy["max_action_risk"], "policy.max_action_risk", minimum=0.0, maximum=1.0)
-    for key in ("max_cost_units", "max_privacy_penalty_units", "max_human_seconds"):
+    for key in ("max_cost_units", "max_privacy_penalty_units", "max_human_seconds", "cost_loss_per_unit", "privacy_loss_per_unit"):
         finite(policy[key], f"policy.{key}", minimum=0.0)
     require(type(policy["max_latency_ms"]) is int and policy["max_latency_ms"] >= 0,
             "policy.max_latency_ms invalid")
@@ -293,7 +294,8 @@ def constrained_decision_risk(distribution: dict[str, float], actions: dict, max
     return safe_risk
 
 
-def probe_information(distribution: dict[str, float], probe: dict, actions: dict, max_action_risk: float) -> dict:
+def probe_information(distribution: dict[str, float], probe: dict, actions: dict, policy: dict) -> dict:
+    max_action_risk = policy["max_action_risk"]
     current_risk = constrained_decision_risk(distribution, actions, max_action_risk)
     current_entropy = entropy(distribution)
     expected_risk = 0.0
@@ -312,7 +314,7 @@ def probe_information(distribution: dict[str, float], probe: dict, actions: dict
             expected_entropy += probability * entropy(updated)
     evsi = max(0.0, current_risk - expected_risk)
     entropy_reduction = max(0.0, current_entropy - expected_entropy)
-    net_value = evsi - probe["cost_units"] - probe["privacy_penalty_units"]
+    net_value = evsi - probe["cost_units"] * policy["cost_loss_per_unit"] - probe["privacy_penalty_units"] * policy["privacy_loss_per_unit"]
     return {
         "current_bayes_risk": current_risk,
         "expected_posterior_bayes_risk": expected_risk,
@@ -363,7 +365,7 @@ def _strategy_choice(
     actions: dict,
     runbook: list[str],
     rng: random.Random,
-    max_action_risk: float,
+    policy: dict,
 ) -> str | None:
     if not candidates:
         return None
@@ -376,7 +378,7 @@ def _strategy_choice(
         ))
     if strategy == "entropy_per_cost":
         def score(pid):
-            info = probe_information(distribution, probes[pid], actions, max_action_risk)
+            info = probe_information(distribution, probes[pid], actions, policy)
             denom = probes[pid]["cost_units"] + probes[pid]["privacy_penalty_units"]
             return (info["entropy_reduction"] / max(denom, 1e-12), info["entropy_reduction"], -probes[pid]["latency_ms"], pid)
         return max(candidates, key=score)
@@ -462,7 +464,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
         ]
         choice = _strategy_choice(
             strategy, candidates, distribution, probes, actions,
-            study["fixed_runbook_order"], rng, policy["max_action_risk"],
+            study["fixed_runbook_order"], rng, policy,
         )
         if choice is None:
             final_action, final_risk = action, action_risk
@@ -479,7 +481,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
         deck_entry = deck[choice]
         before = dict(distribution)
         before_risk = constrained_decision_risk(before, actions, policy["max_action_risk"])
-        predicted = probe_information(before, probe, actions, policy["max_action_risk"])
+        predicted = probe_information(before, probe, actions, policy)
         predicted_gain_values.append(predicted["evsi"])
 
         stale = deck_entry["age_seconds"] > probe["freshness_ttl_seconds"]
