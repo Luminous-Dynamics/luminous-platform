@@ -45,5 +45,6 @@
   "unmatched_candidate_scenario_ids": [
     "SCR-005"
   ],
-  "unmatched_baseline_scenario_ids": []
+  "unmatched_baseline_scenario_ids": [],
+  "pilot_started_at": "2026-10-31T13:00:00Z"
 }
