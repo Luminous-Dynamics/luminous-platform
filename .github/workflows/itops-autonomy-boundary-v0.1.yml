@@ -1,0 +1,27 @@
+name: ITOPS Autonomy Boundary v0.1
+on:
+  pull_request:
+    paths:
+      - "docs/ITOPS_AUTONOMY_BOUNDARY_BENCHMARK_V0_1.md"
+      - "benchmarks/itops-autonomy-boundary-v0.1/**"
+      - "tools/itops-autonomy-boundary-v0.1/**"
+      - ".github/workflows/itops-autonomy-boundary-v0.1.yml"
+  push:
+    branches:
+      - "research/itops-autonomy-boundary-v0.1-2026-10-31"
+    paths:
+      - "docs/ITOPS_AUTONOMY_BOUNDARY_BENCHMARK_V0_1.md"
+      - "benchmarks/itops-autonomy-boundary-v0.1/**"
+      - "tools/itops-autonomy-boundary-v0.1/**"
+      - ".github/workflows/itops-autonomy-boundary-v0.1.yml"
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate task/oracle separation and paired cases
+        run: python3 tools/itops-autonomy-boundary-v0.1/check_autonomy.py
+      - name: Run adversarial mutation tests
+        run: python3 -m unittest discover -s tools/itops-autonomy-boundary-v0.1 -p 'test_*.py' -v
