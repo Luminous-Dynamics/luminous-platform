@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-fault-controller-receipts-v0.1.json",
+  "title": "OpsBench independent fault-controller receipts v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "study_id",
+    "run_id",
+    "episode_id",
+    "service_id",
+    "fault_controller",
+    "phase_schedule_sha256",
+    "receipts"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-opsbench-fault-controller-receipts-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "example_only",
+        "captured"
+      ]
+    },
+    "study_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "episode_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "service_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fault_controller": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "trust_domain_id"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trust_domain_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "phase_schedule_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "receipts": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "phase_id",
+          "fault_id",
+          "started_at",
+          "ended_at",
+          "target_id",
+          "action",
+          "action_digest",
+          "disposition"
+        ],
+        "properties": {
+          "phase_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "fault_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ended_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "target_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "disposition": {
+            "const": "injected"
+          }
+        }
+      }
+    }
+  }
+}
