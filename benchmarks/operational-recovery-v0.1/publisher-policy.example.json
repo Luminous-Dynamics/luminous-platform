@@ -1,0 +1,133 @@
+{
+  "schema": "luminous-operational-evidence-publisher-policy-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "policy_id": "luminous-operational-evidence-publishers-example-v0.1",
+  "payload_type": "application/vnd.in-toto+json",
+  "statement_type": "https://in-toto.io/Statement/v1",
+  "predicate_type": "https://luminousdynamics.io/attestations/operational-recovery/v0.1",
+  "trusted_oidc_issuers": [
+    "https://token.actions.githubusercontent.com"
+  ],
+  "trusted_spiffe_trust_domains": [
+    "luminous.example"
+  ],
+  "verification_requirements": {
+    "require_signature": true,
+    "require_exact_identity": true,
+    "require_trusted_issuer": true,
+    "require_certificate_valid_at_signing_time": true,
+    "revocation_unavailable_result": "indeterminate",
+    "require_transparency_inclusion": true,
+    "require_transparency_checkpoint_consistency": true
+  },
+  "publishers": [
+    {
+      "source_id": "platform-coordinator",
+      "source_kind": "coordinator",
+      "trust_domain_id": "agent-runtime",
+      "identity_profile_id": "platform-coordinator-spiffe-v0",
+      "identity": {
+        "profile": "spiffe_x509_svid",
+        "spiffe_id": "spiffe://luminous.example/ns/platform/sa/coordinator",
+        "spiffe_trust_domain": "luminous.example",
+        "trust_bundle_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "allowed_event_types": [
+        "dispatch_intent_durable",
+        "transport_response_lost",
+        "coordinator_restarted",
+        "recovery_scan_completed",
+        "agent_declared_resolved"
+      ],
+      "transparency": {
+        "mode": "required",
+        "failure_action": "reject",
+        "log_policy_id": "operational-evidence-segment-log-v0"
+      }
+    },
+    {
+      "source_id": "authority-adapter",
+      "source_kind": "authority_adapter",
+      "trust_domain_id": "authorization-service",
+      "identity_profile_id": "authority-adapter-spiffe-v0",
+      "identity": {
+        "profile": "spiffe_x509_svid",
+        "spiffe_id": "spiffe://luminous.example/ns/identity/sa/authority-adapter",
+        "spiffe_trust_domain": "luminous.example",
+        "trust_bundle_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "allowed_event_types": [
+        "plan_authorized"
+      ],
+      "transparency": {
+        "mode": "required",
+        "failure_action": "reject",
+        "log_policy_id": "operational-evidence-segment-log-v0"
+      }
+    },
+    {
+      "source_id": "itsm-ledger",
+      "source_kind": "participant",
+      "trust_domain_id": "itsm-control-plane",
+      "identity_profile_id": "itsm-participant-spiffe-v0",
+      "identity": {
+        "profile": "spiffe_x509_svid",
+        "spiffe_id": "spiffe://luminous.example/ns/itsm/sa/participant",
+        "spiffe_trust_domain": "luminous.example",
+        "trust_bundle_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "allowed_event_types": [
+        "participant_accepted",
+        "effect_committed"
+      ],
+      "transparency": {
+        "mode": "required",
+        "failure_action": "reject",
+        "log_policy_id": "operational-evidence-segment-log-v0"
+      }
+    },
+    {
+      "source_id": "itsm-ledger",
+      "source_kind": "participant_ledger",
+      "trust_domain_id": "itsm-control-plane",
+      "identity_profile_id": "itsm-ledger-spiffe-v0",
+      "identity": {
+        "profile": "spiffe_x509_svid",
+        "spiffe_id": "spiffe://luminous.example/ns/itsm/sa/ledger",
+        "spiffe_trust_domain": "luminous.example",
+        "trust_bundle_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "allowed_event_types": [
+        "attempt_status_observed",
+        "effect_reconciled"
+      ],
+      "transparency": {
+        "mode": "required",
+        "failure_action": "reject",
+        "log_policy_id": "operational-evidence-segment-log-v0"
+      }
+    },
+    {
+      "source_id": "external-probe",
+      "source_kind": "independent_observer",
+      "trust_domain_id": "external-observation",
+      "identity_profile_id": "external-probe-spiffe-v0",
+      "identity": {
+        "profile": "spiffe_x509_svid",
+        "spiffe_id": "spiffe://luminous.example/ns/observability/sa/external-probe",
+        "spiffe_trust_domain": "luminous.example",
+        "trust_bundle_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "allowed_event_types": [
+        "step_postcondition_verified",
+        "service_outcome_verified"
+      ],
+      "transparency": {
+        "mode": "required",
+        "failure_action": "reject",
+        "log_policy_id": "operational-evidence-segment-log-v0"
+      }
+    }
+  ]
+}
