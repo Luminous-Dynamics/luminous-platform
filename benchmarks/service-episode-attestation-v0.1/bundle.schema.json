@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/service-episode-attestation-bundle-v0.1.json",
+  "title": "Luminous Service Episode Attestation Bundle v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "predicate_type",
+    "payload_type",
+    "episode_binding",
+    "required_roles",
+    "attestations",
+    "claim_ceiling",
+    "verifier_policy_version"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-service-episode-attestation-bundle-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "const": "synthetic_profile_not_normative_or_production_pki"
+    },
+    "predicate_type": {
+      "const": "https://luminousdynamics.io/attestations/service-episode/v0.1"
+    },
+    "payload_type": {
+      "const": "application/vnd.in-toto+json"
+    },
+    "episode_binding": {
+      "type": "object",
+      "required": [
+        "episode_id",
+        "tenant_commitment",
+        "plan_digest"
+      ],
+      "properties": {
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_commitment": {
+          "type": "string",
+          "pattern": "^(hmac-sha256|opaque):[A-Za-z0-9_-]{32,128}$"
+        },
+        "plan_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "required_roles": {
+      "const": [
+        "coordinator",
+        "participant",
+        "independent_observer",
+        "authority"
+      ]
+    },
+    "attestations": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "required": [
+          "payloadType",
+          "payload",
+          "signatures"
+        ],
+        "properties": {
+          "payloadType": {
+            "const": "application/vnd.in-toto+json"
+          },
+          "payload": {
+            "type": "string",
+            "contentEncoding": "base64",
+            "minLength": 8
+          },
+          "signatures": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 8,
+            "items": {
+              "type": "object",
+              "required": [
+                "sig"
+              ],
+              "properties": {
+                "sig": {
+                  "type": "string",
+                  "contentEncoding": "base64",
+                  "minLength": 8
+                },
+                "keyid": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "claim_ceiling": {
+      "enum": [
+        "E0",
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ]
+    },
+    "verifier_policy_version": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}
