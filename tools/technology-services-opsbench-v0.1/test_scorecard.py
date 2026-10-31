@@ -84,6 +84,21 @@ class Tests(unittest.TestCase):
         c=cost(ep()); c["binding"]["rate_card_digest"]="sha256:"+"g"*64
         with self.assertRaises(ScorecardError): validate_cost(c,1)
 
+    def test_per_arm_intervals_cluster_repeated_seeds_by_scenario(self):
+        rows=[
+            ep(eid="a1",scenario="A",outcome="task_completed"),
+            ep(eid="a2",scenario="A",outcome="task_completed",seed=2),
+            ep(eid="b1",scenario="B",outcome="task_not_completed",disposition="resolved"),
+        ]
+        a=score(rows)["arms"]["agent"]
+        self.assertEqual(a["scenario_count"],2)
+        self.assertAlmostEqual(a["success_rate"],2/3)
+        self.assertAlmostEqual(a["success_rate_scenario_weighted"],0.5)
+        self.assertIsNotNone(a["success_cluster_bootstrap_95"])
+        self.assertAlmostEqual(a["false_resolution_rate"],1/3)
+        self.assertAlmostEqual(a["false_resolution_scenario_weighted"],0.5)
+        self.assertIsNotNone(a["false_resolution_cluster_bootstrap_95"])
+
     def test_paired_comparison_uses_same_case_variant_seed(self):
         a=ep("human","h",outcome="task_not_completed",disposition="escalated"); b=ep("agent","a")
         x=paired([a],[b],samples=100); self.assertEqual(x["candidate_wins"],1); self.assertEqual(x["paired_success_rate_delta"],1)
