@@ -197,11 +197,21 @@ def paired(base,candidate,samples=5000,seed=20261031):
         return out
     a,b=index(base),index(candidate); common=sorted(set(a)&set(b))
     delta=[b[k]-a[k] for k in common]
-    result={"matched_trials":len(delta),"unmatched_baseline":len(set(a)-set(b)),"unmatched_candidate":len(set(b)-set(a)),
+    clusters=defaultdict(list)
+    for k in common:
+        clusters[k[0]].append(b[k]-a[k])
+    scenario_delta=[statistics.mean(clusters[s]) for s in sorted(clusters)]
+    result={"matched_trials":len(delta),"matched_scenarios":len(scenario_delta),
+            "unmatched_baseline":len(set(a)-set(b)),"unmatched_candidate":len(set(b)-set(a)),
             "candidate_wins":sum(x==1 for x in delta),"ties":sum(x==0 for x in delta),"candidate_losses":sum(x==-1 for x in delta),
-            "paired_success_rate_delta":statistics.mean(delta) if delta else None}
-    if delta:
-        rng=random.Random(seed); draws=[statistics.mean(rng.choices(delta,k=len(delta))) for _ in range(samples)]
+            "paired_trial_weighted_delta":statistics.mean(delta) if delta else None,
+            "paired_success_rate_delta":statistics.mean(scenario_delta) if scenario_delta else None,
+            "scenario_candidate_wins":sum(x>0 for x in scenario_delta),
+            "scenario_ties":sum(x==0 for x in scenario_delta),
+            "scenario_candidate_losses":sum(x<0 for x in scenario_delta),
+            "bootstrap_unit":"scenario_id"}
+    if scenario_delta:
+        rng=random.Random(seed); draws=[statistics.mean(rng.choices(scenario_delta,k=len(scenario_delta))) for _ in range(samples)]
         result.update({"bootstrap_95":[quantile(draws,.025),quantile(draws,.975)],"bootstrap_samples":samples,"bootstrap_seed":seed})
     else:
         result["bootstrap_95"]=None
