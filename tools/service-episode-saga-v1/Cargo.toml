@@ -1,0 +1,9 @@
+[package]
+name = "service-episode-saga"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Dependency-free reference state machine for Luminous cross-system service episodes"
+
+[lib]
+path = "src/lib.rs"
