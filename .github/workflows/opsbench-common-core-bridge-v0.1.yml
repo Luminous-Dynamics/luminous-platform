@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: opsbench-common-core-bridge-v0.1-\${{ github.event.pull_request.number || github.ref }}
+  group: opsbench-common-core-bridge-v0.1-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
