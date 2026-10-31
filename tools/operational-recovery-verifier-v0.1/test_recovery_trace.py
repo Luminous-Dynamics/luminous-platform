@@ -259,6 +259,22 @@ class RecoveryTraceTests(unittest.TestCase):
         m=manifest(); m["observers"][0]["trust_domain_id"]="itsm-control-plane"
         with self.assertRaises(TraceError): verify(m,[])
 
+    def test_never_accepted_ledger_result_cannot_contradict_participant_acceptance(self):
+        b=Builder(); a=b.auth(); d=b.dispatch(parents=(a["event_id"],))
+        accepted=b.accepted(parents=(d["event_id"],))
+        b.status(outcome="never_accepted",consistency="strong",authoritative=True,parents=(accepted["event_id"],))
+        r=verify(b.m,b.events)
+        self.assertTrue(any(x["code"]=="never_accepted_contradicts_acceptance" for x in r["violations"]))
+
+    def test_coordinator_restart_epoch_must_link_exact_previous_epoch_head(self):
+        b=Builder(); a=b.auth(); d=b.dispatch(parents=(a["event_id"],)); lost=b.lost(parents=(d["event_id"],))
+        b.add("restart","coordinator_restarted",parents=(d["event_id"],),epoch=1)
+        with self.assertRaises(TraceError): verify(b.m,b.events)
+
+    def test_observer_ids_must_be_unique_in_manifest(self):
+        m=manifest(); m["observers"].append({"source_id":"external-probe-2","observer_id":"probe-1","trust_domain_id":"other-observation","scope":["service"]})
+        with self.assertRaises(TraceError): verify(m,[])
+
     def test_checked_in_example_trace_is_valid_and_reports_all_provenance_digests(self):
         root = Path(__file__).resolve().parents[2]
         fixture_dir = root / "benchmarks" / "operational-recovery-v0.1"
