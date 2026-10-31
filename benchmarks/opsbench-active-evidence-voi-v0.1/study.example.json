@@ -389,7 +389,9 @@
     "max_privacy_penalty_units": 0.02,
     "max_human_seconds": 0.12,
     "max_probes": 5,
-    "random_seed": 20261031
+    "random_seed": 20261031,
+    "cost_loss_per_unit": 1,
+    "privacy_loss_per_unit": 1
   },
   "fixed_runbook_order": [
     "dependency-latency",
