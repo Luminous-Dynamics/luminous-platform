@@ -26,7 +26,7 @@
         "required":["claim_id","claim_type","statement","required","argument_id"],
         "properties":{
           "claim_id":{"type":"string","minLength":1},
-          "claim_type":{"enum":["top_level","authority","causal_integrity","publisher_authenticity","objective_outcome","service_slo","safety","study_integrity","economics","scope_integrity"]},
+          "claim_type":{"enum":["top_level","authority","causal_integrity","publisher_authenticity","objective_outcome","service_slo","safety","study_integrity","economics"]},
           "statement":{"type":"string","minLength":10},
           "required":{"type":"boolean"},
           "argument_id":{"type":"string","minLength":1}
