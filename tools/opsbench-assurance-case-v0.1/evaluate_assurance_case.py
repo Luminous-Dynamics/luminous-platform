@@ -95,7 +95,7 @@ def _unique_map(rows, key, where):
 def _validate_case(case: dict):
     required = {
         "schema", "version", "status", "case_id", "study_id", "run_id", "episode_id",
-        "arm_id", "attempt_id", "evaluated_at", "scope_sha256", "executor",
+        "arm_id", "attempt_id", "attempt_ids", "evaluated_at", "scope_sha256", "executor",
         "top_level_claim_id", "required_claim_types", "claims", "arguments",
         "evidence", "assumptions", "defeaters",
     }
@@ -105,6 +105,10 @@ def _validate_case(case: dict):
     for field in ("case_id", "study_id", "run_id", "episode_id", "arm_id"):
         require(isinstance(case.get(field), str) and case[field], f"case.{field}: non-empty string required")
     require(case["attempt_id"] is None or (isinstance(case["attempt_id"], str) and case["attempt_id"]), "case.attempt_id: string or null required")
+    attempt_ids = case["attempt_ids"]
+    require(isinstance(attempt_ids, list) and len(attempt_ids) == len(set(attempt_ids)) and all(isinstance(x, str) and x for x in attempt_ids), "case.attempt_ids: unique non-empty attempt IDs required")
+    if case["attempt_id"] is not None:
+        require(case["attempt_id"] in attempt_ids, "case.attempt_id must be included in attempt_ids")
     evaluated_at = _parse_time(case["evaluated_at"], "case.evaluated_at")
     _hex(case.get("scope_sha256"), 64, "case.scope_sha256")
 
@@ -198,7 +202,7 @@ def _validate_case(case: dict):
             require(expiry >= observed, f"evidence.{evidence_id}: validity ends before observation")
         require(item["attempt_id"] is None or (isinstance(item["attempt_id"], str) and item["attempt_id"]), f"evidence.{evidence_id}.attempt_id: string or null required")
         if item["attempt_id"] is not None:
-            require(item["attempt_id"] == case["attempt_id"], f"evidence.{evidence_id}: cross-attempt substitution")
+            require(item["attempt_id"] in case["attempt_ids"], f"evidence.{evidence_id}: attempt is not declared for this episode")
 
     for assumption_id, assumption in assumptions.items():
         exact = {"assumption_id", "statement", "owner", "scope_sha256", "status", "reviewed_at", "expires_at", "rationale"}
