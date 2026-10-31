@@ -128,7 +128,9 @@
           "mitigation",
           "evidence grounding",
           "explanation clarity"
-        ]
+        ],
+        "unit": "five-dimension judged assessment vector",
+        "success_rule": "Report localization, diagnosis, mitigation, evidence grounding and explanation clarity separately; do not infer executed repair or restoration"
       },
       "capabilities": [
         "incident localization",
