@@ -25,7 +25,9 @@
       "server_rejected_count": 0,
       "server_retry_attempt_count": 0,
       "business_checked_count": 600,
-      "business_correct_count": 600
+      "business_correct_count": 600,
+      "started_at": "2026-10-31T14:00:00Z",
+      "ended_at": "2026-10-31T14:01:00Z"
     },
     {
       "window_id": "window-nominal",
@@ -35,7 +37,9 @@
       "server_rejected_count": 0,
       "server_retry_attempt_count": 0,
       "business_checked_count": 5400,
-      "business_correct_count": 5400
+      "business_correct_count": 5400,
+      "started_at": "2026-10-31T14:00:00Z",
+      "ended_at": "2026-10-31T14:01:00Z"
     },
     {
       "window_id": "window-burst",
@@ -45,7 +49,9 @@
       "server_rejected_count": 0,
       "server_retry_attempt_count": 0,
       "business_checked_count": 900,
-      "business_correct_count": 900
+      "business_correct_count": 900,
+      "started_at": "2026-10-31T14:01:00Z",
+      "ended_at": "2026-10-31T14:02:00Z"
     },
     {
       "window_id": "window-burst",
@@ -55,7 +61,9 @@
       "server_rejected_count": 0,
       "server_retry_attempt_count": 0,
       "business_checked_count": 8100,
-      "business_correct_count": 8100
+      "business_correct_count": 8100,
+      "started_at": "2026-10-31T14:01:00Z",
+      "ended_at": "2026-10-31T14:02:00Z"
     },
     {
       "window_id": "window-dependency-degradation",
@@ -65,7 +73,9 @@
       "server_rejected_count": 0,
       "server_retry_attempt_count": 0,
       "business_checked_count": 570,
-      "business_correct_count": 569
+      "business_correct_count": 569,
+      "started_at": "2026-10-31T14:02:00Z",
+      "ended_at": "2026-10-31T14:03:00Z"
     },
     {
       "window_id": "window-dependency-degradation",
@@ -75,7 +85,9 @@
       "server_rejected_count": 0,
       "server_retry_attempt_count": 0,
       "business_checked_count": 5395,
-      "business_correct_count": 5395
+      "business_correct_count": 5395,
+      "started_at": "2026-10-31T14:02:00Z",
+      "ended_at": "2026-10-31T14:03:00Z"
     },
     {
       "window_id": "window-retry-pressure",
@@ -85,7 +97,9 @@
       "server_rejected_count": 0,
       "server_retry_attempt_count": 90,
       "business_checked_count": 594,
-      "business_correct_count": 593
+      "business_correct_count": 593,
+      "started_at": "2026-10-31T14:03:00Z",
+      "ended_at": "2026-10-31T14:04:00Z"
     },
     {
       "window_id": "window-retry-pressure",
@@ -95,7 +109,9 @@
       "server_rejected_count": 0,
       "server_retry_attempt_count": 320,
       "business_checked_count": 5380,
-      "business_correct_count": 5380
+      "business_correct_count": 5380,
+      "started_at": "2026-10-31T14:03:00Z",
+      "ended_at": "2026-10-31T14:04:00Z"
     },
     {
       "window_id": "window-recovery-hold",
@@ -105,7 +121,9 @@
       "server_rejected_count": 0,
       "server_retry_attempt_count": 0,
       "business_checked_count": 600,
-      "business_correct_count": 600
+      "business_correct_count": 600,
+      "started_at": "2026-10-31T14:04:00Z",
+      "ended_at": "2026-10-31T14:05:00Z"
     },
     {
       "window_id": "window-recovery-hold",
@@ -115,7 +133,9 @@
       "server_rejected_count": 0,
       "server_retry_attempt_count": 0,
       "business_checked_count": 5400,
-      "business_correct_count": 5400
+      "business_correct_count": 5400,
+      "started_at": "2026-10-31T14:04:00Z",
+      "ended_at": "2026-10-31T14:05:00Z"
     }
   ]
 }
