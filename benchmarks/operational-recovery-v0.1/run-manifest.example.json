@@ -1,0 +1,30 @@
+{
+  "authority": {"source_id":"authority-adapter","trust_domain_id":"authorization-service"},
+  "executor": {"source_id":"platform-coordinator","trust_domain_id":"agent-runtime"},
+  "observers": [{"observer_id":"probe-1","scope":["step-a","target-1","service"],"source_id":"external-probe","trust_domain_id":"external-observation"}],
+  "participants": [{"participant_kind":"mock-itsm","source_id":"itsm-ledger","trust_domain_id":"itsm-control-plane"}],
+  "required_steps": [{
+    "expected_postcondition_digest":"9999999999999999999999999999999999999999999999999999999999999999",
+    "idempotency_key_digest":"8888888888888888888888888888888888888888888888888888888888888888",
+    "operation_binding_digest":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "operation_id":"ticket.update",
+    "participant_source_id":"itsm-ledger",
+    "request_digest":"7777777777777777777777777777777777777777777777777777777777777777",
+    "step_id":"step-a",
+    "target_digest":"6666666666666666666666666666666666666666666666666666666666666666"
+  }],
+  "run_binding": {
+    "corpus_digest":"4444444444444444444444444444444444444444444444444444444444444444",
+    "episode_id":"episode-001",
+    "expected_service_digest":"2222222222222222222222222222222222222222222222222222222222222222",
+    "fault_matrix_digest":"6666666666666666666666666666666666666666666666666666666666666666",
+    "observer_manifest_digest":"7777777777777777777777777777777777777777777777777777777777777777",
+    "plan_digest":"1111111111111111111111111111111111111111111111111111111111111111",
+    "policy_digest":"3333333333333333333333333333333333333333333333333333333333333333",
+    "run_id":"run-001",
+    "scenario_variant_digest":"5555555555555555555555555555555555555555555555555555555555555555",
+    "source_commit_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "schema":"luminous-operational-recovery-run-v0.1",
+  "version":1
+}
