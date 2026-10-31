@@ -82,7 +82,7 @@ def _no_wildcards(value, where: str):
             _no_wildcards(item, f"{where}[{i}]")
 
 
-def _validate_identity(identity: dict, where: str):
+def _validate_identity(identity: dict, where: str, trusted_oidc_issuers: set[str], trusted_spiffe_domains: set[str]):
     _need(isinstance(identity, dict), f"{where}: expected identity object")
     _no_wildcards(identity, where)
     profile = identity.get("profile")
@@ -91,12 +91,14 @@ def _validate_identity(identity: dict, where: str):
         issuer, subject = identity["oidc_issuer"], identity["oidc_subject"]
         _need(isinstance(issuer, str) and issuer.startswith("https://"), f"{where}: HTTPS OIDC issuer required")
         _need(isinstance(subject, str) and len(subject) > 3, f"{where}: exact OIDC subject required")
+        _need(issuer in trusted_oidc_issuers, f"{where}: OIDC issuer is not in the pinned trust allowlist")
     elif profile == "spiffe_x509_svid":
         _need(set(identity) == {"profile", "spiffe_id", "spiffe_trust_domain", "trust_bundle_sha256"}, f"{where}: SPIFFE identity fields must be exact")
         spiffe_id, trust_domain = identity["spiffe_id"], identity["spiffe_trust_domain"]
         _need(isinstance(spiffe_id, str) and spiffe_id.startswith("spiffe://"), f"{where}: SPIFFE ID required")
         remainder = spiffe_id[len("spiffe://"):]
         _need("/" in remainder and remainder.split("/", 1)[0] == trust_domain, f"{where}: SPIFFE trust domain mismatch")
+        _need(trust_domain in trusted_spiffe_domains, f"{where}: SPIFFE trust domain is not in the pinned trust allowlist")
         _need(_is_hex(identity["trust_bundle_sha256"]), f"{where}: exact trust-bundle digest required")
     else:
         raise PolicyError(f"{where}: unsupported identity profile")
@@ -110,6 +112,12 @@ def _validate_policy(policy: dict) -> dict:
     _need(policy.get("payload_type") == PAYLOAD_TYPE, "policy: DSSE payload type mismatch")
     _need(policy.get("statement_type") == STATEMENT_TYPE, "policy: in-toto statement type mismatch")
     _need(policy.get("predicate_type") == PREDICATE_TYPE, "policy: predicate type mismatch")
+    trusted_oidc_issuers = policy.get("trusted_oidc_issuers")
+    trusted_spiffe_domains = policy.get("trusted_spiffe_trust_domains")
+    _need(isinstance(trusted_oidc_issuers, list) and trusted_oidc_issuers and len(trusted_oidc_issuers) == len(set(trusted_oidc_issuers)), "policy: exact trusted OIDC issuer allowlist required")
+    _need(isinstance(trusted_spiffe_domains, list) and trusted_spiffe_domains and len(trusted_spiffe_domains) == len(set(trusted_spiffe_domains)), "policy: exact SPIFFE trust-domain allowlist required")
+    _no_wildcards(trusted_oidc_issuers, "policy.trusted_oidc_issuers")
+    _no_wildcards(trusted_spiffe_domains, "policy.trusted_spiffe_trust_domains")
     requirements = policy.get("verification_requirements")
     expected_requirements = {
         "require_signature": True,
@@ -137,7 +145,7 @@ def _validate_policy(policy: dict) -> dict:
         key = (publisher["source_id"], publisher["source_kind"], publisher["trust_domain_id"])
         _need(key not in by_role, f"{where}: duplicate producer role mapping")
         by_role[key] = publisher
-        _validate_identity(publisher["identity"], where + ".identity")
+        _validate_identity(publisher["identity"], where + ".identity", set(trusted_oidc_issuers), set(trusted_spiffe_domains))
         identity_key = json.dumps(publisher["identity"], sort_keys=True, separators=(",", ":"))
         _need(identity_key not in identities, f"{where}: identity is reused across producer roles")
         identities.add(identity_key)
@@ -150,7 +158,7 @@ def _validate_policy(policy: dict) -> dict:
     return by_role
 
 
-def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segment_bytes: bytes) -> dict:
+def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segment_bytes: bytes, policy_bytes: bytes) -> dict:
     publisher_map = _validate_policy(policy)
     _need(isinstance(statement, dict), "statement: expected object")
     _need(statement.get("_type") == STATEMENT_TYPE, "statement: wrong in-toto Statement type")
@@ -169,6 +177,7 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
     predicate = statement.get("predicate")
     _need(isinstance(predicate, dict), "statement.predicate: expected object")
     _need(predicate.get("schema") == PREDICATE_SCHEMA and type(predicate.get("version")) is int and predicate["version"] == 1, "predicate: unsupported schema/version")
+    _need(predicate.get("publisher_policy_sha256") == _sha(policy_bytes), "predicate: publisher policy digest mismatch")
     _need(predicate.get("assertion_scope") == "producer_published_source_event_segment", "predicate: claim exceeds producer-segment scope")
     produced_at = predicate.get("produced_at")
     try:
@@ -235,6 +244,7 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
         "event_count": len(events),
         "manifest_sha256": _sha(manifest_bytes),
         "event_segment_sha256": _sha(segment_bytes),
+        "publisher_policy_sha256": _sha(policy_bytes),
         "cryptographic_signature_verification_performed": False,
         "transparency_inclusion_verification_performed": False,
         "causal_episode_semantics_verification_performed": False,
@@ -252,8 +262,9 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     try:
         statement = _load_bytes(args.statement.read_bytes(), str(args.statement))
-        policy = _load_bytes(args.policy.read_bytes(), str(args.policy))
-        report = check_attestation(statement, policy, args.manifest.read_bytes(), args.event_segment.read_bytes())
+        policy_bytes = args.policy.read_bytes()
+        policy = _load_bytes(policy_bytes, str(args.policy))
+        report = check_attestation(statement, policy, args.manifest.read_bytes(), args.event_segment.read_bytes(), policy_bytes)
         rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
         if args.output == "-":
             sys.stdout.write(rendered)
