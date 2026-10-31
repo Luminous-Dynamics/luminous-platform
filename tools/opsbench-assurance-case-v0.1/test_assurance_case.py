@@ -223,5 +223,19 @@ class OperationalAssuranceCaseTests(unittest.TestCase):
         self.assertEqual(report["unresolved_critical_defeaters"], ["def-economics-critical"])
 
 
+    def test_supported_required_premises_support_the_top_level_claim(self):
+        case, raw = fixtures()
+        report = evaluate(case, raw)
+        self.assertEqual(report["top_level_claim_status"], "supported")
+        self.assertEqual(report["computed_disposition"], "eligible_for_human_review")
+
+    def test_indeterminate_required_premise_propagates_to_top_level(self):
+        case, _ = fixtures()
+        evidence(case, "ev-outcome")["verification_status"] = "indeterminate"
+        report = evaluate(case, serialize(case))
+        self.assertEqual(report["claim_results"]["claim-outcome"]["status"], "indeterminate")
+        self.assertEqual(report["top_level_claim_status"], "indeterminate")
+
+
 if __name__ == "__main__":
     unittest.main()
