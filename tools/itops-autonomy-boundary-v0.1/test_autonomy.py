@@ -3,7 +3,7 @@ import copy
 import json
 import unittest
 
-from check_autonomy import validate, validate_result
+from check_autonomy import validate, validate_result, verify_manifest_commit_pin
 
 ROOT = Path(__file__).resolve().parents[2]
 TASKS = json.loads((ROOT / "benchmarks/itops-autonomy-boundary-v0.1/task-manifest.json").read_text())
@@ -181,6 +181,12 @@ class AutonomyBoundaryTests(unittest.TestCase):
         result = validate_result(RESULT_EXAMPLE, RESULT_SCHEMA)
         self.assertEqual(result["result_layers"], 4)
         self.assertEqual(result["run_binding_fields"], 15)
+
+    def test_manifest_pin_must_resolve_to_exact_git_object(self):
+        changed = copy.deepcopy(ORACLE)
+        changed["task_manifest_commit"] = "0" * 40
+        with self.assertRaises(ValueError):
+            verify_manifest_commit_pin(changed)
 
     def test_agent_cannot_be_participant_effect_oracle(self):
         changed = copy.deepcopy(RESULT_EXAMPLE)
