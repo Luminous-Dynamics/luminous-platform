@@ -1,0 +1,70 @@
+name: OpsBench operational assurance case v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/opsbench-assurance-case-v0.1/**"
+      - "tools/opsbench-assurance-case-v0.1/**"
+      - "docs/OPSBENCH_OPERATIONAL_ASSURANCE_CASE_V0_1.md"
+      - ".github/workflows/opsbench-assurance-case-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/opsbench-assurance-case-v0.1/**"
+      - "tools/opsbench-assurance-case-v0.1/**"
+      - ".github/workflows/opsbench-assurance-case-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opsbench-assurance-case-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  assurance-case:
+    name: Cross-layer assurance case validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Compile assurance evaluator and mutation suite
+        run: python3 -m py_compile tools/opsbench-assurance-case-v0.1/evaluate_assurance_case.py tools/opsbench-assurance-case-v0.1/test_assurance_case.py
+      - name: Install pinned JSON Schema validator
+        run: python3 -m pip install --disable-pip-version-check --no-input jsonschema==4.26.0
+      - name: Validate assurance case fixture against Draft 2020-12
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator, FormatChecker
+          root = Path("benchmarks/opsbench-assurance-case-v0.1")
+          schema = json.loads((root / "assurance-case.schema.json").read_text())
+          instance = json.loads((root / "assurance-case.example.json").read_text())
+          Draft202012Validator.check_schema(schema)
+          Draft202012Validator(schema, format_checker=FormatChecker()).validate(instance)
+          PY
+      - name: Evaluate structured assurance case
+        run: |
+          python3 tools/opsbench-assurance-case-v0.1/evaluate_assurance_case.py \
+            --case benchmarks/opsbench-assurance-case-v0.1/assurance-case.example.json \
+            --output assurance-report.json
+      - name: Validate generated report against Draft 2020-12
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator, FormatChecker
+          root = Path("benchmarks/opsbench-assurance-case-v0.1")
+          schema = json.loads((root / "assurance-report.schema.json").read_text())
+          instance = json.loads(Path("assurance-report.json").read_text())
+          Draft202012Validator.check_schema(schema)
+          Draft202012Validator(schema, format_checker=FormatChecker()).validate(instance)
+          PY
+      - name: Run non-compensatory claim, assumption and defeater mutations
+        run: python3 -m unittest discover -s tools/opsbench-assurance-case-v0.1 -p 'test_assurance_case.py' -v
+      - name: Preserve example-only assurance report
+        run: cat assurance-report.json

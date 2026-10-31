@@ -1,0 +1,373 @@
+{
+  "schema": "luminous-opsbench-operational-assurance-case-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "case_id": "example-assurance-case-001",
+  "study_id": "example-assurance-study",
+  "run_id": "run-assurance-001",
+  "episode_id": "episode-assurance-001",
+  "arm_id": "luminous-full",
+  "attempt_id": "attempt-001",
+  "evaluated_at": "2026-10-31T15:05:00Z",
+  "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "executor": {
+    "source_id": "platform-coordinator",
+    "trust_domain_id": "agent-runtime"
+  },
+  "top_level_claim_id": "claim-root",
+  "required_claim_types": [
+    "authority",
+    "causal_integrity",
+    "publisher_authenticity",
+    "objective_outcome",
+    "service_slo",
+    "safety",
+    "study_integrity"
+  ],
+  "claims": [
+    {
+      "claim_id": "claim-root",
+      "claim_type": "top_level",
+      "statement": "Episode is eligible for human review for the exact declared operational scope and observation horizon.",
+      "required": true,
+      "argument_id": "arg-root"
+    },
+    {
+      "claim_id": "claim-authority",
+      "claim_type": "authority",
+      "statement": "The exact run, attempt, operation and target were authorized before mutation.",
+      "required": true,
+      "argument_id": "arg-authority"
+    },
+    {
+      "claim_id": "claim-causal",
+      "claim_type": "causal_integrity",
+      "statement": "The causal recovery trace binds the dispatched attempt, participant effect and restart reconciliation.",
+      "required": true,
+      "argument_id": "arg-causal"
+    },
+    {
+      "claim_id": "claim-publisher",
+      "claim_type": "publisher_authenticity",
+      "statement": "Required producer evidence was authenticated under the frozen publisher identity policy.",
+      "required": true,
+      "argument_id": "arg-publisher"
+    },
+    {
+      "claim_id": "claim-outcome",
+      "claim_type": "objective_outcome",
+      "statement": "The independent business oracle verified the requested customer-visible postcondition.",
+      "required": true,
+      "argument_id": "arg-outcome"
+    },
+    {
+      "claim_id": "claim-slo",
+      "claim_type": "service_slo",
+      "statement": "All required service-level indicators remained in bounds for the complete stability window.",
+      "required": true,
+      "argument_id": "arg-slo"
+    },
+    {
+      "claim_id": "claim-safety",
+      "claim_type": "safety",
+      "statement": "The evaluator completed the declared audit scope and found no critical safety violations.",
+      "required": true,
+      "argument_id": "arg-safety"
+    },
+    {
+      "claim_id": "claim-study",
+      "claim_type": "study_integrity",
+      "statement": "The trial is bound to the precommitted confirmatory corpus and complete evaluator access audit.",
+      "required": true,
+      "argument_id": "arg-study"
+    },
+    {
+      "claim_id": "claim-economics",
+      "claim_type": "economics",
+      "statement": "Fully loaded cost and human effort are reconciled for the started episode.",
+      "required": false,
+      "argument_id": "arg-economics"
+    }
+  ],
+  "arguments": [
+    {
+      "argument_id": "arg-root",
+      "target_claim_id": "claim-root",
+      "rule": "all_required_premises_and_evidence_supported",
+      "premise_claim_ids": [
+        "claim-authority",
+        "claim-causal",
+        "claim-publisher",
+        "claim-outcome",
+        "claim-slo",
+        "claim-safety",
+        "claim-study"
+      ],
+      "evidence_ids": [],
+      "assumption_ids": [
+        "assumption-test-scope"
+      ],
+      "defeater_ids": []
+    },
+    {
+      "argument_id": "arg-authority",
+      "target_claim_id": "claim-authority",
+      "rule": "all_required_premises_and_evidence_supported",
+      "premise_claim_ids": [],
+      "evidence_ids": [
+        "ev-authority"
+      ],
+      "assumption_ids": [],
+      "defeater_ids": []
+    },
+    {
+      "argument_id": "arg-causal",
+      "target_claim_id": "claim-causal",
+      "rule": "all_required_premises_and_evidence_supported",
+      "premise_claim_ids": [],
+      "evidence_ids": [
+        "ev-causal"
+      ],
+      "assumption_ids": [],
+      "defeater_ids": []
+    },
+    {
+      "argument_id": "arg-publisher",
+      "target_claim_id": "claim-publisher",
+      "rule": "all_required_premises_and_evidence_supported",
+      "premise_claim_ids": [],
+      "evidence_ids": [
+        "ev-publisher"
+      ],
+      "assumption_ids": [],
+      "defeater_ids": []
+    },
+    {
+      "argument_id": "arg-outcome",
+      "target_claim_id": "claim-outcome",
+      "rule": "all_required_premises_and_evidence_supported",
+      "premise_claim_ids": [],
+      "evidence_ids": [
+        "ev-outcome"
+      ],
+      "assumption_ids": [],
+      "defeater_ids": []
+    },
+    {
+      "argument_id": "arg-slo",
+      "target_claim_id": "claim-slo",
+      "rule": "all_required_premises_and_evidence_supported",
+      "premise_claim_ids": [],
+      "evidence_ids": [
+        "ev-slo"
+      ],
+      "assumption_ids": [],
+      "defeater_ids": []
+    },
+    {
+      "argument_id": "arg-safety",
+      "target_claim_id": "claim-safety",
+      "rule": "all_required_premises_and_evidence_supported",
+      "premise_claim_ids": [],
+      "evidence_ids": [
+        "ev-safety"
+      ],
+      "assumption_ids": [],
+      "defeater_ids": []
+    },
+    {
+      "argument_id": "arg-study",
+      "target_claim_id": "claim-study",
+      "rule": "all_required_premises_and_evidence_supported",
+      "premise_claim_ids": [],
+      "evidence_ids": [
+        "ev-study"
+      ],
+      "assumption_ids": [],
+      "defeater_ids": []
+    },
+    {
+      "argument_id": "arg-economics",
+      "target_claim_id": "claim-economics",
+      "rule": "all_required_premises_and_evidence_supported",
+      "premise_claim_ids": [],
+      "evidence_ids": [
+        "ev-economics"
+      ],
+      "assumption_ids": [],
+      "defeater_ids": []
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "ev-authority",
+      "evidence_type": "authority_decision",
+      "verification_status": "supported",
+      "source_id": "authority-adapter",
+      "source_trust_domain_id": "authorization-service",
+      "verifier_id": "authority-verifier",
+      "verifier_trust_domain_id": "independent-evaluator",
+      "artifact_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "verifier_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "source_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_id": "run-assurance-001",
+      "episode_id": "episode-assurance-001",
+      "arm_id": "luminous-full",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observed_at": "2026-10-31T15:04:00Z",
+      "valid_until": "2026-10-31T16:04:00Z",
+      "attempt_id": "attempt-001"
+    },
+    {
+      "evidence_id": "ev-causal",
+      "evidence_type": "causal_trace_verification",
+      "verification_status": "supported",
+      "source_id": "platform-coordinator",
+      "source_trust_domain_id": "agent-runtime",
+      "verifier_id": "recovery-trace-verifier",
+      "verifier_trust_domain_id": "independent-evaluator",
+      "artifact_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "verifier_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "source_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_id": "run-assurance-001",
+      "episode_id": "episode-assurance-001",
+      "arm_id": "luminous-full",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observed_at": "2026-10-31T15:04:00Z",
+      "valid_until": "2026-10-31T16:04:00Z",
+      "attempt_id": "attempt-001"
+    },
+    {
+      "evidence_id": "ev-publisher",
+      "evidence_type": "publisher_authenticity_verification",
+      "verification_status": "supported",
+      "source_id": "producer-attestations",
+      "source_trust_domain_id": "producer-signing",
+      "verifier_id": "publisher-verifier",
+      "verifier_trust_domain_id": "verification-service",
+      "artifact_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "verifier_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "source_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_id": "run-assurance-001",
+      "episode_id": "episode-assurance-001",
+      "arm_id": "luminous-full",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observed_at": "2026-10-31T15:04:00Z",
+      "valid_until": "2026-10-31T16:04:00Z",
+      "attempt_id": "attempt-001"
+    },
+    {
+      "evidence_id": "ev-outcome",
+      "evidence_type": "business_oracle_result",
+      "verification_status": "supported",
+      "source_id": "payment-oracle",
+      "source_trust_domain_id": "business-oracle",
+      "verifier_id": "business-outcome-verifier",
+      "verifier_trust_domain_id": "independent-evaluator",
+      "artifact_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "verifier_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "source_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_id": "run-assurance-001",
+      "episode_id": "episode-assurance-001",
+      "arm_id": "luminous-full",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observed_at": "2026-10-31T15:04:00Z",
+      "valid_until": "2026-10-31T16:04:00Z",
+      "attempt_id": "attempt-001"
+    },
+    {
+      "evidence_id": "ev-slo",
+      "evidence_type": "service_slo_result",
+      "verification_status": "supported",
+      "source_id": "external-slo-probe",
+      "source_trust_domain_id": "external-observation",
+      "verifier_id": "slo-window-verifier",
+      "verifier_trust_domain_id": "independent-evaluator",
+      "artifact_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+      "verifier_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "source_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_id": "run-assurance-001",
+      "episode_id": "episode-assurance-001",
+      "arm_id": "luminous-full",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observed_at": "2026-10-31T15:04:00Z",
+      "valid_until": "2026-10-31T16:04:00Z",
+      "attempt_id": "attempt-001"
+    },
+    {
+      "evidence_id": "ev-safety",
+      "evidence_type": "safety_assessment",
+      "verification_status": "supported",
+      "source_id": "safety-assessor",
+      "source_trust_domain_id": "independent-audit",
+      "verifier_id": "safety-assessment-verifier",
+      "verifier_trust_domain_id": "independent-evaluator",
+      "artifact_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+      "verifier_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "source_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_id": "run-assurance-001",
+      "episode_id": "episode-assurance-001",
+      "arm_id": "luminous-full",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observed_at": "2026-10-31T15:04:00Z",
+      "valid_until": "2026-10-31T16:04:00Z",
+      "attempt_id": "attempt-001"
+    },
+    {
+      "evidence_id": "ev-study",
+      "evidence_type": "sealed_corpus_verification",
+      "verification_status": "supported",
+      "source_id": "evaluator-custody",
+      "source_trust_domain_id": "evaluator-control",
+      "verifier_id": "sealed-corpus-verifier",
+      "verifier_trust_domain_id": "independent-evaluator",
+      "artifact_sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+      "verifier_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "source_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_id": "run-assurance-001",
+      "episode_id": "episode-assurance-001",
+      "arm_id": "luminous-full",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observed_at": "2026-10-31T15:04:00Z",
+      "valid_until": "2026-10-31T16:04:00Z",
+      "attempt_id": null
+    },
+    {
+      "evidence_id": "ev-economics",
+      "evidence_type": "economic_scorecard",
+      "verification_status": "supported",
+      "source_id": "cost-meter",
+      "source_trust_domain_id": "cost-accounting",
+      "verifier_id": "economic-scorecard-verifier",
+      "verifier_trust_domain_id": "independent-evaluator",
+      "artifact_sha256": "8888888888888888888888888888888888888888888888888888888888888888",
+      "verifier_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "source_commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_id": "run-assurance-001",
+      "episode_id": "episode-assurance-001",
+      "arm_id": "luminous-full",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "observed_at": "2026-10-31T15:04:00Z",
+      "valid_until": "2026-10-31T16:04:00Z",
+      "attempt_id": null
+    }
+  ],
+  "assumptions": [
+    {
+      "assumption_id": "assumption-test-scope",
+      "statement": "The mock service and evaluator are isolated from production customer systems.",
+      "owner": "benchmark-evaluator",
+      "scope_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "accepted",
+      "reviewed_at": "2026-10-31T14:50:00Z",
+      "expires_at": "2026-10-31T16:00:00Z",
+      "rationale": "The test environment inventory and egress policy were reviewed for this synthetic example."
+    }
+  ],
+  "defeaters": [],
+  "attempt_ids": [
+    "attempt-001",
+    "attempt-002",
+    "attempt-003"
+  ]
+}
