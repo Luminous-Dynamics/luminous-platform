@@ -1,0 +1,60 @@
+{
+  "schema": "luminous-opsbench-workload-phase-schedule-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "study_id": "example-workload-fidelity-not-registered",
+  "profile_id": "payments-api-mixed-workload-v1",
+  "window_seconds": 60,
+  "phases": [
+    {
+      "phase_id": "nominal",
+      "kind": "nominal",
+      "started_at": "2026-10-31T14:00:00Z",
+      "ended_at": "2026-10-31T14:01:00Z",
+      "rate_multiplier_min": 0.95,
+      "rate_multiplier_max": 1.05,
+      "fault_id": null,
+      "fault_action_sha256": null
+    },
+    {
+      "phase_id": "burst",
+      "kind": "burst",
+      "started_at": "2026-10-31T14:01:00Z",
+      "ended_at": "2026-10-31T14:02:00Z",
+      "rate_multiplier_min": 1.45,
+      "rate_multiplier_max": 1.55,
+      "fault_id": null,
+      "fault_action_sha256": null
+    },
+    {
+      "phase_id": "dependency-degradation",
+      "kind": "dependency_degradation",
+      "started_at": "2026-10-31T14:02:00Z",
+      "ended_at": "2026-10-31T14:03:00Z",
+      "rate_multiplier_min": 0.95,
+      "rate_multiplier_max": 1.05,
+      "fault_id": "dependency-latency-pulse-01",
+      "fault_action_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "phase_id": "retry-pressure",
+      "kind": "retry_pressure",
+      "started_at": "2026-10-31T14:03:00Z",
+      "ended_at": "2026-10-31T14:04:00Z",
+      "rate_multiplier_min": 0.95,
+      "rate_multiplier_max": 1.05,
+      "fault_id": "bounded-retry-pressure-01",
+      "fault_action_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "phase_id": "recovery-hold",
+      "kind": "recovery_hold",
+      "started_at": "2026-10-31T14:04:00Z",
+      "ended_at": "2026-10-31T14:05:00Z",
+      "rate_multiplier_min": 0.95,
+      "rate_multiplier_max": 1.05,
+      "fault_id": null,
+      "fault_action_sha256": null
+    }
+  ]
+}

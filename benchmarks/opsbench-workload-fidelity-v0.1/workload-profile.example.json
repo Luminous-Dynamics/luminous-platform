@@ -1,0 +1,44 @@
+{
+  "schema": "luminous-opsbench-workload-profile-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "profile_id": "payments-api-mixed-workload-v1",
+  "study_id": "example-workload-fidelity-not-registered",
+  "window_seconds": 60,
+  "request_classes": [
+    {
+      "class_id": "critical-payment",
+      "critical": true,
+      "min_weight": 0.08,
+      "max_weight": 0.12,
+      "target_offered_rps": 10,
+      "min_success_ratio": 0.999,
+      "min_business_correctness_ratio": 0.999,
+      "min_business_check_count": 500,
+      "min_ingress_ratio": 0.999,
+      "max_p95_latency_seconds": 0.2,
+      "max_server_retry_attempts_per_100_offered": 5,
+      "payload_profile_id": "payment-command-v1",
+      "min_concurrency": 10,
+      "max_concurrency": 40,
+      "client_timeout_ms": 750
+    },
+    {
+      "class_id": "routine-read",
+      "critical": false,
+      "min_weight": 0.88,
+      "max_weight": 0.92,
+      "target_offered_rps": 90,
+      "min_success_ratio": 0.99,
+      "min_business_correctness_ratio": 0.99,
+      "min_business_check_count": 4000,
+      "min_ingress_ratio": 0.99,
+      "max_p95_latency_seconds": 0.5,
+      "max_server_retry_attempts_per_100_offered": 5,
+      "payload_profile_id": "read-response-v1",
+      "min_concurrency": 90,
+      "max_concurrency": 360,
+      "client_timeout_ms": 1500
+    }
+  ]
+}
