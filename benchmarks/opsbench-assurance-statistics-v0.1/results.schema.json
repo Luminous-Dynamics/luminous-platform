@@ -3,7 +3,7 @@
   "$id":"https://luminousdynamics.io/schemas/opsbench-assurance-results-v0.1.json",
   "title":"OpsBench assurance statistics input v0.1",
   "type":"object","additionalProperties":false,
-  "required":["schema","version","status","study_id","trial_started_at","preregistration_sha256","source_pins","arms","baseline_arm_id","candidate_arm_ids","scenario_ids","analysis","trials"],
+  "required":["schema","version","status","study_id","trial_started_at","preregistration_sha256","source_pins","arms","baseline_arm_id","candidate_arm_ids","scenario_ids","scenario_families","analysis","trials"],
   "properties":{
     "schema":{"const":"luminous-opsbench-assurance-results-v0.1"},
     "version":{"const":1},
@@ -42,6 +42,7 @@
     "baseline_arm_id":{"type":"string","minLength":1},
     "candidate_arm_ids":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
     "scenario_ids":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+    "scenario_families":{"type":"object","minProperties":1,"additionalProperties":{"type":"string","minLength":1}},
     "analysis":{
       "type":"object","additionalProperties":false,
       "required":["bootstrap_replicates","bootstrap_seed","confidence_level","safety_confidence_level"],
