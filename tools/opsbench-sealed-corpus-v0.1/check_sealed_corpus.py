@@ -243,7 +243,7 @@ def check_access_audit(audit: dict, policy: dict) -> dict:
     coverage_complete = audit.get("status") in {"example_only", "complete"} and all(coverage.values()) and unknown_events == 0
     if violations:
         status = "fail"
-    elif not coverage_complete:
+    elif not coverage_complete or blocked_attempts:
         status = "indeterminate"
     else:
         status = "pass"
