@@ -70,9 +70,9 @@ class SealedCorpusTests(unittest.TestCase):
             check_corpus_commitment(manifest, raw, registration, salt, prereg_bytes)
 
     def test_salt_must_have_at_least_256_bits(self):
-        manifest, raw, registration, _salt, _audit, _policy = fixtures()
+        manifest, raw, registration, _salt, prereg_bytes, _audit, _policy = fixtures()
         with self.assertRaisesRegex(ContractError, "minimum 32 bytes"):
-            check_corpus_commitment(manifest, raw, registration, b"tiny")
+            check_corpus_commitment(manifest, raw, registration, b"tiny", prereg_bytes)
 
     def test_duplicate_scenario_variant_rejected(self):
         manifest, _raw, registration, salt, prereg_bytes, _audit, _policy = fixtures()
