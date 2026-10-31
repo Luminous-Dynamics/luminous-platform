@@ -123,6 +123,8 @@ def _histogram_quantile(histogram, quantile: float, expected_count: int, where: 
 
 
 def _validate_contract(contract: dict):
+    expected_fields = {"schema", "version", "status", "study_id", "episode_id", "run_id", "service_id", "service_digest", "executor", "observer", "business_oracle", "baseline_reference", "timeline", "required_slis"}
+    require(set(contract) == expected_fields, "contract: unexpected or missing top-level fields")
     require(contract.get("schema") == "luminous-opsbench-service-objective-contract-v0.1" and type(contract.get("version")) is int and contract["version"] == 1, "contract: unsupported schema/version")
     require(contract.get("status") in {"example_only", "preregistered"}, "contract: invalid status")
     for field in ("study_id", "episode_id", "run_id", "service_id"):
@@ -166,7 +168,7 @@ def _validate_contract(contract: dict):
     require(type(hold_count) is int and 2 <= hold_count <= 1000, "timeline.hold_window_count outside supported bounds")
     for field in ("minimum_request_count", "minimum_synthetic_probe_count", "minimum_business_check_count"):
         require(type(timeline[field]) is int and timeline[field] >= 1, f"timeline.{field} must be a positive integer")
-    require(timeline["maximum_gap_seconds"] == 0, "v0.1 requires zero permitted observation gap")
+    require(type(timeline["maximum_gap_seconds"]) is int and timeline["maximum_gap_seconds"] == 0, "v0.1 requires zero permitted observation gap")
     duration = (eval_end - eval_start).total_seconds()
     require(duration % window_seconds == 0, "evaluation duration must be an integer number of windows")
     expected_window_count = int(duration // window_seconds)
@@ -309,8 +311,12 @@ def _evaluate_window(window: dict, contract: dict, validated: dict, index: int) 
 
 def evaluate(contract: dict, contract_bytes: bytes, observations: dict, observation_bytes: bytes) -> dict:
     validated = _validate_contract(contract)
+    expected_observation_fields = {"schema", "version", "status", "contract_sha256", "study_id", "episode_id", "run_id", "windows"}
+    require(set(observations) == expected_observation_fields, "observations: unexpected or missing top-level fields")
     require(observations.get("schema") == "luminous-opsbench-service-observation-windows-v0.1" and type(observations.get("version")) is int and observations["version"] == 1, "observations: unsupported schema/version")
     require(observations.get("status") in {"example_only", "captured"}, "observations: invalid status")
+    expected_observation_status = "example_only" if contract["status"] == "example_only" else "captured"
+    require(observations["status"] == expected_observation_status, "observations: status does not match frozen contract lifecycle")
     for field in ("study_id", "episode_id", "run_id"):
         require(observations.get(field) == contract.get(field), f"observations.{field}: does not match contract")
     contract_digest = sha256(contract_bytes)
