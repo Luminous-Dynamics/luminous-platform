@@ -279,7 +279,8 @@ def evaluate(case: dict, case_bytes: bytes) -> dict:
             if any(status == "indeterminate" for status in statuses):
                 reasons.append("one or more evidence verifiers returned indeterminate")
         else:
-            result = "supported" if evidence_rows or claim["claim_type"] == "top_level" else "indeterminate"
+            has_premises = bool(argument["premise_claim_ids"])
+            result = "supported" if evidence_rows or has_premises else "indeterminate"
             if result == "indeterminate":
                 reasons.append("no supporting evidence or premises")
 
