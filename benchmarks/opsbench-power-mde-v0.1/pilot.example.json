@@ -1,0 +1,50 @@
+{
+  "schema": "luminous-opsbench-power-pilot-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "study_id": "example-common-core-study-not-registered",
+  "preregistration_sha256": "2367a0a7527438e82c5d415e1e946c1b8945732f8971e5c830e0e2c012ab8f5d",
+  "pilot_artifact_id": "synthetic-screening-pilot-only",
+  "pilot_split": "screening",
+  "baseline_arm_id": "deterministic",
+  "candidate_arm_id": "luminous-full",
+  "screening_scenario_ids": [
+    "SCR-001",
+    "SCR-002",
+    "SCR-003",
+    "SCR-004",
+    "SCR-005"
+  ],
+  "scenario_cluster_effects": [
+    {
+      "scenario_id": "SCR-001",
+      "paired_difference": 0.2
+    },
+    {
+      "scenario_id": "SCR-002",
+      "paired_difference": 0
+    },
+    {
+      "scenario_id": "SCR-003",
+      "paired_difference": 0.2
+    },
+    {
+      "scenario_id": "SCR-004",
+      "paired_difference": 0.4
+    }
+  ],
+  "analysis": {
+    "target_effect": 0.1,
+    "target_power": 0.8,
+    "familywise_alpha": 0.05,
+    "candidate_comparison_count": 2,
+    "simulation_replicates": 10000,
+    "simulation_seed": 20261031,
+    "safety_margin_fraction": 0.1
+  },
+  "unmatched_candidate_scenario_ids": [
+    "SCR-005"
+  ],
+  "unmatched_baseline_scenario_ids": [],
+  "pilot_started_at": "2026-10-31T13:00:00Z"
+}
