@@ -79,7 +79,7 @@ def check_corpus_commitment(manifest: dict, manifest_bytes: bytes, registration:
     require(manifest.get("schema") == "luminous-opsbench-sealed-corpus-manifest-v0.1" and type(manifest.get("version")) is int and manifest["version"] == 1, "manifest: unsupported schema/version")
     require(registration.get("schema") == "luminous-opsbench-sealed-corpus-registration-v0.1" and type(registration.get("version")) is int and registration["version"] == 1, "registration: unsupported schema/version")
     require(registration.get("commitment_scheme") == "sha256-domain-separated-secret-salt-v0.1", "registration: unsupported commitment scheme")
-    require(registration.get("commitment_domain") in (None, "luminous-opsbench-sealed-corpus-v0.1"), "registration: unexpected commitment domain")
+    require(registration.get("commitment_domain") == "luminous-opsbench-sealed-corpus-v0.1", "registration: exact commitment domain required")
     require(len(salt) >= 32, "salt: minimum 32 bytes required")
     require(manifest.get("study_id") == registration.get("study_id"), "manifest/registration study ID mismatch")
     require(manifest.get("preregistration_sha256") == registration.get("preregistration_sha256"), "manifest/registration preregistration digest mismatch")
@@ -104,9 +104,10 @@ def check_corpus_commitment(manifest: dict, manifest_bytes: bytes, registration:
     require(manifest_status in {"example_only", "sealed_before_trials", "revealed_after_study"}, "manifest: invalid status")
     require(registration_status in {"example_only", "sealed_before_trials", "revealed_after_study"}, "registration: invalid status")
     require(manifest_status == registration_status, "manifest/registration status mismatch")
+    preregistered_at = parse_time(preregistration.get("registered_at"), "preregistration.registered_at")
     registered_at = parse_time(registration.get("registered_at"), "registration.registered_at")
     first_trial_at = parse_time(registration.get("first_trial_at"), "registration.first_trial_at")
-    require(registered_at < first_trial_at, "registration must precede first scored trial")
+    require(preregistered_at <= registered_at < first_trial_at, "preregistration and corpus commitment must both precede first scored trial")
     if registration_status == "revealed_after_study":
         revealed_at = parse_time(registration.get("revealed_at"), "registration.revealed_at")
         require(revealed_at >= first_trial_at, "post-study reveal timestamp precedes first trial")
@@ -172,7 +173,9 @@ def check_corpus_commitment(manifest: dict, manifest_bytes: bytes, registration:
 
 def check_access_audit(audit: dict, policy: dict) -> dict:
     require(audit.get("schema") == "luminous-opsbench-evaluator-access-audit-v0.1" and type(audit.get("version")) is int and audit["version"] == 1, "audit: unsupported schema/version")
+    require(audit.get("status") in {"example_only", "complete", "incomplete"}, "audit: invalid status")
     require(policy.get("schema") == "luminous-opsbench-evaluator-access-policy-v0.1" and type(policy.get("version")) is int and policy["version"] == 1, "access policy: unsupported schema/version")
+    require(policy.get("status") in {"example_only", "research_policy"}, "access policy: invalid status")
     require(isinstance(policy.get("policy_id"), str) and policy["policy_id"], "access policy.policy_id required")
     forbidden = policy.get("sut_forbidden_resource_classes")
     allowed = policy.get("sut_allowed_resource_classes")
