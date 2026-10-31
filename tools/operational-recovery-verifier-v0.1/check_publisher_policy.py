@@ -106,6 +106,7 @@ def _validate_identity(identity: dict, where: str, trusted_oidc_issuers: set[str
 
 def _validate_policy(policy: dict) -> dict:
     _need(isinstance(policy, dict), "policy: expected object")
+    _need(set(policy) == {"schema", "version", "status", "policy_id", "payload_type", "statement_type", "predicate_type", "trusted_oidc_issuers", "trusted_spiffe_trust_domains", "verification_requirements", "publishers"}, "policy: unexpected or missing top-level fields")
     _need(policy.get("schema") == POLICY_SCHEMA and type(policy.get("version")) is int and policy["version"] == 1, "policy: unsupported schema/version")
     _need(policy.get("status") in {"example_only", "research_policy"}, "policy: invalid status")
     _need(isinstance(policy.get("policy_id"), str) and policy["policy_id"], "policy: policy_id required")
@@ -114,7 +115,8 @@ def _validate_policy(policy: dict) -> dict:
     _need(policy.get("predicate_type") == PREDICATE_TYPE, "policy: predicate type mismatch")
     trusted_oidc_issuers = policy.get("trusted_oidc_issuers")
     trusted_spiffe_domains = policy.get("trusted_spiffe_trust_domains")
-    _need(isinstance(trusted_oidc_issuers, list) and trusted_oidc_issuers and len(trusted_oidc_issuers) == len(set(trusted_oidc_issuers)), "policy: exact trusted OIDC issuer allowlist required")
+    _need(isinstance(trusted_oidc_issuers, list) and len(trusted_oidc_issuers) == len(set(trusted_oidc_issuers)), "policy: exact trusted OIDC issuer allowlist required")
+    _need(all(isinstance(x, str) and x.startswith("https://") for x in trusted_oidc_issuers), "policy: trusted OIDC issuers must be exact HTTPS identities")
     _need(isinstance(trusted_spiffe_domains, list) and trusted_spiffe_domains and len(trusted_spiffe_domains) == len(set(trusted_spiffe_domains)), "policy: exact SPIFFE trust-domain allowlist required")
     _no_wildcards(trusted_oidc_issuers, "policy.trusted_oidc_issuers")
     _no_wildcards(trusted_spiffe_domains, "policy.trusted_spiffe_trust_domains")
@@ -151,7 +153,7 @@ def _validate_policy(policy: dict) -> dict:
         identities.add(identity_key)
         allowed = publisher["allowed_event_types"]
         _need(isinstance(allowed, list) and allowed and len(allowed) == len(set(allowed)), f"{where}: unique allowed event types required")
-        _need(all(isinstance(x, str) and x for x in allowed), f"{where}: invalid allowed event type")
+        _need(all(isinstance(x, str) and x in EVENT_TYPES for x in allowed), f"{where}: unsupported event type for operational recovery evidence")
         transparency = publisher["transparency"]
         _need(isinstance(transparency, dict) and transparency.get("mode") == "required" and transparency.get("failure_action") == "reject", f"{where}: transparency inclusion must fail closed")
         _need(isinstance(transparency.get("log_policy_id"), str) and transparency["log_policy_id"], f"{where}: log policy id required")
@@ -161,6 +163,7 @@ def _validate_policy(policy: dict) -> dict:
 def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segment_bytes: bytes, policy_bytes: bytes) -> dict:
     publisher_map = _validate_policy(policy)
     _need(isinstance(statement, dict), "statement: expected object")
+    _need(set(statement) == {"_type", "subject", "predicateType", "predicate"}, "statement: unexpected or missing top-level fields")
     _need(statement.get("_type") == STATEMENT_TYPE, "statement: wrong in-toto Statement type")
     _need(statement.get("predicateType") == PREDICATE_TYPE, "statement: wrong predicate type")
     subjects = statement.get("subject")
@@ -176,6 +179,7 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
 
     predicate = statement.get("predicate")
     _need(isinstance(predicate, dict), "statement.predicate: expected object")
+    _need(set(predicate) == {"schema", "version", "assertion_scope", "produced_at", "publisher_policy_sha256", "run_binding", "artifact_binding", "producer", "source_segment"}, "predicate: unexpected or missing fields")
     _need(predicate.get("schema") == PREDICATE_SCHEMA and type(predicate.get("version")) is int and predicate["version"] == 1, "predicate: unsupported schema/version")
     _need(predicate.get("publisher_policy_sha256") == _sha(policy_bytes), "predicate: publisher policy digest mismatch")
     _need(predicate.get("assertion_scope") == "producer_published_source_event_segment", "predicate: claim exceeds producer-segment scope")
@@ -186,7 +190,9 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
         raise PolicyError("predicate.produced_at: invalid timestamp") from exc
     _need(parsed_time.tzinfo is not None, "predicate.produced_at: timezone required")
 
-    manifest_name = predicate.get("artifact_binding", {}).get("manifest_subject_name")
+    artifact_binding = predicate.get("artifact_binding")
+    _need(isinstance(artifact_binding, dict) and set(artifact_binding) == {"manifest_subject_name", "event_segment_subject_name"}, "predicate.artifact_binding: exact fields required")
+    manifest_name = artifact_binding.get("manifest_subject_name")
     segment_name = predicate.get("artifact_binding", {}).get("event_segment_subject_name")
     _need(manifest_name in subject_map and segment_name in subject_map and manifest_name != segment_name, "predicate: subject names do not bind manifest and event segment")
     _need(subject_map[manifest_name] == _sha(manifest_bytes), "statement: raw manifest subject digest mismatch")
@@ -194,13 +200,13 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
 
     manifest = _load_bytes(manifest_bytes, "manifest")
     run_binding = predicate.get("run_binding")
-    _need(isinstance(run_binding, dict), "predicate.run_binding: expected object")
+    _need(isinstance(run_binding, dict) and set(run_binding) == {"run_id", "episode_id", "plan_digest", "source_commit_sha"}, "predicate.run_binding: exact fields required")
     frozen = manifest.get("run_binding", {})
     for key in ("run_id", "episode_id", "plan_digest", "source_commit_sha"):
         _need(run_binding.get(key) == frozen.get(key), f"predicate.run_binding.{key}: does not match frozen manifest")
 
     producer = predicate.get("producer")
-    _need(isinstance(producer, dict), "predicate.producer: expected object")
+    _need(isinstance(producer, dict) and set(producer) == {"source_id", "source_kind", "trust_domain_id", "identity_profile_id"}, "predicate.producer: exact fields required")
     role = (producer.get("source_id"), producer.get("source_kind"), producer.get("trust_domain_id"))
     _need(role in publisher_map, "publisher policy: no exact identity is authorized for this producer role")
     publisher = publisher_map[role]
@@ -213,14 +219,21 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
     source_kind = producer["source_kind"]
     trust_domain = producer["trust_domain_id"]
     stream = predicate.get("source_segment")
-    _need(isinstance(stream, dict), "predicate.source_segment: expected object")
+    _need(isinstance(stream, dict) and set(stream) == {"source_epoch", "first_sequence", "last_sequence", "event_count", "first_event_digest", "last_event_digest"}, "predicate.source_segment: exact fields required")
     epoch = stream.get("source_epoch")
     _need(type(epoch) is int and epoch >= 0, "source_segment.source_epoch: invalid")
     event_ids, previous_digest, previous_id = set(), None, None
     for i, event in enumerate(events, 1):
         _need(isinstance(event, dict), f"event {i}: expected object")
+        _need(event.get("schema") == "luminous-operational-recovery-event-v0.1", f"event {i}: unsupported event schema")
+        _need(event.get("run_id") == frozen.get("run_id") and event.get("episode_id") == frozen.get("episode_id") and event.get("plan_digest") == frozen.get("plan_digest"), f"event {i}: frozen run binding mismatch")
+        _need(isinstance(event.get("event_id"), str) and event["event_id"], f"event {i}: event ID required")
+        _need(type(event.get("source_epoch")) is int and type(event.get("source_sequence")) is int, f"event {i}: integer epoch and sequence required")
+        parent_ids = event.get("parent_event_ids")
+        _need(isinstance(parent_ids, list) and len(parent_ids) == len(set(parent_ids)) and all(isinstance(x, str) and x for x in parent_ids), f"event {i}: unique causal parent IDs required")
         _need(event.get("source_id") == source and event.get("source_kind") == source_kind and event.get("trust_domain_id") == trust_domain, f"event {i}: producer role substitution")
         _need(event.get("source_epoch") == epoch and event.get("source_sequence") == i, f"event {i}: source epoch/sequence gap")
+        _need(event.get("event_type") in EVENT_TYPES, f"event {i}: unsupported event type")
         _need(event.get("event_type") in publisher["allowed_event_types"], f"event {i}: event type not authorized for publisher role")
         _need(event.get("event_id") not in event_ids, f"event {i}: duplicate event id")
         event_ids.add(event.get("event_id"))
