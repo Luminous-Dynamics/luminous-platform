@@ -45,7 +45,7 @@ class Tests(unittest.TestCase):
 
     def test_orphan_assessment_rejected(self):
         r=sample()
-        with self.assertRaises(AssessmentError): summarize([r],[])
+        with self.assertRaises(AssessmentError): summarize([r],[episode(r,"different-episode")])
 
     def test_missing_record_cannot_claim_complete(self):
         r=sample(); r["coverage"]=[]; r["findings"]=[]; r["assessment"]={"coverage_claim":"complete","finding_disposition":"no_findings"}
