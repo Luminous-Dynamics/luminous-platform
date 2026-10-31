@@ -1,0 +1,72 @@
+{
+  "schema": "luminous-opsbench-service-objective-contract-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "study_id": "example-slo-recovery-not-registered",
+  "episode_id": "episode-slo-001",
+  "run_id": "run-slo-001",
+  "service_id": "payments-api",
+  "service_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "executor": {
+    "source_id": "platform-coordinator",
+    "trust_domain_id": "agent-runtime"
+  },
+  "observer": {
+    "source_id": "external-slo-probe",
+    "trust_domain_id": "external-observation"
+  },
+  "business_oracle": {
+    "source_id": "independent-payment-checker",
+    "trust_domain_id": "business-oracle"
+  },
+  "baseline_reference": {
+    "window_started_at": "2026-10-31T13:50:00Z",
+    "window_ended_at": "2026-10-31T14:00:00Z",
+    "measurement_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "workload_profile_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "timeline": {
+    "incident_started_at": "2026-10-31T14:00:00Z",
+    "evaluation_started_at": "2026-10-31T14:00:00Z",
+    "evaluation_ended_at": "2026-10-31T14:09:00Z",
+    "window_seconds": 60,
+    "hold_window_count": 5,
+    "minimum_request_count": 100,
+    "minimum_synthetic_probe_count": 20,
+    "minimum_business_check_count": 20,
+    "maximum_gap_seconds": 0
+  },
+  "required_slis": [
+    {
+      "sli_id": "request-success",
+      "kind": "request_success_ratio",
+      "minimum_ratio": 0.99
+    },
+    {
+      "sli_id": "synthetic-probe-success",
+      "kind": "synthetic_probe_success_ratio",
+      "minimum_ratio": 0.99
+    },
+    {
+      "sli_id": "business-correctness",
+      "kind": "business_correctness_ratio",
+      "minimum_ratio": 0.999
+    },
+    {
+      "sli_id": "p95-latency",
+      "kind": "latency_quantile",
+      "quantile": 0.95,
+      "maximum_seconds": 0.2
+    },
+    {
+      "sli_id": "minimum-goodput",
+      "kind": "goodput_minimum",
+      "minimum_units_per_second": 1.5
+    },
+    {
+      "sli_id": "saturation",
+      "kind": "saturation_maximum",
+      "maximum_ratio": 0.8
+    }
+  ]
+}

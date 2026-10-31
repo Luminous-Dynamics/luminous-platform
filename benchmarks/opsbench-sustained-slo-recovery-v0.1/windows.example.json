@@ -1,0 +1,389 @@
+{
+  "schema": "luminous-opsbench-service-observation-windows-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "contract_sha256": "e2438d394d425dc7f2bb9914d04d84ef2c037c104e5344088664ef0ea25f3948",
+  "study_id": "example-slo-recovery-not-registered",
+  "episode_id": "episode-slo-001",
+  "run_id": "run-slo-001",
+  "windows": [
+    {
+      "window_id": "w00",
+      "started_at": "2026-10-31T14:00:00Z",
+      "ended_at": "2026-10-31T14:01:00Z",
+      "observer_source_id": "external-slo-probe",
+      "observer_trust_domain_id": "external-observation",
+      "business_oracle_source_id": "independent-payment-checker",
+      "business_oracle_trust_domain_id": "business-oracle",
+      "request_count": 1000,
+      "successful_request_count": 900,
+      "synthetic_probe_count": 20,
+      "successful_synthetic_probe_count": 16,
+      "business_check_count": 1000,
+      "correct_business_check_count": 950,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 500
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 200
+          },
+          {
+            "upper_bound_seconds": 0.25,
+            "count": 150
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 100
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 50
+          }
+        ]
+      },
+      "goodput_units": 48,
+      "saturation_ratio": 0.95
+    },
+    {
+      "window_id": "w01",
+      "started_at": "2026-10-31T14:01:00Z",
+      "ended_at": "2026-10-31T14:02:00Z",
+      "observer_source_id": "external-slo-probe",
+      "observer_trust_domain_id": "external-observation",
+      "business_oracle_source_id": "independent-payment-checker",
+      "business_oracle_trust_domain_id": "business-oracle",
+      "request_count": 1000,
+      "successful_request_count": 999,
+      "synthetic_probe_count": 20,
+      "successful_synthetic_probe_count": 20,
+      "business_check_count": 1000,
+      "correct_business_check_count": 1000,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 900
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 80
+          },
+          {
+            "upper_bound_seconds": 0.25,
+            "count": 19
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 1
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      },
+      "goodput_units": 120,
+      "saturation_ratio": 0.65
+    },
+    {
+      "window_id": "w02",
+      "started_at": "2026-10-31T14:02:00Z",
+      "ended_at": "2026-10-31T14:03:00Z",
+      "observer_source_id": "external-slo-probe",
+      "observer_trust_domain_id": "external-observation",
+      "business_oracle_source_id": "independent-payment-checker",
+      "business_oracle_trust_domain_id": "business-oracle",
+      "request_count": 1000,
+      "successful_request_count": 999,
+      "synthetic_probe_count": 20,
+      "successful_synthetic_probe_count": 20,
+      "business_check_count": 1000,
+      "correct_business_check_count": 1000,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 900
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 80
+          },
+          {
+            "upper_bound_seconds": 0.25,
+            "count": 19
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 1
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      },
+      "goodput_units": 120,
+      "saturation_ratio": 0.65
+    },
+    {
+      "window_id": "w03",
+      "started_at": "2026-10-31T14:03:00Z",
+      "ended_at": "2026-10-31T14:04:00Z",
+      "observer_source_id": "external-slo-probe",
+      "observer_trust_domain_id": "external-observation",
+      "business_oracle_source_id": "independent-payment-checker",
+      "business_oracle_trust_domain_id": "business-oracle",
+      "request_count": 1000,
+      "successful_request_count": 999,
+      "synthetic_probe_count": 20,
+      "successful_synthetic_probe_count": 20,
+      "business_check_count": 1000,
+      "correct_business_check_count": 1000,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 700
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 150
+          },
+          {
+            "upper_bound_seconds": 0.25,
+            "count": 100
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 40
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 10
+          }
+        ]
+      },
+      "goodput_units": 100,
+      "saturation_ratio": 0.7
+    },
+    {
+      "window_id": "w04",
+      "started_at": "2026-10-31T14:04:00Z",
+      "ended_at": "2026-10-31T14:05:00Z",
+      "observer_source_id": "external-slo-probe",
+      "observer_trust_domain_id": "external-observation",
+      "business_oracle_source_id": "independent-payment-checker",
+      "business_oracle_trust_domain_id": "business-oracle",
+      "request_count": 1000,
+      "successful_request_count": 999,
+      "synthetic_probe_count": 20,
+      "successful_synthetic_probe_count": 20,
+      "business_check_count": 1000,
+      "correct_business_check_count": 1000,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 900
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 80
+          },
+          {
+            "upper_bound_seconds": 0.25,
+            "count": 19
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 1
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      },
+      "goodput_units": 120,
+      "saturation_ratio": 0.65
+    },
+    {
+      "window_id": "w05",
+      "started_at": "2026-10-31T14:05:00Z",
+      "ended_at": "2026-10-31T14:06:00Z",
+      "observer_source_id": "external-slo-probe",
+      "observer_trust_domain_id": "external-observation",
+      "business_oracle_source_id": "independent-payment-checker",
+      "business_oracle_trust_domain_id": "business-oracle",
+      "request_count": 1000,
+      "successful_request_count": 999,
+      "synthetic_probe_count": 20,
+      "successful_synthetic_probe_count": 20,
+      "business_check_count": 1000,
+      "correct_business_check_count": 1000,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 900
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 80
+          },
+          {
+            "upper_bound_seconds": 0.25,
+            "count": 19
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 1
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      },
+      "goodput_units": 120,
+      "saturation_ratio": 0.65
+    },
+    {
+      "window_id": "w06",
+      "started_at": "2026-10-31T14:06:00Z",
+      "ended_at": "2026-10-31T14:07:00Z",
+      "observer_source_id": "external-slo-probe",
+      "observer_trust_domain_id": "external-observation",
+      "business_oracle_source_id": "independent-payment-checker",
+      "business_oracle_trust_domain_id": "business-oracle",
+      "request_count": 1000,
+      "successful_request_count": 999,
+      "synthetic_probe_count": 20,
+      "successful_synthetic_probe_count": 20,
+      "business_check_count": 1000,
+      "correct_business_check_count": 1000,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 900
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 80
+          },
+          {
+            "upper_bound_seconds": 0.25,
+            "count": 19
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 1
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      },
+      "goodput_units": 120,
+      "saturation_ratio": 0.65
+    },
+    {
+      "window_id": "w07",
+      "started_at": "2026-10-31T14:07:00Z",
+      "ended_at": "2026-10-31T14:08:00Z",
+      "observer_source_id": "external-slo-probe",
+      "observer_trust_domain_id": "external-observation",
+      "business_oracle_source_id": "independent-payment-checker",
+      "business_oracle_trust_domain_id": "business-oracle",
+      "request_count": 1000,
+      "successful_request_count": 999,
+      "synthetic_probe_count": 20,
+      "successful_synthetic_probe_count": 20,
+      "business_check_count": 1000,
+      "correct_business_check_count": 1000,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 900
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 80
+          },
+          {
+            "upper_bound_seconds": 0.25,
+            "count": 19
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 1
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      },
+      "goodput_units": 120,
+      "saturation_ratio": 0.65
+    },
+    {
+      "window_id": "w08",
+      "started_at": "2026-10-31T14:08:00Z",
+      "ended_at": "2026-10-31T14:09:00Z",
+      "observer_source_id": "external-slo-probe",
+      "observer_trust_domain_id": "external-observation",
+      "business_oracle_source_id": "independent-payment-checker",
+      "business_oracle_trust_domain_id": "business-oracle",
+      "request_count": 1000,
+      "successful_request_count": 999,
+      "synthetic_probe_count": 20,
+      "successful_synthetic_probe_count": 20,
+      "business_check_count": 1000,
+      "correct_business_check_count": 1000,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 900
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 80
+          },
+          {
+            "upper_bound_seconds": 0.25,
+            "count": 19
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 1
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      },
+      "goodput_units": 120,
+      "saturation_ratio": 0.65
+    }
+  ]
+}
