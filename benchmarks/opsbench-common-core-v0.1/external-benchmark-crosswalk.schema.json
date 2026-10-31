@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/opsbench-common-core-v0.1/external-benchmark-crosswalk.schema.json",
+  "title": "External operations benchmark crosswalk v0.1",
+  "type": "object",
+  "required": ["schema","version","status","as_of","rule","benchmarks","comparison_contract"],
+  "properties": {
+    "schema":{"const":"luminous-external-operations-benchmark-crosswalk-v0.1"},
+    "version":{"const":1},
+    "status":{"const":"research_reference_only"},
+    "as_of":{"type":"string","format":"date"},
+    "rule":{"type":"string","minLength":40},
+    "benchmarks":{
+      "type":"array","minItems":5,"maxItems":20,
+      "items":{
+        "type":"object",
+        "required":["id","name","evaluation_surface","reported_scope","capabilities","limitations","direct_score_comparison_allowed","sources"],
+        "properties":{
+          "id":{"type":"string","minLength":1},
+          "name":{"type":"string","minLength":1},
+          "evaluation_surface":{"type":"string","minLength":10},
+          "reported_scope":{"type":"object"},
+          "primary_metric":{
+            "type":"object",
+            "required":["name","unit","success_rule"],
+            "properties":{
+              "name":{"type":"string","minLength":1},
+              "unit":{"type":"string","minLength":1},
+              "success_rule":{"type":"string","minLength":1},
+              "dimensions":{"type":"array","minItems":1,"items":{"type":"string","minLength":1}}
+            },
+            "additionalProperties":true
+          },
+          "capabilities":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+          "limitations":{"type":"array","minItems":1,"items":{"type":"string","minLength":10}},
+          "direct_score_comparison_allowed":{"const":false},
+          "sources":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","format":"uri","pattern":"^https://"}}
+        },
+        "additionalProperties":true
+      }
+    },
+    "comparison_contract":{
+      "type":"object",
+      "required":["common_core_required","never_translate","analysis_unit","report_unmatched_trials","report_evaluator_errors","report_failed_crashed_timed_out_indeterminate_started_trials"],
+      "properties":{
+        "common_core_required":{"type":"array","minItems":5,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+        "never_translate":{"type":"array","minItems":4,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+        "analysis_unit":{"const":"scenario_id cluster"},
+        "report_unmatched_trials":{"const":true},
+        "report_evaluator_errors":{"const":true},
+        "report_failed_crashed_timed_out_indeterminate_started_trials":{"const":true}
+      },
+      "additionalProperties":false
+    }
+  },
+  "additionalProperties":false
+}
