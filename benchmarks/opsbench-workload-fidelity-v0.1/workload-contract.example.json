@@ -27,10 +27,10 @@
     "source_id": "workload-fault-controller",
     "trust_domain_id": "fault-injection"
   },
-  "profile_sha256": "70a896108d3ae247118fe355dd7c5353e8cca32c24221d4e72bfeb769ae617ae",
-  "phase_schedule_sha256": "4a7285c5a515b28970298dd085ba8d98c692df9ac2b4d30c4bdc3951f589bdfc",
-  "load_generator_receipts_sha256": "bb5776c49d4aedb0a547bed5b3b969b5b4e98c594cce6bd0af6b07ac4c5db626",
-  "service_observations_sha256": "0ebc2a33c4059f91fd842aed680ff0a9e0fabcd54197266c696cbebac7f464c2",
+  "profile_sha256": "d8ebba477bb19a31f347b4379c552f9d3fa05547a985595bea6f05e30b7d609a",
+  "phase_schedule_sha256": "b00ec3fdc79e9d1893db746c5a5cf0eb82fac17a4c0b3764a4403a74a6071780",
+  "load_generator_receipts_sha256": "c577ab99f549be3536d337fdc9e9b8d9b70760cf1e73408d8af81707d250f410",
+  "service_observations_sha256": "bb101c71c97822b73a0bc27b7b3c118550830feaacc5e8c001d44a6a61368a5d",
   "expected_phase_count": 5,
-  "fault_controller_receipts_sha256": "1408e2ef6505643da6a789dcd59ffbabd1ad224d1b65a3ef30395660b4e8a76d"
+  "fault_controller_receipts_sha256": "9287b841896df7a845ba3d2806b54d81871a34cf9a767ced6257d72095c53c49"
 }
