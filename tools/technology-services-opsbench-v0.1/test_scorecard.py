@@ -77,6 +77,23 @@ class Tests(unittest.TestCase):
         a=ep("human","h",outcome="task_not_completed",disposition="escalated"); b=ep("agent","a")
         x=paired([a],[b],samples=100); self.assertEqual(x["candidate_wins"],1); self.assertEqual(x["paired_success_rate_delta"],1)
 
+    def test_paired_bootstrap_clusters_repeated_seeds_by_scenario(self):
+        baseline=[
+            ep("human","ha1",outcome="task_not_completed",disposition="escalated",seed=1,scenario="A"),
+            ep("human","ha2",outcome="task_not_completed",disposition="escalated",seed=2,scenario="A"),
+            ep("human","hb1",seed=1,scenario="B"),
+        ]
+        candidate=[
+            ep("agent","aa1",seed=1,scenario="A"),
+            ep("agent","aa2",seed=2,scenario="A"),
+            ep("agent","ab1",seed=1,scenario="B"),
+        ]
+        x=paired(baseline,candidate,samples=100)
+        self.assertEqual(x["matched_trials"],3); self.assertEqual(x["matched_scenarios"],2)
+        self.assertAlmostEqual(x["paired_trial_weighted_delta"],2/3)
+        self.assertAlmostEqual(x["paired_success_rate_delta"],0.5)
+        self.assertEqual(x["bootstrap_unit"],"scenario_id")
+
     def test_unmatched_trials_remain_visible(self):
         a=ep("human","h"); b=ep("agent","a",scenario="DB-001")
         x=paired([a],[b],samples=100); self.assertEqual(x["matched_trials"],0); self.assertEqual(x["unmatched_baseline"],1); self.assertEqual(x["unmatched_candidate"],1)
