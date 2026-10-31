@@ -2,6 +2,7 @@
 """Dependency-free structural guard for ITOPS Autonomy Boundary v0.1."""
 from __future__ import annotations
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -273,9 +274,26 @@ def validate_result(result: Any, schema: Any) -> dict[str, int]:
     return {"result_layers":4,"run_binding_fields":len(required_run_binding),
             "resource_metrics":len(result["resource_usage"])}
 
+def verify_manifest_commit_pin(oracle: Any) -> None:
+    commit = oracle.get("task_manifest_commit")
+    require(isinstance(commit, str) and len(commit) == 40
+            and set(commit) <= set("0123456789abcdef"),
+            "evaluator corpus task-manifest pin must be a full commit SHA")
+    try:
+        pinned = subprocess.run(
+            ["git", "show", f"{commit}:benchmarks/itops-autonomy-boundary-v0.1/task-manifest.json"],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError) as exc:
+        fail(f"cannot resolve pinned task manifest commit: {exc}")
+    require(pinned == TASKS.read_bytes(),
+            "pinned task-manifest Git object differs from the current SUT manifest")
+
 def main() -> int:
     try:
-        result = validate(load(TASKS), load(TASK_SCHEMA), load(ORACLE), load(ORACLE_SCHEMA))
+        oracle_value = load(ORACLE)
+        result = validate(load(TASKS), load(TASK_SCHEMA), oracle_value, load(ORACLE_SCHEMA))
+        verify_manifest_commit_pin(oracle_value)
         result_summary = validate_result(load(RESULT_EXAMPLE), load(RESULT_SCHEMA))
     except (ValueError, KeyError, TypeError, AttributeError) as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
