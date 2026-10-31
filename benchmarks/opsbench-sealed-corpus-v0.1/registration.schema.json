@@ -3,7 +3,7 @@
   "$id":"https://luminousdynamics.io/schemas/opsbench-sealed-corpus-registration-v0.1.json",
   "title":"OpsBench sealed corpus pre-trial commitment v0.1",
   "type":"object","additionalProperties":false,
-  "required":["schema","version","status","study_id","preregistration_sha256","manifest_sha256","commitment_scheme","commitment_sha256","salt_sha256","registered_at","first_trial_at"],
+  "required":["schema","version","status","study_id","preregistration_sha256","manifest_sha256","commitment_scheme","commitment_domain","commitment_sha256","salt_sha256","registered_at","first_trial_at"],
   "properties":{
     "schema":{"const":"luminous-opsbench-sealed-corpus-registration-v0.1"},
     "version":{"const":1},
