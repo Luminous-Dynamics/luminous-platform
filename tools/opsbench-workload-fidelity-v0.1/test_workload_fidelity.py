@@ -29,9 +29,16 @@ def encode(value):
 
 
 def rebind(docs):
-    """Refresh the contract's raw artifact digests after an intentional mutation."""
-    docs["contract"]["profile_sha256"] = hashlib.sha256(encode(docs["profile"])).hexdigest()
-    docs["contract"]["phase_schedule_sha256"] = hashlib.sha256(encode(docs["schedule"])).hexdigest()
+    """Refresh component cross-bindings and contract digests after an intentional mutation."""
+    profile_digest = hashlib.sha256(encode(docs["profile"])).hexdigest()
+    schedule_digest = hashlib.sha256(encode(docs["schedule"])).hexdigest()
+    docs["load"]["profile_sha256"] = profile_digest
+    docs["load"]["phase_schedule_sha256"] = schedule_digest
+    docs["observations"]["profile_sha256"] = profile_digest
+    docs["observations"]["phase_schedule_sha256"] = schedule_digest
+    docs["faults"]["phase_schedule_sha256"] = schedule_digest
+    docs["contract"]["profile_sha256"] = profile_digest
+    docs["contract"]["phase_schedule_sha256"] = schedule_digest
     docs["contract"]["load_generator_receipts_sha256"] = hashlib.sha256(encode(docs["load"])).hexdigest()
     docs["contract"]["service_observations_sha256"] = hashlib.sha256(encode(docs["observations"])).hexdigest()
     docs["contract"]["fault_controller_receipts_sha256"] = hashlib.sha256(encode(docs["faults"])).hexdigest()
@@ -319,6 +326,34 @@ class WorkloadFidelityTests(unittest.TestCase):
                 docs["observations"], raw["observations"],
                 docs["faults"], raw["faults"],
             )
+
+
+    def test_nonzero_timeout_fails_even_when_aggregate_success_remains_high(self):
+        docs, _ = fixtures()
+        load = record(docs, "nominal", "critical-payment", "load")
+        load["response_success_count"] = 599
+        load["response_timeout_count"] = 1
+        obs = record(docs, "nominal", "critical-payment", "observations")
+        obs["business_checked_count"] = 599
+        obs["business_correct_count"] = 599
+        report = run(docs)
+        window = next(x for x in report["windows"] if x["phase_id"] == "nominal" and x["class_id"] == "critical-payment")
+        self.assertEqual(window["disposition"], "fail")
+        self.assertIn("timed-out requests are non-zero", window["reasons"])
+
+    def test_drop_count_has_its_own_failure_reason(self):
+        docs, _ = fixtures()
+        load = record(docs, "nominal", "critical-payment", "load")
+        load["response_success_count"] = 599
+        load["response_drop_count"] = 1
+        obs = record(docs, "nominal", "critical-payment", "observations")
+        obs["business_checked_count"] = 599
+        obs["business_correct_count"] = 599
+        report = run(docs)
+        window = next(x for x in report["windows"] if x["phase_id"] == "nominal" and x["class_id"] == "critical-payment")
+        self.assertIn("dropped requests are non-zero", window["reasons"])
+        self.assertEqual(window["disposition"], "fail")
+
 
 
 if __name__ == "__main__":
