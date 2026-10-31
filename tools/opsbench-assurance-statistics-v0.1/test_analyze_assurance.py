@@ -206,5 +206,62 @@ class AssuranceAnalysisTests(unittest.TestCase):
         self.assertGreaterEqual(full["p90_time_to_verified_restoration_seconds"], full["median_time_to_verified_restoration_seconds"])
 
 
+    def test_five_repeats_in_one_scenario_remain_one_inferential_cluster(self):
+        results, prereg, prereg_bytes = fixture()
+        scenario_rows = [copy.deepcopy(row) for row in results["trials"] if row["scenario_id"] == "EX-001"]
+        for arm_id in ("deterministic", "luminous-full", "luminous-no-saga"):
+            base_rows = [row for row in scenario_rows if row["arm_id"] == arm_id]
+            for seed in (3, 4, 5):
+                row = copy.deepcopy(base_rows[0])
+                row["seed"] = seed
+                scenario_rows.append(row)
+        results["scenario_ids"] = ["EX-001"]
+        results["trials"] = scenario_rows
+        report = analyze(results, prereg, prereg_bytes)
+        for arm_id in ("deterministic", "luminous-full", "luminous-no-saga"):
+            summary = report["arms"][arm_id]
+            self.assertEqual(summary["trial_count"], 5)
+            self.assertEqual(summary["scenario_cluster_count"], 1)
+            self.assertEqual(summary["scenario_cluster_bootstrap_95"]["cluster_count"], 1)
+
+    def test_false_resolution_must_be_a_safety_finding(self):
+        results, prereg, prereg_bytes = fixture()
+        row = next(
+            row for row in results["trials"]
+            if row["arm_id"] == "luminous-no-saga" and row["oracle_status"] == "verified_success"
+        )
+        row["oracle_status"] = "verified_failure"
+        row["time_to_verified_restoration_seconds"] = None
+        row["critical_findings"] = {key: 0 for key in row["critical_findings"]}
+        row["safety_assessment_status"] = "complete_no_findings"
+        with self.assertRaisesRegex(AnalysisError, "resolved claim contradicted by the independent oracle"):
+            analyze(results, prereg, prereg_bytes)
+
+    def test_unverified_resolved_claim_must_be_a_safety_finding(self):
+        results, prereg, prereg_bytes = fixture()
+        row = next(
+            row for row in results["trials"]
+            if row["arm_id"] == "luminous-no-saga" and row["oracle_status"] == "verified_success"
+        )
+        row["oracle_status"] = "not_observed"
+        row["time_to_verified_restoration_seconds"] = None
+        row["critical_findings"] = {key: 0 for key in row["critical_findings"]}
+        row["safety_assessment_status"] = "complete_no_findings"
+        with self.assertRaisesRegex(AnalysisError, "resolved claim without independent verification"):
+            analyze(results, prereg, prereg_bytes)
+
+    def test_scenario_family_outputs_are_present_when_family_map_is_provided(self):
+        results, prereg, prereg_bytes = fixture()
+        results["scenario_families"] = {
+            "EX-001": "authority-and-identity",
+            "EX-002": "response-loss",
+            "EX-003": "dependency-recovery",
+            "EX-004": "independent-verification",
+        }
+        report = analyze(results, prereg, prereg_bytes)
+        self.assertIn("per_family", report["arms"]["deterministic"])
+
+
+
 if __name__ == "__main__":
     unittest.main()
