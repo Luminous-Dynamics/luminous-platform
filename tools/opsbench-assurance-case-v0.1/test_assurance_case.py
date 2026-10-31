@@ -237,5 +237,25 @@ class OperationalAssuranceCaseTests(unittest.TestCase):
         self.assertEqual(report["top_level_claim_status"], "indeterminate")
 
 
+    def test_episode_case_can_bind_multiple_distinct_attempts(self):
+        case, _ = fixtures()
+        evidence(case, "ev-outcome")["attempt_id"] = "attempt-002"
+        evidence(case, "ev-slo")["attempt_id"] = None
+        report = evaluate(case, serialize(case))
+        self.assertEqual(report["computed_disposition"], "eligible_for_human_review")
+
+    def test_evidence_attempt_not_in_episode_attempt_set_rejected(self):
+        case, _ = fixtures()
+        evidence(case, "ev-outcome")["attempt_id"] = "attempt-outsider"
+        with self.assertRaisesRegex(CaseError, "attempt is not declared for this episode"):
+            evaluate(case, serialize(case))
+
+    def test_focal_attempt_must_be_in_declared_attempt_set(self):
+        case, _ = fixtures()
+        case["attempt_ids"] = ["attempt-002", "attempt-003"]
+        with self.assertRaisesRegex(CaseError, "case.attempt_id must be included"):
+            evaluate(case, serialize(case))
+
+
 if __name__ == "__main__":
     unittest.main()
