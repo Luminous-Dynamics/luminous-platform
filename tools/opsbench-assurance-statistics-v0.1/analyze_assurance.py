@@ -384,7 +384,8 @@ def _arm_summary(rows: list[dict], analysis: dict, seed_offset: int) -> dict:
             "one_sided_exact_upper_bound_95_conditional_on_fully_audited_clusters": upper,
             "upper_bound_scope": "one-sided exact binomial bound for scenario-cluster incidence in a representative, independently sampled scenario population; conditional on complete safety assessment for every started episode in each included cluster. This assumption is not established by the fixed benchmark corpus itself",
             "population_inference_assumptions_verified": False,
-            "global_zero_failure_claim_permitted": safety_gate == "pass",
+            "corpus_audit_complete_zero_critical_findings": safety_gate == "pass",
+            "population_zero_failure_claim_permitted": False,
             "critical_findings_by_dimension": critical_by_dimension,
         },
     }
@@ -437,6 +438,21 @@ def _paired_comparison(candidate_rows: list[dict], baseline_rows: list[dict], an
 def analyze(results: dict, prereg: dict, prereg_bytes: bytes) -> dict:
     arm_ids = _validate_preregistration(results, prereg, prereg_bytes)
     trials = _validate_trials(results, arm_ids)
+    if results["status"] == "confirmatory":
+        minimum_seeds = prereg["repetition_policy"]["confirmatory_seeds_per_scenario"]
+        for arm_id in arm_ids:
+            for scenario_id in results["scenario_ids"]:
+                seeds = {row["seed"] for row in trials if row["arm_id"] == arm_id and row["scenario_id"] == scenario_id}
+                require(len(seeds) >= minimum_seeds, f"confirmatory: arm {arm_id} scenario {scenario_id} has fewer than {minimum_seeds} distinct seeds")
+        rows_by_key = {
+            arm_id: {(row["scenario_id"], row["variant_id"], row["seed"]) for row in trials if row["arm_id"] == arm_id}
+            for arm_id in arm_ids
+        }
+        for candidate_id in results["candidate_arm_ids"]:
+            common_keys = rows_by_key[candidate_id] & rows_by_key[results["baseline_arm_id"]]
+            for scenario_id in results["scenario_ids"]:
+                paired_seeds = {key[2] for key in common_keys if key[0] == scenario_id}
+                require(len(paired_seeds) >= minimum_seeds, f"confirmatory: candidate {candidate_id} has fewer than {minimum_seeds} paired seeds for scenario {scenario_id}")
     analysis = results["analysis"]
     require(type(analysis.get("bootstrap_replicates")) is int and 100 <= analysis["bootstrap_replicates"] <= 100_000, "analysis.bootstrap_replicates outside supported range")
     require(type(analysis.get("bootstrap_seed")) is int and 0 <= analysis["bootstrap_seed"] <= 0xFFFFFFFF, "analysis.bootstrap_seed outside supported range")
@@ -461,12 +477,14 @@ def analyze(results: dict, prereg: dict, prereg_bytes: bytes) -> dict:
         "schema": "luminous-opsbench-assurance-report-v0.1",
         "version": 1,
         "status": "example_only" if results["status"] == "example_only" else "analysis_only_not_a_claim_of_superiority",
+        "input_study_status": results["status"],
         "study_id": results["study_id"],
         "results_input_sha256": sha256(canonical(results)),
         "preregistration_sha256": sha256(prereg_bytes),
         "scenario_cluster_definition": "scenario_id; seeds and variants are nested repeats, not independent inferential units",
         "familywise_comparison_policy": "Bonferroni-adjusted two-sided percentile intervals across all candidate-vs-baseline comparisons",
         "statistical_generalization_scope": "Scenario-cluster intervals describe this sampled task population only if scenario clusters are representative and independently sampled; fixed adversarial benchmark suites do not by themselves establish population representativeness.",
+        "population_sampling_assumptions_verified": False,
         "started_trial_count": len(trials),
         "scenario_count": len(results["scenario_ids"]),
         "baseline_arm_id": baseline_id,
