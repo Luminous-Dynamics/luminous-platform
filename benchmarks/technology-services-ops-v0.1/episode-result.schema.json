@@ -1,0 +1,560 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/technology-services-ops-v0.1/episode-result.schema.json",
+  "title": "Technology-Services OpsBench v0.1 episode result",
+  "description": "A portable benchmark episode record. It separates system-reported disposition from evaluator-owned oracle outcome; this schema validates shape, not truth, authenticity or source independence.",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "run_binding",
+    "episode",
+    "execution",
+    "actions",
+    "observations",
+    "oracle",
+    "measurements",
+    "human_interventions"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-technology-services-opsbench-episode-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "run_binding": {
+      "type": "object",
+      "required": [
+        "source_commit_sha",
+        "runner_version",
+        "toolchain_digest",
+        "environment_image_digest",
+        "policy_digest",
+        "connector_manifest_digest",
+        "corpus_digest",
+        "scenario_variant_digest",
+        "oracle_version",
+        "run_id",
+        "arm_id",
+        "episode_id",
+        "seed",
+        "started_at",
+        "finished_at"
+      ],
+      "properties": {
+        "source_commit_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "runner_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "toolchain_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "environment_image_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "connector_manifest_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "corpus_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "scenario_variant_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "oracle_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finished_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "episode": {
+      "type": "object",
+      "required": [
+        "scenario_id",
+        "scenario_family",
+        "variant_id",
+        "tenant_pseudonym"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string",
+          "pattern": "^[A-Z]+-[0-9]{3}$"
+        },
+        "scenario_family": {
+          "type": "string",
+          "minLength": 1
+        },
+        "variant_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tenant_pseudonym": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "execution": {
+      "type": "object",
+      "required": [
+        "run_state",
+        "system_disposition",
+        "started_at",
+        "finished_at"
+      ],
+      "properties": {
+        "run_state": {
+          "enum": [
+            "completed",
+            "blocked",
+            "timed_out",
+            "crashed",
+            "evaluator_error"
+          ]
+        },
+        "system_disposition": {
+          "enum": [
+            "resolved",
+            "mitigated",
+            "escalated",
+            "safe_refusal",
+            "indeterminate",
+            "timed_out",
+            "crashed"
+          ]
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finished_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "attempt_id",
+          "connector_id",
+          "operation",
+          "target_digest",
+          "plan_digest",
+          "authorization_digest",
+          "idempotency_key",
+          "state_mutated",
+          "outcome",
+          "record_digest"
+        ],
+        "properties": {
+          "attempt_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "connector_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "operation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "target_digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "plan_digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "authorization_digest": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "idempotency_key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state_mutated": {
+            "type": "boolean"
+          },
+          "outcome": {
+            "enum": [
+              "succeeded",
+              "failed",
+              "ambiguous",
+              "blocked",
+              "not_started"
+            ]
+          },
+          "record_digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state_mutated": {
+                  "const": true
+                }
+              },
+              "required": [
+                "state_mutated"
+              ]
+            },
+            "then": {
+              "properties": {
+                "authorization_digest": {
+                  "type": "string",
+                  "pattern": "^sha256:[a-f0-9]{64}$"
+                }
+              }
+            }
+          }
+        ],
+        "additionalProperties": false
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "observer_id",
+          "trust_domain_id",
+          "channel_id",
+          "postcondition_id",
+          "captured_at",
+          "result",
+          "record_digest"
+        ],
+        "properties": {
+          "observer_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trust_domain_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "channel_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "postcondition_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "result": {
+            "enum": [
+              "satisfied",
+              "not_satisfied",
+              "unknown",
+              "contradictory"
+            ]
+          },
+          "record_digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "oracle": {
+      "type": "object",
+      "required": [
+        "oracle_outcome",
+        "evaluator_version",
+        "oracle_record_digest",
+        "observations"
+      ],
+      "properties": {
+        "oracle_outcome": {
+          "enum": [
+            "task_completed",
+            "task_not_completed",
+            "unauthorized_effect",
+            "forbidden_effect",
+            "data_loss",
+            "tenant_violation",
+            "secret_disclosure",
+            "indeterminate"
+          ]
+        },
+        "evaluator_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "oracle_record_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "observer_id",
+              "trust_domain_id",
+              "channel_id",
+              "postcondition_id",
+              "captured_at",
+              "result",
+              "record_digest"
+            ],
+            "properties": {
+              "observer_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "trust_domain_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "channel_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "postcondition_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "captured_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "result": {
+                "enum": [
+                  "satisfied",
+                  "not_satisfied",
+                  "unknown",
+                  "contradictory"
+                ]
+              },
+              "record_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "measurements": {
+      "type": "object",
+      "required": [
+        "wall_clock_duration_ms",
+        "human_active_seconds",
+        "tool_call_count",
+        "api_call_count",
+        "retry_count",
+        "direct_cost_microusd"
+      ],
+      "properties": {
+        "wall_clock_duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "human_active_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "tool_call_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "api_call_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retry_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "input_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "direct_cost_microusd": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "human_interventions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "role_class",
+          "intervention_type",
+          "active_seconds"
+        ],
+        "properties": {
+          "role_class": {
+            "enum": [
+              "operator",
+              "service_owner",
+              "security_reviewer",
+              "customer",
+              "other"
+            ]
+          },
+          "intervention_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "active_seconds": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "execution": {
+            "properties": {
+              "system_disposition": {
+                "const": "resolved"
+              }
+            },
+            "required": [
+              "system_disposition"
+            ]
+          }
+        },
+        "required": [
+          "execution"
+        ]
+      },
+      "then": {
+        "properties": {
+          "execution": {
+            "properties": {
+              "run_state": {
+                "const": "completed"
+              }
+            }
+          },
+          "observations": {
+            "minItems": 1
+          },
+          "oracle": {
+            "properties": {
+              "observations": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "execution": {
+            "properties": {
+              "system_disposition": {
+                "enum": [
+                  "resolved",
+                  "mitigated"
+                ]
+              }
+            },
+            "required": [
+              "system_disposition"
+            ]
+          }
+        },
+        "required": [
+          "execution"
+        ]
+      },
+      "then": {
+        "properties": {
+          "observations": {
+            "minItems": 1
+          },
+          "oracle": {
+            "properties": {
+              "observations": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

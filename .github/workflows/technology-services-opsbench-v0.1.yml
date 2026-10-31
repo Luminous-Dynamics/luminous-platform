@@ -1,0 +1,38 @@
+name: technology services OpsBench v0.1
+
+on:
+  pull_request:
+    paths:
+      - "docs/TECHNOLOGY_SERVICES_OPSBENCH_V0_1.md"
+      - "benchmarks/technology-services-ops-v0.1/**"
+      - "tools/technology-services-opsbench-v0.1/**"
+      - ".github/workflows/technology-services-opsbench-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/TECHNOLOGY_SERVICES_OPSBENCH_V0_1.md"
+      - "benchmarks/technology-services-ops-v0.1/**"
+      - "tools/technology-services-opsbench-v0.1/**"
+      - ".github/workflows/technology-services-opsbench-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: technology-services-opsbench-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  corpus-contract:
+    name: Frozen corpus and adversarial contract tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Validate OpsBench corpus and schema
+        run: python3 tools/technology-services-opsbench-v0.1/check_opsbench.py
+      - name: Run negative mutation tests
+        run: python3 -m unittest discover -s tools/technology-services-opsbench-v0.1 -p 'test_*.py' -v
