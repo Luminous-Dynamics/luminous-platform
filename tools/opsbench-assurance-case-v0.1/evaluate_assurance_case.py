@@ -396,7 +396,11 @@ def main(argv=None) -> int:
             sys.stdout.write(rendered)
         else:
             args.output.write_text(rendered, encoding="utf-8")
-        return 0 if report["status"] in {"example_only", "eligible_for_human_review"} else (1 if report["status"] == "blocked" else 2)
+        if report["computed_disposition"] == "blocked":
+            return 1
+        if report["computed_disposition"] == "indeterminate":
+            return 2
+        return 0 if report["computed_disposition"] == "eligible_for_human_review" else 2
     except (OSError, CaseError, AttributeError, KeyError, TypeError, ValueError, OverflowError, RecursionError) as exc:
         print(f"assurance-case-evaluator: {exc}", file=sys.stderr)
         return 2
