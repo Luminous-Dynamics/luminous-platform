@@ -109,6 +109,10 @@ class WorkloadFidelityTests(unittest.TestCase):
         load["response_timeout_count"] = 0
         load["response_drop_count"] = 0
         load["latency_histogram"]["buckets"] = rebucket(480)
+        obs = record(docs, "nominal", "critical-payment", "observations")
+        obs["server_received_count"] = 480
+        obs["business_checked_count"] = 480
+        obs["business_correct_count"] = 480
         report = run(docs)
         window = next(x for x in report["windows"] if x["phase_id"] == "nominal" and x["class_id"] == "critical-payment")
         self.assertEqual(window["disposition"], "indeterminate")
@@ -123,6 +127,8 @@ class WorkloadFidelityTests(unittest.TestCase):
         obs = record(docs, "nominal", "critical-payment", "observations")
         obs["server_received_count"] = 550
         obs["server_rejected_count"] = 50
+        obs["business_checked_count"] = 550
+        obs["business_correct_count"] = 550
         report = run(docs)
         window = next(x for x in report["windows"] if x["phase_id"] == "nominal" and x["class_id"] == "critical-payment")
         self.assertEqual(window["disposition"], "fail")
@@ -135,6 +141,8 @@ class WorkloadFidelityTests(unittest.TestCase):
         load["response_error_count"] = 1
         obs = record(docs, "nominal", "critical-payment", "observations")
         obs["server_rejected_count"] = 1
+        obs["business_checked_count"] = 599
+        obs["business_correct_count"] = 599
         report = run(docs)
         window = next(x for x in report["windows"] if x["phase_id"] == "nominal" and x["class_id"] == "critical-payment")
         self.assertEqual(window["disposition"], "fail")
@@ -208,13 +216,17 @@ class WorkloadFidelityTests(unittest.TestCase):
     def test_offered_demand_class_mix_drift_is_indeterminate(self):
         docs, _ = fixtures()
         load = record(docs, "nominal", "routine-read", "load")
-        load["offered_count"] = 5600
-        load["offered_rps"] = 5600 / 60
-        load["response_success_count"] = 5600
+        load["offered_count"] = 7200
+        load["offered_rps"] = 7200 / 60
+        load["response_success_count"] = 7200
         load["response_error_count"] = 0
         load["response_timeout_count"] = 0
         load["response_drop_count"] = 0
-        load["latency_histogram"]["buckets"] = rebucket(5600)
+        load["latency_histogram"]["buckets"] = rebucket(7200)
+        obs = record(docs, "nominal", "routine-read", "observations")
+        obs["server_received_count"] = 7200
+        obs["business_checked_count"] = 7200
+        obs["business_correct_count"] = 7200
         report = run(docs)
         window = next(x for x in report["windows"] if x["phase_id"] == "nominal" and x["class_id"] == "routine-read")
         self.assertEqual(window["disposition"], "indeterminate")
@@ -224,7 +236,7 @@ class WorkloadFidelityTests(unittest.TestCase):
         docs, _ = fixtures()
         load = record(docs, "nominal", "critical-payment", "load")
         load["response_drop_count"] = -1
-        with self.assertRaisesRegex(ContractError, "non-negative integer"):
+        with self.assertRaisesRegex(ContractError, "all offered requests must end in success/error/timeout/drop"):
             run(docs)
 
     def test_artifact_digest_mismatch_rejected_without_rebinding(self):
