@@ -94,15 +94,15 @@ class WorkloadFidelityTests(unittest.TestCase):
         self.assertFalse(report["automatic_execution_authorized"])
         self.assertEqual(report["total_offered_requests"], 27000)
 
-    def test_critical_class_fails_even_when_routine_class_is_healthy(self):
+    def test_critical_class_failure_is_not_masked_by_healthy_routine_traffic(self):
         docs, _ = fixtures()
         report = run(docs)
         critical = report["per_class"]["critical-payment"]
         routine = report["per_class"]["routine-read"]
         self.assertEqual(critical["disposition"], "fail")
         self.assertGreater(critical["failed_window_count"], 0)
-        self.assertEqual(routine["disposition"], "fail")
-        self.assertGreater(routine["failed_window_count"], 0)
+        self.assertEqual(routine["disposition"], "pass")
+        self.assertEqual(routine["failed_window_count"], 0)
         self.assertGreater(report["overall_aggregate_response_success_ratio"], 0.99)
 
     def test_under_delivered_load_is_indeterminate_not_qualified(self):
