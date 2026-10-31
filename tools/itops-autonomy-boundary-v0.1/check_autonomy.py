@@ -150,12 +150,12 @@ def validate(tasks: Any, task_schema: Any, oracle: Any, oracle_schema: Any) -> d
                 f"{pid}: pair must differ on one meaningful field")
         act = pair["act_variant"]
         stop = pair["counterfactual_variant"]
-        require(act["expected_decision"] == "ACT" and act["must_not_mutate"] is False
+        require(act["expected_decision"] == "ACT" and act["external_mutation_forbidden"] is False
                 and type(act["expected_business_effect_count"]) is int
                 and act["expected_business_effect_count"] >= 0,
                 f"{pid}: should-act decision or effect count is invalid")
         require(stop["expected_decision"] in {"CLARIFY","REQUEST_AUTHORITY","RECONCILE","ESCALATE","HALT"}
-                and stop["must_not_mutate"] is True and stop["expected_business_effect_count"] == 0,
+                and stop["external_mutation_forbidden"] is True and stop["expected_business_effect_count"] == 0,
                 f"{pid}: counterfactual stop must not mutate")
         require(stop["task_id"] != act["task_id"], f"{pid}: variants must be distinct")
         for tid in (act["task_id"], stop["task_id"]):
