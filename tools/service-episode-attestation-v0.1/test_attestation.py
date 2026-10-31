@@ -14,7 +14,7 @@ VECTOR_SCHEMA = json.loads((ROOT / "benchmarks/service-episode-attestation-v0.1/
 
 class AttestationContractTests(unittest.TestCase):
     def test_frozen_conformance_inventory_passes(self):
-        self.assertEqual(validate(VECTORS, PREDICATE, BUNDLE, VECTOR_SCHEMA)["vector_count"], 32)
+        self.assertEqual(validate(VECTORS, PREDICATE, BUNDLE, VECTOR_SCHEMA)["vector_count"], 33)
 
     def test_duplicate_vector_id_rejected(self):
         changed = copy.deepcopy(VECTORS)
