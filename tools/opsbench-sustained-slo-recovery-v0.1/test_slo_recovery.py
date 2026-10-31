@@ -51,8 +51,11 @@ class SustainedSloRecoveryTests(unittest.TestCase):
         self.assertFalse(report["sustained_recovery"]["verified"])
 
     def test_missing_window_is_indeterminate_and_resets_hold(self):
-        contract, contract_bytes, observations, _ = fixtures()
-        observations["windows"] = [w for w in observations["windows"] if w["window_id"] != "w06"]
+        contract, _contract_bytes, observations, _ = fixtures()
+        contract["timeline"]["evaluation_started_at"] = "2026-10-31T14:04:00Z"
+        observations["windows"] = [w for w in observations["windows"][4:] if w["window_id"] != "w06"]
+        contract_bytes = serialize(contract)
+        observations["contract_sha256"] = hashlib.sha256(contract_bytes).hexdigest()
         report = evaluate(contract, contract_bytes, observations, serialize(observations))
         self.assertEqual(report["status"], "indeterminate")
         self.assertEqual(report["sustained_recovery"]["indeterminate_window_count"], 1)
@@ -97,11 +100,11 @@ class SustainedSloRecoveryTests(unittest.TestCase):
 
     def test_zero_traffic_never_passes_success_ratio(self):
         contract, contract_bytes, observations, _ = fixtures()
-        observations["windows"][0]["request_count"] = 0
-        observations["windows"][0]["successful_request_count"] = 0
-        observations["windows"][0]["latency_histogram"] = None
+        observations["windows"][4]["request_count"] = 0
+        observations["windows"][4]["successful_request_count"] = 0
+        observations["windows"][4]["latency_histogram"] = None
         report = evaluate(contract, contract_bytes, observations, serialize(observations))
-        w = report["sustained_recovery"]["window_results"][0]
+        w = next(row for row in report["sustained_recovery"]["window_results"] if row["window_id"] == "w04")
         self.assertEqual(w["status"], "indeterminate")
 
     def test_goodput_collapse_fails_even_if_requests_are_successful(self):
@@ -168,7 +171,7 @@ class SustainedSloRecoveryTests(unittest.TestCase):
 
     def test_duplicate_time_slot_rejected(self):
         contract, contract_bytes, observations, _ = fixtures()
-        observations["windows"].append(copy.deepcopy(observations["windows"][0]))
+        observations["windows"].insert(1, copy.deepcopy(observations["windows"][0]))
         with self.assertRaisesRegex(ContractError, "duplicate time slot"):
             evaluate(contract, contract_bytes, observations, serialize(observations))
 
