@@ -1,0 +1,22 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://luminousdynamics.io/schemas/opsbench-sealed-corpus-registration-v0.1.json",
+  "title":"OpsBench sealed corpus pre-trial commitment v0.1",
+  "type":"object","additionalProperties":false,
+  "required":["schema","version","status","study_id","preregistration_sha256","manifest_sha256","commitment_scheme","commitment_sha256","salt_sha256","registered_at","first_trial_at"],
+  "properties":{
+    "schema":{"const":"luminous-opsbench-sealed-corpus-registration-v0.1"},
+    "version":{"const":1},
+    "status":{"enum":["example_only","sealed_before_trials","revealed_after_study"]},
+    "study_id":{"type":"string","minLength":1},
+    "preregistration_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "manifest_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "commitment_scheme":{"const":"sha256-domain-separated-secret-salt-v0.1"},
+    "commitment_domain":{"const":"luminous-opsbench-sealed-corpus-v0.1"},
+    "commitment_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "salt_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "registered_at":{"type":"string","format":"date-time"},
+    "first_trial_at":{"type":"string","format":"date-time"},
+    "revealed_at":{"type":"string","format":"date-time"}
+  }
+}
