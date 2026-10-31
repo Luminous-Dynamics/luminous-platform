@@ -1,0 +1,34 @@
+{
+ "$schema":"https://json-schema.org/draft/2020-12/schema",
+ "$id":"https://luminousdynamics.io/schemas/opsbench-workload-fidelity-contract-v0.1.json",
+ "title":"OpsBench workload-fidelity contract v0.1",
+ "type":"object","additionalProperties":false,
+ "required":["schema","version","status","study_id","run_id","episode_id","service_id","service_digest","executor","load_generator","observer","business_oracle","fault_controller","profile_sha256","phase_schedule_sha256","load_generator_receipts_sha256","service_observations_sha256","expected_phase_count"],
+ "properties":{
+  "schema":{"const":"luminous-opsbench-workload-fidelity-contract-v0.1"},
+  "version":{"const":1},
+  "status":{"enum":["example_only","registered_contract"]},
+  "study_id":{"type":"string","minLength":1},
+  "run_id":{"type":"string","minLength":1},
+  "episode_id":{"type":"string","minLength":1},
+  "service_id":{"type":"string","minLength":1},
+  "service_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+  "executor":{"$ref":"#/$defs/identity"},
+  "load_generator":{"$ref":"#/$defs/identity"},
+  "observer":{"$ref":"#/$defs/identity"},
+  "business_oracle":{"$ref":"#/$defs/identity"},
+  "fault_controller":{"$ref":"#/$defs/identity"},
+  "profile_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+  "phase_schedule_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+  "load_generator_receipts_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+  "service_observations_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+  "expected_phase_count":{"type":"integer","minimum":5,"maximum":100}
+ },
+ "$defs":{
+  "identity":{
+   "type":"object","additionalProperties":false,
+   "required":["source_id","trust_domain_id"],
+   "properties":{"source_id":{"type":"string","minLength":1},"trust_domain_id":{"type":"string","minLength":1}}
+  }
+ }
+}
