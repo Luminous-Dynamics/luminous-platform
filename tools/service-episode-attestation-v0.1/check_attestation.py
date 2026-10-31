@@ -11,6 +11,7 @@ ROOT = HERE.parents[1]
 PREDICATE = ROOT / "benchmarks" / "service-episode-attestation-v0.1" / "predicate.schema.json"
 BUNDLE = ROOT / "benchmarks" / "service-episode-attestation-v0.1" / "bundle.schema.json"
 VECTORS = ROOT / "benchmarks" / "service-episode-attestation-v0.1" / "conformance-vectors.json"
+VECTOR_SCHEMA = ROOT / "benchmarks" / "service-episode-attestation-v0.1" / "conformance-vectors.schema.json"
 
 EXPECTED_ROLES = {"coordinator", "participant", "independent_observer", "authority"}
 EXPECTED_IDS = {
@@ -108,7 +109,7 @@ def load(path: Path) -> Any:
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         fail(f"cannot load JSON {path}: {exc}")
 
-def validate(vectors: Any, predicate: Any, bundle: Any) -> dict[str, int]:
+def validate(vectors: Any, predicate: Any, bundle: Any, vector_schema: Any) -> dict[str, int]:
     require(isinstance(vectors, dict) and set(vectors) == TOP_KEYS, "conformance root keys drifted")
     require(vectors["schema"] == "luminous-service-episode-attestation-conformance-v0.1"
             and vectors["version"] == 1, "conformance identity/version drifted")
@@ -135,7 +136,7 @@ def validate(vectors: Any, predicate: Any, bundle: Any) -> dict[str, int]:
             and len(policy["anti_replay"]) == 3, "anti-replay controls drifted")
 
     items = vectors["vectors"]
-    require(isinstance(items, list) and len(items) == 32, "exactly 32 vectors required")
+    require(isinstance(items, list) and len(items) == 33, "exactly 33 vectors required")
     ids: set[str] = set()
     categories: set[str] = set()
     for item in items:
@@ -171,7 +172,24 @@ def validate(vectors: Any, predicate: Any, bundle: Any) -> dict[str, int]:
     for digest_field in ("target_digest","request_digest"):
         require(binding_props.get(digest_field, {}).get("pattern") == "^sha256:[a-f0-9]{64}$",
                 f"predicate {digest_field} must be SHA-256 bound")
-    freshness_props = pred_props.get("freshness", {}).get("properties", {})
+    issuer_schema = pred_props.get("issuer", {})
+    episode_schema = pred_props.get("episode", {})
+    binding_schema = pred_props.get("binding", {})
+    observation_schema = pred_props.get("observation", {})
+    freshness_schema = pred_props.get("freshness", {})
+    required_contracts = [
+        (issuer_schema, {"principal_ref", "key_id", "claimed_role", "trust_registry_version"}, "issuer"),
+        (episode_schema, {"episode_id", "tenant_commitment", "plan_digest"}, "episode"),
+        (binding_schema, {"service_ref", "target_digest", "step_id", "operation_id", "request_digest",
+                          "logical_idempotency_key", "attempt_id"}, "binding"),
+        (observation_schema, {"effect", "consistency", "postcondition_digest", "evidence_digest",
+                              "observed_at", "valid_until"}, "observation"),
+        (freshness_schema, {"issued_at", "expires_at", "issuer_sequence", "nonce"}, "freshness"),
+    ]
+    for contract, required_fields, label in required_contracts:
+        require(set(contract.get("required", [])) == required_fields,
+                f"predicate {label} mandatory field inventory drifted")
+    freshness_props = freshness_schema.get("properties", {})
     require("nonce" in freshness_props and "issuer_sequence" in freshness_props,
             "signed nonce and issuer sequence are required")
 
@@ -186,11 +204,27 @@ def validate(vectors: Any, predicate: Any, bundle: Any) -> dict[str, int]:
     ], "bundle schema must require four roles")
     signature_props = bundle_props.get("attestations", {}).get("items", {}).get("properties", {}).get("signatures", {})
     require(signature_props.get("minItems") == 1, "DSSE envelope must require at least one signature")
+    require(set(bundle.get("required", [])) == {
+        "schema", "version", "status", "predicate_type", "payload_type", "episode_binding",
+        "required_roles", "attestations", "claim_ceiling", "verifier_policy_version"
+    }, "bundle root must require the complete signed evidence envelope")
+
+    require(vector_schema.get("$schema") == "https://json-schema.org/draft/2020-12/schema",
+            "conformance vector schema must be Draft 2020-12")
+    vector_array = vector_schema.get("properties", {}).get("vectors", {})
+    require(vector_array.get("minItems") == 33 and vector_array.get("maxItems") == 33,
+            "conformance schema must freeze all 33 vectors")
+    vector_item = vector_array.get("items", {})
+    require(set(vector_item.get("properties", {})) == VECTOR_KEYS
+            and vector_item.get("additionalProperties") is False,
+            "conformance schema vector field inventory drifted")
+    require(vector_item.get("properties", {}).get("visibility", {}).get("const") ==
+            "evaluator_only_not_sut_input", "conformance schema must keep vectors evaluator-only")
     return {"vector_count":len(ids),"category_count":len(categories),"required_role_count":len(EXPECTED_ROLES)}
 
 def main() -> int:
     try:
-        result = validate(load(VECTORS), load(PREDICATE), load(BUNDLE))
+        result = validate(load(VECTORS), load(PREDICATE), load(BUNDLE), load(VECTOR_SCHEMA))
     except (ValueError, KeyError, TypeError) as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
