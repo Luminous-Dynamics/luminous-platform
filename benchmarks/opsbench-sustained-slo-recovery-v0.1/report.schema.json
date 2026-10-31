@@ -13,13 +13,14 @@
     "window_count":{"type":"integer","minimum":0},
     "sustained_recovery":{
       "type":"object","additionalProperties":false,
-      "required":["verified","candidate_window_id","sustained_from","sustained_until","hold_window_count","time_to_sustained_recovery_seconds","regression_count","indeterminate_window_count","window_results"],
+      "required":["verified","candidate_window_id","sustained_from","sustained_until","hold_window_count","time_to_recovery_candidate_seconds","time_to_sustained_recovery_seconds","regression_count","indeterminate_window_count","window_results"],
       "properties":{
         "verified":{"type":"boolean"},
         "candidate_window_id":{"type":["string","null"]},
         "sustained_from":{"type":["string","null"]},
         "sustained_until":{"type":["string","null"]},
         "hold_window_count":{"type":"integer","minimum":1},
+        "time_to_recovery_candidate_seconds":{"type":["number","null"]},
         "time_to_sustained_recovery_seconds":{"type":["number","null"]},
         "regression_count":{"type":"integer","minimum":0},
         "indeterminate_window_count":{"type":"integer","minimum":0},
