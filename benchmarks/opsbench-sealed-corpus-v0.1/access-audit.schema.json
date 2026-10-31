@@ -1,0 +1,44 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://luminousdynamics.io/schemas/opsbench-evaluator-access-audit-v0.1.json",
+  "title":"OpsBench evaluator access audit v0.1",
+  "type":"object","additionalProperties":false,
+  "required":["schema","version","status","run_id","arm_id","scenario_id","variant_id","seed","coverage","canary_hits","events"],
+  "properties":{
+    "schema":{"const":"luminous-opsbench-evaluator-access-audit-v0.1"},
+    "version":{"const":1},
+    "status":{"enum":["example_only","complete","incomplete"]},
+    "run_id":{"type":"string","minLength":1},
+    "arm_id":{"type":"string","minLength":1},
+    "scenario_id":{"type":"string","minLength":1},
+    "variant_id":{"type":"string","minLength":1},
+    "seed":{"type":"integer","minimum":0},
+    "coverage":{
+      "type":"object","additionalProperties":false,
+      "required":["filesystem","network","tool_calls","process","secrets","artifact_store"],
+      "properties":{
+        "filesystem":{"type":"boolean"},"network":{"type":"boolean"},
+        "tool_calls":{"type":"boolean"},"process":{"type":"boolean"},
+        "secrets":{"type":"boolean"},"artifact_store":{"type":"boolean"}
+      }
+    },
+    "canary_hits":{"type":"integer","minimum":0},
+    "events":{
+      "type":"array",
+      "items":{
+        "type":"object","additionalProperties":false,
+        "required":["event_id","timestamp","principal_role","action","resource_class","disposition","endpoint","evidence_sha256"],
+        "properties":{
+          "event_id":{"type":"string","minLength":1},
+          "timestamp":{"type":"string","format":"date-time"},
+          "principal_role":{"enum":["sut","evaluator","observer","harness"]},
+          "action":{"enum":["read","write","mount","execute","egress"]},
+          "resource_class":{"type":"string","minLength":1},
+          "disposition":{"enum":["allowed","denied","unknown"]},
+          "endpoint":{"type":["string","null"]},
+          "evidence_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}
+        }
+      }
+    }
+  }
+}
