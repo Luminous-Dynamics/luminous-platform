@@ -123,12 +123,11 @@ class DurabilityContractTests(unittest.TestCase):
             validate(changed, SCHEMA)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
     def test_restate_rust_sdk_is_a_required_comparator(self):
         changed = copy.deepcopy(MATRIX)
         changed["baseline_arms"] = [x for x in changed["baseline_arms"] if x["id"] != "restate_rust_sdk_0_13"]
         with self.assertRaises(ValueError):
             validate(changed, SCHEMA)
 
+if __name__ == "__main__":
+    unittest.main()
