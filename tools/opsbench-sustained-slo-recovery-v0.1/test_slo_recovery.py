@@ -43,11 +43,11 @@ class SustainedSloRecoveryTests(unittest.TestCase):
         self.assertTrue(report["sustained_recovery"]["verified"])
         self.assertEqual(report["sustained_recovery"]["regression_count"], 1)
 
-    def test_single_successful_probe_does_not_prove_recovery(self):
+    def test_short_observation_horizon_cannot_prove_sustained_recovery(self):
         contract, contract_bytes, observations, _ = fixtures()
-        observations["windows"] = observations["windows"][:1]
+        observations["windows"] = observations["windows"][1:3]
         report = evaluate(contract, contract_bytes, observations, serialize(observations))
-        self.assertEqual(report["status"], "not_recovered")
+        self.assertEqual(report["status"], "indeterminate")
         self.assertFalse(report["sustained_recovery"]["verified"])
 
     def test_missing_window_is_indeterminate_and_resets_hold(self):
