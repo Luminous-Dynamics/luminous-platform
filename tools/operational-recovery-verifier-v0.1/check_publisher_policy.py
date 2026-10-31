@@ -195,9 +195,10 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
     _need(predicate.get("publisher_policy_sha256") == _sha(policy_bytes), "predicate: publisher policy digest mismatch")
     _need(predicate.get("assertion_scope") == "producer_published_source_event_segment", "predicate: claim exceeds producer-segment scope")
     produced_at = predicate.get("produced_at")
+    _need(isinstance(produced_at, str), "predicate.produced_at: timestamp string required")
     try:
         parsed_time = datetime.fromisoformat(produced_at.replace("Z", "+00:00"))
-    except (AttributeError, ValueError) as exc:
+    except ValueError as exc:
         raise PolicyError("predicate.produced_at: invalid timestamp") from exc
     _need(parsed_time.tzinfo is not None, "predicate.produced_at: timezone required")
 
@@ -310,7 +311,7 @@ def main(argv=None) -> int:
         else:
             Path(args.output).write_text(rendered, encoding="utf-8")
         return 0
-    except (OSError, PolicyError, AttributeError, KeyError, TypeError, OverflowError) as exc:
+    except (OSError, PolicyError, AttributeError, KeyError, TypeError, OverflowError, RecursionError) as exc:
         print(f"publisher-policy-check: {exc}", file=sys.stderr)
         return 2
 
