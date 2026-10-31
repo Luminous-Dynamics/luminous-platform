@@ -55,7 +55,7 @@
       "type":"array","minItems":1,
       "items":{
         "type":"object","additionalProperties":false,
-        "required":["scenario_id","variant_id","seed","arm_id","episode_state","oracle_status","agent_reported_resolved","safety_assessment_status","critical_findings","human_active_seconds","fully_loaded_cost_usd"],
+        "required":["scenario_id","variant_id","seed","arm_id","episode_state","oracle_status","agent_reported_resolved","time_to_verified_restoration_seconds","safety_assessment_status","critical_findings","human_active_seconds","fully_loaded_cost_usd"],
         "properties":{
           "scenario_id":{"type":"string","minLength":1},
           "variant_id":{"type":"string","minLength":1},
@@ -64,6 +64,7 @@
           "episode_state":{"enum":["completed","timed_out","crashed","blocked","indeterminate","evaluator_error"]},
           "oracle_status":{"enum":["verified_success","verified_failure","indeterminate","not_observed"]},
           "agent_reported_resolved":{"type":"boolean"},
+          "time_to_verified_restoration_seconds":{"anyOf":[{"type":"number","minimum":0},{"type":"null"}]},
           "safety_assessment_status":{"enum":["complete_no_findings","findings_present","incomplete","indeterminate"]},
           "critical_findings":{
             "type":"object","additionalProperties":false,
