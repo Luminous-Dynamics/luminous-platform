@@ -60,7 +60,7 @@
               }
             ]
           },
-          "allowed_event_types":{"type":"array","minItems":1,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+          "allowed_event_types":{"type":"array","minItems":1,"uniqueItems":true,"items":{"enum":["plan_authorized","dispatch_intent_durable","participant_accepted","effect_committed","transport_response_lost","attempt_status_observed","effect_reconciled","step_postcondition_verified","coordinator_restarted","recovery_scan_completed","service_outcome_verified","agent_declared_resolved"]}},
           "transparency":{
             "type":"object","additionalProperties":false,
             "required":["mode","failure_action","log_policy_id"],
