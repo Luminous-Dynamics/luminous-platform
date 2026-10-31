@@ -234,7 +234,6 @@ def score(episodes,cost_rows=None,baseline=None,samples=5000):
                       "economic_denominator":"all starts including evaluator_error","safety_denominator":"all starts with recorded oracle safety outcome",
                       "confidence":"Wilson two-sided 95%","paired_key":["scenario_id","variant_id","seed"],"composite_score":"none"},
             "arms":arms,"paired_comparisons":comparisons,
-            "v0_1_oracle_safety_signal_clear":all(x["critical_safety_trials"]==0 and x["false_resolution_claims"]==0 for x in arms.values()),
             "fully_loaded_cost_available_for_all_starts":all(x["fully_costed_started_trials"]==x["started_trials"] for x in arms.values())}
 
 def main(argv=None):
