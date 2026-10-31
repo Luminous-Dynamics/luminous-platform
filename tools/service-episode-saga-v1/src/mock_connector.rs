@@ -7,8 +7,8 @@
 //! durability or power-loss test.
 
 use super::{
-    Consistency, Digest, NoEffectBasis, ObservedEffect, ObserverEvidence,
-    SagaEpisode, ServicePlan, OperationSpec, AuthorityGrant, StepStatus,
+    AuthorityGrant, Consistency, Digest, NoEffectBasis, ObservedEffect, ObserverEvidence,
+    OperationSpec, SagaEpisode, ServicePlan, StepStatus,
 };
 use std::collections::BTreeMap;
 
@@ -142,9 +142,7 @@ impl MockConnector {
             };
         }
 
-        if let Some(original_attempt_id) =
-            self.idempotency_index.get(&request.idempotency_key)
-        {
+        if let Some(original_attempt_id) = self.idempotency_index.get(&request.idempotency_key) {
             let Some(existing) = self.attempts.get(original_attempt_id) else {
                 return TransportOutcome::IdempotencyConflict;
             };
@@ -164,10 +162,8 @@ impl MockConnector {
             return TransportOutcome::TimedOut;
         }
 
-        self.idempotency_index.insert(
-            request.idempotency_key.clone(),
-            request.attempt_id.clone(),
-        );
+        self.idempotency_index
+            .insert(request.idempotency_key.clone(), request.attempt_id.clone());
         self.attempts.insert(
             request.attempt_id.clone(),
             AttemptRecord {
@@ -215,9 +211,7 @@ impl MockConnector {
             effect_digest: Digest(digest_bytes),
         };
 
-        self.attempts
-            .get_mut(attempt_id)?
-            .state = AttemptState::EffectCommitted(receipt.clone());
+        self.attempts.get_mut(attempt_id)?.state = AttemptState::EffectCommitted(receipt.clone());
         Some(receipt)
     }
 
@@ -244,9 +238,7 @@ impl MockConnector {
             };
         }
 
-        if let Some(original_attempt_id) =
-            self.idempotency_index.get(&request.idempotency_key)
-        {
+        if let Some(original_attempt_id) = self.idempotency_index.get(&request.idempotency_key) {
             let Some(existing) = self.attempts.get(original_attempt_id) else {
                 return AttemptLedgerObservation::Unknown;
             };
@@ -290,24 +282,18 @@ impl MockConnector {
                     Some(request.expected_postcondition_digest),
                     None,
                 ),
-                (LedgerConsistency::Strong, AttemptLedgerObservation::AcceptedPending) => (
-                    ObservedEffect::Unknown,
-                    Consistency::Strong,
-                    None,
-                    None,
-                ),
+                (LedgerConsistency::Strong, AttemptLedgerObservation::AcceptedPending) => {
+                    (ObservedEffect::Unknown, Consistency::Strong, None, None)
+                }
                 (_, AttemptLedgerObservation::EffectCommitted(_)) => (
                     ObservedEffect::ExpectedPostcondition,
                     Consistency::Eventual,
                     Some(request.expected_postcondition_digest),
                     None,
                 ),
-                (_, AttemptLedgerObservation::AcceptedPending) => (
-                    ObservedEffect::Unknown,
-                    Consistency::Eventual,
-                    None,
-                    None,
-                ),
+                (_, AttemptLedgerObservation::AcceptedPending) => {
+                    (ObservedEffect::Unknown, Consistency::Eventual, None, None)
+                }
                 (_, AttemptLedgerObservation::IdempotencyKeyOwnedByOtherAttempt { .. })
                 | (_, AttemptLedgerObservation::BindingConflict) => (
                     ObservedEffect::Conflicting,
@@ -315,19 +301,13 @@ impl MockConnector {
                     None,
                     None,
                 ),
-                (_, AttemptLedgerObservation::Unknown) => (
-                    ObservedEffect::Unknown,
-                    Consistency::Unknown,
-                    None,
-                    None,
-                ),
+                (_, AttemptLedgerObservation::Unknown) => {
+                    (ObservedEffect::Unknown, Consistency::Unknown, None, None)
+                }
                 (LedgerConsistency::Eventual, AttemptLedgerObservation::NeverAccepted)
-                | (LedgerConsistency::Unavailable, AttemptLedgerObservation::NeverAccepted) => (
-                    ObservedEffect::Unknown,
-                    Consistency::Unknown,
-                    None,
-                    None,
-                ),
+                | (LedgerConsistency::Unavailable, AttemptLedgerObservation::NeverAccepted) => {
+                    (ObservedEffect::Unknown, Consistency::Unknown, None, None)
+                }
             };
 
         ObserverEvidence {
@@ -411,15 +391,13 @@ mod tests {
         assert_eq!(connector.business_effect_count(), 0);
         let eventual = connector.query_attempt(&req, LedgerConsistency::Eventual);
         assert_eq!(eventual, AttemptLedgerObservation::Unknown);
-        let weak_evidence =
-            connector.observer_evidence(&req, LedgerConsistency::Eventual, 50, 200);
+        let weak_evidence = connector.observer_evidence(&req, LedgerConsistency::Eventual, 50, 200);
         assert_eq!(weak_evidence.effect, ObservedEffect::Unknown);
         assert_eq!(weak_evidence.no_effect_basis, None);
 
         let strong = connector.query_attempt(&req, LedgerConsistency::Strong);
         assert_eq!(strong, AttemptLedgerObservation::NeverAccepted);
-        let evidence =
-            connector.observer_evidence(&req, LedgerConsistency::Strong, 50, 200);
+        let evidence = connector.observer_evidence(&req, LedgerConsistency::Strong, 50, 200);
         assert_eq!(evidence.effect, ObservedEffect::NoEffect);
         assert_eq!(
             evidence.no_effect_basis,
@@ -440,8 +418,7 @@ mod tests {
             connector.query_attempt(&req, LedgerConsistency::Strong),
             AttemptLedgerObservation::AcceptedPending
         );
-        let evidence =
-            connector.observer_evidence(&req, LedgerConsistency::Strong, 50, 200);
+        let evidence = connector.observer_evidence(&req, LedgerConsistency::Strong, 50, 200);
         assert_eq!(evidence.effect, ObservedEffect::Unknown);
         assert_eq!(evidence.no_effect_basis, None);
         assert_eq!(connector.business_effect_count(), 0);
@@ -453,8 +430,12 @@ mod tests {
         );
         assert_eq!(connector.business_effect_count(), 0);
 
-        let first = connector.complete_pending("attempt-1").expect("worker completes");
-        let duplicate = connector.complete_pending("attempt-1").expect("duplicate signal");
+        let first = connector
+            .complete_pending("attempt-1")
+            .expect("worker completes");
+        let duplicate = connector
+            .complete_pending("attempt-1")
+            .expect("duplicate signal");
         assert_eq!(first, duplicate);
         assert_eq!(connector.business_effect_count(), 1);
     }
@@ -468,8 +449,7 @@ mod tests {
             TransportOutcome::TimedOut
         );
         assert_eq!(connector.business_effect_count(), 1);
-        let evidence =
-            connector.observer_evidence(&req, LedgerConsistency::Strong, 50, 200);
+        let evidence = connector.observer_evidence(&req, LedgerConsistency::Strong, 50, 200);
         assert_eq!(evidence.effect, ObservedEffect::ExpectedPostcondition);
         assert_eq!(
             evidence.postcondition_digest,
@@ -500,10 +480,7 @@ mod tests {
         ));
         assert_eq!(
             connector.submit(second_attempt.clone(), FaultMode::Normal),
-            match connector.query_attempt(
-                &second_attempt,
-                LedgerConsistency::Strong
-            ) {
+            match connector.query_attempt(&second_attempt, LedgerConsistency::Strong) {
                 AttemptLedgerObservation::IdempotencyKeyOwnedByOtherAttempt {
                     original_attempt_id,
                 } => {
@@ -511,7 +488,7 @@ mod tests {
                     TransportOutcome::PreviouslyAccepted(
                         match connector.query_attempt(
                             &request("attempt-1", "idem-1", 1),
-                            LedgerConsistency::Strong
+                            LedgerConsistency::Strong,
                         ) {
                             AttemptLedgerObservation::EffectCommitted(receipt) => receipt,
                             other => panic!("expected committed original receipt, got {other:?}"),
@@ -632,13 +609,8 @@ mod tests {
         };
         saga.authorize_step(0, "ticket-step", &first_grant, 1)
             .expect("first exact grant");
-        saga.persist_dispatch_intent(
-            saga.revision(),
-            "ticket-step",
-            "attempt-1",
-            "idem-1",
-        )
-        .expect("write-ahead saga dispatch intent");
+        saga.persist_dispatch_intent(saga.revision(), "ticket-step", "attempt-1", "idem-1")
+            .expect("write-ahead saga dispatch intent");
 
         let mut connector = MockConnector::default();
         let first_request = request("attempt-1", "idem-1", 1);
@@ -646,12 +618,8 @@ mod tests {
             connector.submit(first_request.clone(), FaultMode::BeforeAdmission),
             TransportOutcome::TimedOut
         );
-        let evidence = connector.observer_evidence(
-            &first_request,
-            LedgerConsistency::Strong,
-            50,
-            200,
-        );
+        let evidence =
+            connector.observer_evidence(&first_request, LedgerConsistency::Strong, 50, 200);
         saga.record_observation(saga.revision(), "ticket-step", &evidence, 100)
             .expect("attempt-specific ledger proof reconciles the dispatched step");
         assert!(matches!(
@@ -663,20 +631,10 @@ mod tests {
             grant_id: "grant-2".into(),
             ..first_grant
         };
-        saga.authorize_step(
-            saga.revision(),
-            "ticket-step",
-            &second_grant,
-            101,
-        )
-        .expect("fresh grant required after never-accepted proof");
-        saga.persist_dispatch_intent(
-            saga.revision(),
-            "ticket-step",
-            "attempt-2",
-            "idem-1",
-        )
-        .expect("new unique attempt with stable logical idempotency key");
+        saga.authorize_step(saga.revision(), "ticket-step", &second_grant, 101)
+            .expect("fresh grant required after never-accepted proof");
+        saga.persist_dispatch_intent(saga.revision(), "ticket-step", "attempt-2", "idem-1")
+            .expect("new unique attempt with stable logical idempotency key");
 
         let second_request = request("attempt-2", "idem-1", 1);
         assert!(matches!(
