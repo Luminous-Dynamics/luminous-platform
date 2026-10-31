@@ -10,7 +10,7 @@
     "source_id": "workload-fault-controller",
     "trust_domain_id": "fault-injection"
   },
-  "phase_schedule_sha256": "4a7285c5a515b28970298dd085ba8d98c692df9ac2b4d30c4bdc3951f589bdfc",
+  "phase_schedule_sha256": "b00ec3fdc79e9d1893db746c5a5cf0eb82fac17a4c0b3764a4403a74a6071780",
   "receipts": [
     {
       "phase_id": "dependency-degradation",
