@@ -1,0 +1,29 @@
+name: Service-Episode Durability v0.1
+on:
+  pull_request:
+    paths:
+      - "docs/SERVICE_EPISODE_COORDINATOR_DURABILITY_V0_1.md"
+      - "docs/ADR_SERVICE_EPISODE_DURABLE_RUNTIME_0001.md"
+      - "benchmarks/service-episode-durability-v0.1/**"
+      - "tools/service-episode-durability-v0.1/**"
+      - ".github/workflows/service-episode-durability-v0.1.yml"
+  push:
+    branches:
+      - "research/service-episode-durability-v0.1-2026-10-31"
+    paths:
+      - "docs/SERVICE_EPISODE_COORDINATOR_DURABILITY_V0_1.md"
+      - "docs/ADR_SERVICE_EPISODE_DURABLE_RUNTIME_0001.md"
+      - "benchmarks/service-episode-durability-v0.1/**"
+      - "tools/service-episode-durability-v0.1/**"
+      - ".github/workflows/service-episode-durability-v0.1.yml"
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate frozen crash matrix
+        run: python3 tools/service-episode-durability-v0.1/check_durability.py
+      - name: Run adversarial mutation tests
+        run: python3 -m unittest discover -s tools/service-episode-durability-v0.1 -p 'test_*.py' -v
