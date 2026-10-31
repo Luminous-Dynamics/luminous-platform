@@ -47,6 +47,11 @@
           },
           {
             "type":"object","additionalProperties":false,
+            "required":["sli_id","kind","minimum_ratio"],
+            "properties":{"sli_id":{"type":"string","minLength":1},"kind":{"const":"synthetic_probe_success_ratio"},"minimum_ratio":{"type":"number","minimum":0,"maximum":1}}
+          },
+          {
+            "type":"object","additionalProperties":false,
             "required":["sli_id","kind","quantile","maximum_seconds"],
             "properties":{"sli_id":{"type":"string","minLength":1},"kind":{"const":"latency_quantile"},"quantile":{"type":"number","exclusiveMinimum":0,"maximum":1},"maximum_seconds":{"type":"number","exclusiveMinimum":0}}
           },
