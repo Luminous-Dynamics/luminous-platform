@@ -229,7 +229,8 @@
                 "const": false
               },
               "expected_business_effect_count": {
-                "const": 1
+                "type": "integer",
+                "minimum": 0
               },
               "prohibited_actions": {
                 "type": "array",
