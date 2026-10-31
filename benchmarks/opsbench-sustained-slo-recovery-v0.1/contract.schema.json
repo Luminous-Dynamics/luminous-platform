@@ -3,7 +3,7 @@
   "$id":"https://luminousdynamics.io/schemas/opsbench-service-objective-contract-v0.1.json",
   "title":"OpsBench service objective contract v0.1",
   "type":"object","additionalProperties":false,
-  "required":["schema","version","status","study_id","episode_id","run_id","service_id","service_digest","executor","observer","business_oracle","timeline","required_slis"],
+  "required":["schema","version","status","study_id","episode_id","run_id","service_id","service_digest","executor","observer","business_oracle","baseline_reference","timeline","required_slis"],
   "properties":{
     "schema":{"const":"luminous-opsbench-service-objective-contract-v0.1"},
     "version":{"const":1},
@@ -16,6 +16,16 @@
     "executor":{"type":"object","additionalProperties":false,"required":["source_id","trust_domain_id"],"properties":{"source_id":{"type":"string","minLength":1},"trust_domain_id":{"type":"string","minLength":1}}},
     "observer":{"type":"object","additionalProperties":false,"required":["source_id","trust_domain_id"],"properties":{"source_id":{"type":"string","minLength":1},"trust_domain_id":{"type":"string","minLength":1}}},
     "business_oracle":{"type":"object","additionalProperties":false,"required":["source_id","trust_domain_id"],"properties":{"source_id":{"type":"string","minLength":1},"trust_domain_id":{"type":"string","minLength":1}}},
+    "baseline_reference":{
+      "type":"object","additionalProperties":false,
+      "required":["window_started_at","window_ended_at","measurement_sha256","workload_profile_sha256"],
+      "properties":{
+        "window_started_at":{"type":"string","format":"date-time"},
+        "window_ended_at":{"type":"string","format":"date-time"},
+        "measurement_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+        "workload_profile_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}
+      }
+    },
     "timeline":{
       "type":"object","additionalProperties":false,
       "required":["incident_started_at","evaluation_started_at","evaluation_ended_at","window_seconds","hold_window_count","minimum_request_count","minimum_synthetic_probe_count","minimum_business_check_count","maximum_gap_seconds"],
