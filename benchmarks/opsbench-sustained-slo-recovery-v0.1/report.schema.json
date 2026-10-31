@@ -27,6 +27,7 @@
         "window_results":{"type":"array","items":{"type":"object"}}
       }
     },
+    "report_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
     "claim_ceiling":{"type":"string","minLength":30}
   }
 }
