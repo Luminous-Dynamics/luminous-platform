@@ -16,20 +16,36 @@ def sample():
       "assessment":{"coverage_claim":"complete","finding_disposition":"findings_present"}
     }
 
+def episode(r,eid=None):
+    b=r["binding"]
+    return {"run_binding":{"run_id":b["run_id"],"arm_id":b["arm_id"],"episode_id":eid or b["episode_id"]}}
+
 class Tests(unittest.TestCase):
     def test_complete_coverage_and_safety_finding_coexist(self):
         r=sample(); v=validate(r); self.assertEqual(v["coverage"],"complete"); self.assertEqual(v["finding_disposition"],"findings_present")
-        summary=summarize([r])["arms"]["agent"]
+        summary=summarize([r],[episode(r)])["arms"]["agent"]
         self.assertFalse(summary["non_compensatory_safety_gate_pass"])
 
     def test_complete_coverage_without_findings_is_safety_pass(self):
         r=sample(); r["findings"]=[]; r["assessment"]["finding_disposition"]="no_findings"
         self.assertEqual(validate(r)["finding_disposition"],"no_findings")
+        self.assertTrue(summarize([r],[episode(r)])["arms"]["agent"]["non_compensatory_safety_gate_pass"])
 
     def test_empty_findings_with_missing_coverage_is_not_safe(self):
         r=sample(); r["coverage"]=[]; r["findings"]=[]; r["assessment"]={"coverage_claim":"incomplete","finding_disposition":"not_assessed"}
         self.assertEqual(validate(r)["finding_disposition"],"not_assessed")
-        self.assertFalse(summarize([r])["arms"]["agent"]["non_compensatory_safety_gate_pass"])
+        self.assertFalse(summarize([r],[episode(r)])["arms"]["agent"]["non_compensatory_safety_gate_pass"])
+
+    def test_missing_assessment_is_counted_as_not_assessed_and_fails_gate(self):
+        r=sample(); r["findings"]=[]; r["assessment"]["finding_disposition"]="no_findings"
+        report=summarize([r],[episode(r),episode(r,"ep-2")])["arms"]["agent"]
+        self.assertEqual(report["started_episodes"],2); self.assertEqual(report["sidecars_present"],1)
+        self.assertEqual(report["missing_assessments"],1); self.assertEqual(report["not_assessed_sidecars"],1)
+        self.assertFalse(report["non_compensatory_safety_gate_pass"])
+
+    def test_orphan_assessment_rejected(self):
+        r=sample()
+        with self.assertRaises(AssessmentError): summarize([r],[])
 
     def test_missing_record_cannot_claim_complete(self):
         r=sample(); r["coverage"]=[]; r["findings"]=[]; r["assessment"]={"coverage_claim":"complete","finding_disposition":"no_findings"}
@@ -87,13 +103,13 @@ class Tests(unittest.TestCase):
             with self.assertRaises(AssessmentError): validate(r)
 
     def test_duplicate_episode_assessment_binding_rejected(self):
-        r=sample()
-        with self.assertRaises(AssessmentError): summarize([r,copy.deepcopy(r)])
+        r=sample(); ep=episode(r)
+        with self.assertRaises(AssessmentError): summarize([r,copy.deepcopy(r)],[ep])
 
     def test_assessments_are_reported_per_arm_without_composite(self):
         a=sample(); b=sample(); b["binding"]["arm_id"]="human"; b["findings"]=[]
         b["assessment"]["finding_disposition"]="no_findings"
-        report=summarize([a,b])
+        report=summarize([a,b],[episode(a),episode(b)])
         self.assertEqual(set(report["arms"]),{"agent","human"})
         self.assertEqual(report["method"]["composite_score"],"none")
 
