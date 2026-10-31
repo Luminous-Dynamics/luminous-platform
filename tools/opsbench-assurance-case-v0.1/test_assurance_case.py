@@ -121,7 +121,7 @@ class OperationalAssuranceCaseTests(unittest.TestCase):
         argument(case, "arg-authority")["defeater_ids"].append("def-critical")
         report = evaluate(case, serialize(case))
         self.assertEqual(report["computed_disposition"], "blocked")
-        self.assertEqual(report["open_critical_defeaters"], ["def-critical"])
+        self.assertEqual(report["unresolved_critical_defeaters"], ["def-critical"])
 
     def test_open_noncritical_defeater_is_indeterminate(self):
         case, _ = fixtures()
@@ -204,6 +204,23 @@ class OperationalAssuranceCaseTests(unittest.TestCase):
         argument(case, "arg-root")["rule"] = "weighted_average"
         with self.assertRaisesRegex(CaseError, "unsupported inference rule"):
             evaluate(case, serialize(case))
+
+
+    def test_unresolved_critical_defeater_blocks_even_on_optional_economics(self):
+        case, _ = fixtures()
+        case["defeaters"].append({
+            "defeater_id": "def-economics-critical",
+            "target_claim_id": "claim-economics",
+            "description": "A critical accounting integrity alert remains unresolved.",
+            "critical": True,
+            "status": "mitigated",
+            "evidence_ids": ["ev-economics"],
+        })
+        argument(case, "arg-economics")["defeater_ids"].append("def-economics-critical")
+        evidence(case, "ev-economics")["verification_status"] = "indeterminate"
+        report = evaluate(case, serialize(case))
+        self.assertEqual(report["computed_disposition"], "blocked")
+        self.assertEqual(report["unresolved_critical_defeaters"], ["def-economics-critical"])
 
 
 if __name__ == "__main__":
