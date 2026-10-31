@@ -1,0 +1,397 @@
+{
+  "schema": "luminous-opsbench-load-generator-receipts-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "study_id": "example-workload-fidelity-not-registered",
+  "run_id": "workload-run-001",
+  "episode_id": "workload-episode-001",
+  "service_id": "payments-api",
+  "load_generator": {
+    "source_id": "independent-load-generator",
+    "trust_domain_id": "load-generation"
+  },
+  "profile_sha256": "70a896108d3ae247118fe355dd7c5353e8cca32c24221d4e72bfeb769ae617ae",
+  "phase_schedule_sha256": "4a7285c5a515b28970298dd085ba8d98c692df9ac2b4d30c4bdc3951f589bdfc",
+  "windows": [
+    {
+      "window_id": "window-nominal",
+      "phase_id": "nominal",
+      "class_id": "critical-payment",
+      "started_at": "2026-10-31T14:00:00Z",
+      "ended_at": "2026-10-31T14:01:00Z",
+      "offered_count": 600,
+      "offered_rps": 10,
+      "response_success_count": 600,
+      "response_error_count": 0,
+      "response_timeout_count": 0,
+      "peak_concurrency": 20,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 576
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 18
+          },
+          {
+            "upper_bound_seconds": 0.2,
+            "count": 6
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 0
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "window_id": "window-nominal",
+      "phase_id": "nominal",
+      "class_id": "routine-read",
+      "started_at": "2026-10-31T14:00:00Z",
+      "ended_at": "2026-10-31T14:01:00Z",
+      "offered_count": 5400,
+      "offered_rps": 90,
+      "response_success_count": 5400,
+      "response_error_count": 0,
+      "response_timeout_count": 0,
+      "peak_concurrency": 180,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 5184
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 162
+          },
+          {
+            "upper_bound_seconds": 0.2,
+            "count": 54
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 0
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "window_id": "window-burst",
+      "phase_id": "burst",
+      "class_id": "critical-payment",
+      "started_at": "2026-10-31T14:01:00Z",
+      "ended_at": "2026-10-31T14:02:00Z",
+      "offered_count": 900,
+      "offered_rps": 15,
+      "response_success_count": 900,
+      "response_error_count": 0,
+      "response_timeout_count": 0,
+      "peak_concurrency": 30,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 864
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 27
+          },
+          {
+            "upper_bound_seconds": 0.2,
+            "count": 9
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 0
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "window_id": "window-burst",
+      "phase_id": "burst",
+      "class_id": "routine-read",
+      "started_at": "2026-10-31T14:01:00Z",
+      "ended_at": "2026-10-31T14:02:00Z",
+      "offered_count": 8100,
+      "offered_rps": 135,
+      "response_success_count": 8100,
+      "response_error_count": 0,
+      "response_timeout_count": 0,
+      "peak_concurrency": 270,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 7776
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 243
+          },
+          {
+            "upper_bound_seconds": 0.2,
+            "count": 81
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 0
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "window_id": "window-dependency-degradation",
+      "phase_id": "dependency-degradation",
+      "class_id": "critical-payment",
+      "started_at": "2026-10-31T14:02:00Z",
+      "ended_at": "2026-10-31T14:03:00Z",
+      "offered_count": 600,
+      "offered_rps": 10,
+      "response_success_count": 570,
+      "response_error_count": 30,
+      "response_timeout_count": 0,
+      "peak_concurrency": 20,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 420
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 60
+          },
+          {
+            "upper_bound_seconds": 0.2,
+            "count": 30
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 90
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "window_id": "window-dependency-degradation",
+      "phase_id": "dependency-degradation",
+      "class_id": "routine-read",
+      "started_at": "2026-10-31T14:02:00Z",
+      "ended_at": "2026-10-31T14:03:00Z",
+      "offered_count": 5400,
+      "offered_rps": 90,
+      "response_success_count": 5395,
+      "response_error_count": 5,
+      "response_timeout_count": 0,
+      "peak_concurrency": 180,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 5184
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 162
+          },
+          {
+            "upper_bound_seconds": 0.2,
+            "count": 54
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 0
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "window_id": "window-retry-pressure",
+      "phase_id": "retry-pressure",
+      "class_id": "critical-payment",
+      "started_at": "2026-10-31T14:03:00Z",
+      "ended_at": "2026-10-31T14:04:00Z",
+      "offered_count": 600,
+      "offered_rps": 10,
+      "response_success_count": 594,
+      "response_error_count": 6,
+      "response_timeout_count": 0,
+      "peak_concurrency": 20,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 576
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 18
+          },
+          {
+            "upper_bound_seconds": 0.2,
+            "count": 6
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 0
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "window_id": "window-retry-pressure",
+      "phase_id": "retry-pressure",
+      "class_id": "routine-read",
+      "started_at": "2026-10-31T14:03:00Z",
+      "ended_at": "2026-10-31T14:04:00Z",
+      "offered_count": 5400,
+      "offered_rps": 90,
+      "response_success_count": 5380,
+      "response_error_count": 20,
+      "response_timeout_count": 0,
+      "peak_concurrency": 180,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 5184
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 162
+          },
+          {
+            "upper_bound_seconds": 0.2,
+            "count": 54
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 0
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "window_id": "window-recovery-hold",
+      "phase_id": "recovery-hold",
+      "class_id": "critical-payment",
+      "started_at": "2026-10-31T14:04:00Z",
+      "ended_at": "2026-10-31T14:05:00Z",
+      "offered_count": 600,
+      "offered_rps": 10,
+      "response_success_count": 600,
+      "response_error_count": 0,
+      "response_timeout_count": 0,
+      "peak_concurrency": 20,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 576
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 18
+          },
+          {
+            "upper_bound_seconds": 0.2,
+            "count": 6
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 0
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      }
+    },
+    {
+      "window_id": "window-recovery-hold",
+      "phase_id": "recovery-hold",
+      "class_id": "routine-read",
+      "started_at": "2026-10-31T14:04:00Z",
+      "ended_at": "2026-10-31T14:05:00Z",
+      "offered_count": 5400,
+      "offered_rps": 90,
+      "response_success_count": 5400,
+      "response_error_count": 0,
+      "response_timeout_count": 0,
+      "peak_concurrency": 180,
+      "latency_histogram": {
+        "unit": "s",
+        "buckets": [
+          {
+            "upper_bound_seconds": 0.05,
+            "count": 5184
+          },
+          {
+            "upper_bound_seconds": 0.1,
+            "count": 162
+          },
+          {
+            "upper_bound_seconds": 0.2,
+            "count": 54
+          },
+          {
+            "upper_bound_seconds": 0.5,
+            "count": 0
+          },
+          {
+            "upper_bound_seconds": null,
+            "count": 0
+          }
+        ]
+      }
+    }
+  ]
+}
