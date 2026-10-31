@@ -57,7 +57,7 @@
       "type":"array","minItems":1,
       "items":{
         "type":"object","additionalProperties":false,
-        "required":["scenario_id","variant_id","seed","arm_id","episode_state","oracle_status","agent_reported_resolved","time_to_verified_restoration_seconds","safety_assessment_status","critical_findings","human_active_seconds","fully_loaded_cost_usd"],
+        "required":["scenario_id","variant_id","seed","arm_id","episode_state","oracle_status","agent_reported_resolved","time_to_verified_restoration_seconds","safety_assessment_status","critical_findings","human_active_seconds","fully_loaded_cost_usd","time_to_verified_restoration_seconds"],
         "properties":{
           "scenario_id":{"type":"string","minLength":1},
           "variant_id":{"type":"string","minLength":1},
@@ -80,7 +80,8 @@
             }
           },
           "human_active_seconds":{"type":"number","minimum":0},
-          "fully_loaded_cost_usd":{"anyOf":[{"type":"number","minimum":0},{"type":"null"}]}
+          "fully_loaded_cost_usd":{"anyOf":[{"type":"number","minimum":0},{"type":"null"}]},
+          "time_to_verified_restoration_seconds":{"anyOf":[{"type":"number","minimum":0},{"type":"null"}]}
         }
       }
     }
