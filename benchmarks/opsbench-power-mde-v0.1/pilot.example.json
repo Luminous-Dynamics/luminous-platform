@@ -31,14 +31,8 @@
     {
       "scenario_id": "SCR-004",
       "paired_difference": 0.4
-    },
-    {
-      "scenario_id": "SCR-005",
-      "paired_difference": 0.2
     }
   ],
-  "unmatched_candidate_scenario_count": 1,
-  "unmatched_baseline_scenario_count": 0,
   "analysis": {
     "target_effect": 0.1,
     "target_power": 0.8,
@@ -47,5 +41,9 @@
     "simulation_replicates": 10000,
     "simulation_seed": 20261031,
     "safety_margin_fraction": 0.1
-  }
+  },
+  "unmatched_candidate_scenario_ids": [
+    "SCR-005"
+  ],
+  "unmatched_baseline_scenario_ids": []
 }
