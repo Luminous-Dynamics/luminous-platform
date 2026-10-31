@@ -1,0 +1,49 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "run-manifest.example.json",
+      "digest": {
+        "sha256": "53fcd7bdc9584a01d44dbab80513458eb0afa75e39242849a29f15f0a1535b98"
+      }
+    },
+    {
+      "name": "events-platform-coordinator-epoch-0.example.jsonl",
+      "digest": {
+        "sha256": "82aec54dc8c6da2adf65ade7cc6f63a8fabcb0b0fab36fd2101ec9e47dd95af1"
+      }
+    }
+  ],
+  "predicateType": "https://luminousdynamics.io/attestations/operational-recovery/v0.1",
+  "predicate": {
+    "schema": "luminous-operational-recovery-attestation-v0.1",
+    "version": 1,
+    "assertion_scope": "producer_published_source_event_segment",
+    "produced_at": "2026-10-31T10:00:00Z",
+    "run_binding": {
+      "run_id": "run-001",
+      "episode_id": "episode-001",
+      "plan_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "source_commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "artifact_binding": {
+      "manifest_subject_name": "run-manifest.example.json",
+      "event_segment_subject_name": "events-platform-coordinator-epoch-0.example.jsonl"
+    },
+    "producer": {
+      "source_id": "platform-coordinator",
+      "source_kind": "coordinator",
+      "trust_domain_id": "agent-runtime",
+      "identity_profile_id": "platform-coordinator-spiffe-v0"
+    },
+    "source_segment": {
+      "source_epoch": 0,
+      "first_sequence": 1,
+      "last_sequence": 2,
+      "event_count": 2,
+      "first_event_digest": "899600c26f7acc052a1c502c30b32d0e2df57e744732e87ff74a6a88e7ba5787",
+      "last_event_digest": "51740afe85e9320f4e1b07675b3faecf49f39266884ff3f2c81f11e9ea6de4d1"
+    },
+    "publisher_policy_sha256": "952353e03541bfcdef8d757b8558e73a08da9bc093e0387368ad3d8e7903332b"
+  }
+}

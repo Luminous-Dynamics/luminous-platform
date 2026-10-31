@@ -1,0 +1,67 @@
+name: operational evidence publisher profile v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/operational-recovery-v0.1/attestation-statement.schema.json"
+      - "benchmarks/operational-recovery-v0.1/attestation-statement.example.json"
+      - "benchmarks/operational-recovery-v0.1/publisher-policy.schema.json"
+      - "benchmarks/operational-recovery-v0.1/publisher-policy.example.json"
+      - "benchmarks/operational-recovery-v0.1/run-manifest.example.json"
+      - "benchmarks/operational-recovery-v0.1/events-platform-coordinator-epoch-0.example.jsonl"
+      - "tools/operational-recovery-verifier-v0.1/check_publisher_policy.py"
+      - "tools/operational-recovery-verifier-v0.1/test_publisher_policy.py"
+      - "docs/OPERATIONAL_EVIDENCE_ATTESTATION_PROFILE_V0_1.md"
+      - ".github/workflows/operational-evidence-publisher-profile-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/operational-recovery-v0.1/attestation-statement.schema.json"
+      - "benchmarks/operational-recovery-v0.1/attestation-statement.example.json"
+      - "benchmarks/operational-recovery-v0.1/publisher-policy.schema.json"
+      - "benchmarks/operational-recovery-v0.1/publisher-policy.example.json"
+      - "benchmarks/operational-recovery-v0.1/run-manifest.example.json"
+      - "benchmarks/operational-recovery-v0.1/events-platform-coordinator-epoch-0.example.jsonl"
+      - "tools/operational-recovery-verifier-v0.1/check_publisher_policy.py"
+      - "tools/operational-recovery-verifier-v0.1/test_publisher_policy.py"
+      - "docs/OPERATIONAL_EVIDENCE_ATTESTATION_PROFILE_V0_1.md"
+      - ".github/workflows/operational-evidence-publisher-profile-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operational-evidence-publisher-profile-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publisher-policy:
+    name: Publisher policy and evidence binding
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Compile exact checker and adversarial tests
+        run: python3 -m py_compile tools/operational-recovery-verifier-v0.1/check_publisher_policy.py tools/operational-recovery-verifier-v0.1/test_publisher_policy.py
+      - name: Parse all JSON profile artifacts
+        run: |
+          python3 -m json.tool benchmarks/operational-recovery-v0.1/attestation-statement.schema.json >/dev/null
+          python3 -m json.tool benchmarks/operational-recovery-v0.1/attestation-statement.example.json >/dev/null
+          python3 -m json.tool benchmarks/operational-recovery-v0.1/publisher-policy.schema.json >/dev/null
+          python3 -m json.tool benchmarks/operational-recovery-v0.1/publisher-policy.example.json >/dev/null
+          python3 -m json.tool benchmarks/operational-recovery-v0.1/run-manifest.example.json >/dev/null
+      - name: Check exact raw artifact and publisher-policy bindings
+        run: |
+          python3 tools/operational-recovery-verifier-v0.1/check_publisher_policy.py \
+            --statement benchmarks/operational-recovery-v0.1/attestation-statement.example.json \
+            --policy benchmarks/operational-recovery-v0.1/publisher-policy.example.json \
+            --manifest benchmarks/operational-recovery-v0.1/run-manifest.example.json \
+            --event-segment benchmarks/operational-recovery-v0.1/events-platform-coordinator-epoch-0.example.jsonl \
+            --output publisher-policy-report.json
+      - name: Run publisher identity and artifact mutation tests
+        run: python3 -m unittest discover -s tools/operational-recovery-verifier-v0.1 -p 'test_publisher_policy.py' -v
+      - name: Preserve structural report in workflow log
+        run: cat publisher-policy-report.json
