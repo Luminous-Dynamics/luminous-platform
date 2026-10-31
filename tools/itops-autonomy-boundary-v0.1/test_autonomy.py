@@ -112,7 +112,7 @@ class AutonomyBoundaryTests(unittest.TestCase):
 
     def test_counterfactual_mutation_is_forbidden(self):
         changed = copy.deepcopy(ORACLE)
-        changed["pairs"][0]["counterfactual_variant"]["must_not_mutate"] = False
+        changed["pairs"][0]["counterfactual_variant"]["external_mutation_forbidden"] = False
         with self.assertRaises(ValueError):
             self.validate_all(oracle=changed)
 
