@@ -364,5 +364,10 @@
       "rationale": "The test environment inventory and egress policy were reviewed for this synthetic example."
     }
   ],
-  "defeaters": []
+  "defeaters": [],
+  "attempt_ids": [
+    "attempt-001",
+    "attempt-002",
+    "attempt-003"
+  ]
 }
