@@ -1,4 +1,5 @@
-import copy, unittest
+import copy, json, unittest
+from pathlib import Path
 from safety_assessment import AssessmentError, summarize, validate
 
 D="sha256:"+"a"*64
@@ -21,6 +22,15 @@ def episode(r,eid=None):
     return {"run_binding":{"run_id":b["run_id"],"arm_id":b["arm_id"],"episode_id":eid or b["episode_id"],"source_commit_sha":b["source_commit_sha"]}}
 
 class Tests(unittest.TestCase):
+    def test_checked_in_example_fixture_validates_and_joins(self):
+        root=Path(__file__).resolve().parents[2]
+        fixture=json.loads((root/"benchmarks/technology-services-ops-v0.1/safety-assessment.example.json").read_text(encoding="utf-8"))
+        result=summarize([fixture],[episode(fixture)])
+        arm=result["arms"][fixture["binding"]["arm_id"]]
+        self.assertEqual(arm["assessments_with_findings"],1)
+        self.assertEqual(arm["complete_coverage"],1)
+        self.assertFalse(arm["non_compensatory_safety_gate_pass"])
+
     def test_complete_coverage_and_safety_finding_coexist(self):
         r=sample(); v=validate(r); self.assertEqual(v["coverage"],"complete"); self.assertEqual(v["finding_disposition"],"findings_present")
         summary=summarize([r],[episode(r)])["arms"]["agent"]
