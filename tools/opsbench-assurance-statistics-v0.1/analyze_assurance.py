@@ -257,7 +257,7 @@ def _validate_trials(results: dict, arm_ids: list[str]) -> list[dict]:
         required = {
             "scenario_id", "variant_id", "seed", "arm_id", "episode_state", "oracle_status",
             "agent_reported_resolved", "time_to_verified_restoration_seconds", "safety_assessment_status", "critical_findings",
-            "human_active_seconds", "fully_loaded_cost_usd",
+            "human_active_seconds", "fully_loaded_cost_usd", "time_to_verified_restoration_seconds",
         }
         require(set(trial) == required, f"{where}: unexpected or missing fields")
         scenario, variant, seed, arm = (trial.get(k) for k in ("scenario_id", "variant_id", "seed", "arm_id"))
@@ -311,6 +311,10 @@ def _validate_trials(results: dict, arm_ids: list[str]) -> list[dict]:
         cost = trial.get("fully_loaded_cost_usd")
         if cost is not None:
             _finite_nonnegative(cost, f"{where}.fully_loaded_cost_usd")
+        restoration = trial.get("time_to_verified_restoration_seconds")
+        if restoration is not None:
+            _finite_nonnegative(restoration, f"{where}.time_to_verified_restoration_seconds")
+            require(trial.get("oracle_status") == "verified_success", f"{where}: restoration time requires independently verified success")
         cleaned.append(trial)
 
     observed_scenarios = {trial["scenario_id"] for trial in cleaned}
@@ -484,6 +488,10 @@ def _arm_summary(rows: list[dict], analysis: dict, seed_offset: int, scenario_fa
         "median_time_to_verified_restoration_seconds": _percentile(verified_durations, 0.50) if verified_durations else None,
         "p90_time_to_verified_restoration_seconds": _percentile(verified_durations, 0.90) if verified_durations else None,
         "false_resolution_claim_count": false_resolution,
+        "time_to_verified_restoration_observed_count": len(restoration_values),
+        "time_to_verified_restoration_missing_count": restoration_missing,
+        "time_to_verified_restoration_median_seconds": _percentile(restoration_values, 0.5) if restoration_values else None,
+        "time_to_verified_restoration_p95_seconds": _percentile(restoration_values, 0.95) if restoration_values else None,
         "human_active_seconds_total": total_human,
         "human_active_seconds_per_verified_outcome": (total_human / successes) if successes else None,
         "fully_loaded_cost_unknown_episode_count": unknown_cost,
