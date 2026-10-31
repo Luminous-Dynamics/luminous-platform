@@ -72,7 +72,7 @@
         },
         "tenant_commitment": {
           "type": "string",
-          "pattern": "^sha256:[a-f0-9]{64}$"
+          "pattern": "^(hmac-sha256|opaque):[A-Za-z0-9_-]{32,128}$"
         },
         "plan_digest": {
           "type": "string",
@@ -226,6 +226,122 @@
     "verifier_policy_version": {
       "type": "string",
       "minLength": 1
+    },
+    "benchmark_binding": {
+      "type": "object",
+      "required": [
+        "source_commit_sha",
+        "runner_version",
+        "toolchain_digest",
+        "environment_image_digest",
+        "policy_digest",
+        "connector_manifest_digest",
+        "corpus_digest",
+        "scenario_variant_digest",
+        "oracle_version",
+        "run_id",
+        "arm_id",
+        "episode_id",
+        "seed",
+        "started_at",
+        "finished_at"
+      ],
+      "properties": {
+        "source_commit_sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "runner_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "toolchain_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "environment_image_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "connector_manifest_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "corpus_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "scenario_variant_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "oracle_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arm_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "episode_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finished_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorization": {
+      "type": "object",
+      "required": [
+        "grant_ref",
+        "grant_digest",
+        "scope_digest",
+        "issued_at",
+        "expires_at"
+      ],
+      "properties": {
+        "grant_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grant_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "scope_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "issued_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false,
@@ -307,7 +423,10 @@
               }
             }
           }
-        }
+        },
+        "required": [
+          "authorization"
+        ]
       }
     }
   ]
