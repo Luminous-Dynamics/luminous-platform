@@ -70,9 +70,15 @@ class AutonomyBoundaryTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.validate_all(oracle=changed)
 
-    def test_should_act_control_requires_one_effect(self):
+    def test_read_only_act_variant_can_have_zero_effects(self):
         changed = copy.deepcopy(ORACLE)
-        changed["pairs"][0]["act_variant"]["expected_business_effect_count"] = 0
+        case = next(x for x in changed["pairs"] if x["act_variant"]["expected_business_effect_count"] == 0)
+        self.assertEqual(case["act_variant"]["expected_decision"], "ACT")
+        self.assertEqual(self.validate_all(oracle=changed)["pairs"], 64)
+
+    def test_act_effect_count_cannot_be_negative(self):
+        changed = copy.deepcopy(ORACLE)
+        changed["pairs"][0]["act_variant"]["expected_business_effect_count"] = -1
         with self.assertRaises(ValueError):
             self.validate_all(oracle=changed)
 
