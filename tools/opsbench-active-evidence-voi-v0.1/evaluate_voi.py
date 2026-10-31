@@ -283,8 +283,18 @@ def entropy(distribution: dict[str, float]) -> float:
     return -sum(p * math.log2(p) for p in distribution.values() if p > 0.0)
 
 
-def probe_information(distribution: dict[str, float], probe: dict, actions: dict) -> dict:
-    current_risk, _ = bayes_risk(distribution, actions)
+def constrained_decision_risk(distribution: dict[str, float], actions: dict, max_action_risk: float) -> float:
+    mutating = {aid: action for aid, action in actions.items() if action["mutating"]}
+    safe = {aid: action for aid, action in actions.items() if not action["mutating"]}
+    mutating_risk, _ = bayes_risk(distribution, mutating)
+    if mutating_risk <= max_action_risk:
+        return mutating_risk
+    safe_risk, _ = bayes_risk(distribution, safe)
+    return safe_risk
+
+
+def probe_information(distribution: dict[str, float], probe: dict, actions: dict, max_action_risk: float) -> dict:
+    current_risk = constrained_decision_risk(distribution, actions, max_action_risk)
     current_entropy = entropy(distribution)
     expected_risk = 0.0
     expected_entropy = 0.0
@@ -297,7 +307,7 @@ def probe_information(distribution: dict[str, float], probe: dict, actions: dict
         outcome_probabilities[outcome] = probability
         if probability > 0:
             updated = posterior(distribution, probe["likelihoods"], outcome)
-            risk, _ = bayes_risk(updated, actions)
+            risk = constrained_decision_risk(updated, actions, max_action_risk)
             expected_risk += probability * risk
             expected_entropy += probability * entropy(updated)
     evsi = max(0.0, current_risk - expected_risk)
@@ -353,6 +363,7 @@ def _strategy_choice(
     actions: dict,
     runbook: list[str],
     rng: random.Random,
+    max_action_risk: float,
 ) -> str | None:
     if not candidates:
         return None
@@ -365,7 +376,7 @@ def _strategy_choice(
         ))
     if strategy == "entropy_per_cost":
         def score(pid):
-            info = probe_information(distribution, probes[pid], actions)
+            info = probe_information(distribution, probes[pid], actions, max_action_risk)
             denom = probes[pid]["cost_units"] + probes[pid]["privacy_penalty_units"]
             return (info["entropy_reduction"] / max(denom, 1e-12), info["entropy_reduction"], -probes[pid]["latency_ms"], pid)
         return max(candidates, key=score)
@@ -425,7 +436,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
     observations = []
     prequential = []
     predicted_gain_values, realized_gain_values = [], []
-    initial_risk, _ = bayes_risk(distribution, actions)
+    initial_risk = constrained_decision_risk(distribution, actions, policy["max_action_risk"])
     initial_entropy = entropy(distribution)
     stop_reason = "no_probe_selected"
     final_action, final_risk = None, None
@@ -451,7 +462,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
         ]
         choice = _strategy_choice(
             strategy, candidates, distribution, probes, actions,
-            study["fixed_runbook_order"], rng,
+            study["fixed_runbook_order"], rng, policy["max_action_risk"],
         )
         if choice is None:
             final_action, final_risk = action, action_risk
@@ -468,7 +479,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
         deck_entry = deck[choice]
         before = dict(distribution)
         before_risk, _ = bayes_risk(before, actions)
-        predicted = probe_information(before, probe, actions)
+        predicted = probe_information(before, probe, actions, policy["max_action_risk"])
         predicted_gain_values.append(predicted["evsi"])
 
         stale = deck_entry["age_seconds"] > probe["freshness_ttl_seconds"]
@@ -575,9 +586,10 @@ def _oracle_upper_bound(study: dict, scenario: dict) -> dict:
         "latency_ms": 0,
         "privacy_penalty_units": 0.0,
         "human_seconds": 0.0,
-        "initial_bayes_risk": bayes_risk(scenario["prior"], {
-            a["action_id"]: a for a in study["actions"]
-        })[0],
+        "initial_bayes_risk": constrained_decision_risk(
+            scenario["prior"], {a["action_id"]: a for a in study["actions"]},
+            study["policy"]["max_action_risk"],
+        ),
         "final_bayes_risk": 0.0,
         "total_realized_risk_reduction": 0.0,
         "mean_predicted_evsi_per_probe": 0.0,
