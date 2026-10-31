@@ -195,5 +195,38 @@ class SustainedSloRecoveryTests(unittest.TestCase):
             evaluate(contract, contract_bytes, observations, serialize(observations))
 
 
+    def test_later_regression_after_five_good_windows_invalidates_final_recovery_claim(self):
+        contract, _contract_bytes, observations, _ = fixtures()
+        contract["timeline"]["evaluation_ended_at"] = "2026-10-31T14:10:00Z"
+        contract_bytes = serialize(contract)
+        observations["contract_sha256"] = hashlib.sha256(contract_bytes).hexdigest()
+        regression = copy.deepcopy(observations["windows"][0])
+        regression["window_id"] = "w09"
+        regression["started_at"] = "2026-10-31T14:09:00Z"
+        regression["ended_at"] = "2026-10-31T14:10:00Z"
+        observations["windows"].append(regression)
+        report = evaluate(contract, contract_bytes, observations, serialize(observations))
+        self.assertEqual(report["status"], "not_recovered")
+        self.assertFalse(report["sustained_recovery"]["verified"])
+        self.assertEqual(report["sustained_recovery"]["regression_count"], 2)
+
+    def test_latency_quantile_overflow_bucket_is_indeterminate(self):
+        contract, contract_bytes, observations, _ = fixtures()
+        observations["windows"][4]["latency_histogram"] = {
+            "unit": "s",
+            "buckets": [
+                {"upper_bound_seconds": 0.05, "count": 900},
+                {"upper_bound_seconds": 0.1, "count": 0},
+                {"upper_bound_seconds": 0.25, "count": 0},
+                {"upper_bound_seconds": 0.5, "count": 0},
+                {"upper_bound_seconds": None, "count": 100},
+            ],
+        }
+        report = evaluate(contract, contract_bytes, observations, serialize(observations))
+        window = report["sustained_recovery"]["window_results"][4]
+        latency = next(x for x in window["sli_results"] if x["kind"] == "latency_quantile")
+        self.assertEqual(latency["disposition"], "indeterminate")
+
+
 if __name__ == "__main__":
     unittest.main()
