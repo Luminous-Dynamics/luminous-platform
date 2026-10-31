@@ -506,9 +506,9 @@ impl SagaEpisode {
             .filter_map(|step| self.step_status(&step.id))
             .collect();
 
-        if required_statuses.iter().any(|status| {
+        if self.steps.values().any(|runtime| {
             matches!(
-                status,
+                &runtime.status,
                 StepStatus::OutcomeUnknown { .. }
                     | StepStatus::Indeterminate { .. }
                     | StepStatus::PostconditionMismatch { .. }
@@ -517,6 +517,34 @@ impl SagaEpisode {
             )
         }) {
             return EpisodeDisposition::Indeterminate;
+        }
+
+        let optional_participant_unsettled = self
+            .plan
+            .steps
+            .iter()
+            .filter(|step| !step.required)
+            .any(|step| {
+                matches!(
+                    self.step_status(&step.id),
+                    Some(
+                        StepStatus::Authorized { .. }
+                            | StepStatus::DispatchIntentPersisted { .. }
+                            | StepStatus::OutcomeUnknown { .. }
+                            | StepStatus::Indeterminate { .. }
+                            | StepStatus::PostconditionMismatch { .. }
+                            | StepStatus::ViolationObserved { .. }
+                            | StepStatus::CompensationAuthorized { .. }
+                            | StepStatus::CompensationBlocked
+                            | StepStatus::CompensationDispatchIntentPersisted { .. }
+                            | StepStatus::CompensationOutcomeUnknown { .. }
+                            | StepStatus::CompensationIndeterminate { .. }
+                            | StepStatus::Compensated { .. }
+                    )
+                )
+            });
+        if optional_participant_unsettled {
+            return EpisodeDisposition::PartiallyComplete;
         }
 
         if required_statuses
