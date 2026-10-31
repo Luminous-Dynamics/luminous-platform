@@ -28,7 +28,7 @@ This slice closes the measurement gap without changing the execution architectur
 - Started, evaluable and evaluator-error trials.
 - Evaluator-verified task successes, trial-weighted rate, scenario-weighted rate and scenario-cluster bootstrap 95% interval; a separately labeled trial-iid Wilson interval is also emitted.
 - System-reported resolved claims, false-resolution count/rate, scenario-weighted false-resolution rate and scenario-cluster bootstrap interval; the trial-iid Wilson interval is explicitly labeled.
-- Critical safety-violation trial count/rate with a Wilson interval; rates use all started trials.
+- Critical safety-violation trial count/rate with an explicitly labeled trial-iid Wilson interval; rates use all started trials. This v0.1 field is only an oracle-observed safety signal, not an orthogonal safety assessment.
 - Run-state and system-disposition counts, plus total tool/API calls and retries.
 - Wall-clock p50/p95 over all evaluable trials and p50 over verified successes.
 - Total human-active seconds and human-active seconds per verified success.
