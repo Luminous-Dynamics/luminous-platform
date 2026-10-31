@@ -65,7 +65,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "accept",
@@ -110,7 +111,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -155,7 +157,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -200,7 +203,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -245,7 +249,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -290,7 +295,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -335,7 +341,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -380,7 +387,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -425,7 +433,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -470,7 +479,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -515,7 +525,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -559,7 +570,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -603,7 +615,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -648,7 +661,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -693,7 +707,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -738,7 +753,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -783,7 +799,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -828,7 +845,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -873,7 +891,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -918,7 +937,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -963,7 +983,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -1008,7 +1029,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -1053,7 +1075,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -1098,7 +1121,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -1143,7 +1167,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "indeterminate",
@@ -1188,7 +1213,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "indeterminate",
@@ -1233,7 +1259,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "indeterminate",
@@ -1278,7 +1305,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -1323,7 +1351,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -1368,7 +1397,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "low_entropy_plaintext",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -1413,7 +1443,8 @@
         "transparency_requirement": "required",
         "transparency_proof": "missing",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "independent_observer"
+        "service_claim_signer_role": "independent_observer",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
@@ -1502,7 +1533,8 @@
         "transparency_requirement": "not_required",
         "transparency_proof": "not_required",
         "privacy_commitment": "opaque_commitment",
-        "service_claim_signer_role": "coordinator"
+        "service_claim_signer_role": "coordinator",
+        "extra_signatures_from_same_role": 0
       },
       "expected": {
         "decision": "reject",
