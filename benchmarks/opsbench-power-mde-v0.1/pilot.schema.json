@@ -1,0 +1,27 @@
+{
+ "$schema":"https://json-schema.org/draft/2020-12/schema",
+ "$id":"https://luminousdynamics.io/schemas/opsbench-power-pilot-v0.1.json",
+ "title":"OpsBench paired scenario-cluster power pilot v0.1",
+ "type":"object","additionalProperties":false,
+ "required":["schema","version","status","study_id","preregistration_sha256","pilot_artifact_id","pilot_split","baseline_arm_id","candidate_arm_id","screening_scenario_ids","scenario_cluster_effects","unmatched_candidate_scenario_count","unmatched_baseline_scenario_count","analysis"],
+ "properties":{
+  "schema":{"const":"luminous-opsbench-power-pilot-v0.1"},"version":{"const":1},
+  "status":{"enum":["example_only","screening"]},"study_id":{"type":"string","minLength":1},
+  "preregistration_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+  "pilot_artifact_id":{"type":"string","minLength":1},"pilot_split":{"const":"screening"},
+  "baseline_arm_id":{"type":"string","minLength":1},"candidate_arm_id":{"type":"string","minLength":1},
+  "screening_scenario_ids":{"type":"array","minItems":2,"uniqueItems":true,"items":{"type":"string","minLength":1}},
+  "scenario_cluster_effects":{"type":"array","minItems":2,"items":{"type":"object","additionalProperties":false,"required":["scenario_id","paired_difference"],"properties":{"scenario_id":{"type":"string","minLength":1},"paired_difference":{"type":"number","minimum":-1,"maximum":1}}}},
+  "unmatched_candidate_scenario_count":{"type":"integer","minimum":0},
+  "unmatched_baseline_scenario_count":{"type":"integer","minimum":0},
+  "analysis":{"type":"object","additionalProperties":false,"required":["target_effect","target_power","familywise_alpha","candidate_comparison_count","simulation_replicates","simulation_seed","safety_margin_fraction"],"properties":{
+   "target_effect":{"type":"number","exclusiveMinimum":0,"maximum":1},
+   "target_power":{"enum":[0.8,0.9,0.95]},
+   "familywise_alpha":{"const":0.05},
+   "candidate_comparison_count":{"type":"integer","minimum":1,"maximum":20},
+   "simulation_replicates":{"type":"integer","minimum":1000,"maximum":100000},
+   "simulation_seed":{"type":"integer","minimum":0,"maximum":4294967295},
+   "safety_margin_fraction":{"type":"number","minimum":0,"maximum":1}
+  }}
+ }
+}
