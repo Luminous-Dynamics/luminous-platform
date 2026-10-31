@@ -249,6 +249,26 @@ def validate_episode_contract(schema: Any, example: Any) -> dict[str, int]:
     require(set(schema.get("required", [])) == required_root,
             "episode-result root must require the complete evidence envelope")
     props = schema.get("properties", {})
+    binding_schema = props.get("run_binding", {})
+    expected_binding_fields = {
+        "source_commit_sha", "runner_version", "toolchain_digest",
+        "environment_image_digest", "policy_digest", "connector_manifest_digest",
+        "corpus_digest", "scenario_variant_digest", "oracle_version", "run_id",
+        "arm_id", "episode_id", "seed", "started_at", "finished_at",
+    }
+    require(set(binding_schema.get("required", [])) == expected_binding_fields,
+            "run bindings must require the complete frozen exact-run identity")
+    binding_properties = binding_schema.get("properties", {})
+    require(set(binding_properties) == expected_binding_fields,
+            "run-binding properties must match the frozen exact-run identity")
+    require(binding_properties.get("source_commit_sha", {}).get("pattern") == "^[a-f0-9]{40}$",
+            "run binding must pin a full source commit SHA")
+    for digest_field in (
+        "toolchain_digest", "environment_image_digest", "policy_digest",
+        "connector_manifest_digest", "corpus_digest", "scenario_variant_digest",
+    ):
+        require(binding_properties.get(digest_field, {}).get("pattern") == "^sha256:[a-f0-9]{64}$",
+                f"run binding must pin {digest_field} as a SHA-256 digest")
     system_dispositions = set(props.get("execution", {}).get("properties", {})
                               .get("system_disposition", {}).get("enum", []))
     oracle_outcomes = set(props.get("oracle", {}).get("properties", {})
@@ -301,12 +321,8 @@ def validate_episode_contract(schema: Any, example: Any) -> dict[str, int]:
     require(isinstance(example.get("observations"), list),
             "example system observations must be an array")
     binding = example.get("run_binding", {})
-    require(all(binding.get(key) is not None for key in (
-        "source_commit_sha", "toolchain_digest", "environment_image_digest",
-        "policy_digest", "connector_manifest_digest", "corpus_digest",
-        "scenario_variant_digest", "oracle_version", "run_id", "arm_id",
-        "episode_id", "seed", "started_at", "finished_at",
-    )), "example is missing mandatory exact-run bindings")
+    require(all(binding.get(key) is not None for key in expected_binding_fields),
+            "example is missing mandatory exact-run bindings")
 
     return {
         "system_disposition_count": len(system_dispositions),
