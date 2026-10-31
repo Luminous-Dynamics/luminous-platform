@@ -190,11 +190,11 @@ def _validate_schedule(schedule: dict, contract: dict, profile: dict):
     return phase_map
 
 
-def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes: bytes, schedule: dict, schedule_bytes: bytes, load_receipts: dict, load_bytes: bytes, observations: dict, observation_bytes: bytes) -> dict:
+def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes: bytes, schedule: dict, schedule_bytes: bytes, load_receipts: dict, load_bytes: bytes, observations: dict, observation_bytes: bytes, fault_receipts: dict, fault_receipt_bytes: bytes) -> dict:
     required_contract = {
         "schema", "version", "status", "study_id", "run_id", "episode_id", "service_id", "service_digest",
         "executor", "load_generator", "observer", "business_oracle", "fault_controller", "profile_sha256",
-        "phase_schedule_sha256", "load_generator_receipts_sha256", "service_observations_sha256", "expected_phase_count",
+        "phase_schedule_sha256", "load_generator_receipts_sha256", "service_observations_sha256", "fault_controller_receipts_sha256", "expected_phase_count",
     }
     require(set(contract) == required_contract, "contract: unexpected or missing fields")
     require(contract.get("schema") == "luminous-opsbench-workload-fidelity-contract-v0.1" and type(contract.get("version")) is int and contract["version"] == 1, "contract: unsupported schema/version")
@@ -211,11 +211,12 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
         ("phase_schedule_sha256", schedule_bytes),
         ("load_generator_receipts_sha256", load_bytes),
         ("service_observations_sha256", observation_bytes),
+        ("fault_controller_receipts_sha256", fault_receipt_bytes),
     ):
         _hex64(contract.get(field), f"contract.{field}")
         require(contract[field] == sha256(data), f"contract.{field}: exact raw artifact digest mismatch")
 
-    components = [profile, schedule, load_receipts, observations]
+    components = [profile, schedule, load_receipts, observations, fault_receipts]
     require(all(component.get("status") == contract["status"] for component in components), "component status does not match frozen contract lifecycle")
     class_map = _validate_profile(profile)
     require(profile["study_id"] == contract["study_id"], "profile: study identity mismatch")
@@ -226,12 +227,35 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
 
     require(load_receipts.get("schema") == "luminous-opsbench-load-generator-receipts-v0.1" and type(load_receipts.get("version")) is int and load_receipts["version"] == 1, "load receipts: unsupported schema/version")
     require(observations.get("schema") == "luminous-opsbench-service-observations-v0.1" and type(observations.get("version")) is int and observations["version"] == 1, "service observations: unsupported schema/version")
+    require(fault_receipts.get("schema") == "luminous-opsbench-fault-controller-receipts-v0.1" and type(fault_receipts.get("version")) is int and fault_receipts["version"] == 1, "fault receipts: unsupported schema/version")
     _identity(load_receipts.get("load_generator"), "load receipts.load_generator")
     _identity(observations.get("observer"), "service observations.observer")
     _identity(observations.get("business_oracle"), "service observations.business_oracle")
     require(load_receipts["load_generator"] == contract["load_generator"], "load receipts: publisher identity mismatch")
     require(observations["observer"] == contract["observer"], "service observations: observer identity mismatch")
     require(observations["business_oracle"] == contract["business_oracle"], "service observations: business oracle identity mismatch")
+    _identity(fault_receipts.get("fault_controller"), "fault receipts.fault_controller")
+    require(fault_receipts["fault_controller"] == contract["fault_controller"], "fault receipts: publisher identity mismatch")
+    require(fault_receipts.get("study_id") == contract["study_id"] and fault_receipts.get("run_id") == contract["run_id"] and fault_receipts.get("episode_id") == contract["episode_id"] and fault_receipts.get("service_id") == contract["service_id"], "fault receipts: cross-run/service substitution")
+    require(fault_receipts.get("phase_schedule_sha256") == contract["phase_schedule_sha256"], "fault receipts: phase schedule digest mismatch")
+    faulted_phases = {pid: phase for pid, phase in phase_map.items() if phase["kind"] in {"dependency_degradation", "retry_pressure"}}
+    fault_rows = fault_receipts.get("receipts")
+    require(isinstance(fault_rows, list) and len(fault_rows) == len(faulted_phases), "fault receipts: missing or extra fault phase receipts")
+    seen_fault_phases = set()
+    for index, receipt in enumerate(fault_rows):
+        where = f"fault_receipts.receipts[{index}]"
+        required_fault_fields = {"phase_id", "fault_id", "started_at", "ended_at", "target_id", "action", "action_digest", "disposition"}
+        require(isinstance(receipt, dict) and set(receipt) == required_fault_fields, f"{where}: unexpected or missing fields")
+        phase_id = receipt["phase_id"]
+        require(phase_id in faulted_phases and phase_id not in seen_fault_phases, f"{where}: unknown or duplicate fault phase")
+        seen_fault_phases.add(phase_id)
+        phase = faulted_phases[phase_id]
+        require(receipt["fault_id"] == phase["fault_id"], f"{where}: fault ID does not match frozen schedule")
+        require(receipt["started_at"] == phase["started_at"] and receipt["ended_at"] == phase["ended_at"], f"{where}: fault execution time does not match frozen phase window")
+        require(isinstance(receipt["target_id"], str) and receipt["target_id"] and isinstance(receipt["action"], str) and receipt["action"], f"{where}: target/action required")
+        _hex64(receipt["action_digest"], f"{where}.action_digest")
+        require(receipt["disposition"] == "injected", f"{where}: fault was not confirmed injected")
+    require(seen_fault_phases == set(faulted_phases), "fault receipts: fault phase coverage mismatch")
 
     def map_records(component, label):
         records = component.get("windows")
@@ -245,8 +269,8 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
             require(isinstance(row.get("window_id"), str) and row["window_id"], f"{label}: window ID required")
             phase = phase_map[key[0]]
             require(row["window_id"] == "window-" + key[0], f"{label}: window ID/phase mismatch")
-            if label == "load receipts":
-                require(row["started_at"] == phase["started_at"] and row["ended_at"] == phase["ended_at"], f"{label}: window time differs from frozen phase schedule")
+            if label in {"load receipts", "service observations"}:
+                require(row.get("started_at") == phase["started_at"] and row.get("ended_at") == phase["ended_at"], f"{label}: window time differs from frozen phase schedule")
             result[key] = row
         expected = {(phase_id, class_id) for phase_id in phase_map for class_id in class_map}
         require(set(result) == expected, f"{label}: phase/class coverage mismatch")
@@ -269,7 +293,7 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
             load = load_map[key]
             obs = observation_map[key]
             where = f"window[{phase_id}/{class_id}]"
-            required_load_fields = {"window_id", "phase_id", "class_id", "started_at", "ended_at", "offered_count", "offered_rps", "response_success_count", "response_error_count", "response_timeout_count", "peak_concurrency", "latency_histogram"}
+            required_load_fields = {"window_id", "phase_id", "class_id", "started_at", "ended_at", "offered_count", "offered_rps", "response_success_count", "response_error_count", "response_timeout_count", "response_drop_count", "peak_concurrency", "latency_histogram"}
             require(set(load) == required_load_fields, f"{where}: unexpected/missing load receipt fields")
             require(type(load["offered_count"]) is int and load["offered_count"] > 0, f"{where}: positive offered count required")
             duration = profile["window_seconds"]
@@ -277,8 +301,8 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
             rps = finite(load["offered_rps"], f"{where}.offered_rps", minimum=0.000001)
             require(abs(rps-expected_rps) <= 1e-9, f"{where}: offered_rps does not reconcile to count/window duration")
             require(type(load["peak_concurrency"]) is int and load["peak_concurrency"] > 0, f"{where}: peak concurrency required")
-            counts = [load[k] for k in ("response_success_count", "response_error_count", "response_timeout_count")]
-            require(all(type(x) is int and x >= 0 for x in counts) and sum(counts) == load["offered_count"], f"{where}: all offered requests must end in success/error/timeout; no denominator loss")
+            counts = [load[k] for k in ("response_success_count", "response_error_count", "response_timeout_count", "response_drop_count")]
+            require(all(type(x) is int and x >= 0 for x in counts) and sum(counts) == load["offered_count"], f"{where}: all offered requests must end in success/error/timeout/drop; no denominator loss")
             multiplier_low, multiplier_high = phase["rate_multiplier_min"], phase["rate_multiplier_max"]
             base_rps = cls["target_offered_rps"]
             load_fidelity_reasons = []
@@ -295,6 +319,7 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
             require(all(type(x) is int and x >= 0 for x in (received, rejected, retries, checked, correct)), f"{where}: non-negative observer counters required")
             require(received <= load["offered_count"] and rejected <= received, f"{where}: observer ingress/rejection counts inconsistent")
             require(correct <= checked <= load["response_success_count"], f"{where}: business oracle checks must bind to client-observed successful responses")
+            require(obs["started_at"] == phase_map[phase_id]["started_at"] and obs["ended_at"] == phase_map[phase_id]["ended_at"], f"{where}: observer timestamps do not match frozen phase window")
 
             offered = load["offered_count"]
             success_ratio = load["response_success_count"] / offered
@@ -308,6 +333,9 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
             if ingress_ratio < cls["min_ingress_ratio"]:
                 dispositions.append("fail")
                 reasons.append("independent observer ingress ratio is below the class floor")
+            if rejected > 0:
+                dispositions.append("fail")
+                reasons.append("service-side rejected requests are non-zero")
             if success_ratio < cls["min_success_ratio"]:
                 dispositions.append("fail")
                 reasons.append("externally observed response success ratio is below the class floor")
@@ -356,6 +384,7 @@ def evaluate(contract: dict, contract_bytes: bytes, profile: dict, profile_bytes
         "profile_sha256": contract["profile_sha256"], "phase_schedule_sha256": contract["phase_schedule_sha256"],
         "load_generator_receipts_sha256": contract["load_generator_receipts_sha256"],
         "service_observations_sha256": contract["service_observations_sha256"],
+        "fault_controller_receipts_sha256": contract["fault_controller_receipts_sha256"],
         "overall_aggregate_response_success_ratio": total_success / total_offered if total_offered else None,
         "total_offered_requests": total_offered,
         "total_successful_responses": total_success,
@@ -378,18 +407,20 @@ def main(argv=None) -> int:
     parser.add_argument("--schedule", type=Path, required=True)
     parser.add_argument("--load-receipts", type=Path, required=True)
     parser.add_argument("--service-observations", type=Path, required=True)
+    parser.add_argument("--fault-receipts", type=Path, required=True)
     parser.add_argument("--output", default="-")
     args = parser.parse_args(argv)
     try:
         paths = {
             "contract": args.contract, "profile": args.profile, "schedule": args.schedule,
-            "load receipts": args.load_receipts, "service observations": args.service_observations,
+            "load receipts": args.load_receipts, "service observations": args.service_observations, "fault receipts": args.fault_receipts,
         }
         raw = {key: path.read_bytes() for key, path in paths.items()}
         docs = {key: load_json(data, key) for key, data in raw.items()}
         report = evaluate(
             docs["contract"], raw["contract"], docs["profile"], raw["profile"], docs["schedule"], raw["schedule"],
             docs["load receipts"], raw["load receipts"], docs["service observations"], raw["service observations"],
+            docs["fault receipts"], raw["fault receipts"],
         )
         rendered = json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n"
         if args.output == "-":
