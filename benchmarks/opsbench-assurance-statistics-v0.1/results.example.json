@@ -536,5 +536,11 @@
       "time_to_verified_restoration_seconds": null
     }
   ],
-  "trial_started_at": "2026-10-31T15:00:00+02:00"
+  "trial_started_at": "2026-10-31T15:00:00+02:00",
+  "scenario_families": {
+    "EX-001": "authority-and-identity",
+    "EX-002": "response-loss",
+    "EX-003": "dependency-recovery",
+    "EX-004": "independent-verification"
+  }
 }
