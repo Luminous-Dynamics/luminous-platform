@@ -165,6 +165,10 @@ def validate(tasks: Any, task_schema: Any, oracle: Any, oracle_schema: Any) -> d
         stop_task = task_by_id[stop["task_id"]]
         require(act_task["timing"] == stop_task["timing"] == pair["timing"],
                 f"{pid}: paired task timing diverged")
+        if act["expected_business_effect_count"] > 0:
+            require(bool({"apply_exact_approved_change", "apply_exact_bounded_change"}
+                         & set(act_task["available_tools"])),
+                    f"{pid}: mutating ACT case lacks an advertised exact-operation tool")
         for field in TASK_KEYS - {"id", "observed_state"}:
             require(act_task[field] == stop_task[field], f"{pid}: pair changed non-counterfactual field {field}")
         act_state = act_task["observed_state"]
