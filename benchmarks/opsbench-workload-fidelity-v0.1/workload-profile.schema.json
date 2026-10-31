@@ -1,35 +1,135 @@
 {
- "$schema":"https://json-schema.org/draft/2020-12/schema",
- "$id":"https://luminousdynamics.io/schemas/opsbench-workload-profile-v0.1.json",
- "title":"OpsBench demand-conditioned workload profile v0.1",
- "type":"object","additionalProperties":false,
- "required":["schema","version","status","profile_id","study_id","window_seconds","request_classes"],
- "properties":{
-  "schema":{"const":"luminous-opsbench-workload-profile-v0.1"},
-  "version":{"const":1},
-  "status":{"enum":["example_only","registered_profile"]},
-  "profile_id":{"type":"string","minLength":1},
-  "study_id":{"type":"string","minLength":1},
-  "window_seconds":{"type":"integer","minimum":1,"maximum":3600},
-  "request_classes":{
-   "type":"array","minItems":2,"maxItems":32,
-   "items":{
-    "type":"object","additionalProperties":false,
-    "required":["class_id","critical","min_weight","max_weight","target_offered_rps","min_success_ratio","min_business_correctness_ratio","min_business_check_count","min_ingress_ratio","max_p95_latency_seconds","max_server_retry_attempts_per_100_offered"],
-    "properties":{
-     "class_id":{"type":"string","minLength":1},
-     "critical":{"type":"boolean"},
-     "min_weight":{"type":"number","minimum":0,"maximum":1},
-     "max_weight":{"type":"number","exclusiveMinimum":0,"maximum":1},
-     "target_offered_rps":{"type":"number","exclusiveMinimum":0},
-     "min_success_ratio":{"type":"number","minimum":0,"maximum":1},
-     "min_business_correctness_ratio":{"type":"number","minimum":0,"maximum":1},
-     "min_business_check_count":{"type":"integer","minimum":1},
-     "min_ingress_ratio":{"type":"number","minimum":0,"maximum":1},
-     "max_p95_latency_seconds":{"type":"number","exclusiveMinimum":0},
-     "max_server_retry_attempts_per_100_offered":{"type":"number","minimum":0}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-workload-profile-v0.1.json",
+  "title": "OpsBench demand-conditioned workload profile v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "profile_id",
+    "study_id",
+    "window_seconds",
+    "request_classes"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-opsbench-workload-profile-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "example_only",
+        "registered_profile"
+      ]
+    },
+    "profile_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "study_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "window_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3600
+    },
+    "request_classes": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "class_id",
+          "critical",
+          "min_weight",
+          "max_weight",
+          "target_offered_rps",
+          "min_success_ratio",
+          "min_business_correctness_ratio",
+          "min_business_check_count",
+          "min_ingress_ratio",
+          "max_p95_latency_seconds",
+          "max_server_retry_attempts_per_100_offered",
+          "payload_profile_id",
+          "min_concurrency",
+          "max_concurrency",
+          "client_timeout_ms"
+        ],
+        "properties": {
+          "class_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "critical": {
+            "type": "boolean"
+          },
+          "min_weight": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_weight": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1
+          },
+          "target_offered_rps": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "min_success_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "min_business_correctness_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "min_business_check_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "min_ingress_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "max_p95_latency_seconds": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "max_server_retry_attempts_per_100_offered": {
+            "type": "number",
+            "minimum": 0
+          },
+          "payload_profile_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "min_concurrency": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_concurrency": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "client_timeout_ms": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
     }
-   }
   }
- }
 }
