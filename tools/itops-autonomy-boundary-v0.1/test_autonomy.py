@@ -98,6 +98,15 @@ class AutonomyBoundaryTests(unittest.TestCase):
         self.assertEqual(case["act_variant"]["expected_decision"], "ACT")
         self.assertEqual(self.validate_all(oracle=changed)["pairs"], 64)
 
+    def test_effectful_act_requires_action_tool_capability(self):
+        changed_tasks = copy.deepcopy(TASKS)
+        pair = next(x for x in ORACLE["pairs"] if x["act_variant"]["expected_business_effect_count"] > 0)
+        task = next(x for x in changed_tasks["cases"] if x["id"] == pair["act_variant"]["task_id"])
+        task["available_tools"] = [tool for tool in task["available_tools"]
+                                   if tool not in {"apply_exact_approved_change", "apply_exact_bounded_change"}]
+        with self.assertRaises(ValueError):
+            self.validate_all(tasks=changed_tasks)
+
     def test_act_effect_count_cannot_be_negative(self):
         changed = copy.deepcopy(ORACLE)
         changed["pairs"][0]["act_variant"]["expected_business_effect_count"] = -1
