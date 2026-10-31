@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/opsbench-active-evidence-report-v0.1.json",
+  "title": "OpsBench active evidence acquisition report v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "status",
+    "study_id",
+    "scenario_count",
+    "strategies",
+    "claim_ceiling",
+    "report_sha256",
+    "automatic_execution_authorized",
+    "scenario_results"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-opsbench-active-evidence-report-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "example_only",
+        "analysis_only_not_a_policy_qualification"
+      ]
+    },
+    "study_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "strategies": {
+      "type": "object",
+      "minProperties": 3,
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "scenario_count",
+          "direct_recommendation_count",
+          "escalation_count",
+          "abstention_count",
+          "unsafe_recommendation_count",
+          "mean_probes",
+          "mean_cost_units",
+          "mean_latency_ms",
+          "mean_privacy_penalty_units",
+          "mean_final_brier_score",
+          "mean_realized_decision_loss",
+          "calibration"
+        ],
+        "properties": {
+          "scenario_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "direct_recommendation_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "escalation_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "abstention_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unsafe_recommendation_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mean_probes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "mean_cost_units": {
+            "type": "number",
+            "minimum": 0
+          },
+          "mean_latency_ms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "mean_privacy_penalty_units": {
+            "type": "number",
+            "minimum": 0
+          },
+          "mean_final_brier_score": {
+            "type": "number",
+            "minimum": 0
+          },
+          "mean_realized_decision_loss": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "calibration": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "claim_ceiling": {
+      "type": "string",
+      "minLength": 80
+    },
+    "report_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "automatic_execution_authorized": {
+      "const": false
+    },
+    "scenario_results": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 6,
+        "additionalProperties": {
+          "type": "object",
+          "required": [
+            "scenario_id",
+            "strategy",
+            "action_id",
+            "unsafe_recommendation",
+            "realized_decision_loss",
+            "probe_count",
+            "cost_units",
+            "latency_ms",
+            "privacy_penalty_units",
+            "human_seconds",
+            "final_posterior",
+            "multiclass_brier_score",
+            "observations",
+            "stop_reason"
+          ],
+          "properties": {
+            "scenario_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "strategy": {
+              "enum": [
+                "random",
+                "cheapest_first",
+                "entropy_per_cost",
+                "fixed_runbook",
+                "risk_adjusted_voi",
+                "oracle_perfect_information"
+              ]
+            },
+            "action_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "action_mutating": {
+              "type": "boolean"
+            },
+            "unsafe_recommendation": {
+              "type": "boolean"
+            },
+            "realized_decision_loss": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "probe_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "cost_units": {
+              "type": "number",
+              "minimum": 0
+            },
+            "latency_ms": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "privacy_penalty_units": {
+              "type": "number",
+              "minimum": 0
+            },
+            "human_seconds": {
+              "type": "number",
+              "minimum": 0
+            },
+            "final_posterior": {
+              "type": "object",
+              "minProperties": 2,
+              "additionalProperties": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "multiclass_brier_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "observations": {
+              "type": "array"
+            },
+            "stop_reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

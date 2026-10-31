@@ -1,0 +1,712 @@
+{
+  "schema": "luminous-opsbench-active-evidence-study-v0.1",
+  "version": 1,
+  "status": "example_only",
+  "study_id": "example-active-evidence-voi-not-registered",
+  "scope_id": "synthetic-ops-lab",
+  "hypotheses": [
+    {
+      "hypothesis_id": "dependency_degradation",
+      "family": "dependency"
+    },
+    {
+      "hypothesis_id": "bad_deploy",
+      "family": "release"
+    },
+    {
+      "hypothesis_id": "credential_expiry",
+      "family": "identity"
+    },
+    {
+      "hypothesis_id": "network_partition",
+      "family": "network"
+    }
+  ],
+  "actions": [
+    {
+      "action_id": "failover_dependency",
+      "target_hypothesis": "dependency_degradation",
+      "mutating": true,
+      "loss_by_hypothesis": {
+        "dependency_degradation": 0,
+        "bad_deploy": 1,
+        "credential_expiry": 1,
+        "network_partition": 1
+      }
+    },
+    {
+      "action_id": "rollback_deploy",
+      "target_hypothesis": "bad_deploy",
+      "mutating": true,
+      "loss_by_hypothesis": {
+        "dependency_degradation": 1,
+        "bad_deploy": 0,
+        "credential_expiry": 1,
+        "network_partition": 1
+      }
+    },
+    {
+      "action_id": "refresh_credentials",
+      "target_hypothesis": "credential_expiry",
+      "mutating": true,
+      "loss_by_hypothesis": {
+        "dependency_degradation": 1,
+        "bad_deploy": 1,
+        "credential_expiry": 0,
+        "network_partition": 1
+      }
+    },
+    {
+      "action_id": "restore_network",
+      "target_hypothesis": "network_partition",
+      "mutating": true,
+      "loss_by_hypothesis": {
+        "dependency_degradation": 1,
+        "bad_deploy": 1,
+        "credential_expiry": 1,
+        "network_partition": 0
+      }
+    },
+    {
+      "action_id": "escalate",
+      "target_hypothesis": null,
+      "mutating": false,
+      "loss_by_hypothesis": {
+        "dependency_degradation": 0.15,
+        "bad_deploy": 0.15,
+        "credential_expiry": 0.15,
+        "network_partition": 0.15
+      }
+    },
+    {
+      "action_id": "abstain",
+      "target_hypothesis": null,
+      "mutating": false,
+      "loss_by_hypothesis": {
+        "dependency_degradation": 0.2,
+        "bad_deploy": 0.2,
+        "credential_expiry": 0.2,
+        "network_partition": 0.2
+      }
+    }
+  ],
+  "probes": [
+    {
+      "probe_id": "dependency-latency",
+      "source_id": "dependency-latency-monitor",
+      "trust_domain_id": "dependency-metrics",
+      "correlation_group": "dependency-latency",
+      "read_only": true,
+      "scope_id": "synthetic-ops-lab",
+      "freshness_ttl_seconds": 60,
+      "cost_units": 0.002,
+      "latency_ms": 350,
+      "privacy_penalty_units": 0.001,
+      "human_seconds": 0,
+      "likelihoods": {
+        "dependency_degradation": {
+          "signal": 0.8,
+          "clear": 0.19999999999999996
+        },
+        "bad_deploy": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        },
+        "credential_expiry": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        },
+        "network_partition": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        }
+      }
+    },
+    {
+      "probe_id": "dependency-trace",
+      "source_id": "dependency-trace-probe",
+      "trust_domain_id": "dependency-tracing",
+      "correlation_group": "dependency-trace",
+      "read_only": true,
+      "scope_id": "synthetic-ops-lab",
+      "freshness_ttl_seconds": 60,
+      "cost_units": 0.01,
+      "latency_ms": 1100,
+      "privacy_penalty_units": 0.002,
+      "human_seconds": 0.02,
+      "likelihoods": {
+        "dependency_degradation": {
+          "signal": 0.98,
+          "clear": 0.020000000000000018
+        },
+        "bad_deploy": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        },
+        "credential_expiry": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        },
+        "network_partition": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        }
+      }
+    },
+    {
+      "probe_id": "deploy-diff",
+      "source_id": "release-audit",
+      "trust_domain_id": "deployment-ledger",
+      "correlation_group": "deploy-diff",
+      "read_only": true,
+      "scope_id": "synthetic-ops-lab",
+      "freshness_ttl_seconds": 60,
+      "cost_units": 0.002,
+      "latency_ms": 300,
+      "privacy_penalty_units": 0.001,
+      "human_seconds": 0,
+      "likelihoods": {
+        "dependency_degradation": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        },
+        "bad_deploy": {
+          "signal": 0.8,
+          "clear": 0.19999999999999996
+        },
+        "credential_expiry": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        },
+        "network_partition": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        }
+      }
+    },
+    {
+      "probe_id": "deploy-runtime",
+      "source_id": "runtime-release-probe",
+      "trust_domain_id": "runtime-observation",
+      "correlation_group": "deploy-runtime",
+      "read_only": true,
+      "scope_id": "synthetic-ops-lab",
+      "freshness_ttl_seconds": 60,
+      "cost_units": 0.01,
+      "latency_ms": 1000,
+      "privacy_penalty_units": 0.002,
+      "human_seconds": 0.03,
+      "likelihoods": {
+        "dependency_degradation": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        },
+        "bad_deploy": {
+          "signal": 0.98,
+          "clear": 0.020000000000000018
+        },
+        "credential_expiry": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        },
+        "network_partition": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        }
+      }
+    },
+    {
+      "probe_id": "credential-audit",
+      "source_id": "identity-audit",
+      "trust_domain_id": "identity-ledger",
+      "correlation_group": "credential-audit",
+      "read_only": true,
+      "scope_id": "synthetic-ops-lab",
+      "freshness_ttl_seconds": 60,
+      "cost_units": 0.002,
+      "latency_ms": 250,
+      "privacy_penalty_units": 0.002,
+      "human_seconds": 0,
+      "likelihoods": {
+        "dependency_degradation": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        },
+        "bad_deploy": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        },
+        "credential_expiry": {
+          "signal": 0.8,
+          "clear": 0.19999999999999996
+        },
+        "network_partition": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        }
+      }
+    },
+    {
+      "probe_id": "issuer-health",
+      "source_id": "issuer-health-probe",
+      "trust_domain_id": "identity-metrics",
+      "correlation_group": "issuer-health",
+      "read_only": true,
+      "scope_id": "synthetic-ops-lab",
+      "freshness_ttl_seconds": 60,
+      "cost_units": 0.01,
+      "latency_ms": 800,
+      "privacy_penalty_units": 0.004,
+      "human_seconds": 0.02,
+      "likelihoods": {
+        "dependency_degradation": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        },
+        "bad_deploy": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        },
+        "credential_expiry": {
+          "signal": 0.98,
+          "clear": 0.020000000000000018
+        },
+        "network_partition": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        }
+      }
+    },
+    {
+      "probe_id": "network-route",
+      "source_id": "route-audit",
+      "trust_domain_id": "network-config",
+      "correlation_group": "network-route",
+      "read_only": true,
+      "scope_id": "synthetic-ops-lab",
+      "freshness_ttl_seconds": 60,
+      "cost_units": 0.002,
+      "latency_ms": 220,
+      "privacy_penalty_units": 0.001,
+      "human_seconds": 0,
+      "likelihoods": {
+        "dependency_degradation": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        },
+        "bad_deploy": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        },
+        "credential_expiry": {
+          "signal": 0.19999999999999996,
+          "clear": 0.8
+        },
+        "network_partition": {
+          "signal": 0.8,
+          "clear": 0.19999999999999996
+        }
+      }
+    },
+    {
+      "probe_id": "network-path",
+      "source_id": "network-path-probe",
+      "trust_domain_id": "network-observation",
+      "correlation_group": "network-path",
+      "read_only": true,
+      "scope_id": "synthetic-ops-lab",
+      "freshness_ttl_seconds": 60,
+      "cost_units": 0.01,
+      "latency_ms": 950,
+      "privacy_penalty_units": 0.002,
+      "human_seconds": 0,
+      "likelihoods": {
+        "dependency_degradation": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        },
+        "bad_deploy": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        },
+        "credential_expiry": {
+          "signal": 0.020000000000000018,
+          "clear": 0.98
+        },
+        "network_partition": {
+          "signal": 0.98,
+          "clear": 0.020000000000000018
+        }
+      }
+    }
+  ],
+  "authorized_probe_sources": [
+    {
+      "source_id": "dependency-latency-monitor",
+      "trust_domain_id": "dependency-metrics",
+      "scope_id": "synthetic-ops-lab"
+    },
+    {
+      "source_id": "dependency-trace-probe",
+      "trust_domain_id": "dependency-tracing",
+      "scope_id": "synthetic-ops-lab"
+    },
+    {
+      "source_id": "release-audit",
+      "trust_domain_id": "deployment-ledger",
+      "scope_id": "synthetic-ops-lab"
+    },
+    {
+      "source_id": "runtime-release-probe",
+      "trust_domain_id": "runtime-observation",
+      "scope_id": "synthetic-ops-lab"
+    },
+    {
+      "source_id": "identity-audit",
+      "trust_domain_id": "identity-ledger",
+      "scope_id": "synthetic-ops-lab"
+    },
+    {
+      "source_id": "issuer-health-probe",
+      "trust_domain_id": "identity-metrics",
+      "scope_id": "synthetic-ops-lab"
+    },
+    {
+      "source_id": "route-audit",
+      "trust_domain_id": "network-config",
+      "scope_id": "synthetic-ops-lab"
+    },
+    {
+      "source_id": "network-path-probe",
+      "trust_domain_id": "network-observation",
+      "scope_id": "synthetic-ops-lab"
+    }
+  ],
+  "policy": {
+    "max_action_risk": 0.1,
+    "max_cost_units": 0.06,
+    "max_latency_ms": 3000,
+    "max_privacy_penalty_units": 0.02,
+    "max_human_seconds": 0.12,
+    "max_probes": 5,
+    "random_seed": 20261031,
+    "cost_loss_per_unit": 1,
+    "privacy_loss_per_unit": 1
+  },
+  "fixed_runbook_order": [
+    "dependency-latency",
+    "dependency-trace",
+    "deploy-diff",
+    "deploy-runtime",
+    "credential-audit",
+    "issuer-health",
+    "network-route",
+    "network-path"
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "VOI-001",
+      "truth_hypothesis": "dependency_degradation",
+      "prior": {
+        "dependency_degradation": 0.25,
+        "bad_deploy": 0.25,
+        "credential_expiry": 0.25,
+        "network_partition": 0.25
+      },
+      "outcome_deck": [
+        {
+          "probe_id": "dependency-latency",
+          "evidence_id": "evidence-1-dependency-latency",
+          "source_id": "dependency-latency-monitor",
+          "trust_domain_id": "dependency-metrics",
+          "outcome": "signal",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "dependency-trace",
+          "evidence_id": "evidence-1-dependency-trace",
+          "source_id": "dependency-trace-probe",
+          "trust_domain_id": "dependency-tracing",
+          "outcome": "signal",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "deploy-diff",
+          "evidence_id": "evidence-1-deploy-diff",
+          "source_id": "release-audit",
+          "trust_domain_id": "deployment-ledger",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "deploy-runtime",
+          "evidence_id": "evidence-1-deploy-runtime",
+          "source_id": "runtime-release-probe",
+          "trust_domain_id": "runtime-observation",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "credential-audit",
+          "evidence_id": "evidence-1-credential-audit",
+          "source_id": "identity-audit",
+          "trust_domain_id": "identity-ledger",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "issuer-health",
+          "evidence_id": "evidence-1-issuer-health",
+          "source_id": "issuer-health-probe",
+          "trust_domain_id": "identity-metrics",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "network-route",
+          "evidence_id": "evidence-1-network-route",
+          "source_id": "route-audit",
+          "trust_domain_id": "network-config",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "network-path",
+          "evidence_id": "evidence-1-network-path",
+          "source_id": "network-path-probe",
+          "trust_domain_id": "network-observation",
+          "outcome": "clear",
+          "age_seconds": 2
+        }
+      ]
+    },
+    {
+      "scenario_id": "VOI-002",
+      "truth_hypothesis": "bad_deploy",
+      "prior": {
+        "dependency_degradation": 0.25,
+        "bad_deploy": 0.25,
+        "credential_expiry": 0.25,
+        "network_partition": 0.25
+      },
+      "outcome_deck": [
+        {
+          "probe_id": "dependency-latency",
+          "evidence_id": "evidence-2-dependency-latency",
+          "source_id": "dependency-latency-monitor",
+          "trust_domain_id": "dependency-metrics",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "dependency-trace",
+          "evidence_id": "evidence-2-dependency-trace",
+          "source_id": "dependency-trace-probe",
+          "trust_domain_id": "dependency-tracing",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "deploy-diff",
+          "evidence_id": "evidence-2-deploy-diff",
+          "source_id": "release-audit",
+          "trust_domain_id": "deployment-ledger",
+          "outcome": "signal",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "deploy-runtime",
+          "evidence_id": "evidence-2-deploy-runtime",
+          "source_id": "runtime-release-probe",
+          "trust_domain_id": "runtime-observation",
+          "outcome": "signal",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "credential-audit",
+          "evidence_id": "evidence-2-credential-audit",
+          "source_id": "identity-audit",
+          "trust_domain_id": "identity-ledger",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "issuer-health",
+          "evidence_id": "evidence-2-issuer-health",
+          "source_id": "issuer-health-probe",
+          "trust_domain_id": "identity-metrics",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "network-route",
+          "evidence_id": "evidence-2-network-route",
+          "source_id": "route-audit",
+          "trust_domain_id": "network-config",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "network-path",
+          "evidence_id": "evidence-2-network-path",
+          "source_id": "network-path-probe",
+          "trust_domain_id": "network-observation",
+          "outcome": "clear",
+          "age_seconds": 2
+        }
+      ]
+    },
+    {
+      "scenario_id": "VOI-003",
+      "truth_hypothesis": "credential_expiry",
+      "prior": {
+        "dependency_degradation": 0.25,
+        "bad_deploy": 0.25,
+        "credential_expiry": 0.25,
+        "network_partition": 0.25
+      },
+      "outcome_deck": [
+        {
+          "probe_id": "dependency-latency",
+          "evidence_id": "evidence-3-dependency-latency",
+          "source_id": "dependency-latency-monitor",
+          "trust_domain_id": "dependency-metrics",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "dependency-trace",
+          "evidence_id": "evidence-3-dependency-trace",
+          "source_id": "dependency-trace-probe",
+          "trust_domain_id": "dependency-tracing",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "deploy-diff",
+          "evidence_id": "evidence-3-deploy-diff",
+          "source_id": "release-audit",
+          "trust_domain_id": "deployment-ledger",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "deploy-runtime",
+          "evidence_id": "evidence-3-deploy-runtime",
+          "source_id": "runtime-release-probe",
+          "trust_domain_id": "runtime-observation",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "credential-audit",
+          "evidence_id": "evidence-3-credential-audit",
+          "source_id": "identity-audit",
+          "trust_domain_id": "identity-ledger",
+          "outcome": "signal",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "issuer-health",
+          "evidence_id": "evidence-3-issuer-health",
+          "source_id": "issuer-health-probe",
+          "trust_domain_id": "identity-metrics",
+          "outcome": "signal",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "network-route",
+          "evidence_id": "evidence-3-network-route",
+          "source_id": "route-audit",
+          "trust_domain_id": "network-config",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "network-path",
+          "evidence_id": "evidence-3-network-path",
+          "source_id": "network-path-probe",
+          "trust_domain_id": "network-observation",
+          "outcome": "clear",
+          "age_seconds": 2
+        }
+      ]
+    },
+    {
+      "scenario_id": "VOI-004",
+      "truth_hypothesis": "network_partition",
+      "prior": {
+        "dependency_degradation": 0.25,
+        "bad_deploy": 0.25,
+        "credential_expiry": 0.25,
+        "network_partition": 0.25
+      },
+      "outcome_deck": [
+        {
+          "probe_id": "dependency-latency",
+          "evidence_id": "evidence-4-dependency-latency",
+          "source_id": "dependency-latency-monitor",
+          "trust_domain_id": "dependency-metrics",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "dependency-trace",
+          "evidence_id": "evidence-4-dependency-trace",
+          "source_id": "dependency-trace-probe",
+          "trust_domain_id": "dependency-tracing",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "deploy-diff",
+          "evidence_id": "evidence-4-deploy-diff",
+          "source_id": "release-audit",
+          "trust_domain_id": "deployment-ledger",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "deploy-runtime",
+          "evidence_id": "evidence-4-deploy-runtime",
+          "source_id": "runtime-release-probe",
+          "trust_domain_id": "runtime-observation",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "credential-audit",
+          "evidence_id": "evidence-4-credential-audit",
+          "source_id": "identity-audit",
+          "trust_domain_id": "identity-ledger",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "issuer-health",
+          "evidence_id": "evidence-4-issuer-health",
+          "source_id": "issuer-health-probe",
+          "trust_domain_id": "identity-metrics",
+          "outcome": "clear",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "network-route",
+          "evidence_id": "evidence-4-network-route",
+          "source_id": "route-audit",
+          "trust_domain_id": "network-config",
+          "outcome": "signal",
+          "age_seconds": 2
+        },
+        {
+          "probe_id": "network-path",
+          "evidence_id": "evidence-4-network-path",
+          "source_id": "network-path-probe",
+          "trust_domain_id": "network-observation",
+          "outcome": "signal",
+          "age_seconds": 90
+        }
+      ]
+    }
+  ]
+}

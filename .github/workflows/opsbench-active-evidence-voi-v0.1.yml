@@ -1,0 +1,56 @@
+name: OpsBench active evidence value of information v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/opsbench-active-evidence-voi-v0.1/**"
+      - "tools/opsbench-active-evidence-voi-v0.1/**"
+      - "docs/OPSBENCH_ACTIVE_EVIDENCE_VOI_V0_1.md"
+      - ".github/workflows/opsbench-active-evidence-voi-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/opsbench-active-evidence-voi-v0.1/**"
+      - "tools/opsbench-active-evidence-voi-v0.1/**"
+      - "docs/OPSBENCH_ACTIVE_EVIDENCE_VOI_V0_1.md"
+      - ".github/workflows/opsbench-active-evidence-voi-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opsbench-active-evidence-voi-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  active-evidence-voi:
+    name: Risk-aware evidence acquisition benchmark
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Compile evaluator and adversarial tests
+        run: python3 -m py_compile tools/opsbench-active-evidence-voi-v0.1/evaluate_voi.py tools/opsbench-active-evidence-voi-v0.1/test_evaluate_voi.py
+      - name: Parse study and report schemas plus synthetic fixture
+        run: |
+          python3 -m json.tool benchmarks/opsbench-active-evidence-voi-v0.1/study.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-active-evidence-voi-v0.1/report.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-active-evidence-voi-v0.1/study.example.json >/dev/null
+      - name: Run evaluator on exact synthetic study
+        run: |
+          python3 tools/opsbench-active-evidence-voi-v0.1/evaluate_voi.py \
+            --study benchmarks/opsbench-active-evidence-voi-v0.1/study.example.json \
+            --output /tmp/active-evidence-voi-report-a.json
+      - name: Confirm byte-for-byte deterministic output
+        run: |
+          python3 tools/opsbench-active-evidence-voi-v0.1/evaluate_voi.py \
+            --study benchmarks/opsbench-active-evidence-voi-v0.1/study.example.json \
+            --output /tmp/active-evidence-voi-report-b.json
+          cmp /tmp/active-evidence-voi-report-a.json /tmp/active-evidence-voi-report-b.json
+      - name: Run VOI, freshness, correlation and safety mutation tests
+        run: python3 -m unittest discover -s tools/opsbench-active-evidence-voi-v0.1 -p 'test_evaluate_voi.py' -v
+      - name: Preserve explicitly example-only report
+        run: cat /tmp/active-evidence-voi-report-a.json
