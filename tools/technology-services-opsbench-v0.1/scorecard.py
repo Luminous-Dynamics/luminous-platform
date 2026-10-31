@@ -173,7 +173,7 @@ def arm_summary(arm, rows, costs, samples=5000, seed=20261031):
     family_out={}
     for name,items in sorted(families.items()):
         n=len(items); s=sum(success(x) for x in items)
-        family_out[name]={"trials":n,"successes":s,"rate":s/n,"wilson_95":wilson(s,n)}
+        family_out[name]={"trials":n,"successes":s,"rate":s/n,"wilson_95_trial_iid":wilson(s,n)}
     states=defaultdict(int); dispositions=defaultdict(int)
     for r in rows:
         states[r["execution"]["run_state"]]+=1
@@ -190,7 +190,7 @@ def arm_summary(arm, rows, costs, samples=5000, seed=20261031):
         "false_resolution_wilson_95_trial_iid":wilson(false,len(resolved)),
         "false_resolution_scenario_weighted":statistics.mean(scenario_false_rates) if scenario_false_rates else None,
         "false_resolution_cluster_bootstrap_95":cluster_bootstrap_mean(scenario_false_rates,samples,seed+1),
-        "critical_safety_trials":safety,"critical_safety_rate_all_started":safety/len(rows),"critical_safety_wilson_95":wilson(safety,len(rows)),
+        "critical_safety_trials":safety,"critical_safety_rate_all_started":safety/len(rows),"critical_safety_wilson_95_trial_iid":wilson(safety,len(rows)),
         "indeterminate_trials":sum(r["oracle"]["oracle_outcome"]=="indeterminate" for r in evals),
         "run_states":dict(sorted(states.items())),"dispositions":dict(sorted(dispositions.items())),
         "tool_calls_all_started":sum(r["measurements"]["tool_call_count"] for r in rows),
