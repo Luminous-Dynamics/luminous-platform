@@ -53,6 +53,17 @@ def _restart_and_scan(builder: Builder, *, scanned: list[str], unresolved: list[
     return restart, scan
 
 
+def _complete_with_lost_response_after_effect(builder: Builder):
+    auth = builder.auth()
+    dispatch = builder.dispatch(parents=(auth["event_id"],))
+    accepted = builder.accepted(parents=(dispatch["event_id"],))
+    effect = builder.effect(parents=(accepted["event_id"],))
+    lost = builder.lost(parents=(effect["event_id"],))
+    reconcile = builder.reconcile(parents=(effect["event_id"], lost["event_id"]))
+    step = builder.step_verified(parents=(reconcile["event_id"],))
+    builder.service_verified(parents=(step["event_id"],))
+
+
 def _finish_attempt_two(builder: Builder, parent_id: str, *, epoch: int = 0):
     auth = builder.auth("attempt-2", D("d"), parents=(parent_id,))
     dispatch = builder.dispatch("attempt-2", D("d"), parents=(auth["event_id"],), epoch=epoch)
@@ -66,7 +77,7 @@ def _finish_attempt_two(builder: Builder, parent_id: str, *, epoch: int = 0):
 def _scenarios() -> dict[str, Builder]:
     cases: dict[str, Builder] = {}
 
-    b = Builder(); b.complete_effect(); cases["F001"] = b
+    b = Builder(); _complete_with_lost_response_after_effect(b); cases["F001"] = b
 
     b = Builder(); auth = b.auth(); dispatch = b.dispatch(parents=(auth["event_id"],)); lost = b.lost(parents=(dispatch["event_id"],))
     proof = b.status(outcome="never_accepted", consistency="strong", authoritative=True, parents=(lost["event_id"],))
@@ -110,16 +121,16 @@ def _scenarios() -> dict[str, Builder]:
     dispatch["event_digest"] = digest_record(dispatch)
     cases["F011"] = b
 
-    b = Builder(); b.complete_effect(); service = b.by_id["verify-service"]
+    b = Builder(); _complete_with_lost_response_after_effect(b); service = b.by_id["verify-service"]
     service["data"]["valid_until"] = "2026-10-31T10:02:00Z"
     service["event_digest"] = digest_record(service)
     cases["F012"] = b
 
-    b = Builder(); auth = b.auth(); dispatch = b.dispatch(parents=(auth["event_id"],)); b.accepted(parents=(dispatch["event_id"],))
+    b = Builder(); auth = b.auth(); dispatch = b.dispatch(parents=(auth["event_id"],)); accepted = b.accepted(parents=(dispatch["event_id"],)); b.lost(parents=(accepted["event_id"],))
     _restart_and_scan(b, scanned=["attempt-1"], unresolved=["attempt-1"], reconciled=[])
     cases["F013"] = b
 
-    b = Builder(); b.complete_effect()
+    b = Builder(); _complete_with_lost_response_after_effect(b)
     _restart_and_scan(b, scanned=["attempt-1"], unresolved=[], reconciled=["attempt-1"], include_service_parent=True)
     cases["F014"] = b
 
