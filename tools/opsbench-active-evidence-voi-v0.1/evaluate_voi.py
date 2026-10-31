@@ -185,6 +185,8 @@ def validate_study(study: dict) -> dict:
         for hid, loss in losses.items():
             finite(loss, f"action {aid}/{hid} loss", minimum=0.0, maximum=1.0)
         actions[aid] = row
+    mutating_targets = {action["target_hypothesis"] for action in actions.values() if action["mutating"]}
+    require(mutating_targets == hids, "study must declare at least one mutating response for every hypothesis")
     require(any(not action["mutating"] for action in actions.values()),
             "study requires a non-mutating escalation/abstention option")
 
@@ -473,10 +475,19 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
         duplicate = deck_entry["evidence_id"] in evidence_ids
         evidence_ids.add(deck_entry["evidence_id"])
         updated = False
+        impossible = False
         outcome = deck_entry["outcome"]
-        if not stale and not duplicate:
+        outcome_mass = sum(
+            distribution[h] * probe["likelihoods"][h][outcome]
+            for h in distribution
+        )
+        if not stale and not duplicate and outcome_mass > 1e-15:
             distribution = posterior(distribution, probe["likelihoods"], outcome)
             updated = True
+        elif not stale and not duplicate:
+            # An observation assigned zero probability by the model is a
+            # model/data contradiction. Preserve uncertainty and expose it.
+            impossible = True
         after_risk, _ = bayes_risk(distribution, actions)
         realized_gain_values.append(max(0.0, before_risk - after_risk))
         top_hypothesis, confidence = _argmax(distribution)
@@ -490,6 +501,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
             "outcome": outcome if updated else "unavailable",
             "stale": stale,
             "duplicate": duplicate,
+            "impossible_under_model": impossible,
             "posterior_updated": updated,
             "predicted_evsi": predicted["evsi"],
             "predicted_entropy_reduction": predicted["entropy_reduction"],
@@ -529,6 +541,7 @@ def _run_policy(study: dict, validated: dict, scenario: dict, strategy: str, str
         "mean_predicted_entropy_reduction": sum(x["predicted_entropy_reduction"] for x in observations) / len(observations) if observations else 0.0,
         "duplicate_evidence_count": sum(x["duplicate"] for x in observations),
         "stale_evidence_count": sum(x["stale"] for x in observations),
+        "impossible_observation_count": sum(x["impossible_under_model"] for x in observations),
         "final_posterior": distribution,
         "top_hypothesis": top_hypothesis,
         "top_hypothesis_confidence": confidence,
@@ -607,6 +620,7 @@ def _summarize(rows: list[dict]) -> dict:
         "mean_predicted_entropy_reduction": sum(row["mean_predicted_entropy_reduction"] for row in rows) / n,
         "duplicate_evidence_count": sum(row["duplicate_evidence_count"] for row in rows),
         "stale_evidence_count": sum(row["stale_evidence_count"] for row in rows),
+        "impossible_observation_count": sum(row["impossible_observation_count"] for row in rows),
         "calibration": calibration,
     }
 
