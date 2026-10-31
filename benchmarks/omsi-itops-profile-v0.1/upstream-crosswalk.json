@@ -9,7 +9,7 @@
       "repository": "Luminous-Dynamics/luminous-platform",
       "pull_request": 149,
       "branch": "research/technology-services-opsbench-v0.1-2026-10-30",
-      "commit": "c3a746afd56f36b791783f49855cbf7736024f6f",
+      "commit": "b69f11d33f91c5f72ad274f6e1dee544c902f560",
       "path": "benchmarks/technology-services-ops-v0.1/corpus.json",
       "blob_sha": "1de8c499abb8ca995223bae8ef42037cc04fa34e"
     },
@@ -18,7 +18,7 @@
       "repository": "Luminous-Dynamics/luminous-platform",
       "pull_request": 153,
       "branch": "research/service-episode-saga-v1-2026-10-30",
-      "commit": "0bdebbe5e6aa3cbb3e68a4df4e18c7407829c87d",
+      "commit": "098d9840454d457658d101cca170f7ce67a3cd9b",
       "path": "benchmarks/service-episode-saga-v1/fault-matrix.json",
       "blob_sha": "ee0ed9c3e8e4d10bd165d3a2bde816f146aaa977"
     }
