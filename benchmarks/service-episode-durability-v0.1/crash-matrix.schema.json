@@ -1,0 +1,289 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Luminous-Dynamics/luminous-platform/blob/main/benchmarks/service-episode-durability-v0.1/crash-matrix.schema.json",
+  "title": "Service Episode Coordinator Durability Crash Matrix v0.1",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "benchmark",
+    "benchmark_version",
+    "status",
+    "scope",
+    "claim_ceiling",
+    "recovery_unit",
+    "external_effect_oracle",
+    "invariants",
+    "hard_gates",
+    "initial_targets_not_results",
+    "metrics",
+    "baseline_arms",
+    "comparison_rules",
+    "cases"
+  ],
+  "properties": {
+    "schema": {
+      "const": "luminous-service-episode-durability-matrix"
+    },
+    "version": {
+      "const": 1
+    },
+    "benchmark": {
+      "const": "service-episode-durability"
+    },
+    "benchmark_version": {
+      "const": "0.1"
+    },
+    "status": {
+      "const": "synthetic_evaluator_only_not_runtime_input"
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "claim_ceiling": {
+      "const": "E0_E1_contract_and_synthetic_fault_matrix_only"
+    },
+    "recovery_unit": {
+      "const": "episode"
+    },
+    "external_effect_oracle": {
+      "type": "object",
+      "required": [
+        "required",
+        "owner",
+        "independent_of",
+        "purpose"
+      ],
+      "properties": {
+        "required": {
+          "const": true
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "independent_of": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "hard_gates": {
+      "type": "object",
+      "required": [
+        "max_lost_acknowledged_events",
+        "max_duplicate_business_effects",
+        "max_unauthorized_dispatches",
+        "max_automatic_replays_with_unknown_effect",
+        "max_stale_owner_commits_after_fence",
+        "valid_history_replay_rate_percent",
+        "malformed_history_fail_closed_rate_percent",
+        "run_binding_correlation_rate_percent"
+      ],
+      "properties": {
+        "max_lost_acknowledged_events": {
+          "const": 0
+        },
+        "max_duplicate_business_effects": {
+          "const": 0
+        },
+        "max_unauthorized_dispatches": {
+          "const": 0
+        },
+        "max_automatic_replays_with_unknown_effect": {
+          "const": 0
+        },
+        "max_stale_owner_commits_after_fence": {
+          "const": 0
+        },
+        "valid_history_replay_rate_percent": {
+          "const": 100
+        },
+        "malformed_history_fail_closed_rate_percent": {
+          "const": 100
+        },
+        "run_binding_correlation_rate_percent": {
+          "const": 100
+        }
+      },
+      "additionalProperties": false
+    },
+    "initial_targets_not_results": {
+      "type": "object",
+      "required": [
+        "acknowledged_commit_rpo_events",
+        "same_node_restart_rto_p95_ms",
+        "p95_episode_latency_overhead_percent",
+        "human_adjudications_per_1000_episodes_max"
+      ],
+      "properties": {
+        "acknowledged_commit_rpo_events": {
+          "const": 0
+        },
+        "same_node_restart_rto_p95_ms": {
+          "const": 5000
+        },
+        "p95_episode_latency_overhead_percent": {
+          "const": 10
+        },
+        "human_adjudications_per_1000_episodes_max": {
+          "const": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "baseline_arms": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "comparison_rules": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 24,
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "family",
+          "crash_point",
+          "intent_durability",
+          "participant_state",
+          "journal_state",
+          "expected_recovery",
+          "required_gate",
+          "automatic_external_replay",
+          "expected_effect_count",
+          "rationale"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z]+-[0-9]{3}$"
+          },
+          "family": {
+            "enum": [
+              "intent-boundary",
+              "pre-dispatch",
+              "participant-admission",
+              "receipt-commit",
+              "coordinator-fencing",
+              "snapshot-replay",
+              "storage-integrity",
+              "compensation-cancellation"
+            ]
+          },
+          "crash_point": {
+            "type": "string",
+            "minLength": 1
+          },
+          "intent_durability": {
+            "enum": [
+              "absent",
+              "torn",
+              "committed_acknowledged",
+              "commit_may_have_succeeded_ack_lost"
+            ]
+          },
+          "participant_state": {
+            "enum": [
+              "not_sent",
+              "may_be_sent",
+              "accepted_pending",
+              "effect_committed",
+              "receipt_received"
+            ]
+          },
+          "journal_state": {
+            "enum": [
+              "clean",
+              "torn_tail",
+              "ownership_changed",
+              "stale_snapshot",
+              "corrupt",
+              "event_gap"
+            ]
+          },
+          "expected_recovery": {
+            "enum": [
+              "safe_to_resume",
+              "outcome_unknown",
+              "quarantined",
+              "fenced",
+              "reconcile_required"
+            ]
+          },
+          "required_gate": {
+            "type": "string",
+            "minLength": 1
+          },
+          "automatic_external_replay": {
+            "const": false
+          },
+          "expected_effect_count": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 30
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
