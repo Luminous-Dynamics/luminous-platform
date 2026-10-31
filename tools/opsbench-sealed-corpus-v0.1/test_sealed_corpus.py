@@ -66,7 +66,7 @@ class SealedCorpusTests(unittest.TestCase):
     def test_registration_must_precede_first_trial(self):
         manifest, raw, registration, salt, prereg_bytes, _audit, _policy = fixtures()
         registration["registered_at"] = "2026-10-31T15:00:00Z"
-        with self.assertRaisesRegex(ContractError, "registration must precede first scored trial"):
+        with self.assertRaisesRegex(ContractError, "both precede first scored trial"):
             check_corpus_commitment(manifest, raw, registration, salt, prereg_bytes)
 
     def test_salt_must_have_at_least_256_bits(self):
