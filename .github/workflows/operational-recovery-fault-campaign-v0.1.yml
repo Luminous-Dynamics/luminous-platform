@@ -1,0 +1,50 @@
+name: operational recovery fault campaign v0.1
+
+on:
+  pull_request:
+    paths:
+      - "benchmarks/operational-recovery-v0.1/fault-matrix.json"
+      - "benchmarks/operational-recovery-v0.1/fault-matrix.schema.json"
+      - "tools/operational-recovery-verifier-v0.1/fault_campaign.py"
+      - "tools/operational-recovery-verifier-v0.1/test_fault_campaign.py"
+      - "tools/operational-recovery-verifier-v0.1/recovery_trace.py"
+      - "tools/operational-recovery-verifier-v0.1/test_recovery_trace.py"
+      - "docs/OPERATIONAL_RECOVERY_FAULT_CAMPAIGN_V0_1.md"
+      - ".github/workflows/operational-recovery-fault-campaign-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/operational-recovery-v0.1/fault-matrix.json"
+      - "benchmarks/operational-recovery-v0.1/fault-matrix.schema.json"
+      - "tools/operational-recovery-verifier-v0.1/fault_campaign.py"
+      - "tools/operational-recovery-verifier-v0.1/test_fault_campaign.py"
+      - "tools/operational-recovery-verifier-v0.1/recovery_trace.py"
+      - "tools/operational-recovery-verifier-v0.1/test_recovery_trace.py"
+      - "docs/OPERATIONAL_RECOVERY_FAULT_CAMPAIGN_V0_1.md"
+      - ".github/workflows/operational-recovery-fault-campaign-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operational-recovery-fault-campaign-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  recovery-fault-campaign:
+    name: Deterministic recovery fault campaign
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Compile exact verifier and campaign sources
+        run: python3 -m py_compile tools/operational-recovery-verifier-v0.1/recovery_trace.py tools/operational-recovery-verifier-v0.1/test_recovery_trace.py tools/operational-recovery-verifier-v0.1/fault_campaign.py tools/operational-recovery-verifier-v0.1/test_fault_campaign.py
+      - name: Run deterministic positive and negative fault campaign
+        run: python3 tools/operational-recovery-verifier-v0.1/fault_campaign.py --output recovery-fault-campaign-report.json
+      - name: Verify report reproducibility and invariant tests
+        run: python3 -m unittest discover -s tools/operational-recovery-verifier-v0.1 -p 'test_fault_campaign.py' -v
+      - name: Preserve report in workflow log
+        run: cat recovery-fault-campaign-report.json
