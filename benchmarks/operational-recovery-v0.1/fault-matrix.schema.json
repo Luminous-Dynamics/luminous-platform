@@ -1,0 +1,31 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://luminousdynamics.io/schemas/operational-recovery-fault-matrix-v0.1.json",
+  "title":"Luminous operational recovery fault matrix v0.1",
+  "type":"object",
+  "additionalProperties":false,
+  "required":["schema","version","campaign_id","status","claim_ceiling","scenarios"],
+  "properties":{
+    "schema":{"const":"luminous-operational-recovery-fault-matrix-v0.1"},
+    "version":{"const":1},
+    "campaign_id":{"type":"string","minLength":1},
+    "status":{"const":"research_only"},
+    "claim_ceiling":{"type":"string","minLength":40},
+    "scenarios":{
+      "type":"array","minItems":12,"uniqueItems":true,
+      "items":{
+        "type":"object","additionalProperties":false,
+        "required":["scenario_id","name","fault_boundary","injection","expected_status","must_include_violation_codes","safety_property"],
+        "properties":{
+          "scenario_id":{"type":"string","pattern":"^F[0-9]{3}$"},
+          "name":{"type":"string","minLength":3},
+          "fault_boundary":{"type":"string","minLength":3},
+          "injection":{"type":"string","minLength":10},
+          "expected_status":{"enum":["valid","invalid","indeterminate"]},
+          "must_include_violation_codes":{"type":"array","uniqueItems":true,"items":{"type":"string","minLength":3}},
+          "safety_property":{"type":"string","minLength":10}
+        }
+      }
+    }
+  }
+}
