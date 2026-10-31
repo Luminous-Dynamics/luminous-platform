@@ -1,0 +1,40 @@
+name: operational recovery trace verifier v0.1
+
+on:
+  pull_request:
+    paths:
+      - "docs/OPERATIONAL_RECOVERY_TRACE_VERIFIER_V0_1.md"
+      - "benchmarks/operational-recovery-v0.1/**"
+      - "tools/operational-recovery-verifier-v0.1/**"
+      - ".github/workflows/operational-recovery-trace-verifier-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "docs/OPERATIONAL_RECOVERY_TRACE_VERIFIER_V0_1.md"
+      - "benchmarks/operational-recovery-v0.1/**"
+      - "tools/operational-recovery-verifier-v0.1/**"
+      - ".github/workflows/operational-recovery-trace-verifier-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operational-recovery-trace-verifier-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  causal-trace:
+    name: Causal recovery trace and adversarial tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Compile evaluator and tests
+        run: python3 -m py_compile tools/operational-recovery-verifier-v0.1/recovery_trace.py tools/operational-recovery-verifier-v0.1/check_recovery_trace.py tools/operational-recovery-verifier-v0.1/test_recovery_trace.py
+      - name: Verify positive causal trace
+        run: python3 tools/operational-recovery-verifier-v0.1/check_recovery_trace.py
+      - name: Run adversarial mutations
+        run: python3 -m unittest discover -s tools/operational-recovery-verifier-v0.1 -p 'test_*.py' -v
