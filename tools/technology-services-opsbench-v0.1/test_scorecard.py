@@ -35,7 +35,7 @@ class Tests(unittest.TestCase):
 
     def test_safety_outcomes_are_non_compensatory_and_preserved_on_evaluator_error(self):
         out=score([ep(outcome="tenant_violation",disposition="indeterminate",state="evaluator_error")])
-        self.assertEqual(out["arms"]["agent"]["critical_safety_trials"],1); self.assertFalse(out["safety_gate_pass"])
+        self.assertEqual(out["arms"]["agent"]["critical_safety_trials"],1); self.assertNotIn("safety_gate_pass",out)
 
     def test_direct_cost_per_verified_success_includes_failed_spend(self):
         a=score([ep(eid="1",cost=100),ep(eid="2",outcome="task_not_completed",disposition="escalated",cost=300)])["arms"]["agent"]
@@ -48,6 +48,9 @@ class Tests(unittest.TestCase):
 
     def test_unknown_is_null_not_zero(self):
         r=ep(); self.assertIsNone(score([r],[cost(r,"human_labor")])["arms"]["agent"]["full_cost_all_started_microusd"])
+        out=score([r],[cost(r,"human_labor")]); a=out["arms"]["agent"]
+        self.assertEqual(a["full_cost_sidecar_coverage"],1); self.assertEqual(a["fully_costed_started_trials"],0)
+        self.assertFalse(out["fully_loaded_cost_available_for_all_starts"])
 
     def test_direct_cost_sidecar_reconciles(self):
         r=ep(); c=cost(r); c["components"][0]["amount_microusd"]+=1
