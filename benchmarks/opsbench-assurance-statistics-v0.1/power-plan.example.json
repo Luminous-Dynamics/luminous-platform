@@ -18,32 +18,47 @@
     {
       "scenario_id": "SCR-001",
       "seed_count": 5,
-      "baseline_success_rate": 0.6,
-      "candidate_success_rate": 0.6
+      "arm_success_rates": {
+        "deterministic": 0.6,
+        "luminous-full": 0.6,
+        "luminous-no-saga": 0.6
+      }
     },
     {
       "scenario_id": "SCR-002",
       "seed_count": 5,
-      "baseline_success_rate": 0.4,
-      "candidate_success_rate": 0.6
+      "arm_success_rates": {
+        "deterministic": 0.4,
+        "luminous-full": 0.6,
+        "luminous-no-saga": 0.4
+      }
     },
     {
       "scenario_id": "SCR-003",
       "seed_count": 5,
-      "baseline_success_rate": 0.9,
-      "candidate_success_rate": 0.6
+      "arm_success_rates": {
+        "deterministic": 0.9,
+        "luminous-full": 0.6,
+        "luminous-no-saga": 0.8
+      }
     },
     {
       "scenario_id": "SCR-004",
       "seed_count": 5,
-      "baseline_success_rate": 0.3,
-      "candidate_success_rate": 0.7
+      "arm_success_rates": {
+        "deterministic": 0.3,
+        "luminous-full": 0.7,
+        "luminous-no-saga": 0.5
+      }
     },
     {
       "scenario_id": "SCR-005",
       "seed_count": 5,
-      "baseline_success_rate": 0.6,
-      "candidate_success_rate": 0.55
+      "arm_success_rates": {
+        "deterministic": 0.6,
+        "luminous-full": 0.55,
+        "luminous-no-saga": 0.7
+      }
     }
   ],
   "planning_parameters": {
@@ -71,5 +86,9 @@
       2,
       4
     ]
-  }
+  },
+  "candidate_arm_ids": [
+    "luminous-full",
+    "luminous-no-saga"
+  ]
 }
