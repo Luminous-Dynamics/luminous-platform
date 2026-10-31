@@ -176,11 +176,21 @@ def check_access_audit(audit: dict, policy: dict) -> dict:
     require(isinstance(policy.get("policy_id"), str) and policy["policy_id"], "access policy.policy_id required")
     forbidden = policy.get("sut_forbidden_resource_classes")
     allowed = policy.get("sut_allowed_resource_classes")
+    action_rows = policy.get("sut_allowed_actions")
     endpoints = policy.get("allowed_service_endpoints")
     channels = policy.get("required_audit_channels")
     require(isinstance(forbidden, list) and forbidden and all(isinstance(x, str) and x for x in forbidden) and len(forbidden) == len(set(forbidden)), "access policy: invalid forbidden resource classes")
     require(isinstance(allowed, list) and allowed and all(isinstance(x, str) and x for x in allowed) and len(allowed) == len(set(allowed)), "access policy: invalid allowed resource classes")
     require(not (set(forbidden) & set(allowed)), "access policy: a resource class cannot be both allowed and forbidden")
+    require(isinstance(action_rows, list) and action_rows, "access policy: explicit resource/action rules required")
+    allowed_actions = {}
+    for row in action_rows:
+        require(isinstance(row, dict) and set(row) == {"resource_class", "actions"}, "access policy: malformed resource/action rule")
+        resource_class, actions = row["resource_class"], row["actions"]
+        require(isinstance(resource_class, str) and resource_class and isinstance(actions, list) and actions and all(x in {"read", "write", "mount", "execute", "egress"} for x in actions) and len(actions) == len(set(actions)), "access policy: invalid allowed action set")
+        require(resource_class not in allowed_actions, "access policy: duplicate resource action rule")
+        allowed_actions[resource_class] = set(actions)
+    require(set(allowed_actions) == set(allowed), "access policy: resource/action map must exactly cover allowed resource classes")
     require(isinstance(endpoints, list) and all(isinstance(x, str) and x for x in endpoints) and len(endpoints) == len(set(endpoints)), "access policy: invalid endpoint allowlist")
     require(isinstance(channels, list) and channels and set(channels) == REQUIRED_COVERAGE, "access policy: required audit channels must cover all six v0.1 channels")
 
@@ -205,14 +215,15 @@ def check_access_audit(audit: dict, policy: dict) -> dict:
         _hex64(event["evidence_sha256"], f"{where}.evidence_sha256")
         is_forbidden = event["principal_role"] == "sut" and event["resource_class"] in forbidden
         is_unlisted = event["principal_role"] == "sut" and event["resource_class"] not in allowed and event["resource_class"] not in forbidden
+        bad_action = event["principal_role"] == "sut" and event["resource_class"] in allowed_actions and event["action"] not in allowed_actions[event["resource_class"]]
         bad_endpoint = event["principal_role"] == "sut" and event["action"] == "egress" and event["endpoint"] not in endpoints
-        if is_forbidden or is_unlisted or bad_endpoint:
+        if event["disposition"] == "unknown":
+            unknown_events += 1
+        if is_forbidden or is_unlisted or bad_action or bad_endpoint:
             if event["disposition"] == "allowed":
                 violations.append({"event_id": event["event_id"], "reason": "subject accessed forbidden/unlisted resource or unapproved endpoint"})
             elif event["disposition"] == "denied":
                 blocked_attempts += 1
-            else:
-                unknown_events += 1
         if event["action"] == "egress":
             require(event["endpoint"] is None or isinstance(event["endpoint"], str), f"{where}: endpoint must be string or null")
         else:
