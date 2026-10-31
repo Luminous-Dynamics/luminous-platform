@@ -14,7 +14,7 @@
       "rate_multiplier_min": 0.95,
       "rate_multiplier_max": 1.05,
       "fault_id": null,
-      "fault_receipt_sha256": null
+      "fault_action_sha256": null
     },
     {
       "phase_id": "burst",
@@ -24,7 +24,7 @@
       "rate_multiplier_min": 1.45,
       "rate_multiplier_max": 1.55,
       "fault_id": null,
-      "fault_receipt_sha256": null
+      "fault_action_sha256": null
     },
     {
       "phase_id": "dependency-degradation",
@@ -34,7 +34,7 @@
       "rate_multiplier_min": 0.95,
       "rate_multiplier_max": 1.05,
       "fault_id": "dependency-latency-pulse-01",
-      "fault_receipt_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      "fault_action_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     },
     {
       "phase_id": "retry-pressure",
@@ -44,7 +44,7 @@
       "rate_multiplier_min": 0.95,
       "rate_multiplier_max": 1.05,
       "fault_id": "bounded-retry-pressure-01",
-      "fault_receipt_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      "fault_action_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
     },
     {
       "phase_id": "recovery-hold",
@@ -54,7 +54,7 @@
       "rate_multiplier_min": 0.95,
       "rate_multiplier_max": 1.05,
       "fault_id": null,
-      "fault_receipt_sha256": null
+      "fault_action_sha256": null
     }
   ]
 }
