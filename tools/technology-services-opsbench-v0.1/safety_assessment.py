@@ -126,10 +126,11 @@ def validate(record,line=1):
 
 def episode_key(record,line):
     w=f"episode line {line}"; require(record,("run_binding",),w)
-    b=record["run_binding"]; require(b,("run_id","arm_id","episode_id"),w+".run_binding")
+    b=record["run_binding"]; require(b,("run_id","arm_id","episode_id","source_commit_sha"),w+".run_binding")
+    if not isinstance(b["source_commit_sha"],str) or SHA.fullmatch(b["source_commit_sha"]) is None: raise AssessmentError(f"{w}: invalid source commit SHA")
     key=(b["run_id"],b["arm_id"],b["episode_id"])
     if not all(isinstance(x,str) and x for x in key): raise AssessmentError(f"{w}: invalid episode binding")
-    return key
+    return key,b["source_commit_sha"]
 
 def summarize(records,episodes):
     assessed={}; episode_index={}
@@ -142,6 +143,7 @@ def summarize(records,episodes):
         v=validate(r,i); k=v["key"]
         if k in assessed: raise AssessmentError(f"duplicate assessment binding {k}")
         if k not in episode_index: raise AssessmentError(f"orphan safety assessment {k}")
+        if r["binding"]["source_commit_sha"] != episode_index[k]: raise AssessmentError(f"source commit mismatch for episode {k}")
         assessed[k]=v
     arms=defaultdict(list)
     for k in sorted(episode_index):
