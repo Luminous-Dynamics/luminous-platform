@@ -6,6 +6,7 @@ on:
       - "benchmarks/opsbench-assurance-statistics-v0.1/**"
       - "benchmarks/opsbench-common-core-v0.1/preregistration.example.json"
       - "tools/opsbench-assurance-statistics-v0.1/**"
+      - "docs/OPSBENCH_ASSURANCE_STATISTICS_V0_1.md"
       - ".github/workflows/opsbench-assurance-statistics-v0.1.yml"
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - "benchmarks/opsbench-assurance-statistics-v0.1/**"
       - "benchmarks/opsbench-common-core-v0.1/preregistration.example.json"
       - "tools/opsbench-assurance-statistics-v0.1/**"
+      - "docs/OPSBENCH_ASSURANCE_STATISTICS_V0_1.md"
       - ".github/workflows/opsbench-assurance-statistics-v0.1.yml"
 
 permissions:
@@ -34,14 +36,26 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - name: Compile evaluator and adversarial tests
         run: python3 -m py_compile tools/opsbench-assurance-statistics-v0.1/analyze_assurance.py tools/opsbench-assurance-statistics-v0.1/test_analyze_assurance.py
-      - name: Parse pinned inputs
+      - name: Parse input and output contracts
         run: |
           python3 -m json.tool benchmarks/opsbench-assurance-statistics-v0.1/results.schema.json >/dev/null
+          python3 -m json.tool benchmarks/opsbench-assurance-statistics-v0.1/report.schema.json >/dev/null
           python3 -m json.tool benchmarks/opsbench-assurance-statistics-v0.1/results.example.json >/dev/null
           python3 -m json.tool benchmarks/opsbench-common-core-v0.1/preregistration.example.json >/dev/null
-      - name: Run repeatability, safety and economic analysis on synthetic fixture
-        run: python3 tools/opsbench-assurance-statistics-v0.1/analyze_assurance.py --output opsbench-assurance-report.json
+      - name: Run evaluator on synthetic example
+        run: |
+          python3 tools/opsbench-assurance-statistics-v0.1/analyze_assurance.py \
+            --results benchmarks/opsbench-assurance-statistics-v0.1/results.example.json \
+            --preregistration benchmarks/opsbench-common-core-v0.1/preregistration.example.json \
+            --output /tmp/opsbench-assurance-report-a.json
+      - name: Confirm byte-for-byte report repeatability
+        run: |
+          python3 tools/opsbench-assurance-statistics-v0.1/analyze_assurance.py \
+            --results benchmarks/opsbench-assurance-statistics-v0.1/results.example.json \
+            --preregistration benchmarks/opsbench-common-core-v0.1/preregistration.example.json \
+            --output /tmp/opsbench-assurance-report-b.json
+          cmp /tmp/opsbench-assurance-report-a.json /tmp/opsbench-assurance-report-b.json
       - name: Run adversarial and mutation tests
         run: python3 -m unittest discover -s tools/opsbench-assurance-statistics-v0.1 -p 'test_analyze_assurance.py' -v
       - name: Preserve explicitly example-only report
-        run: cat opsbench-assurance-report.json
+        run: cat /tmp/opsbench-assurance-report-a.json
