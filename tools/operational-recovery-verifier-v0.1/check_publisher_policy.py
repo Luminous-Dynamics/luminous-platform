@@ -23,6 +23,13 @@ POLICY_SCHEMA = "luminous-operational-evidence-publisher-policy-v0.1"
 HEX64 = re.compile(r"^[a-f0-9]{64}$")
 HEX40 = re.compile(r"^[a-f0-9]{40}$")
 KINDS = {"coordinator", "authority_adapter", "participant", "participant_ledger", "independent_observer", "evaluator"}
+MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
+MAX_MANIFEST_BYTES = 2 * 1024 * 1024
+MAX_SEGMENT_BYTES = 8 * 1024 * 1024
+MAX_SEGMENT_EVENTS = 4096
+MAX_EVENT_LINE_BYTES = 128 * 1024
+MAX_ID_BYTES = 256
+
 EVENT_TYPES = {
     "plan_authorized", "dispatch_intent_durable", "participant_accepted", "effect_committed",
     "transport_response_lost", "attempt_status_observed", "effect_reconciled",
@@ -35,6 +42,10 @@ class PolicyError(ValueError):
     pass
 
 
+def _reject_constant(value):
+    raise PolicyError(f"non-finite JSON number is prohibited: {value}")
+
+
 def _strict_object(pairs):
     result = {}
     for key, value in pairs:
@@ -44,9 +55,10 @@ def _strict_object(pairs):
     return result
 
 
-def _load_bytes(data: bytes, where: str):
+def _load_bytes(data: bytes, where: str, *, max_bytes: int = MAX_DOCUMENT_BYTES):
+    _need(len(data) <= max_bytes, f"{where}: document exceeds size limit")
     try:
-        return json.loads(data.decode("utf-8"), object_pairs_hook=_strict_object)
+        return json.loads(data.decode("utf-8"), object_pairs_hook=_strict_object, parse_constant=_reject_constant)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise PolicyError(f"{where}: invalid UTF-8 JSON: {exc}") from exc
 
@@ -115,7 +127,7 @@ def _validate_policy(policy: dict) -> dict:
     _need(policy.get("predicate_type") == PREDICATE_TYPE, "policy: predicate type mismatch")
     trusted_oidc_issuers = policy.get("trusted_oidc_issuers")
     trusted_spiffe_domains = policy.get("trusted_spiffe_trust_domains")
-    _need(isinstance(trusted_oidc_issuers, list) and all(isinstance(x, str) for x in trusted_oidc_issuers) and len(trusted_oidc_issuers) == len(set(trusted_oidc_issuers)), "policy: exact trusted OIDC issuer allowlist required")
+    _need(isinstance(trusted_oidc_issuers, list) and trusted_oidc_issuers and all(isinstance(x, str) for x in trusted_oidc_issuers) and len(trusted_oidc_issuers) == len(set(trusted_oidc_issuers)), "policy: exact trusted OIDC issuer allowlist required")
     _need(all(isinstance(x, str) and x.startswith("https://") for x in trusted_oidc_issuers), "policy: trusted OIDC issuers must be exact HTTPS identities")
     _need(isinstance(trusted_spiffe_domains, list) and trusted_spiffe_domains and all(isinstance(x, str) for x in trusted_spiffe_domains) and len(trusted_spiffe_domains) == len(set(trusted_spiffe_domains)), "policy: exact SPIFFE trust-domain allowlist required")
     _no_wildcards(trusted_oidc_issuers, "policy.trusted_oidc_issuers")
@@ -154,7 +166,7 @@ def _validate_policy(policy: dict) -> dict:
         allowed = publisher["allowed_event_types"]
         _need(isinstance(allowed, list) and allowed and all(isinstance(x, str) and x in EVENT_TYPES for x in allowed) and len(allowed) == len(set(allowed)), f"{where}: unique supported event types required")
         transparency = publisher["transparency"]
-        _need(isinstance(transparency, dict) and transparency.get("mode") == "required" and transparency.get("failure_action") == "reject", f"{where}: transparency inclusion must fail closed")
+        _need(isinstance(transparency, dict) and set(transparency) == {"mode", "failure_action", "log_policy_id"} and transparency.get("mode") == "required" and transparency.get("failure_action") == "reject", f"{where}: transparency inclusion must fail closed with exact fields")
         _need(isinstance(transparency.get("log_policy_id"), str) and transparency["log_policy_id"], f"{where}: log policy id required")
     return by_role
 
@@ -192,17 +204,27 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
     artifact_binding = predicate.get("artifact_binding")
     _need(isinstance(artifact_binding, dict) and set(artifact_binding) == {"manifest_subject_name", "event_segment_subject_name"}, "predicate.artifact_binding: exact fields required")
     manifest_name = artifact_binding.get("manifest_subject_name")
-    segment_name = predicate.get("artifact_binding", {}).get("event_segment_subject_name")
+    segment_name = artifact_binding.get("event_segment_subject_name")
+    _need(isinstance(manifest_name, str) and manifest_name and isinstance(segment_name, str) and segment_name, "predicate.artifact_binding: subject names must be non-empty strings")
     _need(manifest_name in subject_map and segment_name in subject_map and manifest_name != segment_name, "predicate: subject names do not bind manifest and event segment")
     _need(subject_map[manifest_name] == _sha(manifest_bytes), "statement: raw manifest subject digest mismatch")
     _need(subject_map[segment_name] == _sha(segment_bytes), "statement: raw event segment subject digest mismatch")
 
-    manifest = _load_bytes(manifest_bytes, "manifest")
+    _need(len(manifest_bytes) <= MAX_MANIFEST_BYTES, "manifest: document exceeds size limit")
+    _need(len(policy_bytes) <= MAX_DOCUMENT_BYTES, "publisher policy: document exceeds size limit")
+    _need(len(segment_bytes) <= MAX_SEGMENT_BYTES, "event segment: document exceeds size limit")
+    manifest = _load_bytes(manifest_bytes, "manifest", max_bytes=MAX_MANIFEST_BYTES)
+    _need(isinstance(manifest, dict), "manifest: expected object")
+    _need(manifest.get("schema") == "luminous-operational-recovery-run-v0.1" and type(manifest.get("version")) is int and manifest["version"] == 1, "manifest: unsupported schema/version")
     run_binding = predicate.get("run_binding")
     _need(isinstance(run_binding, dict) and set(run_binding) == {"run_id", "episode_id", "plan_digest", "source_commit_sha"}, "predicate.run_binding: exact fields required")
-    frozen = manifest.get("run_binding", {})
+    frozen = manifest.get("run_binding")
+    _need(isinstance(frozen, dict), "manifest.run_binding: expected object")
     for key in ("run_id", "episode_id", "plan_digest", "source_commit_sha"):
+        _need(isinstance(frozen.get(key), str) and frozen[key], f"manifest.run_binding.{key}: required")
         _need(run_binding.get(key) == frozen.get(key), f"predicate.run_binding.{key}: does not match frozen manifest")
+    _need(len(frozen["run_id"].encode("utf-8")) <= MAX_ID_BYTES and len(frozen["episode_id"].encode("utf-8")) <= MAX_ID_BYTES, "manifest run/episode identity exceeds size limit")
+    _need(_is_hex(frozen["plan_digest"]) and _is_hex(frozen["source_commit_sha"], HEX40), "manifest run binding digests are malformed")
 
     producer = predicate.get("producer")
     _need(isinstance(producer, dict) and set(producer) == {"source_id", "source_kind", "trust_domain_id", "identity_profile_id"}, "predicate.producer: exact fields required")
@@ -214,7 +236,9 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
 
     lines = segment_bytes.splitlines()
     _need(lines, "event segment: empty source stream")
-    events = [_load_bytes(line, f"event segment line {i}") for i, line in enumerate(lines, 1)]
+    _need(len(lines) <= MAX_SEGMENT_EVENTS, "event segment: event count exceeds limit")
+    _need(all(len(line) <= MAX_EVENT_LINE_BYTES for line in lines), "event segment: event line exceeds size limit")
+    events = [_load_bytes(line, f"event segment line {i}", max_bytes=MAX_EVENT_LINE_BYTES) for i, line in enumerate(lines, 1)]
     source = producer["source_id"]
     source_kind = producer["source_kind"]
     trust_domain = producer["trust_domain_id"]
@@ -227,7 +251,7 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
         _need(isinstance(event, dict), f"event {i}: expected object")
         _need(event.get("schema") == "luminous-operational-recovery-event-v0.1", f"event {i}: unsupported event schema")
         _need(event.get("run_id") == frozen.get("run_id") and event.get("episode_id") == frozen.get("episode_id") and event.get("plan_digest") == frozen.get("plan_digest"), f"event {i}: frozen run binding mismatch")
-        _need(isinstance(event.get("event_id"), str) and event["event_id"], f"event {i}: event ID required")
+        _need(isinstance(event.get("event_id"), str) and event["event_id"] and len(event["event_id"].encode("utf-8")) <= MAX_ID_BYTES, f"event {i}: event ID required and size-bounded")
         _need(type(event.get("source_epoch")) is int and type(event.get("source_sequence")) is int, f"event {i}: integer epoch and sequence required")
         parent_ids = event.get("parent_event_ids")
         _need(isinstance(parent_ids, list) and all(isinstance(x, str) and x for x in parent_ids) and len(parent_ids) == len(set(parent_ids)), f"event {i}: unique causal parent IDs required")
@@ -245,13 +269,15 @@ def check_attestation(statement: dict, policy: dict, manifest_bytes: bytes, segm
         _need(event.get("event_digest") == calculated, f"event {i}: event digest mismatch")
         previous_digest, previous_id = calculated, event.get("event_id")
 
-    _need(stream.get("first_sequence") == 1, "source segment must begin at sequence one")
-    _need(stream.get("last_sequence") == len(events) and stream.get("event_count") == len(events), "source segment must cover the complete declared epoch prefix")
+    _need(type(stream.get("first_sequence")) is int and stream.get("first_sequence") == 1, "source segment must begin at sequence one")
+    _need(type(stream.get("last_sequence")) is int and stream.get("last_sequence") == len(events) and type(stream.get("event_count")) is int and stream.get("event_count") == len(events), "source segment must cover the complete declared epoch prefix")
     _need(stream.get("first_event_digest") == events[0].get("event_digest"), "source segment first digest mismatch")
     _need(stream.get("last_event_digest") == events[-1].get("event_digest"), "source segment last digest mismatch")
     return {
         "status": "policy_match",
         "policy_id": policy["policy_id"],
+        "policy_status": policy["status"],
+        "production_usable": False,
         "producer_role": {"source_id": source, "source_kind": source_kind, "trust_domain_id": trust_domain},
         "identity_profile_id": publisher["identity_profile_id"],
         "event_count": len(events),
@@ -284,7 +310,7 @@ def main(argv=None) -> int:
         else:
             Path(args.output).write_text(rendered, encoding="utf-8")
         return 0
-    except (OSError, PolicyError) as exc:
+    except (OSError, PolicyError, AttributeError, KeyError, TypeError, OverflowError) as exc:
         print(f"publisher-policy-check: {exc}", file=sys.stderr)
         return 2
 
