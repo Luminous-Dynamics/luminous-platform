@@ -3,7 +3,7 @@ import json
 import unittest
 from pathlib import Path
 from recovery_trace import (
-    EVENT_SCHEMA, MANIFEST_SCHEMA, TraceError, digest_record, verify,
+    EVENT_SCHEMA, MANIFEST_SCHEMA, TraceError, _json_loads, digest_record, verify,
 )
 
 D = lambda char: char * 64
@@ -285,6 +285,23 @@ class RecoveryTraceTests(unittest.TestCase):
         for key in ("manifest_digest", "event_log_digest", "participant_manifest_digest", "observer_manifest_digest", "verifier_source_sha256"):
             self.assertRegex(report[key], r"^[a-f0-9]{64}$")
         self.assertEqual(report["event_count"], 8)
+
+    def test_duplicate_json_object_keys_are_rejected(self):
+        with self.assertRaises(TraceError):
+            _json_loads('{"event_id":"first","event_id":"second"}', "duplicate-key fixture")
+
+    def test_event_count_limit_is_enforced_before_graph_processing(self):
+        b=Builder()
+        with self.assertRaises(TraceError):
+            verify(b.m, [{}] * 4097)
+
+    def test_parent_fanout_limit_is_enforced(self):
+        b=Builder()
+        e=b.add("too-many-parents","agent_declared_resolved",data={"claim":"resolved"})
+        e["parent_event_ids"]=["parent-"+str(i) for i in range(65)]
+        e["event_digest"]=digest_record(e)
+        with self.assertRaises(TraceError):
+            verify(b.m,[e])
 
     def test_manifest_source_revision_binding_is_required(self):
         m=manifest(); del m["run_binding"]["source_commit_sha"]
