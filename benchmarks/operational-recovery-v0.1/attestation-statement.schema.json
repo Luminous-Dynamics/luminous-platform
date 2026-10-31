@@ -14,59 +14,45 @@
         "required":["name","digest"],
         "properties":{
           "name":{"type":"string","minLength":1},
-          "digest":{
-            "type":"object","additionalProperties":false,
-            "required":["sha256"],
-            "properties":{"sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}}
-          }
+          "digest":{"type":"object","additionalProperties":false,"required":["sha256"],"properties":{"sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}}}
         }
       }
     },
     "predicateType":{"const":"https://luminousdynamics.io/attestations/operational-recovery/v0.1"},
     "predicate":{
       "type":"object","additionalProperties":false,
-      "required":["schema","version","assertion_scope","produced_at","run_binding","artifact_binding","producer","source_segment"],
+      "required":["schema","version","assertion_scope","produced_at","publisher_policy_sha256","run_binding","artifact_binding","producer","source_segment"],
       "properties":{
         "schema":{"const":"luminous-operational-recovery-attestation-v0.1"},
         "version":{"const":1},
         "assertion_scope":{"const":"producer_published_source_event_segment"},
         "produced_at":{"type":"string","format":"date-time"},
+        "publisher_policy_sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"},
         "run_binding":{
-          "type":"object","additionalProperties":false,
-          "required":["run_id","episode_id","plan_digest","source_commit_sha"],
+          "type":"object","additionalProperties":false,"required":["run_id","episode_id","plan_digest","source_commit_sha"],
           "properties":{
-            "run_id":{"type":"string","minLength":1},
-            "episode_id":{"type":"string","minLength":1},
+            "run_id":{"type":"string","minLength":1},"episode_id":{"type":"string","minLength":1},
             "plan_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"},
             "source_commit_sha":{"type":"string","pattern":"^[a-f0-9]{40}$"}
           }
         },
         "artifact_binding":{
-          "type":"object","additionalProperties":false,
-          "required":["manifest_subject_name","event_segment_subject_name"],
-          "properties":{
-            "manifest_subject_name":{"type":"string","minLength":1},
-            "event_segment_subject_name":{"type":"string","minLength":1}
-          }
+          "type":"object","additionalProperties":false,"required":["manifest_subject_name","event_segment_subject_name"],
+          "properties":{"manifest_subject_name":{"type":"string","minLength":1},"event_segment_subject_name":{"type":"string","minLength":1}}
         },
         "producer":{
-          "type":"object","additionalProperties":false,
-          "required":["source_id","source_kind","trust_domain_id","identity_profile_id"],
+          "type":"object","additionalProperties":false,"required":["source_id","source_kind","trust_domain_id","identity_profile_id"],
           "properties":{
             "source_id":{"type":"string","minLength":1},
             "source_kind":{"enum":["coordinator","authority_adapter","participant","participant_ledger","independent_observer","evaluator"]},
-            "trust_domain_id":{"type":"string","minLength":1},
-            "identity_profile_id":{"type":"string","minLength":1}
+            "trust_domain_id":{"type":"string","minLength":1},"identity_profile_id":{"type":"string","minLength":1}
           }
         },
         "source_segment":{
-          "type":"object","additionalProperties":false,
-          "required":["source_epoch","first_sequence","last_sequence","event_count","first_event_digest","last_event_digest"],
+          "type":"object","additionalProperties":false,"required":["source_epoch","first_sequence","last_sequence","event_count","first_event_digest","last_event_digest"],
           "properties":{
-            "source_epoch":{"type":"integer","minimum":0},
-            "first_sequence":{"const":1},
-            "last_sequence":{"type":"integer","minimum":1},
-            "event_count":{"type":"integer","minimum":1},
+            "source_epoch":{"type":"integer","minimum":0},"first_sequence":{"const":1},
+            "last_sequence":{"type":"integer","minimum":1},"event_count":{"type":"integer","minimum":1},
             "first_event_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"},
             "last_event_digest":{"type":"string","pattern":"^[a-f0-9]{64}$"}
           }
