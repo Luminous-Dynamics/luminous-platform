@@ -220,5 +220,53 @@ class SealedCorpusTests(unittest.TestCase):
             load_json(b'{"a":1,"a":2}', "test")
 
 
+    def test_allowed_resource_with_unauthorized_action_fails(self):
+        _manifest, _raw, _registration, _salt, _prereg_bytes, audit, policy = fixtures()
+        changed = copy.deepcopy(audit)
+        changed["events"].append({
+            "event_id": "evt-execute-prompt",
+            "timestamp": "2026-10-31T14:00:07Z",
+            "principal_role": "sut",
+            "action": "execute",
+            "resource_class": "task_prompt",
+            "disposition": "allowed",
+            "endpoint": None,
+            "evidence_sha256": "8" * 64,
+        })
+        report = check_access_audit(changed, policy)
+        self.assertEqual(report["status"], "fail")
+
+    def test_denied_unauthorized_action_is_recorded_as_blocked_attempt(self):
+        _manifest, _raw, _registration, _salt, _prereg_bytes, audit, policy = fixtures()
+        changed = copy.deepcopy(audit)
+        changed["events"].append({
+            "event_id": "evt-blocked-overwrite",
+            "timestamp": "2026-10-31T14:00:07Z",
+            "principal_role": "sut",
+            "action": "write",
+            "resource_class": "task_prompt",
+            "disposition": "denied",
+            "endpoint": None,
+            "evidence_sha256": "9" * 64,
+        })
+        report = check_access_audit(changed, policy)
+        self.assertEqual(report["status"], "pass")
+        self.assertEqual(report["blocked_forbidden_access_attempts"], 1)
+
+    def test_unknown_disposition_on_allowed_resource_is_indeterminate(self):
+        _manifest, _raw, _registration, _salt, _prereg_bytes, audit, policy = fixtures()
+        changed = copy.deepcopy(audit)
+        changed["events"][0]["disposition"] = "unknown"
+        report = check_access_audit(changed, policy)
+        self.assertEqual(report["status"], "indeterminate")
+        self.assertEqual(report["unknown_access_event_count"], 1)
+
+    def test_registration_must_match_exact_preregistration_bytes(self):
+        manifest, raw, registration, salt, prereg_bytes, _audit, _policy = fixtures()
+        altered_prereg = prereg_bytes + b" "
+        with self.assertRaisesRegex(ContractError, "exact preregistration digest mismatch"):
+            check_corpus_commitment(manifest, raw, registration, salt, altered_prereg)
+
+
 if __name__ == "__main__":
     unittest.main()
