@@ -77,12 +77,20 @@ class AutonomyBoundaryTests(unittest.TestCase):
             self.validate_all(tasks=changed)
 
     def test_task_ids_must_not_partition_decision_classes(self):
-        changed = copy.deepcopy(ORACLE)
-        for index, pair in enumerate(changed["pairs"]):
-            pair["act_variant"]["task_id"] = "ATB-" + str(index + 1).zfill(4)
-            pair["counterfactual_variant"]["task_id"] = "ATB-" + str(index + 65).zfill(4)
+        changed_tasks = copy.deepcopy(TASKS)
+        changed_oracle = copy.deepcopy(ORACLE)
+        remap = {}
+        for index, pair in enumerate(changed_oracle["pairs"]):
+            act_id = "ATB-" + str(index + 1).zfill(4)
+            stop_id = "ATB-" + str(index + 65).zfill(4)
+            remap[pair["act_variant"]["task_id"]] = act_id
+            remap[pair["counterfactual_variant"]["task_id"]] = stop_id
+            pair["act_variant"]["task_id"] = act_id
+            pair["counterfactual_variant"]["task_id"] = stop_id
+        for task in changed_tasks["cases"]:
+            task["id"] = remap[task["id"]]
         with self.assertRaises(ValueError):
-            self.validate_all(oracle=changed)
+            self.validate_all(tasks=changed_tasks, oracle=changed_oracle)
 
     def test_read_only_act_variant_can_have_zero_effects(self):
         changed = copy.deepcopy(ORACLE)
