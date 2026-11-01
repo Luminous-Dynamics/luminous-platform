@@ -1075,6 +1075,16 @@ mod tests {
     }
 
     #[test]
+    fn preregistered_arm_order_must_match_first_observed_activity() {
+        let (mut m, commitment, freeze, scenarios, events) = valid_fixture();
+        m.trials[0].first_arm = EvaluationArm::Baseline;
+        assert_eq!(
+            validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events),
+            Err(SealedRunError::ArmExecutionOrderMismatch("trial-a".into()))
+        );
+    }
+
+    #[test]
     fn matched_baseline_arm_is_required_for_every_planned_scenario() {
         let (m, commitment, freeze, scenarios, mut events) = valid_fixture();
         events.retain(|event| event.arm != EvaluationArm::Baseline);
@@ -1380,7 +1390,7 @@ mod tests {
 
     #[test]
     fn sixty_seven_adversarial_mutations_fail_closed() {
-        for vector in 0..75 {
+        for vector in 0..76 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
             match vector {
                 0 => { m.run_id.clear(); }
@@ -1457,7 +1467,8 @@ mod tests {
                 71 => { m.baseline.control_domain = m.agent.control_domain.clone(); }
                 72 => { m.execution_environment_digest = Digest::from_byte(0); }
                 73 => { m.resource_budget_digest = Digest::from_byte(0); }
-                _ => { m.baseline_identity_digest = m.agent_identity_digest.clone(); }
+                74 => { m.baseline_identity_digest = m.agent_identity_digest.clone(); }
+                _ => { m.trials[0].first_arm = EvaluationArm::Baseline; }
             };
             assert!(
                 validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).is_err(),
