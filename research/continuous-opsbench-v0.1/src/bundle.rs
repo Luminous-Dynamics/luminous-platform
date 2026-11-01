@@ -831,7 +831,7 @@ mod tests {
             identity_constraints_digest: d(6),
             revocation_policy_digest: d(7),
             policy_as_of_ms: 100,
-            maximum_attestation_age_ms: 10_000,
+            maximum_attestation_age_ms: 150,
             minimum_verifier_version: "0.1.0".into(),
             trusted_publishers: vec![
                 TrustedPublisher {
@@ -1129,7 +1129,9 @@ mod tests {
     #[test]
     fn stale_future_replayed_and_rejected_receipts_fail_closed() {
         let mut fixture = fixture();
-        fixture.4[0].issued_at_ms = 1;
+        fixture.0.trust_policy.maximum_attestation_age_ms = 150;
+        fixture.0.artifacts[0].issued_at_ms = 100;
+        fixture.4[0].issued_at_ms = 100;
         assert_eq!(
             verify(&fixture, &fixture.4),
             Err(BundleVerificationError::StaleArtifactReceipt(
@@ -1137,7 +1139,7 @@ mod tests {
             ))
         );
         let mut fixture = fixture();
-        fixture.4[0].issued_at_ms = 400;
+        fixture.4[0].verified_at_ms = 301;
         assert_eq!(
             verify(&fixture, &fixture.4),
             Err(BundleVerificationError::ReceiptFromFuture(
@@ -1145,11 +1147,14 @@ mod tests {
             ))
         );
         let mut fixture = fixture();
-        fixture.4[1].sequence = 1;
+        fixture.0.artifacts[1].source_id = "evaluator-source".into();
+        fixture.0.artifacts[1].control_domain = "evaluator-domain".into();
+        fixture.4[1].source_id = "evaluator-source".into();
+        fixture.4[1].control_domain = "evaluator-domain".into();
         assert_eq!(
             verify(&fixture, &fixture.4),
             Err(BundleVerificationError::DuplicateSourceSequence(
-                "observer-source".into()
+                "evaluator-source".into()
             ))
         );
         let mut fixture = fixture();
@@ -1314,7 +1319,13 @@ mod tests {
                 69 => fixture.0.claims[0].dependencies = vec!["service-outcome".into()],
                 70 => fixture.0.claims[0].claim_ceiling.clear(),
                 71 => fixture.0.claims[0].status_reason.clear(),
-                72 => fixture.0.visibility = BundleVisibility::Public,
+                72 => {
+                    fixture.0.visibility = BundleVisibility::Public;
+                    fixture.0.artifacts[2].availability = ArtifactAvailability::Embedded;
+                    fixture.0.artifacts[2].byte_length = Some(64);
+                    fixture.4[2].observed_content_digest = Some(d(12));
+                    fixture.4[2].observed_byte_length = Some(64);
+                }
                 73 => fixture.0.created_at_ms = 0,
                 74 => fixture.0.created_at_ms = 0,
                 75 => fixture.0.trust_policy.policy_as_of_ms = fixture.3 + 1,
