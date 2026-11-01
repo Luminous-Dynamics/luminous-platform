@@ -7,7 +7,7 @@
 
 use crate::sealed::{
     validate_freeze_receipt, validate_scenario, ArmRunSummary, EvaluationArm, FreezeReceipt,
-    RunLedgerSummary, RunManifest, PlannedTrial, ScenarioReceipt, TrialDisposition, TrialResult,
+    RunLedgerSummary, RunManifest, ScenarioReceipt, TrialDisposition, TrialResult,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
