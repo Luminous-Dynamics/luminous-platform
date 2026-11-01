@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-run-v0.1.json",
+  "title": "Continuous OpsBench run contract v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "scenario_id", "arm_id", "workload_profile_digest",
+    "start_ms", "end_ms", "minimum_offered_per_window",
+    "maximum_failed_ppm", "maximum_slow_ppm",
+    "required_consecutive_healthy_windows"
+  ],
+  "properties": {
+    "schema_version": { "const": "continuous-opsbench-run-v0.1" },
+    "scenario_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "arm_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "workload_profile_digest": { "$ref": "#/$defs/sha256" },
+    "start_ms": { "type": "integer", "minimum": 0 },
+    "end_ms": { "type": "integer", "minimum": 1 },
+    "minimum_offered_per_window": { "type": "integer", "minimum": 1 },
+    "maximum_failed_ppm": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+    "maximum_slow_ppm": { "type": "integer", "minimum": 0, "maximum": 1000000 },
+    "required_consecutive_healthy_windows": { "type": "integer", "minimum": 1, "maximum": 1000 }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    }
+  }
+}

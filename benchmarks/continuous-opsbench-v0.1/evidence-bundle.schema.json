@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-evidence-v0.1.json",
+  "title": "Continuous OpsBench evidence bundle v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "scenario_id", "arm_id", "faults", "reports", "actions", "effects", "observations"],
+  "properties": {
+    "schema_version": { "const": "continuous-opsbench-evidence-v0.1" },
+    "scenario_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "arm_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "faults": { "type": "array", "items": { "$ref": "#/$defs/fault" }, "maxItems": 10000 },
+    "reports": { "type": "array", "items": { "$ref": "#/$defs/report" }, "maxItems": 100000 },
+    "actions": { "type": "array", "items": { "$ref": "#/$defs/action" }, "maxItems": 100000 },
+    "effects": { "type": "array", "items": { "$ref": "#/$defs/effect" }, "maxItems": 100000 },
+    "observations": { "type": "array", "items": { "$ref": "#/$defs/observation" }, "maxItems": 100000 },
+    "no_action_observations": { "type": "array", "items": { "$ref": "#/$defs/observation" }, "maxItems": 100000 }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+    "id": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "fault": {
+      "type": "object", "additionalProperties": false,
+      "required": ["fault_id", "cluster_id", "starts_at_ms", "evaluator_reverts_at_ms", "root_service", "root_artifact", "affected_scope", "recovery_service", "alert_ids"],
+      "properties": {
+        "fault_id": { "$ref": "#/$defs/id" },
+        "cluster_id": { "$ref": "#/$defs/id" },
+        "starts_at_ms": { "type": "integer", "minimum": 0 },
+        "evaluator_reverts_at_ms": { "type": "integer", "minimum": 1 },
+        "root_service": { "$ref": "#/$defs/id" },
+        "root_artifact": { "$ref": "#/$defs/id" },
+        "affected_scope": { "type": "array", "items": { "$ref": "#/$defs/id" }, "minItems": 1, "maxItems": 256 },
+        "recovery_service": { "$ref": "#/$defs/id" },
+        "alert_ids": { "type": "array", "items": { "$ref": "#/$defs/id" }, "minItems": 1, "maxItems": 4096 }
+      }
+    },
+    "report": {
+      "type": "object", "additionalProperties": false,
+      "required": ["report_id", "reported_at_ms", "alert_ids", "claims_repaired"],
+      "properties": {
+        "report_id": { "$ref": "#/$defs/id" },
+        "reported_at_ms": { "type": "integer", "minimum": 0 },
+        "alert_ids": { "type": "array", "items": { "$ref": "#/$defs/id" }, "maxItems": 4096 },
+        "root_service": { "type": ["string", "null"] },
+        "root_artifact": { "type": ["string", "null"] },
+        "claims_repaired": { "type": "boolean" }
+      }
+    },
+    "action": {
+      "type": "object", "additionalProperties": false,
+      "required": ["action_id", "incident_report_id", "tenant_id", "participant_id", "attempt_id", "logical_action_key", "request_digest", "target_service", "stage", "forbidden_attempt"],
+      "properties": {
+        "action_id": { "$ref": "#/$defs/id" },
+        "incident_report_id": { "$ref": "#/$defs/id" },
+        "tenant_id": { "$ref": "#/$defs/id" },
+        "participant_id": { "$ref": "#/$defs/id" },
+        "attempt_id": { "$ref": "#/$defs/id" },
+        "logical_action_key": { "$ref": "#/$defs/id" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "target_service": { "$ref": "#/$defs/id" },
+        "stage": { "enum": ["proposed", "gate_denied", "dispatched"] },
+        "dispatched_at_ms": { "type": ["integer", "null"], "minimum": 0 },
+        "completed_at_ms": { "type": ["integer", "null"], "minimum": 0 },
+        "forbidden_attempt": { "type": "boolean" }
+      }
+    },
+    "effect": {
+      "type": "object", "additionalProperties": false,
+      "required": ["effect_id", "action_id", "tenant_id", "participant_id", "attempt_id", "logical_action_key", "request_digest", "target_service", "state", "gate_authorized", "forbidden_attempt", "ledger_cursor"],
+      "properties": {
+        "effect_id": { "$ref": "#/$defs/id" },
+        "action_id": { "$ref": "#/$defs/id" },
+        "tenant_id": { "$ref": "#/$defs/id" },
+        "participant_id": { "$ref": "#/$defs/id" },
+        "attempt_id": { "$ref": "#/$defs/id" },
+        "logical_action_key": { "$ref": "#/$defs/id" },
+        "request_digest": { "$ref": "#/$defs/sha256" },
+        "target_service": { "$ref": "#/$defs/id" },
+        "state": { "enum": ["accepted_pending", "committed", "never_accepted", "rejected", "unknown"] },
+        "gate_authorized": { "type": "boolean" },
+        "forbidden_attempt": { "type": "boolean" },
+        "ledger_cursor": { "type": "string", "maxLength": 1024 }
+      }
+    },
+    "observation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["window_id", "starts_at_ms", "ends_at_ms", "service", "request_class", "offered_requests", "failed_requests", "slow_requests", "incorrect_business_results", "workload_profile_digest", "observer_id", "complete"],
+      "properties": {
+        "window_id": { "$ref": "#/$defs/id" },
+        "starts_at_ms": { "type": "integer", "minimum": 0 },
+        "ends_at_ms": { "type": "integer", "minimum": 1 },
+        "service": { "$ref": "#/$defs/id" },
+        "request_class": { "$ref": "#/$defs/id" },
+        "offered_requests": { "type": "integer", "minimum": 0 },
+        "failed_requests": { "type": "integer", "minimum": 0 },
+        "slow_requests": { "type": "integer", "minimum": 0 },
+        "incorrect_business_results": { "type": "integer", "minimum": 0 },
+        "workload_profile_digest": { "$ref": "#/$defs/sha256" },
+        "observer_id": { "$ref": "#/$defs/id" },
+        "complete": { "type": "boolean" }
+      }
+    }
+  }
+}
