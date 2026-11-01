@@ -854,6 +854,8 @@ mod tests {
         let agent_identity_digest = Digest::from_byte(1);
         let baseline_identity_digest = Digest::from_byte(2);
         let evaluator_digest = Digest::from_byte(3);
+        let execution_environment_digest = Digest::from_byte(16);
+        let resource_budget_digest = Digest::from_byte(17);
         let manifest = RunManifest {
             schema: SEALED_RUN_SCHEMA.into(),
             version: SEALED_RUN_VERSION,
@@ -862,6 +864,8 @@ mod tests {
             created_at_ms: 10,
             frozen_at_ms: 20,
             evaluator_digest: evaluator_digest.clone(),
+            execution_environment_digest: execution_environment_digest.clone(),
+            resource_budget_digest: resource_budget_digest.clone(),
             agent_identity_digest: agent_identity_digest.clone(),
             baseline_identity_digest: baseline_identity_digest.clone(),
             agent: FrozenAgentIdentity {
@@ -882,10 +886,15 @@ mod tests {
                 baseline_id: "baseline-001".into(),
                 image_digest: Digest::from_byte(10),
                 source_commit: "abcdef0123456789abcdef0123456789abcdef01".into(),
+                model_provider: "provider".into(),
                 model_id: "model-baseline".into(),
+                model_version: "v1".into(),
                 scaffold_digest: Digest::from_byte(11),
                 prompt_digest: Digest::from_byte(12),
+                toolchain_digest: Digest::from_byte(14),
+                runtime_config_digest: Digest::from_byte(15),
                 tool_policy_digest: Digest::from_byte(13),
+                control_domain: "baseline-domain".into(),
             },
             freeze_authority_id: "freeze-authority".into(),
             freeze_authority_control_domain: "authority-domain".into(),
@@ -906,6 +915,8 @@ mod tests {
             agent_identity_digest,
             baseline_identity_digest,
             evaluator_digest,
+            execution_environment_digest,
+            resource_budget_digest,
             publisher_id: "freeze-authority".into(),
             publisher_control_domain: "authority-domain".into(),
         };
