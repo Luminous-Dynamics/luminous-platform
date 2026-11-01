@@ -363,8 +363,12 @@ pub fn evaluate_continuous_run(
         degradation_integral(contract, candidate_observations, &contract.arm_id);
     if !candidate_obs_complete { evidence_complete = false; }
 
-    let (baseline_degraded, baseline_complete) =
+    let (baseline_degraded_value, baseline_complete) =
         degradation_integral(contract, no_action_observations, "no-action");
+    let baseline_present = no_action_observations.iter().any(|o| {
+        o.scenario_id == contract.scenario_id && o.arm_id == "no-action"
+    });
+    let baseline_degraded = if baseline_present { Some(baseline_degraded_value) } else { None };
     if !baseline_complete { evidence_complete = false; }
     let degradation_ratio_ppm = match baseline_degraded {
         Some(base) if base > 0 => Some(degraded_request_ms.saturating_mul(1_000_000) / base),
@@ -539,7 +543,7 @@ fn degradation_integral(
     c: &RunContract,
     observations: &[ObserverWindow],
     expected_arm: &str,
-) -> (Option<u128>, bool) {
+) -> (u128, bool) {
     let mut integral = 0u128;
     let mut complete = true;
     for o in observations {
@@ -559,7 +563,7 @@ fn degradation_integral(
         o.scenario_id == c.scenario_id && o.arm_id == expected_arm
     });
     if !found { complete = false; }
-    (if found { Some(integral) } else { None }, complete)
+    (integral, complete)
 }
 
 #[cfg(test)]
