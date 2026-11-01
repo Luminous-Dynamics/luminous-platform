@@ -53,6 +53,7 @@
         "run_id",
         "trial_id",
         "manifest_commitment",
+        "commitment_scheme",
         "case_payload_commitment",
         "oracle_commitment",
         "generated_at_ms",
@@ -101,6 +102,9 @@
         },
         "control_domain": {
           "$ref": "#/$defs/id"
+        },
+        "commitment_scheme": {
+          "const": "sha256-domain-separated-length-prefixed-salt32-v1"
         }
       }
     },
@@ -176,6 +180,7 @@
         "run_id",
         "trial_id",
         "manifest_commitment",
+        "commitment_scheme",
         "case_payload_commitment",
         "oracle_commitment",
         "case_payload_artifact_digest",
@@ -211,7 +216,7 @@
         "case_payload_salt": {
           "type": "array",
           "minItems": 32,
-          "maxItems": 1024,
+          "maxItems": 32,
           "items": {
             "type": "integer",
             "minimum": 0,
@@ -221,7 +226,7 @@
         "oracle_salt": {
           "type": "array",
           "minItems": 32,
-          "maxItems": 1024,
+          "maxItems": 32,
           "items": {
             "type": "integer",
             "minimum": 0,
@@ -237,6 +242,9 @@
         },
         "control_domain": {
           "$ref": "#/$defs/id"
+        },
+        "commitment_scheme": {
+          "const": "sha256-domain-separated-length-prefixed-salt32-v1"
         }
       }
     }
