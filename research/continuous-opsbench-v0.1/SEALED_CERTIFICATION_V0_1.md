@@ -20,14 +20,15 @@ Before any sealed case generation, freeze:
 - candidate agent image and source commit;
 - model provider, exact model identifier/version, scaffold and prompt digests;
 - toolchain, runtime configuration and tool-policy digests;
-- baseline identity and digests;
+- a complete matched-baseline identity: provider, model/version, source revision, image, scaffold, prompt, toolchain, runtime config, tool policy and distinct control domain;
+- shared execution-environment and resource-budget digests, identical across candidate and baseline;
 - evaluator digest and evidence source/control-domain identity;
 - complete planned trial and scenario-cluster IDs;
 - maximum attempts per trial.
 
 An independent freeze authority produces a commitment to the exact manifest. The FreezeReceipt is checked against the manifest and the expected externally authenticated commitment. The digest algorithm and signature verification belong to the existing typed evidence gate / source adapter; this crate does not implement cryptography.
 
-The manifest is frozen before hidden case generation. Each planned trial then gets exactly one ScenarioReceipt, binding a case-payload commitment and a separate private-oracle commitment to the manifest and evaluator. In the sealed lane, generation must occur strictly after the freeze; issuance must occur after generation and no earlier than the freeze.
+The manifest is frozen before hidden case generation. The freeze receipt repeats the exact execution-environment and resource-budget digests; any candidate/baseline mismatch or later change invalidates the run. The environment digest must resolve to the pinned OS/VM/runtime/CPU/GPU profile; the budget digest must resolve to the exact wall-clock, token, CPU, memory, tool-call and concurrency ceilings. Each planned trial then gets exactly one ScenarioReceipt, binding a case-payload commitment and a separate private-oracle commitment to the manifest and evaluator. In the sealed lane, generation must occur strictly after the freeze; issuance must occur after generation and no earlier than the freeze.
 
 ## Append-only trial accounting
 
@@ -39,7 +40,7 @@ Every planned trial must have one terminal disposition. The validator counts:
 - all declared attempts;
 - unique scenario clusters.
 
-A started attempt must have exactly one terminal event. Attempts are sequential, bounded by the preregistered maximum, and a retry is allowed only after the previous attempt failed. Completion or invalidation cannot be followed by another attempt. A skipped trial is represented explicitly with attempt zero. Missing events, duplicate event IDs, extra trials, substituted digests, foreign sources, or incomplete attempt histories are rejected; none can disappear from the denominator.
+A started attempt must have exactly one terminal event in each arm. Every planned scenario must have a complete Candidate history and a complete Baseline history, both bound to the same case-payload commitment but to their own distinct frozen identity digests. The summary preserves per-arm success/failure/skipped/invalidated counts. A candidate-only run is not a matched comparison. Attempts are sequential, bounded by the preregistered maximum, and a retry is allowed only after the previous attempt failed. Completion or invalidation cannot be followed by another attempt. A skipped trial is represented explicitly with attempt zero. Missing events, duplicate event IDs, extra trials, substituted digests, foreign sources, or incomplete attempt histories are rejected; none can disappear from the denominator.
 
 The cluster ID is retained so statistical inference can resample independent scenario/fault-schedule/topology clusters rather than treating requests or repeated attempts as independent samples. Both arms share the same case receipt and planned cluster, but their events bind to distinct frozen identity digests. Resource and execution-environment digests are part of the freeze protocol and must be identical across the two arms.
 
