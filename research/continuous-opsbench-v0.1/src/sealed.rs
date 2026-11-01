@@ -253,6 +253,8 @@ pub struct RunLedgerSummary {
     pub runtime_observer_source_id: String,
     pub runtime_observer_control_domain: String,
     pub runtime_observer_adapter_digest: Digest,
+    pub runtime_challenge_authority_id: String,
+    pub runtime_challenge_authority_control_domain: String,
     pub trials: Vec<TrialResult>,
 }
 
@@ -499,6 +501,8 @@ pub fn validate_run_ledger_with_reveals(
         runtime_observer_source_id: manifest.runtime_observer_source_id.clone(),
         runtime_observer_control_domain: manifest.runtime_observer_control_domain.clone(),
         runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+        runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
+        runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
         trials: results,
     })
 }
