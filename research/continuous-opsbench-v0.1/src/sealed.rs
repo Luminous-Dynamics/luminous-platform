@@ -18,6 +18,19 @@ pub enum EvaluationLane {
     RetiredReproducibility,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum SandboxTier {
+    Research,
+    Process,
+    Container,
+    MicroVm,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SupervisorKeyClass {
+    SoftwareTestOnly,
+    HardwareProtected,
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FrozenAgentIdentity {
     pub agent_id: String,
@@ -86,6 +99,13 @@ pub struct RunManifest {
     pub runtime_observer_source_id: String,
     pub runtime_observer_control_domain: String,
     pub runtime_observer_adapter_digest: Digest,
+    pub sandbox_tier: SandboxTier,
+    pub sandbox_profile_digest: Digest,
+    pub supervisor_id: String,
+    pub supervisor_source_id: String,
+    pub supervisor_control_domain: String,
+    pub supervisor_adapter_digest: Digest,
+    pub supervisor_key_class: SupervisorKeyClass,
     pub agent_identity_digest: Digest,
     pub baseline_identity_digest: Digest,
     pub agent: FrozenAgentIdentity,
@@ -117,6 +137,13 @@ pub struct FreezeReceipt {
     pub runtime_observer_source_id: String,
     pub runtime_observer_control_domain: String,
     pub runtime_observer_adapter_digest: Digest,
+    pub sandbox_tier: SandboxTier,
+    pub sandbox_profile_digest: Digest,
+    pub supervisor_id: String,
+    pub supervisor_source_id: String,
+    pub supervisor_control_domain: String,
+    pub supervisor_adapter_digest: Digest,
+    pub supervisor_key_class: SupervisorKeyClass,
     pub publisher_id: String,
     pub publisher_control_domain: String,
 }
@@ -248,6 +275,13 @@ pub struct RunLedgerSummary {
     pub runtime_observer_source_id: String,
     pub runtime_observer_control_domain: String,
     pub runtime_observer_adapter_digest: Digest,
+    pub sandbox_tier: SandboxTier,
+    pub sandbox_profile_digest: Digest,
+    pub supervisor_id: String,
+    pub supervisor_source_id: String,
+    pub supervisor_control_domain: String,
+    pub supervisor_adapter_digest: Digest,
+    pub supervisor_key_class: SupervisorKeyClass,
     pub trials: Vec<TrialResult>,
 }
 
@@ -276,6 +310,11 @@ pub enum SealedRunError {
     InvalidTrialCluster(String),
     ScenarioGeneratedBeforeFreeze(String),
     ScenarioIssuedBeforeGenerated(String),
+    SandboxProfileDigestMissing,
+    SupervisorIdentityMissing,
+    SupervisorControlDomainCollision,
+    SupervisorSourceCollision,
+    SupervisorKeyClassInsufficient(SandboxTier),
     MissingRetirementTime(String),
     RetirementAfterRunCreated(String),
     UnexpectedRetirementTime(String),
@@ -494,6 +533,13 @@ pub fn validate_run_ledger_with_reveals(
         runtime_observer_source_id: manifest.runtime_observer_source_id.clone(),
         runtime_observer_control_domain: manifest.runtime_observer_control_domain.clone(),
         runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+        sandbox_tier: manifest.sandbox_tier,
+        sandbox_profile_digest: manifest.sandbox_profile_digest.clone(),
+        supervisor_id: manifest.supervisor_id.clone(),
+        supervisor_source_id: manifest.supervisor_source_id.clone(),
+        supervisor_control_domain: manifest.supervisor_control_domain.clone(),
+        supervisor_adapter_digest: manifest.supervisor_adapter_digest.clone(),
+        supervisor_key_class: manifest.supervisor_key_class,
         trials: results,
     })
 }
@@ -523,6 +569,9 @@ pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunE
         (manifest.evidence_control_domain.as_str(), "evidence_control_domain"),
         (manifest.runtime_observer_source_id.as_str(), "runtime_observer_source_id"),
         (manifest.runtime_observer_control_domain.as_str(), "runtime_observer_control_domain"),
+        (manifest.supervisor_id.as_str(), "supervisor_id"),
+        (manifest.supervisor_source_id.as_str(), "supervisor_source_id"),
+        (manifest.supervisor_control_domain.as_str(), "supervisor_control_domain"),
     ] {
         if !valid_record_id(value) { return Err(SealedRunError::EmptyIdentity(name)); }
     }
@@ -554,7 +603,19 @@ pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunE
         || manifest.runtime_observer_control_domain == manifest.evaluator_control_domain
         || manifest.runtime_observer_control_domain == manifest.evidence_control_domain
         || manifest.runtime_observer_source_id == manifest.evidence_source_id
+        || manifest.supervisor_source_id == manifest.evidence_source_id
+        || manifest.supervisor_source_id == manifest.runtime_observer_source_id
+        || manifest.supervisor_control_domain == manifest.agent.control_domain
+        || manifest.supervisor_control_domain == manifest.baseline.control_domain
+        || manifest.supervisor_control_domain == manifest.freeze_authority_control_domain
+        || manifest.supervisor_control_domain == manifest.evaluator_control_domain
+        || manifest.supervisor_control_domain == manifest.evidence_control_domain
+        || manifest.supervisor_control_domain == manifest.runtime_observer_control_domain
+        || (manifest.sandbox_tier != SandboxTier::Research
+            && manifest.supervisor_key_class != SupervisorKeyClass::HardwareProtected)
         || digest_is_zero(&manifest.runtime_observer_adapter_digest)
+        || digest_is_zero(&manifest.supervisor_adapter_digest)
+        || digest_is_zero(&manifest.sandbox_profile_digest)
         || digest_is_zero(&manifest.evaluator_digest)
         || digest_is_zero(&manifest.execution_environment_digest)
         || digest_is_zero(&manifest.resource_budget_digest)
@@ -605,6 +666,13 @@ pub(crate) fn validate_freeze_receipt(
         || receipt.runtime_observer_source_id != manifest.runtime_observer_source_id
         || receipt.runtime_observer_control_domain != manifest.runtime_observer_control_domain
         || receipt.runtime_observer_adapter_digest != manifest.runtime_observer_adapter_digest
+        || receipt.sandbox_tier != manifest.sandbox_tier
+        || receipt.sandbox_profile_digest != manifest.sandbox_profile_digest
+        || receipt.supervisor_id != manifest.supervisor_id
+        || receipt.supervisor_source_id != manifest.supervisor_source_id
+        || receipt.supervisor_control_domain != manifest.supervisor_control_domain
+        || receipt.supervisor_adapter_digest != manifest.supervisor_adapter_digest
+        || receipt.supervisor_key_class != manifest.supervisor_key_class
         || receipt.publisher_id != manifest.freeze_authority_id
         || receipt.publisher_control_domain != manifest.freeze_authority_control_domain
     {
