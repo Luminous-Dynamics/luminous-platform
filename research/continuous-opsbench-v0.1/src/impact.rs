@@ -323,7 +323,7 @@ pub fn evaluate_paired_impact(
     })
 }
 
-fn validate_pair_contract(contract: &PairCellContract) -> Result<(), ImpactError> {
+pub(crate) fn validate_pair_contract(contract: &PairCellContract) -> Result<(), ImpactError> {
     let non_empty = [
         contract.pair_id.as_str(),
         contract.scenario_id.as_str(),
