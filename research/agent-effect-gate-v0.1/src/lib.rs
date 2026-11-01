@@ -2,11 +2,12 @@
 //!
 //! This crate demonstrates E0/E1 semantics with an injected participant port. It is
 //! deliberately not a production broker: grants and participant evidence are trusted
-//! inputs supplied by adapters; receipts and attempt state are process-local; no
-//! cryptographic signatures, durable journal, process isolation, or host executor are
-//! implemented here. Nixward remains the sole host-transaction authority.
+//! inputs supplied by adapters; receipts and the permit-replay guard are process-local;
+//! no cryptographic signatures, durable broker journal, process isolation, or host executor
+//! are implemented here. Participant attempt state belongs to the participant ledger.
+//! Nixward remains the sole host-transaction authority.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Digest(pub [u8; 32]);
