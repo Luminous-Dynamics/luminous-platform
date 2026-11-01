@@ -100,7 +100,11 @@ pub enum RuntimeAttestationError {
     LedgerTrialDenominatorMismatch,
     LedgerTrialDuplicate(String, EvaluationArm),
     LedgerTrialMissing(String, EvaluationArm),
+    LedgerTrialUnplanned(String, EvaluationArm),
+    LedgerTrialClusterMismatch(String, EvaluationArm),
+    LedgerTrialSummaryMismatch,
     ScenarioDuplicate(String),
+    ScenarioManifestMismatch(String),
     ScenarioMissing(String),
     ScenarioBindingMismatch(String),
     DuplicateAttestation(String, EvaluationArm),
@@ -109,6 +113,7 @@ pub enum RuntimeAttestationError {
     AttestationBindingMismatch(String, EvaluationArm),
     ObserverIdentityMismatch,
     ObserverControlDomainCollision,
+    InvalidObserverSequence,
     EmptyOrInvalidIdentity,
     RuntimeInstanceCollision,
     StateNamespaceCollision,
@@ -138,6 +143,17 @@ pub fn validate_runtime_attestations(
 
     let mut scenario_index: BTreeMap<&str, &ScenarioReceipt> = BTreeMap::new();
     for scenario in scenarios {
+        if scenario.run_id != manifest.run_id
+            || scenario.manifest_commitment != ledger.manifest_commitment
+            || scenario.evaluator_digest != manifest.evaluator_digest
+            || is_zero(&scenario.case_payload_commitment)
+            || is_zero(&scenario.oracle_commitment)
+            || scenario.case_payload_commitment == scenario.oracle_commitment
+        {
+            return Err(RuntimeAttestationError::ScenarioManifestMismatch(
+                scenario.trial_id.clone(),
+            ));
+        }
         if scenario_index.insert(scenario.trial_id.as_str(), scenario).is_some() {
             return Err(RuntimeAttestationError::ScenarioDuplicate(
                 scenario.trial_id.clone(),
@@ -383,8 +399,59 @@ fn validate_ledger_binding(
         || ledger.runtime_observer_adapter_digest != manifest.runtime_observer_adapter_digest
         || ledger.planned_trials != manifest.trials.len()
         || ledger.planned_arm_trials != manifest.trials.len().saturating_mul(2)
+        || ledger.trials.len() != manifest.trials.len().saturating_mul(2)
+        || ledger.candidate.planned_trials != manifest.trials.len()
+        || ledger.baseline.planned_trials != manifest.trials.len()
     {
         return Err(RuntimeAttestationError::LedgerManifestMismatch);
+    }
+
+    let mut candidate = ArmRunSummary {
+        planned_trials: manifest.trials.len(),
+        completed_trials: 0,
+        failed_trials: 0,
+        skipped_trials: 0,
+        invalidated_trials: 0,
+        total_attempts: 0,
+    };
+    let mut baseline = candidate.clone();
+    let mut total_attempts = 0usize;
+    for result in &ledger.trials {
+        let planned = manifest.trials.iter()
+            .find(|trial| trial.trial_id == result.trial_id)
+            .ok_or_else(|| RuntimeAttestationError::LedgerTrialUnplanned(
+                result.trial_id.clone(), result.arm
+            ))?;
+        if planned.cluster_id != result.cluster_id {
+            return Err(RuntimeAttestationError::LedgerTrialClusterMismatch(
+                result.trial_id.clone(), result.arm
+            ));
+        }
+        let arm_summary = match result.arm {
+            EvaluationArm::Candidate => &mut candidate,
+            EvaluationArm::Baseline => &mut baseline,
+        };
+        arm_summary.total_attempts = arm_summary.total_attempts
+            .checked_add(result.attempts_started as usize)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        total_attempts = total_attempts.checked_add(result.attempts_started as usize)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        match result.disposition {
+            crate::sealed::TrialDisposition::Completed => arm_summary.completed_trials += 1,
+            crate::sealed::TrialDisposition::Failed => arm_summary.failed_trials += 1,
+            crate::sealed::TrialDisposition::Skipped => arm_summary.skipped_trials += 1,
+            crate::sealed::TrialDisposition::Invalidated => arm_summary.invalidated_trials += 1,
+        }
+    }
+    if candidate != ledger.candidate
+        || baseline != ledger.baseline
+        || total_attempts != ledger.total_attempts
+        || candidate.completed_trials + baseline.completed_trials != ledger.completed_trials
+        || candidate.failed_trials + baseline.failed_trials != ledger.failed_trials
+        || candidate.skipped_trials + baseline.skipped_trials != ledger.skipped_trials
+        || candidate.invalidated_trials + baseline.invalidated_trials != ledger.invalidated_trials
+    {
+        return Err(RuntimeAttestationError::LedgerTrialSummaryMismatch);
     }
     Ok(())
 }
