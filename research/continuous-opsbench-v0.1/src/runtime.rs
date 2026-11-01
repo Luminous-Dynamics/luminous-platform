@@ -1002,7 +1002,7 @@ mod tests {
     }
 
     #[test]
-    fn duplicate_sequence_and_out_of_order_observer_stream_fail_closed() {
+    fn duplicate_ordered_and_gapped_observer_sequences_fail_closed() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[1].receipt_sequence = attestations[0].receipt_sequence;
         assert_eq!(
@@ -1014,6 +1014,12 @@ mod tests {
         assert_eq!(
             validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverSequenceOrderInvalid)
+        );
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[3].receipt_sequence = 6;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ObserverSequenceNotContiguous)
         );
     }
 
