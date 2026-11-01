@@ -23,6 +23,11 @@
     "observer_source_id",
     "observer_control_domain",
     "observer_adapter_digest",
+    "challenge_nonce_digest",
+    "challenge_authority_id",
+    "challenge_authority_control_domain",
+    "challenge_issued_at_ms",
+    "challenge_expires_at_ms",
     "receipt_sequence",
     "issued_at_ms",
     "measurement_start_ms",
@@ -214,6 +219,23 @@
       "minimum": 0
     },
     "allowlisted_egress_events": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "challenge_nonce_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "challenge_authority_id": {
+      "$ref": "#/$defs/id"
+    },
+    "challenge_authority_control_domain": {
+      "$ref": "#/$defs/id"
+    },
+    "challenge_issued_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "challenge_expires_at_ms": {
       "type": "integer",
       "minimum": 0
     }
