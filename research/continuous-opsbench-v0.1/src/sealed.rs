@@ -76,6 +76,12 @@ pub struct RunManifest {
     pub resource_budget_digest: Digest,
     /// Commitment to the precomputed candidate/baseline first-arm assignment schedule.
     pub arm_order_schedule_digest: Digest,
+    /// Frozen policy for per-trial writable state, cache scope and cross-arm isolation.
+    pub state_isolation_policy_digest: Digest,
+    /// Frozen policy for separating agent-visible case/evidence artifacts from private oracles.
+    pub artifact_access_policy_digest: Digest,
+    /// Frozen default-deny or allowlisted outbound network policy.
+    pub network_egress_policy_digest: Digest,
     pub agent_identity_digest: Digest,
     pub baseline_identity_digest: Digest,
     pub agent: FrozenAgentIdentity,
@@ -101,6 +107,9 @@ pub struct FreezeReceipt {
     pub execution_environment_digest: Digest,
     pub resource_budget_digest: Digest,
     pub arm_order_schedule_digest: Digest,
+    pub state_isolation_policy_digest: Digest,
+    pub artifact_access_policy_digest: Digest,
+    pub network_egress_policy_digest: Digest,
     pub publisher_id: String,
     pub publisher_control_domain: String,
 }
@@ -226,6 +235,9 @@ pub struct RunLedgerSummary {
     pub execution_environment_digest: Digest,
     pub resource_budget_digest: Digest,
     pub arm_order_schedule_digest: Digest,
+    pub state_isolation_policy_digest: Digest,
+    pub artifact_access_policy_digest: Digest,
+    pub network_egress_policy_digest: Digest,
     pub trials: Vec<TrialResult>,
 }
 
@@ -466,6 +478,9 @@ pub fn validate_run_ledger_with_reveals(
         execution_environment_digest: manifest.execution_environment_digest.clone(),
         resource_budget_digest: manifest.resource_budget_digest.clone(),
         arm_order_schedule_digest: manifest.arm_order_schedule_digest.clone(),
+        state_isolation_policy_digest: manifest.state_isolation_policy_digest.clone(),
+        artifact_access_policy_digest: manifest.artifact_access_policy_digest.clone(),
+        network_egress_policy_digest: manifest.network_egress_policy_digest.clone(),
         trials: results,
     })
 }
@@ -522,6 +537,9 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         || digest_is_zero(&manifest.execution_environment_digest)
         || digest_is_zero(&manifest.resource_budget_digest)
         || digest_is_zero(&manifest.arm_order_schedule_digest)
+        || digest_is_zero(&manifest.state_isolation_policy_digest)
+        || digest_is_zero(&manifest.artifact_access_policy_digest)
+        || digest_is_zero(&manifest.network_egress_policy_digest)
         || digest_is_zero(&manifest.agent_identity_digest)
         || digest_is_zero(&manifest.baseline_identity_digest)
         || digest_is_zero(&manifest.agent.agent_image_digest)
@@ -559,6 +577,9 @@ fn validate_freeze_receipt(
         || receipt.execution_environment_digest != manifest.execution_environment_digest
         || receipt.resource_budget_digest != manifest.resource_budget_digest
         || receipt.arm_order_schedule_digest != manifest.arm_order_schedule_digest
+        || receipt.state_isolation_policy_digest != manifest.state_isolation_policy_digest
+        || receipt.artifact_access_policy_digest != manifest.artifact_access_policy_digest
+        || receipt.network_egress_policy_digest != manifest.network_egress_policy_digest
         || receipt.publisher_id != manifest.freeze_authority_id
         || receipt.publisher_control_domain != manifest.freeze_authority_control_domain
     {
@@ -884,6 +905,9 @@ mod tests {
         let execution_environment_digest = Digest::from_byte(16);
         let resource_budget_digest = Digest::from_byte(17);
         let arm_order_schedule_digest = Digest::from_byte(18);
+        let state_isolation_policy_digest = Digest::from_byte(19);
+        let artifact_access_policy_digest = Digest::from_byte(20);
+        let network_egress_policy_digest = Digest::from_byte(25);
         let manifest = RunManifest {
             schema: SEALED_RUN_SCHEMA.into(),
             version: SEALED_RUN_VERSION,
@@ -895,6 +919,9 @@ mod tests {
             execution_environment_digest: execution_environment_digest.clone(),
             resource_budget_digest: resource_budget_digest.clone(),
             arm_order_schedule_digest: arm_order_schedule_digest.clone(),
+            state_isolation_policy_digest: state_isolation_policy_digest.clone(),
+            artifact_access_policy_digest: artifact_access_policy_digest.clone(),
+            network_egress_policy_digest: network_egress_policy_digest.clone(),
             agent_identity_digest: agent_identity_digest.clone(),
             baseline_identity_digest: baseline_identity_digest.clone(),
             agent: FrozenAgentIdentity {
@@ -947,6 +974,9 @@ mod tests {
             execution_environment_digest,
             resource_budget_digest,
             arm_order_schedule_digest,
+            state_isolation_policy_digest,
+            artifact_access_policy_digest,
+            network_egress_policy_digest,
             publisher_id: "freeze-authority".into(),
             publisher_control_domain: "authority-domain".into(),
         };
@@ -1400,7 +1430,7 @@ mod tests {
 
     #[test]
     fn sixty_seven_adversarial_mutations_fail_closed() {
-        for vector in 0..78 {
+        for vector in 0..81 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
             match vector {
                 0 => { m.run_id.clear(); }
@@ -1480,7 +1510,10 @@ mod tests {
                 74 => { m.baseline_identity_digest = m.agent_identity_digest.clone(); }
                 75 => { m.trials[0].first_arm = EvaluationArm::Baseline; }
                 76 => { m.arm_order_schedule_digest = Digest::from_byte(0); }
-                _ => { freeze.arm_order_schedule_digest = Digest::from_byte(99); }
+                77 => { freeze.arm_order_schedule_digest = Digest::from_byte(99); }
+                78 => { m.state_isolation_policy_digest = Digest::from_byte(0); }
+                79 => { m.artifact_access_policy_digest = Digest::from_byte(0); }
+                _ => { freeze.network_egress_policy_digest = Digest::from_byte(99); }
             };
             assert!(
                 validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).is_err(),
