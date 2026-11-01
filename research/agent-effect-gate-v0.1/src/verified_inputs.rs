@@ -6,7 +6,7 @@
 //! checks. The adapter and trust-policy source remain explicit trust roots.
 
 use super::{
-    AgentDecision, AuthorityGrant, DispatchReport, EffectBroker,
+    AuthorityGrant, DispatchReport, EffectBroker,
     GateContext, GateDenial, ManifestRegistry, MutationProposal, ParticipantPort, ToolManifest,
 };
 use std::collections::BTreeSet;
@@ -61,6 +61,7 @@ pub struct EvidenceBinding {
     pub toolchain_id: String,
     pub toolchain_digest: super::Digest,
     pub policy_version: String,
+    pub policy_digest: super::Digest,
     pub target_digest: super::Digest,
     pub request_digest: super::Digest,
     pub grant_id: String,
@@ -85,6 +86,7 @@ impl EvidenceBinding {
             toolchain_id: p.toolchain_id.clone(),
             toolchain_digest: p.toolchain_digest.clone(),
             policy_version: p.policy_version.clone(),
+            policy_digest: p.policy_digest.clone(),
             target_digest: p.target_digest.clone(),
             request_digest: p.request_digest.clone(),
             grant_id: p.grant_id.clone(),
@@ -413,6 +415,9 @@ pub fn verify_gate_evidence<V: AttestationVerifier>(
             return Err(EvidenceGateError::WrongEvidenceClaim);
         }
         let rule = resolve_rule(policy, role)?;
+        if payload.schema_version != rule.schema_version {
+            return Err(EvidenceGateError::WrongSchemaVersion);
+        }
         if payload.source_id != rule.source_id {
             return Err(EvidenceGateError::WrongSource);
         }
@@ -447,7 +452,8 @@ pub fn verify_gate_evidence<V: AttestationVerifier>(
     }
 
     // This policy version is itself pinned by the proposal and by the trust-policy registry.
-    if policy.policy_version != proposal.policy_version {
+    if policy.policy_version != proposal.policy_version
+        || policy.policy_digest != proposal.policy_digest {
         return Err(EvidenceGateError::PolicyVersionMismatch);
     }
 
@@ -464,7 +470,7 @@ fn resolve_rule(policy: &TrustPolicy, role: EvidenceRole) -> Result<&PublisherRu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Digest, EffectClass};
+    use crate::{AgentDecision, Digest, EffectClass};
 
     #[derive(Clone)]
     struct FakeParticipant {
@@ -540,7 +546,7 @@ mod tests {
             operation_id: "restart-service".into(), manifest_version: "1.0.0".into(),
             manifest_digest: Digest::from_byte(1), toolchain_id: "rust-1.96".into(),
             toolchain_digest: Digest::from_byte(5), policy_version: "policy-v1".into(),
-            target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
+            policy_digest: Digest::from_byte(9), target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
             grant_id: "grant-1".into(), attempt_id: "attempt-1".into(),
             idempotency_key: "logical-1".into(), environment: "test".into(),
             risk_level: 1, decision: AgentDecision::Act,
@@ -552,7 +558,8 @@ mod tests {
             tool_id: "deployment".into(), operation_id: "restart-service".into(),
             semantic_version: "1.0.0".into(), manifest_digest: Digest::from_byte(1),
             toolchain_id: "rust-1.96".into(), toolchain_digest: Digest::from_byte(5),
-            policy_version: "policy-v1".into(), effect_class: EffectClass::BoundedMutation,
+            policy_version: "policy-v1".into(), policy_digest: Digest::from_byte(9),
+            effect_class: EffectClass::BoundedMutation,
             qualified: true, required_scope: "service:restart".into(),
             required_grant_issuer: "authority-issuer".into(), participant_id: "participant-a".into(),
             idempotency_supported: true, participant_ledger_supported: true,
@@ -573,7 +580,8 @@ mod tests {
             target_digest: p.target_digest.clone(), request_digest: p.request_digest.clone(),
             attempt_id: p.attempt_id.clone(), idempotency_key: p.idempotency_key.clone(),
             environment: p.environment.clone(), risk_level: p.risk_level,
-            policy_version: p.policy_version.clone(), expires_at_ms: 50_000, revoked: false,
+            policy_version: p.policy_version.clone(), policy_digest: p.policy_digest.clone(),
+            expires_at_ms: 50_000, revoked: false,
         }
     }
 
