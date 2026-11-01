@@ -106,6 +106,24 @@ pub struct ScenarioReceipt {
     pub control_domain: String,
 }
 
+/// Post-retirement disclosure binding the formerly hidden payload/oracle artifacts
+/// to the commitments used during sealed evaluation. Hash/signature verification
+/// is performed by the external source-evidence adapter, not this structural validator.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ScenarioReveal {
+    pub run_id: String,
+    pub trial_id: String,
+    pub manifest_commitment: Digest,
+    pub case_payload_commitment: Digest,
+    pub oracle_commitment: Digest,
+    pub case_payload_artifact_digest: Digest,
+    pub oracle_artifact_digest: Digest,
+    pub case_payload_salt: Vec<u8>,
+    pub oracle_salt: Vec<u8>,
+    pub revealed_at_ms: u64,
+    pub source_id: String,
+    pub control_domain: String,
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TrialEventKind {
     Started,
@@ -186,11 +204,24 @@ pub enum SealedRunError {
     UnplannedScenarioReceipt(String),
     ScenarioBindingMismatch(String),
     ScenarioCommitmentCollision(String),
+    AgentBaselineIdentityCollision,
+    InvalidTrialIdentity,
+    InvalidTrialCluster(String),
     ScenarioGeneratedBeforeFreeze(String),
     ScenarioIssuedBeforeGenerated(String),
     MissingRetirementTime(String),
     RetirementAfterRunCreated(String),
     UnexpectedRetirementTime(String),
+    ScenarioIssuedBeforeFreeze(String),
+    DuplicateScenarioReveal(String),
+    MissingScenarioReveal(String),
+    UnplannedScenarioReveal(String),
+    UnexpectedScenarioReveal(String),
+    ScenarioRevealBindingMismatch(String),
+    ScenarioRevealSourceMismatch(String),
+    ScenarioRevealControlDomainCollision(String),
+    ScenarioRevealBeforeRetirement(String),
+    ScenarioRevealSaltTooShort(String),
     DuplicateEventId,
     UnplannedTrialEvent(String),
     EventBindingMismatch(String),
