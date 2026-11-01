@@ -56,12 +56,13 @@ If an accelerator is assigned, its allocation digest and measured GPU energy are
 - **Harness:** task inputs, tools, runtime and agent scaffold; content-addressed and itself measured.
 - **Supervisor:** external to SUT and Harness; controls measurement, observes host-side facts, signs receipts with a key inaccessible to the SUT/Harness, and publishes through the existing typed source-evidence path.
 
-The frozen manifest pins sandbox tier/profile digest, Supervisor ID/source/control domain/adapter digest and key-protection class. The freeze receipt repeats those fields. Supervisor control domain must differ from candidate, baseline, evaluator, freeze authority, runtime observer and scenario/effect evidence domains.
+The frozen manifest pins sandbox tier/profile digest, Supervisor ID/source/control domain/adapter digest and key-protection class. The freeze receipt repeats those fields. Each per-trial Supervisor receipt repeats the frozen execution-environment and resource-budget digests so the measured host/runtime and budget are explicitly joined to the trial. Supervisor control domain must differ from candidate, baseline, evaluator, freeze authority, runtime observer and scenario/effect evidence domains.
 
 ## Telemetry contract
 
 Each (trial, arm) gets exactly one supervisor attestation. It binds:
 - manifest, scenario and candidate/baseline identity;
+- the exact frozen execution-environment and resource-budget digests;
 - tier and profile digest;
 - Supervisor identity and hardware-key class;
 - runtime instance and unique writable namespace;
