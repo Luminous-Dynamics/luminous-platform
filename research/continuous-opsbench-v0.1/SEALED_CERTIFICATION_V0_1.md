@@ -28,7 +28,7 @@ Before any sealed case generation, freeze:
 
 An independent freeze authority produces a commitment to the exact manifest. The FreezeReceipt is checked against the manifest and the expected externally authenticated commitment. The digest algorithm and signature verification belong to the existing typed evidence gate / source adapter; this crate does not implement cryptography.
 
-The manifest is frozen before hidden case generation. The freeze receipt repeats the exact execution-environment, resource-budget and arm-order-schedule digests; any candidate/baseline mismatch or later change invalidates the run. The environment digest must resolve to the pinned OS/VM/runtime/CPU/GPU profile; the budget digest must resolve to the exact wall-clock, token, CPU, memory, tool-call and concurrency ceilings.
+The manifest is frozen before hidden case generation. The freeze receipt repeats the exact execution-environment, resource-budget, arm-order-schedule, state-isolation, artifact-access and network-egress policy digests; any candidate/baseline mismatch or later change invalidates the run. The environment digest must resolve to the pinned OS/VM/runtime/CPU/GPU profile; the budget digest must resolve to the exact wall-clock, token, CPU, memory, tool-call and concurrency ceilings.
 
 Each planned trial includes a precommitted `first_arm` assignment (Candidate or Baseline). The assignment schedule commitment is part of the manifest and freeze receipt. The validator checks that the first observed activity in each arm respects that assignment. This proves adherence to a frozen schedule, **not** that the assignment was unbiased or generated randomly. For that stronger claim, the freeze authority must authenticate the schedule-generation algorithm, random seed commitment, entropy source and exact assignment bytes through the typed evidence adapter. Each planned trial then gets exactly one ScenarioReceipt, binding a case-payload commitment and a separate private-oracle commitment to the manifest and evaluator. In the sealed lane, generation must occur strictly after the freeze; issuance must occur after generation and no earlier than the freeze.
 
@@ -65,6 +65,8 @@ The v0.1 commitment scheme identifier is `sha256-domain-separated-length-prefixe
 - Private oracle: `SHA-256("org.luminousdynamics.opsbench.private-oracle.v1\\0" || u64_be(oracle_bytes.len) || oracle_bytes || oracle_salt[32])`
 
 The salt is exactly 32 bytes and the case/oracle salts must differ. The adapter must independently verify each artifact's SHA-256 digest, the commitment, the receipt signature and source identity. Domain separation prevents a case-payload commitment from being reinterpreted as an oracle commitment. The Rust structural validator pins the scheme identifier and salt lengths but does not compute hashes or authenticate signatures.
+
+The state-isolation policy must define per-trial writable storage, cache scope, home-directory isolation and whether any cross-trial state is allowed. The artifact-access policy must keep private oracle material unavailable to the agent while allowing only the declared case and evidence artifacts. The network-egress policy must be default-deny or an exact allowlist with resolver, request, response digest and timing telemetry. These policy digests pin intended behavior; an independent sandbox/runtime observer must attest actual enforcement.
 
 The evidence source/control-domain fields are **claims in typed input records** until the source adapter authenticates them. Production must verify them through the typed source-evidence gate (#191 / issue #190), a durable replay guard, and verifier-owned source policy. Do not accept a caller-supplied signature_verified boolean.
 
@@ -105,6 +107,7 @@ These are deterministic conformance tests, not empirical agent benchmark results
 
 This layer proves structural consistency and denominator preservation for the records supplied to it. It does **not** prove:
 - the manifest or scenario commitments were correctly recomputed from canonical artifact bytes and salts or signed by a trusted authority;
+- the runtime actually enforced state isolation, artifact-access separation or the declared network-egress policy;
 - the agent could not read private oracle data or retrieve leaked answer artifacts;
 - the model provider/version actually matched the declared identity;
 - events were emitted completely or honestly by the named source;
