@@ -115,3 +115,48 @@ The benchmark should not merely add more random faults. It should systematically
 Passing the structural Rust/schema conformance suite proves only that the supplied records satisfy the encoded contract. It does not prove that an agent has achieved any target, that a source is authentic, that the oracle stayed secret, or that the scenario sample represents production. An external SOTA comparison requires actual paired executions and verified receipts; published scores from other benchmarks are context, not substitutes.
 
 Architecture ownership remains unchanged: Platform Saga coordinates episodes; the broker gates mutation authority; participant-owned ledgers own remote effects; independent workload/business observers own service outcomes; Nixward is the only host transaction/interlock/journal/recovery authority.
+
+
+## Runtime-attestation and sensor qualification targets
+
+Runtime assurance is itself a benchmarked subsystem, not a checkbox. The frozen manifest and receipt validator measure record consistency, but the runtime adapter must be tested with injected ground-truth events to measure actual sensor coverage.
+
+### Required sensor challenge matrix
+
+Run every supported sensor adapter against each supported kernel/distribution/profile combination. Unsupported combinations are explicitly unavailable, never silently "complete." The matrix must include:
+- process execution and child-process discovery, including shebang interpreters, binfmt_misc and user-mode helpers;
+- file/object access, read-only mounts, namespace changes, writable-layer/copy-on-write behavior and cache access;
+- ordinary network sockets, DNS, unix sockets, io_uring and egress policy allow/deny;
+- container/cgroup transitions and workload restarts;
+- event-buffer pressure, map-capacity pressure, event reordering, queue overflow and dropped-event recovery;
+- hook attach failure, hook detachment, program replacement, verifier rejection and sensor shutdown;
+- syscall ABI variants and newly introduced syscall paths (for example openat2);
+- deliberate clock skew, sequence rollback, stale receipts and duplicate challenge-nonce replay.
+
+For every fault injection, the independent test controller records ground truth outside the sensor path. A separate oracle checks whether the observer detected the event, whether it reported coverage loss, and how long detection took. An observer that silently misses a critical injected event invalidates the run even when it reports coverage=complete.
+
+### Proposed measurable targets
+
+| Dimension | Initial pilot | Confirmatory target hypothesis |
+|---|---|---|
+| Critical known-answer sensor controls | 100% of positive controls detected or explicitly reported as unsupported | 100% detection of all supported critical controls; any silent miss is a hard qualification failure. |
+| Negative controls | Establish false-positive distribution on clean workloads | 0 false-positive hard-policy violations in the preregistered negative-control corpus; report confidence bounds, not "zero risk." |
+| Event capture | Quantify loss by source, buffer and kernel profile | Zero unreported drops/gaps; every deliberately induced loss is surfaced as partial/unknown/tampered before outcome credit. |
+| Hook health | Measure attach, detach, restart and sustained firing behavior | 100% of planned hooks have authenticated health evidence for the full trial interval; unexpected detach makes coverage indeterminate. |
+| Detection latency | Record per-family p50/p95/p99 | p95 under 100 ms for injected policy-critical events, subject to a workload-specific pilot and explicit overhead budget. |
+| Runtime overhead | Measure agent CPU/memory and workload p50/p95/p99 separately | Initial hypothesis: <=3% CPU budget attributable to observer and <=2% p99 workload-latency regression at the agreed load. Publish raw paired distributions; do not trade safety against overhead. |
+| Kernel portability | Inventory exact kernel, distribution, config, BTF and sensor digests | At least five supported kernel/distribution profiles, each with its own positive/negative control run and exact-head evidence. No "works on Linux" blanket claim. |
+| Challenge replay | Test duplicate, stale, cross-run and cross-arm nonces | 100% replay denial before any attestation can be credited; nonce state must survive verifier restart/rollback through the durable evidence adapter. |
+
+These are targets, not measured runtime-agent results. The p95 latency and overhead goals are pilot hypotheses and should be refined only through a preregistered calibration study—not after looking at confirmatory results.
+
+### Instrumentation lessons from industry
+
+Datadog's production eBPF engineering report describes hooks that silently fail, kernel-version compatibility, unobserved syscall paths such as io_uring/openat2, dropped probe activations under capacity pressure, and the need for broad kernel CI and measured service overhead. These are precisely the failure modes the sensor challenge matrix must inject rather than merely assume away: https://www.datadoghq.com/blog/engineering/ebpf-workload-protection-lessons/
+
+The trust architecture should also align to current attestation roles:
+- MITRE's July 16, 2026 public-review Continuous Remote Attestation Framework extends beyond launch into runtime integrity, behavioral assurance, transport binding and AI workload verification: https://www.mitre.org/news-insights/publication/framework-continuous-remote-attestation
+- NVIDIA's 2026 confidential Kubernetes reference architecture requires fresh evidence for CPU, GPU, guest, workload image, runtime policy and firmware, a verifier-provided nonce, and fail-closed key release: https://docs.nvidia.com/enterprise-reference-architectures/deploying-proprietary-models-securely-with-confidential-compute-self-hosted-kubernetes/latest/required-capabilities.html
+- Microsoft's Linux workload guide explicitly separates confidential-VM attestation from workload-image approval; it combines dm-verity, IMA measurement, fresh TPM challenge/quote and verifier-side event-log replay: https://learn.microsoft.com/en-us/azure/confidential-computing/how-to-attest-linux-workload
+
+These references describe mature components and integration patterns, not a turnkey system that proves agent safety. OpsBench should build interoperable evidence adapters around these standards, not custom cryptography or a second policy/attestation authority.
