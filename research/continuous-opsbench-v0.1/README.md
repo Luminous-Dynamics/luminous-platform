@@ -33,3 +33,10 @@ The synthetic fixture is not a benchmark result and cannot support SOTA or produ
 ## Request-level impact v0.2
 
 The v0.1 aggregate `max(failed, slow, incorrect)` remains a **lower bound**, not an exact unique-request estimand. The additive v0.2 paired-cell evaluator in `src/impact.rs` uses keyed request pseudonyms, exact set unions, preregistered Candidate/NoAction cell pairs, matched intervals and demand contracts. See `REQUEST_IMPACT_PAIRED_CELLS_V0_2.md`. Do not report v0.1 degradation ratios as exact paired counterfactual effects.
+
+
+## Sealed certification run freeze v0.1
+
+The additive sealed-run validator in `src/sealed.rs` pins the candidate, baseline, evaluator, freeze-authority and evidence-source identities before sealed scenario generation. It requires explicit accounting for every planned trial and every declared attempt. Open, sealed-certification, and retired-reproducibility lanes have distinct timing rules. See `SEALED_CERTIFICATION_V0_1.md` and the two `sealed-run-*.schema.json` schemas.
+
+This is structural validation only. Commitment hashing, signatures, source authentication, durable replay, network isolation, secret-oracle access control, and trial execution are not implemented here. They must be supplied by the existing source-evidence and execution infrastructure. Skipped, failed, and invalidated trials remain in the denominator.
