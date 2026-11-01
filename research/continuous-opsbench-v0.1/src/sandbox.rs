@@ -1231,7 +1231,9 @@ mod tests {
         receipts[0].supervisor_control_domain = "candidate-domain".into();
         assert_eq!(
             validate(&fixture, &receipts),
-            Err(SandboxAttestationError::SupervisorControlDomainCollision)
+            Err(SandboxAttestationError::AttestationBindingMismatch(
+                "trial-1".into(), EvaluationArm::Candidate
+            ))
         );
     }
 
