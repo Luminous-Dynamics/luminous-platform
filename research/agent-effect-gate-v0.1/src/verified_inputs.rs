@@ -6,7 +6,7 @@
 //! checks. The adapter and trust-policy source remain explicit trust roots.
 
 use super::{
-    AgentDecision, AuthorityGrant, DispatchReport, EffectBroker, EvidenceGateDenyMarker,
+    AgentDecision, AuthorityGrant, DispatchReport, EffectBroker,
     GateContext, GateDenial, ManifestRegistry, MutationProposal, ParticipantPort, ToolManifest,
 };
 use std::collections::BTreeSet;
