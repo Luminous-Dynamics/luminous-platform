@@ -1430,7 +1430,7 @@ mod tests {
 
     #[test]
     fn sixty_seven_adversarial_mutations_fail_closed() {
-        for vector in 0..81 {
+        for vector in 0..84 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
             match vector {
                 0 => { m.run_id.clear(); }
@@ -1513,7 +1513,10 @@ mod tests {
                 77 => { freeze.arm_order_schedule_digest = Digest::from_byte(99); }
                 78 => { m.state_isolation_policy_digest = Digest::from_byte(0); }
                 79 => { m.artifact_access_policy_digest = Digest::from_byte(0); }
-                _ => { freeze.network_egress_policy_digest = Digest::from_byte(99); }
+                80 => { freeze.network_egress_policy_digest = Digest::from_byte(99); }
+                81 => { m.agent.model_id = "bad\nmodel".into(); }
+                82 => { m.baseline.baseline_id = "x".repeat(257); }
+                _ => { m.freeze_authority_id = "authority\u{7f}".into(); }
             };
             assert!(
                 validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).is_err(),
