@@ -618,7 +618,7 @@ pub(crate) fn validate_freeze_receipt(
     Ok(())
 }
 
-fn validate_scenario(
+pub(crate) fn validate_scenario(
     manifest: &RunManifest,
     expected_commitment: &Digest,
     trial: &PlannedTrial,
