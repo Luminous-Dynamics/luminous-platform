@@ -399,6 +399,7 @@ impl<P: ParticipantPort, V: AttestationVerifier, C: TrustedClock, S: EvidenceRep
         report
     }
 
+    #[cfg(test)]
     pub(crate) fn participant_mut(&mut self) -> &mut P { &mut self.inner.participant }
 }
 
