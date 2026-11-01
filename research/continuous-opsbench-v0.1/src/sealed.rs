@@ -9,6 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub const SEALED_RUN_SCHEMA: &str = "continuous-opsbench-sealed-run-v0.1";
 pub const SEALED_RUN_VERSION: u16 = 1;
+pub const SCENARIO_COMMITMENT_SCHEME: &str = "sha256-domain-separated-length-prefixed-salt32-v1";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EvaluationLane {
@@ -93,6 +94,7 @@ pub struct ScenarioReceipt {
     pub run_id: String,
     pub trial_id: String,
     pub manifest_commitment: Digest,
+    pub commitment_scheme: String,
     /// Commitment to the case payload given to the agent.
     pub case_payload_commitment: Digest,
     /// Commitment to the private business oracle / grading truth.
@@ -114,6 +116,7 @@ pub struct ScenarioReveal {
     pub run_id: String,
     pub trial_id: String,
     pub manifest_commitment: Digest,
+    pub commitment_scheme: String,
     pub case_payload_commitment: Digest,
     pub oracle_commitment: Digest,
     pub case_payload_artifact_digest: Digest,
@@ -204,6 +207,7 @@ pub enum SealedRunError {
     UnplannedScenarioReceipt(String),
     ScenarioBindingMismatch(String),
     ScenarioCommitmentCollision(String),
+    UnsupportedScenarioCommitmentScheme(String),
     AgentBaselineIdentityCollision,
     InvalidTrialIdentity,
     InvalidTrialCluster(String),
@@ -470,6 +474,9 @@ fn validate_scenario(
     scenario: &ScenarioReceipt,
 ) -> Result<(), SealedRunError> {
     let id = trial.trial_id.clone();
+    if scenario.commitment_scheme != SCENARIO_COMMITMENT_SCHEME {
+        return Err(SealedRunError::UnsupportedScenarioCommitmentScheme(id));
+    }
     if scenario.run_id != manifest.run_id
         || scenario.trial_id != trial.trial_id
         || scenario.manifest_commitment != *expected_commitment
@@ -694,7 +701,8 @@ fn validate_scenario_reveals(
         }
         let scenario = scenarios.get(reveal.trial_id.as_str())
             .ok_or_else(|| SealedRunError::MissingScenarioReceipt(reveal.trial_id.clone()))?;
-        if reveal.run_id != manifest.run_id
+        if reveal.commitment_scheme != scenario.commitment_scheme
+            || reveal.run_id != manifest.run_id
             || reveal.manifest_commitment != *expected_commitment
             || reveal.case_payload_commitment != scenario.case_payload_commitment
             || reveal.oracle_commitment != scenario.oracle_commitment
@@ -818,6 +826,7 @@ mod tests {
             run_id: manifest.run_id.clone(),
             trial_id: trial_id.into(),
             manifest_commitment: commitment.clone(),
+            commitment_scheme: SCENARIO_COMMITMENT_SCHEME.into(),
             case_payload_commitment: Digest::from_byte(21),
             oracle_commitment: Digest::from_byte(22),
             generated_at_ms: 25,
@@ -860,6 +869,7 @@ mod tests {
             run_id: manifest.run_id.clone(),
             trial_id: scenario.trial_id.clone(),
             manifest_commitment: commitment.clone(),
+            commitment_scheme: scenario.commitment_scheme.clone(),
             case_payload_commitment: scenario.case_payload_commitment.clone(),
             oracle_commitment: scenario.oracle_commitment.clone(),
             case_payload_artifact_digest: Digest::from_byte(23),
