@@ -201,7 +201,10 @@
         "arm_order_schedule_digest",
         "state_isolation_policy_digest",
         "artifact_access_policy_digest",
-        "network_egress_policy_digest"
+        "network_egress_policy_digest",
+        "runtime_observer_source_id",
+        "runtime_observer_control_domain",
+        "runtime_observer_adapter_digest"
       ],
       "properties": {
         "schema": {
@@ -283,6 +286,15 @@
         },
         "network_egress_policy_digest": {
           "$ref": "#/$defs/sha256"
+        },
+        "runtime_observer_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "runtime_observer_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "runtime_observer_adapter_digest": {
+          "$ref": "#/$defs/sha256"
         }
       }
     },
@@ -304,7 +316,10 @@
         "arm_order_schedule_digest",
         "state_isolation_policy_digest",
         "artifact_access_policy_digest",
-        "network_egress_policy_digest"
+        "network_egress_policy_digest",
+        "runtime_observer_source_id",
+        "runtime_observer_control_domain",
+        "runtime_observer_adapter_digest"
       ],
       "properties": {
         "run_id": {
@@ -352,6 +367,15 @@
           "$ref": "#/$defs/sha256"
         },
         "network_egress_policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "runtime_observer_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "runtime_observer_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "runtime_observer_adapter_digest": {
           "$ref": "#/$defs/sha256"
         }
       }
