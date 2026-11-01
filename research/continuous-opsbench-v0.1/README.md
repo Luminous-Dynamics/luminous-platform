@@ -65,3 +65,10 @@ The validator is structural only. The typed source-evidence adapter must authent
 The runtime validator in `src/runtime.rs` requires complete per-arm process, mount, filesystem, egress and event-stream commitments, and a unique one-use challenge nonce issued after the run freeze. It binds the runtime observer and challenge authority to distinct frozen trust domains. See `RUNTIME_ENFORCEMENT_V0_1.md` and `runtime-trial-attestation.schema.json`.
 
 This is still structural validation. The typed source-evidence adapter must authenticate challenge and receipt publishers, validate the subject and freshness, and consume nonces through durable anti-replay state. The runtime adapter must independently prove telemetry coverage and enforcement; a receipt field cannot prove that a hook remained attached or that a compromised kernel did not suppress events.
+
+
+### Contextual integrity and compositional privacy
+
+The new `src/privacy.rs` validator separates privacy from task utility. It binds an evaluator-frozen contextual-flow contract to the exact run/trial/arm, recipient, channel and purpose; includes essential, permitted and protected fact IDs; and permits sensitive declassification only under an exact context/detail rule. Independent disclosure captures bind exact output digests, and a separate privacy grader binds direct/paraphrased/aggregated/correlated/cross-tool fact findings to evaluator-owned source lineage. See `contextual-privacy.schema.json` and `CONTEXTUAL_PRIVACY_V0_1.md`.
+
+A blanket refusal may be privacy-clean but is reported as utility-not-met. Protected or unauthorized disclosure is non-compensatory. The evaluator is structural only: semantic inference detection, source-lineage truth, output-capture completeness and grader correctness require independently authenticated adapters and known-answer/human-adjudicated controls.
