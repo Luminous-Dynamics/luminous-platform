@@ -929,7 +929,7 @@ mod tests {
             validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events),
             Err(SealedRunError::FreezeReceiptNotBeforeFreeze)
         );
-        let (m, commitment, freeze, scenarios, events) = valid_fixture();
+        let (m, _commitment, freeze, scenarios, events) = valid_fixture();
         assert_eq!(
             validate_run_ledger(&m, &Digest::from_byte(99), &freeze, &scenarios, &events),
             Err(SealedRunError::FreezeReceiptMismatch)
@@ -997,7 +997,7 @@ mod tests {
                 53 => { events.retain(|e| e.trial_id != "trial-c"); }
                 54 => { events.push(event(&m, &commitment, &scenarios[0], "unplanned", "extra", 1, 50, TrialEventKind::Started)); }
                 55 => { m.lane = EvaluationLane::RetiredReproducibility; }
-                56 => { m.lane = EvaluationLane::OpenDevelopment; scenarios[0].generated_at_ms = 5; scenarios[0].issued_at_ms = 30; }
+                56 => { m.lane = EvaluationLane::OpenDevelopment; scenarios[0].generated_at_ms = 5; scenarios[0].issued_at_ms = 30; scenarios[0].retired_at_ms = Some(9); }
                 57 => { m.lane = EvaluationLane::RetiredReproducibility; scenarios[0].generated_at_ms = 5; scenarios[0].retired_at_ms = Some(m.created_at_ms + 1); }
                 58 => { m.agent.agent_id.clear(); }
                 59 => { m.evaluator_control_domain.clear(); }
