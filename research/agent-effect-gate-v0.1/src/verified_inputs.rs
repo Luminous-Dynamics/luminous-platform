@@ -7,9 +7,9 @@
 
 use super::{
     AuthorityGrant, DispatchReport, EffectBroker,
-    GateContext, GateDenial, ManifestRegistry, MutationProposal, ParticipantPort, ToolManifest,
+    GateContext, GateDenial, ManifestRegistry, MutationProposal, ParticipantPort,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 pub const DSSE_IN_TOTO_PAYLOAD_TYPE: &str = "application/vnd.in-toto+json";
 pub const IN_TOTO_STATEMENT_V1: &str = "https://in-toto.io/Statement/v1";
@@ -454,7 +454,7 @@ pub fn verify_gate_evidence<V: AttestationVerifier>(
         if payload.subject_digest == super::Digest::ZERO {
             return Err(EvidenceGateError::EmptySubjectDigest);
         }
-        if !seen.insert(payload.evidence_id.as_str()) {
+        if !seen.insert(payload.evidence_id.clone()) {
             return Err(EvidenceGateError::WrongEvidenceRole);
         }
         if payload.binding != expected_binding {
@@ -568,7 +568,8 @@ fn resolve_rule(policy: &TrustPolicy, role: EvidenceRole) -> Result<&PublisherRu
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{AgentDecision, Digest, EffectClass};
+    use crate::{AgentDecision, Digest, EffectClass, ToolManifest};
+    use std::collections::BTreeMap;
 
     #[derive(Clone)]
     struct FakeParticipant {
@@ -854,8 +855,8 @@ mod tests {
         fn mutate(v: &mut Vec<VerifiedAttestation>) {
             v[0].payload.binding.target_digest = Digest::from_byte(99);
         }
-        let (mut broker, p, g, e) = verified_broker(None, Some(mutate));
-        let result = broker.dispatch(&p, Some(&g), &e);
+        let (mut broker, p, e) = verified_broker(None, Some(mutate));
+        let result = broker.dispatch(&p, &e);
         assert_eq!(result.gate_receipt.decision(),
             super::super::GateDecision::Denied(GateDenial::EvidenceBindingMismatch));
         assert_eq!(broker.participant_mut().submit_calls, 0);
