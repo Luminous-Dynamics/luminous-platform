@@ -99,7 +99,7 @@ pub struct ImpactMetrics {
     pub impact_rate_ppm: u64,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum CellFailure {
     MissingCandidateCell,
     MissingNoActionCell,
