@@ -65,3 +65,5 @@ The validator is structural only. The typed source-evidence adapter must authent
 The sealed run freezes a sandbox tier, profile digest, Supervisor identity/source/control domain/adapter and key-protection class. The new `src/sandbox.rs` requires tier-specific host/runtime evidence for Research, Process, Container and MicroVM; distinct runtime and writable-state identities; complete logical/resource telemetry; and explicit physical-energy coverage. The strict schema is `sandbox-tier-attestation.schema.json`, with the claim ceiling and industry references in `SANDBOX_TIERS_AND_RESOURCE_TELEMETRY_V0_1.md`.
 
 Tier labels do not grant score bonuses and are never aggregated into a single leaderboard. Energy is reported only where the measured interval, hardware identity, source, calibration profile and uncertainty are present. Unsupported sensors are unavailable, not zero. The validator is structural; it does not provision or certify an actual kernel/hypervisor boundary.
+
+Every per-trial Supervisor attestation explicitly repeats the frozen execution-environment and resource-budget digests and is rejected if either differs from the manifest.
