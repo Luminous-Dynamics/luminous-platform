@@ -8,9 +8,9 @@ The implementation is intentionally a **structural validator**. It does not calc
 
 ## Three evaluation lanes
 
-- **Open development:** public scenarios and public conformance tests; fast iteration is expected.
-- **Sealed certification:** the run manifest is frozen first. Case payload and oracle commitments are generated strictly after the freeze. The agent receives the case payload, not the private oracle.
-- **Retired reproducibility:** a case must have been generated and retired before the reproducibility run is created. Its payload can then be disclosed for independent reproduction.
+- **Open development:** public scenarios and public conformance tests; existing cases may predate the run freeze.
+- **Sealed certification:** the run manifest is frozen first. Case payload and oracle commitments are generated strictly after the freeze. The agent receives the case payload, not the private oracle. A retirement reveal is forbidden while the case is active.
+- **Retired reproducibility:** a case must have been generated and retired before the reproducibility run is created. The run must include exactly one post-retirement reveal per planned trial. Each reveal binds the previously published case/oracle commitments to disclosed artifact digests and salts for independent reproduction.
 
 A sealed run is not made trustworthy by hiding its scenarios alone. It also needs source authentication, restricted evidence access, network/retrieval telemetry, state isolation, scorer validation, and independent trial accounting. Those are separate controls, not implied by this module.
 
@@ -51,6 +51,8 @@ The validator checks that:
 - evidence source IDs and control domains match the frozen policy and do not collide with the agent/evaluator domains;
 - scenario payload and oracle commitments are nonzero and distinct fields;
 - scenario generation/retirement timing agrees with the selected lane;
+- every retired-reproducibility case has exactly one post-retirement reveal bound to its original case/oracle commitments and disclosed artifact digests/salts;
+- open-development and active sealed lanes cannot smuggle in retirement reveals;
 - every planned trial has an explicit terminal disposition and complete attempt history.
 
 The evidence source/control-domain fields are **claims in typed input records** until the source adapter authenticates them. Production must verify them through the typed source-evidence gate (#191 / issue #190), a durable replay guard, and verifier-owned source policy. Do not accept a caller-supplied signature_verified boolean.
@@ -76,8 +78,8 @@ The Rust conformance tests cover:
 - valid completed/failed/retried/skipped/invalidated accounting;
 - exact candidate, baseline, and evaluator identity binding;
 - strict post-freeze case generation for the sealed lane;
-- pre-retired case timing for the reproducibility lane;
-- missing/duplicate/unplanned scenarios and events;
+- pre-retired case timing and exact post-retirement reveals for the reproducibility lane;
+- missing/duplicate/unplanned scenarios, reveals and events;
 - undeclared attempts, retry-after-success, duplicate starts, missing terminals;
 - event time ordering, event source/control-domain substitution;
 - manifest commitment and freeze-receipt substitution;
@@ -88,7 +90,7 @@ These are deterministic conformance tests, not empirical agent benchmark results
 ## Claim ceiling and next integration
 
 This layer proves structural consistency and denominator preservation for the records supplied to it. It does **not** prove:
-- the manifest commitment was computed by SHA-256 or signed by a trusted authority;
+- the manifest or scenario commitments were correctly recomputed from canonical artifact bytes and salts or signed by a trusted authority;
 - the agent could not read private oracle data or retrieve leaked answer artifacts;
 - the model provider/version actually matched the declared identity;
 - events were emitted completely or honestly by the named source;
