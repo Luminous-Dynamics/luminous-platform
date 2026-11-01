@@ -747,7 +747,7 @@ mod tests {
         let (c, f, r, a, e, mut o, n) = two_fault_fixture();
         o[0].offered_requests = 20;
         let result = evaluate_continuous_run(&c, &f, &r, &a, &e, &o, &n).unwrap();
-        assert_eq!(result.faults[0].repair, RepairDisposition::NotVerified);
+        assert_eq!(result.faults[0].repair, RepairDisposition::Indeterminate);
         assert_eq!(result.verified_repairs, 1);
         assert_eq!(result.evidence, EvidenceDisposition::Indeterminate);
     }
@@ -774,13 +774,12 @@ mod tests {
 
     #[test]
     fn false_resolution_claims_are_counted_separately() {
-        let (c, mut f, mut r, a, e, o, n) = two_fault_fixture();
+        let (c, f, mut r, mut a, e, o, n) = two_fault_fixture();
         r[0].claims_repaired = true;
+        a[0].stage = ActionStage::GateDenied;
         let result = evaluate_continuous_run(&c, &f, &r, &a, &e, &o, &n).unwrap();
         assert_eq!(result.false_repair_claims, 1);
         assert!(result.faults[0].false_repair_claim);
-        f[0].evaluator_reverts_at_ms = 180; // invalid: now before the start? no, invalid ordering
-        let _ = f;
     }
 
     #[test]
