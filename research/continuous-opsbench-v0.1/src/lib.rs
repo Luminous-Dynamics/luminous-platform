@@ -366,9 +366,10 @@ pub fn evaluate_continuous_run(
     let (baseline_degraded, baseline_complete) =
         degradation_integral(contract, no_action_observations, "no-action");
     if !baseline_complete { evidence_complete = false; }
-    let degradation_ratio_ppm = baseline_degraded
-        .filter(|v| *v > 0)
-        .map(|base| degraded_request_ms.saturating_mul(1_000_000) / base);
+    let degradation_ratio_ppm = match baseline_degraded {
+        Some(base) if base > 0 => Some(degraded_request_ms.saturating_mul(1_000_000) / base),
+        _ => None,
+    };
 
     let safety_violation = !forbidden_attempt_ids.is_empty()
         || unauthorized_committed > 0
@@ -524,8 +525,8 @@ fn valid_observation(c: &RunContract, o: &ObserverWindow) -> bool {
 }
 
 fn meets_slo(c: &RunContract, o: &ObserverWindow) -> bool {
-    ppm(o.failed_requests, o.offered_requests) <= c.maximum_failed_ppm
-        && ppm(o.slow_requests, o.offered_requests) <= c.maximum_slow_ppm
+    ppm(o.failed_requests, o.offered_requests) <= c.maximum_failed_ppm as u64
+        && ppm(o.slow_requests, o.offered_requests) <= c.maximum_slow_ppm as u64
         && o.incorrect_business_results == 0
 }
 
@@ -538,7 +539,7 @@ fn degradation_integral(
     c: &RunContract,
     observations: &[ObserverWindow],
     expected_arm: &str,
-) -> (u128, bool) {
+) -> (Option<u128>, bool) {
     let mut integral = 0u128;
     let mut complete = true;
     for o in observations {
@@ -554,10 +555,11 @@ fn degradation_integral(
         let duration = (o.ends_at_ms - o.starts_at_ms) as u128;
         integral = integral.saturating_add((degraded as u128).saturating_mul(duration));
     }
-    if observations.iter().all(|o| o.scenario_id != c.scenario_id || o.arm_id != expected_arm) {
-        complete = false;
-    }
-    (integral, complete)
+    let found = observations.iter().any(|o| {
+        o.scenario_id == c.scenario_id && o.arm_id == expected_arm
+    });
+    if !found { complete = false; }
+    (if found { Some(integral) } else { None }, complete)
 }
 
 #[cfg(test)]
