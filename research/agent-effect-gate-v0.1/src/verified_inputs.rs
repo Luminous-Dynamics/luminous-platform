@@ -621,7 +621,7 @@ mod tests {
             attempt_id: p.attempt_id.clone(), idempotency_key: p.idempotency_key.clone(),
             environment: p.environment.clone(), risk_level: p.risk_level,
             policy_version: p.policy_version.clone(), policy_digest: p.policy_digest.clone(),
-            expires_at_ms: 50_000, revoked: false,
+            subject_digest: Digest::from_byte(10), expires_at_ms: 50_000, revoked: false,
         }
     }
 
@@ -669,11 +669,18 @@ mod tests {
                 predicate_type: GATE_EVIDENCE_PREDICATE_V1.into(),
                 publisher: VerifiedPublisher { issuer: issuer.into(), subject: subject.into(),
                     trust_domain: domain.into(), key_fingerprint: key_fingerprint.into() },
+                authority_grant: if role == EvidenceRole::Authority { Some(grant(p)) } else { None },
                 payload: EvidencePayload {
                     evidence_id: format!("evidence-{i}"), role, source_id: source_id.into(),
                     schema_version: GATE_EVIDENCE_SCHEMA_V1.into(), binding: binding.clone(),
                     claim: role.required_claim(), issued_at_ms: 90_000, observed_at_ms: 99_000,
-                    expires_at_ms: 105_000, sequence: 4, subject_digest: Digest::from_byte((i+10) as u8),
+                    expires_at_ms: 105_000, sequence: 4,
+                    subject_digest: match role {
+                        EvidenceRole::Authority => Digest::from_byte(10),
+                        EvidenceRole::Manifest => p.manifest_digest.clone(),
+                        EvidenceRole::Policy => p.policy_digest.clone(),
+                        EvidenceRole::Preflight | EvidenceRole::Observer => Digest::from_byte((i+10) as u8),
+                    },
                 },
             }
         }).collect()
@@ -698,7 +705,7 @@ mod tests {
 
     fn verified_broker(fail_at: Option<usize>, mutate: Option<fn(&mut Vec<VerifiedAttestation>)>)
         -> (VerifiedEffectBroker<FakeParticipant, FakeVerifier, FakeClock>,
-            MutationProposal, AuthorityGrant, GateEvidenceBundle) {
+            MutationProposal, GateEvidenceBundle) {
         let p = proposal();
         let mut evidence = attestations(&p);
         if let Some(f) = mutate { f(&mut evidence); }
