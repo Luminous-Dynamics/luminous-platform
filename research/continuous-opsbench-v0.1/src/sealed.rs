@@ -275,6 +275,12 @@ pub fn validate_run_ledger_with_reveals(
     let mut trial_index: BTreeMap<&str, &PlannedTrial> = BTreeMap::new();
     let mut cluster_trial_keys = BTreeSet::new();
     for trial in &manifest.trials {
+        if !valid_record_id(&trial.trial_id) {
+            return Err(SealedRunError::InvalidTrialIdentity);
+        }
+        if !valid_record_id(&trial.cluster_id) {
+            return Err(SealedRunError::InvalidTrialCluster(trial.trial_id.clone()));
+        }
         if trial_index.insert(trial.trial_id.as_str(), trial).is_some() {
             return Err(SealedRunError::DuplicateTrialId);
         }
@@ -398,6 +404,9 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
     {
         return Err(SealedRunError::InvalidSourceCommit);
     }
+    if manifest.agent_identity_digest == manifest.baseline_identity_digest {
+        return Err(SealedRunError::AgentBaselineIdentityCollision);
+    }
     if manifest.created_at_ms > manifest.frozen_at_ms {
         return Err(SealedRunError::InvalidRunInterval);
     }
@@ -480,15 +489,13 @@ fn validate_scenario(
     {
         return Err(SealedRunError::EventControlDomainCollision(id));
     }
-    if scenario.issued_at_ms < scenario.generated_at_ms
-        || scenario.issued_at_ms < manifest.frozen_at_ms
-    {
-        return Err(SealedRunError::ScenarioIssuedBeforeGenerated(id));
+    if scenario.issued_at_ms < scenario.generated_at_ms {
+        return Err(SealedRunError::ScenarioIssuedBeforeGenerated(id.clone()));
     }
     match manifest.lane {
         EvaluationLane::SealedCertification => {
             if scenario.generated_at_ms <= manifest.frozen_at_ms {
-                return Err(SealedRunError::ScenarioGeneratedBeforeFreeze(id));
+                return Err(SealedRunError::ScenarioGeneratedBeforeFreeze(id.clone()));
             }
             if scenario.retired_at_ms.is_some() {
                 return Err(SealedRunError::UnexpectedRetirementTime(id));
@@ -498,7 +505,10 @@ fn validate_scenario(
             let retired = scenario.retired_at_ms
                 .ok_or_else(|| SealedRunError::MissingRetirementTime(id.clone()))?;
             if scenario.generated_at_ms > retired || retired > manifest.created_at_ms {
-                return Err(SealedRunError::RetirementAfterRunCreated(id));
+                return Err(SealedRunError::RetirementAfterRunCreated(id.clone()));
+            }
+            if scenario.issued_at_ms < manifest.frozen_at_ms {
+                return Err(SealedRunError::ScenarioIssuedBeforeFreeze(id));
             }
         }
         EvaluationLane::OpenDevelopment => {
@@ -660,6 +670,74 @@ fn validate_trial_events(
     })
 }
 
+fn validate_scenario_reveals(
+    manifest: &RunManifest,
+    expected_commitment: &Digest,
+    trials: &BTreeMap<&str, &PlannedTrial>,
+    scenarios: &BTreeMap<&str, &ScenarioReceipt>,
+    reveals: &[ScenarioReveal],
+) -> Result<(), SealedRunError> {
+    if manifest.lane != EvaluationLane::RetiredReproducibility {
+        if let Some(reveal) = reveals.first() {
+            return Err(SealedRunError::UnexpectedScenarioReveal(reveal.trial_id.clone()));
+        }
+        return Ok(());
+    }
+
+    let mut reveal_index: BTreeMap<&str, &ScenarioReveal> = BTreeMap::new();
+    for reveal in reveals {
+        if !trials.contains_key(reveal.trial_id.as_str()) {
+            return Err(SealedRunError::UnplannedScenarioReveal(reveal.trial_id.clone()));
+        }
+        if reveal_index.insert(reveal.trial_id.as_str(), reveal).is_some() {
+            return Err(SealedRunError::DuplicateScenarioReveal(reveal.trial_id.clone()));
+        }
+        let scenario = scenarios.get(reveal.trial_id.as_str())
+            .ok_or_else(|| SealedRunError::MissingScenarioReceipt(reveal.trial_id.clone()))?;
+        if reveal.run_id != manifest.run_id
+            || reveal.manifest_commitment != *expected_commitment
+            || reveal.case_payload_commitment != scenario.case_payload_commitment
+            || reveal.oracle_commitment != scenario.oracle_commitment
+            || digest_is_zero(&reveal.case_payload_artifact_digest)
+            || digest_is_zero(&reveal.oracle_artifact_digest)
+            || reveal.case_payload_artifact_digest == reveal.oracle_artifact_digest
+        {
+            return Err(SealedRunError::ScenarioRevealBindingMismatch(reveal.trial_id.clone()));
+        }
+        if reveal.source_id != manifest.evidence_source_id {
+            return Err(SealedRunError::ScenarioRevealSourceMismatch(reveal.trial_id.clone()));
+        }
+        if reveal.control_domain != manifest.evidence_control_domain
+            || reveal.control_domain == manifest.agent.control_domain
+            || reveal.control_domain == manifest.evaluator_control_domain
+        {
+            return Err(SealedRunError::ScenarioRevealControlDomainCollision(reveal.trial_id.clone()));
+        }
+        let retired_at = scenario.retired_at_ms
+            .ok_or_else(|| SealedRunError::MissingRetirementTime(reveal.trial_id.clone()))?;
+        if reveal.revealed_at_ms < retired_at
+            || reveal.revealed_at_ms > manifest.created_at_ms
+        {
+            return Err(SealedRunError::ScenarioRevealBeforeRetirement(reveal.trial_id.clone()));
+        }
+        if reveal.case_payload_salt.len() < 32 || reveal.oracle_salt.len() < 32 {
+            return Err(SealedRunError::ScenarioRevealSaltTooShort(reveal.trial_id.clone()));
+        }
+    }
+
+    for trial_id in trials.keys() {
+        if !reveal_index.contains_key(trial_id) {
+            return Err(SealedRunError::MissingScenarioReveal((*trial_id).to_owned()));
+        }
+    }
+    Ok(())
+}
+
+fn valid_record_id(value: &str) -> bool {
+    !value.trim().is_empty()
+        && value.len() <= 256
+        && !value.chars().any(char::is_control)
+}
 fn digest_is_zero(digest: &Digest) -> bool {
     digest.0.iter().all(|byte| *byte == 0)
 }
