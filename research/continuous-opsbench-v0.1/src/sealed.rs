@@ -583,12 +583,13 @@ fn validate_event_binding(
     scenario: &ScenarioReceipt,
     event: &TrialEvent,
 ) -> Result<(), SealedRunError> {
+    let expected_arm_digest = match event.arm {
+        EvaluationArm::Candidate => &manifest.agent_identity_digest,
+        EvaluationArm::Baseline => &manifest.baseline_identity_digest,
+    };
     if event.run_id != manifest.run_id
         || event.manifest_commitment != *expected_commitment
-        || event.arm_identity_digest != match event.arm {
-            EvaluationArm::Candidate => manifest.agent_identity_digest,
-            EvaluationArm::Baseline => manifest.baseline_identity_digest,
-        }
+        || &event.arm_identity_digest != expected_arm_digest
         || event.evaluator_digest != manifest.evaluator_digest
         || event.scenario_commitment != scenario.case_payload_commitment
         || event.event_id.trim().is_empty()
