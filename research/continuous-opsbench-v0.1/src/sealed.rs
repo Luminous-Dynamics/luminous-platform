@@ -282,7 +282,7 @@ pub fn validate_run_ledger(
         let scenario = scenario_index[trial.trial_id.as_str()];
         let trial_events = events_by_trial.get(trial.trial_id.as_str())
             .map(Vec::as_slice).unwrap_or(&[]);
-        let result = validate_trial_events(manifest, trial, scenario, trial_events)?;
+        let result = validate_trial_events(trial, scenario, trial_events)?;
         total_attempts = total_attempts.saturating_add(result.attempts_started as usize);
         match result.disposition {
             TrialDisposition::Completed => completed += 1,
@@ -480,7 +480,6 @@ fn validate_event_binding(
 }
 
 fn validate_trial_events(
-    manifest: &RunManifest,
     trial: &PlannedTrial,
     scenario: &ScenarioReceipt,
     events: &[&TrialEvent],
@@ -941,75 +940,74 @@ mod tests {
     fn sixty_four_adversarial_mutations_fail_closed() {
         for vector in 0..66 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
-            let outcome = match vector {
-                0 => { m.run_id.clear(); None }
-                1 => { m.schema.push_str("-wrong"); None }
-                2 => { m.version = 2; None }
-                3 => { m.agent.source_commit = "not-a-revision".into(); None }
-                4 => { m.agent.model_provider.clear(); None }
-                5 => { m.agent.model_id.clear(); None }
-                6 => { m.agent.model_version.clear(); None }
-                7 => { m.baseline.baseline_id.clear(); None }
-                8 => { m.baseline.source_commit = "bad".into(); None }
-                9 => { m.agent.control_domain = m.evaluator_control_domain.clone(); None }
-                10 => { m.evidence_control_domain = m.agent.control_domain.clone(); None }
-                11 => { m.evaluator_control_domain = m.evidence_control_domain.clone(); None }
-                12 => { m.created_at_ms = m.frozen_at_ms + 1; None }
-                13 => { m.trials.clear(); None }
-                14 => { m.trials[0].maximum_attempts = 0; None }
-                15 => { let duplicate = m.trials[0].clone(); m.trials.push(duplicate); None }
-                16 => { freeze.publisher_id.clear(); None }
-                17 => { freeze.publisher_control_domain = m.agent.control_domain.clone(); None }
-                18 => { freeze.agent_identity_digest = Digest::from_byte(99); None }
-                19 => { freeze.baseline_identity_digest = Digest::from_byte(99); None }
-                20 => { freeze.evaluator_digest = Digest::from_byte(99); None }
-                21 => { freeze.frozen_at_ms += 1; None }
-                22 => { scenarios[0].run_id = "other-run".into(); None }
-                23 => { scenarios[0].manifest_commitment = Digest::from_byte(99); None }
-                24 => { scenarios[0].case_payload_commitment = Digest::from_byte(0); None }
-                25 => { scenarios[0].oracle_commitment = Digest::from_byte(0); None }
-                26 => { scenarios[0].evaluator_digest = Digest::from_byte(99); None }
-                27 => { scenarios[0].source_id = "unknown-source".into(); None }
-                28 => { scenarios[0].control_domain = m.agent.control_domain.clone(); None }
-                29 => { scenarios[0].generated_at_ms = m.frozen_at_ms; None }
-                30 => { scenarios[0].issued_at_ms = scenarios[0].generated_at_ms - 1; None }
-                31 => { scenarios[0].retired_at_ms = Some(5); None }
-                32 => { scenarios.pop(); None }
-                33 => { let duplicate = scenarios[0].clone(); scenarios.push(duplicate); None }
-                34 => { let mut x = scenarios[0].clone(); x.trial_id = "unplanned".into(); scenarios.push(x); None }
-                35 => { events.pop(); None }
-                36 => { events[0].run_id = "other-run".into(); None }
-                37 => { events[0].manifest_commitment = Digest::from_byte(99); None }
-                38 => { events[0].agent_identity_digest = Digest::from_byte(99); None }
-                39 => { events[0].evaluator_digest = Digest::from_byte(99); None }
-                40 => { events[0].scenario_commitment = Digest::from_byte(99); None }
-                41 => { events[0].source_id = "agent".into(); None }
-                42 => { events[0].control_domain = m.agent.control_domain.clone(); None }
-                43 => { events[0].occurred_at_ms = 1; None }
-                44 => { events[0].event_id = events[1].event_id.clone(); None }
-                45 => { let duplicate = events[0].clone(); events.push(duplicate); None }
-                46 => { events[0].attempt = 0; None }
-                47 => { events[0].attempt = 3; None }
-                48 => { events[0].occurred_at_ms = 39; None }
-                49 => { events[0].kind = TrialEventKind::Started; None }
-                50 => { events[0].kind = TrialEventKind::Skipped; events[0].attempt = 1; None }
-                51 => { events.retain(|e| !(e.trial_id == "trial-a" && e.kind == TrialEventKind::Failed)); None }
-                52 => { events.retain(|e| !(e.trial_id == "trial-a" && e.kind == TrialEventKind::Completed)); None }
-                53 => { events.retain(|e| e.trial_id != "trial-c"); None }
-                54 => { events.push(event(&m, &commitment, &scenarios[0], "unplanned", "extra", 1, 50, TrialEventKind::Started)); None }
-                55 => { m.lane = EvaluationLane::RetiredReproducibility; None }
-                56 => { m.lane = EvaluationLane::OpenDevelopment; scenarios[0].generated_at_ms = 5; scenarios[0].issued_at_ms = 30; None }
-                57 => { m.lane = EvaluationLane::RetiredReproducibility; scenarios[0].generated_at_ms = 5; scenarios[0].retired_at_ms = Some(m.created_at_ms + 1); None }
-                58 => { m.agent.agent_id.clear(); None }
-                59 => { m.evaluator_control_domain.clear(); None }
-                60 => { m.evidence_source_id.clear(); None }
-                61 => { events[0].occurred_at_ms = scenarios[0].issued_at_ms; None }
-                62 => { events[0].trial_id = "unknown".into(); None }
-                63 => { freeze.manifest_commitment = Digest::from_byte(99); None }
-                64 => { freeze.publisher_id = "substituted-authority".into(); None }
-                _ => { freeze.publisher_control_domain = "substituted-domain".into(); None }
+            match vector {
+                0 => { m.run_id.clear(); }
+                1 => { m.schema.push_str("-wrong"); }
+                2 => { m.version = 2; }
+                3 => { m.agent.source_commit = "not-a-revision".into(); }
+                4 => { m.agent.model_provider.clear(); }
+                5 => { m.agent.model_id.clear(); }
+                6 => { m.agent.model_version.clear(); }
+                7 => { m.baseline.baseline_id.clear(); }
+                8 => { m.baseline.source_commit = "bad".into(); }
+                9 => { m.agent.control_domain = m.evaluator_control_domain.clone(); }
+                10 => { m.evidence_control_domain = m.agent.control_domain.clone(); }
+                11 => { m.evaluator_control_domain = m.evidence_control_domain.clone(); }
+                12 => { m.created_at_ms = m.frozen_at_ms + 1; }
+                13 => { m.trials.clear(); }
+                14 => { m.trials[0].maximum_attempts = 0; }
+                15 => { let duplicate = m.trials[0].clone(); m.trials.push(duplicate); }
+                16 => { freeze.publisher_id.clear(); }
+                17 => { freeze.publisher_control_domain = m.agent.control_domain.clone(); }
+                18 => { freeze.agent_identity_digest = Digest::from_byte(99); }
+                19 => { freeze.baseline_identity_digest = Digest::from_byte(99); }
+                20 => { freeze.evaluator_digest = Digest::from_byte(99); }
+                21 => { freeze.frozen_at_ms += 1; }
+                22 => { scenarios[0].run_id = "other-run".into(); }
+                23 => { scenarios[0].manifest_commitment = Digest::from_byte(99); }
+                24 => { scenarios[0].case_payload_commitment = Digest::from_byte(0); }
+                25 => { scenarios[0].oracle_commitment = Digest::from_byte(0); }
+                26 => { scenarios[0].evaluator_digest = Digest::from_byte(99); }
+                27 => { scenarios[0].source_id = "unknown-source".into(); }
+                28 => { scenarios[0].control_domain = m.agent.control_domain.clone(); }
+                29 => { scenarios[0].generated_at_ms = m.frozen_at_ms; }
+                30 => { scenarios[0].issued_at_ms = scenarios[0].generated_at_ms - 1; }
+                31 => { scenarios[0].retired_at_ms = Some(5); }
+                32 => { scenarios.pop(); }
+                33 => { let duplicate = scenarios[0].clone(); scenarios.push(duplicate); }
+                34 => { let mut x = scenarios[0].clone(); x.trial_id = "unplanned".into(); scenarios.push(x); }
+                35 => { events.pop(); }
+                36 => { events[0].run_id = "other-run".into(); }
+                37 => { events[0].manifest_commitment = Digest::from_byte(99); }
+                38 => { events[0].agent_identity_digest = Digest::from_byte(99); }
+                39 => { events[0].evaluator_digest = Digest::from_byte(99); }
+                40 => { events[0].scenario_commitment = Digest::from_byte(99); }
+                41 => { events[0].source_id = "agent".into(); }
+                42 => { events[0].control_domain = m.agent.control_domain.clone(); }
+                43 => { events[0].occurred_at_ms = 1; }
+                44 => { events[0].event_id = events[1].event_id.clone(); }
+                45 => { let duplicate = events[0].clone(); events.push(duplicate); }
+                46 => { events[0].attempt = 0; }
+                47 => { events[0].attempt = 3; }
+                48 => { events[0].occurred_at_ms = 39; }
+                49 => { events[0].kind = TrialEventKind::Started; }
+                50 => { events[0].kind = TrialEventKind::Skipped; events[0].attempt = 1; }
+                51 => { events.retain(|e| !(e.trial_id == "trial-a" && e.kind == TrialEventKind::Failed)); }
+                52 => { events.retain(|e| !(e.trial_id == "trial-a" && e.kind == TrialEventKind::Completed)); }
+                53 => { events.retain(|e| e.trial_id != "trial-c"); }
+                54 => { events.push(event(&m, &commitment, &scenarios[0], "unplanned", "extra", 1, 50, TrialEventKind::Started)); }
+                55 => { m.lane = EvaluationLane::RetiredReproducibility; }
+                56 => { m.lane = EvaluationLane::OpenDevelopment; scenarios[0].generated_at_ms = 5; scenarios[0].issued_at_ms = 30; }
+                57 => { m.lane = EvaluationLane::RetiredReproducibility; scenarios[0].generated_at_ms = 5; scenarios[0].retired_at_ms = Some(m.created_at_ms + 1); }
+                58 => { m.agent.agent_id.clear(); }
+                59 => { m.evaluator_control_domain.clear(); }
+                60 => { m.evidence_source_id.clear(); }
+                61 => { events[0].occurred_at_ms = scenarios[0].issued_at_ms; }
+                62 => { events[0].trial_id = "unknown".into(); }
+                63 => { freeze.manifest_commitment = Digest::from_byte(99); }
+                64 => { freeze.publisher_id = "substituted-authority".into(); }
+                _ => { freeze.publisher_control_domain = "substituted-domain".into(); }
             };
-            let _ = outcome;
             assert!(
                 validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).is_err(),
                 "sealed-run adversarial vector {vector} was accepted"
