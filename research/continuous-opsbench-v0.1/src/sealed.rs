@@ -509,7 +509,7 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         (manifest.evidence_source_id.as_str(), "evidence_source_id"),
         (manifest.evidence_control_domain.as_str(), "evidence_control_domain"),
     ] {
-        if value.trim().is_empty() { return Err(SealedRunError::EmptyIdentity(name)); }
+        if !valid_record_id(value) { return Err(SealedRunError::EmptyIdentity(name)); }
     }
     if !valid_git_revision(&manifest.agent.source_commit)
         || !valid_git_revision(&manifest.baseline.source_commit)
