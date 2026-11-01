@@ -225,7 +225,7 @@ pub enum SealedRunError {
     ScenarioRevealSourceMismatch(String),
     ScenarioRevealControlDomainCollision(String),
     ScenarioRevealBeforeRetirement(String),
-    ScenarioRevealSaltTooShort(String),
+    ScenarioRevealSaltLengthInvalid(String),
     DuplicateEventId,
     UnplannedTrialEvent(String),
     EventBindingMismatch(String),
@@ -728,8 +728,11 @@ fn validate_scenario_reveals(
         {
             return Err(SealedRunError::ScenarioRevealBeforeRetirement(reveal.trial_id.clone()));
         }
-        if reveal.case_payload_salt.len() < 32 || reveal.oracle_salt.len() < 32 {
-            return Err(SealedRunError::ScenarioRevealSaltTooShort(reveal.trial_id.clone()));
+        if reveal.case_payload_salt.len() != 32
+            || reveal.oracle_salt.len() != 32
+            || reveal.case_payload_salt == reveal.oracle_salt
+        {
+            return Err(SealedRunError::ScenarioRevealSaltLengthInvalid(reveal.trial_id.clone()));
         }
     }
 
@@ -1128,7 +1131,7 @@ mod tests {
         reveals[0].case_payload_salt.truncate(31);
         assert_eq!(
             validate_run_ledger_with_reveals(&manifest, &commitment, &freeze, &scenarios, &reveals, &events),
-            Err(SealedRunError::ScenarioRevealSaltTooShort("trial-a".into()))
+            Err(SealedRunError::ScenarioRevealSaltLengthInvalid("trial-a".into()))
         );
         reveals[0] = reveal(&manifest, &commitment, &scenarios[0]);
         reveals[0].source_id = "other-source".into();
