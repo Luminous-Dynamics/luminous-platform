@@ -127,6 +127,11 @@ pub struct ScenarioReveal {
     pub source_id: String,
     pub control_domain: String,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum EvaluationArm {
+    Candidate,
+    Baseline,
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TrialEventKind {
     Started,
@@ -139,6 +144,7 @@ pub enum TrialEventKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TrialEvent {
     pub run_id: String,
+    pub arm: EvaluationArm,
     pub trial_id: String,
     pub event_id: String,
     pub attempt: u16,
@@ -163,6 +169,7 @@ pub enum TrialDisposition {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TrialResult {
     pub trial_id: String,
+    pub arm: EvaluationArm,
     pub cluster_id: String,
     pub disposition: TrialDisposition,
     pub attempts_started: u16,
@@ -170,6 +177,20 @@ pub struct TrialResult {
     pub terminal_at_ms: u64,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ArmRunSummary {
+    /// Number of preregistered scenario clusters/trials, before multiplying by arms.
+    pub planned_trials: usize,
+    /// Exactly two arms per planned scenario: candidate and strongest matched baseline.
+    pub planned_arm_trials: usize,
+    pub candidate: ArmRunSummary,
+    pub baseline: ArmRunSummary,
+    pub completed_trials: usize,
+    pub failed_trials: usize,
+    pub skipped_trials: usize,
+    pub invalidated_trials: usize,
+    pub total_attempts: usize,
+}
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RunLedgerSummary {
     pub run_id: String,
