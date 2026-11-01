@@ -467,6 +467,9 @@ pub(crate) fn validate_ledger_binding(
         || ledger.trials.len() != manifest.trials.len().saturating_mul(2)
         || ledger.candidate.planned_trials != manifest.trials.len()
         || ledger.baseline.planned_trials != manifest.trials.len()
+        || ledger.unique_clusters
+            != manifest.trials.iter().map(|trial| trial.cluster_id.as_str())
+                .collect::<BTreeSet<_>>().len()
     {
         return Err(RuntimeAttestationError::LedgerManifestMismatch);
     }
@@ -512,9 +515,17 @@ pub(crate) fn validate_ledger_binding(
             ));
         }
         for result in [*candidate_result, *baseline_result] {
+            let timeline_valid = match (result.attempts_started, result.first_started_at_ms) {
+                (0, None) => matches!(
+                    result.disposition,
+                    TrialDisposition::Skipped | TrialDisposition::Invalidated
+                ),
+                (0, Some(_)) => false,
+                (_, None) => false,
+                (_, Some(started_at)) => started_at < result.terminal_at_ms,
+            };
             if result.attempts_started > trial.maximum_attempts
-                || (result.attempts_started == 0
-                    && !matches!(result.disposition, TrialDisposition::Skipped | TrialDisposition::Invalidated))
+                || !timeline_valid
                 || (result.attempts_started > 0
                     && matches!(result.disposition, TrialDisposition::Skipped))
             {
@@ -938,6 +949,47 @@ mod tests {
         assert_eq!(result.complete_attestations, 4);
         assert_eq!(result.allowlisted_egress_events, 8);
         assert_eq!(result.evidence.len(), 4);
+    }
+
+    #[test]
+    fn challenge_nonce_is_unique_and_must_be_fresh_after_freeze() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[1].challenge_nonce_digest = attestations[0].challenge_nonce_digest.clone();
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeNonceCollision)
+        );
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].challenge_issued_at_ms = manifest.frozen_at_ms;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
+    fn runtime_challenge_must_enclose_measurement_and_receipt_issue() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].challenge_expires_at_ms = 59;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
+    fn challenge_authority_cannot_be_the_runtime_observer_or_agent() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].challenge_authority_control_domain =
+            manifest.runtime_observer_control_domain.clone();
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::EmptyOrInvalidIdentity)
+        );
     }
 
     #[test]
