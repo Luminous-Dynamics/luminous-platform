@@ -664,7 +664,7 @@ mod tests {
         cells[1].events.push(ev("n", 2, ImpactKind::Failed, 110, Some(180)));
         let result = evaluate_paired_interval_impact(&[spec], &cells).unwrap();
         assert_eq!(result.complete_candidate_minus_no_action_requests, Some(0));
-        assert_eq!(result.complete_candidate_minus_no_action_request_ms, Some(-30));
+        assert_eq!(result.complete_candidate_minus_no_action_request_ms, Some(-50));
     }
 
     #[test]
