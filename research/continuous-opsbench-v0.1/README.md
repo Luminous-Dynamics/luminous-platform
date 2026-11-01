@@ -58,3 +58,10 @@ The run freeze also pins the state-isolation, artifact-access and network-egress
 The new `src/runtime.rs` validator requires one independent runtime attestation per planned (scenario, Candidate/Baseline) pair. Each receipt binds the exact arm identity, scenario, manifest, environment, resource budget and state/artifact/egress policy digests; it must cover the complete agent interval with complete telemetry. Oracle reads, unauthorized artifact reads, disallowed egress, writable-state sharing, cross-trial state observations, telemetry gaps and missing/duplicate receipts are rejected. See `runtime-trial-attestation.schema.json` and `RUNTIME_ENFORCEMENT_V0_1.md`.
 
 The validator is structural only. The typed source-evidence adapter must authenticate observer receipts and replay sequences; a real runtime observer/sandbox adapter must prove actual enforcement. This does not qualify kernel/hypervisor isolation or production safety.
+
+
+### Tiered sandbox assurance
+
+The sealed run freezes a sandbox tier, profile digest, Supervisor identity/source/control domain/adapter and key-protection class. The new `src/sandbox.rs` requires tier-specific host/runtime evidence for Research, Process, Container and MicroVM; distinct runtime and writable-state identities; complete logical/resource telemetry; and explicit physical-energy coverage. The strict schema is `sandbox-tier-attestation.schema.json`, with the claim ceiling and industry references in `SANDBOX_TIERS_AND_RESOURCE_TELEMETRY_V0_1.md`.
+
+Tier labels do not grant score bonuses and are never aggregated into a single leaderboard. Energy is reported only where the measured interval, hardware identity, source, calibration profile and uncertainty are present. Unsupported sensors are unavailable, not zero. The validator is structural; it does not provision or certify an actual kernel/hypervisor boundary.
