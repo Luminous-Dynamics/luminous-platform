@@ -1071,7 +1071,8 @@ mod tests {
             ))
         );
         let mut duplicate = fixture.5.clone();
-        duplicate.push(duplicate[0].clone());
+        let extra_duplicate = duplicate[0].clone();
+        duplicate.push(extra_duplicate);
         assert_eq!(
             validate(&fixture, &duplicate),
             Err(SandboxAttestationError::DuplicateAttestation(
@@ -1187,7 +1188,7 @@ mod tests {
         receipts[0].energy.calibration_profile_digest = Some(d(0));
         assert!(validate(&fixture, &receipts).is_err());
         let mut receipts = fixture.5.clone();
-        receipts[0].energy.sample_start_ms = Some(31);
+        receipts[0].energy.sample_start_ms = Some(36);
         assert!(validate(&fixture, &receipts).is_err());
         let mut receipts = fixture.5.clone();
         receipts[0].energy.uncertainty_ppm = Some(MAX_ENERGY_UNCERTAINTY_PPM + 1);
@@ -1242,7 +1243,7 @@ mod tests {
             Err(SandboxAttestationError::SupervisorSequenceNotContiguous)
         );
         let mut receipts = fixture.5.clone();
-        receipts[1].issued_at_ms = receipts[0].issued_at_ms;
+        receipts[0].issued_at_ms = 90;
         assert_eq!(
             validate(&fixture, &receipts),
             Err(SandboxAttestationError::SupervisorSequenceNotContiguous)
@@ -1344,7 +1345,7 @@ mod tests {
                 54 => receipts[0].writable_state_namespace_digest = d(0),
                 55 => { let duplicate_runtime = receipts[0].runtime_instance_digest.clone(); receipts[1].runtime_instance_digest = duplicate_runtime; },
                 56 => { let duplicate_namespace = receipts[0].writable_state_namespace_digest.clone(); receipts[1].writable_state_namespace_digest = duplicate_namespace; },
-                57 => receipts.push(receipts[0].clone()),
+                57 => { let extra = receipts[0].clone(); receipts.push(extra); },
                 58 => receipts.pop(),
                 59 => receipts[0].hardware_identity_digest = d(88),
                 60 => receipts[1].host_kernel_digest = d(89),
