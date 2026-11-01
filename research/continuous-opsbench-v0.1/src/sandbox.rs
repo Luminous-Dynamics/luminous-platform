@@ -1365,4 +1365,107 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn sixty_four_adversarial_vectors_run_in_each_of_the_four_sandbox_tiers() {
+        for tier in [
+            SandboxTier::Research,
+            SandboxTier::Process,
+            SandboxTier::Container,
+            SandboxTier::MicroVm,
+        ] {
+            for vector in 0..64 {
+                let (manifest, commitment, mut freeze, mut ledger, mut scenarios, mut receipts) =
+                    fixture(tier);
+                let other_tier = if tier == SandboxTier::Research {
+                    SandboxTier::Process
+                } else {
+                    SandboxTier::Research
+                };
+                match vector {
+                    0 => receipts[0].schema = "wrong-schema".into(),
+                    1 => receipts[0].run_id = "another-run".into(),
+                    2 => receipts[0].trial_id = "unknown-trial".into(),
+                    3 => receipts[0].arm_identity_digest = d(99),
+                    4 => receipts[0].scenario_commitment = d(99),
+                    5 => receipts[0].manifest_commitment = d(99),
+                    6 => receipts[0].sandbox_tier = other_tier,
+                    7 => receipts[0].sandbox_profile_digest = d(0),
+                    8 => receipts[0].supervisor_id = "substituted-supervisor".into(),
+                    9 => receipts[0].supervisor_source_id = "substituted-source".into(),
+                    10 => receipts[0].supervisor_control_domain = manifest.agent.control_domain.clone(),
+                    11 => receipts[0].supervisor_adapter_digest = d(0),
+                    12 => receipts[0].receipt_sequence = 0,
+                    13 => { let seq = receipts[0].receipt_sequence; receipts[1].receipt_sequence = seq; },
+                    14 => receipts[0].issued_at_ms = receipts[0].measurement_end_ms - 1,
+                    15 => receipts[0].measurement_start_ms = 39,
+                    16 => receipts[0].measurement_end_ms = 49,
+                    17 => receipts[0].clock_uncertainty_ms = 1_001,
+                    18 => receipts[0].host_os.clear(),
+                    19 => receipts[0].host_architecture.clear(),
+                    20 => receipts[0].host_kernel_digest = d(0),
+                    21 => receipts[0].hardware_identity_digest = d(0),
+                    22 => receipts[0].isolation_mechanism = match tier {
+                        SandboxTier::Research => IsolationMechanism::Firecracker,
+                        _ => IsolationMechanism::ResearchUnisolated,
+                    },
+                    23 => receipts[0].runtime_version.clear(),
+                    24 => receipts[0].session_identity_digest = d(0),
+                    25 => receipts[0].harness_identity_digest = d(0),
+                    26 => receipts[0].transcript_commitment = d(0),
+                    27 => receipts[0].input_seed_commitment = d(0),
+                    28 => receipts[0].logical_coverage = TelemetryCoverage::Partial,
+                    29 => receipts[0].logical_coverage = TelemetryCoverage::Unknown,
+                    30 => receipts[0].resource_coverage = TelemetryCoverage::Partial,
+                    31 => receipts[0].resource_coverage = TelemetryCoverage::Unknown,
+                    32 => receipts[0].wallclock_ms = 0,
+                    33 => receipts[0].cpu_time_ns = 0,
+                    34 => receipts[0].peak_memory_bytes = 0,
+                    35 => receipts[0].runtime_instance_digest = d(0),
+                    36 => receipts[0].writable_state_namespace_digest = d(0),
+                    37 => { let duplicate = receipts[0].runtime_instance_digest.clone(); receipts[1].runtime_instance_digest = duplicate; },
+                    38 => { let duplicate = receipts[0].writable_state_namespace_digest.clone(); receipts[1].writable_state_namespace_digest = duplicate; },
+                    39 => receipts[0].physical_coverage = TelemetryCoverage::Partial,
+                    40 => receipts[0].physical_coverage = TelemetryCoverage::Unknown,
+                    41 => receipts[0].physical_coverage = TelemetryCoverage::Tampered,
+                    42 => { let duplicate = receipts[0].clone(); receipts.push(duplicate); },
+                    43 => { receipts.pop(); },
+                    44 => receipts[0].trial_id = "unplanned-trial".into(),
+                    45 => receipts[1].receipt_sequence = 4,
+                    46 => receipts[0].issued_at_ms = 90,
+                    47 => { scenarios.clear(); },
+                    48 => { let duplicate = scenarios[0].clone(); scenarios.push(duplicate); },
+                    49 => receipts[0].arm = EvaluationArm::Baseline,
+                    50 => receipts[0].run_id = "different-run".into(),
+                    51 => scenarios[0].case_payload_commitment = d(99),
+                    52 => ledger.run_id = "different-ledger-run".into(),
+                    53 => ledger.manifest_commitment = d(99),
+                    54 => ledger.sandbox_profile_digest = d(99),
+                    55 => ledger.supervisor_id = "wrong-supervisor".into(),
+                    56 => ledger.planned_arm_trials = 3,
+                    57 => freeze.supervisor_source_id = "other-source".into(),
+                    58 => freeze.supervisor_control_domain = "other-domain".into(),
+                    59 => freeze.sandbox_profile_digest = d(99),
+                    60 => freeze.supervisor_adapter_digest = d(0),
+                    61 => freeze.sandbox_tier = other_tier,
+                    62 => {},
+                    _ => receipts[0].measurement_end_ms = 0,
+                }
+                let expected_commitment = if vector == 62 { d(99) } else { commitment.clone() };
+                let result = validate_sandbox_attestations(
+                    &manifest,
+                    &expected_commitment,
+                    &freeze,
+                    &ledger,
+                    &scenarios,
+                    &receipts,
+                );
+                assert!(
+                    result.is_err(),
+                    "sandbox tier {tier:?} mutation vector {vector} was accepted"
+                );
+            }
+        }
+    }
+
 }
