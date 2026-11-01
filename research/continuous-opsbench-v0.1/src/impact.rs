@@ -444,9 +444,9 @@ fn measure_cell(
 
     Ok(ImpactMetrics {
         offered_requests: cell.offered_requests,
-        failed_requests: failed.len() as u64,
-        slow_requests: slow.len() as u64,
-        incorrect_business_requests: incorrect.len() as u64,
+        failed_requests: u64::try_from(failed.len()).map_err(|_| CellFailure::UniqueUnionExceedsOffered)?,
+        slow_requests: u64::try_from(slow.len()).map_err(|_| CellFailure::UniqueUnionExceedsOffered)?,
+        incorrect_business_requests: u64::try_from(incorrect.len()).map_err(|_| CellFailure::UniqueUnionExceedsOffered)?,
         unique_degraded_requests: union_count,
         duplicate_event_rows,
         duration_ms,
@@ -456,7 +456,7 @@ fn measure_cell(
 }
 
 fn is_keyed_pseudonym_token(token: &str) -> bool {
-    token.len() == 64 && token.bytes().all(|byte| byte.is_ascii_hexdigit())
+    token.len() == 64 && token.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
 #[cfg(test)]
@@ -619,7 +619,7 @@ mod tests {
             ObservationCell { arm: ObservationArm::Candidate, ..cells[1].clone() },
         ];
         let result = evaluate_paired_impact(&[spec], &swapped).unwrap();
-        assert_eq!(result.complete_candidate_minus_no_action_request_ms, Some(-200));
+        assert_eq!(result.complete_candidate_minus_no_action_request_ms, Some(200));
     }
 
     #[test]
@@ -662,8 +662,8 @@ mod tests {
     #[test]
     fn paired_observation_rejects_request_union_larger_than_offered_demand() {
         let (spec, mut cells) = pair();
-        cells[0].events = (0..101).map(|n| ImpactEvent {
-            request_token: token(n as u8), kind: ImpactKind::Failed,
+        cells[0].events = (0u8..=100u8).map(|n| ImpactEvent {
+            request_token: token(n), kind: ImpactKind::Failed,
         }).collect();
         let result = evaluate_paired_impact(&[spec], &cells).unwrap();
         assert_eq!(result.pairs[0].failures, vec![CellFailure::UniqueUnionExceedsOffered]);
@@ -677,8 +677,8 @@ mod tests {
             match vector {
                 0 => { cells.remove(0); }
                 1 => { cells.remove(1); }
-                2 => { cells.push(cells[0].clone()); }
-                3 => { cells.push(cells[1].clone()); }
+                2 => { let duplicate = cells[0].clone(); cells.push(duplicate); }
+                3 => { let duplicate = cells[1].clone(); cells.push(duplicate); }
                 4 => { cells[0].pair_id = "unknown-pair".into(); }
                 5 => { cells[0].scenario_id = "other-scenario".into(); }
                 6 => { cells[0].cluster_id = "other-cluster".into(); }
@@ -724,7 +724,7 @@ mod tests {
                 36 => { spec.pseudonym_key_epoch.clear(); }
                 37 => { spec.demand.minimum_offered_requests = 101; }
                 38 => { spec.starts_at_ms = spec.ends_at_ms; }
-                39 => { cells.push(ObservationCell { pair_id: "extra-cell".into(), ..cells[0].clone() }); }
+                39 => { let extra = ObservationCell { pair_id: "extra-cell".into(), ..cells[0].clone() }; cells.push(extra); }
                 40 => { cells[1].scenario_id = "other-scenario".into(); }
                 41 => { cells[1].service = "other-service".into(); }
                 42 => { cells[1].request_class = "other-class".into(); }
