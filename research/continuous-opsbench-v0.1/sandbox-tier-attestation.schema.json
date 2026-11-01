@@ -505,6 +505,119 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "sandbox_tier": {
+            "const": "research"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "isolation_mechanism": {
+            "const": "research_unisolated"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "sandbox_tier": {
+            "enum": [
+              "process",
+              "container",
+              "micro_vm"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "supervisor_key_class": {
+            "const": "hardware_protected"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "physical_coverage": {
+            "const": "complete"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "energy": {
+            "properties": {
+              "cpu_package_microjoules": {
+                "type": "integer"
+              },
+              "sample_start_ms": {
+                "type": "integer"
+              },
+              "sample_end_ms": {
+                "type": "integer"
+              },
+              "uncertainty_ppm": {
+                "type": "integer"
+              },
+              "calibration_profile_digest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "hardware_source_id": {
+                "$ref": "#/$defs/id"
+              },
+              "device_identity_digest": {
+                "$ref": "#/$defs/sha256"
+              },
+              "unavailable_reason": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "physical_coverage": {
+            "const": "not_available"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "energy": {
+            "properties": {
+              "cpu_package_microjoules": {
+                "type": "null"
+              },
+              "gpu_microjoules": {
+                "type": "null"
+              },
+              "sample_start_ms": {
+                "type": "null"
+              },
+              "sample_end_ms": {
+                "type": "null"
+              },
+              "calibration_profile_digest": {
+                "type": "null"
+              },
+              "unavailable_reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }
