@@ -937,7 +937,7 @@ mod tests {
     }
 
     #[test]
-    fn sixty_four_adversarial_mutations_fail_closed() {
+    fn sixty_six_adversarial_mutations_fail_closed() {
         for vector in 0..66 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
             match vector {
