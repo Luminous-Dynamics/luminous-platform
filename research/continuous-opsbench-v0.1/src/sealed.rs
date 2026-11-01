@@ -1205,8 +1205,8 @@ mod tests {
     fn open_lane_can_use_preexisting_scenarios_but_sealed_lane_cannot() {
         let (mut m, commitment, freeze, mut scenarios, mut events) = valid_fixture();
         m.lane = EvaluationLane::OpenDevelopment;
-        scenarios[0].generated_at_ms = 12;
-        scenarios[0].issued_at_ms = 15;
+        scenarios[0].generated_at_ms = 5;
+        scenarios[0].issued_at_ms = 8;
         // The fixture's existing events still bind to the same frozen commitment and case.
         let result = validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events);
         assert!(result.is_ok());
@@ -1260,7 +1260,7 @@ mod tests {
         manifest.lane = EvaluationLane::OpenDevelopment;
         for scenario in &mut scenarios {
             scenario.generated_at_ms = 5;
-            scenario.issued_at_ms = 15;
+            scenario.issued_at_ms = 8;
         }
         assert!(validate_run_ledger(&manifest, &commitment, &freeze, &scenarios, &events).is_ok());
     }
