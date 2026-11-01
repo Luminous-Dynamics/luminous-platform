@@ -65,6 +65,8 @@ pub struct SandboxTrialAttestation {
     pub supervisor_adapter_digest: Digest,
     pub supervisor_key_class: SupervisorKeyClass,
     pub receipt_sequence: u64,
+    pub runtime_instance_digest: Digest,
+    pub writable_state_namespace_digest: Digest,
     pub issued_at_ms: u64,
     pub measurement_start_ms: u64,
     pub measurement_end_ms: u64,
@@ -271,17 +273,21 @@ pub fn validate_sandbox_attestations(
         validate_supervisor_identity(manifest, receipt)?;
         validate_tier_evidence(manifest, receipt)?;
         validate_telemetry(receipt)?;
+        validate_sandbox_coverage_window(receipt, ledger_result)?;
 
         if receipt.receipt_sequence == 0 || !supervisor_sequences.insert(receipt.receipt_sequence) {
             return Err(SandboxAttestationError::DuplicateSupervisorSequence);
         }
         sequence_order.push((receipt.issued_at_ms, receipt.receipt_sequence));
 
-        if !runtime_instances.insert(receipt.session_identity_digest.clone()) {
-            // Session identity is a per-trial logical ID and must be unique.
+        if is_zero(&receipt.runtime_instance_digest)
+            || !runtime_instances.insert(receipt.runtime_instance_digest.clone())
+        {
             return Err(SandboxAttestationError::DuplicateRuntimeInstance);
         }
-        if !state_namespaces.insert(receipt.namespace_digest()) {
+        if is_zero(&receipt.writable_state_namespace_digest)
+            || !state_namespaces.insert(receipt.writable_state_namespace_digest.clone())
+        {
             return Err(SandboxAttestationError::DuplicateStateNamespace);
         }
 
@@ -355,9 +361,11 @@ pub fn validate_sandbox_attestations(
         return Err(SandboxAttestationError::DuplicateSupervisorSequence);
     }
     sequence_order.sort_unstable_by_key(|(issued_at, _)| *issued_at);
-    if sequence_order.iter().enumerate().any(|(index, (_, sequence))| {
-        *sequence != (index as u64) + 1
-    }) {
+    if sequence_order.windows(2).any(|pair| pair[0].0 >= pair[1].0)
+        || sequence_order.iter().enumerate().any(|(index, (_, sequence))| {
+            *sequence != (index as u64) + 1
+        })
+    {
         return Err(SandboxAttestationError::SupervisorSequenceNotContiguous);
     }
 
@@ -388,29 +396,6 @@ pub fn validate_sandbox_attestations(
     })
 }
 
-impl SandboxTrialAttestation {
-    fn namespace_digest(&self) -> Digest {
-        // The writable namespace is represented by mount + network namespace + runtime
-        // profile commitments. It is distinct from a process/session identity.
-        combine_namespace_digests(
-            &self.mount_policy_digest,
-            &self.network_namespace_digest,
-            &self.sandbox_profile_digest,
-        )
-    }
-}
-
-fn combine_namespace_digests(
-    mount: &Option<Digest>,
-    network: &Option<Digest>,
-    profile: &Digest,
-) -> Digest {
-    // This is only an in-memory collision key. It is not a cryptographic commitment.
-    let mut bytes = profile.0;
-    if let Some(v) = mount { for (slot, value) in bytes.iter_mut().zip(v.0.iter()) { *slot ^= value; } }
-    if let Some(v) = network { for (slot, value) in bytes.iter_mut().zip(v.0.iter()) { *slot ^= value; } }
-    Digest(bytes)
-}
 
 fn validate_sandbox_ledger_binding(
     manifest: &RunManifest,
@@ -588,6 +573,8 @@ fn validate_tier_evidence(
                 (&receipt.mount_policy_digest, "guest_mount_policy"),
                 (&receipt.network_namespace_digest, "guest_network_namespace"),
                 (&receipt.dedicated_cpu_set_digest, "dedicated_cpu_set"),
+                (&receipt.cgroup_profile_digest, "resource_cgroup"),
+                (&receipt.tool_subsandbox_digest, "tool_subsandbox"),
             ] {
                 if !required(value) {
                     return Err(SandboxAttestationError::TierEvidenceMissing(
