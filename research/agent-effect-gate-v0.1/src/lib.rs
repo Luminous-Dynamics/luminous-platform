@@ -129,7 +129,7 @@ pub enum GateDenial {
     RiskExceedsManifest, EnvironmentNotAllowed, RevokedGrant, ExpiredGrant,
     GrantBindingMismatch, GrantIssuerMismatch, GrantScopeMismatch, PolicyVersionMismatch,
     MissingRequiredField, AttemptIdReplay, PriorAttemptUnresolved, PermitBindingMismatch,
-    ParticipantEvidenceMismatch, AttemptNotFound,
+    ParticipantEvidenceMismatch, ParticipantLedgerUnavailable, IdempotencyKeyConflict,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -161,20 +161,38 @@ pub enum ParticipantState { NeverAccepted, AcceptedPending, Committed, Rejected,
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ParticipantEvidence {
     pub participant_id: String,
+    pub tenant_id: String,
+    pub idempotency_key: String,
     pub attempt_id: String,
     pub request_digest: Digest,
     pub ledger_cursor: String,
     pub state: ParticipantState,
 }
 
+/// Strong participant-owned index for one logical idempotency key.
+/// latest_attempt=None must mean an authoritative ledger lookup found no prior attempt,
+/// not merely that the participant's local cache did not contain one.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LogicalActionEvidence {
+    pub participant_id: String,
+    pub tenant_id: String,
+    pub idempotency_key: String,
+    pub ledger_cursor: String,
+    pub latest_attempt: Option<ParticipantEvidence>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ParticipantError { TransportOrOutcomeUnknown }
 
-/// The adapter is trusted. NeverAccepted must only follow a strong lookup of this exact attempt.
+/// Participant ledger is authoritative for logical-key and same-attempt reconciliation.
+/// submit() must atomically enforce tenant+idempotency-key+request-digest semantics so
+/// an inspect/submit race cannot produce a duplicate effect.
 pub trait ParticipantPort {
+    fn inspect_logical_action(&mut self, tenant_id: &str, idempotency_key: &str)
+        -> Result<LogicalActionEvidence, ParticipantError>;
     fn submit(&mut self, request: &DispatchRequest) -> Result<ParticipantEvidence, ParticipantError>;
-    fn query_same_attempt(&mut self, attempt_id: &str, request_digest: &Digest)
-        -> Result<ParticipantEvidence, ParticipantError>;
+    fn query_same_attempt(&mut self, tenant_id: &str, idempotency_key: &str,
+        attempt_id: &str, request_digest: &Digest) -> Result<ParticipantEvidence, ParticipantError>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -207,14 +225,6 @@ pub struct ReconcileReport {
     pub evidence: Option<ParticipantEvidence>,
 }
 
-#[derive(Clone, Debug)]
-struct AttemptRecord {
-    attempt_id: String,
-    request_digest: Digest,
-    participant_id: String,
-    status: AttemptStatus,
-}
-
 /// Internal one-use permit. It is non-Clone, non-Serialize, and never exposed to the model.
 struct DispatchPermit {
     request_digest: Digest,
@@ -237,15 +247,15 @@ impl DispatchPermit {
 pub struct EffectBroker<P: ParticipantPort> {
     registry: ManifestRegistry,
     participant: P,
-    attempts: HashMap<(String, String), AttemptRecord>,
+    // This is only an in-process permit-replay guard, not an attempt/effect ledger.
+    // The participant's ledger remains authoritative across process restarts.
     used_attempts: HashSet<(String, String)>,
     receipt_sequence: u64,
 }
 
 impl<P: ParticipantPort> EffectBroker<P> {
     pub fn new(registry: ManifestRegistry, participant: P) -> Self {
-        Self { registry, participant, attempts: HashMap::new(),
-            used_attempts: HashSet::new(), receipt_sequence: 0 }
+        Self { registry, participant, used_attempts: HashSet::new(), receipt_sequence: 0 }
     }
 
     pub fn dispatch(&mut self, proposal: &MutationProposal, grant: Option<&AuthorityGrant>,
@@ -259,13 +269,33 @@ impl<P: ParticipantPort> EffectBroker<P> {
         if self.used_attempts.contains(&attempt_key) {
             return self.denied_report(proposal, GateDenial::AttemptIdReplay);
         }
-        let logical_key = (proposal.tenant_id.clone(), proposal.idempotency_key.clone());
-        if let Some(previous) = self.attempts.get(&logical_key) {
-            let safe_retry = previous.status == AttemptStatus::NeverAccepted
-                && previous.attempt_id != proposal.attempt_id
-                && previous.request_digest == proposal.request_digest
-                && previous.participant_id == manifest.participant_id;
-            if !safe_retry {
+        // Consult the participant-owned logical-action ledger on every dispatch.
+        // No broker-local attempt/effect ledger is created.
+        let logical = match self.participant.inspect_logical_action(
+            &proposal.tenant_id, &proposal.idempotency_key) {
+            Ok(e) => e,
+            Err(_) => return self.denied_report(proposal, GateDenial::ParticipantLedgerUnavailable),
+        };
+        if logical.participant_id != manifest.participant_id
+            || logical.tenant_id != proposal.tenant_id
+            || logical.idempotency_key != proposal.idempotency_key
+            || logical.ledger_cursor.is_empty() {
+            return self.denied_report(proposal, GateDenial::ParticipantEvidenceMismatch);
+        }
+        if let Some(previous) = logical.latest_attempt.as_ref() {
+            if previous.participant_id != manifest.participant_id
+                || previous.tenant_id != proposal.tenant_id
+                || previous.idempotency_key != proposal.idempotency_key
+                || previous.ledger_cursor.is_empty() {
+                return self.denied_report(proposal, GateDenial::ParticipantEvidenceMismatch);
+            }
+            if previous.attempt_id == proposal.attempt_id {
+                return self.denied_report(proposal, GateDenial::AttemptIdReplay);
+            }
+            if previous.request_digest != proposal.request_digest {
+                return self.denied_report(proposal, GateDenial::IdempotencyKeyConflict);
+            }
+            if previous.state != ParticipantState::NeverAccepted {
                 return self.denied_report(proposal, GateDenial::PriorAttemptUnresolved);
             }
         }
@@ -282,14 +312,9 @@ impl<P: ParticipantPort> EffectBroker<P> {
         // Authorization receipt precedes participant dispatch; it does not prove effect.
         let gate_receipt = self.allowed_receipt(proposal);
 
-        // Reserve before calling out. Unknown responses block all new attempts for this key.
+        // Consume this attempt identifier locally before calling out. The participant
+        // ledger, not this broker, persists the authoritative attempt/effect state.
         self.used_attempts.insert(attempt_key);
-        self.attempts.insert(logical_key.clone(), AttemptRecord {
-            attempt_id: proposal.attempt_id.clone(),
-            request_digest: proposal.request_digest.clone(),
-            participant_id: manifest.participant_id.clone(),
-            status: AttemptStatus::OutcomeUnknown,
-        });
 
         let request = DispatchRequest {
             participant_id: manifest.participant_id.clone(),
@@ -307,42 +332,40 @@ impl<P: ParticipantPort> EffectBroker<P> {
         let (status, evidence) = match self.participant.submit(&request) {
             Ok(e) if self.evidence_matches(&e, &manifest, proposal)
                 && e.state != ParticipantState::NeverAccepted
-                && e.state != ParticipantState::Unknown => {
-                    let s = map_state(e.state);
-                    self.set_attempt_status(&logical_key, s);
-                    (s, Some(e))
-                }
+                && e.state != ParticipantState::Unknown => (map_state(e.state), Some(e)),
             _ => (AttemptStatus::OutcomeUnknown, None),
         };
         DispatchReport { gate_receipt, participant_status: Some(status),
             participant_evidence: evidence }
     }
 
-    /// Query only the exact previous attempt. NeverAccepted is the only retry-unlocking state.
-    pub fn reconcile_same_attempt(&mut self, tenant_id: &str, idempotency_key: &str,
-        attempt_id: &str, request_digest: &Digest) -> Result<ReconcileReport, GateDenial> {
-        let key = (tenant_id.to_owned(), idempotency_key.to_owned());
-        let record = self.attempts.get(&key).ok_or(GateDenial::AttemptNotFound)?;
-        if record.attempt_id != attempt_id || &record.request_digest != request_digest {
-            return Err(GateDenial::ParticipantEvidenceMismatch);
-        }
-        let participant_id = record.participant_id.clone();
-        let previous_status = record.status;
-        let evidence = self.participant.query_same_attempt(attempt_id, request_digest)
+    /// Query the exact attempt, then cross-check it against the participant's current
+    /// logical-key index. The broker stores no participant attempt history itself.
+    pub fn reconcile_same_attempt(&mut self, participant_id: &str, tenant_id: &str,
+        idempotency_key: &str, attempt_id: &str, request_digest: &Digest)
+        -> Result<ReconcileReport, GateDenial> {
+        let evidence = self.participant.query_same_attempt(
+            tenant_id, idempotency_key, attempt_id, request_digest)
             .map_err(|_| GateDenial::ParticipantEvidenceMismatch)?;
-        if evidence.participant_id != participant_id || evidence.attempt_id != attempt_id
+        if evidence.participant_id != participant_id || evidence.tenant_id != tenant_id
+            || evidence.idempotency_key != idempotency_key || evidence.attempt_id != attempt_id
             || &evidence.request_digest != request_digest || evidence.ledger_cursor.is_empty() {
             return Err(GateDenial::ParticipantEvidenceMismatch);
         }
-        let status = map_state(evidence.state);
-        // A later NeverAccepted assertion cannot erase earlier authoritative evidence
-        // that this same attempt was accepted, rejected after admission, or committed.
-        if status == AttemptStatus::NeverAccepted
-            && previous_status != AttemptStatus::OutcomeUnknown
-            && previous_status != AttemptStatus::NeverAccepted {
+        let logical = self.participant.inspect_logical_action(tenant_id, idempotency_key)
+            .map_err(|_| GateDenial::ParticipantLedgerUnavailable)?;
+        if logical.participant_id != participant_id || logical.tenant_id != tenant_id
+            || logical.idempotency_key != idempotency_key || logical.ledger_cursor.is_empty() {
             return Err(GateDenial::ParticipantEvidenceMismatch);
         }
-        self.set_attempt_status(&key, status);
+        let latest = logical.latest_attempt.ok_or(GateDenial::ParticipantEvidenceMismatch)?;
+        if latest.participant_id != participant_id || latest.tenant_id != tenant_id
+            || latest.idempotency_key != idempotency_key || latest.attempt_id != attempt_id
+            || latest.request_digest != *request_digest || latest.state != evidence.state
+            || latest.ledger_cursor != evidence.ledger_cursor {
+            return Err(GateDenial::ParticipantEvidenceMismatch);
+        }
+        let status = map_state(evidence.state);
         Ok(ReconcileReport { status, evidence: Some(evidence) })
     }
 
@@ -400,12 +423,9 @@ impl<P: ParticipantPort> EffectBroker<P> {
 
     fn evidence_matches(&self, e: &ParticipantEvidence, m: &ToolManifest,
         p: &MutationProposal) -> bool {
-        e.participant_id == m.participant_id && e.attempt_id == p.attempt_id
+        e.participant_id == m.participant_id && e.tenant_id == p.tenant_id
+            && e.idempotency_key == p.idempotency_key && e.attempt_id == p.attempt_id
             && e.request_digest == p.request_digest && !e.ledger_cursor.is_empty()
-    }
-
-    fn set_attempt_status(&mut self, key: &(String, String), status: AttemptStatus) {
-        if let Some(record) = self.attempts.get_mut(key) { record.status = status; }
     }
 
     fn next_receipt_sequence(&mut self) -> u64 {
@@ -449,20 +469,48 @@ mod tests {
     struct FakeParticipant {
         submit_result: Result<ParticipantEvidence, ParticipantError>,
         query_result: Result<ParticipantEvidence, ParticipantError>,
+        logical_action: LogicalActionEvidence,
         submit_calls: usize,
     }
 
     impl ParticipantPort for FakeParticipant {
-        fn submit(&mut self, _r: &DispatchRequest) -> Result<ParticipantEvidence, ParticipantError> {
-            self.submit_calls += 1;
-            self.submit_result.clone()
+        fn inspect_logical_action(&mut self, tenant: &str, key: &str)
+            -> Result<LogicalActionEvidence, ParticipantError> {
+            if self.logical_action.tenant_id != tenant || self.logical_action.idempotency_key != key {
+                return Err(ParticipantError::TransportOrOutcomeUnknown);
+            }
+            Ok(self.logical_action.clone())
         }
-        fn query_same_attempt(&mut self, _a: &str, _d: &Digest)
-            -> Result<ParticipantEvidence, ParticipantError> { self.query_result.clone() }
+        fn submit(&mut self, r: &DispatchRequest) -> Result<ParticipantEvidence, ParticipantError> {
+            self.submit_calls += 1;
+            let result = self.submit_result.clone();
+            let observed = match &result {
+                Ok(e) => e.clone(),
+                Err(_) => ParticipantEvidence {
+                    participant_id: r.participant_id.clone(), tenant_id: r.tenant_id.clone(),
+                    idempotency_key: r.idempotency_key.clone(), attempt_id: r.attempt_id.clone(),
+                    request_digest: r.request_digest.clone(), ledger_cursor: "ledger:2".into(),
+                    state: ParticipantState::Unknown,
+                },
+            };
+            self.logical_action.ledger_cursor = observed.ledger_cursor.clone();
+            self.logical_action.latest_attempt = Some(observed);
+            result
+        }
+        fn query_same_attempt(&mut self, _tenant: &str, _key: &str, _a: &str, _d: &Digest)
+            -> Result<ParticipantEvidence, ParticipantError> {
+            let result = self.query_result.clone();
+            if let Ok(e) = &result {
+                self.logical_action.ledger_cursor = e.ledger_cursor.clone();
+                self.logical_action.latest_attempt = Some(e.clone());
+            }
+            result
+        }
     }
 
     fn evidence(attempt: &str, digest: Digest, state: ParticipantState) -> ParticipantEvidence {
-        ParticipantEvidence { participant_id: "participant-a".into(), attempt_id: attempt.into(),
+        ParticipantEvidence { participant_id: "participant-a".into(), tenant_id: "tenant-a".into(),
+            idempotency_key: "logical-action-1".into(), attempt_id: attempt.into(),
             request_digest: digest, ledger_cursor: "ledger:1".into(), state }
     }
 
@@ -507,6 +555,9 @@ mod tests {
         let participant = FakeParticipant {
             submit_result: Ok(evidence("attempt-1", Digest::from_byte(4), ParticipantState::Committed)),
             query_result: Ok(evidence("attempt-1", Digest::from_byte(4), ParticipantState::NeverAccepted)),
+            logical_action: LogicalActionEvidence { participant_id: "participant-a".into(),
+                tenant_id: "tenant-a".into(), idempotency_key: "logical-action-1".into(),
+                ledger_cursor: "ledger:0".into(), latest_attempt: None },
             submit_calls: 0,
         };
         (EffectBroker::new(registry, participant), proposal, grant, context)
@@ -551,8 +602,8 @@ mod tests {
         let mut g2 = g.clone(); g2.attempt_id = "attempt-2".into();
         let blocked = b.dispatch(&p2, Some(&g2), c);
         assert_eq!(blocked.gate_receipt.decision(), GateDecision::Denied(GateDenial::PriorAttemptUnresolved));
-        let reconciled = b.reconcile_same_attempt("tenant-a", "logical-action-1", "attempt-1",
-            &Digest::from_byte(4)).unwrap();
+        let reconciled = b.reconcile_same_attempt("participant-a", "tenant-a",
+            "logical-action-1", "attempt-1", &Digest::from_byte(4)).unwrap();
         assert_eq!(reconciled.status, AttemptStatus::NeverAccepted);
         let allowed = b.dispatch(&p2, Some(&g2), c);
         assert_eq!(allowed.gate_receipt.decision(), GateDecision::Allowed);
@@ -569,7 +620,7 @@ mod tests {
         let mut p2 = p.clone(); p2.attempt_id = "attempt-2".into();
         let mut g2 = g.clone(); g2.attempt_id = "attempt-2".into();
         let blocked = b.dispatch(&p2, Some(&g2), c);
-        assert_eq!(blocked.gate_receipt.decision(), GateDecision::Denied(GateDenial::PriorAttemptUnresolved));
+        assert_eq!(blocked.gate_receipt.decision(), GateDecision::Denied(GateDenial::ParticipantEvidenceMismatch));
     }
 
     #[test]
@@ -681,8 +732,8 @@ mod tests {
         let dispatched = b.dispatch(&p, Some(&g), c);
         assert_eq!(dispatched.participant_status, Some(AttemptStatus::Committed));
         // Simulate a faulty or contradictory participant query result.
-        let result = b.reconcile_same_attempt("tenant-a", "logical-action-1", "attempt-1",
-            &Digest::from_byte(4));
+        let result = b.reconcile_same_attempt("participant-a", "tenant-a",
+            "logical-action-1", "attempt-1", &Digest::from_byte(4));
         assert_eq!(result, Err(GateDenial::ParticipantEvidenceMismatch));
     }
 
@@ -691,9 +742,9 @@ mod tests {
         let (mut b, p, g, c) = fixture();
         b.participant.submit_result = Err(ParticipantError::TransportOrOutcomeUnknown);
         let _ = b.dispatch(&p, Some(&g), c);
-        assert_eq!(b.reconcile_same_attempt("tenant-a", "logical-action-1", "wrong",
-            &Digest::from_byte(4)), Err(GateDenial::ParticipantEvidenceMismatch));
-        assert_eq!(b.reconcile_same_attempt("tenant-a", "logical-action-1", "attempt-1",
-            &Digest::from_byte(8)), Err(GateDenial::ParticipantEvidenceMismatch));
+        assert_eq!(b.reconcile_same_attempt("participant-a", "tenant-a", "logical-action-1",
+            "wrong", &Digest::from_byte(4)), Err(GateDenial::ParticipantEvidenceMismatch));
+        assert_eq!(b.reconcile_same_attempt("participant-a", "tenant-a", "logical-action-1",
+            "attempt-1", &Digest::from_byte(8)), Err(GateDenial::ParticipantEvidenceMismatch));
     }
 }
