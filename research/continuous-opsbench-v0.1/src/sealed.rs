@@ -245,6 +245,9 @@ pub struct RunLedgerSummary {
     pub state_isolation_policy_digest: Digest,
     pub artifact_access_policy_digest: Digest,
     pub network_egress_policy_digest: Digest,
+    pub runtime_observer_source_id: String,
+    pub runtime_observer_control_domain: String,
+    pub runtime_observer_adapter_digest: Digest,
     pub trials: Vec<TrialResult>,
 }
 
