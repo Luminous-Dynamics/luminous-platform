@@ -41,7 +41,7 @@ Every planned trial must have one terminal disposition. The validator counts:
 
 A started attempt must have exactly one terminal event. Attempts are sequential, bounded by the preregistered maximum, and a retry is allowed only after the previous attempt failed. Completion or invalidation cannot be followed by another attempt. A skipped trial is represented explicitly with attempt zero. Missing events, duplicate event IDs, extra trials, substituted digests, foreign sources, or incomplete attempt histories are rejected; none can disappear from the denominator.
 
-The cluster ID is retained so statistical inference can resample independent scenario/fault-schedule/topology clusters rather than treating requests or repeated attempts as independent samples.
+The cluster ID is retained so statistical inference can resample independent scenario/fault-schedule/topology clusters rather than treating requests or repeated attempts as independent samples. Both arms share the same case receipt and planned cluster, but their events bind to distinct frozen identity digests. Resource and execution-environment digests are part of the freeze protocol and must be identical across the two arms.
 
 ## Evidence and trust boundaries
 
@@ -70,8 +70,9 @@ The oracle_commitment is not an instruction to expose oracle bytes to the agent.
 ## Statistical reporting contract
 
 This ledger does not compute a leaderboard score. It produces the full denominator and outcome distribution. Reports should separately provide:
-- completed / failed / skipped / invalidated trials;
-- declared and executed attempt counts;
+- completed / failed / skipped / invalidated trials, separately for Candidate and Baseline;
+- candidate/baseline paired differences by preregistered cluster;
+- declared and executed attempt counts per arm;
 - cluster count and cluster-aware uncertainty;
 - paired candidate/baseline outcome differences on the exact same planned clusters;
 - task success, independently verified service recovery, safety, evidence completeness, calibration, cost, wall-clock time, and human-active time.
@@ -85,6 +86,7 @@ Safety outcomes remain non-compensatory. Unauthorized committed effects, duplica
 The Rust conformance tests cover:
 - valid completed/failed/retried/skipped/invalidated accounting;
 - exact candidate, baseline, and evaluator identity binding;
+- complete one-to-one Candidate/Baseline trial coverage with the same scenario commitment;
 - strict post-freeze case generation for the sealed lane;
 - pre-retired case timing and exact post-retirement reveals for the reproducibility lane;
 - missing/duplicate/unplanned scenarios, reveals and events;
