@@ -198,7 +198,10 @@
         "trials",
         "execution_environment_digest",
         "resource_budget_digest",
-        "arm_order_schedule_digest"
+        "arm_order_schedule_digest",
+        "state_isolation_policy_digest",
+        "artifact_access_policy_digest",
+        "network_egress_policy_digest"
       ],
       "properties": {
         "schema": {
@@ -271,6 +274,15 @@
         },
         "arm_order_schedule_digest": {
           "$ref": "#/$defs/sha256"
+        },
+        "state_isolation_policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "artifact_access_policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "network_egress_policy_digest": {
+          "$ref": "#/$defs/sha256"
         }
       }
     },
@@ -289,7 +301,10 @@
         "publisher_control_domain",
         "execution_environment_digest",
         "resource_budget_digest",
-        "arm_order_schedule_digest"
+        "arm_order_schedule_digest",
+        "state_isolation_policy_digest",
+        "artifact_access_policy_digest",
+        "network_egress_policy_digest"
       ],
       "properties": {
         "run_id": {
@@ -328,6 +343,15 @@
           "$ref": "#/$defs/sha256"
         },
         "arm_order_schedule_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "state_isolation_policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "artifact_access_policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "network_egress_policy_digest": {
           "$ref": "#/$defs/sha256"
         }
       }
