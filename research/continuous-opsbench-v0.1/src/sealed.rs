@@ -553,6 +553,7 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         || manifest.runtime_observer_control_domain == manifest.freeze_authority_control_domain
         || manifest.runtime_observer_control_domain == manifest.evaluator_control_domain
         || manifest.runtime_observer_control_domain == manifest.evidence_control_domain
+        || manifest.runtime_observer_source_id == manifest.evidence_source_id
         || digest_is_zero(&manifest.runtime_observer_adapter_digest)
         || digest_is_zero(&manifest.evaluator_digest)
         || digest_is_zero(&manifest.execution_environment_digest)
@@ -581,7 +582,7 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
     Ok(())
 }
 
-fn validate_freeze_receipt(
+pub(crate) fn validate_freeze_receipt(
     manifest: &RunManifest,
     expected_commitment: &Digest,
     receipt: &FreezeReceipt,
