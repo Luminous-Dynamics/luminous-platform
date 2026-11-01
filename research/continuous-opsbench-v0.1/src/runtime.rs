@@ -952,6 +952,26 @@ mod tests {
     }
 
     #[test]
+    fn forged_ledger_cluster_count_is_rejected_before_runtime_receipts_are_credited() {
+        let (manifest, freeze, mut ledger, scenarios, attestations) = fixture();
+        ledger.unique_clusters = 1;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::LedgerManifestMismatch)
+        );
+    }
+
+    #[test]
+    fn missing_first_attempt_timestamp_cannot_shrink_runtime_coverage() {
+        let (manifest, freeze, mut ledger, scenarios, attestations) = fixture();
+        ledger.trials[0].first_started_at_ms = None;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::LedgerTrialSummaryMismatch)
+        );
+    }
+
+    #[test]
     fn challenge_nonce_is_unique_and_must_be_fresh_after_freeze() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[1].challenge_nonce_digest = attestations[0].challenge_nonce_digest.clone();
