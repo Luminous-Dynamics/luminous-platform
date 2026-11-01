@@ -1,0 +1,510 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-sandbox-attestation-v0.1.json",
+  "title": "Continuous OpsBench tiered sandbox and telemetry attestation v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "run_id",
+    "trial_id",
+    "arm",
+    "arm_identity_digest",
+    "scenario_commitment",
+    "manifest_commitment",
+    "sandbox_tier",
+    "sandbox_profile_digest",
+    "supervisor_id",
+    "supervisor_source_id",
+    "supervisor_control_domain",
+    "supervisor_adapter_digest",
+    "supervisor_key_class",
+    "receipt_sequence",
+    "runtime_instance_digest",
+    "writable_state_namespace_digest",
+    "issued_at_ms",
+    "measurement_start_ms",
+    "measurement_end_ms",
+    "clock_uncertainty_ms",
+    "host_os",
+    "host_architecture",
+    "host_kernel_digest",
+    "hardware_identity_digest",
+    "isolation_mechanism",
+    "runtime_version",
+    "seccomp_profile_digest",
+    "namespace_profile_digest",
+    "cgroup_profile_digest",
+    "container_image_digest",
+    "mount_policy_digest",
+    "network_namespace_digest",
+    "tool_subsandbox_digest",
+    "hypervisor_digest",
+    "guest_kernel_digest",
+    "dedicated_cpu_set_digest",
+    "accelerator_assignment_digest",
+    "logical_coverage",
+    "session_identity_digest",
+    "harness_identity_digest",
+    "transcript_commitment",
+    "input_seed_commitment",
+    "tool_call_count",
+    "input_tokens",
+    "output_tokens",
+    "resource_coverage",
+    "wallclock_ms",
+    "cpu_time_ns",
+    "peak_memory_bytes",
+    "disk_read_bytes",
+    "disk_write_bytes",
+    "network_rx_bytes",
+    "network_tx_bytes",
+    "accelerator_utilization_ppm",
+    "accelerator_memory_bytes",
+    "retry_count",
+    "physical_coverage",
+    "energy"
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "digestOrNull": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "coverage": {
+      "enum": [
+        "complete",
+        "not_available",
+        "partial",
+        "unknown",
+        "tampered"
+      ]
+    },
+    "energy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cpu_package_microjoules",
+        "gpu_microjoules",
+        "sample_start_ms",
+        "sample_end_ms",
+        "uncertainty_ppm",
+        "calibration_profile_digest",
+        "hardware_source_id",
+        "device_identity_digest",
+        "unavailable_reason"
+      ],
+      "properties": {
+        "cpu_package_microjoules": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "gpu_microjoules": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "sample_start_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "sample_end_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "uncertainty_ppm": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "calibration_profile_digest": {
+          "$ref": "#/$defs/digestOrNull"
+        },
+        "hardware_source_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "device_identity_digest": {
+          "$ref": "#/$defs/digestOrNull"
+        },
+        "unavailable_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-sandbox-attestation-v0.1"
+    },
+    "run_id": {
+      "$ref": "#/$defs/id"
+    },
+    "trial_id": {
+      "$ref": "#/$defs/id"
+    },
+    "arm": {
+      "enum": [
+        "candidate",
+        "baseline"
+      ]
+    },
+    "arm_identity_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "scenario_commitment": {
+      "$ref": "#/$defs/sha256"
+    },
+    "manifest_commitment": {
+      "$ref": "#/$defs/sha256"
+    },
+    "sandbox_tier": {
+      "enum": [
+        "research",
+        "process",
+        "container",
+        "micro_vm"
+      ]
+    },
+    "sandbox_profile_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "supervisor_id": {
+      "$ref": "#/$defs/id"
+    },
+    "supervisor_source_id": {
+      "$ref": "#/$defs/id"
+    },
+    "supervisor_control_domain": {
+      "$ref": "#/$defs/id"
+    },
+    "supervisor_adapter_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "supervisor_key_class": {
+      "enum": [
+        "software_test_only",
+        "hardware_protected"
+      ]
+    },
+    "receipt_sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "runtime_instance_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "writable_state_namespace_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "issued_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "measurement_start_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "measurement_end_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "clock_uncertainty_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000
+    },
+    "host_os": {
+      "$ref": "#/$defs/id"
+    },
+    "host_architecture": {
+      "$ref": "#/$defs/id"
+    },
+    "host_kernel_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "hardware_identity_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "isolation_mechanism": {
+      "enum": [
+        "research_unisolated",
+        "seccomp_process",
+        "gvisor_process",
+        "container_runtime",
+        "gvisor_container",
+        "firecracker",
+        "cloud_hypervisor",
+        "crosvm"
+      ]
+    },
+    "runtime_version": {
+      "$ref": "#/$defs/id"
+    },
+    "seccomp_profile_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "namespace_profile_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "cgroup_profile_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "container_image_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "mount_policy_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "network_namespace_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "tool_subsandbox_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "hypervisor_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "guest_kernel_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "dedicated_cpu_set_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "accelerator_assignment_digest": {
+      "$ref": "#/$defs/digestOrNull"
+    },
+    "logical_coverage": {
+      "$ref": "#/$defs/coverage"
+    },
+    "session_identity_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "harness_identity_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "transcript_commitment": {
+      "$ref": "#/$defs/sha256"
+    },
+    "input_seed_commitment": {
+      "$ref": "#/$defs/sha256"
+    },
+    "tool_call_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "input_tokens": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "output_tokens": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "resource_coverage": {
+      "$ref": "#/$defs/coverage"
+    },
+    "wallclock_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cpu_time_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "peak_memory_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "disk_read_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "disk_write_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "network_rx_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "network_tx_bytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "accelerator_utilization_ppm": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "accelerator_memory_bytes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "retry_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "physical_coverage": {
+      "$ref": "#/$defs/coverage"
+    },
+    "energy": {
+      "$ref": "#/$defs/energy"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "sandbox_tier": {
+            "const": "process"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "isolation_mechanism": {
+            "enum": [
+              "seccomp_process",
+              "gvisor_process"
+            ]
+          },
+          "seccomp_profile_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "namespace_profile_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "cgroup_profile_digest": {
+            "$ref": "#/$defs/sha256"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "sandbox_tier": {
+            "const": "container"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "isolation_mechanism": {
+            "enum": [
+              "container_runtime",
+              "gvisor_container"
+            ]
+          },
+          "container_image_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "mount_policy_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "network_namespace_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "cgroup_profile_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "tool_subsandbox_digest": {
+            "$ref": "#/$defs/sha256"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "sandbox_tier": {
+            "const": "micro_vm"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "isolation_mechanism": {
+            "enum": [
+              "firecracker",
+              "cloud_hypervisor",
+              "crosvm"
+            ]
+          },
+          "hypervisor_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "guest_kernel_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "mount_policy_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "network_namespace_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "cgroup_profile_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "tool_subsandbox_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "dedicated_cpu_set_digest": {
+            "$ref": "#/$defs/sha256"
+          },
+          "supervisor_key_class": {
+            "const": "hardware_protected"
+          },
+          "physical_coverage": {
+            "const": "complete"
+          }
+        }
+      }
+    }
+  ]
+}
