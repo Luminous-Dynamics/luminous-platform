@@ -58,6 +58,8 @@ pub struct SandboxTrialAttestation {
     pub arm_identity_digest: Digest,
     pub scenario_commitment: Digest,
     pub manifest_commitment: Digest,
+    pub execution_environment_digest: Digest,
+    pub resource_budget_digest: Digest,
     pub sandbox_tier: SandboxTier,
     pub sandbox_profile_digest: Digest,
     pub supervisor_id: String,
@@ -424,6 +426,8 @@ fn validate_attestation_binding(
         || receipt.scenario_commitment != scenario.case_payload_commitment
         || receipt.manifest_commitment != *expected_manifest_commitment
         || scenario.manifest_commitment != *expected_manifest_commitment
+        || receipt.execution_environment_digest != manifest.execution_environment_digest
+        || receipt.resource_budget_digest != manifest.resource_budget_digest
         || receipt.sandbox_tier != manifest.sandbox_tier
         || receipt.sandbox_profile_digest != manifest.sandbox_profile_digest
         || receipt.supervisor_id != manifest.supervisor_id
@@ -946,6 +950,8 @@ mod tests {
             arm_identity_digest,
             scenario_commitment: scenario.case_payload_commitment.clone(),
             manifest_commitment: scenario.manifest_commitment.clone(),
+            execution_environment_digest: manifest.execution_environment_digest.clone(),
+            resource_budget_digest: manifest.resource_budget_digest.clone(),
             sandbox_tier: manifest.sandbox_tier,
             sandbox_profile_digest: manifest.sandbox_profile_digest.clone(),
             supervisor_id: manifest.supervisor_id.clone(),
@@ -1043,6 +1049,27 @@ mod tests {
                 if tier == SandboxTier::MicroVm { Some(200) } else { None }
             );
         }
+    }
+
+    #[test]
+    fn supervisor_receipt_repeats_exact_environment_and_budget_digests() {
+        let fixture = fixture(SandboxTier::Process);
+        let mut receipts = fixture.5.clone();
+        receipts[0].execution_environment_digest = d(99);
+        assert_eq!(
+            validate(&fixture, &receipts),
+            Err(SandboxAttestationError::AttestationBindingMismatch(
+                "trial-1".into(), EvaluationArm::Candidate
+            ))
+        );
+        let mut receipts = fixture.5.clone();
+        receipts[0].resource_budget_digest = d(98);
+        assert_eq!(
+            validate(&fixture, &receipts),
+            Err(SandboxAttestationError::AttestationBindingMismatch(
+                "trial-1".into(), EvaluationArm::Candidate
+            ))
+        );
     }
 
     #[test]
