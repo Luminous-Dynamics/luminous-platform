@@ -55,6 +55,8 @@ pub struct PlannedTrial {
     pub trial_id: String,
     /// Independent resampling unit: fault schedule × topology × application cluster.
     pub cluster_id: String,
+    /// Precommitted first arm. Both arms execute against the same case and budget.
+    pub first_arm: EvaluationArm,
     /// Maximum declared attempts, including the first attempt.
     pub maximum_attempts: u16,
 }
@@ -269,6 +271,7 @@ pub enum SealedRunError {
     EventBeforeScenarioIssue(String),
     MissingTrialDisposition(String),
     MissingArmTrialDisposition(String, EvaluationArm),
+    ArmExecutionOrderMismatch(String),
     InvalidAttemptSequence(String),
     AttemptBeyondDeclaration(String),
     DuplicateAttemptStart(String),
@@ -401,6 +404,7 @@ pub fn validate_run_ledger_with_reveals(
 
     for trial in &manifest.trials {
         let scenario = scenario_index[trial.trial_id.as_str()];
+        let mut trial_arm_results = Vec::with_capacity(2);
         for arm in [EvaluationArm::Candidate, EvaluationArm::Baseline] {
             let trial_events = events_by_trial.get(&(trial.trial_id.as_str(), arm))
                 .map(Vec::as_slice).unwrap_or(&[]);
@@ -418,8 +422,24 @@ pub fn validate_run_ledger_with_reveals(
                 TrialDisposition::Skipped => { skipped += 1; arm_summary.skipped_trials += 1; }
                 TrialDisposition::Invalidated => { invalidated += 1; arm_summary.invalidated_trials += 1; }
             }
-            results.push(result);
+            trial_arm_results.push(result);
         }
+        let candidate_result = trial_arm_results.iter()
+            .find(|result| result.arm == EvaluationArm::Candidate).unwrap();
+        let baseline_result = trial_arm_results.iter()
+            .find(|result| result.arm == EvaluationArm::Baseline).unwrap();
+        let candidate_first_activity = candidate_result.first_started_at_ms
+            .unwrap_or(candidate_result.terminal_at_ms);
+        let baseline_first_activity = baseline_result.first_started_at_ms
+            .unwrap_or(baseline_result.terminal_at_ms);
+        let arm_order_valid = match trial.first_arm {
+            EvaluationArm::Candidate => candidate_first_activity < baseline_first_activity,
+            EvaluationArm::Baseline => baseline_first_activity < candidate_first_activity,
+        };
+        if !arm_order_valid {
+            return Err(SealedRunError::ArmExecutionOrderMismatch(trial.trial_id.clone()));
+        }
+        results.extend(trial_arm_results);
     }
 
     Ok(RunLedgerSummary {
@@ -902,9 +922,9 @@ mod tests {
             evidence_source_id: "independent-ledger".into(),
             evidence_control_domain: "evidence-domain".into(),
             trials: vec![
-                PlannedTrial { trial_id: "trial-a".into(), cluster_id: "cluster-1".into(), maximum_attempts: 2 },
-                PlannedTrial { trial_id: "trial-b".into(), cluster_id: "cluster-2".into(), maximum_attempts: 1 },
-                PlannedTrial { trial_id: "trial-c".into(), cluster_id: "cluster-2".into(), maximum_attempts: 1 },
+                PlannedTrial { trial_id: "trial-a".into(), cluster_id: "cluster-1".into(), first_arm: EvaluationArm::Candidate, maximum_attempts: 2 },
+                PlannedTrial { trial_id: "trial-b".into(), cluster_id: "cluster-2".into(), first_arm: EvaluationArm::Baseline, maximum_attempts: 1 },
+                PlannedTrial { trial_id: "trial-c".into(), cluster_id: "cluster-2".into(), first_arm: EvaluationArm::Candidate, maximum_attempts: 1 },
             ],
         };
         let freeze = FreezeReceipt {
@@ -1019,18 +1039,18 @@ mod tests {
             event(&m, &commitment, &scenarios[0], "trial-a", "a-1-fail", 1, 50, TrialEventKind::Failed),
             event(&m, &commitment, &scenarios[0], "trial-a", "a-2-start", 2, 60, TrialEventKind::Started),
             event(&m, &commitment, &scenarios[0], "trial-a", "a-2-done", 2, 70, TrialEventKind::Completed),
-            event(&m, &commitment, &scenarios[1], "trial-b", "b-skip", 0, 35, TrialEventKind::Skipped),
+            event(&m, &commitment, &scenarios[1], "trial-b", "b-skip", 0, 36, TrialEventKind::Skipped),
             event(&m, &commitment, &scenarios[2], "trial-c", "c-start", 1, 40, TrialEventKind::Started),
             event(&m, &commitment, &scenarios[2], "trial-c", "c-invalid", 1, 45, TrialEventKind::Invalidated),
         ];
         events.extend(vec![
-            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-1-start", 1, 40, TrialEventKind::Started, EvaluationArm::Baseline),
-            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-1-fail", 1, 50, TrialEventKind::Failed, EvaluationArm::Baseline),
-            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-2-start", 2, 60, TrialEventKind::Started, EvaluationArm::Baseline),
-            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-2-done", 2, 70, TrialEventKind::Completed, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-1-start", 1, 41, TrialEventKind::Started, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-1-fail", 1, 51, TrialEventKind::Failed, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-2-start", 2, 61, TrialEventKind::Started, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-2-done", 2, 71, TrialEventKind::Completed, EvaluationArm::Baseline),
             event_for_arm(&m, &commitment, &scenarios[1], "trial-b", "base-b-skip", 0, 35, TrialEventKind::Skipped, EvaluationArm::Baseline),
-            event_for_arm(&m, &commitment, &scenarios[2], "trial-c", "base-c-start", 1, 40, TrialEventKind::Started, EvaluationArm::Baseline),
-            event_for_arm(&m, &commitment, &scenarios[2], "trial-c", "base-c-invalid", 1, 45, TrialEventKind::Invalidated, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[2], "trial-c", "base-c-start", 1, 41, TrialEventKind::Started, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[2], "trial-c", "base-c-invalid", 1, 46, TrialEventKind::Invalidated, EvaluationArm::Baseline),
         ]);
         events.reverse(); // input order is not trusted; event timestamps/attempts are.
         (m, commitment, freeze, scenarios, events)
