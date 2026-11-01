@@ -906,7 +906,7 @@ mod tests {
         broker: &mut VerifiedEffectBroker<FakeParticipant, FakeVerifier, FakeClock, FakeReplayGuard>,
     ) {
         match index {
-            0 => broker.attestation_verifier.broker.attestation_verifier.results[0].payload.role = EvidenceRole::Manifest,
+            0 => broker.attestation_verifier.results[0].payload.role = EvidenceRole::Manifest,
             1 => broker.attestation_verifier.results[2].payload.schema_version.push_str("-old"),
             2 => broker.attestation_verifier.results[0].payload.evidence_id.clear(),
             3 => broker.attestation_verifier.results[0].payload.subject_digest = Digest::ZERO,
