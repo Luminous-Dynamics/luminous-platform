@@ -65,3 +65,12 @@ The validator is structural only. The typed source-evidence adapter must authent
 The runtime validator in `src/runtime.rs` requires complete per-arm process, mount, filesystem, egress and event-stream commitments, and a unique one-use challenge nonce issued after the run freeze. It binds the runtime observer and challenge authority to distinct frozen trust domains. See `RUNTIME_ENFORCEMENT_V0_1.md` and `runtime-trial-attestation.schema.json`.
 
 This is still structural validation. The typed source-evidence adapter must authenticate challenge and receipt publishers, validate the subject and freshness, and consume nonces through durable anti-replay state. The runtime adapter must independently prove telemetry coverage and enforcement; a receipt field cannot prove that a hook remained attached or that a compromised kernel did not suppress events.
+
+
+### Tiered sandbox assurance
+
+The sealed run freezes a sandbox tier, profile digest, Supervisor identity/source/control domain/adapter and key-protection class. The new `src/sandbox.rs` requires tier-specific host/runtime evidence for Research, Process, Container and MicroVM; distinct runtime and writable-state identities; complete logical/resource telemetry; and explicit physical-energy coverage. The strict schema is `sandbox-tier-attestation.schema.json`, with claim ceilings and industry references in `SANDBOX_TIERS_AND_RESOURCE_TELEMETRY_V0_1.md`.
+
+Tier labels do not grant score bonuses and are never aggregated into a single leaderboard. Energy is reported only where the measured interval, hardware identity, source, calibration profile and uncertainty are present. Unsupported sensors are unavailable, not zero. This validator is structural; it does not provision or certify an actual kernel/hypervisor boundary.
+
+Every per-trial Supervisor attestation explicitly repeats the frozen execution-environment and resource-budget digests and is rejected if either differs from the manifest.
