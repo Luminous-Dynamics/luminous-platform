@@ -8,6 +8,7 @@ pub mod impact;
 pub mod sealed;
 pub mod runtime;
 pub mod sandbox;
+pub mod bundle;
 
 use std::collections::{BTreeMap, BTreeSet};
 
