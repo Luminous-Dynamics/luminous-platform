@@ -14,7 +14,7 @@
     }
   },
   "$defs": {
-    "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "id": { "type": "string", "minLength": 1, "maxLength": 256 },
     "event": {
       "type": "object",
