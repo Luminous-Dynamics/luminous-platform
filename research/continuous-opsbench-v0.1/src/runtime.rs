@@ -82,6 +82,9 @@ pub struct RuntimeTrialEvidence {
     pub arm: EvaluationArm,
     pub runtime_instance_digest: Digest,
     pub writable_state_namespace_digest: Digest,
+    pub challenge_nonce_digest: Digest,
+    pub challenge_issued_at_ms: u64,
+    pub challenge_expires_at_ms: u64,
     pub receipt_sequence: u64,
     pub measurement_start_ms: u64,
     pub measurement_end_ms: u64,
@@ -97,6 +100,8 @@ pub struct RuntimeAttestationSummary {
     pub runtime_observer_source_id: String,
     pub runtime_observer_control_domain: String,
     pub runtime_observer_adapter_digest: Digest,
+    pub runtime_challenge_authority_id: String,
+    pub runtime_challenge_authority_control_domain: String,
     pub evidence: Vec<RuntimeTrialEvidence>,
 }
 
@@ -376,6 +381,9 @@ pub fn validate_runtime_attestations(
             arm: receipt.arm,
             runtime_instance_digest: receipt.runtime_instance_digest.clone(),
             writable_state_namespace_digest: receipt.writable_state_namespace_digest.clone(),
+            challenge_nonce_digest: receipt.challenge_nonce_digest.clone(),
+            challenge_issued_at_ms: receipt.challenge_issued_at_ms,
+            challenge_expires_at_ms: receipt.challenge_expires_at_ms,
             receipt_sequence: receipt.receipt_sequence,
             measurement_start_ms: receipt.measurement_start_ms,
             measurement_end_ms: receipt.measurement_end_ms,
@@ -427,6 +435,8 @@ pub fn validate_runtime_attestations(
         runtime_observer_source_id: manifest.runtime_observer_source_id.clone(),
         runtime_observer_control_domain: manifest.runtime_observer_control_domain.clone(),
         runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+        runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
+        runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
         evidence,
     })
 }
@@ -450,6 +460,8 @@ pub(crate) fn validate_ledger_binding(
         || ledger.runtime_observer_source_id != manifest.runtime_observer_source_id
         || ledger.runtime_observer_control_domain != manifest.runtime_observer_control_domain
         || ledger.runtime_observer_adapter_digest != manifest.runtime_observer_adapter_digest
+        || ledger.runtime_challenge_authority_id != manifest.runtime_challenge_authority_id
+        || ledger.runtime_challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
         || ledger.planned_trials != manifest.trials.len()
         || ledger.planned_arm_trials != manifest.trials.len().saturating_mul(2)
         || ledger.trials.len() != manifest.trials.len().saturating_mul(2)
@@ -846,10 +858,10 @@ mod tests {
             trials: ledger_trials,
         };
         let attestations = vec![
-            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 20, 60),
-            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 20, 80),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 20, 90),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 20, 100),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 36, 60),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 36, 80),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 36, 90),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 36, 100),
         ];
         (manifest, freeze, ledger, scenarios, attestations)
     }
@@ -890,7 +902,7 @@ mod tests {
             challenge_nonce_digest: digest(60u8.saturating_add(sequence as u8)),
             challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
-            challenge_issued_at_ms: 25,
+            challenge_issued_at_ms: 35,
             challenge_expires_at_ms: measurement_end_ms + 100,
             receipt_sequence: sequence,
             issued_at_ms: measurement_end_ms + 1,
