@@ -1461,7 +1461,7 @@ mod tests {
     }
 
     #[test]
-    fn sixty_seven_adversarial_mutations_fail_closed() {
+    fn eighty_seven_adversarial_mutations_fail_closed() {
         for vector in 0..87 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
             match vector {
@@ -1552,6 +1552,7 @@ mod tests {
                 84 => { m.runtime_observer_control_domain = m.agent.control_domain.clone(); }
                 85 => { m.runtime_observer_adapter_digest = Digest::from_byte(0); }
                 86 => { freeze.runtime_observer_source_id = "substituted-observer".into(); }
+                _ => panic!("unexpected sealed-run mutation vector {vector}"),
             };
             assert!(
                 validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).is_err(),
