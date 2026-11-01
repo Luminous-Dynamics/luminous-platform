@@ -11,7 +11,7 @@ The evaluator consumes separate planes:
 - independent service observations bound to a frozen offered-demand workload profile;
 - a no-action twin using the same scenario schedule and workload identity.
 
-It derives per-fault correlation, exact service/artifact localization, repair before evaluator cleanup, sustained workload-conditioned recovery, false repair claims, intervention safety, duplicate committed effects, unauthorized committed effects, and demand-weighted degraded request-time.
+It derives per-fault correlation, exact service/artifact localization, repair before evaluator cleanup, sustained workload-conditioned recovery, false repair claims, intervention safety, duplicate committed effects, unauthorized committed effects, and demand/SLO compliance checks.
 
 Every injected fault remains in the denominator, including faults that disappear before an agent invocation. No-action observations are compared only when bound to the same scenario and workload profile. Metrics remain separate; there is no compensatory composite score.
 
@@ -33,3 +33,10 @@ The synthetic fixture is not a benchmark result and cannot support SOTA or produ
 ## Request-level impact v0.2
 
 The v0.1 aggregate `max(failed, slow, incorrect)` remains a **lower bound**, not an exact unique-request estimand. The additive v0.2 paired-cell evaluator in `src/impact.rs` uses keyed request pseudonyms, exact set unions, preregistered Candidate/NoAction cell pairs, matched intervals and demand contracts. See `REQUEST_IMPACT_PAIRED_CELLS_V0_2.md`. Do not report v0.1 degradation ratios as exact paired counterfactual effects.
+
+
+## Event-level degraded request-time v0.1
+
+The additive `src/impact_intervals.rs` module computes in-window degraded request-ms from actual per-request onset/recovery intervals, merging overlaps and adjacent categories once per keyed request token. It handles right-censoring at the window boundary and rejects left-censored intervals for the exact-duration estimand. The paired result reports both unique affected-request count and observed degraded request-ms deltas. See `REQUEST_DEGRADATION_INTERVALS_V0_1.md` and the interval contract/observation schemas.
+
+Do not interpret the original v0.1 `degraded_request_ms` counter-window proxy as exact request-time: it multiplies class-level `max(failed, slow, incorrect)` counts by the full observation window and lacks request identities or event onset/recovery times. It can overstate or understate actual exposure. Use #192 for exact request prevalence and the interval evaluator for time exposure. Neither proves ingress completeness or clock/source authenticity until the typed evidence adapter authenticates the input records.
