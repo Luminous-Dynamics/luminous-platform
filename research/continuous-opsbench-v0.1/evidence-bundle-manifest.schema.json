@@ -198,6 +198,7 @@
       "required": [
         "artifact_id",
         "content_digest",
+        "related_commitment",
         "byte_length",
         "media_type",
         "publisher_id",
@@ -277,6 +278,16 @@
         },
         "required_for_verification": {
           "type": "boolean"
+        },
+        "related_commitment": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "allOf": [
