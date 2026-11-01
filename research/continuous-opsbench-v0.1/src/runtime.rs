@@ -947,6 +947,78 @@ mod tests {
     }
 
     #[test]
+    fn sixty_adversarial_runtime_mutations_fail_closed() {
+        for vector in 0..60 {
+            let (mut manifest, mut ledger, mut scenarios, mut attestations) = fixture();
+            match vector {
+                0 => attestations[0].schema.push_str("-unknown"),
+                1 => attestations[0].run_id = "other-run".into(),
+                2 => attestations[0].trial_id = "unplanned".into(),
+                3 => attestations[0].arm_identity_digest = digest(99),
+                4 => attestations[0].scenario_commitment = digest(99),
+                5 => attestations[0].manifest_commitment = digest(99),
+                6 => attestations[0].evaluator_digest = digest(99),
+                7 => attestations[0].execution_environment_digest = digest(99),
+                8 => attestations[0].resource_budget_digest = digest(99),
+                9 => attestations[0].state_isolation_policy_digest = digest(99),
+                10 => attestations[0].artifact_access_policy_digest = digest(99),
+                11 => attestations[0].network_egress_policy_digest = digest(99),
+                12 => attestations[0].runtime_instance_digest = digest(0),
+                13 => attestations[0].writable_state_namespace_digest = digest(0),
+                14 => attestations[0].writable_state_namespace_digest = attestations[0].runtime_instance_digest.clone(),
+                15 => attestations[1].runtime_instance_digest = attestations[0].runtime_instance_digest.clone(),
+                16 => attestations[1].writable_state_namespace_digest = attestations[0].writable_state_namespace_digest.clone(),
+                17 => attestations[0].observer_source_id = "candidate".into(),
+                18 => attestations[0].observer_control_domain = "candidate-domain".into(),
+                19 => attestations[0].observer_adapter_digest = digest(99),
+                20 => attestations[0].receipt_sequence = 0,
+                21 => attestations[1].receipt_sequence = attestations[0].receipt_sequence,
+                22 => attestations[0].receipt_sequence = 10,
+                23 => attestations[0].issued_at_ms = attestations[0].measurement_end_ms - 1,
+                24 => attestations[0].measurement_start_ms = 41,
+                25 => { attestations[0].measurement_end_ms = 49; attestations[0].issued_at_ms = 50; },
+                26 => attestations[0].measurement_end_ms = attestations[0].measurement_start_ms,
+                27 => attestations[0].clock_uncertainty_ms = MAX_CLOCK_UNCERTAINTY_MS + 1,
+                28 => attestations[0].process_tree_commitment = digest(0),
+                29 => attestations[0].mount_namespace_commitment = digest(0),
+                30 => attestations[0].filesystem_access_log_commitment = digest(0),
+                31 => attestations[0].network_egress_log_commitment = digest(0),
+                32 => attestations[0].runtime_event_stream_commitment = digest(0),
+                33 => attestations[0].coverage = RuntimeCoverage::Partial,
+                34 => attestations[0].coverage = RuntimeCoverage::Unknown,
+                35 => attestations[0].coverage = RuntimeCoverage::Tampered,
+                36 => attestations[0].sequence_gap_count = 1,
+                37 => attestations[0].dropped_event_count = 1,
+                38 => attestations[0].oracle_read_attempts = 1,
+                39 => attestations[0].oracle_read_successes = 1,
+                40 => attestations[0].unauthorized_artifact_read_attempts = 1,
+                41 => attestations[0].unauthorized_artifact_read_successes = 1,
+                42 => attestations[0].disallowed_egress_attempts = 1,
+                43 => attestations[0].disallowed_egress_successes = 1,
+                44 => attestations[0].cross_trial_state_observations = 1,
+                45 => attestations[0].shared_writable_namespace_observations = 1,
+                46 => attestations.pop(),
+                47 => scenarios.pop(),
+                48 => { let mut extra = attestations[0].clone(); extra.trial_id = "not-planned".into(); attestations.push(extra); },
+                49 => { let duplicate = attestations[0].clone(); attestations.push(duplicate); },
+                50 => { let duplicate = scenarios[0].clone(); scenarios.push(duplicate); },
+                51 => ledger.manifest_commitment = digest(99),
+                52 => ledger.agent_identity_digest = digest(99),
+                53 => ledger.baseline_identity_digest = digest(99),
+                54 => ledger.execution_environment_digest = digest(99),
+                55 => ledger.state_isolation_policy_digest = digest(99),
+                56 => ledger.trials[0].cluster_id = "wrong-cluster".into(),
+                57 => ledger.trials.pop(),
+                58 => { manifest.runtime_observer_control_domain = manifest.agent.control_domain.clone(); },
+                _ => manifest.runtime_observer_adapter_digest = digest(0),
+            }
+            assert!(
+                validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations).is_err(),
+                "runtime attestation adversarial vector {vector} was accepted"
+            );
+        }
+    }
+    #[test]
     fn observer_control_domain_must_be_distinct_from_the_evaluated_systems() {
         let (manifest, ledger, scenarios, mut attestations) = fixture();
         attestations[0].observer_control_domain = manifest.agent.control_domain.clone();
