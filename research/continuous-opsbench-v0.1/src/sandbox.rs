@@ -209,6 +209,9 @@ pub fn validate_sandbox_attestations(
         .map_err(|_| SandboxAttestationError::ManifestOrFreezeInvalid)?;
     validate_ledger_binding(manifest, ledger)
         .map_err(|_| SandboxAttestationError::LedgerManifestMismatch)?;
+    if ledger.manifest_commitment != *expected_manifest_commitment {
+        return Err(SandboxAttestationError::LedgerManifestMismatch);
+    }
 
     let mut scenario_index: BTreeMap<&str, &ScenarioReceipt> = BTreeMap::new();
     for scenario in scenarios {
