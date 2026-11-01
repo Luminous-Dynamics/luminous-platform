@@ -855,6 +855,22 @@ mod tests {
         }
     }
 
+    fn reveal(manifest: &RunManifest, commitment: &Digest, scenario: &ScenarioReceipt) -> ScenarioReveal {
+        ScenarioReveal {
+            run_id: manifest.run_id.clone(),
+            trial_id: scenario.trial_id.clone(),
+            manifest_commitment: commitment.clone(),
+            case_payload_commitment: scenario.case_payload_commitment.clone(),
+            oracle_commitment: scenario.oracle_commitment.clone(),
+            case_payload_artifact_digest: Digest::from_byte(23),
+            oracle_artifact_digest: Digest::from_byte(24),
+            case_payload_salt: vec![31; 32],
+            oracle_salt: vec![32; 32],
+            revealed_at_ms: scenario.retired_at_ms.unwrap() + 1,
+            source_id: manifest.evidence_source_id.clone(),
+            control_domain: manifest.evidence_control_domain.clone(),
+        }
+    }
     fn valid_fixture() -> (
         RunManifest, Digest, FreezeReceipt, Vec<ScenarioReceipt>, Vec<TrialEvent>
     ) {
@@ -1004,7 +1020,7 @@ mod tests {
         let (mut m, commitment, freeze, mut scenarios, mut events) = valid_fixture();
         m.lane = EvaluationLane::OpenDevelopment;
         scenarios[0].generated_at_ms = 12;
-        scenarios[0].issued_at_ms = 30;
+        scenarios[0].issued_at_ms = 15;
         // The fixture's existing events still bind to the same frozen commitment and case.
         let result = validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events);
         assert!(result.is_ok());
@@ -1012,7 +1028,7 @@ mod tests {
     }
 
     #[test]
-    fn retired_reproducibility_cases_must_be_retired_before_run_creation() {
+    fn retired_reproducibility_requires_post_retirement_reveals() {
         let (mut m, commitment, freeze, mut scenarios, events) = valid_fixture();
         m.lane = EvaluationLane::RetiredReproducibility;
         for scenario in &mut scenarios {
@@ -1020,8 +1036,18 @@ mod tests {
             scenario.retired_at_ms = Some(8);
             scenario.issued_at_ms = 30;
         }
-        let result = validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events);
+        let reveals: Vec<ScenarioReveal> = scenarios.iter()
+            .map(|scenario| reveal(&m, &commitment, scenario))
+            .collect();
+        let result = validate_run_ledger_with_reveals(
+            &m, &commitment, &freeze, &scenarios, &reveals, &events
+        );
         assert!(result.is_ok());
+        let missing = validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events);
+        assert_eq!(
+            missing,
+            Err(SealedRunError::MissingScenarioReveal("trial-a".into()))
+        );
     }
 
     #[test]
@@ -1039,6 +1065,76 @@ mod tests {
         assert_eq!(
             validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events),
             Err(SealedRunError::MissingRetirementTime("trial-a".into()))
+        );
+    }
+
+    #[test]
+    fn open_development_accepts_preexisting_case_issued_before_run_freeze() {
+        let (mut manifest, commitment, freeze, mut scenarios, events) = valid_fixture();
+        manifest.lane = EvaluationLane::OpenDevelopment;
+        for scenario in &mut scenarios {
+            scenario.generated_at_ms = 5;
+            scenario.issued_at_ms = 15;
+        }
+        assert!(validate_run_ledger(&manifest, &commitment, &freeze, &scenarios, &events).is_ok());
+    }
+
+    #[test]
+    fn retired_reveal_must_bind_exact_commitments_and_be_published_after_retirement() {
+        let (mut manifest, commitment, freeze, mut scenarios, events) = valid_fixture();
+        manifest.lane = EvaluationLane::RetiredReproducibility;
+        for scenario in &mut scenarios {
+            scenario.generated_at_ms = 5;
+            scenario.retired_at_ms = Some(8);
+            scenario.issued_at_ms = 30;
+        }
+        let mut reveals: Vec<ScenarioReveal> = scenarios.iter()
+            .map(|scenario| reveal(&manifest, &commitment, scenario)).collect();
+        assert!(validate_run_ledger_with_reveals(&manifest, &commitment, &freeze, &scenarios, &reveals, &events).is_ok());
+        reveals[0].case_payload_commitment = Digest::from_byte(99);
+        assert_eq!(
+            validate_run_ledger_with_reveals(&manifest, &commitment, &freeze, &scenarios, &reveals, &events),
+            Err(SealedRunError::ScenarioRevealBindingMismatch("trial-a".into()))
+        );
+        reveals[0] = reveal(&manifest, &commitment, &scenarios[0]);
+        reveals[0].revealed_at_ms = 7;
+        assert_eq!(
+            validate_run_ledger_with_reveals(&manifest, &commitment, &freeze, &scenarios, &reveals, &events),
+            Err(SealedRunError::ScenarioRevealBeforeRetirement("trial-a".into()))
+        );
+    }
+
+    #[test]
+    fn retired_reveal_rejects_short_salts_and_foreign_source() {
+        let (mut manifest, commitment, freeze, mut scenarios, events) = valid_fixture();
+        manifest.lane = EvaluationLane::RetiredReproducibility;
+        for scenario in &mut scenarios {
+            scenario.generated_at_ms = 5;
+            scenario.retired_at_ms = Some(8);
+            scenario.issued_at_ms = 30;
+        }
+        let mut reveals: Vec<ScenarioReveal> = scenarios.iter()
+            .map(|scenario| reveal(&manifest, &commitment, scenario)).collect();
+        reveals[0].case_payload_salt.truncate(31);
+        assert_eq!(
+            validate_run_ledger_with_reveals(&manifest, &commitment, &freeze, &scenarios, &reveals, &events),
+            Err(SealedRunError::ScenarioRevealSaltTooShort("trial-a".into()))
+        );
+        reveals[0] = reveal(&manifest, &commitment, &scenarios[0]);
+        reveals[0].source_id = "other-source".into();
+        assert_eq!(
+            validate_run_ledger_with_reveals(&manifest, &commitment, &freeze, &scenarios, &reveals, &events),
+            Err(SealedRunError::ScenarioRevealSourceMismatch("trial-a".into()))
+        );
+    }
+
+    #[test]
+    fn open_or_sealed_lane_rejects_retirement_reveal() {
+        let (manifest, commitment, freeze, scenarios, events) = valid_fixture();
+        let reveals = vec![reveal(&manifest, &commitment, &scenarios[0])];
+        assert_eq!(
+            validate_run_ledger_with_reveals(&manifest, &commitment, &freeze, &scenarios, &reveals, &events),
+            Err(SealedRunError::UnexpectedScenarioReveal("trial-a".into()))
         );
     }
 
