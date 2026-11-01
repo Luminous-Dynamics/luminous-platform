@@ -134,6 +134,8 @@ pub struct VerifiedAttestation {
     pub predicate_type: String,
     pub publisher: VerifiedPublisher,
     pub payload: EvidencePayload,
+    /// Present only for Authority and decoded from the verified signed predicate.
+    pub authority_grant: Option<AuthorityGrant>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -246,6 +248,8 @@ pub enum EvidenceGateError {
     ClockUncertaintyExceeded,
     PolicyVersionMismatch,
     SignatureVerificationFailed,
+    AuthorityGrantMissing,
+    AuthorityGrantMismatch,
 }
 
 impl From<AttestationVerificationError> for EvidenceGateError {
@@ -258,7 +262,8 @@ impl From<EvidenceGateError> for GateDenial {
     fn from(value: EvidenceGateError) -> Self {
         match value {
             EvidenceGateError::ObserverNotIndependent => GateDenial::ObserverNotIndependent,
-            EvidenceGateError::WrongEvidenceBinding => GateDenial::EvidenceBindingMismatch,
+            EvidenceGateError::WrongEvidenceBinding | EvidenceGateError::AuthorityGrantMismatch =>
+                GateDenial::EvidenceBindingMismatch,
             EvidenceGateError::WrongEvidenceClaim => GateDenial::EvidenceClaimFailed,
             EvidenceGateError::ExpiredEvidence => GateDenial::EvidenceExpired,
             EvidenceGateError::StaleEvidence => GateDenial::EvidenceStale,
@@ -267,6 +272,7 @@ impl From<EvidenceGateError> for GateDenial {
             EvidenceGateError::ClockUncertaintyExceeded => GateDenial::ClockUncertaintyExceeded,
             EvidenceGateError::FutureObservation | EvidenceGateError::InvalidTimeOrder =>
                 GateDenial::EvidenceFutureTimestamp,
+            EvidenceGateError::AuthorityGrantMissing => GateDenial::MissingGrant,
             _ => GateDenial::EvidenceVerificationFailed,
         }
     }
@@ -276,6 +282,7 @@ impl From<EvidenceGateError> for GateDenial {
 pub struct VerifiedGateContext {
     evidence_ids: Vec<String>,
     now_ms: u64,
+    authority_grant: AuthorityGrant,
 }
 
 impl VerifiedGateContext {
@@ -314,7 +321,6 @@ impl<P: ParticipantPort, V: AttestationVerifier, C: TrustedClock>
     pub fn dispatch(
         &mut self,
         proposal: &MutationProposal,
-        grant: Option<&AuthorityGrant>,
         evidence: &GateEvidenceBundle,
     ) -> DispatchReport {
         let clock = match self.clock.read() {
@@ -346,7 +352,8 @@ impl<P: ParticipantPort, V: AttestationVerifier, C: TrustedClock>
             manifest_source_available: true,
             policy_source_available: true,
         };
-        let mut report = self.inner.dispatch(proposal, grant, context);
+        let mut report = self.inner.dispatch(
+            proposal, Some(&evidence_context.authority_grant), context);
         // The exact verified source references remain correlatable to the gate receipt.
         report.gate_receipt.evidence_ids = evidence_context.evidence_ids;
         report
@@ -384,6 +391,7 @@ pub fn verify_gate_evidence<V: AttestationVerifier>(
 
     let mut evidence_ids = Vec::with_capacity(expected.len());
     let mut seen = BTreeSet::new();
+    let mut verified_authority_grant: Option<AuthorityGrant> = None;
 
     for (role, signed) in expected {
         let attestation = verifier.verify_dsse(&signed.dsse_envelope)?;
@@ -413,6 +421,36 @@ pub fn verify_gate_evidence<V: AttestationVerifier>(
         }
         if payload.claim != role.required_claim() {
             return Err(EvidenceGateError::WrongEvidenceClaim);
+        }
+        match role {
+            EvidenceRole::Authority => {
+                let grant = attestation.authority_grant.clone()
+                    .ok_or(EvidenceGateError::AuthorityGrantMissing)?;
+                if grant.issuer != attestation.publisher.issuer
+                    || grant.subject_digest != payload.subject_digest
+                    || grant.policy_digest != proposal.policy_digest
+                    || grant.policy_version != proposal.policy_version {
+                    return Err(EvidenceGateError::AuthorityGrantMismatch);
+                }
+                verified_authority_grant = Some(grant);
+            }
+            EvidenceRole::Manifest => {
+                if attestation.authority_grant.is_some()
+                    || payload.subject_digest != proposal.manifest_digest {
+                    return Err(EvidenceGateError::WrongEvidenceBinding);
+                }
+            }
+            EvidenceRole::Policy => {
+                if attestation.authority_grant.is_some()
+                    || payload.subject_digest != policy.policy_digest {
+                    return Err(EvidenceGateError::WrongEvidenceBinding);
+                }
+            }
+            EvidenceRole::Preflight | EvidenceRole::Observer => {
+                if attestation.authority_grant.is_some() {
+                    return Err(EvidenceGateError::WrongEvidenceRole);
+                }
+            }
         }
         let rule = resolve_rule(policy, role)?;
         if payload.schema_version != rule.schema_version {
@@ -457,7 +495,9 @@ pub fn verify_gate_evidence<V: AttestationVerifier>(
         return Err(EvidenceGateError::PolicyVersionMismatch);
     }
 
-    Ok(VerifiedGateContext { evidence_ids, now_ms: clock.now_ms })
+    let authority_grant = verified_authority_grant
+        .ok_or(EvidenceGateError::AuthorityGrantMissing)?;
+    Ok(VerifiedGateContext { evidence_ids, now_ms: clock.now_ms, authority_grant })
 }
 
 fn resolve_rule(policy: &TrustPolicy, role: EvidenceRole) -> Result<&PublisherRule, EvidenceGateError> {
@@ -670,14 +710,13 @@ mod tests {
         };
         let broker = VerifiedEffectBroker::new(registry, FakeParticipant { submit_calls: 0 },
             verifier, clock(), trust_policy());
-        let g = grant(&p);
-        (broker, p, g, bundle())
+        (broker, p, bundle())
     }
 
     #[test]
     fn verified_source_bound_evidence_allows_exact_dispatch() {
-        let (mut broker, p, g, e) = verified_broker(None, None);
-        let result = broker.dispatch(&p, Some(&g), &e);
+        let (mut broker, p, e) = verified_broker(None, None);
+        let result = broker.dispatch(&p, &e);
         assert_eq!(result.gate_receipt.decision(), super::super::GateDecision::Allowed);
         assert_eq!(result.participant_status, Some(super::super::AttemptStatus::Committed));
         assert_eq!(result.gate_receipt.evidence_ids.len(), 5);
@@ -686,8 +725,8 @@ mod tests {
 
     #[test]
     fn invalid_signature_fails_closed_before_participant_submission() {
-        let (mut broker, p, g, e) = verified_broker(Some(2), None);
-        let result = broker.dispatch(&p, Some(&g), &e);
+        let (mut broker, p, e) = verified_broker(Some(2), None);
+        let result = broker.dispatch(&p, &e);
         assert_eq!(result.gate_receipt.decision(),
             super::super::GateDecision::Denied(GateDenial::EvidenceVerificationFailed));
         assert_eq!(broker.participant_mut().submit_calls, 0);
@@ -698,8 +737,8 @@ mod tests {
         fn mutate(v: &mut Vec<VerifiedAttestation>) {
             v[3].payload.observed_at_ms = 90_000;
         }
-        let (mut broker, p, g, e) = verified_broker(None, Some(mutate));
-        let result = broker.dispatch(&p, Some(&g), &e);
+        let (mut broker, p, e) = verified_broker(None, Some(mutate));
+        let result = broker.dispatch(&p, &e);
         assert_eq!(result.gate_receipt.decision(),
             super::super::GateDecision::Denied(GateDenial::EvidenceStale));
         assert_eq!(broker.participant_mut().submit_calls, 0);
@@ -712,9 +751,9 @@ mod tests {
         }
         // Signature identity remains valid, but the policy maps this publisher to the
         // same control domain as the executor.
-        let (mut broker, p, g, e) = verified_broker(None, Some(mutate));
+        let (mut broker, p, e) = verified_broker(None, Some(mutate));
         broker.trust_policy.executor_control_domain = "observer-control".into();
-        let result = broker.dispatch(&p, Some(&g), &e);
+        let result = broker.dispatch(&p, &e);
         assert_eq!(result.gate_receipt.decision(),
             super::super::GateDecision::Denied(GateDenial::ObserverNotIndependent));
         assert_eq!(broker.participant_mut().submit_calls, 0);
@@ -744,9 +783,9 @@ mod tests {
 
     #[test]
     fn uncertain_clock_fails_closed() {
-        let (mut broker, p, g, e) = verified_broker(None, None);
+        let (mut broker, p, e) = verified_broker(None, None);
         broker.clock.0.uncertainty_ms = 99;
-        let result = broker.dispatch(&p, Some(&g), &e);
+        let result = broker.dispatch(&p, &e);
         assert_eq!(result.gate_receipt.decision(),
             super::super::GateDecision::Denied(GateDenial::ClockUncertaintyExceeded));
         assert_eq!(broker.participant_mut().submit_calls, 0);
