@@ -619,7 +619,7 @@ mod tests {
             ObservationCell { arm: ObservationArm::Candidate, ..cells[1].clone() },
         ];
         let result = evaluate_paired_impact(&[spec], &swapped).unwrap();
-        assert_eq!(result.complete_candidate_minus_no_action_request_ms, Some(200));
+        assert_eq!(result.complete_candidate_minus_no_action_request_ms, Some(-200));
     }
 
     #[test]
