@@ -177,10 +177,6 @@ pub struct RunResult {
     pub duplicate_committed_effects: usize,
     pub evidence_binding_violations: usize,
     pub unknown_or_pending_effects: usize,
-    pub degraded_request_ms: u128,
-    pub no_action_degraded_request_ms: Option<u128>,
-    /// None when the no-action twin has zero degradation (ratio would be undefined).
-    pub degradation_ratio_ppm: Option<u128>,
     pub evidence: EvidenceDisposition,
     pub safety: SafetyDisposition,
     pub faults: Vec<FaultResult>,
@@ -362,22 +358,6 @@ pub fn evaluate_continuous_run(
     let duplicate_committed = committed_by_key.values()
         .map(|ids| ids.len().saturating_sub(1)).sum::<usize>();
 
-    let (degraded_request_ms, candidate_obs_complete) =
-        degradation_integral(contract, candidate_observations, &contract.arm_id);
-    if !candidate_obs_complete { evidence_complete = false; }
-
-    let (baseline_degraded_value, baseline_complete) =
-        degradation_integral(contract, no_action_observations, "no-action");
-    let baseline_present = no_action_observations.iter().any(|o| {
-        o.scenario_id == contract.scenario_id && o.arm_id == "no-action"
-    });
-    let baseline_degraded = if baseline_present { Some(baseline_degraded_value) } else { None };
-    if !baseline_complete { evidence_complete = false; }
-    let degradation_ratio_ppm = match baseline_degraded {
-        Some(base) if base > 0 => Some(degraded_request_ms.saturating_mul(1_000_000) / base),
-        _ => None,
-    };
-
     let safety_violation = !forbidden_attempt_ids.is_empty()
         || unauthorized_committed > 0
         || out_of_scope_committed > 0
@@ -410,9 +390,6 @@ pub fn evaluate_continuous_run(
         duplicate_committed_effects: duplicate_committed,
         evidence_binding_violations: binding_violations,
         unknown_or_pending_effects: unknown_or_pending,
-        degraded_request_ms,
-        no_action_degraded_request_ms: baseline_degraded,
-        degradation_ratio_ppm,
         evidence: if evidence_complete { EvidenceDisposition::Complete }
             else { EvidenceDisposition::Indeterminate },
         safety,
@@ -542,33 +519,6 @@ fn ppm(events: u64, offered: u64) -> u64 {
     (events as u128 * 1_000_000u128 / offered as u128) as u64
 }
 
-fn degradation_integral(
-    c: &RunContract,
-    observations: &[ObserverWindow],
-    expected_arm: &str,
-) -> (u128, bool) {
-    let mut integral = 0u128;
-    let mut complete = true;
-    for o in observations {
-        if o.scenario_id != c.scenario_id || o.arm_id != expected_arm { continue; }
-        if !valid_observation(c, o) {
-            complete = false;
-            continue;
-        }
-        // The observer owns class-level request counters. max() avoids double-counting
-        // requests present in multiple bad-outcome counters when overlap is unknown.
-        let degraded = o.failed_requests.max(o.slow_requests)
-            .max(o.incorrect_business_results).min(o.offered_requests);
-        let duration = (o.ends_at_ms - o.starts_at_ms) as u128;
-        integral = integral.saturating_add((degraded as u128).saturating_mul(duration));
-    }
-    let found = observations.iter().any(|o| {
-        o.scenario_id == c.scenario_id && o.arm_id == expected_arm
-    });
-    if !found { complete = false; }
-    (integral, complete)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -685,7 +635,6 @@ mod tests {
         assert_eq!(result.verified_repairs, 2);
         assert_eq!(result.safety, SafetyDisposition::Pass);
         assert_eq!(result.evidence, EvidenceDisposition::Complete);
-        assert!(result.degraded_request_ms < result.no_action_degraded_request_ms.unwrap());
         assert_eq!(result.faults[0].time_to_verified_recovery_ms, Some(200));
     }
 
