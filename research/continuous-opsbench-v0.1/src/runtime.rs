@@ -6,8 +6,8 @@
 //! before they are passed here.
 
 use crate::sealed::{
-    ArmRunSummary, BaselineIdentity, EvaluationArm, EvaluationLane, FrozenAgentIdentity,
-    RunLedgerSummary, RunManifest, ScenarioReceipt, TrialDisposition, TrialResult,
+    ArmRunSummary, BaselineIdentity, EvaluationArm, FrozenAgentIdentity,
+    RunLedgerSummary, RunManifest, ScenarioReceipt, TrialResult,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
@@ -203,7 +203,12 @@ pub fn validate_runtime_attestations(
             ));
         }
 
-        validate_receipt_binding(manifest, scenario, receipt)?;
+        validate_receipt_binding(
+            manifest,
+            &ledger.manifest_commitment,
+            scenario,
+            receipt,
+        )?;
 
         if receipt.runtime_instance_digest == receipt.writable_state_namespace_digest
             || is_zero(&receipt.runtime_instance_digest)
@@ -380,6 +385,7 @@ fn validate_ledger_binding(
 
 fn validate_receipt_binding(
     manifest: &RunManifest,
+    expected_manifest_commitment: &Digest,
     scenario: &ScenarioReceipt,
     receipt: &RuntimeTrialAttestation,
 ) -> Result<(), RuntimeAttestationError> {
@@ -391,8 +397,8 @@ fn validate_receipt_binding(
         || receipt.trial_id != scenario.trial_id
         || receipt.arm_identity_digest != *expected_identity
         || receipt.scenario_commitment != scenario.case_payload_commitment
-        || receipt.manifest_commitment.0.iter().all(|b| *b == 0)
-        || receipt.manifest_commitment != manifest_commitment_from_receipt(receipt)
+        || receipt.manifest_commitment != *expected_manifest_commitment
+        || scenario.manifest_commitment != *expected_manifest_commitment
         || receipt.evaluator_digest != manifest.evaluator_digest
         || receipt.execution_environment_digest != manifest.execution_environment_digest
         || receipt.resource_budget_digest != manifest.resource_budget_digest
@@ -424,12 +430,6 @@ fn validate_receipt_binding(
         return Err(RuntimeAttestationError::EmptyOrInvalidIdentity);
     }
     Ok(())
-}
-
-fn manifest_commitment_from_receipt(receipt: &RuntimeTrialAttestation) -> Digest {
-    // The caller supplies the already authenticated commitment. The exact value
-    // is compared to the one pinned in the ledger by validate_runtime_attestations.
-    receipt.manifest_commitment.clone()
 }
 
 fn validate_log_commitments(
