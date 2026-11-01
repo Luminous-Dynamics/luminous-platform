@@ -70,8 +70,8 @@
       "required": [
         "schema", "version", "run_id", "lane", "created_at_ms", "frozen_at_ms",
         "evaluator_digest", "agent_identity_digest", "baseline_identity_digest",
-        "agent", "baseline", "evaluator_control_domain", "evidence_source_id",
-        "evidence_control_domain", "trials"
+        "agent", "baseline", "freeze_authority_id", "freeze_authority_control_domain",
+        "evaluator_control_domain", "evidence_source_id", "evidence_control_domain", "trials"
       ],
       "properties": {
         "schema": { "const": "continuous-opsbench-sealed-run-v0.1" },
@@ -85,6 +85,8 @@
         "baseline_identity_digest": { "$ref": "#/$defs/sha256" },
         "agent": { "$ref": "#/$defs/agent" },
         "baseline": { "$ref": "#/$defs/baseline" },
+        "freeze_authority_id": { "$ref": "#/$defs/id" },
+        "freeze_authority_control_domain": { "$ref": "#/$defs/id" },
         "evaluator_control_domain": { "$ref": "#/$defs/id" },
         "evidence_source_id": { "$ref": "#/$defs/id" },
         "evidence_control_domain": { "$ref": "#/$defs/id" },
