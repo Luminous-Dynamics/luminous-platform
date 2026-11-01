@@ -4,66 +4,240 @@
   "title": "Continuous OpsBench sealed scenario receipts and trial ledger v0.1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "scenario_receipts", "trial_events"],
+  "required": [
+    "schema_version",
+    "scenario_receipts",
+    "scenario_reveals",
+    "trial_events"
+  ],
   "properties": {
-    "schema_version": { "const": "continuous-opsbench-sealed-evidence-v0.1" },
+    "schema_version": {
+      "const": "continuous-opsbench-sealed-evidence-v0.1"
+    },
     "scenario_receipts": {
       "type": "array",
       "maxItems": 100000,
-      "items": { "$ref": "#/$defs/scenario_receipt" }
+      "items": {
+        "$ref": "#/$defs/scenario_receipt"
+      }
     },
     "trial_events": {
       "type": "array",
       "maxItems": 1000000,
-      "items": { "$ref": "#/$defs/trial_event" }
+      "items": {
+        "$ref": "#/$defs/trial_event"
+      }
+    },
+    "scenario_reveals": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/scenario_reveal"
+      }
     }
   },
   "$defs": {
-    "id": { "type": "string", "minLength": 1, "maxLength": 256 },
-    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
     "scenario_receipt": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "run_id", "trial_id", "manifest_commitment", "case_payload_commitment",
-        "oracle_commitment", "generated_at_ms", "issued_at_ms", "retired_at_ms",
-        "evaluator_digest", "source_id", "control_domain"
+        "run_id",
+        "trial_id",
+        "manifest_commitment",
+        "case_payload_commitment",
+        "oracle_commitment",
+        "generated_at_ms",
+        "issued_at_ms",
+        "retired_at_ms",
+        "evaluator_digest",
+        "source_id",
+        "control_domain"
       ],
       "properties": {
-        "run_id": { "$ref": "#/$defs/id" },
-        "trial_id": { "$ref": "#/$defs/id" },
-        "manifest_commitment": { "$ref": "#/$defs/sha256" },
-        "case_payload_commitment": { "$ref": "#/$defs/sha256" },
-        "oracle_commitment": { "$ref": "#/$defs/sha256" },
-        "generated_at_ms": { "type": "integer", "minimum": 0 },
-        "issued_at_ms": { "type": "integer", "minimum": 0 },
-        "retired_at_ms": { "type": ["integer", "null"], "minimum": 0 },
-        "evaluator_digest": { "$ref": "#/$defs/sha256" },
-        "source_id": { "$ref": "#/$defs/id" },
-        "control_domain": { "$ref": "#/$defs/id" }
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "case_payload_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "oracle_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "generated_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "issued_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retired_at_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "evaluator_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/id"
+        }
       }
     },
     "trial_event": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "run_id", "trial_id", "event_id", "attempt", "occurred_at_ms", "kind",
-        "manifest_commitment", "agent_identity_digest", "evaluator_digest",
-        "scenario_commitment", "source_id", "control_domain"
+        "run_id",
+        "trial_id",
+        "event_id",
+        "attempt",
+        "occurred_at_ms",
+        "kind",
+        "manifest_commitment",
+        "agent_identity_digest",
+        "evaluator_digest",
+        "scenario_commitment",
+        "source_id",
+        "control_domain"
       ],
       "properties": {
-        "run_id": { "$ref": "#/$defs/id" },
-        "trial_id": { "$ref": "#/$defs/id" },
-        "event_id": { "$ref": "#/$defs/id" },
-        "attempt": { "type": "integer", "minimum": 0, "maximum": 65535 },
-        "occurred_at_ms": { "type": "integer", "minimum": 0 },
-        "kind": { "enum": ["started", "completed", "failed", "skipped", "invalidated"] },
-        "manifest_commitment": { "$ref": "#/$defs/sha256" },
-        "agent_identity_digest": { "$ref": "#/$defs/sha256" },
-        "evaluator_digest": { "$ref": "#/$defs/sha256" },
-        "scenario_commitment": { "$ref": "#/$defs/sha256" },
-        "source_id": { "$ref": "#/$defs/id" },
-        "control_domain": { "$ref": "#/$defs/id" }
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "occurred_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "kind": {
+          "enum": [
+            "started",
+            "completed",
+            "failed",
+            "skipped",
+            "invalidated"
+          ]
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "agent_identity_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "evaluator_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "scenario_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "scenario_reveal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "trial_id",
+        "manifest_commitment",
+        "case_payload_commitment",
+        "oracle_commitment",
+        "case_payload_artifact_digest",
+        "oracle_artifact_digest",
+        "case_payload_salt",
+        "oracle_salt",
+        "revealed_at_ms",
+        "source_id",
+        "control_domain"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "case_payload_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "oracle_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "case_payload_artifact_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "oracle_artifact_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "case_payload_salt": {
+          "type": "array",
+          "minItems": 32,
+          "maxItems": 1024,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "oracle_salt": {
+          "type": "array",
+          "minItems": 32,
+          "maxItems": 1024,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          }
+        },
+        "revealed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/id"
+        }
       }
     }
   }
