@@ -370,6 +370,7 @@ impl<P: ParticipantPort> EffectBroker<P> {
 
     /// Query the exact attempt, then cross-check it against the participant's current
     /// logical-key index. The broker stores no participant attempt history itself.
+    #[cfg(test)]
     pub fn reconcile_same_attempt(&mut self, participant_id: &str, tenant_id: &str,
         idempotency_key: &str, attempt_id: &str, request_digest: &Digest)
         -> Result<ReconcileReport, GateDenial> {
@@ -398,6 +399,7 @@ impl<P: ParticipantPort> EffectBroker<P> {
         Ok(ReconcileReport { status, evidence: Some(evidence) })
     }
 
+    #[cfg(test)]
     pub(crate) fn participant_mut(&mut self) -> &mut P { &mut self.participant }
 
     fn authorize(&self, p: &MutationProposal, grant: Option<&AuthorityGrant>,
