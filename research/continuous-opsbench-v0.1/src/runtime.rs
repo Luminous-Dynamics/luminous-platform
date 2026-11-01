@@ -1103,7 +1103,7 @@ mod tests {
                 54 => ledger.execution_environment_digest = digest(99),
                 55 => ledger.state_isolation_policy_digest = digest(99),
                 56 => ledger.trials[0].cluster_id = "wrong-cluster".into(),
-                57 => ledger.trials.pop(),
+                57 => { ledger.trials.pop(); },
                 58 => { manifest.runtime_observer_control_domain = manifest.agent.control_domain.clone(); },
                 _ => manifest.runtime_observer_adapter_digest = digest(0),
             }
