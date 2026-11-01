@@ -81,7 +81,7 @@ The Rust conformance tests cover:
 - undeclared attempts, retry-after-success, duplicate starts, missing terminals;
 - event time ordering, event source/control-domain substitution;
 - manifest commitment and freeze-receipt substitution;
-- a 64-vector adversarial mutation matrix.
+- a 66-vector adversarial mutation matrix.
 
 These are deterministic conformance tests, not empirical agent benchmark results. A schema parse does not demonstrate cryptographic authenticity or secure isolation.
 
