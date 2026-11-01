@@ -6,8 +6,9 @@
 //! before they are passed here.
 
 use crate::sealed::{
-    ArmRunSummary, BaselineIdentity, EvaluationArm, FrozenAgentIdentity,
-    RunLedgerSummary, RunManifest, ScenarioReceipt, TrialResult,
+    validate_freeze_receipt, ArmRunSummary, BaselineIdentity, EvaluationArm,
+    FreezeReceipt, FrozenAgentIdentity, RunLedgerSummary, RunManifest, ScenarioReceipt,
+    TrialResult,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
@@ -135,10 +136,16 @@ pub enum RuntimeAttestationError {
 
 pub fn validate_runtime_attestations(
     manifest: &RunManifest,
+    freeze: &FreezeReceipt,
     ledger: &RunLedgerSummary,
     scenarios: &[ScenarioReceipt],
     attestations: &[RuntimeTrialAttestation],
 ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
+    validate_freeze_receipt(manifest, &freeze.manifest_commitment, freeze)
+        .map_err(|_| RuntimeAttestationError::LedgerManifestMismatch)?;
+    if ledger.manifest_commitment != freeze.manifest_commitment {
+        return Err(RuntimeAttestationError::LedgerManifestMismatch);
+    }
     validate_ledger_binding(manifest, ledger)?;
 
     let mut scenario_index: BTreeMap<&str, &ScenarioReceipt> = BTreeMap::new();
@@ -538,6 +545,7 @@ mod tests {
 
     fn fixture() -> (
         RunManifest,
+        FreezeReceipt,
         RunLedgerSummary,
         Vec<ScenarioReceipt>,
         Vec<RuntimeTrialAttestation>,
@@ -623,6 +631,27 @@ mod tests {
             evidence_source_id: "scenario-source".into(),
             evidence_control_domain: "scenario-domain".into(),
             trials,
+        };
+
+        let freeze = FreezeReceipt {
+            run_id: manifest.run_id.clone(),
+            manifest_commitment: manifest_commitment.clone(),
+            committed_at_ms: 15,
+            frozen_at_ms: manifest.frozen_at_ms,
+            agent_identity_digest: manifest.agent_identity_digest.clone(),
+            baseline_identity_digest: manifest.baseline_identity_digest.clone(),
+            evaluator_digest: manifest.evaluator_digest.clone(),
+            execution_environment_digest: manifest.execution_environment_digest.clone(),
+            resource_budget_digest: manifest.resource_budget_digest.clone(),
+            arm_order_schedule_digest: manifest.arm_order_schedule_digest.clone(),
+            state_isolation_policy_digest: manifest.state_isolation_policy_digest.clone(),
+            artifact_access_policy_digest: manifest.artifact_access_policy_digest.clone(),
+            network_egress_policy_digest: manifest.network_egress_policy_digest.clone(),
+            runtime_observer_source_id: manifest.runtime_observer_source_id.clone(),
+            runtime_observer_control_domain: manifest.runtime_observer_control_domain.clone(),
+            runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+            publisher_id: manifest.freeze_authority_id.clone(),
+            publisher_control_domain: manifest.freeze_authority_control_domain.clone(),
         };
 
         let scenarios = vec![
@@ -715,7 +744,7 @@ mod tests {
             attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 35, 55),
             attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 55, 75),
         ];
-        (manifest, ledger, scenarios, attestations)
+        (manifest, freeze, ledger, scenarios, attestations)
     }
 
     fn attestation(
@@ -778,9 +807,9 @@ mod tests {
 
     #[test]
     fn complete_clean_runtime_receipts_cover_every_arm_and_trial() {
-        let (manifest, ledger, scenarios, attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
         let result =
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations).unwrap();
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations).unwrap();
         assert_eq!(result.planned_arm_trials, 4);
         assert_eq!(result.complete_attestations, 4);
         assert_eq!(result.allowlisted_egress_events, 8);
@@ -789,10 +818,10 @@ mod tests {
 
     #[test]
     fn missing_runtime_receipt_is_not_zero_access() {
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations.pop();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::MissingAttestation(
                 "trial-b".into(),
                 EvaluationArm::Candidate,
@@ -802,10 +831,10 @@ mod tests {
 
     #[test]
     fn oracle_attempt_is_a_hard_sealed_lane_violation_even_when_denied() {
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].oracle_read_attempts = 1;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::OracleAccessObserved(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
@@ -820,10 +849,10 @@ mod tests {
             RuntimeCoverage::Unknown,
             RuntimeCoverage::Tampered,
         ] {
-            let (manifest, ledger, scenarios, mut attestations) = fixture();
+            let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
             attestations[0].coverage = coverage;
             assert_eq!(
-                validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+                validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
                 Err(RuntimeAttestationError::IncompleteCoverage(
                     "trial-a".into(),
                     EvaluationArm::Candidate,
@@ -835,37 +864,37 @@ mod tests {
 
     #[test]
     fn runtime_and_namespace_identifiers_must_be_unique() {
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[1].runtime_instance_digest = attestations[0].runtime_instance_digest.clone();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::RuntimeInstanceCollision)
         );
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[1].writable_state_namespace_digest =
             attestations[0].writable_state_namespace_digest.clone();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::StateNamespaceCollision)
         );
     }
 
     #[test]
     fn runtime_measurement_must_cover_all_agent_activity() {
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].measurement_start_ms = 41;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
             ))
         );
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].measurement_end_ms = 49;
         attestations[0].issued_at_ms = 50;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
@@ -875,19 +904,19 @@ mod tests {
 
     #[test]
     fn mismatched_policy_or_source_is_rejected() {
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].artifact_access_policy_digest = digest(99);
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::AttestationBindingMismatch(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
             ))
         );
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].observer_source_id = "agent".into();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverIdentityMismatch)
         );
     }
@@ -904,42 +933,42 @@ mod tests {
             |r| r.dropped_event_count = 1,
         ];
         for mutate in mutations {
-            let (manifest, ledger, scenarios, mut attestations) = fixture();
+            let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
             mutate(&mut attestations[0]);
             assert!(validate_runtime_attestations(
-                &manifest, &ledger, &scenarios, &attestations
+                &manifest, &freeze, &ledger, &scenarios, &attestations
             ).is_err());
         }
     }
 
     #[test]
     fn duplicate_sequence_and_out_of_order_observer_stream_fail_closed() {
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[1].receipt_sequence = attestations[0].receipt_sequence;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::DuplicateObserverSequence)
         );
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].receipt_sequence = 10;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverSequenceOrderInvalid)
         );
     }
 
     #[test]
     fn clock_uncertainty_and_zero_log_commitment_are_rejected() {
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].clock_uncertainty_ms = MAX_CLOCK_UNCERTAINTY_MS + 1;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ClockUncertaintyExceeded(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
             ))
         );
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].filesystem_access_log_commitment = digest(0);
         assert!(validate_runtime_attestations(
             &manifest, &ledger, &scenarios, &attestations
@@ -949,7 +978,7 @@ mod tests {
     #[test]
     fn sixty_adversarial_runtime_mutations_fail_closed() {
         for vector in 0..60 {
-            let (mut manifest, mut ledger, mut scenarios, mut attestations) = fixture();
+            let (mut manifest, freeze, mut ledger, mut scenarios, mut attestations) = fixture();
             match vector {
                 0 => attestations[0].schema.push_str("-unknown"),
                 1 => attestations[0].run_id = "other-run".into(),
@@ -1013,36 +1042,36 @@ mod tests {
                 _ => manifest.runtime_observer_adapter_digest = digest(0),
             }
             assert!(
-                validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations).is_err(),
+                validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations).is_err(),
                 "runtime attestation adversarial vector {vector} was accepted"
             );
         }
     }
     #[test]
     fn observer_control_domain_must_be_distinct_from_the_evaluated_systems() {
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].observer_control_domain = manifest.agent.control_domain.clone();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ObserverControlDomainCollision)
         );
     }
 
     #[test]
     fn invalid_oracle_event_count_and_missing_scenario_are_rejected() {
-        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].oracle_read_successes = 1;
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::OracleAccessObserved(
                 "trial-a".into(),
                 EvaluationArm::Candidate,
             ))
         );
-        let (manifest, ledger, mut scenarios, attestations) = fixture();
+        let (manifest, freeze, ledger, mut scenarios, attestations) = fixture();
         scenarios.pop();
         assert_eq!(
-            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::ScenarioMissing("trial-b".into()))
         );
     }
