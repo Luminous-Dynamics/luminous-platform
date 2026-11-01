@@ -12,6 +12,8 @@
     "arm_identity_digest",
     "scenario_commitment",
     "manifest_commitment",
+    "resource_budget_digest",
+    "execution_environment_digest",
     "sandbox_tier",
     "sandbox_profile_digest",
     "supervisor_id",
@@ -394,6 +396,12 @@
     },
     "energy": {
       "$ref": "#/$defs/energy"
+    },
+    "execution_environment_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "resource_budget_digest": {
+      "$ref": "#/$defs/sha256"
     }
   },
   "allOf": [
