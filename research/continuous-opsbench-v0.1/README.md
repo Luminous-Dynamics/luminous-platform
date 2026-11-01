@@ -58,3 +58,10 @@ The run freeze also pins the state-isolation, artifact-access and network-egress
 The new `src/runtime.rs` validator requires one independent runtime attestation per planned (scenario, Candidate/Baseline) pair. Each receipt binds the exact arm identity, scenario, manifest, environment, resource budget and state/artifact/egress policy digests; it must cover the complete agent interval with complete telemetry. Oracle reads, unauthorized artifact reads, disallowed egress, writable-state sharing, cross-trial state observations, telemetry gaps and missing/duplicate receipts are rejected. See `runtime-trial-attestation.schema.json` and `RUNTIME_ENFORCEMENT_V0_1.md`.
 
 The validator is structural only. The typed source-evidence adapter must authenticate observer receipts and replay sequences; a real runtime observer/sandbox adapter must prove actual enforcement. This does not qualify kernel/hypervisor isolation or production safety.
+
+
+### Independent runtime enforcement receipts
+
+The runtime validator in `src/runtime.rs` requires complete per-arm process, mount, filesystem, egress and event-stream commitments, and a unique one-use challenge nonce issued after the run freeze. It binds the runtime observer and challenge authority to distinct frozen trust domains. See `RUNTIME_ENFORCEMENT_V0_1.md` and `runtime-trial-attestation.schema.json`.
+
+This is still structural validation. The typed source-evidence adapter must authenticate challenge and receipt publishers, validate the subject and freshness, and consume nonces through durable anti-replay state. The runtime adapter must independently prove telemetry coverage and enforcement; a receipt field cannot prove that a hook remained attached or that a compromised kernel did not suppress events.
