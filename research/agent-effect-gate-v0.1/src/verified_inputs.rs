@@ -623,7 +623,10 @@ mod tests {
     impl AttestationVerifier for FakeVerifier {
         fn verify_dsse(&mut self, _envelope: &[u8])
             -> Result<VerifiedAttestation, AttestationVerificationError> {
-            let index = self.calls;
+            if self.results.is_empty() {
+                return Err(AttestationVerificationError::MalformedEnvelope);
+            }
+            let index = self.calls % self.results.len();
             self.calls += 1;
             if self.fail_at == Some(index) {
                 return Err(AttestationVerificationError::InvalidSignature);
