@@ -127,6 +127,8 @@ pub struct AuthorityGrant {
     pub risk_level: u8,
     pub policy_version: String,
     pub policy_digest: Digest,
+    /// Digest of the exact authority-grant subject bytes verified in its signed attestation.
+    pub subject_digest: Digest,
     pub expires_at_ms: u64,
     pub revoked: bool,
 }
@@ -595,7 +597,8 @@ mod tests {
             target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
             attempt_id: "attempt-1".into(), idempotency_key: "logical-action-1".into(),
             environment: "test".into(), risk_level: 2, policy_version: "policy-v1".into(),
-            policy_digest: Digest::from_byte(6), expires_at_ms: 10_000, revoked: false,
+            policy_digest: Digest::from_byte(6), subject_digest: Digest::from_byte(10),
+            expires_at_ms: 10_000, revoked: false,
         };
         let context = GateContext { now_ms: 1_000, preconditions_satisfied: true,
             observer_available: true, authority_source_available: true,
