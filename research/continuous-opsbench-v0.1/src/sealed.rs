@@ -1012,6 +1012,44 @@ mod tests {
     }
 
     #[test]
+    fn matched_baseline_arm_is_required_for_every_planned_scenario() {
+        let (m, commitment, freeze, scenarios, mut events) = valid_fixture();
+        events.retain(|event| event.arm != EvaluationArm::Baseline);
+        assert_eq!(
+            validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events),
+            Err(SealedRunError::MissingArmTrialDisposition("trial-a".into(), EvaluationArm::Baseline))
+        );
+    }
+
+    #[test]
+    fn baseline_event_cannot_claim_candidate_identity_digest() {
+        let (m, commitment, freeze, scenarios, mut events) = valid_fixture();
+        let event = events.iter_mut().find(|event| event.arm == EvaluationArm::Baseline).unwrap();
+        event.arm_identity_digest = m.agent_identity_digest.clone();
+        assert!(matches!(
+            validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events),
+            Err(SealedRunError::EventBindingMismatch(_))
+        ));
+    }
+
+    #[test]
+    fn arm_specific_outcomes_are_not_collapsed_in_the_summary() {
+        let (m, commitment, freeze, scenarios, mut events) = valid_fixture();
+        let baseline_completed = events.iter_mut().find(|event| {
+            event.arm == EvaluationArm::Baseline
+                && event.trial_id == "trial-a"
+                && event.kind == TrialEventKind::Completed
+        }).unwrap();
+        baseline_completed.kind = TrialEventKind::Failed;
+        let result = validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).unwrap();
+        assert_eq!(result.candidate.completed_trials, 1);
+        assert_eq!(result.baseline.failed_trials, 1);
+        assert_eq!(result.baseline.completed_trials, 0);
+        assert_eq!(result.completed_trials, 1);
+        assert_eq!(result.failed_trials, 1);
+    }
+
+    #[test]
     fn sealed_scenarios_must_be_generated_after_the_exact_system_freeze() {
         let (mut m, commitment, freeze, mut scenarios, events) = valid_fixture();
         scenarios[0].generated_at_ms = m.frozen_at_ms;
