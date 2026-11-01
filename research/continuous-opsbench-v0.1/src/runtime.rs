@@ -1093,7 +1093,7 @@ mod tests {
                 44 => attestations[0].cross_trial_state_observations = 1,
                 45 => attestations[0].shared_writable_namespace_observations = 1,
                 46 => { attestations.pop(); },
-                47 => scenarios.pop(),
+                47 => { scenarios.pop(); },
                 48 => { let mut extra = attestations[0].clone(); extra.trial_id = "not-planned".into(); attestations.push(extra); },
                 49 => { let duplicate = attestations[0].clone(); attestations.push(duplicate); },
                 50 => { let duplicate = scenarios[0].clone(); scenarios.push(duplicate); },
