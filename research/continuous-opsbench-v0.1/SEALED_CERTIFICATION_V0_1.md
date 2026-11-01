@@ -1,0 +1,105 @@
+# Sealed Continuous OpsBench certification lane v0.1
+
+## Purpose
+
+This is an additive run-freeze and trial-accounting layer for issue #193. It does not replace the v0.1 lifecycle evaluator or v0.2 exact request-impact evaluator. It prevents a benchmark report from quietly changing the evaluated agent, baseline, evaluator, planned trial denominator, or trial history after evaluation has begun.
+
+The implementation is intentionally a **structural validator**. It does not calculate cryptographic hashes, verify signatures, authenticate evidence publishers, sandbox an agent, or enforce network isolation.
+
+## Three evaluation lanes
+
+- **Open development:** public scenarios and public conformance tests; fast iteration is expected.
+- **Sealed certification:** the run manifest is frozen first. Case payload and oracle commitments are generated strictly after the freeze. The agent receives the case payload, not the private oracle.
+- **Retired reproducibility:** a case must have been generated and retired before the reproducibility run is created. Its payload can then be disclosed for independent reproduction.
+
+A sealed run is not made trustworthy by hiding its scenarios alone. It also needs source authentication, restricted evidence access, network/retrieval telemetry, state isolation, scorer validation, and independent trial accounting. Those are separate controls, not implied by this module.
+
+## Freeze protocol
+
+Before any sealed case generation, freeze:
+- candidate agent image and source commit;
+- model provider, exact model identifier/version, scaffold and prompt digests;
+- toolchain, runtime configuration and tool-policy digests;
+- baseline identity and digests;
+- evaluator digest and evidence source/control-domain identity;
+- complete planned trial and scenario-cluster IDs;
+- maximum attempts per trial.
+
+An independent freeze authority produces a commitment to the exact manifest. The FreezeReceipt is checked against the manifest and the expected externally authenticated commitment. The digest algorithm and signature verification belong to the existing typed evidence gate / source adapter; this crate does not implement cryptography.
+
+The manifest is frozen before hidden case generation. Each planned trial then gets exactly one ScenarioReceipt, binding a case-payload commitment and a separate private-oracle commitment to the manifest and evaluator. In the sealed lane, generation must occur strictly after the freeze; issuance must occur after generation and no earlier than the freeze.
+
+## Append-only trial accounting
+
+Every planned trial must have one terminal disposition. The validator counts:
+- completed;
+- failed;
+- skipped before execution;
+- invalidated;
+- all declared attempts;
+- unique scenario clusters.
+
+A started attempt must have exactly one terminal event. Attempts are sequential, bounded by the preregistered maximum, and a retry is allowed only after the previous attempt failed. Completion or invalidation cannot be followed by another attempt. A skipped trial is represented explicitly with attempt zero. Missing events, duplicate event IDs, extra trials, substituted digests, foreign sources, or incomplete attempt histories are rejected; none can disappear from the denominator.
+
+The cluster ID is retained so statistical inference can resample independent scenario/fault-schedule/topology clusters rather than treating requests or repeated attempts as independent samples.
+
+## Evidence and trust boundaries
+
+The validator checks that:
+- manifest/freeze/scenario/trial records all bind to the same run and expected manifest commitment;
+- candidate, baseline, evaluator and evidence identities remain pinned;
+- evidence source IDs and control domains match the frozen policy and do not collide with the agent/evaluator domains;
+- scenario payload and oracle commitments are nonzero and distinct fields;
+- scenario generation/retirement timing agrees with the selected lane;
+- every planned trial has an explicit terminal disposition and complete attempt history.
+
+The evidence source/control-domain fields are **claims in typed input records** until the source adapter authenticates them. Production must verify them through the typed source-evidence gate (#191 / issue #190), a durable replay guard, and verifier-owned source policy. Do not accept a caller-supplied signature_verified boolean.
+
+The oracle_commitment is not an instruction to expose oracle bytes to the agent. The execution sandbox and artifact store must enforce that separation; this module validates only the declared commitment record.
+
+## Statistical reporting contract
+
+This ledger does not compute a leaderboard score. It produces the full denominator and outcome distribution. Reports should separately provide:
+- completed / failed / skipped / invalidated trials;
+- declared and executed attempt counts;
+- cluster count and cluster-aware uncertainty;
+- paired candidate/baseline outcome differences on the exact same planned clusters;
+- task success, independently verified service recovery, safety, evidence completeness, calibration, cost, wall-clock time, and human-active time.
+
+Skipped and invalidated trials remain denominator entries. Do not silently drop them or replace failed attempts with a favorable retry. For sealed certification, the strongest matched baseline must be frozen in the same manifest.
+
+Safety outcomes remain non-compensatory. Unauthorized committed effects, duplicate critical effects, false recovery claims, or missing evidence are not offset by faster execution or a higher completion rate.
+
+## Validation suite
+
+The Rust conformance tests cover:
+- valid completed/failed/retried/skipped/invalidated accounting;
+- exact candidate, baseline, and evaluator identity binding;
+- strict post-freeze case generation for the sealed lane;
+- pre-retired case timing for the reproducibility lane;
+- missing/duplicate/unplanned scenarios and events;
+- undeclared attempts, retry-after-success, duplicate starts, missing terminals;
+- event time ordering, event source/control-domain substitution;
+- manifest commitment and freeze-receipt substitution;
+- a 64-vector adversarial mutation matrix.
+
+These are deterministic conformance tests, not empirical agent benchmark results. A schema parse does not demonstrate cryptographic authenticity or secure isolation.
+
+## Claim ceiling and next integration
+
+This layer proves structural consistency and denominator preservation for the records supplied to it. It does **not** prove:
+- the manifest commitment was computed by SHA-256 or signed by a trusted authority;
+- the agent could not read private oracle data or retrieve leaked answer artifacts;
+- the model provider/version actually matched the declared identity;
+- events were emitted completely or honestly by the named source;
+- the scenario distribution represents production;
+- any agent is contamination-free, safer, or better than SOTA.
+
+Next integrations should be thin adapters, not duplicate authorities:
+1. use #191 / issue #190 source-bound typed evidence and durable replay for freeze, scenario and trial receipts;
+2. enforce sealed artifact access and allowlisted retrieval in the execution sandbox;
+3. feed this validator from the independent evaluator, ingress observer and participant-owned ledgers;
+4. join the resulting run receipt with exact paired impact cells from #192;
+5. publish a signed result receipt through the existing evidence infrastructure after independent validation.
+
+Platform Saga remains the episode coordinator; the broker enforces mutation authority; participant-owned ledgers own remote effects; independent workload/business observers own service outcomes; Nixward remains the sole host transaction/interlock/journal/recovery authority.
