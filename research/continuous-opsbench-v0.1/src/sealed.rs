@@ -343,7 +343,7 @@ pub fn validate_run_ledger_with_reveals(
     )?;
 
     let mut event_ids = BTreeSet::new();
-    let mut events_by_trial: BTreeMap<&str, Vec<&TrialEvent>> = BTreeMap::new();
+    let mut events_by_trial: BTreeMap<(&str, EvaluationArm), Vec<&TrialEvent>> = BTreeMap::new();
     for event in events {
         if !event_ids.insert(event.event_id.as_str()) {
             return Err(SealedRunError::DuplicateEventId);
@@ -355,38 +355,65 @@ pub fn validate_run_ledger_with_reveals(
         let scenario = scenario_index.get(event.trial_id.as_str())
             .ok_or_else(|| SealedRunError::MissingScenarioReceipt(event.trial_id.clone()))?;
         validate_event_binding(manifest, expected_manifest_commitment, trial, scenario, event)?;
-        events_by_trial.entry(event.trial_id.as_str()).or_default().push(event);
+        events_by_trial.entry((event.trial_id.as_str(), event.arm)).or_default().push(event);
     }
 
-    let mut results = Vec::with_capacity(manifest.trials.len());
+    let mut results = Vec::with_capacity(manifest.trials.len().saturating_mul(2));
     let mut completed = 0usize;
     let mut failed = 0usize;
     let mut skipped = 0usize;
     let mut invalidated = 0usize;
     let mut total_attempts = 0usize;
+    let mut candidate = ArmRunSummary {
+        planned_trials: manifest.trials.len(),
+        completed_trials: 0,
+        failed_trials: 0,
+        skipped_trials: 0,
+        invalidated_trials: 0,
+        total_attempts: 0,
+    };
+    let mut baseline = ArmRunSummary {
+        planned_trials: manifest.trials.len(),
+        completed_trials: 0,
+        failed_trials: 0,
+        skipped_trials: 0,
+        invalidated_trials: 0,
+        total_attempts: 0,
+    };
     let unique_clusters = manifest.trials.iter()
         .map(|trial| trial.cluster_id.as_str())
         .collect::<BTreeSet<_>>().len();
 
     for trial in &manifest.trials {
         let scenario = scenario_index[trial.trial_id.as_str()];
-        let trial_events = events_by_trial.get(trial.trial_id.as_str())
-            .map(Vec::as_slice).unwrap_or(&[]);
-        let result = validate_trial_events(trial, scenario, trial_events)?;
-        total_attempts = total_attempts.saturating_add(result.attempts_started as usize);
-        match result.disposition {
-            TrialDisposition::Completed => completed += 1,
-            TrialDisposition::Failed => failed += 1,
-            TrialDisposition::Skipped => skipped += 1,
-            TrialDisposition::Invalidated => invalidated += 1,
+        for arm in [EvaluationArm::Candidate, EvaluationArm::Baseline] {
+            let trial_events = events_by_trial.get(&(trial.trial_id.as_str(), arm))
+                .map(Vec::as_slice).unwrap_or(&[]);
+            let result = validate_trial_events(trial, scenario, arm, trial_events)?;
+            total_attempts = total_attempts.saturating_add(result.attempts_started as usize);
+            let arm_summary = match result.arm {
+                EvaluationArm::Candidate => &mut candidate,
+                EvaluationArm::Baseline => &mut baseline,
+            };
+            arm_summary.total_attempts = arm_summary.total_attempts
+                .saturating_add(result.attempts_started as usize);
+            match result.disposition {
+                TrialDisposition::Completed => { completed += 1; arm_summary.completed_trials += 1; }
+                TrialDisposition::Failed => { failed += 1; arm_summary.failed_trials += 1; }
+                TrialDisposition::Skipped => { skipped += 1; arm_summary.skipped_trials += 1; }
+                TrialDisposition::Invalidated => { invalidated += 1; arm_summary.invalidated_trials += 1; }
+            }
+            results.push(result);
         }
-        results.push(result);
     }
 
     Ok(RunLedgerSummary {
         run_id: manifest.run_id.clone(),
         lane: manifest.lane,
         planned_trials: manifest.trials.len(),
+        planned_arm_trials: manifest.trials.len().saturating_mul(2),
+        candidate,
+        baseline,
         completed_trials: completed,
         failed_trials: failed,
         skipped_trials: skipped,
