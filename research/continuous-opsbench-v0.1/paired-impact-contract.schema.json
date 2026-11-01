@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-paired-impact-contract-v0.2.json",
+  "title": "Continuous OpsBench exact paired impact contract v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "contracts"],
+  "properties": {
+    "schema_version": { "const": "continuous-opsbench-paired-impact-contract-v0.2" },
+    "contracts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": { "$ref": "#/$defs/pair" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+    "id": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "demand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["digest", "minimum_offered_requests", "maximum_offered_requests"],
+      "properties": {
+        "digest": { "$ref": "#/$defs/sha256" },
+        "minimum_offered_requests": { "type": "integer", "minimum": 1 },
+        "maximum_offered_requests": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "pair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pair_id", "scenario_id", "cluster_id", "service", "request_class", "phase",
+        "starts_at_ms", "ends_at_ms", "workload_profile_digest", "phase_schedule_digest",
+        "demand", "pseudonym_key_epoch", "expected_observer_source_id",
+        "expected_observer_control_domain", "executor_control_domain", "evaluation_time_ms",
+        "maximum_receipt_age_ms", "maximum_event_rows"
+      ],
+      "properties": {
+        "pair_id": { "$ref": "#/$defs/id" },
+        "scenario_id": { "$ref": "#/$defs/id" },
+        "cluster_id": { "$ref": "#/$defs/id" },
+        "service": { "$ref": "#/$defs/id" },
+        "request_class": { "$ref": "#/$defs/id" },
+        "phase": { "$ref": "#/$defs/id" },
+        "starts_at_ms": { "type": "integer", "minimum": 0 },
+        "ends_at_ms": { "type": "integer", "minimum": 1 },
+        "workload_profile_digest": { "$ref": "#/$defs/sha256" },
+        "phase_schedule_digest": { "$ref": "#/$defs/sha256" },
+        "demand": { "$ref": "#/$defs/demand" },
+        "pseudonym_key_epoch": { "$ref": "#/$defs/id" },
+        "expected_observer_source_id": { "$ref": "#/$defs/id" },
+        "expected_observer_control_domain": { "$ref": "#/$defs/id" },
+        "executor_control_domain": { "$ref": "#/$defs/id" },
+        "evaluation_time_ms": { "type": "integer", "minimum": 0 },
+        "maximum_receipt_age_ms": { "type": "integer", "minimum": 1 },
+        "maximum_event_rows": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}
