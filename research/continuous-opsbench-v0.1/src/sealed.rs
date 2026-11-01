@@ -66,6 +66,8 @@ pub struct RunManifest {
     pub baseline_identity_digest: Digest,
     pub agent: FrozenAgentIdentity,
     pub baseline: BaselineIdentity,
+    pub freeze_authority_id: String,
+    pub freeze_authority_control_domain: String,
     pub evaluator_control_domain: String,
     pub evidence_source_id: String,
     pub evidence_control_domain: String,
@@ -324,6 +326,8 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         (manifest.baseline.baseline_id.as_str(), "baseline_id"),
         (manifest.baseline.source_commit.as_str(), "baseline_source_commit"),
         (manifest.baseline.model_id.as_str(), "baseline_model_id"),
+        (manifest.freeze_authority_id.as_str(), "freeze_authority_id"),
+        (manifest.freeze_authority_control_domain.as_str(), "freeze_authority_control_domain"),
         (manifest.evaluator_control_domain.as_str(), "evaluator_control_domain"),
         (manifest.evidence_source_id.as_str(), "evidence_source_id"),
         (manifest.evidence_control_domain.as_str(), "evidence_control_domain"),
@@ -339,8 +343,11 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         return Err(SealedRunError::InvalidRunInterval);
     }
     if manifest.trials.is_empty() { return Err(SealedRunError::MissingPlannedTrials); }
-    if manifest.agent.control_domain == manifest.evaluator_control_domain
+    if manifest.agent.control_domain == manifest.freeze_authority_control_domain
+        || manifest.agent.control_domain == manifest.evaluator_control_domain
         || manifest.agent.control_domain == manifest.evidence_control_domain
+        || manifest.freeze_authority_control_domain == manifest.evaluator_control_domain
+        || manifest.freeze_authority_control_domain == manifest.evidence_control_domain
         || manifest.evaluator_control_domain == manifest.evidence_control_domain
         || digest_is_zero(&manifest.evaluator_digest)
         || digest_is_zero(&manifest.agent_identity_digest)
@@ -375,10 +382,8 @@ fn validate_freeze_receipt(
         || receipt.agent_identity_digest != manifest.agent_identity_digest
         || receipt.baseline_identity_digest != manifest.baseline_identity_digest
         || receipt.evaluator_digest != manifest.evaluator_digest
-        || receipt.publisher_id.trim().is_empty()
-        || receipt.publisher_control_domain.trim().is_empty()
-        || receipt.publisher_control_domain == manifest.agent.control_domain
-        || receipt.publisher_control_domain == manifest.evaluator_control_domain
+        || receipt.publisher_id != manifest.freeze_authority_id
+        || receipt.publisher_control_domain != manifest.freeze_authority_control_domain
     {
         return Err(SealedRunError::FreezeReceiptMismatch);
     }
@@ -644,6 +649,8 @@ mod tests {
                 prompt_digest: Digest::from_byte(12),
                 tool_policy_digest: Digest::from_byte(13),
             },
+            freeze_authority_id: "freeze-authority".into(),
+            freeze_authority_control_domain: "authority-domain".into(),
             evaluator_control_domain: "evaluator-domain".into(),
             evidence_source_id: "independent-ledger".into(),
             evidence_control_domain: "evidence-domain".into(),
@@ -932,7 +939,7 @@ mod tests {
 
     #[test]
     fn sixty_four_adversarial_mutations_fail_closed() {
-        for vector in 0..64 {
+        for vector in 0..66 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
             let outcome = match vector {
                 0 => { m.run_id.clear(); None }
@@ -998,7 +1005,9 @@ mod tests {
                 60 => { m.evidence_source_id.clear(); None }
                 61 => { events[0].occurred_at_ms = scenarios[0].issued_at_ms; None }
                 62 => { events[0].trial_id = "unknown".into(); None }
-                _ => { freeze.manifest_commitment = Digest::from_byte(99); None }
+                63 => { freeze.manifest_commitment = Digest::from_byte(99); None }
+                64 => { freeze.publisher_id = "substituted-authority".into(); None }
+                _ => { freeze.publisher_control_domain = "substituted-domain".into(); None }
             };
             let _ = outcome;
             assert!(
