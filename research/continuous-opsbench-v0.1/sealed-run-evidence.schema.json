@@ -115,11 +115,12 @@
         "run_id",
         "trial_id",
         "event_id",
+        "arm_identity_digest",
+        "arm",
         "attempt",
         "occurred_at_ms",
         "kind",
         "manifest_commitment",
-        "agent_identity_digest",
         "evaluator_digest",
         "scenario_commitment",
         "source_id",
@@ -156,9 +157,6 @@
         "manifest_commitment": {
           "$ref": "#/$defs/sha256"
         },
-        "agent_identity_digest": {
-          "$ref": "#/$defs/sha256"
-        },
         "evaluator_digest": {
           "$ref": "#/$defs/sha256"
         },
@@ -170,6 +168,15 @@
         },
         "control_domain": {
           "$ref": "#/$defs/id"
+        },
+        "arm": {
+          "enum": [
+            "candidate",
+            "baseline"
+          ]
+        },
+        "arm_identity_digest": {
+          "$ref": "#/$defs/sha256"
         }
       }
     },
