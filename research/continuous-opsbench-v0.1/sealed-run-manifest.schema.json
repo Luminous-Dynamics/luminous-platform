@@ -197,7 +197,8 @@
         "evidence_control_domain",
         "trials",
         "execution_environment_digest",
-        "resource_budget_digest"
+        "resource_budget_digest",
+        "arm_order_schedule_digest"
       ],
       "properties": {
         "schema": {
@@ -267,6 +268,9 @@
         },
         "resource_budget_digest": {
           "$ref": "#/$defs/sha256"
+        },
+        "arm_order_schedule_digest": {
+          "$ref": "#/$defs/sha256"
         }
       }
     },
@@ -284,7 +288,8 @@
         "publisher_id",
         "publisher_control_domain",
         "execution_environment_digest",
-        "resource_budget_digest"
+        "resource_budget_digest",
+        "arm_order_schedule_digest"
       ],
       "properties": {
         "run_id": {
@@ -320,6 +325,9 @@
           "$ref": "#/$defs/sha256"
         },
         "resource_budget_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "arm_order_schedule_digest": {
           "$ref": "#/$defs/sha256"
         }
       }
