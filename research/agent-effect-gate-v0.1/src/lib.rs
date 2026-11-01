@@ -155,7 +155,7 @@ pub enum GateDenial {
     MissingRequiredField, AttemptIdReplay, PriorAttemptUnresolved, PermitBindingMismatch,
     ParticipantEvidenceMismatch, ParticipantLedgerUnavailable, IdempotencyKeyConflict,
     EvidenceVerificationFailed, EvidenceBindingMismatch, EvidenceClaimFailed, EvidenceExpired,
-    EvidenceStale, EvidenceSequenceRollback, EvidenceFutureTimestamp, ObserverNotIndependent,
+    EvidenceStale, EvidenceSequenceRollback, EvidenceSequenceStoreUnavailable, EvidenceFutureTimestamp, ObserverNotIndependent,
     ClockUnavailable, ClockUntrusted, ClockUncertaintyExceeded,
 }
 
