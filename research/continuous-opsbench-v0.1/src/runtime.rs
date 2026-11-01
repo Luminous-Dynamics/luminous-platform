@@ -441,7 +441,7 @@ pub fn validate_runtime_attestations(
     })
 }
 
-pub(crate) fn validate_ledger_binding(
+pub(crate) pub(crate) fn validate_ledger_binding(
     manifest: &RunManifest,
     ledger: &RunLedgerSummary,
 ) -> Result<(), RuntimeAttestationError> {
