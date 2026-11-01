@@ -1346,7 +1346,7 @@ mod tests {
                 55 => { let duplicate_runtime = receipts[0].runtime_instance_digest.clone(); receipts[1].runtime_instance_digest = duplicate_runtime; },
                 56 => { let duplicate_namespace = receipts[0].writable_state_namespace_digest.clone(); receipts[1].writable_state_namespace_digest = duplicate_namespace; },
                 57 => { let extra = receipts[0].clone(); receipts.push(extra); },
-                58 => receipts.pop(),
+                58 => { receipts.pop(); },
                 59 => receipts[0].hardware_identity_digest = d(88),
                 60 => receipts[1].host_kernel_digest = d(89),
                 61 => receipts[1].host_architecture = "aarch64".into(),
