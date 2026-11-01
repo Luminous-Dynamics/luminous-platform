@@ -51,3 +51,10 @@ The matched baseline identity is now fully pinned (provider/model/version, sourc
 See [BENCHMARK_TARGETS_AND_INDUSTRY_COMPARISON_V0_1.md](BENCHMARK_TARGETS_AND_INDUSTRY_COMPARISON_V0_1.md) for current external reference benchmarks, a preregistered target ladder, rare-event confidence interpretation, and the matched confirmatory evaluation protocol. All numeric targets are goals, not measured results.
 
 The run freeze also pins the state-isolation, artifact-access and network-egress policy digests. These describe per-trial writable state/cache boundaries, agent separation from private oracle artifacts, and default-deny or allowlisted outbound retrieval. The structural validator verifies digest presence/binding only; a separate runtime observer must attest enforcement.
+
+
+### Independent runtime enforcement receipts
+
+The new `src/runtime.rs` validator requires one independent runtime attestation per planned (scenario, Candidate/Baseline) pair. Each receipt binds the exact arm identity, scenario, manifest, environment, resource budget and state/artifact/egress policy digests; it must cover the complete agent interval with complete telemetry. Oracle reads, unauthorized artifact reads, disallowed egress, writable-state sharing, cross-trial state observations, telemetry gaps and missing/duplicate receipts are rejected. See `runtime-trial-attestation.schema.json` and `RUNTIME_ENFORCEMENT_V0_1.md`.
+
+The validator is structural only. The typed source-evidence adapter must authenticate observer receipts and replay sequences; a real runtime observer/sandbox adapter must prove actual enforcement. This does not qualify kernel/hypervisor isolation or production safety.
