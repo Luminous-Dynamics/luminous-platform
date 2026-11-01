@@ -682,3 +682,697 @@ fn validate_sandbox_coverage_window(
 fn is_zero(digest: &Digest) -> bool {
     digest.0.iter().all(|byte| *byte == 0)
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sealed::{
+        ArmRunSummary, BaselineIdentity, FrozenAgentIdentity, PlannedTrial, RunLedgerSummary,
+        TrialDisposition,
+    };
+
+    fn d(value: u8) -> Digest {
+        Digest::from_byte(value)
+    }
+
+    fn fixture(
+        tier: SandboxTier,
+    ) -> (
+        RunManifest,
+        Digest,
+        FreezeReceipt,
+        RunLedgerSummary,
+        Vec<ScenarioReceipt>,
+        Vec<SandboxTrialAttestation>,
+    ) {
+        let manifest_commitment = d(20);
+        let key_class = if tier == SandboxTier::Research {
+            SupervisorKeyClass::SoftwareTestOnly
+        } else {
+            SupervisorKeyClass::HardwareProtected
+        };
+        let manifest = RunManifest {
+            schema: crate::sealed::SEALED_RUN_SCHEMA.into(),
+            version: crate::sealed::SEALED_RUN_VERSION,
+            run_id: "tiered-run".into(),
+            lane: crate::sealed::EvaluationLane::SealedCertification,
+            created_at_ms: 10,
+            frozen_at_ms: 20,
+            evaluator_digest: d(1),
+            execution_environment_digest: d(2),
+            resource_budget_digest: d(3),
+            arm_order_schedule_digest: d(4),
+            state_isolation_policy_digest: d(5),
+            artifact_access_policy_digest: d(6),
+            network_egress_policy_digest: d(7),
+            runtime_observer_source_id: "runtime-observer".into(),
+            runtime_observer_control_domain: "runtime-observer-domain".into(),
+            runtime_observer_adapter_digest: d(8),
+            sandbox_tier: tier,
+            sandbox_profile_digest: d(9),
+            supervisor_id: "external-supervisor".into(),
+            supervisor_source_id: "supervisor-source".into(),
+            supervisor_control_domain: "supervisor-domain".into(),
+            supervisor_adapter_digest: d(10),
+            supervisor_key_class: key_class,
+            agent_identity_digest: d(11),
+            baseline_identity_digest: d(12),
+            agent: FrozenAgentIdentity {
+                agent_id: "candidate".into(),
+                agent_image_digest: d(13),
+                source_commit: "0123456789abcdef0123456789abcdef01234567".into(),
+                model_provider: "provider".into(),
+                model_id: "candidate-model".into(),
+                model_version: "v1".into(),
+                scaffold_digest: d(14),
+                prompt_digest: d(15),
+                toolchain_digest: d(16),
+                runtime_config_digest: d(17),
+                tool_policy_digest: d(18),
+                control_domain: "candidate-domain".into(),
+            },
+            baseline: BaselineIdentity {
+                baseline_id: "baseline".into(),
+                image_digest: d(19),
+                source_commit: "abcdef0123456789abcdef0123456789abcdef01".into(),
+                model_provider: "provider".into(),
+                model_id: "baseline-model".into(),
+                model_version: "v1".into(),
+                scaffold_digest: d(21),
+                prompt_digest: d(22),
+                toolchain_digest: d(23),
+                runtime_config_digest: d(24),
+                tool_policy_digest: d(25),
+                control_domain: "baseline-domain".into(),
+            },
+            freeze_authority_id: "freeze-authority".into(),
+            freeze_authority_control_domain: "freeze-domain".into(),
+            evaluator_control_domain: "evaluator-domain".into(),
+            evidence_source_id: "scenario-source".into(),
+            evidence_control_domain: "scenario-domain".into(),
+            trials: vec![PlannedTrial {
+                trial_id: "trial-1".into(),
+                cluster_id: "cluster-1".into(),
+                first_arm: EvaluationArm::Candidate,
+                maximum_attempts: 1,
+            }],
+        };
+        let freeze = FreezeReceipt {
+            run_id: manifest.run_id.clone(),
+            manifest_commitment: manifest_commitment.clone(),
+            committed_at_ms: 15,
+            frozen_at_ms: 20,
+            agent_identity_digest: manifest.agent_identity_digest.clone(),
+            baseline_identity_digest: manifest.baseline_identity_digest.clone(),
+            evaluator_digest: manifest.evaluator_digest.clone(),
+            execution_environment_digest: manifest.execution_environment_digest.clone(),
+            resource_budget_digest: manifest.resource_budget_digest.clone(),
+            arm_order_schedule_digest: manifest.arm_order_schedule_digest.clone(),
+            state_isolation_policy_digest: manifest.state_isolation_policy_digest.clone(),
+            artifact_access_policy_digest: manifest.artifact_access_policy_digest.clone(),
+            network_egress_policy_digest: manifest.network_egress_policy_digest.clone(),
+            runtime_observer_source_id: manifest.runtime_observer_source_id.clone(),
+            runtime_observer_control_domain: manifest.runtime_observer_control_domain.clone(),
+            runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+            sandbox_tier: manifest.sandbox_tier,
+            sandbox_profile_digest: manifest.sandbox_profile_digest.clone(),
+            supervisor_id: manifest.supervisor_id.clone(),
+            supervisor_source_id: manifest.supervisor_source_id.clone(),
+            supervisor_control_domain: manifest.supervisor_control_domain.clone(),
+            supervisor_adapter_digest: manifest.supervisor_adapter_digest.clone(),
+            supervisor_key_class: manifest.supervisor_key_class,
+            publisher_id: manifest.freeze_authority_id.clone(),
+            publisher_control_domain: manifest.freeze_authority_control_domain.clone(),
+        };
+        let scenario = ScenarioReceipt {
+            run_id: manifest.run_id.clone(),
+            trial_id: "trial-1".into(),
+            manifest_commitment: manifest_commitment.clone(),
+            commitment_scheme: crate::sealed::SCENARIO_COMMITMENT_SCHEME.into(),
+            case_payload_commitment: d(26),
+            oracle_commitment: d(27),
+            generated_at_ms: 25,
+            issued_at_ms: 30,
+            retired_at_ms: None,
+            evaluator_digest: manifest.evaluator_digest.clone(),
+            source_id: manifest.evidence_source_id.clone(),
+            control_domain: manifest.evidence_control_domain.clone(),
+        };
+        let candidate = TrialResult {
+            trial_id: "trial-1".into(),
+            arm: EvaluationArm::Candidate,
+            cluster_id: "cluster-1".into(),
+            disposition: TrialDisposition::Completed,
+            attempts_started: 1,
+            first_started_at_ms: Some(40),
+            terminal_at_ms: 50,
+        };
+        let baseline = TrialResult {
+            trial_id: "trial-1".into(),
+            arm: EvaluationArm::Baseline,
+            cluster_id: "cluster-1".into(),
+            disposition: TrialDisposition::Completed,
+            attempts_started: 1,
+            first_started_at_ms: Some(60),
+            terminal_at_ms: 70,
+        };
+        let arm_summary = ArmRunSummary {
+            planned_trials: 1,
+            completed_trials: 1,
+            failed_trials: 0,
+            skipped_trials: 0,
+            invalidated_trials: 0,
+            total_attempts: 1,
+        };
+        let ledger = RunLedgerSummary {
+            run_id: manifest.run_id.clone(),
+            lane: manifest.lane,
+            planned_trials: 1,
+            planned_arm_trials: 2,
+            candidate: arm_summary.clone(),
+            baseline: arm_summary,
+            completed_trials: 2,
+            failed_trials: 0,
+            skipped_trials: 0,
+            invalidated_trials: 0,
+            total_attempts: 2,
+            unique_clusters: 1,
+            manifest_commitment: manifest_commitment.clone(),
+            agent_identity_digest: manifest.agent_identity_digest.clone(),
+            baseline_identity_digest: manifest.baseline_identity_digest.clone(),
+            evaluator_digest: manifest.evaluator_digest.clone(),
+            execution_environment_digest: manifest.execution_environment_digest.clone(),
+            resource_budget_digest: manifest.resource_budget_digest.clone(),
+            arm_order_schedule_digest: manifest.arm_order_schedule_digest.clone(),
+            state_isolation_policy_digest: manifest.state_isolation_policy_digest.clone(),
+            artifact_access_policy_digest: manifest.artifact_access_policy_digest.clone(),
+            network_egress_policy_digest: manifest.network_egress_policy_digest.clone(),
+            runtime_observer_source_id: manifest.runtime_observer_source_id.clone(),
+            runtime_observer_control_domain: manifest.runtime_observer_control_domain.clone(),
+            runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+            sandbox_tier: manifest.sandbox_tier,
+            sandbox_profile_digest: manifest.sandbox_profile_digest.clone(),
+            supervisor_id: manifest.supervisor_id.clone(),
+            supervisor_source_id: manifest.supervisor_source_id.clone(),
+            supervisor_control_domain: manifest.supervisor_control_domain.clone(),
+            supervisor_adapter_digest: manifest.supervisor_adapter_digest.clone(),
+            supervisor_key_class: manifest.supervisor_key_class,
+            trials: vec![candidate.clone(), baseline.clone()],
+        };
+        let scenarios = vec![scenario.clone()];
+        let attestations = vec![
+            attestation(&manifest, &scenario, EvaluationArm::Candidate, 1, 35, 55),
+            attestation(&manifest, &scenario, EvaluationArm::Baseline, 2, 55, 75),
+        ];
+        (manifest, manifest_commitment, freeze, ledger, scenarios, attestations)
+    }
+
+    fn attestation(
+        manifest: &RunManifest,
+        scenario: &ScenarioReceipt,
+        arm: EvaluationArm,
+        sequence: u64,
+        start: u64,
+        end: u64,
+    ) -> SandboxTrialAttestation {
+        let arm_identity_digest = match arm {
+            EvaluationArm::Candidate => manifest.agent_identity_digest.clone(),
+            EvaluationArm::Baseline => manifest.baseline_identity_digest.clone(),
+        };
+        let (mechanism, seccomp, namespace, cgroup, image, mount, network, tool,
+            hypervisor, guest, cpu_set) = match manifest.sandbox_tier {
+            SandboxTier::Research => (
+                IsolationMechanism::ResearchUnisolated, None, None, None, None, None,
+                None, None, None, None, None,
+            ),
+            SandboxTier::Process => (
+                IsolationMechanism::SeccompProcess, Some(d(31)), Some(d(32)), Some(d(33)),
+                None, None, None, None, None, None, None,
+            ),
+            SandboxTier::Container => (
+                IsolationMechanism::ContainerRuntime, None, None, Some(d(34)), Some(d(35)),
+                Some(d(36)), Some(d(37)), Some(d(38)), None, None, None,
+            ),
+            SandboxTier::MicroVm => (
+                IsolationMechanism::Firecracker, None, None, Some(d(39)), None,
+                Some(d(40)), Some(d(41)), Some(d(42)), Some(d(43)), Some(d(44)), Some(d(45)),
+            ),
+        };
+        let (physical_coverage, energy) = if manifest.sandbox_tier == SandboxTier::MicroVm {
+            (
+                TelemetryCoverage::Complete,
+                EnergyTelemetry {
+                    cpu_package_microjoules: Some(100),
+                    gpu_microjoules: None,
+                    sample_start_ms: Some(30),
+                    sample_end_ms: Some(80),
+                    uncertainty_ppm: Some(5_000),
+                    calibration_profile_digest: Some(d(46)),
+                    hardware_source_id: Some("rapl".into()),
+                    device_identity_digest: Some(d(47)),
+                    unavailable_reason: None,
+                },
+            )
+        } else {
+            (
+                TelemetryCoverage::NotAvailable,
+                EnergyTelemetry {
+                    cpu_package_microjoules: None,
+                    gpu_microjoules: None,
+                    sample_start_ms: None,
+                    sample_end_ms: None,
+                    uncertainty_ppm: None,
+                    calibration_profile_digest: None,
+                    hardware_source_id: None,
+                    device_identity_digest: None,
+                    unavailable_reason: Some("sensor unavailable on this test host".into()),
+                },
+            )
+        };
+        SandboxTrialAttestation {
+            schema: SANDBOX_ATTESTATION_SCHEMA.into(),
+            run_id: manifest.run_id.clone(),
+            trial_id: scenario.trial_id.clone(),
+            arm,
+            arm_identity_digest,
+            scenario_commitment: scenario.case_payload_commitment.clone(),
+            manifest_commitment: scenario.manifest_commitment.clone(),
+            sandbox_tier: manifest.sandbox_tier,
+            sandbox_profile_digest: manifest.sandbox_profile_digest.clone(),
+            supervisor_id: manifest.supervisor_id.clone(),
+            supervisor_source_id: manifest.supervisor_source_id.clone(),
+            supervisor_control_domain: manifest.supervisor_control_domain.clone(),
+            supervisor_adapter_digest: manifest.supervisor_adapter_digest.clone(),
+            supervisor_key_class: manifest.supervisor_key_class,
+            receipt_sequence: sequence,
+            runtime_instance_digest: d(50 + sequence as u8),
+            writable_state_namespace_digest: d(60 + sequence as u8),
+            issued_at_ms: end + 1,
+            measurement_start_ms: start,
+            measurement_end_ms: end,
+            clock_uncertainty_ms: 2,
+            host_os: "linux".into(),
+            host_architecture: "x86_64".into(),
+            host_kernel_digest: d(70),
+            hardware_identity_digest: d(71),
+            isolation_mechanism: mechanism,
+            runtime_version: match manifest.sandbox_tier {
+                SandboxTier::Research => "research/no-isolation",
+                SandboxTier::Process => "gvisor-or-seccomp/1",
+                SandboxTier::Container => "podman/5",
+                SandboxTier::MicroVm => "firecracker/1",
+            }.into(),
+            seccomp_profile_digest: seccomp,
+            namespace_profile_digest: namespace,
+            cgroup_profile_digest: cgroup,
+            container_image_digest: image,
+            mount_policy_digest: mount,
+            network_namespace_digest: network,
+            tool_subsandbox_digest: tool,
+            hypervisor_digest: hypervisor,
+            guest_kernel_digest: guest,
+            dedicated_cpu_set_digest: cpu_set,
+            accelerator_assignment_digest: None,
+            logical_coverage: TelemetryCoverage::Complete,
+            session_identity_digest: d(80 + sequence as u8),
+            harness_identity_digest: d(81),
+            transcript_commitment: d(82 + sequence as u8),
+            input_seed_commitment: d(83),
+            tool_call_count: 3,
+            input_tokens: 200,
+            output_tokens: 50,
+            resource_coverage: TelemetryCoverage::Complete,
+            wallclock_ms: end - start,
+            cpu_time_ns: 1_000_000,
+            peak_memory_bytes: 4 * 1024 * 1024,
+            disk_read_bytes: 1_000,
+            disk_write_bytes: 2_000,
+            network_rx_bytes: 3_000,
+            network_tx_bytes: 4_000,
+            accelerator_utilization_ppm: None,
+            accelerator_memory_bytes: None,
+            retry_count: 0,
+            physical_coverage,
+            energy,
+        }
+    }
+
+    fn validate(
+        fixture: &(
+            RunManifest, Digest, FreezeReceipt, RunLedgerSummary,
+            Vec<ScenarioReceipt>, Vec<SandboxTrialAttestation>
+        ),
+        attestations: &[SandboxTrialAttestation],
+    ) -> Result<SandboxCertificationSummary, SandboxAttestationError> {
+        validate_sandbox_attestations(
+            &fixture.0,
+            &fixture.1,
+            &fixture.2,
+            &fixture.3,
+            &fixture.4,
+            attestations,
+        )
+    }
+
+    #[test]
+    fn research_process_container_and_microvm_positive_controls_are_tier_stratified() {
+        for tier in [
+            SandboxTier::Research,
+            SandboxTier::Process,
+            SandboxTier::Container,
+            SandboxTier::MicroVm,
+        ] {
+            let fixture = fixture(tier);
+            let result = validate(&fixture, &fixture.5).unwrap();
+            assert_eq!(result.tier, tier);
+            assert_eq!(result.planned_arm_trials, 2);
+            assert_eq!(result.complete_attestations, 2);
+            assert_eq!(result.supervisor_id, "external-supervisor");
+            assert_eq!(result.all_physical_energy_measured, tier == SandboxTier::MicroVm);
+            assert_eq!(
+                result.total_cpu_package_microjoules,
+                if tier == SandboxTier::MicroVm { Some(200) } else { None }
+            );
+        }
+    }
+
+    #[test]
+    fn candidate_baseline_cannot_share_runtime_or_writable_namespace() {
+        let fixture = fixture(SandboxTier::Process);
+        let mut receipts = fixture.5.clone();
+        receipts[1].runtime_instance_digest = receipts[0].runtime_instance_digest.clone();
+        assert_eq!(
+            validate(&fixture, &receipts),
+            Err(SandboxAttestationError::DuplicateRuntimeInstance)
+        );
+        let mut receipts = fixture.5.clone();
+        receipts[1].writable_state_namespace_digest =
+            receipts[0].writable_state_namespace_digest.clone();
+        assert_eq!(
+            validate(&fixture, &receipts),
+            Err(SandboxAttestationError::DuplicateStateNamespace)
+        );
+    }
+
+    #[test]
+    fn missing_duplicate_and_unplanned_attestations_are_rejected() {
+        let fixture = fixture(SandboxTier::Process);
+        assert_eq!(
+            validate(&fixture, &fixture.5[..1]),
+            Err(SandboxAttestationError::MissingAttestation(
+                "trial-1".into(), EvaluationArm::Baseline
+            ))
+        );
+        let mut duplicate = fixture.5.clone();
+        duplicate.push(duplicate[0].clone());
+        assert_eq!(
+            validate(&fixture, &duplicate),
+            Err(SandboxAttestationError::DuplicateAttestation(
+                "trial-1".into(), EvaluationArm::Candidate
+            ))
+        );
+        let mut extra = fixture.5.clone();
+        extra[0].trial_id = "unplanned".into();
+        assert!(validate(&fixture, &extra).is_err());
+    }
+
+    #[test]
+    fn process_tier_requires_seccomp_namespaces_and_cgroups() {
+        let fixture = fixture(SandboxTier::Process);
+        let mut receipts = fixture.5.clone();
+        receipts[0].seccomp_profile_digest = None;
+        assert_eq!(
+            validate(&fixture, &receipts),
+            Err(SandboxAttestationError::TierEvidenceMissing(
+                "trial-1".into(), "seccomp_profile"
+            ))
+        );
+        let mut receipts = fixture.5.clone();
+        receipts[0].namespace_profile_digest = None;
+        assert!(validate(&fixture, &receipts).is_err());
+        let mut receipts = fixture.5.clone();
+        receipts[0].cgroup_profile_digest = None;
+        assert!(validate(&fixture, &receipts).is_err());
+    }
+
+    #[test]
+    fn container_tier_requires_content_addressed_image_mount_network_and_tool_sandbox() {
+        let fixture = fixture(SandboxTier::Container);
+        for mutation in 0..5 {
+            let mut receipts = fixture.5.clone();
+            match mutation {
+                0 => receipts[0].container_image_digest = None,
+                1 => receipts[0].mount_policy_digest = None,
+                2 => receipts[0].network_namespace_digest = None,
+                3 => receipts[0].cgroup_profile_digest = None,
+                _ => receipts[0].tool_subsandbox_digest = None,
+            }
+            assert!(validate(&fixture, &receipts).is_err());
+        }
+    }
+
+    #[test]
+    fn microvm_tier_requires_hypervisor_guest_kernel_cpu_set_and_tool_isolation() {
+        let fixture = fixture(SandboxTier::MicroVm);
+        for mutation in 0..6 {
+            let mut receipts = fixture.5.clone();
+            match mutation {
+                0 => receipts[0].hypervisor_digest = None,
+                1 => receipts[0].guest_kernel_digest = None,
+                2 => receipts[0].dedicated_cpu_set_digest = None,
+                3 => receipts[0].mount_policy_digest = None,
+                4 => receipts[0].network_namespace_digest = None,
+                _ => receipts[0].tool_subsandbox_digest = None,
+            }
+            assert!(validate(&fixture, &receipts).is_err());
+        }
+    }
+
+    #[test]
+    fn microvm_requires_hardware_protected_supervisor_and_measured_energy() {
+        let fixture = fixture(SandboxTier::MicroVm);
+        let mut manifest = fixture.0.clone();
+        manifest.supervisor_key_class = SupervisorKeyClass::SoftwareTestOnly;
+        let mut freeze = fixture.2.clone();
+        freeze.supervisor_key_class = SupervisorKeyClass::SoftwareTestOnly;
+        let mut ledger = fixture.3.clone();
+        ledger.supervisor_key_class = SupervisorKeyClass::SoftwareTestOnly;
+        let altered = (
+            manifest, fixture.1.clone(), freeze, ledger, fixture.4.clone(), fixture.5.clone()
+        );
+        assert!(validate(&altered, &altered.5).is_err());
+        let mut receipts = fixture.5.clone();
+        receipts[0].physical_coverage = TelemetryCoverage::NotAvailable;
+        receipts[0].energy = EnergyTelemetry {
+            cpu_package_microjoules: None,
+            gpu_microjoules: None,
+            sample_start_ms: None,
+            sample_end_ms: None,
+            uncertainty_ppm: None,
+            calibration_profile_digest: None,
+            hardware_source_id: None,
+            device_identity_digest: None,
+            unavailable_reason: Some("no physical sensor".into()),
+        };
+        assert!(validate(&fixture, &receipts).is_err());
+    }
+
+    #[test]
+    fn no_partial_or_unknown_logical_or_resource_telemetry_is_accepted() {
+        let fixture = fixture(SandboxTier::Process);
+        let mut receipts = fixture.5.clone();
+        receipts[0].logical_coverage = TelemetryCoverage::Partial;
+        assert_eq!(
+            validate(&fixture, &receipts),
+            Err(SandboxAttestationError::IncompleteLogicalTelemetry(
+                "trial-1".into(), EvaluationArm::Candidate
+            ))
+        );
+        let mut receipts = fixture.5.clone();
+        receipts[0].resource_coverage = TelemetryCoverage::Unknown;
+        assert!(validate(&fixture, &receipts).is_err());
+    }
+
+    #[test]
+    fn physical_energy_requires_interval_calibration_source_and_bounded_uncertainty() {
+        let fixture = fixture(SandboxTier::MicroVm);
+        let mut receipts = fixture.5.clone();
+        receipts[0].energy.calibration_profile_digest = Some(d(0));
+        assert!(validate(&fixture, &receipts).is_err());
+        let mut receipts = fixture.5.clone();
+        receipts[0].energy.sample_start_ms = Some(31);
+        assert!(validate(&fixture, &receipts).is_err());
+        let mut receipts = fixture.5.clone();
+        receipts[0].energy.uncertainty_ppm = Some(MAX_ENERGY_UNCERTAINTY_PPM + 1);
+        assert!(validate(&fixture, &receipts).is_err());
+        let mut receipts = fixture.5.clone();
+        receipts[0].energy.hardware_source_id = Some(String::new());
+        assert!(validate(&fixture, &receipts).is_err());
+    }
+
+    #[test]
+    fn full_trial_measurement_interval_and_clock_uncertainty_are_enforced() {
+        let fixture = fixture(SandboxTier::Process);
+        let mut receipts = fixture.5.clone();
+        receipts[0].measurement_start_ms = 39;
+        assert!(validate(&fixture, &receipts).is_err());
+        let mut receipts = fixture.5.clone();
+        receipts[0].measurement_end_ms = 49;
+        receipts[0].issued_at_ms = 50;
+        assert!(validate(&fixture, &receipts).is_err());
+        let mut receipts = fixture.5.clone();
+        receipts[0].clock_uncertainty_ms = 1_001;
+        assert!(validate(&fixture, &receipts).is_err());
+    }
+
+    #[test]
+    fn supervisor_identity_key_and_control_domain_must_match_frozen_manifest() {
+        let fixture = fixture(SandboxTier::Process);
+        let mut receipts = fixture.5.clone();
+        receipts[0].supervisor_source_id = "other-source".into();
+        assert_eq!(
+            validate(&fixture, &receipts),
+            Err(SandboxAttestationError::AttestationBindingMismatch(
+                "trial-1".into(), EvaluationArm::Candidate
+            ))
+        );
+        let mut receipts = fixture.5.clone();
+        receipts[0].supervisor_control_domain = "candidate-domain".into();
+        assert_eq!(
+            validate(&fixture, &receipts),
+            Err(SandboxAttestationError::SupervisorControlDomainCollision)
+        );
+    }
+
+    #[test]
+    fn observer_sequence_must_start_at_one_and_be_contiguous_in_issue_order() {
+        let fixture = fixture(SandboxTier::Process);
+        let mut receipts = fixture.5.clone();
+        receipts[0].receipt_sequence = 2;
+        receipts[1].receipt_sequence = 3;
+        assert_eq!(
+            validate(&fixture, &receipts),
+            Err(SandboxAttestationError::SupervisorSequenceNotContiguous)
+        );
+        let mut receipts = fixture.5.clone();
+        receipts[1].issued_at_ms = receipts[0].issued_at_ms;
+        assert_eq!(
+            validate(&fixture, &receipts),
+            Err(SandboxAttestationError::SupervisorSequenceNotContiguous)
+        );
+    }
+
+    #[test]
+    fn hardware_kernel_and_architecture_must_match_the_frozen_environment() {
+        let fixture = fixture(SandboxTier::Process);
+        let mut receipts = fixture.5.clone();
+        receipts[1].hardware_identity_digest = d(99);
+        assert!(validate(&fixture, &receipts).is_err());
+        let mut receipts = fixture.5.clone();
+        receipts[1].host_kernel_digest = d(98);
+        assert!(validate(&fixture, &receipts).is_err());
+        let mut receipts = fixture.5.clone();
+        receipts[1].host_architecture = "aarch64".into();
+        assert!(validate(&fixture, &receipts).is_err());
+    }
+
+    #[test]
+    fn resource_totals_are_reported_only_when_physical_energy_is_measured() {
+        let fixture = fixture(SandboxTier::MicroVm);
+        let result = validate(&fixture, &fixture.5).unwrap();
+        assert_eq!(result.total_cpu_package_microjoules, Some(200));
+        assert_eq!(result.total_gpu_microjoules, None);
+        assert!(result.all_physical_energy_measured);
+        let process = fixture(SandboxTier::Process);
+        let result = validate(&process, &process.5).unwrap();
+        assert_eq!(result.total_cpu_package_microjoules, None);
+        assert!(!result.all_physical_energy_measured);
+    }
+
+    #[test]
+    fn sixty_four_adversarial_sandbox_mutations_never_pass() {
+        for vector in 0..64 {
+            let tier = if (38..=54).contains(&vector) {
+                SandboxTier::MicroVm
+            } else {
+                SandboxTier::Process
+            };
+            let (mut manifest, commitment, mut freeze, mut ledger, mut scenarios, mut receipts) =
+                fixture(tier);
+            match vector {
+                0 => manifest.run_id = "other-run".into(),
+                1 => manifest.sandbox_profile_digest = d(99),
+                2 => manifest.supervisor_id = "wrong-supervisor".into(),
+                3 => manifest.supervisor_source_id = "wrong-source".into(),
+                4 => manifest.supervisor_control_domain = manifest.agent.control_domain.clone(),
+                5 => manifest.supervisor_adapter_digest = d(0),
+                6 => manifest.sandbox_tier = SandboxTier::Research,
+                7 => freeze.sandbox_profile_digest = d(99),
+                8 => freeze.supervisor_id = "wrong-supervisor".into(),
+                9 => freeze.supervisor_key_class = SupervisorKeyClass::SoftwareTestOnly,
+                10 => ledger.manifest_commitment = d(99),
+                11 => ledger.sandbox_profile_digest = d(99),
+                12 => ledger.supervisor_source_id = "wrong".into(),
+                13 => scenarios[0].manifest_commitment = d(99),
+                14 => scenarios[0].case_payload_commitment = d(99),
+                15 => receipts[0].schema = "unknown-schema".into(),
+                16 => receipts[0].trial_id = "unplanned".into(),
+                17 => receipts[0].arm_identity_digest = d(99),
+                18 => receipts[0].scenario_commitment = d(99),
+                19 => receipts[0].manifest_commitment = d(99),
+                20 => receipts[0].sandbox_tier = SandboxTier::Container,
+                21 => receipts[0].sandbox_profile_digest = d(99),
+                22 => receipts[0].supervisor_id = "attacker".into(),
+                23 => receipts[0].supervisor_source_id = "attacker".into(),
+                24 => receipts[0].supervisor_control_domain = "candidate-domain".into(),
+                25 => receipts[0].supervisor_adapter_digest = d(0),
+                26 => receipts[0].supervisor_key_class = SupervisorKeyClass::SoftwareTestOnly,
+                27 => receipts[0].receipt_sequence = 0,
+                28 => receipts[1].receipt_sequence = receipts[0].receipt_sequence,
+                29 => receipts[0].issued_at_ms = receipts[0].measurement_end_ms - 1,
+                30 => receipts[0].measurement_start_ms = 39,
+                31 => receipts[0].measurement_end_ms = 49,
+                32 => receipts[0].clock_uncertainty_ms = 5_000,
+                33 => receipts[0].host_os.clear(),
+                34 => receipts[0].host_architecture.clear(),
+                35 => receipts[0].host_kernel_digest = d(0),
+                36 => receipts[0].hardware_identity_digest = d(0),
+                37 => receipts[0].isolation_mechanism = IsolationMechanism::ResearchUnisolated,
+                38 => receipts[0].hypervisor_digest = None,
+                39 => receipts[0].guest_kernel_digest = None,
+                40 => receipts[0].dedicated_cpu_set_digest = None,
+                41 => receipts[0].mount_policy_digest = None,
+                42 => receipts[0].network_namespace_digest = None,
+                43 => receipts[0].tool_subsandbox_digest = None,
+                44 => receipts[0].physical_coverage = TelemetryCoverage::Partial,
+                45 => receipts[0].energy.cpu_package_microjoules = None,
+                46 => receipts[0].energy.calibration_profile_digest = Some(d(0)),
+                47 => receipts[0].energy.sample_end_ms = Some(40),
+                48 => receipts[0].energy.uncertainty_ppm = Some(200_000),
+                49 => receipts[0].logical_coverage = TelemetryCoverage::Unknown,
+                50 => receipts[0].transcript_commitment = d(0),
+                51 => receipts[0].resource_coverage = TelemetryCoverage::Tampered,
+                52 => receipts[0].cpu_time_ns = 0,
+                53 => receipts[0].peak_memory_bytes = 0,
+                54 => receipts[0].writable_state_namespace_digest = d(0),
+                55 => receipts[1].runtime_instance_digest = receipts[0].runtime_instance_digest.clone(),
+                56 => receipts[1].writable_state_namespace_digest = receipts[0].writable_state_namespace_digest.clone(),
+                57 => receipts.push(receipts[0].clone()),
+                58 => receipts.pop(),
+                59 => receipts[0].hardware_identity_digest = d(88),
+                60 => receipts[1].host_kernel_digest = d(89),
+                61 => receipts[1].host_architecture = "aarch64".into(),
+                62 => receipts[0].runtime_version.clear(),
+                _ => receipts[0].energy.hardware_source_id = Some(String::new()),
+            }
+            let result = validate_sandbox_attestations(
+                &manifest, &commitment, &freeze, &ledger, &scenarios, &receipts
+            );
+            assert!(
+                result.is_err(),
+                "sandbox mutation vector {vector} was accepted"
+            );
+        }
+    }
+}
