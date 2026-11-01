@@ -112,6 +112,8 @@ pub struct TrustPolicyReference {
 pub struct ArtifactDescriptor {
     pub artifact_id: String,
     pub content_digest: Digest,
+    /// For RetiredReveal, the exact active-case/oracle commitment this artifact discloses.
+    pub related_commitment: Option<Digest>,
     /// Required for Embedded artifacts. CommitmentOnly has no payload byte length.
     pub byte_length: Option<u64>,
     pub media_type: String,
@@ -589,10 +591,29 @@ fn validate_artifact_descriptor(
             ArtifactSensitivity::Public => {}
         }
     }
-    if artifact.sensitivity == ArtifactSensitivity::RetiredReveal
-        && manifest.lane != EvaluationLane::RetiredReproducibility
-    {
-        return Err(BundleVerificationError::RetiredRevealInWrongLane(id));
+    if artifact.sensitivity == ArtifactSensitivity::RetiredReveal {
+        if manifest.lane != EvaluationLane::RetiredReproducibility {
+            return Err(BundleVerificationError::RetiredRevealInWrongLane(id));
+        }
+        if artifact.availability != ArtifactAvailability::Embedded {
+            return Err(BundleVerificationError::InvalidArtifact(id));
+        }
+        let commitment = artifact.related_commitment.as_ref()
+            .filter(|digest| !digest_is_zero(digest))
+            .ok_or_else(|| BundleVerificationError::RetiredRevealCommitmentMissing(id.clone()))?;
+        let original_commitment = manifest.artifacts.iter().any(|original| {
+            &original.content_digest == commitment
+                && matches!(
+                    original.sensitivity,
+                    ArtifactSensitivity::ActiveSealedScenario | ArtifactSensitivity::PrivateOracle
+                )
+                && original.availability == ArtifactAvailability::CommitmentOnly
+        });
+        if !original_commitment {
+            return Err(BundleVerificationError::RetiredRevealCommitmentMismatch(id));
+        }
+    } else if artifact.related_commitment.is_some() {
+        return Err(BundleVerificationError::InvalidArtifact(id));
     }
     Ok(())
 }
@@ -852,6 +873,7 @@ mod tests {
             ArtifactDescriptor {
                 artifact_id: "evaluator-attestation".into(),
                 content_digest: d(10),
+                related_commitment: None,
                 byte_length: Some(128),
                 media_type: "application/vnd.dsse.envelope+json".into(),
                 publisher_id: "evaluator-publisher".into(),
@@ -867,6 +889,7 @@ mod tests {
             ArtifactDescriptor {
                 artifact_id: "service-observer-attestation".into(),
                 content_digest: d(11),
+                related_commitment: None,
                 byte_length: None,
                 media_type: "application/vnd.in-toto+json".into(),
                 publisher_id: "observer-publisher".into(),
@@ -882,6 +905,7 @@ mod tests {
             ArtifactDescriptor {
                 artifact_id: "active-oracle-commitment".into(),
                 content_digest: d(12),
+                related_commitment: None,
                 byte_length: None,
                 media_type: "application/vnd.luminous.commitment".into(),
                 publisher_id: "evaluator-publisher".into(),
@@ -1240,6 +1264,58 @@ mod tests {
             &fixture.0, &fixture.1, &d(99), &fixture.0.verifier_digest, fixture.3, &fixture.4
         );
         assert_eq!(result, Err(BundleVerificationError::ManifestCommitmentMismatch));
+    }
+
+
+    #[test]
+    fn retired_reveal_must_bind_to_an_original_commitment_artifact() {
+        let mut fixture = fixture();
+        fixture.0.lane = EvaluationLane::RetiredReproducibility;
+        fixture.0.artifacts.push(ArtifactDescriptor {
+            artifact_id: "retired-oracle-reveal".into(),
+            content_digest: d(13),
+            related_commitment: Some(d(12)),
+            byte_length: Some(64),
+            media_type: "application/octet-stream".into(),
+            publisher_id: "evaluator-publisher".into(),
+            source_id: "evaluator-source".into(),
+            control_domain: "evaluator-domain".into(),
+            role: EvidenceRole::Evaluator,
+            sequence: 3,
+            issued_at_ms: 203,
+            availability: ArtifactAvailability::Embedded,
+            sensitivity: ArtifactSensitivity::RetiredReveal,
+            required_for_verification: true,
+        });
+        fixture.0.claims[0].evidence_digests.push(d(13));
+        fixture.4.push(ArtifactAuthenticationReceipt {
+            artifact_id: "retired-oracle-reveal".into(),
+            subject_digest: d(13),
+            manifest_commitment: fixture.2.clone(),
+            publisher_id: "evaluator-publisher".into(),
+            source_id: "evaluator-source".into(),
+            control_domain: "evaluator-domain".into(),
+            role: EvidenceRole::Evaluator,
+            sequence: 3,
+            issued_at_ms: 203,
+            verified_at_ms: 244,
+            observed_content_digest: Some(d(13)),
+            observed_byte_length: Some(64),
+            trust_policy_digest: fixture.0.trust_policy.policy_digest.clone(),
+            verifier_id: "portable-verifier".into(),
+            verifier_build_digest: fixture.0.verifier_digest.clone(),
+            decision: AuthenticationDecision::Authenticated,
+        });
+        assert_eq!(verify(&fixture, &fixture.4).unwrap().integrity, BundleIntegrity::Verified);
+
+        let mut wrong = fixture.clone();
+        wrong.0.artifacts[3].related_commitment = Some(d(99));
+        assert_eq!(
+            verify(&wrong, &wrong.4),
+            Err(BundleVerificationError::RetiredRevealCommitmentMismatch(
+                "retired-oracle-reveal".into()
+            ))
+        );
     }
 
     #[test]
