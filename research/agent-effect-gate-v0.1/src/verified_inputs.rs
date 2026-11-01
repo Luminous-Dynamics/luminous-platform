@@ -865,8 +865,8 @@ mod tests {
     #[test]
     fn stale_sequence_floor_is_rejected() {
         fn mutate(v: &mut Vec<VerifiedAttestation>) { v[1].payload.sequence = 3; }
-        let (mut broker, p, g, e) = verified_broker(None, Some(mutate));
-        let result = broker.dispatch(&p, Some(&g), &e);
+        let (mut broker, p, e) = verified_broker(None, Some(mutate));
+        let result = broker.dispatch(&p, &e);
         assert_eq!(result.gate_receipt.decision(),
             super::super::GateDecision::Denied(GateDenial::EvidenceSequenceRollback));
         assert_eq!(broker.participant_mut().submit_calls, 0);
