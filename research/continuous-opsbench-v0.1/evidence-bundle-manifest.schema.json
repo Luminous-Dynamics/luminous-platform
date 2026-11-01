@@ -1,0 +1,450 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-evidence-bundle-manifest-v0.1.json",
+  "title": "Continuous OpsBench portable evidence bundle manifest v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "bundle_id",
+    "run_id",
+    "lane",
+    "visibility",
+    "created_at_ms",
+    "manifest_commitment",
+    "bundle_digest",
+    "verifier_digest",
+    "trust_policy",
+    "planned_trial_ids",
+    "artifacts",
+    "claims"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-evidence-bundle-v0.1"
+    },
+    "version": {
+      "const": 1
+    },
+    "bundle_id": {
+      "$ref": "#/$defs/id"
+    },
+    "run_id": {
+      "$ref": "#/$defs/id"
+    },
+    "lane": {
+      "enum": [
+        "open_development",
+        "sealed_certification",
+        "retired_reproducibility"
+      ]
+    },
+    "visibility": {
+      "enum": [
+        "public",
+        "restricted"
+      ]
+    },
+    "created_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "manifest_commitment": {
+      "$ref": "#/$defs/sha256"
+    },
+    "bundle_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "verifier_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "trust_policy": {
+      "$ref": "#/$defs/trust_policy"
+    },
+    "planned_trial_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/id"
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/artifact"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "publisher": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publisher_id",
+        "source_id",
+        "control_domain",
+        "role"
+      ],
+      "properties": {
+        "publisher_id": {
+          "$ref": "#/$defs/id"
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "role": {
+          "enum": [
+            "freeze_authority",
+            "evaluator",
+            "participant_ledger",
+            "service_observer",
+            "runtime_observer",
+            "sandbox_supervisor",
+            "privacy_disclosure_observer",
+            "privacy_grader",
+            "other"
+          ]
+        }
+      }
+    },
+    "trust_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "policy_digest",
+        "verifier_id",
+        "verifier_build_digest",
+        "trust_roots_digest",
+        "identity_constraints_digest",
+        "revocation_policy_digest",
+        "policy_as_of_ms",
+        "maximum_attestation_age_ms",
+        "minimum_verifier_version",
+        "trusted_publishers"
+      ],
+      "properties": {
+        "policy_id": {
+          "$ref": "#/$defs/id"
+        },
+        "policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "verifier_id": {
+          "$ref": "#/$defs/id"
+        },
+        "verifier_build_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "trust_roots_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "identity_constraints_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "revocation_policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "policy_as_of_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maximum_attestation_age_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "minimum_verifier_version": {
+          "$ref": "#/$defs/id"
+        },
+        "trusted_publishers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/publisher"
+          }
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "content_digest",
+        "byte_length",
+        "media_type",
+        "publisher_id",
+        "source_id",
+        "control_domain",
+        "role",
+        "sequence",
+        "issued_at_ms",
+        "availability",
+        "sensitivity",
+        "required_for_verification"
+      ],
+      "properties": {
+        "artifact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "content_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "byte_length": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "media_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "publisher_id": {
+          "$ref": "#/$defs/id"
+        },
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "role": {
+          "enum": [
+            "freeze_authority",
+            "evaluator",
+            "participant_ledger",
+            "service_observer",
+            "runtime_observer",
+            "sandbox_supervisor",
+            "privacy_disclosure_observer",
+            "privacy_grader",
+            "other"
+          ]
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "issued_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "availability": {
+          "enum": [
+            "embedded",
+            "commitment_only",
+            "unavailable"
+          ]
+        },
+        "sensitivity": {
+          "enum": [
+            "public",
+            "restricted",
+            "active_sealed_scenario",
+            "private_oracle",
+            "retired_reveal"
+          ]
+        },
+        "required_for_verification": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "const": "embedded"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "byte_length": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "availability": {
+                "enum": [
+                  "commitment_only",
+                  "unavailable"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "byte_length": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "claim_subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "trial_id",
+        "arm",
+        "subject_digest"
+      ],
+      "properties": {
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/id"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "arm": {
+          "oneOf": [
+            {
+              "enum": [
+                "candidate",
+                "baseline"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "subject_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "claim_type",
+        "subject",
+        "status",
+        "verifier_id",
+        "verifier_digest",
+        "evidence_digests",
+        "dependencies",
+        "assumptions",
+        "claim_ceiling",
+        "status_reason"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/id"
+        },
+        "claim_type": {
+          "enum": [
+            "authorization",
+            "external_effect",
+            "service_outcome",
+            "request_impact",
+            "safety",
+            "calibration",
+            "contextual_privacy",
+            "runtime_enforcement",
+            "sandbox_tier",
+            "resource_telemetry",
+            "energy_measurement",
+            "statistical_comparison",
+            "contamination_control"
+          ]
+        },
+        "subject": {
+          "$ref": "#/$defs/claim_subject"
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "indeterminate"
+          ]
+        },
+        "verifier_id": {
+          "$ref": "#/$defs/id"
+        },
+        "verifier_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "evidence_digests": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/sha256"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "type": "string",
+            "maxLength": 4096
+          }
+        },
+        "claim_ceiling": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "status_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      }
+    }
+  }
+}
