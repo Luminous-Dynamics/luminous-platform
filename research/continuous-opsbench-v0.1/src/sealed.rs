@@ -39,10 +39,15 @@ pub struct BaselineIdentity {
     pub baseline_id: String,
     pub image_digest: Digest,
     pub source_commit: String,
+    pub model_provider: String,
     pub model_id: String,
+    pub model_version: String,
     pub scaffold_digest: Digest,
     pub prompt_digest: Digest,
+    pub toolchain_digest: Digest,
+    pub runtime_config_digest: Digest,
     pub tool_policy_digest: Digest,
+    pub control_domain: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -63,6 +68,10 @@ pub struct RunManifest {
     pub created_at_ms: u64,
     pub frozen_at_ms: u64,
     pub evaluator_digest: Digest,
+    /// Frozen common execution environment for both arms (host/VM/runtime profile).
+    pub execution_environment_digest: Digest,
+    /// Frozen common resource ceilings for both arms (time, tokens, CPU, memory, tool calls).
+    pub resource_budget_digest: Digest,
     pub agent_identity_digest: Digest,
     pub baseline_identity_digest: Digest,
     pub agent: FrozenAgentIdentity,
@@ -85,6 +94,8 @@ pub struct FreezeReceipt {
     pub agent_identity_digest: Digest,
     pub baseline_identity_digest: Digest,
     pub evaluator_digest: Digest,
+    pub execution_environment_digest: Digest,
+    pub resource_budget_digest: Digest,
     pub publisher_id: String,
     pub publisher_control_domain: String,
 }
@@ -207,6 +218,8 @@ pub struct RunLedgerSummary {
     pub agent_identity_digest: Digest,
     pub baseline_identity_digest: Digest,
     pub evaluator_digest: Digest,
+    pub execution_environment_digest: Digest,
+    pub resource_budget_digest: Digest,
     pub trials: Vec<TrialResult>,
 }
 
@@ -426,6 +439,8 @@ pub fn validate_run_ledger_with_reveals(
         agent_identity_digest: manifest.agent_identity_digest.clone(),
         baseline_identity_digest: manifest.baseline_identity_digest.clone(),
         evaluator_digest: manifest.evaluator_digest.clone(),
+        execution_environment_digest: manifest.execution_environment_digest.clone(),
+        resource_budget_digest: manifest.resource_budget_digest.clone(),
         trials: results,
     })
 }
@@ -444,7 +459,10 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         (manifest.agent.control_domain.as_str(), "agent_control_domain"),
         (manifest.baseline.baseline_id.as_str(), "baseline_id"),
         (manifest.baseline.source_commit.as_str(), "baseline_source_commit"),
+        (manifest.baseline.model_provider.as_str(), "baseline_model_provider"),
         (manifest.baseline.model_id.as_str(), "baseline_model_id"),
+        (manifest.baseline.model_version.as_str(), "baseline_model_version"),
+        (manifest.baseline.control_domain.as_str(), "baseline_control_domain"),
         (manifest.freeze_authority_id.as_str(), "freeze_authority_id"),
         (manifest.freeze_authority_control_domain.as_str(), "freeze_authority_control_domain"),
         (manifest.evaluator_control_domain.as_str(), "evaluator_control_domain"),
@@ -465,13 +483,19 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         return Err(SealedRunError::InvalidRunInterval);
     }
     if manifest.trials.is_empty() { return Err(SealedRunError::MissingPlannedTrials); }
-    if manifest.agent.control_domain == manifest.freeze_authority_control_domain
+    if manifest.agent.control_domain == manifest.baseline.control_domain
+        || manifest.agent.control_domain == manifest.freeze_authority_control_domain
         || manifest.agent.control_domain == manifest.evaluator_control_domain
         || manifest.agent.control_domain == manifest.evidence_control_domain
+        || manifest.baseline.control_domain == manifest.freeze_authority_control_domain
+        || manifest.baseline.control_domain == manifest.evaluator_control_domain
+        || manifest.baseline.control_domain == manifest.evidence_control_domain
         || manifest.freeze_authority_control_domain == manifest.evaluator_control_domain
         || manifest.freeze_authority_control_domain == manifest.evidence_control_domain
         || manifest.evaluator_control_domain == manifest.evidence_control_domain
         || digest_is_zero(&manifest.evaluator_digest)
+        || digest_is_zero(&manifest.execution_environment_digest)
+        || digest_is_zero(&manifest.resource_budget_digest)
         || digest_is_zero(&manifest.agent_identity_digest)
         || digest_is_zero(&manifest.baseline_identity_digest)
         || digest_is_zero(&manifest.agent.agent_image_digest)
@@ -483,6 +507,8 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         || digest_is_zero(&manifest.baseline.image_digest)
         || digest_is_zero(&manifest.baseline.scaffold_digest)
         || digest_is_zero(&manifest.baseline.prompt_digest)
+        || digest_is_zero(&manifest.baseline.toolchain_digest)
+        || digest_is_zero(&manifest.baseline.runtime_config_digest)
         || digest_is_zero(&manifest.baseline.tool_policy_digest)
     {
         return Err(SealedRunError::InvalidControlDomainSeparation);
@@ -504,6 +530,8 @@ fn validate_freeze_receipt(
         || receipt.agent_identity_digest != manifest.agent_identity_digest
         || receipt.baseline_identity_digest != manifest.baseline_identity_digest
         || receipt.evaluator_digest != manifest.evaluator_digest
+        || receipt.execution_environment_digest != manifest.execution_environment_digest
+        || receipt.resource_budget_digest != manifest.resource_budget_digest
         || receipt.publisher_id != manifest.freeze_authority_id
         || receipt.publisher_control_domain != manifest.freeze_authority_control_domain
     {
@@ -602,6 +630,7 @@ fn validate_event_binding(
     }
     if event.control_domain != manifest.evidence_control_domain
         || event.control_domain == manifest.agent.control_domain
+        || event.control_domain == manifest.baseline.control_domain
         || event.control_domain == manifest.evaluator_control_domain
     {
         return Err(SealedRunError::EventControlDomainCollision(trial.trial_id.clone()));
@@ -775,6 +804,7 @@ fn validate_scenario_reveals(
         }
         if reveal.control_domain != manifest.evidence_control_domain
             || reveal.control_domain == manifest.agent.control_domain
+            || reveal.control_domain == manifest.baseline.control_domain
             || reveal.control_domain == manifest.evaluator_control_domain
         {
             return Err(SealedRunError::ScenarioRevealControlDomainCollision(reveal.trial_id.clone()));
