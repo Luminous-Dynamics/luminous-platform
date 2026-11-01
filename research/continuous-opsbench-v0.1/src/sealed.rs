@@ -249,6 +249,26 @@ pub fn validate_run_ledger(
     scenarios: &[ScenarioReceipt],
     events: &[TrialEvent],
 ) -> Result<RunLedgerSummary, SealedRunError> {
+    validate_run_ledger_with_reveals(
+        manifest,
+        expected_manifest_commitment,
+        freeze,
+        scenarios,
+        &[],
+        events,
+    )
+}
+
+/// Full validation entry point. Retired-reproducibility runs must provide exactly
+/// one reveal per planned trial; open and active sealed runs must provide none.
+pub fn validate_run_ledger_with_reveals(
+    manifest: &RunManifest,
+    expected_manifest_commitment: &Digest,
+    freeze: &FreezeReceipt,
+    scenarios: &[ScenarioReceipt],
+    reveals: &[ScenarioReveal],
+    events: &[TrialEvent],
+) -> Result<RunLedgerSummary, SealedRunError> {
     validate_manifest(manifest)?;
     validate_freeze_receipt(manifest, expected_manifest_commitment, freeze)?;
 
@@ -283,6 +303,13 @@ pub fn validate_run_ledger(
             return Err(SealedRunError::MissingScenarioReceipt(trial.trial_id.clone()));
         }
     }
+    validate_scenario_reveals(
+        manifest,
+        expected_manifest_commitment,
+        &trial_index,
+        &scenario_index,
+        reveals,
+    )?;
 
     let mut event_ids = BTreeSet::new();
     let mut events_by_trial: BTreeMap<&str, Vec<&TrialEvent>> = BTreeMap::new();
