@@ -4,6 +4,7 @@
 //! It does not provision isolation or authenticate the Supervisor. The existing
 //! typed evidence verifier must authenticate Supervisor receipts before use.
 
+use crate::runtime::validate_ledger_binding;
 use crate::sealed::{
     validate_freeze_receipt, validate_manifest, validate_scenario, EvaluationArm, FreezeReceipt,
     RunLedgerSummary, RunManifest, SandboxTier, ScenarioReceipt, SupervisorKeyClass, TrialResult,
@@ -206,7 +207,8 @@ pub fn validate_sandbox_attestations(
     validate_manifest(manifest).map_err(|_| SandboxAttestationError::ManifestOrFreezeInvalid)?;
     validate_freeze_receipt(manifest, expected_manifest_commitment, freeze)
         .map_err(|_| SandboxAttestationError::ManifestOrFreezeInvalid)?;
-    validate_sandbox_ledger_binding(manifest, expected_manifest_commitment, ledger)?;
+    validate_ledger_binding(manifest, ledger)
+        .map_err(|_| SandboxAttestationError::LedgerManifestMismatch)?;
 
     let mut scenario_index: BTreeMap<&str, &ScenarioReceipt> = BTreeMap::new();
     for scenario in scenarios {
@@ -304,12 +306,18 @@ pub fn validate_sandbox_attestations(
         common_architecture.get_or_insert(receipt.host_architecture.as_str());
 
         if let Some(energy) = receipt.energy.cpu_package_microjoules {
-            total_cpu_energy = total_cpu_energy.and_then(|sum| sum.checked_add(energy));
+            if let Some(sum) = total_cpu_energy {
+                total_cpu_energy = Some(sum.checked_add(energy)
+                    .ok_or(SandboxAttestationError::ArithmeticOverflow)?);
+            }
         } else {
             total_cpu_energy = None;
         }
         if let Some(energy) = receipt.energy.gpu_microjoules {
-            total_gpu_energy = total_gpu_energy.and_then(|sum| sum.checked_add(energy));
+            if let Some(sum) = total_gpu_energy {
+                total_gpu_energy = Some(sum.checked_add(energy)
+                    .ok_or(SandboxAttestationError::ArithmeticOverflow)?);
+            }
         } else {
             total_gpu_energy = None;
         }
@@ -397,34 +405,6 @@ pub fn validate_sandbox_attestations(
 }
 
 
-fn validate_sandbox_ledger_binding(
-    manifest: &RunManifest,
-    expected_manifest_commitment: &Digest,
-    ledger: &RunLedgerSummary,
-) -> Result<(), SandboxAttestationError> {
-    if ledger.run_id != manifest.run_id
-        || ledger.lane != manifest.lane
-        || ledger.manifest_commitment != *expected_manifest_commitment
-        || ledger.agent_identity_digest != manifest.agent_identity_digest
-        || ledger.baseline_identity_digest != manifest.baseline_identity_digest
-        || ledger.evaluator_digest != manifest.evaluator_digest
-        || ledger.execution_environment_digest != manifest.execution_environment_digest
-        || ledger.resource_budget_digest != manifest.resource_budget_digest
-        || ledger.sandbox_tier != manifest.sandbox_tier
-        || ledger.sandbox_profile_digest != manifest.sandbox_profile_digest
-        || ledger.supervisor_id != manifest.supervisor_id
-        || ledger.supervisor_source_id != manifest.supervisor_source_id
-        || ledger.supervisor_control_domain != manifest.supervisor_control_domain
-        || ledger.supervisor_adapter_digest != manifest.supervisor_adapter_digest
-        || ledger.supervisor_key_class != manifest.supervisor_key_class
-        || ledger.planned_trials != manifest.trials.len()
-        || ledger.planned_arm_trials != manifest.trials.len().saturating_mul(2)
-    {
-        return Err(SandboxAttestationError::LedgerManifestMismatch);
-    }
-    Ok(())
-}
-
 fn validate_attestation_binding(
     manifest: &RunManifest,
     expected_manifest_commitment: &Digest,
@@ -505,6 +485,11 @@ fn validate_tier_evidence(
     if is_zero(&receipt.hardware_identity_digest) {
         return Err(SandboxAttestationError::InvalidIdentity(
             receipt.trial_id.clone(), "hardware_identity"
+        ));
+    }
+    if manifest.sandbox_tier != SandboxTier::Research && is_zero(&receipt.host_kernel_digest) {
+        return Err(SandboxAttestationError::InvalidIdentity(
+            receipt.trial_id.clone(), "host_kernel"
         ));
     }
 
@@ -1279,8 +1264,8 @@ mod tests {
 
     #[test]
     fn resource_totals_are_reported_only_when_physical_energy_is_measured() {
-        let fixture = fixture(SandboxTier::MicroVm);
-        let result = validate(&fixture, &fixture.5).unwrap();
+        let vm_fixture = fixture(SandboxTier::MicroVm);
+        let result = validate(&vm_fixture, &vm_fixture.5).unwrap();
         assert_eq!(result.total_cpu_package_microjoules, Some(200));
         assert_eq!(result.total_gpu_microjoules, None);
         assert!(result.all_physical_energy_measured);
