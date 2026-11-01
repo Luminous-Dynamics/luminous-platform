@@ -7,16 +7,8 @@
 //! end and reported; left-censored intervals are indeterminate.
 
 use super::Digest;
-use super::impact::{validate_pair_contract, ImpactError, ImpactKind, ObservationArm, PairCellContract};
+use super::impact::{validate_pair_contract, ImpactKind, ObservationArm, PairCellContract};
 use std::collections::{BTreeMap, BTreeSet};
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum ClockSourceKind {
-    Ptp,
-    Ntp,
-    MonotonicMapped,
-    Other,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct IntervalClockContract {
@@ -190,8 +182,9 @@ pub fn evaluate_paired_interval_impact(
     for (index, contract) in contracts.iter().enumerate() {
         validate_pair_contract(&contract.pair)
             .map_err(|_| IntervalImpactError::InvalidPairContract(contract.pair.pair_id.clone()))?;
-        validate_clock_contract(&contract.clock)
-            .map_err(|_| IntervalImpactError::InvalidPairContract(contract.pair.pair_id.clone()))?;
+        if !validate_clock_contract(&contract.clock) {
+            return Err(IntervalImpactError::InvalidPairContract(contract.pair.pair_id.clone()));
+        }
         if contract_index.insert(contract.pair.pair_id.as_str(), index).is_some() {
             return Err(IntervalImpactError::DuplicatePairId(contract.pair.pair_id.clone()));
         }
@@ -326,16 +319,16 @@ pub fn evaluate_paired_interval_impact(
     })
 }
 
-fn validate_clock_contract(clock: &IntervalClockContract) -> Result<(), ()> {
+fn validate_clock_contract(clock: &IntervalClockContract) -> bool {
     if clock.source_id.trim().is_empty()
         || clock.clock_epoch.trim().is_empty()
         || clock.maximum_uncertainty_ms == 0
         || clock.required_timestamp_resolution_ms == 0
         || digest_is_zero(&clock.mapping_digest)
     {
-        return Err(());
+        return false;
     }
-    Ok(())
+    true
 }
 
 fn measure_interval_cell(
@@ -808,9 +801,9 @@ mod tests {
                 54 => { cells[0].events.push(ev("future", 1, ImpactKind::Failed, 300, None)); }
                 55 => { cells[0].events.push(ev("late-start", 1, ImpactKind::Failed, 301, Some(302))); }
                 56 => { cells[0].events.push(ev("zero-end", 1, ImpactKind::Failed, 150, Some(100))); }
-                57 => { cells[0].events.push(ev("duplicate-1", 1, ImpactKind::Failed, 110, Some(120))); cells[0].events.push(ev("duplicate-2", 1, ImpactKind::Slow, 110, Some(120))); }
-                58 => { cells[0].events.push(ev("touch-1", 1, ImpactKind::Failed, 110, Some(120))); cells[0].events.push(ev("touch-2", 1, ImpactKind::Slow, 120, Some(130))); }
-                59 => { cells[0].events.push(ev("open-1", 1, ImpactKind::Failed, 110, None)); cells[0].events.push(ev("open-2", 1, ImpactKind::Slow, 150, None)); }
+                57 => { cells[0].events = vec![ev("dup", 1, ImpactKind::Failed, 110, Some(120)), ev("dup", 1, ImpactKind::Slow, 110, Some(120))]; }
+                58 => { cells[0].events.push(ev("outside-end", 1, ImpactKind::Failed, 280, Some(301))); }
+                59 => { cells[0].events.push(ev("upper-token", 1, ImpactKind::Failed, 110, Some(120))); cells[0].events[0].request_token = "AA".repeat(32); }
                 60 => { cells[0].events = (0..101).map(|n| ev(&format!("u-{n}"), n as u8, ImpactKind::Failed, 110, Some(120))).collect(); }
                 61 => { cells[0].observer_source_id.clear(); }
                 62 => { cells[0].clock_source_id.clear(); }
