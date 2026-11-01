@@ -753,7 +753,7 @@ mod tests {
         let (c, f, r, a, e, mut o, n) = two_fault_fixture();
         o[0].offered_requests = 20;
         let result = evaluate_continuous_run(&c, &f, &r, &a, &e, &o, &n).unwrap();
-        assert_eq!(result.faults[0].repair, RepairDisposition::Indeterminate);
+        assert_eq!(result.faults[0].repair, RepairDisposition::NotVerified);
         assert_eq!(result.verified_repairs, 1);
         assert_eq!(result.evidence, EvidenceDisposition::Indeterminate);
     }
