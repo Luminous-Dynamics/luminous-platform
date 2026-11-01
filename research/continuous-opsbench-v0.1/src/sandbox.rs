@@ -295,7 +295,7 @@ pub fn validate_sandbox_attestations(
 
         if common_hardware.as_ref().map(|v| v != &receipt.hardware_identity_digest).unwrap_or(false)
             || common_kernel.as_ref().map(|v| v != &receipt.host_kernel_digest).unwrap_or(false)
-            || common_architecture.map(|v| v != receipt.host_architecture).unwrap_or(false)
+            || common_architecture.map(|v| v != receipt.host_architecture.as_str()).unwrap_or(false)
         {
             return Err(SandboxAttestationError::HardwareProfileMismatch(
                 receipt.trial_id.clone(), receipt.arm
@@ -1046,14 +1046,15 @@ mod tests {
     fn candidate_baseline_cannot_share_runtime_or_writable_namespace() {
         let fixture = fixture(SandboxTier::Process);
         let mut receipts = fixture.5.clone();
-        receipts[1].runtime_instance_digest = receipts[0].runtime_instance_digest.clone();
+        let duplicate_runtime = receipts[0].runtime_instance_digest.clone();
+        receipts[1].runtime_instance_digest = duplicate_runtime;
         assert_eq!(
             validate(&fixture, &receipts),
             Err(SandboxAttestationError::DuplicateRuntimeInstance)
         );
         let mut receipts = fixture.5.clone();
-        receipts[1].writable_state_namespace_digest =
-            receipts[0].writable_state_namespace_digest.clone();
+        let duplicate_namespace = receipts[0].writable_state_namespace_digest.clone();
+        receipts[1].writable_state_namespace_digest = duplicate_namespace;
         assert_eq!(
             validate(&fixture, &receipts),
             Err(SandboxAttestationError::DuplicateStateNamespace)
@@ -1314,7 +1315,7 @@ mod tests {
                 25 => receipts[0].supervisor_adapter_digest = d(0),
                 26 => receipts[0].supervisor_key_class = SupervisorKeyClass::SoftwareTestOnly,
                 27 => receipts[0].receipt_sequence = 0,
-                28 => receipts[1].receipt_sequence = receipts[0].receipt_sequence,
+                28 => { let duplicate_sequence = receipts[0].receipt_sequence; receipts[1].receipt_sequence = duplicate_sequence; },
                 29 => receipts[0].issued_at_ms = receipts[0].measurement_end_ms - 1,
                 30 => receipts[0].measurement_start_ms = 39,
                 31 => receipts[0].measurement_end_ms = 49,
@@ -1341,15 +1342,18 @@ mod tests {
                 52 => receipts[0].cpu_time_ns = 0,
                 53 => receipts[0].peak_memory_bytes = 0,
                 54 => receipts[0].writable_state_namespace_digest = d(0),
-                55 => receipts[1].runtime_instance_digest = receipts[0].runtime_instance_digest.clone(),
-                56 => receipts[1].writable_state_namespace_digest = receipts[0].writable_state_namespace_digest.clone(),
+                55 => { let duplicate_runtime = receipts[0].runtime_instance_digest.clone(); receipts[1].runtime_instance_digest = duplicate_runtime; },
+                56 => { let duplicate_namespace = receipts[0].writable_state_namespace_digest.clone(); receipts[1].writable_state_namespace_digest = duplicate_namespace; },
                 57 => receipts.push(receipts[0].clone()),
                 58 => receipts.pop(),
                 59 => receipts[0].hardware_identity_digest = d(88),
                 60 => receipts[1].host_kernel_digest = d(89),
                 61 => receipts[1].host_architecture = "aarch64".into(),
                 62 => receipts[0].runtime_version.clear(),
-                _ => receipts[0].energy.hardware_source_id = Some(String::new()),
+                _ => {
+                    receipts[0].energy.cpu_package_microjoules = Some(u128::MAX);
+                    receipts[1].energy.cpu_package_microjoules = Some(u128::MAX);
+                },
             }
             let result = validate_sandbox_attestations(
                 &manifest, &commitment, &freeze, &ledger, &scenarios, &receipts
