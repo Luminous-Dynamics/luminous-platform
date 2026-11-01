@@ -462,6 +462,13 @@ pub(crate) fn validate_ledger_binding(
         || ledger.runtime_observer_adapter_digest != manifest.runtime_observer_adapter_digest
         || ledger.runtime_challenge_authority_id != manifest.runtime_challenge_authority_id
         || ledger.runtime_challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
+        || ledger.sandbox_tier != manifest.sandbox_tier
+        || ledger.sandbox_profile_digest != manifest.sandbox_profile_digest
+        || ledger.supervisor_id != manifest.supervisor_id
+        || ledger.supervisor_source_id != manifest.supervisor_source_id
+        || ledger.supervisor_control_domain != manifest.supervisor_control_domain
+        || ledger.supervisor_adapter_digest != manifest.supervisor_adapter_digest
+        || ledger.supervisor_key_class != manifest.supervisor_key_class
         || ledger.planned_trials != manifest.trials.len()
         || ledger.planned_arm_trials != manifest.trials.len().saturating_mul(2)
         || ledger.trials.len() != manifest.trials.len().saturating_mul(2)
@@ -748,6 +755,13 @@ mod tests {
             runtime_challenge_authority_id: "challenge-authority".into(),
             runtime_challenge_authority_control_domain: "challenge-domain".into(),
             agent_identity_digest: agent_digest.clone(),
+            sandbox_tier: crate::sealed::SandboxTier::Research,
+            sandbox_profile_digest: digest(55),
+            supervisor_id: "sandbox-supervisor".into(),
+            supervisor_source_id: "sandbox-supervisor-source".into(),
+            supervisor_control_domain: "sandbox-supervisor-domain".into(),
+            supervisor_adapter_digest: digest(56),
+            supervisor_key_class: crate::sealed::SupervisorKeyClass::SoftwareTestOnly,
             baseline_identity_digest: baseline_digest.clone(),
             agent,
             baseline,
@@ -779,6 +793,13 @@ mod tests {
             runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
             publisher_id: manifest.freeze_authority_id.clone(),
+            sandbox_tier: manifest.sandbox_tier,
+            sandbox_profile_digest: manifest.sandbox_profile_digest.clone(),
+            supervisor_id: manifest.supervisor_id.clone(),
+            supervisor_source_id: manifest.supervisor_source_id.clone(),
+            supervisor_control_domain: manifest.supervisor_control_domain.clone(),
+            supervisor_adapter_digest: manifest.supervisor_adapter_digest.clone(),
+            supervisor_key_class: manifest.supervisor_key_class,
             publisher_control_domain: manifest.freeze_authority_control_domain.clone(),
         };
 
@@ -867,6 +888,13 @@ mod tests {
             runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
             trials: ledger_trials,
+            sandbox_tier: manifest.sandbox_tier,
+            sandbox_profile_digest: manifest.sandbox_profile_digest.clone(),
+            supervisor_id: manifest.supervisor_id.clone(),
+            supervisor_source_id: manifest.supervisor_source_id.clone(),
+            supervisor_control_domain: manifest.supervisor_control_domain.clone(),
+            supervisor_adapter_digest: manifest.supervisor_adapter_digest.clone(),
+            supervisor_key_class: manifest.supervisor_key_class,
         };
         let attestations = vec![
             attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 30, 60),
