@@ -268,6 +268,12 @@ pub fn validate_runtime_attestations(
                 receipt.arm,
             ));
         }
+        if receipt.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS {
+            return Err(RuntimeAttestationError::ClockUncertaintyExceeded(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
         let first_activity = result
             .first_started_at_ms
             .unwrap_or(result.terminal_at_ms);
@@ -277,12 +283,6 @@ pub fn validate_runtime_attestations(
                 < result.terminal_at_ms
         {
             return Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
-                receipt.trial_id.clone(),
-                receipt.arm,
-            ));
-        }
-        if receipt.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS {
-            return Err(RuntimeAttestationError::ClockUncertaintyExceeded(
                 receipt.trial_id.clone(),
                 receipt.arm,
             ));
