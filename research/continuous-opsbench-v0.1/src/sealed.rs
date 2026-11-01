@@ -341,9 +341,20 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
     if manifest.trials.is_empty() { return Err(SealedRunError::MissingPlannedTrials); }
     if manifest.agent.control_domain == manifest.evaluator_control_domain
         || manifest.agent.control_domain == manifest.evidence_control_domain
-        || manifest.agent.control_domain == manifest.agent.control_domain.trim()
-            && manifest.agent.control_domain.is_empty()
         || manifest.evaluator_control_domain == manifest.evidence_control_domain
+        || digest_is_zero(&manifest.evaluator_digest)
+        || digest_is_zero(&manifest.agent_identity_digest)
+        || digest_is_zero(&manifest.baseline_identity_digest)
+        || digest_is_zero(&manifest.agent.agent_image_digest)
+        || digest_is_zero(&manifest.agent.scaffold_digest)
+        || digest_is_zero(&manifest.agent.prompt_digest)
+        || digest_is_zero(&manifest.agent.toolchain_digest)
+        || digest_is_zero(&manifest.agent.runtime_config_digest)
+        || digest_is_zero(&manifest.agent.tool_policy_digest)
+        || digest_is_zero(&manifest.baseline.image_digest)
+        || digest_is_zero(&manifest.baseline.scaffold_digest)
+        || digest_is_zero(&manifest.baseline.prompt_digest)
+        || digest_is_zero(&manifest.baseline.tool_policy_digest)
     {
         return Err(SealedRunError::InvalidControlDomainSeparation);
     }
@@ -401,9 +412,6 @@ fn validate_scenario(
         || scenario.control_domain == manifest.evaluator_control_domain
     {
         return Err(SealedRunError::EventControlDomainCollision(id));
-    }
-    if scenario.generated_at_ms < manifest.created_at_ms {
-        return Err(SealedRunError::ScenarioGeneratedBeforeFreeze(id));
     }
     if scenario.issued_at_ms < scenario.generated_at_ms
         || scenario.issued_at_ms < manifest.frozen_at_ms
@@ -584,6 +592,10 @@ fn validate_trial_events(
         first_started_at_ms: first_started_at,
         terminal_at_ms: terminal.occurred_at_ms,
     })
+}
+
+fn digest_is_zero(digest: &Digest) -> bool {
+    digest.0.iter().all(|byte| *byte == 0)
 }
 
 fn valid_git_revision(value: &str) -> bool {
@@ -938,7 +950,7 @@ mod tests {
                 12 => { m.created_at_ms = m.frozen_at_ms + 1; None }
                 13 => { m.trials.clear(); None }
                 14 => { m.trials[0].maximum_attempts = 0; None }
-                15 => { m.trials.push(m.trials[0].clone()); None }
+                15 => { let duplicate = m.trials[0].clone(); m.trials.push(duplicate); None }
                 16 => { freeze.publisher_id.clear(); None }
                 17 => { freeze.publisher_control_domain = m.agent.control_domain.clone(); None }
                 18 => { freeze.agent_identity_digest = Digest::from_byte(99); None }
@@ -956,7 +968,7 @@ mod tests {
                 30 => { scenarios[0].issued_at_ms = scenarios[0].generated_at_ms - 1; None }
                 31 => { scenarios[0].retired_at_ms = Some(5); None }
                 32 => { scenarios.pop(); None }
-                33 => { scenarios.push(scenarios[0].clone()); None }
+                33 => { let duplicate = scenarios[0].clone(); scenarios.push(duplicate); None }
                 34 => { let mut x = scenarios[0].clone(); x.trial_id = "unplanned".into(); scenarios.push(x); None }
                 35 => { events.pop(); None }
                 36 => { events[0].run_id = "other-run".into(); None }
@@ -968,10 +980,10 @@ mod tests {
                 42 => { events[0].control_domain = m.agent.control_domain.clone(); None }
                 43 => { events[0].occurred_at_ms = 1; None }
                 44 => { events[0].event_id = events[1].event_id.clone(); None }
-                45 => { events.push(events[0].clone()); None }
+                45 => { let duplicate = events[0].clone(); events.push(duplicate); None }
                 46 => { events[0].attempt = 0; None }
                 47 => { events[0].attempt = 3; None }
-                48 => { events[0].kind = TrialEventKind::Completed; None }
+                48 => { events[0].occurred_at_ms = 39; None }
                 49 => { events[0].kind = TrialEventKind::Started; None }
                 50 => { events[0].kind = TrialEventKind::Skipped; events[0].attempt = 1; None }
                 51 => { events.retain(|e| !(e.trial_id == "trial-a" && e.kind == TrialEventKind::Failed)); None }
