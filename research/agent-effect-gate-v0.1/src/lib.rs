@@ -13,9 +13,9 @@ pub mod verified_inputs;
 pub use verified_inputs::{
     AttestationVerificationError, AttestationVerifier, ClockError, ClockReading,
     EvidenceBinding, EvidenceClaim, EvidenceGateError, EvidencePayload, EvidenceRole,
-    GateEvidenceBundle, PublisherRule, SignedSourceEvidence, TrustPolicy,
-    TrustedClock, VerifiedAttestation, VerifiedEffectBroker, VerifiedGateContext,
-    VerifiedPublisher,
+    EvidenceReplayGuard, GateEvidenceBundle, PublisherRule, ReplayGuardError,
+    SequenceObservation, SignedSourceEvidence, TrustPolicy, TrustedClock,
+    VerifiedAttestation, VerifiedEffectBroker, VerifiedGateContext, VerifiedPublisher,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
