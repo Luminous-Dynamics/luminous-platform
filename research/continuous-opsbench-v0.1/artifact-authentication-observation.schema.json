@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-artifact-authentication-v0.1.json",
+  "title": "Continuous OpsBench artifact authentication observation v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_id",
+    "subject_digest",
+    "manifest_commitment",
+    "publisher_id",
+    "source_id",
+    "control_domain",
+    "role",
+    "sequence",
+    "issued_at_ms",
+    "verified_at_ms",
+    "observed_content_digest",
+    "observed_byte_length",
+    "trust_policy_digest",
+    "verifier_id",
+    "verifier_build_digest",
+    "decision"
+  ],
+  "properties": {
+    "artifact_id": {
+      "$ref": "#/$defs/id"
+    },
+    "subject_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "manifest_commitment": {
+      "$ref": "#/$defs/sha256"
+    },
+    "publisher_id": {
+      "$ref": "#/$defs/id"
+    },
+    "source_id": {
+      "$ref": "#/$defs/id"
+    },
+    "control_domain": {
+      "$ref": "#/$defs/id"
+    },
+    "role": {
+      "enum": [
+        "freeze_authority",
+        "evaluator",
+        "participant_ledger",
+        "service_observer",
+        "runtime_observer",
+        "sandbox_supervisor",
+        "privacy_disclosure_observer",
+        "privacy_grader",
+        "other"
+      ]
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "issued_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "verified_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "observed_content_digest": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/sha256"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "observed_byte_length": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "trust_policy_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "verifier_id": {
+      "$ref": "#/$defs/id"
+    },
+    "verifier_build_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "decision": {
+      "enum": [
+        "authenticated",
+        "rejected",
+        "indeterminate"
+      ]
+    }
+  }
+}
