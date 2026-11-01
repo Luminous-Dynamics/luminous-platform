@@ -283,6 +283,7 @@ pub struct VerifiedGateContext {
     evidence_ids: Vec<String>,
     now_ms: u64,
     authority_grant: AuthorityGrant,
+    sequence_observations: Vec<SequenceObservation>,
 }
 
 impl VerifiedGateContext {
@@ -290,27 +291,57 @@ impl VerifiedGateContext {
     pub fn now_ms(&self) -> u64 { self.now_ms }
 }
 
-pub struct VerifiedEffectBroker<P: ParticipantPort, V: AttestationVerifier, C: TrustedClock> {
+/// Evidence anti-replay state is owned by a durable, shared trust/attestation store.
+/// It is deliberately not an episode journal or participant attempt ledger.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SequenceObservation {
+    pub role: EvidenceRole,
+    pub source_id: String,
+    pub sequence: u64,
+    pub evidence_id: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ReplayGuardError {
+    Unavailable,
+    ReplayOrRollback,
+}
+
+/// Implementations must atomically compare and advance all values, durably and across
+/// verifier instances/processes. In-memory guards are test-only, not production anti-replay.
+pub trait EvidenceReplayGuard {
+    fn check_and_advance_batch(
+        &mut self,
+        observations: &[SequenceObservation],
+    ) -> Result<(), ReplayGuardError>;
+}
+
+pub struct VerifiedEffectBroker<
+    P: ParticipantPort, V: AttestationVerifier, C: TrustedClock, S: EvidenceReplayGuard
+> {
     inner: EffectBroker<P>,
     attestation_verifier: V,
     clock: C,
+    replay_guard: S,
     trust_policy: TrustPolicy,
 }
 
-impl<P: ParticipantPort, V: AttestationVerifier, C: TrustedClock>
-    VerifiedEffectBroker<P, V, C>
+impl<P: ParticipantPort, V: AttestationVerifier, C: TrustedClock, S: EvidenceReplayGuard>
+    VerifiedEffectBroker<P, V, C, S>
 {
     pub fn new(
         registry: ManifestRegistry,
         participant: P,
         attestation_verifier: V,
         clock: C,
+        replay_guard: S,
         trust_policy: TrustPolicy,
     ) -> Self {
         Self {
             inner: EffectBroker::new(registry, participant),
             attestation_verifier,
             clock,
+            replay_guard,
             trust_policy,
         }
     }
@@ -343,6 +374,15 @@ impl<P: ParticipantPort, V: AttestationVerifier, C: TrustedClock>
             Ok(context) => context,
             Err(reason) => return self.inner.denied_report(proposal, reason.into()),
         };
+
+        if let Err(error) = self.replay_guard.check_and_advance_batch(
+            &evidence_context.sequence_observations) {
+            let denial = match error {
+                ReplayGuardError::Unavailable => GateDenial::EvidenceSequenceStoreUnavailable,
+                ReplayGuardError::ReplayOrRollback => GateDenial::EvidenceSequenceRollback,
+            };
+            return self.inner.denied_report(proposal, denial);
+        }
 
         let context = GateContext {
             now_ms: evidence_context.now_ms,
@@ -390,6 +430,7 @@ pub fn verify_gate_evidence<V: AttestationVerifier>(
     ];
 
     let mut evidence_ids = Vec::with_capacity(expected.len());
+    let mut sequence_observations = Vec::with_capacity(expected.len());
     let mut seen = BTreeSet::new();
     let mut verified_authority_grant: Option<AuthorityGrant> = None;
 
@@ -487,6 +528,12 @@ pub fn verify_gate_evidence<V: AttestationVerifier>(
             return Err(EvidenceGateError::StaleEvidence);
         }
         evidence_ids.push(payload.evidence_id.clone());
+        sequence_observations.push(SequenceObservation {
+            role,
+            source_id: payload.source_id.clone(),
+            sequence: payload.sequence,
+            evidence_id: payload.evidence_id.clone(),
+        });
     }
 
     // This policy version is itself pinned by the proposal and by the trust-policy registry.
@@ -497,7 +544,12 @@ pub fn verify_gate_evidence<V: AttestationVerifier>(
 
     let authority_grant = verified_authority_grant
         .ok_or(EvidenceGateError::AuthorityGrantMissing)?;
-    Ok(VerifiedGateContext { evidence_ids, now_ms: clock.now_ms, authority_grant })
+    Ok(VerifiedGateContext {
+        evidence_ids,
+        now_ms: clock.now_ms,
+        authority_grant,
+        sequence_observations,
+    })
 }
 
 fn resolve_rule(policy: &TrustPolicy, role: EvidenceRole) -> Result<&PublisherRule, EvidenceGateError> {
