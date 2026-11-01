@@ -29,6 +29,8 @@ pub struct ToolManifest {
     pub operation_id: String,
     pub semantic_version: String,
     pub manifest_digest: Digest,
+    pub toolchain_id: String,
+    pub toolchain_digest: Digest,
     pub policy_version: String,
     pub effect_class: EffectClass,
     pub qualified: bool,
@@ -77,6 +79,8 @@ pub struct MutationProposal {
     pub operation_id: String,
     pub manifest_version: String,
     pub manifest_digest: Digest,
+    pub toolchain_id: String,
+    pub toolchain_digest: Digest,
     pub policy_version: String,
     pub target_digest: Digest,
     pub request_digest: Digest,
@@ -100,6 +104,10 @@ pub struct AuthorityGrant {
     pub step_id: String,
     pub tool_id: String,
     pub operation_id: String,
+    pub manifest_version: String,
+    pub manifest_digest: Digest,
+    pub toolchain_id: String,
+    pub toolchain_digest: Digest,
     pub target_digest: Digest,
     pub request_digest: Digest,
     pub attempt_id: String,
@@ -129,6 +137,7 @@ pub enum GateDenial {
     MissingObserverVerifier, ObserverUnavailable, MissingPreflightVerifier, PreconditionsFailed,
     RiskExceedsManifest, EnvironmentNotAllowed, RevokedGrant, ExpiredGrant,
     GrantBindingMismatch, GrantIssuerMismatch, GrantScopeMismatch, PolicyVersionMismatch,
+    ToolchainMismatch,
     MissingRequiredField, AttemptIdReplay, PriorAttemptUnresolved, PermitBindingMismatch,
     ParticipantEvidenceMismatch, ParticipantLedgerUnavailable, IdempotencyKeyConflict,
 }
@@ -387,7 +396,12 @@ impl<P: ParticipantPort> EffectBroker<P> {
             || p.idempotency_key.is_empty() || p.environment.is_empty() {
             return Err(GateDenial::MissingRequiredField);
         }
-        if p.manifest_digest != m.manifest_digest { return Err(GateDenial::ManifestDigestMismatch); }
+        if p.manifest_version != m.semantic_version || p.manifest_digest != m.manifest_digest {
+            return Err(GateDenial::ManifestDigestMismatch);
+        }
+        if p.toolchain_id != m.toolchain_id || p.toolchain_digest != m.toolchain_digest {
+            return Err(GateDenial::ToolchainMismatch);
+        }
         if !m.qualified { return Err(GateDenial::ManifestUnqualified); }
         match m.effect_class {
             EffectClass::Unknown => return Err(GateDenial::UnknownEffectClass),
@@ -415,6 +429,8 @@ impl<P: ParticipantPort> EffectBroker<P> {
             && g.principal_id == p.principal_id && g.episode_id == p.episode_id
             && g.plan_digest == p.plan_digest && g.step_id == p.step_id
             && g.tool_id == p.tool_id && g.operation_id == p.operation_id
+            && g.manifest_version == p.manifest_version && g.manifest_digest == p.manifest_digest
+            && g.toolchain_id == p.toolchain_id && g.toolchain_digest == p.toolchain_digest
             && g.target_digest == p.target_digest && g.request_digest == p.request_digest
             && g.attempt_id == p.attempt_id && g.idempotency_key == p.idempotency_key
             && g.environment == p.environment && g.risk_level == p.risk_level;
@@ -522,6 +538,7 @@ mod tests {
         let manifest = ToolManifest {
             tool_id: "deployment".into(), operation_id: "restart-service".into(),
             semantic_version: "1.0.0".into(), manifest_digest: Digest::from_byte(1),
+            toolchain_id: "nix-toolchain-2026-11".into(), toolchain_digest: Digest::from_byte(5),
             policy_version: "policy-v1".into(), effect_class: EffectClass::BoundedMutation,
             qualified: true, required_scope: "service:restart".into(),
             required_grant_issuer: "authority-v1".into(), participant_id: "participant-a".into(),
@@ -536,7 +553,8 @@ mod tests {
             episode_id: "episode-a".into(), plan_digest: Digest::from_byte(2),
             step_id: "step-1".into(), tool_id: "deployment".into(),
             operation_id: "restart-service".into(), manifest_version: "1.0.0".into(),
-            manifest_digest: Digest::from_byte(1), policy_version: "policy-v1".into(),
+            manifest_digest: Digest::from_byte(1), toolchain_id: "nix-toolchain-2026-11".into(),
+            toolchain_digest: Digest::from_byte(5), policy_version: "policy-v1".into(),
             target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
             grant_id: "grant-1".into(), attempt_id: "attempt-1".into(),
             idempotency_key: "logical-action-1".into(), environment: "test".into(),
@@ -548,6 +566,8 @@ mod tests {
             principal_id: "operator-a".into(), episode_id: "episode-a".into(),
             plan_digest: Digest::from_byte(2), step_id: "step-1".into(),
             tool_id: "deployment".into(), operation_id: "restart-service".into(),
+            manifest_version: "1.0.0".into(), manifest_digest: Digest::from_byte(1),
+            toolchain_id: "nix-toolchain-2026-11".into(), toolchain_digest: Digest::from_byte(5),
             target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
             attempt_id: "attempt-1".into(), idempotency_key: "logical-action-1".into(),
             environment: "test".into(), risk_level: 2, policy_version: "policy-v1".into(),
