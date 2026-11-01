@@ -55,6 +55,14 @@ The validator checks that:
 - open-development and active sealed lanes cannot smuggle in retirement reveals;
 - every planned trial has an explicit terminal disposition and complete attempt history.
 
+
+The v0.1 commitment scheme identifier is `sha256-domain-separated-length-prefixed-salt32-v1`. The independent source-evidence adapter must verify the disclosed artifact bytes against the commitments using these exact constructions:
+
+- Case payload: `SHA-256("org.luminousdynamics.opsbench.case-payload.v1\\0" || u64_be(payload_bytes.len) || payload_bytes || case_salt[32])`
+- Private oracle: `SHA-256("org.luminousdynamics.opsbench.private-oracle.v1\\0" || u64_be(oracle_bytes.len) || oracle_bytes || oracle_salt[32])`
+
+The salt is exactly 32 bytes and the case/oracle salts must differ. The adapter must independently verify each artifact's SHA-256 digest, the commitment, the receipt signature and source identity. Domain separation prevents a case-payload commitment from being reinterpreted as an oracle commitment. The Rust structural validator pins the scheme identifier and salt lengths but does not compute hashes or authenticate signatures.
+
 The evidence source/control-domain fields are **claims in typed input records** until the source adapter authenticates them. Production must verify them through the typed source-evidence gate (#191 / issue #190), a durable replay guard, and verifier-owned source policy. Do not accept a caller-supplied signature_verified boolean.
 
 The oracle_commitment is not an instruction to expose oracle bytes to the agent. The execution sandbox and artifact store must enforce that separation; this module validates only the declared commitment record.
