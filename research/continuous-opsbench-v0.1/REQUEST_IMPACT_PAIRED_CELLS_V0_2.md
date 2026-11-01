@@ -41,11 +41,10 @@ For each exact pair:
 
 \[
 \Delta_{pair} =
-  \text{Candidate degraded request-time}
-  - \text{NoAction degraded request-time}
+  |D_{candidate}| - |D_{no-action}|
 \]
 
-Positive values mean the candidate caused more measured harm; negative values mean less. The pooled delta is emitted only if every preregistered pair is valid and there are no unmatched observations. Per-pair signs and distributions are retained. No single compensatory recovery score is introduced.
+Positive values mean more uniquely degraded requests in the candidate arm; negative values mean fewer. Because each pair pins the exact same interval and equal offered-request count in both arms, raw union-count differences and per-cell impact rates are directly interpretable at the paired-cell level. The pooled count delta is emitted only if every preregistered pair is valid and there are no unmatched observations. Per-pair signs and distributions are retained for cluster-level inference. No single compensatory recovery score is introduced.
 
 ## Privacy and trust boundary
 
@@ -62,7 +61,7 @@ The offline evaluator checks source identifiers, control-domain separation, key 
 5. Keep all repeats nested under scenario/fault-schedule/topology cluster IDs. Pair at the cell level; resample independent clusters, not individual requests.
 6. Freeze the primary estimand, class weights, comparison plan and exclusions before confirmatory runs.
 
-The included suite contains two explicit overlap controls, exact-pair controls, and a 48-case adversarial mutation matrix. These are evaluator conformance tests, not empirical benchmark results.
+The included suite contains two explicit overlap controls, an independent sort/deduplicate oracle, exact-pair controls, rate controls, and a 48-case adversarial mutation matrix. These are evaluator conformance tests, not empirical benchmark results.
 
 ## Claim ceiling
 
