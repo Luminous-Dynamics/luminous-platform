@@ -364,9 +364,12 @@ pub fn verify_evidence_bundle(
                 ));
             }
             AuthenticationDecision::Indeterminate => {
-                if artifact.availability != ArtifactAvailability::Unavailable {
-                    artifact_indeterminate = artifact_indeterminate.checked_add(1)
-                        .ok_or(BundleVerificationError::ArithmeticOverflow)?;
+                if receipt.observed_content_digest.is_some()
+                    || receipt.observed_byte_length.is_some()
+                {
+                    return Err(BundleVerificationError::CommitmentArtifactHasBytes(
+                        artifact.artifact_id.clone(),
+                    ));
                 }
             }
         }
@@ -403,7 +406,7 @@ pub fn verify_evidence_bundle(
         }
     }
 
-    let claim_statuses = validate_claim_graph(manifest, &artifacts_by_digest, &receipt_by_id)?;
+    validate_claim_graph(manifest, &artifacts_by_digest, &receipt_by_id)?;
     let mut claim_results = Vec::with_capacity(manifest.claims.len());
     let mut passing_claim_count = 0usize;
     let mut failing_claim_count = 0usize;
@@ -674,7 +677,7 @@ fn validate_claim_graph(
     manifest: &EvidenceBundleManifest,
     artifacts: &BTreeMap<&str, &ArtifactDescriptor>,
     receipts: &BTreeMap<&str, &ArtifactAuthenticationReceipt>,
-) -> Result<BTreeMap<&str, ClaimStatus>, BundleVerificationError> {
+) -> Result<(), BundleVerificationError> {
     let mut claims: BTreeMap<&str, &EvidenceClaim> = BTreeMap::new();
     for claim in &manifest.claims {
         if !valid_id(&claim.claim_id) || claims.insert(claim.claim_id.as_str(), claim).is_some() {
@@ -700,6 +703,14 @@ fn validate_claim_graph(
             ));
         }
         if claim.subject.trial_id.is_none() && claim.subject.arm.is_some() {
+            return Err(BundleVerificationError::ClaimSubjectInvalid(claim.claim_id.clone()));
+        }
+        if let Some(arm) = claim.subject.arm.as_deref() {
+            if arm != "candidate" && arm != "baseline" {
+                return Err(BundleVerificationError::ClaimSubjectInvalid(claim.claim_id.clone()));
+            }
+        }
+        if !valid_id(&claim.status_reason) {
             return Err(BundleVerificationError::ClaimSubjectInvalid(claim.claim_id.clone()));
         }
         if let Some(trial_id) = claim.subject.trial_id.as_deref() {
@@ -734,7 +745,7 @@ fn validate_claim_graph(
         .filter_map(|(id, degree)| if *degree == 0 { Some(*id) } else { None })
         .collect();
     let mut visited = 0usize;
-    let mut statuses = BTreeMap::new();
+    let mut statuses: BTreeMap<String, ClaimStatus> = BTreeMap::new();
     while let Some(id) = queue.pop_front() {
         let claim = claims[id];
         for digest in &claim.evidence_digests {
@@ -764,7 +775,7 @@ fn validate_claim_graph(
                 ));
             }
         }
-        statuses.insert(id, claim.status);
+        statuses.insert(id.to_owned(), claim.status);
         visited += 1;
         if let Some(next) = outgoing.get(id) {
             for dependent in next {
@@ -779,7 +790,7 @@ fn validate_claim_graph(
     if visited != claims.len() {
         return Err(BundleVerificationError::ClaimDependencyCycle);
     }
-    Ok(statuses)
+    Ok(())
 }
 
 fn valid_id(value: &str) -> bool {
@@ -1063,6 +1074,8 @@ mod tests {
         fixture.0.artifacts[0].byte_length = None;
         fixture.4[0].decision = AuthenticationDecision::Indeterminate;
         fixture.4[0].observed_content_digest = None;
+        fixture.0.claims[0].status = ClaimStatus::Indeterminate;
+        fixture.0.claims[1].status = ClaimStatus::Indeterminate;
         fixture.4[0].observed_byte_length = None;
         let result = verify(&fixture, &fixture.4).unwrap();
         assert_eq!(result.integrity, BundleIntegrity::Indeterminate);
@@ -1267,7 +1280,7 @@ mod tests {
                 35 => fixture.0.artifacts[0].content_digest = fixture.0.artifacts[1].content_digest.clone(),
                 36 => fixture.0.artifacts[0].media_type.clear(),
                 37 => fixture.0.artifacts[0].role = EvidenceRole::Other,
-                38 => fixture.0.artifacts[0].required_for_verification = false,
+                38 => fixture.0.claims[0].evidence_digests.retain(|digest| digest != &d(12)),
                 39 => fixture.0.artifacts[0].byte_length = Some(256),
                 40 => fixture.4[0].subject_digest = d(99),
                 41 => fixture.4[0].manifest_commitment = d(99),
@@ -1285,9 +1298,9 @@ mod tests {
                 53 => fixture.4[0].observed_byte_length = Some(127),
                 54 => fixture.4[0].decision = AuthenticationDecision::Rejected,
                 55 => fixture.4[0].decision = AuthenticationDecision::Indeterminate,
-                56 => fixture.4[1].sequence = fixture.4[0].sequence,
+                56 => fixture.4[1].source_id = fixture.4[0].source_id.clone(),
                 57 => fixture.4.pop(),
-                58 => fixture.4.push(fixture.4[0].clone()),
+                58 => { let extra = fixture.4[0].clone(); fixture.4.push(extra); },
                 59 => fixture.0.claims[0].claim_id.clear(),
                 60 => fixture.0.claims[0].status = ClaimStatus::Pass,
                 61 => fixture.0.claims[0].verifier_id = "wrong".into(),
@@ -1302,11 +1315,11 @@ mod tests {
                 70 => fixture.0.claims[0].claim_ceiling.clear(),
                 71 => fixture.0.claims[0].status_reason.clear(),
                 72 => fixture.0.visibility = BundleVisibility::Public,
-                73 => fixture.0.lane = EvaluationLane::OpenDevelopment,
+                73 => fixture.0.created_at_ms = 0,
                 74 => fixture.0.created_at_ms = 0,
                 75 => fixture.0.trust_policy.policy_as_of_ms = fixture.3 + 1,
                 76 => fixture.0.trust_policy.minimum_verifier_version.clear(),
-                77 => fixture.0.claims[0].claim_type = ClaimType::Safety,
+                77 => fixture.0.claims[0].subject.arm = Some("unsupported".into()),
                 78 => fixture.0.claims[0].status = ClaimStatus::Indeterminate,
                 _ => fixture.0.claims[1].status = ClaimStatus::Fail,
             }
