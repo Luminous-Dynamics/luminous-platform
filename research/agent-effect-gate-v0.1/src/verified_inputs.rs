@@ -9,7 +9,7 @@ use super::{
     AuthorityGrant, DispatchReport, EffectBroker,
     GateContext, GateDenial, ManifestRegistry, MutationProposal, ParticipantPort, ToolManifest,
 };
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub const DSSE_IN_TOTO_PAYLOAD_TYPE: &str = "application/vnd.in-toto+json";
 pub const IN_TOTO_STATEMENT_V1: &str = "https://in-toto.io/Statement/v1";
@@ -399,7 +399,7 @@ impl<P: ParticipantPort, V: AttestationVerifier, C: TrustedClock, S: EvidenceRep
         report
     }
 
-    pub fn participant_mut(&mut self) -> &mut P { &mut self.inner.participant }
+    pub(crate) fn participant_mut(&mut self) -> &mut P { &mut self.inner.participant }
 }
 
 pub fn verify_gate_evidence<V: AttestationVerifier>(
@@ -508,8 +508,14 @@ pub fn verify_gate_evidence<V: AttestationVerifier>(
         if attestation.publisher.trust_domain != rule.trust_domain {
             return Err(EvidenceGateError::WrongTrustDomain);
         }
-        if role == EvidenceRole::Observer && rule.control_domain == policy.executor_control_domain {
-            return Err(EvidenceGateError::ObserverNotIndependent);
+        if role == EvidenceRole::Observer {
+            let shares_control_domain = policy.publisher_rules.iter().any(|other| {
+                other.role != EvidenceRole::Observer
+                    && other.control_domain == rule.control_domain
+            });
+            if rule.control_domain == policy.executor_control_domain || shares_control_domain {
+                return Err(EvidenceGateError::ObserverNotIndependent);
+            }
         }
         if payload.sequence < rule.minimum_sequence {
             return Err(EvidenceGateError::SequenceRollback);
@@ -630,6 +636,31 @@ mod tests {
         fn read(&mut self) -> Result<ClockReading, ClockError> { Ok(self.0.clone()) }
     }
 
+    #[derive(Default)]
+    struct FakeReplayGuard {
+        seen: BTreeMap<(EvidenceRole, String), u64>,
+        unavailable: bool,
+    }
+
+    impl EvidenceReplayGuard for FakeReplayGuard {
+        fn check_and_advance_batch(
+            &mut self,
+            observations: &[SequenceObservation],
+        ) -> Result<(), ReplayGuardError> {
+            if self.unavailable { return Err(ReplayGuardError::Unavailable); }
+            let mut updates = BTreeMap::new();
+            for observation in observations {
+                let key = (observation.role, observation.source_id.clone());
+                if self.seen.get(&key).map(|last| observation.sequence <= *last).unwrap_or(false)
+                    || updates.insert(key, observation.sequence).is_some() {
+                    return Err(ReplayGuardError::ReplayOrRollback);
+                }
+            }
+            self.seen.extend(updates);
+            Ok(())
+        }
+    }
+
     fn proposal() -> MutationProposal {
         MutationProposal {
             tenant_id: "tenant-a".into(), principal_id: "operator-a".into(),
@@ -682,7 +713,7 @@ mod tests {
             (EvidenceRole::Authority, "authority-src", "authority-issuer", "authority-key", "authority-domain", "authority-control"),
             (EvidenceRole::Manifest, "manifest-src", "manifest-issuer", "manifest-key", "manifest-domain", "build-control"),
             (EvidenceRole::Policy, "policy-src", "policy-issuer", "policy-key", "policy-domain", "policy-control"),
-            (EvidenceRole::Preflight, "preflight-src", "preflight-issuer", "preflight-key", "preflight-domain", "observer-control"),
+            (EvidenceRole::Preflight, "preflight-src", "preflight-issuer", "preflight-key", "preflight-domain", "preflight-control"),
             (EvidenceRole::Observer, "observer-src", "observer-issuer", "observer-key", "observer-domain", "observer-control"),
         ];
         sources.into_iter().map(|(role, source_id, issuer, subject, trust_domain, control_domain)| {
@@ -756,7 +787,7 @@ mod tests {
     }
 
     fn verified_broker(fail_at: Option<usize>, mutate: Option<fn(&mut Vec<VerifiedAttestation>)>)
-        -> (VerifiedEffectBroker<FakeParticipant, FakeVerifier, FakeClock>,
+        -> (VerifiedEffectBroker<FakeParticipant, FakeVerifier, FakeClock, FakeReplayGuard>,
             MutationProposal, GateEvidenceBundle) {
         let p = proposal();
         let mut evidence = attestations(&p);
@@ -768,7 +799,7 @@ mod tests {
             registry
         };
         let broker = VerifiedEffectBroker::new(registry, FakeParticipant { submit_calls: 0 },
-            verifier, clock(), trust_policy());
+            verifier, clock(), FakeReplayGuard::default(), trust_policy());
         (broker, p, bundle())
     }
 
