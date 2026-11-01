@@ -104,6 +104,7 @@ pub enum RuntimeAttestationError {
     LedgerTrialUnplanned(String, EvaluationArm),
     LedgerTrialClusterMismatch(String, EvaluationArm),
     LedgerTrialSummaryMismatch,
+    LedgerArmExecutionOrderMismatch(String),
     ScenarioDuplicate(String),
     ScenarioManifestMismatch(String),
     ScenarioMissing(String),
@@ -150,6 +151,11 @@ pub fn validate_runtime_attestations(
 
     let mut scenario_index: BTreeMap<&str, &ScenarioReceipt> = BTreeMap::new();
     for scenario in scenarios {
+        if !manifest.trials.iter().any(|trial| trial.trial_id == scenario.trial_id) {
+            return Err(RuntimeAttestationError::ScenarioManifestMismatch(
+                scenario.trial_id.clone(),
+            ));
+        }
         if scenario.run_id != manifest.run_id
             || scenario.manifest_commitment != ledger.manifest_commitment
             || scenario.evaluator_digest != manifest.evaluator_digest
@@ -423,6 +429,47 @@ fn validate_ledger_binding(
     };
     let mut baseline = candidate.clone();
     let mut total_attempts = 0usize;
+    let mut result_index: BTreeMap<(&str, EvaluationArm), &TrialResult> = BTreeMap::new();
+    for result in &ledger.trials {
+        if result_index.insert((result.trial_id.as_str(), result.arm), result).is_some() {
+            return Err(RuntimeAttestationError::LedgerTrialDuplicate(
+                result.trial_id.clone(), result.arm
+            ));
+        }
+    }
+    for trial in &manifest.trials {
+        let candidate_result = result_index.get(&(trial.trial_id.as_str(), EvaluationArm::Candidate))
+            .ok_or_else(|| RuntimeAttestationError::LedgerTrialMissing(
+                trial.trial_id.clone(), EvaluationArm::Candidate
+            ))?;
+        let baseline_result = result_index.get(&(trial.trial_id.as_str(), EvaluationArm::Baseline))
+            .ok_or_else(|| RuntimeAttestationError::LedgerTrialMissing(
+                trial.trial_id.clone(), EvaluationArm::Baseline
+            ))?;
+        let candidate_activity = candidate_result.first_started_at_ms
+            .unwrap_or(candidate_result.terminal_at_ms);
+        let baseline_activity = baseline_result.first_started_at_ms
+            .unwrap_or(baseline_result.terminal_at_ms);
+        let arm_order_valid = match trial.first_arm {
+            EvaluationArm::Candidate => candidate_activity < baseline_activity,
+            EvaluationArm::Baseline => baseline_activity < candidate_activity,
+        };
+        if !arm_order_valid {
+            return Err(RuntimeAttestationError::LedgerArmExecutionOrderMismatch(
+                trial.trial_id.clone()
+            ));
+        }
+        for result in [*candidate_result, *baseline_result] {
+            if result.attempts_started > trial.maximum_attempts
+                || (result.attempts_started == 0
+                    && !matches!(result.disposition, TrialDisposition::Skipped | TrialDisposition::Invalidated))
+                || (result.attempts_started > 0
+                    && matches!(result.disposition, TrialDisposition::Skipped))
+            {
+                return Err(RuntimeAttestationError::LedgerTrialSummaryMismatch);
+            }
+        }
+    }
     for result in &ledger.trials {
         let planned = manifest.trials.iter()
             .find(|trial| trial.trial_id == result.trial_id)
