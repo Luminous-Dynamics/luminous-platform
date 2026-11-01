@@ -44,7 +44,9 @@ Runtime instance IDs and writable namespace IDs must be nonzero and unique acros
 
 The runtime measurement must start no later than the first observed activity in the arm and end no earlier than that arm's final terminal event. The receipt itself must be issued after the measurement interval ends.
 
-Clock uncertainty is bounded at 1,000 ms in v0.1. Deployments requiring tighter bounds must adopt a stricter profile before evaluation. The receipt sequence must be nonzero, unique and monotonic in issue-time order. Sequence gaps and dropped events are hard failures.
+Clock uncertainty is bounded at 1,000 ms in v0.1. Coverage uses conservative bounds: `measurement_start + uncertainty` must still precede the first arm activity, and `measurement_end - uncertainty` must still follow the final terminal event. Deployments requiring tighter bounds must adopt a stricter profile before evaluation.
+
+Receipt sequence numbers are scoped to one run and observer source. They must be nonzero, unique, strictly ordered by issue time, begin at one and be contiguous across the complete run receipt set. The external durable replay adapter additionally prevents receipt replay across runs. Sequence gaps and dropped runtime events are hard failures.
 
 A skip is still measured: the interval must cover the explicit skip disposition. It cannot disappear because the process was never started.
 
@@ -76,7 +78,7 @@ Before accepting runtime receipts, the caller supplies the manifest, freeze rece
 - observer instance, namespace and receipt-sequence identities do not collide;
 - the complete receipt population exactly covers the planned arm denominator.
 
-The validator does not infer missing receipts as zero accesses. Missing, duplicated, unplanned, substituted or incomplete evidence is rejected.
+The validator does not infer missing receipts as zero accesses. Missing, duplicated, unplanned, substituted or incomplete evidence is rejected. It reuses the canonical sealed manifest, freeze and scenario validators rather than defining parallel interpretations of those records.
 
 ## Validation suite
 
