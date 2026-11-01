@@ -5,13 +5,13 @@ Research-only Rust reference for the E0/E1 portion of Luminous Platform issue #1
 ## What this prototype enforces
 
 - Exact tool/operation/version manifest lookup; unknown, unqualified, and read-only operations cannot enter the mutation path.
-- ACT is necessary but not sufficient. Current grant, issuer, scope, policy version, principal, tenant, episode, plan, step, target, request digest, attempt, idempotency key, environment, and risk must all match.
+- ACT is necessary but not sufficient. The grant binds issuer, scope, policy, manifest version/digest, toolchain ID/digest, principal, tenant, episode, plan, step, target, request digest, attempt, idempotency key, environment, and risk.
 - Authority/manifest/policy source failures, missing preconditions, missing independent observer capability, missing participant ledger support, and missing verifiers fail closed.
 - A private non-cloneable permit is consumed internally against the exact request/target/attempt before dispatch.
 - Participant acceptance/effect evidence is kept separate from the gate receipt.
 - The broker asks the participant-owned logical-action ledger for the latest state of the tenant-scoped idempotency key before every dispatch; it maintains no parallel attempt/effect ledger.
 - An ambiguous response remains OutcomeUnknown; a distinct attempt is blocked until the participant's exact-attempt query and logical-key index consistently report matching NeverAccepted evidence.
-- Fifty-one negative conformance vectors assert zero calls to the fake participant.
+- Fifty-five negative conformance vectors assert zero calls to the fake participant.
 
 ## Boundaries / non-claims
 
