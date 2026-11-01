@@ -6,8 +6,8 @@
 //! before they are passed here.
 
 use crate::sealed::{
-    validate_freeze_receipt, ArmRunSummary, EvaluationArm, FreezeReceipt,
-    RunLedgerSummary, RunManifest, ScenarioReceipt, TrialDisposition, TrialResult,
+    validate_freeze_receipt, validate_scenario, ArmRunSummary, EvaluationArm, FreezeReceipt,
+    RunLedgerSummary, RunManifest, PlannedTrial, ScenarioReceipt, TrialDisposition, TrialResult,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
@@ -155,17 +155,19 @@ pub fn validate_runtime_attestations(
                 scenario.trial_id.clone(),
             ));
         }
-        if scenario.run_id != manifest.run_id
-            || scenario.manifest_commitment != ledger.manifest_commitment
-            || scenario.evaluator_digest != manifest.evaluator_digest
-            || is_zero(&scenario.case_payload_commitment)
-            || is_zero(&scenario.oracle_commitment)
-            || scenario.case_payload_commitment == scenario.oracle_commitment
-        {
-            return Err(RuntimeAttestationError::ScenarioManifestMismatch(
-                scenario.trial_id.clone(),
-            ));
-        }
+        let planned = manifest.trials.iter()
+            .find(|trial| trial.trial_id == scenario.trial_id)
+            .ok_or_else(|| RuntimeAttestationError::ScenarioManifestMismatch(
+                scenario.trial_id.clone()
+            ))?;
+        validate_scenario(
+            manifest,
+            &ledger.manifest_commitment,
+            planned,
+            scenario,
+        ).map_err(|_| RuntimeAttestationError::ScenarioManifestMismatch(
+            scenario.trial_id.clone()
+        ))?;
         if scenario_index.insert(scenario.trial_id.as_str(), scenario).is_some() {
             return Err(RuntimeAttestationError::ScenarioDuplicate(
                 scenario.trial_id.clone(),
