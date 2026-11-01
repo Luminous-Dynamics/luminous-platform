@@ -94,8 +94,7 @@ pub struct ImpactMetrics {
     pub incorrect_business_requests: u64,
     pub unique_degraded_requests: u64,
     pub duplicate_event_rows: u64,
-    pub duration_ms: u64,
-    pub unique_degraded_request_ms: u128,
+    pub interval_duration_ms: u64,
     pub impact_rate_ppm: u64,
 }
 
@@ -138,14 +137,14 @@ pub struct PairedCellResult {
     pub failures: Vec<CellFailure>,
     pub candidate: Option<ImpactMetrics>,
     pub no_action: Option<ImpactMetrics>,
-    /// Positive means the candidate caused more degraded request-time than no-action.
-    pub candidate_minus_no_action_request_ms: Option<i128>,
+    /// Positive means the candidate caused more uniquely degraded requests than no-action.
+    pub candidate_minus_no_action_degraded_requests: Option<i128>,
 }
 
 impl PairedCellResult {
     pub fn is_valid(&self) -> bool {
         self.failures.is_empty() && self.candidate.is_some() && self.no_action.is_some()
-            && self.candidate_minus_no_action_request_ms.is_some()
+            && self.candidate_minus_no_action_degraded_requests.is_some()
     }
 }
 
@@ -165,7 +164,7 @@ pub struct ImpactCoverage {
 pub struct ImpactSummary {
     pub coverage: ImpactCoverage,
     /// Only present when every preregistered pair has exactly one valid cell per arm.
-    pub complete_candidate_minus_no_action_request_ms: Option<i128>,
+    pub complete_candidate_minus_no_action_degraded_requests: Option<i128>,
     pub pairs: Vec<PairedCellResult>,
 }
 
@@ -265,10 +264,8 @@ pub fn evaluate_paired_impact(
                     failures.insert(CellFailure::OfferedDemandMismatch);
                     None
                 } else {
-                    let candidate_value = i128::try_from(candidate_metrics.unique_degraded_request_ms)
-                        .map_err(|_| ImpactError::ArithmeticOverflow)?;
-                    let baseline_value = i128::try_from(no_action_metrics.unique_degraded_request_ms)
-                        .map_err(|_| ImpactError::ArithmeticOverflow)?;
+                    let candidate_value = i128::from(candidate_metrics.unique_degraded_requests);
+                    let baseline_value = i128::from(no_action_metrics.unique_degraded_requests);
                     candidate_value.checked_sub(baseline_value)
                 }
             }
@@ -295,7 +292,7 @@ pub fn evaluate_paired_impact(
             failures: failures.into_iter().collect(),
             candidate,
             no_action,
-            candidate_minus_no_action_request_ms: delta,
+            candidate_minus_no_action_degraded_requests: delta,
         });
     }
 
@@ -317,7 +314,7 @@ pub fn evaluate_paired_impact(
             missing_candidate_cells,
             missing_no_action_cells,
         },
-        complete_candidate_minus_no_action_request_ms: if complete {
+        complete_candidate_minus_no_action_degraded_requests: if complete {
             Some(total_delta)
         } else {
             None
@@ -431,9 +428,6 @@ fn measure_cell(
         return Err(CellFailure::UniqueUnionExceedsOffered);
     }
     let duration_ms = cell.ends_at_ms - cell.starts_at_ms;
-    let unique_degraded_request_ms = (union_count as u128)
-        .checked_mul(duration_ms as u128)
-        .ok_or(CellFailure::UniqueUnionExceedsOffered)?;
     let impact_rate_ppm = (union_count as u128)
         .checked_mul(1_000_000)
         .ok_or(CellFailure::UniqueUnionExceedsOffered)?
@@ -449,8 +443,7 @@ fn measure_cell(
         incorrect_business_requests: u64::try_from(incorrect.len()).map_err(|_| CellFailure::UniqueUnionExceedsOffered)?,
         unique_degraded_requests: union_count,
         duplicate_event_rows,
-        duration_ms,
-        unique_degraded_request_ms,
+        interval_duration_ms: duration_ms,
         impact_rate_ppm,
     })
 }
@@ -540,7 +533,7 @@ mod tests {
         assert_eq!(metrics.slow_requests, 10);
         assert_eq!(metrics.incorrect_business_requests, 10);
         assert_eq!(metrics.unique_degraded_requests, 30);
-        assert_eq!(metrics.unique_degraded_request_ms, 3_000);
+        assert_eq!(metrics.interval_duration_ms, 100);
     }
 
     #[test]
@@ -588,8 +581,8 @@ mod tests {
         }));
         let result = evaluate_paired_impact(&[spec], &cells).unwrap();
         assert_eq!(result.coverage.valid_pairs, 1);
-        assert_eq!(result.complete_candidate_minus_no_action_request_ms, Some(-200));
-        assert_eq!(result.pairs[0].candidate_minus_no_action_request_ms, Some(-200));
+        assert_eq!(result.complete_candidate_minus_no_action_degraded_requests, Some(-2));
+        assert_eq!(result.pairs[0].candidate_minus_no_action_degraded_requests, Some(-2));
     }
 
     #[test]
@@ -613,13 +606,13 @@ mod tests {
             request_token: token(n), kind: ImpactKind::Slow,
         }).collect();
         let result = evaluate_paired_impact(&[spec.clone()], &cells).unwrap();
-        assert_eq!(result.complete_candidate_minus_no_action_request_ms, Some(200));
+        assert_eq!(result.complete_candidate_minus_no_action_degraded_requests, Some(2));
         let swapped = vec![
             ObservationCell { arm: ObservationArm::NoAction, ..cells[0].clone() },
             ObservationCell { arm: ObservationArm::Candidate, ..cells[1].clone() },
         ];
         let result = evaluate_paired_impact(&[spec], &swapped).unwrap();
-        assert_eq!(result.complete_candidate_minus_no_action_request_ms, Some(-200));
+        assert_eq!(result.complete_candidate_minus_no_action_degraded_requests, Some(-2));
     }
 
     #[test]
@@ -629,7 +622,7 @@ mod tests {
         let result = evaluate_paired_impact(&[spec], &cells).unwrap();
         assert_eq!(result.coverage.missing_no_action_cells, 1);
         assert_eq!(result.coverage.indeterminate_pairs, 1);
-        assert_eq!(result.complete_candidate_minus_no_action_request_ms, None);
+        assert_eq!(result.complete_candidate_minus_no_action_degraded_requests, None);
     }
 
     #[test]
@@ -640,7 +633,7 @@ mod tests {
         cells.push(extra);
         let result = evaluate_paired_impact(&[spec], &cells).unwrap();
         assert_eq!(result.coverage.unmatched_observations, 1);
-        assert_eq!(result.complete_candidate_minus_no_action_request_ms, None);
+        assert_eq!(result.complete_candidate_minus_no_action_degraded_requests, None);
     }
 
     #[test]
@@ -667,7 +660,7 @@ mod tests {
         }).collect();
         let result = evaluate_paired_impact(&[spec], &cells).unwrap();
         assert_eq!(result.pairs[0].failures, vec![CellFailure::UniqueUnionExceedsOffered]);
-        assert_eq!(result.complete_candidate_minus_no_action_request_ms, None);
+        assert_eq!(result.complete_candidate_minus_no_action_degraded_requests, None);
     }
 
     #[test]
@@ -739,7 +732,7 @@ mod tests {
                 Err(_) => {}
                 Ok(summary) => {
                     assert!(
-                        summary.complete_candidate_minus_no_action_request_ms.is_none(),
+                        summary.complete_candidate_minus_no_action_degraded_requests.is_none(),
                         "adversarial vector {vector} was incorrectly treated as complete"
                     );
                     assert!(
