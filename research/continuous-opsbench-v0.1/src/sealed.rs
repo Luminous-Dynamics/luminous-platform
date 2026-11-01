@@ -998,12 +998,17 @@ mod tests {
         let (m, commitment, freeze, scenarios, events) = valid_fixture();
         let result = validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).unwrap();
         assert_eq!(result.planned_trials, 3);
-        assert_eq!(result.completed_trials, 1);
+        assert_eq!(result.planned_arm_trials, 6);
+        assert_eq!(result.completed_trials, 2);
         assert_eq!(result.failed_trials, 0);
-        assert_eq!(result.skipped_trials, 1);
-        assert_eq!(result.invalidated_trials, 1);
-        assert_eq!(result.total_attempts, 3);
+        assert_eq!(result.skipped_trials, 2);
+        assert_eq!(result.invalidated_trials, 2);
+        assert_eq!(result.total_attempts, 6);
         assert_eq!(result.unique_clusters, 2);
+        assert_eq!(result.candidate.completed_trials, 1);
+        assert_eq!(result.baseline.completed_trials, 1);
+        assert_eq!(result.candidate.total_attempts, 3);
+        assert_eq!(result.baseline.total_attempts, 3);
     }
 
     #[test]
@@ -1062,7 +1067,7 @@ mod tests {
         events.retain(|e| e.trial_id != "trial-c");
         assert_eq!(
             validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events),
-            Err(SealedRunError::MissingTrialDisposition("trial-c".into()))
+            Err(SealedRunError::MissingArmTrialDisposition("trial-c".into(), EvaluationArm::Candidate))
         );
     }
 
@@ -1315,7 +1320,7 @@ mod tests {
                 35 => { events.pop(); }
                 36 => { events[0].run_id = "other-run".into(); }
                 37 => { events[0].manifest_commitment = Digest::from_byte(99); }
-                38 => { events[0].agent_identity_digest = Digest::from_byte(99); }
+                38 => { events[0].arm_identity_digest = Digest::from_byte(99); }
                 39 => { events[0].evaluator_digest = Digest::from_byte(99); }
                 40 => { events[0].scenario_commitment = Digest::from_byte(99); }
                 41 => { events[0].source_id = "agent".into(); }
