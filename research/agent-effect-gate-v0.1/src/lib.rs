@@ -41,6 +41,7 @@ pub struct ToolManifest {
     pub toolchain_id: String,
     pub toolchain_digest: Digest,
     pub policy_version: String,
+    pub policy_digest: Digest,
     pub effect_class: EffectClass,
     pub qualified: bool,
     pub required_scope: String,
@@ -91,6 +92,7 @@ pub struct MutationProposal {
     pub toolchain_id: String,
     pub toolchain_digest: Digest,
     pub policy_version: String,
+    pub policy_digest: Digest,
     pub target_digest: Digest,
     pub request_digest: Digest,
     pub grant_id: String,
@@ -124,12 +126,13 @@ pub struct AuthorityGrant {
     pub environment: String,
     pub risk_level: u8,
     pub policy_version: String,
+    pub policy_digest: Digest,
     pub expires_at_ms: u64,
     pub revoked: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct GateContext {
+pub(crate) struct GateContext {
     pub now_ms: u64,
     pub preconditions_satisfied: bool,
     pub observer_available: bool,
@@ -146,7 +149,7 @@ pub enum GateDenial {
     MissingObserverVerifier, ObserverUnavailable, MissingPreflightVerifier, PreconditionsFailed,
     RiskExceedsManifest, EnvironmentNotAllowed, RevokedGrant, ExpiredGrant,
     GrantBindingMismatch, GrantIssuerMismatch, GrantScopeMismatch, PolicyVersionMismatch,
-    ToolchainMismatch,
+    PolicyDigestMismatch, ToolchainMismatch,
     MissingRequiredField, AttemptIdReplay, PriorAttemptUnresolved, PermitBindingMismatch,
     ParticipantEvidenceMismatch, ParticipantLedgerUnavailable, IdempotencyKeyConflict,
     EvidenceVerificationFailed, EvidenceBindingMismatch, EvidenceClaimFailed, EvidenceExpired,
@@ -268,7 +271,7 @@ impl DispatchPermit {
 }
 
 /// Process-local reference gate. Production adapters must reuse Saga and participant ledgers.
-pub struct EffectBroker<P: ParticipantPort> {
+pub(crate) struct EffectBroker<P: ParticipantPort> {
     registry: ManifestRegistry,
     participant: P,
     // This is only an in-process permit-replay guard, not an attempt/effect ledger.
@@ -278,11 +281,11 @@ pub struct EffectBroker<P: ParticipantPort> {
 }
 
 impl<P: ParticipantPort> EffectBroker<P> {
-    pub fn new(registry: ManifestRegistry, participant: P) -> Self {
+    pub(crate) fn new(registry: ManifestRegistry, participant: P) -> Self {
         Self { registry, participant, used_attempts: HashSet::new(), receipt_sequence: 0 }
     }
 
-    pub fn dispatch(&mut self, proposal: &MutationProposal, grant: Option<&AuthorityGrant>,
+    pub(crate) fn dispatch(&mut self, proposal: &MutationProposal, grant: Option<&AuthorityGrant>,
         context: GateContext) -> DispatchReport {
         let manifest = match self.authorize(proposal, grant, context) {
             Ok(m) => m.clone(),
@@ -393,7 +396,7 @@ impl<P: ParticipantPort> EffectBroker<P> {
         Ok(ReconcileReport { status, evidence: Some(evidence) })
     }
 
-    pub fn participant_mut(&mut self) -> &mut P { &mut self.participant }
+    pub(crate) fn participant_mut(&mut self) -> &mut P { &mut self.participant }
 
     fn authorize(&self, p: &MutationProposal, grant: Option<&AuthorityGrant>,
         c: GateContext) -> Result<&ToolManifest, GateDenial> {
@@ -439,12 +442,16 @@ impl<P: ParticipantPort> EffectBroker<P> {
         if p.policy_version != m.policy_version || g.policy_version != m.policy_version {
             return Err(GateDenial::PolicyVersionMismatch);
         }
+        if p.policy_digest != m.policy_digest || g.policy_digest != p.policy_digest {
+            return Err(GateDenial::PolicyDigestMismatch);
+        }
         let exact = g.grant_id == p.grant_id && g.tenant_id == p.tenant_id
             && g.principal_id == p.principal_id && g.episode_id == p.episode_id
             && g.plan_digest == p.plan_digest && g.step_id == p.step_id
             && g.tool_id == p.tool_id && g.operation_id == p.operation_id
             && g.manifest_version == p.manifest_version && g.manifest_digest == p.manifest_digest
             && g.toolchain_id == p.toolchain_id && g.toolchain_digest == p.toolchain_digest
+            && g.policy_digest == p.policy_digest
             && g.target_digest == p.target_digest && g.request_digest == p.request_digest
             && g.attempt_id == p.attempt_id && g.idempotency_key == p.idempotency_key
             && g.environment == p.environment && g.risk_level == p.risk_level;
@@ -555,7 +562,8 @@ mod tests {
             tool_id: "deployment".into(), operation_id: "restart-service".into(),
             semantic_version: "1.0.0".into(), manifest_digest: Digest::from_byte(1),
             toolchain_id: "nix-toolchain-2026-11".into(), toolchain_digest: Digest::from_byte(5),
-            policy_version: "policy-v1".into(), effect_class: EffectClass::BoundedMutation,
+            policy_version: "policy-v1".into(), policy_digest: Digest::from_byte(6),
+            effect_class: EffectClass::BoundedMutation,
             qualified: true, required_scope: "service:restart".into(),
             required_grant_issuer: "authority-v1".into(), participant_id: "participant-a".into(),
             idempotency_supported: true, participant_ledger_supported: true,
@@ -571,7 +579,7 @@ mod tests {
             operation_id: "restart-service".into(), manifest_version: "1.0.0".into(),
             manifest_digest: Digest::from_byte(1), toolchain_id: "nix-toolchain-2026-11".into(),
             toolchain_digest: Digest::from_byte(5), policy_version: "policy-v1".into(),
-            target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
+            policy_digest: Digest::from_byte(6), target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
             grant_id: "grant-1".into(), attempt_id: "attempt-1".into(),
             idempotency_key: "logical-action-1".into(), environment: "test".into(),
             risk_level: 2, decision: AgentDecision::Act,
@@ -587,7 +595,7 @@ mod tests {
             target_digest: Digest::from_byte(3), request_digest: Digest::from_byte(4),
             attempt_id: "attempt-1".into(), idempotency_key: "logical-action-1".into(),
             environment: "test".into(), risk_level: 2, policy_version: "policy-v1".into(),
-            expires_at_ms: 10_000, revoked: false,
+            policy_digest: Digest::from_byte(6), expires_at_ms: 10_000, revoked: false,
         };
         let context = GateContext { now_ms: 1_000, preconditions_satisfied: true,
             observer_available: true, authority_source_available: true,
