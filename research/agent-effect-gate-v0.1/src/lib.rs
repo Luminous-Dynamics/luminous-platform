@@ -775,7 +775,7 @@ mod tests {
     }
 
     #[test]
-    fn fifty_one_negative_conformance_vectors_have_zero_external_effects() {
+    fn fifty_five_negative_conformance_vectors_have_zero_external_effects() {
         use NegativeVector::*;
         let vectors = [NonAct, NoGrant, AuthorityDown, ManifestDown, PolicyDown, ObserverDown,
             Preconditions, Revoked, Expired, WrongTenant, WrongPrincipal, WrongEpisode,
