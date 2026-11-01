@@ -49,3 +49,5 @@ The sealed ledger now requires two separately identified trial streams for every
 The matched baseline identity is now fully pinned (provider/model/version, source and image digests, scaffold, prompt, toolchain, runtime config, policy and distinct control domain). The run freeze also pins common execution-environment and resource-budget digests for both arms. A candidate-only ledger is invalid.
 
 See [BENCHMARK_TARGETS_AND_INDUSTRY_COMPARISON_V0_1.md](BENCHMARK_TARGETS_AND_INDUSTRY_COMPARISON_V0_1.md) for current external reference benchmarks, a preregistered target ladder, rare-event confidence interpretation, and the matched confirmatory evaluation protocol. All numeric targets are goals, not measured results.
+
+The run freeze also pins the state-isolation, artifact-access and network-egress policy digests. These describe per-trial writable state/cache boundaries, agent separation from private oracle artifacts, and default-deny or allowlisted outbound retrieval. The structural validator verifies digest presence/binding only; a separate runtime observer must attest enforcement.
