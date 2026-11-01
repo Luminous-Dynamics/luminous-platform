@@ -151,7 +151,7 @@ pub struct TrialEvent {
     pub occurred_at_ms: u64,
     pub kind: TrialEventKind,
     pub manifest_commitment: Digest,
-    pub agent_identity_digest: Digest,
+    pub arm_identity_digest: Digest,
     pub evaluator_digest: Digest,
     pub scenario_commitment: Digest,
     pub source_id: String,
@@ -254,6 +254,7 @@ pub enum SealedRunError {
     EventControlDomainCollision(String),
     EventBeforeScenarioIssue(String),
     MissingTrialDisposition(String),
+    MissingArmTrialDisposition(String, EvaluationArm),
     InvalidAttemptSequence(String),
     AttemptBeyondDeclaration(String),
     DuplicateAttemptStart(String),
@@ -584,7 +585,10 @@ fn validate_event_binding(
 ) -> Result<(), SealedRunError> {
     if event.run_id != manifest.run_id
         || event.manifest_commitment != *expected_commitment
-        || event.agent_identity_digest != manifest.agent_identity_digest
+        || event.arm_identity_digest != match event.arm {
+            EvaluationArm::Candidate => manifest.agent_identity_digest,
+            EvaluationArm::Baseline => manifest.baseline_identity_digest,
+        }
         || event.evaluator_digest != manifest.evaluator_digest
         || event.scenario_commitment != scenario.case_payload_commitment
         || event.event_id.trim().is_empty()
@@ -609,10 +613,11 @@ fn validate_event_binding(
 fn validate_trial_events(
     trial: &PlannedTrial,
     scenario: &ScenarioReceipt,
+    arm: EvaluationArm,
     events: &[&TrialEvent],
 ) -> Result<TrialResult, SealedRunError> {
     if events.is_empty() {
-        return Err(SealedRunError::MissingTrialDisposition(trial.trial_id.clone()));
+        return Err(SealedRunError::MissingArmTrialDisposition(trial.trial_id.clone(), arm));
     }
     let skipped_or_invalidated: Vec<&TrialEvent> = events.iter().copied()
         .filter(|event| matches!(event.kind, TrialEventKind::Skipped | TrialEventKind::Invalidated))
@@ -626,6 +631,7 @@ fn validate_trial_events(
         if event.kind == TrialEventKind::Skipped {
             return Ok(TrialResult {
                 trial_id: trial.trial_id.clone(),
+                arm,
                 cluster_id: trial.cluster_id.clone(),
                 disposition: TrialDisposition::Skipped,
                 attempts_started: 0,
@@ -635,6 +641,7 @@ fn validate_trial_events(
         }
         return Ok(TrialResult {
             trial_id: trial.trial_id.clone(),
+            arm,
             cluster_id: trial.cluster_id.clone(),
             disposition: TrialDisposition::Invalidated,
             attempts_started: 0,
@@ -717,6 +724,7 @@ fn validate_trial_events(
     };
     Ok(TrialResult {
         trial_id: trial.trial_id.clone(),
+        arm,
         cluster_id: trial.cluster_id.clone(),
         disposition,
         attempts_started: highest_attempt,
