@@ -1360,7 +1360,7 @@ mod tests {
 
     #[test]
     fn sixty_seven_adversarial_mutations_fail_closed() {
-        for vector in 0..67 {
+        for vector in 0..75 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
             match vector {
                 0 => { m.run_id.clear(); }
@@ -1429,7 +1429,15 @@ mod tests {
                 63 => { freeze.manifest_commitment = Digest::from_byte(99); }
                 64 => { freeze.publisher_id = "substituted-authority".into(); }
                 65 => { freeze.publisher_control_domain = "substituted-domain".into(); }
-                _ => { scenarios[0].oracle_commitment = scenarios[0].case_payload_commitment.clone(); }
+                66 => { scenarios[0].oracle_commitment = scenarios[0].case_payload_commitment.clone(); }
+                67 => { m.baseline.model_provider.clear(); }
+                68 => { m.baseline.model_version.clear(); }
+                69 => { m.baseline.toolchain_digest = Digest::from_byte(0); }
+                70 => { m.baseline.runtime_config_digest = Digest::from_byte(0); }
+                71 => { m.baseline.control_domain = m.agent.control_domain.clone(); }
+                72 => { m.execution_environment_digest = Digest::from_byte(0); }
+                73 => { m.resource_budget_digest = Digest::from_byte(0); }
+                _ => { m.baseline_identity_digest = m.agent_identity_digest.clone(); }
             };
             assert!(
                 validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).is_err(),
