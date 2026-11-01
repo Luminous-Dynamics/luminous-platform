@@ -74,6 +74,8 @@ pub struct RunManifest {
     pub execution_environment_digest: Digest,
     /// Frozen common resource ceilings for both arms (time, tokens, CPU, memory, tool calls).
     pub resource_budget_digest: Digest,
+    /// Commitment to the precomputed candidate/baseline first-arm assignment schedule.
+    pub arm_order_schedule_digest: Digest,
     pub agent_identity_digest: Digest,
     pub baseline_identity_digest: Digest,
     pub agent: FrozenAgentIdentity,
@@ -98,6 +100,7 @@ pub struct FreezeReceipt {
     pub evaluator_digest: Digest,
     pub execution_environment_digest: Digest,
     pub resource_budget_digest: Digest,
+    pub arm_order_schedule_digest: Digest,
     pub publisher_id: String,
     pub publisher_control_domain: String,
 }
@@ -222,6 +225,7 @@ pub struct RunLedgerSummary {
     pub evaluator_digest: Digest,
     pub execution_environment_digest: Digest,
     pub resource_budget_digest: Digest,
+    pub arm_order_schedule_digest: Digest,
     pub trials: Vec<TrialResult>,
 }
 
@@ -461,6 +465,7 @@ pub fn validate_run_ledger_with_reveals(
         evaluator_digest: manifest.evaluator_digest.clone(),
         execution_environment_digest: manifest.execution_environment_digest.clone(),
         resource_budget_digest: manifest.resource_budget_digest.clone(),
+        arm_order_schedule_digest: manifest.arm_order_schedule_digest.clone(),
         trials: results,
     })
 }
@@ -516,6 +521,7 @@ fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
         || digest_is_zero(&manifest.evaluator_digest)
         || digest_is_zero(&manifest.execution_environment_digest)
         || digest_is_zero(&manifest.resource_budget_digest)
+        || digest_is_zero(&manifest.arm_order_schedule_digest)
         || digest_is_zero(&manifest.agent_identity_digest)
         || digest_is_zero(&manifest.baseline_identity_digest)
         || digest_is_zero(&manifest.agent.agent_image_digest)
@@ -552,6 +558,7 @@ fn validate_freeze_receipt(
         || receipt.evaluator_digest != manifest.evaluator_digest
         || receipt.execution_environment_digest != manifest.execution_environment_digest
         || receipt.resource_budget_digest != manifest.resource_budget_digest
+        || receipt.arm_order_schedule_digest != manifest.arm_order_schedule_digest
         || receipt.publisher_id != manifest.freeze_authority_id
         || receipt.publisher_control_domain != manifest.freeze_authority_control_domain
     {
@@ -876,6 +883,7 @@ mod tests {
         let evaluator_digest = Digest::from_byte(3);
         let execution_environment_digest = Digest::from_byte(16);
         let resource_budget_digest = Digest::from_byte(17);
+        let arm_order_schedule_digest = Digest::from_byte(18);
         let manifest = RunManifest {
             schema: SEALED_RUN_SCHEMA.into(),
             version: SEALED_RUN_VERSION,
@@ -886,6 +894,7 @@ mod tests {
             evaluator_digest: evaluator_digest.clone(),
             execution_environment_digest: execution_environment_digest.clone(),
             resource_budget_digest: resource_budget_digest.clone(),
+            arm_order_schedule_digest: arm_order_schedule_digest.clone(),
             agent_identity_digest: agent_identity_digest.clone(),
             baseline_identity_digest: baseline_identity_digest.clone(),
             agent: FrozenAgentIdentity {
@@ -937,6 +946,7 @@ mod tests {
             evaluator_digest,
             execution_environment_digest,
             resource_budget_digest,
+            arm_order_schedule_digest,
             publisher_id: "freeze-authority".into(),
             publisher_control_domain: "authority-domain".into(),
         };
@@ -1390,7 +1400,7 @@ mod tests {
 
     #[test]
     fn sixty_seven_adversarial_mutations_fail_closed() {
-        for vector in 0..76 {
+        for vector in 0..78 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
             match vector {
                 0 => { m.run_id.clear(); }
@@ -1468,7 +1478,9 @@ mod tests {
                 72 => { m.execution_environment_digest = Digest::from_byte(0); }
                 73 => { m.resource_budget_digest = Digest::from_byte(0); }
                 74 => { m.baseline_identity_digest = m.agent_identity_digest.clone(); }
-                _ => { m.trials[0].first_arm = EvaluationArm::Baseline; }
+                75 => { m.trials[0].first_arm = EvaluationArm::Baseline; }
+                76 => { m.arm_order_schedule_digest = Digest::from_byte(0); }
+                _ => { freeze.arm_order_schedule_digest = Digest::from_byte(99); }
             };
             assert!(
                 validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).is_err(),
