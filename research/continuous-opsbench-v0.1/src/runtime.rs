@@ -375,6 +375,12 @@ fn validate_ledger_binding(
         || ledger.execution_environment_digest != manifest.execution_environment_digest
         || ledger.resource_budget_digest != manifest.resource_budget_digest
         || ledger.arm_order_schedule_digest != manifest.arm_order_schedule_digest
+        || ledger.state_isolation_policy_digest != manifest.state_isolation_policy_digest
+        || ledger.artifact_access_policy_digest != manifest.artifact_access_policy_digest
+        || ledger.network_egress_policy_digest != manifest.network_egress_policy_digest
+        || ledger.runtime_observer_source_id != manifest.runtime_observer_source_id
+        || ledger.runtime_observer_control_domain != manifest.runtime_observer_control_domain
+        || ledger.runtime_observer_adapter_digest != manifest.runtime_observer_adapter_digest
         || ledger.planned_trials != manifest.trials.len()
         || ledger.planned_arm_trials != manifest.trials.len().saturating_mul(2)
     {
