@@ -533,6 +533,7 @@ mod tests {
         assert_eq!(metrics.slow_requests, 10);
         assert_eq!(metrics.incorrect_business_requests, 10);
         assert_eq!(metrics.unique_degraded_requests, 30);
+        assert_eq!(metrics.impact_rate_ppm, 300_000);
         assert_eq!(metrics.interval_duration_ms, 100);
     }
 
@@ -551,6 +552,7 @@ mod tests {
         assert_eq!(metrics.slow_requests, 10);
         assert_eq!(metrics.incorrect_business_requests, 10);
         assert_eq!(metrics.unique_degraded_requests, 10);
+        assert_eq!(metrics.impact_rate_ppm, 100_000);
     }
 
     #[test]
@@ -570,6 +572,43 @@ mod tests {
         assert_eq!(metrics.slow_requests, 1);
         assert_eq!(metrics.incorrect_business_requests, 1);
         assert_eq!(metrics.duplicate_event_rows, 1);
+    }
+
+    #[test]
+    fn independent_sort_dedup_oracle_matches_union_across_overlap_patterns() {
+        let (spec, mut cells) = pair();
+        let mut expected_tokens: Vec<String> = Vec::new();
+        for index in 0u8..64 {
+            let id = token(index);
+            let kinds = [
+                (index % 3 == 0, ImpactKind::Failed),
+                (index % 5 == 0, ImpactKind::Slow),
+                (index % 7 == 0, ImpactKind::IncorrectBusinessResult),
+            ];
+            for (include, kind) in kinds {
+                if include {
+                    cells[0].events.push(ImpactEvent {
+                        request_token: id.clone(),
+                        kind,
+                    });
+                    expected_tokens.push(id.clone());
+                }
+            }
+        }
+        // Independent oracle: sort/deduplicate a flat token vector. It does not
+        // reuse the evaluator's BTreeSet-based union implementation.
+        expected_tokens.sort_unstable();
+        expected_tokens.dedup();
+
+        let result = evaluate_paired_impact(&[spec], &cells).unwrap();
+        assert_eq!(
+            result.pairs[0]
+                .candidate
+                .as_ref()
+                .unwrap()
+                .unique_degraded_requests as usize,
+            expected_tokens.len()
+        );
     }
 
     #[test]
@@ -701,6 +740,8 @@ mod tests {
                 30 => { cells[1].enumeration_complete = false; }
                 31 => { cells[0].events.push(ImpactEvent { request_token: "not-a-keyed-token".into(), kind: ImpactKind::Failed }); }
                 32 => {
+                    spec.demand.minimum_offered_requests = 2;
+                    spec.demand.maximum_offered_requests = 2;
                     cells[0].offered_requests = 2;
                     cells[1].offered_requests = 2;
                     cells[0].events = (0..3).map(|n| ImpactEvent { request_token: token(n), kind: ImpactKind::Failed }).collect();
