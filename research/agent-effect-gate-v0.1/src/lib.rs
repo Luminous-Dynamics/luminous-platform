@@ -649,6 +649,46 @@ mod tests {
     }
 
     #[test]
+    fn participant_owned_committed_state_blocks_a_fresh_attempt() {
+        let (mut b, p, g, c) = fixture();
+        let first = b.dispatch(&p, Some(&g), c);
+        assert_eq!(first.participant_status, Some(AttemptStatus::Committed));
+        let mut p2 = p.clone(); p2.attempt_id = "attempt-2".into();
+        let mut g2 = g.clone(); g2.attempt_id = "attempt-2".into();
+        let r = b.dispatch(&p2, Some(&g2), c);
+        assert_eq!(r.gate_receipt.decision(),
+            GateDecision::Denied(GateDenial::PriorAttemptUnresolved));
+        assert_eq!(b.participant_mut().submit_calls, 1);
+    }
+
+    #[test]
+    fn idempotency_key_cannot_be_rebound_to_a_different_request() {
+        let (mut b, p, g, c) = fixture();
+        let first = b.dispatch(&p, Some(&g), c);
+        assert_eq!(first.participant_status, Some(AttemptStatus::Committed));
+        let mut p2 = p.clone();
+        p2.attempt_id = "attempt-2".into();
+        p2.request_digest = Digest::from_byte(9);
+        let mut g2 = g.clone();
+        g2.attempt_id = "attempt-2".into();
+        g2.request_digest = Digest::from_byte(9);
+        let r = b.dispatch(&p2, Some(&g2), c);
+        assert_eq!(r.gate_receipt.decision(),
+            GateDecision::Denied(GateDenial::IdempotencyKeyConflict));
+        assert_eq!(b.participant_mut().submit_calls, 1);
+    }
+
+    #[test]
+    fn participant_ledger_lookup_failure_fails_closed() {
+        let (mut b, p, g, c) = fixture();
+        b.participant.logical_action.tenant_id = "wrong-tenant".into();
+        let r = b.dispatch(&p, Some(&g), c);
+        assert_eq!(r.gate_receipt.decision(),
+            GateDecision::Denied(GateDenial::ParticipantLedgerUnavailable));
+        assert_eq!(b.participant_mut().submit_calls, 0);
+    }
+
+    #[test]
     fn one_attempt_id_cannot_be_replayed_under_another_logical_key() {
         let (mut b, p, g, c) = fixture();
         let _ = b.dispatch(&p, Some(&g), c);
@@ -669,6 +709,7 @@ mod tests {
         MissingPrincipal, MissingEpisode, MissingStep, MissingOperation, MissingAttempt,
         MissingIdempotency, MissingEnvironment, BlankIssuer, BlankScope, WrongManifestVersion,
         ManifestWrongPolicy, GrantWrongTool, GrantWrongTarget, GrantWrongRequest,
+        WrongGrantManifestVersion, WrongGrantManifestDigest, WrongToolchainId, WrongToolchainDigest,
     }
 
     fn apply_negative(v: NegativeVector, b: &mut EffectBroker<FakeParticipant>,
@@ -725,6 +766,10 @@ mod tests {
             NegativeVector::GrantWrongTool => g.tool_id = "other-tool".into(),
             NegativeVector::GrantWrongTarget => g.target_digest = Digest::from_byte(8),
             NegativeVector::GrantWrongRequest => g.request_digest = Digest::from_byte(8),
+            NegativeVector::WrongGrantManifestVersion => g.manifest_version.push_str("-other"),
+            NegativeVector::WrongGrantManifestDigest => g.manifest_digest = Digest::from_byte(8),
+            NegativeVector::WrongToolchainId => p.toolchain_id.push_str("-other"),
+            NegativeVector::WrongToolchainDigest => p.toolchain_digest = Digest::from_byte(8),
         }
         true
     }
@@ -740,8 +785,9 @@ mod tests {
             NoIdempotency, NoLedger, NoPreflight, NoObserverVerifier, TooMuchRisk, BadEnvironment,
             MissingTenant, MissingPrincipal, MissingEpisode, MissingStep, MissingOperation,
             MissingAttempt, MissingIdempotency, MissingEnvironment, BlankIssuer, BlankScope,
-            WrongManifestVersion, ManifestWrongPolicy, GrantWrongTool, GrantWrongTarget, GrantWrongRequest];
-        assert_eq!(vectors.len(), 51);
+            WrongManifestVersion, ManifestWrongPolicy, GrantWrongTool, GrantWrongTarget, GrantWrongRequest,
+            WrongGrantManifestVersion, WrongGrantManifestDigest, WrongToolchainId, WrongToolchainDigest];
+        assert_eq!(vectors.len(), 55);
         for vector in vectors {
             let (mut b, mut p, mut g, mut c) = fixture();
             let with_grant = apply_negative(vector, &mut b, &mut p, &mut g, &mut c);
