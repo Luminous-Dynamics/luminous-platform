@@ -152,7 +152,8 @@
       "required": [
         "trial_id",
         "cluster_id",
-        "maximum_attempts"
+        "maximum_attempts",
+        "first_arm"
       ],
       "properties": {
         "trial_id": {
@@ -165,6 +166,12 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 65535
+        },
+        "first_arm": {
+          "enum": [
+            "candidate",
+            "baseline"
+          ]
         }
       }
     },
