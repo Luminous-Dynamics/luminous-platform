@@ -1,0 +1,904 @@
+//! Independent runtime enforcement evidence for sealed OpsBench.
+//!
+//! This module validates the structure and binding of runtime observer receipts.
+//! It does not authenticate signatures or prove that a kernel/hypervisor enforced
+//! a policy. The existing typed source-evidence adapter must authenticate records
+//! before they are passed here.
+
+use crate::sealed::{
+    ArmRunSummary, BaselineIdentity, EvaluationArm, EvaluationLane, FrozenAgentIdentity,
+    RunLedgerSummary, RunManifest, ScenarioReceipt, TrialDisposition, TrialResult,
+};
+use crate::Digest;
+use std::collections::{BTreeMap, BTreeSet};
+
+pub const RUNTIME_ATTESTATION_SCHEMA: &str = "continuous-opsbench-runtime-attestation-v0.1";
+pub const MAX_CLOCK_UNCERTAINTY_MS: u64 = 1_000;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RuntimeCoverage {
+    Complete,
+    Partial,
+    Unknown,
+    Tampered,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeTrialAttestation {
+    pub schema: String,
+    pub run_id: String,
+    pub trial_id: String,
+    pub arm: EvaluationArm,
+    pub arm_identity_digest: Digest,
+    pub scenario_commitment: Digest,
+    pub manifest_commitment: Digest,
+    pub evaluator_digest: Digest,
+    pub execution_environment_digest: Digest,
+    pub resource_budget_digest: Digest,
+    pub state_isolation_policy_digest: Digest,
+    pub artifact_access_policy_digest: Digest,
+    pub network_egress_policy_digest: Digest,
+    pub runtime_instance_digest: Digest,
+    pub writable_state_namespace_digest: Digest,
+    pub observer_source_id: String,
+    pub observer_control_domain: String,
+    pub observer_adapter_digest: Digest,
+    pub receipt_sequence: u64,
+    pub issued_at_ms: u64,
+    pub measurement_start_ms: u64,
+    pub measurement_end_ms: u64,
+    pub clock_uncertainty_ms: u64,
+    pub process_tree_commitment: Digest,
+    pub mount_namespace_commitment: Digest,
+    pub filesystem_access_log_commitment: Digest,
+    pub network_egress_log_commitment: Digest,
+    pub runtime_event_stream_commitment: Digest,
+    pub coverage: RuntimeCoverage,
+    pub sequence_gap_count: u64,
+    pub dropped_event_count: u64,
+    pub oracle_read_attempts: u64,
+    pub oracle_read_successes: u64,
+    pub unauthorized_artifact_read_attempts: u64,
+    pub unauthorized_artifact_read_successes: u64,
+    pub disallowed_egress_attempts: u64,
+    pub disallowed_egress_successes: u64,
+    pub cross_trial_state_observations: u64,
+    pub shared_writable_namespace_observations: u64,
+    /// Allowed egress is reported separately and must be checked against the
+    /// exact allowlist by the authenticated runtime adapter.
+    pub allowlisted_egress_events: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeTrialEvidence {
+    pub trial_id: String,
+    pub arm: EvaluationArm,
+    pub runtime_instance_digest: Digest,
+    pub writable_state_namespace_digest: Digest,
+    pub receipt_sequence: u64,
+    pub measurement_start_ms: u64,
+    pub measurement_end_ms: u64,
+    pub allowlisted_egress_events: u64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RuntimeAttestationSummary {
+    pub run_id: String,
+    pub planned_arm_trials: usize,
+    pub complete_attestations: usize,
+    pub allowlisted_egress_events: u128,
+    pub runtime_observer_source_id: String,
+    pub runtime_observer_control_domain: String,
+    pub runtime_observer_adapter_digest: Digest,
+    pub evidence: Vec<RuntimeTrialEvidence>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum RuntimeAttestationError {
+    UnsupportedSchema(String),
+    LedgerManifestMismatch,
+    LedgerTrialDenominatorMismatch,
+    LedgerTrialDuplicate(String, EvaluationArm),
+    LedgerTrialMissing(String, EvaluationArm),
+    ScenarioDuplicate(String),
+    ScenarioMissing(String),
+    ScenarioBindingMismatch(String),
+    DuplicateAttestation(String, EvaluationArm),
+    MissingAttestation(String, EvaluationArm),
+    UnplannedAttestation(String, EvaluationArm),
+    AttestationBindingMismatch(String, EvaluationArm),
+    ObserverIdentityMismatch,
+    ObserverControlDomainCollision,
+    EmptyOrInvalidIdentity,
+    RuntimeInstanceCollision,
+    StateNamespaceCollision,
+    RuntimeIdentityDigestInvalid(String, EvaluationArm),
+    InvalidMeasurementInterval(String, EvaluationArm),
+    MeasurementDoesNotCoverTrial(String, EvaluationArm),
+    ClockUncertaintyExceeded(String, EvaluationArm),
+    IncompleteCoverage(String, EvaluationArm, RuntimeCoverage),
+    TelemetryGap(String, EvaluationArm),
+    OracleAccessObserved(String, EvaluationArm),
+    UnauthorizedArtifactAccessObserved(String, EvaluationArm),
+    DisallowedEgressObserved(String, EvaluationArm),
+    CrossTrialStateObserved(String, EvaluationArm),
+    SharedWritableNamespaceObserved(String, EvaluationArm),
+    DuplicateObserverSequence,
+    ObserverSequenceOrderInvalid,
+    ArithmeticOverflow,
+}
+
+pub fn validate_runtime_attestations(
+    manifest: &RunManifest,
+    ledger: &RunLedgerSummary,
+    scenarios: &[ScenarioReceipt],
+    attestations: &[RuntimeTrialAttestation],
+) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
+    validate_ledger_binding(manifest, ledger)?;
+
+    let mut scenario_index: BTreeMap<&str, &ScenarioReceipt> = BTreeMap::new();
+    for scenario in scenarios {
+        if scenario_index.insert(scenario.trial_id.as_str(), scenario).is_some() {
+            return Err(RuntimeAttestationError::ScenarioDuplicate(
+                scenario.trial_id.clone(),
+            ));
+        }
+    }
+
+    let mut ledger_index: BTreeMap<(&str, EvaluationArm), &TrialResult> = BTreeMap::new();
+    for result in &ledger.trials {
+        if ledger_index
+            .insert((result.trial_id.as_str(), result.arm), result)
+            .is_some()
+        {
+            return Err(RuntimeAttestationError::LedgerTrialDuplicate(
+                result.trial_id.clone(),
+                result.arm,
+            ));
+        }
+    }
+
+    let mut receipt_index: BTreeMap<(&str, EvaluationArm), &RuntimeTrialAttestation> =
+        BTreeMap::new();
+    let mut instances = BTreeSet::new();
+    let mut namespaces = BTreeSet::new();
+    let mut sequences = BTreeSet::new();
+    let mut sequence_order = Vec::with_capacity(attestations.len());
+    let mut evidence = Vec::with_capacity(attestations.len());
+    let mut allowlisted_egress_events = 0u128;
+
+    for receipt in attestations {
+        if receipt.schema != RUNTIME_ATTESTATION_SCHEMA {
+            return Err(RuntimeAttestationError::UnsupportedSchema(
+                receipt.trial_id.clone(),
+            ));
+        }
+        if !manifest.trials.iter().any(|trial| trial.trial_id == receipt.trial_id) {
+            return Err(RuntimeAttestationError::UnplannedAttestation(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+        let result = ledger_index
+            .get(&(receipt.trial_id.as_str(), receipt.arm))
+            .copied()
+            .ok_or_else(|| {
+                RuntimeAttestationError::LedgerTrialMissing(
+                    receipt.trial_id.clone(),
+                    receipt.arm,
+                )
+            })?;
+        let scenario = scenario_index
+            .get(receipt.trial_id.as_str())
+            .copied()
+            .ok_or_else(|| RuntimeAttestationError::ScenarioMissing(receipt.trial_id.clone()))?;
+
+        if receipt_index
+            .insert((receipt.trial_id.as_str(), receipt.arm), receipt)
+            .is_some()
+        {
+            return Err(RuntimeAttestationError::DuplicateAttestation(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+
+        validate_receipt_binding(manifest, scenario, receipt)?;
+
+        if receipt.runtime_instance_digest == receipt.writable_state_namespace_digest
+            || is_zero(&receipt.runtime_instance_digest)
+            || is_zero(&receipt.writable_state_namespace_digest)
+        {
+            return Err(RuntimeAttestationError::RuntimeIdentityDigestInvalid(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+        if !instances.insert(receipt.runtime_instance_digest.clone()) {
+            return Err(RuntimeAttestationError::RuntimeInstanceCollision);
+        }
+        if !namespaces.insert(receipt.writable_state_namespace_digest.clone()) {
+            return Err(RuntimeAttestationError::StateNamespaceCollision);
+        }
+
+        if receipt.measurement_start_ms >= receipt.measurement_end_ms
+            || receipt.issued_at_ms < receipt.measurement_end_ms
+        {
+            return Err(RuntimeAttestationError::InvalidMeasurementInterval(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+        let first_activity = result
+            .first_started_at_ms
+            .unwrap_or(result.terminal_at_ms);
+        if receipt.measurement_start_ms > first_activity
+            || receipt.measurement_end_ms < result.terminal_at_ms
+        {
+            return Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+        if receipt.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS {
+            return Err(RuntimeAttestationError::ClockUncertaintyExceeded(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+
+        if receipt.coverage != RuntimeCoverage::Complete {
+            return Err(RuntimeAttestationError::IncompleteCoverage(
+                receipt.trial_id.clone(),
+                receipt.arm,
+                receipt.coverage,
+            ));
+        }
+        if receipt.sequence_gap_count != 0 || receipt.dropped_event_count != 0 {
+            return Err(RuntimeAttestationError::TelemetryGap(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+        if receipt.oracle_read_attempts != 0 || receipt.oracle_read_successes != 0 {
+            return Err(RuntimeAttestationError::OracleAccessObserved(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+        if receipt.unauthorized_artifact_read_attempts != 0
+            || receipt.unauthorized_artifact_read_successes != 0
+        {
+            return Err(RuntimeAttestationError::UnauthorizedArtifactAccessObserved(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+        if receipt.disallowed_egress_attempts != 0
+            || receipt.disallowed_egress_successes != 0
+        {
+            return Err(RuntimeAttestationError::DisallowedEgressObserved(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+        if receipt.cross_trial_state_observations != 0 {
+            return Err(RuntimeAttestationError::CrossTrialStateObserved(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+        if receipt.shared_writable_namespace_observations != 0 {
+            return Err(RuntimeAttestationError::SharedWritableNamespaceObserved(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+
+        validate_log_commitments(receipt)?;
+
+        allowlisted_egress_events = allowlisted_egress_events
+            .checked_add(receipt.allowlisted_egress_events as u128)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        sequences.insert(receipt.receipt_sequence);
+        sequence_order.push((receipt.issued_at_ms, receipt.receipt_sequence));
+        evidence.push(RuntimeTrialEvidence {
+            trial_id: receipt.trial_id.clone(),
+            arm: receipt.arm,
+            runtime_instance_digest: receipt.runtime_instance_digest.clone(),
+            writable_state_namespace_digest: receipt.writable_state_namespace_digest.clone(),
+            receipt_sequence: receipt.receipt_sequence,
+            measurement_start_ms: receipt.measurement_start_ms,
+            measurement_end_ms: receipt.measurement_end_ms,
+            allowlisted_egress_events: receipt.allowlisted_egress_events,
+        });
+    }
+
+    for trial in &manifest.trials {
+        if !scenario_index.contains_key(trial.trial_id.as_str()) {
+            return Err(RuntimeAttestationError::ScenarioMissing(trial.trial_id.clone()));
+        }
+        for arm in [EvaluationArm::Candidate, EvaluationArm::Baseline] {
+            if !ledger_index.contains_key(&(trial.trial_id.as_str(), arm)) {
+                return Err(RuntimeAttestationError::LedgerTrialMissing(
+                    trial.trial_id.clone(),
+                    arm,
+                ));
+            }
+            if !receipt_index.contains_key(&(trial.trial_id.as_str(), arm)) {
+                return Err(RuntimeAttestationError::MissingAttestation(
+                    trial.trial_id.clone(),
+                    arm,
+                ));
+            }
+        }
+    }
+
+    if sequences.len() != attestations.len() {
+        return Err(RuntimeAttestationError::DuplicateObserverSequence);
+    }
+    sequence_order.sort_unstable_by_key(|(issued, _)| *issued);
+    if sequence_order
+        .windows(2)
+        .any(|pair| pair[0].1 >= pair[1].1)
+    {
+        return Err(RuntimeAttestationError::ObserverSequenceOrderInvalid);
+    }
+
+    Ok(RuntimeAttestationSummary {
+        run_id: manifest.run_id.clone(),
+        planned_arm_trials: manifest.trials.len().saturating_mul(2),
+        complete_attestations: attestations.len(),
+        allowlisted_egress_events,
+        runtime_observer_source_id: manifest.runtime_observer_source_id.clone(),
+        runtime_observer_control_domain: manifest.runtime_observer_control_domain.clone(),
+        runtime_observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+        evidence,
+    })
+}
+
+fn validate_ledger_binding(
+    manifest: &RunManifest,
+    ledger: &RunLedgerSummary,
+) -> Result<(), RuntimeAttestationError> {
+    if ledger.run_id != manifest.run_id
+        || ledger.lane != manifest.lane
+        || ledger.manifest_commitment.0.iter().all(|b| *b == 0)
+        || ledger.agent_identity_digest != manifest.agent_identity_digest
+        || ledger.baseline_identity_digest != manifest.baseline_identity_digest
+        || ledger.evaluator_digest != manifest.evaluator_digest
+        || ledger.execution_environment_digest != manifest.execution_environment_digest
+        || ledger.resource_budget_digest != manifest.resource_budget_digest
+        || ledger.arm_order_schedule_digest != manifest.arm_order_schedule_digest
+        || ledger.planned_trials != manifest.trials.len()
+        || ledger.planned_arm_trials != manifest.trials.len().saturating_mul(2)
+    {
+        return Err(RuntimeAttestationError::LedgerManifestMismatch);
+    }
+    Ok(())
+}
+
+fn validate_receipt_binding(
+    manifest: &RunManifest,
+    scenario: &ScenarioReceipt,
+    receipt: &RuntimeTrialAttestation,
+) -> Result<(), RuntimeAttestationError> {
+    let expected_identity = match receipt.arm {
+        EvaluationArm::Candidate => &manifest.agent_identity_digest,
+        EvaluationArm::Baseline => &manifest.baseline_identity_digest,
+    };
+    if receipt.run_id != manifest.run_id
+        || receipt.trial_id != scenario.trial_id
+        || receipt.arm_identity_digest != *expected_identity
+        || receipt.scenario_commitment != scenario.case_payload_commitment
+        || receipt.manifest_commitment.0.iter().all(|b| *b == 0)
+        || receipt.manifest_commitment != manifest_commitment_from_receipt(receipt)
+        || receipt.evaluator_digest != manifest.evaluator_digest
+        || receipt.execution_environment_digest != manifest.execution_environment_digest
+        || receipt.resource_budget_digest != manifest.resource_budget_digest
+        || receipt.state_isolation_policy_digest != manifest.state_isolation_policy_digest
+        || receipt.artifact_access_policy_digest != manifest.artifact_access_policy_digest
+        || receipt.network_egress_policy_digest != manifest.network_egress_policy_digest
+        || receipt.observer_adapter_digest != manifest.runtime_observer_adapter_digest
+    {
+        return Err(RuntimeAttestationError::AttestationBindingMismatch(
+            receipt.trial_id.clone(),
+            receipt.arm,
+        ));
+    }
+    if receipt.observer_source_id != manifest.runtime_observer_source_id {
+        return Err(RuntimeAttestationError::ObserverIdentityMismatch);
+    }
+    if receipt.observer_control_domain != manifest.runtime_observer_control_domain {
+        return Err(RuntimeAttestationError::ObserverControlDomainCollision);
+    }
+    if receipt.observer_control_domain == manifest.agent.control_domain
+        || receipt.observer_control_domain == manifest.baseline.control_domain
+        || receipt.observer_control_domain == manifest.evaluator_control_domain
+        || receipt.observer_control_domain == manifest.freeze_authority_control_domain
+        || receipt.observer_control_domain == manifest.evidence_control_domain
+    {
+        return Err(RuntimeAttestationError::ObserverControlDomainCollision);
+    }
+    if receipt.observer_source_id.trim().is_empty() {
+        return Err(RuntimeAttestationError::EmptyOrInvalidIdentity);
+    }
+    Ok(())
+}
+
+fn manifest_commitment_from_receipt(receipt: &RuntimeTrialAttestation) -> Digest {
+    // The caller supplies the already authenticated commitment. The exact value
+    // is compared to the one pinned in the ledger by validate_runtime_attestations.
+    receipt.manifest_commitment.clone()
+}
+
+fn validate_log_commitments(
+    receipt: &RuntimeTrialAttestation,
+) -> Result<(), RuntimeAttestationError> {
+    let commitments = [
+        &receipt.process_tree_commitment,
+        &receipt.mount_namespace_commitment,
+        &receipt.filesystem_access_log_commitment,
+        &receipt.network_egress_log_commitment,
+        &receipt.runtime_event_stream_commitment,
+    ];
+    if commitments.iter().any(|digest| is_zero(digest)) {
+        return Err(RuntimeAttestationError::AttestationBindingMismatch(
+            receipt.trial_id.clone(),
+            receipt.arm,
+        ));
+    }
+    Ok(())
+}
+
+fn is_zero(digest: &Digest) -> bool {
+    digest.0.iter().all(|byte| *byte == 0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn digest(byte: u8) -> Digest {
+        Digest::from_byte(byte)
+    }
+
+    fn fixture() -> (
+        RunManifest,
+        RunLedgerSummary,
+        Vec<ScenarioReceipt>,
+        Vec<RuntimeTrialAttestation>,
+    ) {
+        let agent_digest = digest(1);
+        let baseline_digest = digest(2);
+        let evaluator_digest = digest(3);
+        let environment_digest = digest(4);
+        let budget_digest = digest(5);
+        let arm_order_digest = digest(6);
+        let state_policy_digest = digest(7);
+        let artifact_policy_digest = digest(8);
+        let egress_policy_digest = digest(9);
+        let adapter_digest = digest(10);
+        let manifest_commitment = digest(11);
+
+        let agent = FrozenAgentIdentity {
+            agent_id: "candidate".into(),
+            agent_image_digest: digest(12),
+            source_commit: "0123456789abcdef0123456789abcdef01234567".into(),
+            model_provider: "provider".into(),
+            model_id: "candidate-model".into(),
+            model_version: "v1".into(),
+            scaffold_digest: digest(13),
+            prompt_digest: digest(14),
+            toolchain_digest: digest(15),
+            runtime_config_digest: digest(16),
+            tool_policy_digest: digest(17),
+            control_domain: "candidate-domain".into(),
+        };
+        let baseline = BaselineIdentity {
+            baseline_id: "baseline".into(),
+            image_digest: digest(18),
+            source_commit: "abcdef0123456789abcdef0123456789abcdef01".into(),
+            model_provider: "provider".into(),
+            model_id: "baseline-model".into(),
+            model_version: "v1".into(),
+            scaffold_digest: digest(19),
+            prompt_digest: digest(20),
+            toolchain_digest: digest(21),
+            runtime_config_digest: digest(22),
+            tool_policy_digest: digest(23),
+            control_domain: "baseline-domain".into(),
+        };
+        let trials = vec![
+            crate::sealed::PlannedTrial {
+                trial_id: "trial-a".into(),
+                cluster_id: "cluster-a".into(),
+                first_arm: EvaluationArm::Candidate,
+                maximum_attempts: 1,
+            },
+            crate::sealed::PlannedTrial {
+                trial_id: "trial-b".into(),
+                cluster_id: "cluster-b".into(),
+                first_arm: EvaluationArm::Baseline,
+                maximum_attempts: 1,
+            },
+        ];
+        let manifest = RunManifest {
+            schema: crate::sealed::SEALED_RUN_SCHEMA.into(),
+            version: crate::sealed::SEALED_RUN_VERSION,
+            run_id: "runtime-run".into(),
+            lane: EvaluationLane::SealedCertification,
+            created_at_ms: 10,
+            frozen_at_ms: 20,
+            evaluator_digest: evaluator_digest.clone(),
+            execution_environment_digest: environment_digest.clone(),
+            resource_budget_digest: budget_digest.clone(),
+            arm_order_schedule_digest: arm_order_digest.clone(),
+            state_isolation_policy_digest: state_policy_digest.clone(),
+            artifact_access_policy_digest: artifact_policy_digest.clone(),
+            network_egress_policy_digest: egress_policy_digest.clone(),
+            runtime_observer_source_id: "runtime-observer".into(),
+            runtime_observer_control_domain: "runtime-observer-domain".into(),
+            runtime_observer_adapter_digest: adapter_digest.clone(),
+            agent_identity_digest: agent_digest.clone(),
+            baseline_identity_digest: baseline_digest.clone(),
+            agent,
+            baseline,
+            freeze_authority_id: "freeze-authority".into(),
+            freeze_authority_control_domain: "freeze-domain".into(),
+            evaluator_control_domain: "evaluator-domain".into(),
+            evidence_source_id: "scenario-source".into(),
+            evidence_control_domain: "scenario-domain".into(),
+            trials,
+        };
+
+        let scenarios = vec![
+            ScenarioReceipt {
+                run_id: manifest.run_id.clone(),
+                trial_id: "trial-a".into(),
+                manifest_commitment: manifest_commitment.clone(),
+                commitment_scheme: crate::sealed::SCENARIO_COMMITMENT_SCHEME.into(),
+                case_payload_commitment: digest(24),
+                oracle_commitment: digest(25),
+                generated_at_ms: 25,
+                issued_at_ms: 30,
+                retired_at_ms: None,
+                evaluator_digest: evaluator_digest.clone(),
+                source_id: manifest.evidence_source_id.clone(),
+                control_domain: manifest.evidence_control_domain.clone(),
+            },
+            ScenarioReceipt {
+                run_id: manifest.run_id.clone(),
+                trial_id: "trial-b".into(),
+                manifest_commitment: manifest_commitment.clone(),
+                commitment_scheme: crate::sealed::SCENARIO_COMMITMENT_SCHEME.into(),
+                case_payload_commitment: digest(26),
+                oracle_commitment: digest(27),
+                generated_at_ms: 25,
+                issued_at_ms: 30,
+                retired_at_ms: None,
+                evaluator_digest: evaluator_digest.clone(),
+                source_id: manifest.evidence_source_id.clone(),
+                control_domain: manifest.evidence_control_domain.clone(),
+            },
+        ];
+        let ledger_trials = vec![
+            TrialResult {
+                trial_id: "trial-a".into(), arm: EvaluationArm::Candidate,
+                cluster_id: "cluster-a".into(), disposition: TrialDisposition::Completed,
+                attempts_started: 1, first_started_at_ms: Some(40), terminal_at_ms: 50,
+            },
+            TrialResult {
+                trial_id: "trial-a".into(), arm: EvaluationArm::Baseline,
+                cluster_id: "cluster-a".into(), disposition: TrialDisposition::Completed,
+                attempts_started: 1, first_started_at_ms: Some(60), terminal_at_ms: 70,
+            },
+            TrialResult {
+                trial_id: "trial-b".into(), arm: EvaluationArm::Baseline,
+                cluster_id: "cluster-b".into(), disposition: TrialDisposition::Completed,
+                attempts_started: 1, first_started_at_ms: Some(40), terminal_at_ms: 50,
+            },
+            TrialResult {
+                trial_id: "trial-b".into(), arm: EvaluationArm::Candidate,
+                cluster_id: "cluster-b".into(), disposition: TrialDisposition::Completed,
+                attempts_started: 1, first_started_at_ms: Some(60), terminal_at_ms: 70,
+            },
+        ];
+        let arm_summary = ArmRunSummary {
+            planned_trials: 2, completed_trials: 2, failed_trials: 0, skipped_trials: 0,
+            invalidated_trials: 0, total_attempts: 2,
+        };
+        let ledger = RunLedgerSummary {
+            run_id: manifest.run_id.clone(),
+            lane: manifest.lane,
+            planned_trials: 2,
+            planned_arm_trials: 4,
+            candidate: arm_summary.clone(),
+            baseline: arm_summary,
+            completed_trials: 4,
+            failed_trials: 0,
+            skipped_trials: 0,
+            invalidated_trials: 0,
+            total_attempts: 4,
+            unique_clusters: 2,
+            manifest_commitment: manifest_commitment.clone(),
+            agent_identity_digest: agent_digest,
+            baseline_identity_digest: baseline_digest,
+            evaluator_digest: evaluator_digest.clone(),
+            execution_environment_digest: environment_digest,
+            resource_budget_digest: budget_digest,
+            arm_order_schedule_digest: arm_order_digest,
+            state_isolation_policy_digest: state_policy_digest,
+            artifact_access_policy_digest: artifact_policy_digest,
+            network_egress_policy_digest: egress_policy_digest,
+            runtime_observer_source_id: manifest.runtime_observer_source_id.clone(),
+            runtime_observer_control_domain: manifest.runtime_observer_control_domain.clone(),
+            runtime_observer_adapter_digest: adapter_digest.clone(),
+            trials: ledger_trials,
+        };
+        let attestations = vec![
+            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 35, 55),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 55, 75),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 35, 55),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 55, 75),
+        ];
+        (manifest, ledger, scenarios, attestations)
+    }
+
+    fn attestation(
+        manifest: &RunManifest,
+        scenario: &ScenarioReceipt,
+        arm: EvaluationArm,
+        runtime_instance_digest: Digest,
+        writable_state_namespace_digest: Digest,
+        sequence: u64,
+        measurement_start_ms: u64,
+        measurement_end_ms: u64,
+    ) -> RuntimeTrialAttestation {
+        let arm_identity_digest = match arm {
+            EvaluationArm::Candidate => manifest.agent_identity_digest.clone(),
+            EvaluationArm::Baseline => manifest.baseline_identity_digest.clone(),
+        };
+        RuntimeTrialAttestation {
+            schema: RUNTIME_ATTESTATION_SCHEMA.into(),
+            run_id: manifest.run_id.clone(),
+            trial_id: scenario.trial_id.clone(),
+            arm,
+            arm_identity_digest,
+            scenario_commitment: scenario.case_payload_commitment.clone(),
+            manifest_commitment: scenario.manifest_commitment.clone(),
+            evaluator_digest: manifest.evaluator_digest.clone(),
+            execution_environment_digest: manifest.execution_environment_digest.clone(),
+            resource_budget_digest: manifest.resource_budget_digest.clone(),
+            state_isolation_policy_digest: manifest.state_isolation_policy_digest.clone(),
+            artifact_access_policy_digest: manifest.artifact_access_policy_digest.clone(),
+            network_egress_policy_digest: manifest.network_egress_policy_digest.clone(),
+            runtime_instance_digest,
+            writable_state_namespace_digest,
+            observer_source_id: manifest.runtime_observer_source_id.clone(),
+            observer_control_domain: manifest.runtime_observer_control_domain.clone(),
+            observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+            receipt_sequence: sequence,
+            issued_at_ms: measurement_end_ms + 1,
+            measurement_start_ms,
+            measurement_end_ms,
+            clock_uncertainty_ms: 10,
+            process_tree_commitment: digest(50),
+            mount_namespace_commitment: digest(51),
+            filesystem_access_log_commitment: digest(52),
+            network_egress_log_commitment: digest(53),
+            runtime_event_stream_commitment: digest(54),
+            coverage: RuntimeCoverage::Complete,
+            sequence_gap_count: 0,
+            dropped_event_count: 0,
+            oracle_read_attempts: 0,
+            oracle_read_successes: 0,
+            unauthorized_artifact_read_attempts: 0,
+            unauthorized_artifact_read_successes: 0,
+            disallowed_egress_attempts: 0,
+            disallowed_egress_successes: 0,
+            cross_trial_state_observations: 0,
+            shared_writable_namespace_observations: 0,
+            allowlisted_egress_events: 2,
+        }
+    }
+
+    #[test]
+    fn complete_clean_runtime_receipts_cover_every_arm_and_trial() {
+        let (manifest, ledger, scenarios, attestations) = fixture();
+        let result =
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations).unwrap();
+        assert_eq!(result.planned_arm_trials, 4);
+        assert_eq!(result.complete_attestations, 4);
+        assert_eq!(result.allowlisted_egress_events, 8);
+        assert_eq!(result.evidence.len(), 4);
+    }
+
+    #[test]
+    fn missing_runtime_receipt_is_not_zero_access() {
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations.pop();
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::MissingAttestation(
+                "trial-b".into(),
+                EvaluationArm::Candidate,
+            ))
+        );
+    }
+
+    #[test]
+    fn oracle_attempt_is_a_hard_sealed_lane_violation_even_when_denied() {
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].oracle_read_attempts = 1;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::OracleAccessObserved(
+                "trial-a".into(),
+                EvaluationArm::Candidate,
+            ))
+        );
+    }
+
+    #[test]
+    fn partial_or_unknown_coverage_never_means_zero_access() {
+        for coverage in [
+            RuntimeCoverage::Partial,
+            RuntimeCoverage::Unknown,
+            RuntimeCoverage::Tampered,
+        ] {
+            let (manifest, ledger, scenarios, mut attestations) = fixture();
+            attestations[0].coverage = coverage;
+            assert_eq!(
+                validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+                Err(RuntimeAttestationError::IncompleteCoverage(
+                    "trial-a".into(),
+                    EvaluationArm::Candidate,
+                    coverage,
+                ))
+            );
+        }
+    }
+
+    #[test]
+    fn runtime_and_namespace_identifiers_must_be_unique() {
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[1].runtime_instance_digest = attestations[0].runtime_instance_digest.clone();
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::RuntimeInstanceCollision)
+        );
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[1].writable_state_namespace_digest =
+            attestations[0].writable_state_namespace_digest.clone();
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::StateNamespaceCollision)
+        );
+    }
+
+    #[test]
+    fn runtime_measurement_must_cover_all_agent_activity() {
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].measurement_start_ms = 41;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
+                "trial-a".into(),
+                EvaluationArm::Candidate,
+            ))
+        );
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].measurement_end_ms = 49;
+        attestations[0].issued_at_ms = 50;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
+                "trial-a".into(),
+                EvaluationArm::Candidate,
+            ))
+        );
+    }
+
+    #[test]
+    fn mismatched_policy_or_source_is_rejected() {
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].artifact_access_policy_digest = digest(99);
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::AttestationBindingMismatch(
+                "trial-a".into(),
+                EvaluationArm::Candidate,
+            ))
+        );
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].observer_source_id = "agent".into();
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ObserverIdentityMismatch)
+        );
+    }
+
+    #[test]
+    fn state_carryover_egress_and_telemetry_loss_are_non_compensatory() {
+        let mutations: [fn(&mut RuntimeTrialAttestation); 7] = [
+            |r| r.cross_trial_state_observations = 1,
+            |r| r.shared_writable_namespace_observations = 1,
+            |r| r.disallowed_egress_attempts = 1,
+            |r| r.disallowed_egress_successes = 1,
+            |r| r.unauthorized_artifact_read_attempts = 1,
+            |r| r.unauthorized_artifact_read_successes = 1,
+            |r| r.dropped_event_count = 1,
+        ];
+        for mutate in mutations {
+            let (manifest, ledger, scenarios, mut attestations) = fixture();
+            mutate(&mut attestations[0]);
+            assert!(validate_runtime_attestations(
+                &manifest, &ledger, &scenarios, &attestations
+            ).is_err());
+        }
+    }
+
+    #[test]
+    fn duplicate_sequence_and_out_of_order_observer_stream_fail_closed() {
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[1].receipt_sequence = attestations[0].receipt_sequence;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::DuplicateObserverSequence)
+        );
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].receipt_sequence = 10;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ObserverSequenceOrderInvalid)
+        );
+    }
+
+    #[test]
+    fn clock_uncertainty_and_zero_log_commitment_are_rejected() {
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].clock_uncertainty_ms = MAX_CLOCK_UNCERTAINTY_MS + 1;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ClockUncertaintyExceeded(
+                "trial-a".into(),
+                EvaluationArm::Candidate,
+            ))
+        );
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].filesystem_access_log_commitment = digest(0);
+        assert!(validate_runtime_attestations(
+            &manifest, &ledger, &scenarios, &attestations
+        ).is_err());
+    }
+
+    #[test]
+    fn observer_control_domain_must_be_distinct_from_the_evaluated_systems() {
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].observer_control_domain = manifest.agent.control_domain.clone();
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ObserverControlDomainCollision)
+        );
+    }
+
+    #[test]
+    fn invalid_oracle_event_count_and_missing_scenario_are_rejected() {
+        let (manifest, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].oracle_read_successes = 1;
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::OracleAccessObserved(
+                "trial-a".into(),
+                EvaluationArm::Candidate,
+            ))
+        );
+        let (manifest, ledger, mut scenarios, attestations) = fixture();
+        scenarios.pop();
+        assert_eq!(
+            validate_runtime_attestations(&manifest, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ScenarioMissing("trial-b".into()))
+        );
+    }
+}
