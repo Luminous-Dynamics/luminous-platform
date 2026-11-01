@@ -9,6 +9,14 @@
 
 use std::collections::HashSet;
 
+pub mod verified_inputs;
+pub use verified_inputs::{
+    AttestationVerificationError, AttestationVerifier, ClockError, ClockReading,
+    EvidenceBinding, EvidenceClaim, EvidenceGateError, EvidencePayload, EvidenceRole,
+    GateEvidenceBundle, PublisherRule, SignedSourceEvidence, TrustPolicy,
+    TrustedClock, VerifiedAttestation, VerifiedEffectBroker, VerifiedGateContext,
+    VerifiedPublisher,
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Digest(pub [u8; 32]);
 
@@ -140,6 +148,9 @@ pub enum GateDenial {
     ToolchainMismatch,
     MissingRequiredField, AttemptIdReplay, PriorAttemptUnresolved, PermitBindingMismatch,
     ParticipantEvidenceMismatch, ParticipantLedgerUnavailable, IdempotencyKeyConflict,
+    EvidenceVerificationFailed, EvidenceBindingMismatch, EvidenceClaimFailed, EvidenceExpired,
+    EvidenceStale, EvidenceSequenceRollback, EvidenceFutureTimestamp, ObserverNotIndependent,
+    ClockUnavailable, ClockUntrusted, ClockUncertaintyExceeded,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -154,6 +165,7 @@ pub struct GateReceipt {
     attempt_id: String,
     request_digest: Digest,
     decision: GateDecision,
+    evidence_ids: Vec<String>,
 }
 
 impl GateReceipt {
@@ -163,6 +175,7 @@ impl GateReceipt {
     pub fn attempt_id(&self) -> &str { &self.attempt_id }
     pub fn request_digest(&self) -> &Digest { &self.request_digest }
     pub fn decision(&self) -> GateDecision { self.decision }
+    pub fn evidence_ids(&self) -> &[String] { &self.evidence_ids }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -455,7 +468,8 @@ impl<P: ParticipantPort> EffectBroker<P> {
         DispatchReport {
             gate_receipt: GateReceipt { sequence, tenant_id: p.tenant_id.clone(),
                 episode_id: p.episode_id.clone(), attempt_id: p.attempt_id.clone(),
-                request_digest: p.request_digest.clone(), decision: GateDecision::Denied(reason) },
+                request_digest: p.request_digest.clone(), decision: GateDecision::Denied(reason),
+            evidence_ids: Vec::new() },
             participant_status: None, participant_evidence: None,
         }
     }
@@ -464,7 +478,8 @@ impl<P: ParticipantPort> EffectBroker<P> {
         let sequence = self.next_receipt_sequence();
         GateReceipt { sequence, tenant_id: p.tenant_id.clone(),
             episode_id: p.episode_id.clone(), attempt_id: p.attempt_id.clone(),
-            request_digest: p.request_digest.clone(), decision: GateDecision::Allowed }
+            request_digest: p.request_digest.clone(), decision: GateDecision::Allowed,
+            evidence_ids: Vec::new() }
     }
 }
 
