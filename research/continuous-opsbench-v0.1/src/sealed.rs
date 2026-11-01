@@ -866,7 +866,7 @@ mod tests {
             oracle_artifact_digest: Digest::from_byte(24),
             case_payload_salt: vec![31; 32],
             oracle_salt: vec![32; 32],
-            revealed_at_ms: scenario.retired_at_ms.unwrap() + 1,
+            revealed_at_ms: scenario.retired_at_ms.unwrap_or(8) + 1,
             source_id: manifest.evidence_source_id.clone(),
             control_domain: manifest.evidence_control_domain.clone(),
         }
