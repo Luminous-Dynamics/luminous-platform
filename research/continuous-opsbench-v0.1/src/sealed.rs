@@ -179,23 +179,24 @@ pub struct TrialResult {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ArmRunSummary {
-    /// Number of preregistered scenario clusters/trials, before multiplying by arms.
     pub planned_trials: usize,
-    /// Exactly two arms per planned scenario: candidate and strongest matched baseline.
-    pub planned_arm_trials: usize,
-    pub candidate: ArmRunSummary,
-    pub baseline: ArmRunSummary,
     pub completed_trials: usize,
     pub failed_trials: usize,
     pub skipped_trials: usize,
     pub invalidated_trials: usize,
     pub total_attempts: usize,
 }
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RunLedgerSummary {
     pub run_id: String,
     pub lane: EvaluationLane,
+    /// Number of preregistered scenario clusters/trials, before multiplying by arms.
     pub planned_trials: usize,
+    /// Exactly two arm trials per planned scenario.
+    pub planned_arm_trials: usize,
+    pub candidate: ArmRunSummary,
+    pub baseline: ArmRunSummary,
     pub completed_trials: usize,
     pub failed_trials: usize,
     pub skipped_trials: usize,
