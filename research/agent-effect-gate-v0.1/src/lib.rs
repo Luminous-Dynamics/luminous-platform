@@ -624,7 +624,7 @@ mod tests {
         let mut p2 = p.clone(); p2.attempt_id = "attempt-2".into();
         let mut g2 = g.clone(); g2.attempt_id = "attempt-2".into();
         let blocked = b.dispatch(&p2, Some(&g2), c);
-        assert_eq!(blocked.gate_receipt.decision(), GateDecision::Denied(GateDenial::ParticipantEvidenceMismatch));
+        assert_eq!(blocked.gate_receipt.decision(), GateDecision::Denied(GateDenial::PriorAttemptUnresolved));
     }
 
     #[test]
