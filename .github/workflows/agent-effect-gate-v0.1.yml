@@ -1,0 +1,41 @@
+name: agent effect gate v0.1
+
+on:
+  pull_request:
+    paths:
+      - "research/agent-effect-gate-v0.1/**"
+      - ".github/workflows/agent-effect-gate-v0.1.yml"
+  push:
+    branches: [main]
+    paths:
+      - "research/agent-effect-gate-v0.1/**"
+      - ".github/workflows/agent-effect-gate-v0.1.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-effect-gate-v0.1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust-reference-gate:
+    name: Rust reference gate and adversarial conformance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Install pinned Rust toolchain
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.96.0 --profile minimal --component rustfmt --component clippy
+          rustup override set 1.96.0
+      - name: Check formatting
+        run: cargo fmt --manifest-path research/agent-effect-gate-v0.1/Cargo.toml -- --check
+      - name: Run dependency-locked tests
+        run: cargo test --manifest-path research/agent-effect-gate-v0.1/Cargo.toml --locked
+      - name: Run Clippy with warnings denied
+        run: cargo clippy --manifest-path research/agent-effect-gate-v0.1/Cargo.toml --locked -- -D warnings
