@@ -596,9 +596,6 @@ fn validate_receipt_binding(
         || receipt.artifact_access_policy_digest != manifest.artifact_access_policy_digest
         || receipt.network_egress_policy_digest != manifest.network_egress_policy_digest
         || receipt.observer_adapter_digest != manifest.runtime_observer_adapter_digest
-        || receipt.challenge_authority_id != manifest.runtime_challenge_authority_id
-        || receipt.challenge_authority_control_domain
-            != manifest.runtime_challenge_authority_control_domain
     {
         return Err(RuntimeAttestationError::AttestationBindingMismatch(
             receipt.trial_id.clone(),
@@ -620,9 +617,12 @@ fn validate_receipt_binding(
     {
         return Err(RuntimeAttestationError::ObserverControlDomainCollision);
     }
-    if receipt.observer_source_id.trim().is_empty()
-        || receipt.challenge_authority_id.trim().is_empty()
-        || receipt.challenge_authority_control_domain.trim().is_empty()
+    if receipt.observer_source_id.trim().is_empty() {
+        return Err(RuntimeAttestationError::EmptyOrInvalidIdentity);
+    }
+    if receipt.challenge_authority_id != manifest.runtime_challenge_authority_id
+        || receipt.challenge_authority_control_domain
+            != manifest.runtime_challenge_authority_control_domain
         || receipt.challenge_authority_control_domain == manifest.agent.control_domain
         || receipt.challenge_authority_control_domain == manifest.baseline.control_domain
         || receipt.challenge_authority_control_domain == manifest.evaluator_control_domain
@@ -630,7 +630,7 @@ fn validate_receipt_binding(
         || receipt.challenge_authority_control_domain == manifest.evidence_control_domain
         || receipt.challenge_authority_control_domain == manifest.runtime_observer_control_domain
     {
-        return Err(RuntimeAttestationError::EmptyOrInvalidIdentity);
+        return Err(RuntimeAttestationError::ChallengeAuthorityMismatch);
     }
     Ok(())
 }
@@ -869,10 +869,10 @@ mod tests {
             trials: ledger_trials,
         };
         let attestations = vec![
-            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 36, 60),
-            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 36, 80),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 36, 90),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 36, 100),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 30, 60),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 30, 80),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 30, 90),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 30, 100),
         ];
         (manifest, freeze, ledger, scenarios, attestations)
     }
@@ -913,7 +913,7 @@ mod tests {
             challenge_nonce_digest: digest(60u8.saturating_add(sequence as u8)),
             challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
             challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
-            challenge_issued_at_ms: 35,
+            challenge_issued_at_ms: 25,
             challenge_expires_at_ms: measurement_end_ms + 100,
             receipt_sequence: sequence,
             issued_at_ms: measurement_end_ms + 1,
@@ -1008,7 +1008,7 @@ mod tests {
             manifest.runtime_observer_control_domain.clone();
         assert_eq!(
             validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &attestations),
-            Err(RuntimeAttestationError::EmptyOrInvalidIdentity)
+            Err(RuntimeAttestationError::ChallengeAuthorityMismatch)
         );
     }
 
