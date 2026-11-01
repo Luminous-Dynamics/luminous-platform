@@ -498,7 +498,7 @@ pub fn validate_run_ledger_with_reveals(
     })
 }
 
-fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
+pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunError> {
     if manifest.schema != SEALED_RUN_SCHEMA || manifest.version != SEALED_RUN_VERSION {
         return Err(SealedRunError::UnsupportedSchema);
     }
