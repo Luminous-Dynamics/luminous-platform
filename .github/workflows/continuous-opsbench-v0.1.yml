@@ -6,7 +6,7 @@ on:
       - "research/continuous-opsbench-v0.1/**"
       - ".github/workflows/continuous-opsbench-v0.1.yml"
   push:
-    branches: [main]
+    branches: [main, "research/**"]
     paths:
       - "research/continuous-opsbench-v0.1/**"
       - ".github/workflows/continuous-opsbench-v0.1.yml"
