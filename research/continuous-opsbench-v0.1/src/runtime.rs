@@ -6,9 +6,8 @@
 //! before they are passed here.
 
 use crate::sealed::{
-    validate_freeze_receipt, ArmRunSummary, BaselineIdentity, EvaluationArm,
-    FreezeReceipt, FrozenAgentIdentity, RunLedgerSummary, RunManifest, ScenarioReceipt,
-    TrialDisposition, TrialResult,
+    validate_freeze_receipt, ArmRunSummary, EvaluationArm, FreezeReceipt,
+    RunLedgerSummary, RunManifest, ScenarioReceipt, TrialDisposition, TrialResult,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
@@ -585,6 +584,7 @@ fn is_zero(digest: &Digest) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sealed::{BaselineIdentity, EvaluationLane, FrozenAgentIdentity};
 
     fn digest(byte: u8) -> Digest {
         Digest::from_byte(byte)
@@ -1018,7 +1018,7 @@ mod tests {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].filesystem_access_log_commitment = digest(0);
         assert!(validate_runtime_attestations(
-            &manifest, &ledger, &scenarios, &attestations
+            &manifest, &freeze, &ledger, &scenarios, &attestations
         ).is_err());
     }
 
@@ -1073,7 +1073,7 @@ mod tests {
                 43 => attestations[0].disallowed_egress_successes = 1,
                 44 => attestations[0].cross_trial_state_observations = 1,
                 45 => attestations[0].shared_writable_namespace_observations = 1,
-                46 => attestations.pop(),
+                46 => { attestations.pop(); },
                 47 => scenarios.pop(),
                 48 => { let mut extra = attestations[0].clone(); extra.trial_id = "not-planned".into(); attestations.push(extra); },
                 49 => { let duplicate = attestations[0].clone(); attestations.push(duplicate); },
