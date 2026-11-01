@@ -688,7 +688,7 @@ mod tests {
     #[test]
     fn stale_preflight_evidence_fails_closed() {
         fn mutate(v: &mut Vec<VerifiedAttestation>) {
-            v[3].payload.observed_at_ms = 1;
+            v[3].payload.observed_at_ms = 90_000;
         }
         let (mut broker, p, g, e) = verified_broker(None, Some(mutate));
         let result = broker.dispatch(&p, Some(&g), &e);
