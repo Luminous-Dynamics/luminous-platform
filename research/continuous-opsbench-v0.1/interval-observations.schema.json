@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-interval-observations-v0.1.json",
+  "title": "Continuous OpsBench degradation interval observations v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "observations"],
+  "properties": {
+    "schema_version": { "const": "continuous-opsbench-interval-observations-v0.1" },
+    "observations": {
+      "type": "array",
+      "maxItems": 200000,
+      "items": { "$ref": "#/$defs/cell" }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 256 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_id", "request_token", "kind", "starts_at_ms", "ends_at_ms"],
+      "properties": {
+        "event_id": { "$ref": "#/$defs/id" },
+        "request_token": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "32-byte keyed HMAC pseudonym. Plain hashes of request IDs are prohibited."
+        },
+        "kind": { "enum": ["failed", "slow", "incorrect_business_result"] },
+        "starts_at_ms": { "type": "integer", "minimum": 0 },
+        "ends_at_ms": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pair_id", "arm", "scenario_id", "cluster_id", "service", "request_class", "phase",
+        "starts_at_ms", "ends_at_ms", "workload_profile_digest", "phase_schedule_digest",
+        "demand_contract_digest", "offered_requests", "pseudonym_key_epoch",
+        "observer_source_id", "observer_control_domain", "receipt_issued_at_ms",
+        "complete", "enumeration_complete", "clock_source_id", "clock_epoch",
+        "clock_mapping_digest", "observed_clock_uncertainty_ms", "timestamp_resolution_ms",
+        "events"
+      ],
+      "properties": {
+        "pair_id": { "$ref": "#/$defs/id" },
+        "arm": { "enum": ["candidate", "no_action"] },
+        "scenario_id": { "$ref": "#/$defs/id" },
+        "cluster_id": { "$ref": "#/$defs/id" },
+        "service": { "$ref": "#/$defs/id" },
+        "request_class": { "$ref": "#/$defs/id" },
+        "phase": { "$ref": "#/$defs/id" },
+        "starts_at_ms": { "type": "integer", "minimum": 0 },
+        "ends_at_ms": { "type": "integer", "minimum": 1 },
+        "workload_profile_digest": { "$ref": "#/$defs/sha256" },
+        "phase_schedule_digest": { "$ref": "#/$defs/sha256" },
+        "demand_contract_digest": { "$ref": "#/$defs/sha256" },
+        "offered_requests": { "type": "integer", "minimum": 0 },
+        "pseudonym_key_epoch": { "$ref": "#/$defs/id" },
+        "observer_source_id": { "$ref": "#/$defs/id" },
+        "observer_control_domain": { "$ref": "#/$defs/id" },
+        "receipt_issued_at_ms": { "type": "integer", "minimum": 0 },
+        "complete": { "type": "boolean" },
+        "enumeration_complete": { "type": "boolean" },
+        "clock_source_id": { "$ref": "#/$defs/id" },
+        "clock_epoch": { "$ref": "#/$defs/id" },
+        "clock_mapping_digest": { "$ref": "#/$defs/sha256" },
+        "observed_clock_uncertainty_ms": { "type": "integer", "minimum": 0 },
+        "timestamp_resolution_ms": { "type": "integer", "minimum": 1 },
+        "events": { "type": "array", "maxItems": 300000, "items": { "$ref": "#/$defs/event" } }
+      }
+    }
+  }
+}
