@@ -131,6 +131,7 @@ pub enum RuntimeAttestationError {
     SharedWritableNamespaceObserved(String, EvaluationArm),
     DuplicateObserverSequence,
     ObserverSequenceOrderInvalid,
+    ObserverSequenceNotContiguous,
     ArithmeticOverflow,
 }
 
@@ -267,8 +268,10 @@ pub fn validate_runtime_attestations(
         let first_activity = result
             .first_started_at_ms
             .unwrap_or(result.terminal_at_ms);
-        if receipt.measurement_start_ms > first_activity
-            || receipt.measurement_end_ms < result.terminal_at_ms
+        if receipt.measurement_start_ms.saturating_add(receipt.clock_uncertainty_ms)
+                > first_activity
+            || receipt.measurement_end_ms.saturating_sub(receipt.clock_uncertainty_ms)
+                < result.terminal_at_ms
         {
             return Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
                 receipt.trial_id.clone(),
@@ -372,12 +375,17 @@ pub fn validate_runtime_attestations(
     if sequences.len() != attestations.len() {
         return Err(RuntimeAttestationError::DuplicateObserverSequence);
     }
-    sequence_order.sort_unstable_by_key(|(issued, _)| *issued);
+    sequence_order.sort_unstable_by_key(|(issued, sequence)| (*issued, *sequence));
     if sequence_order
         .windows(2)
         .any(|pair| pair[0].1 >= pair[1].1)
     {
         return Err(RuntimeAttestationError::ObserverSequenceOrderInvalid);
+    }
+    if sequence_order.first().map(|entry| entry.1) != Some(1)
+        || sequence_order.windows(2).any(|pair| pair[1].1 != pair[0].1.saturating_add(1))
+    {
+        return Err(RuntimeAttestationError::ObserverSequenceNotContiguous);
     }
 
     Ok(RuntimeAttestationSummary {
@@ -788,10 +796,10 @@ mod tests {
             trials: ledger_trials,
         };
         let attestations = vec![
-            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 35, 55),
-            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 55, 75),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 35, 55),
-            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 55, 75),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Candidate, digest(40), digest(41), 1, 20, 60),
+            attestation(&manifest, &scenarios[0], EvaluationArm::Baseline, digest(42), digest(43), 2, 20, 80),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Baseline, digest(44), digest(45), 3, 20, 90),
+            attestation(&manifest, &scenarios[1], EvaluationArm::Candidate, digest(46), digest(47), 4, 20, 100),
         ];
         (manifest, freeze, ledger, scenarios, attestations)
     }
