@@ -327,6 +327,7 @@ impl<P: ParticipantPort> EffectBroker<P> {
             return Err(GateDenial::ParticipantEvidenceMismatch);
         }
         let participant_id = record.participant_id.clone();
+        let previous_status = record.status;
         let evidence = self.participant.query_same_attempt(attempt_id, request_digest)
             .map_err(|_| GateDenial::ParticipantEvidenceMismatch)?;
         if evidence.participant_id != participant_id || evidence.attempt_id != attempt_id
@@ -334,6 +335,13 @@ impl<P: ParticipantPort> EffectBroker<P> {
             return Err(GateDenial::ParticipantEvidenceMismatch);
         }
         let status = map_state(evidence.state);
+        // A later NeverAccepted assertion cannot erase earlier authoritative evidence
+        // that this same attempt was accepted, rejected after admission, or committed.
+        if status == AttemptStatus::NeverAccepted
+            && previous_status != AttemptStatus::OutcomeUnknown
+            && previous_status != AttemptStatus::NeverAccepted {
+            return Err(GateDenial::ParticipantEvidenceMismatch);
+        }
         self.set_attempt_status(&key, status);
         Ok(ReconcileReport { status, evidence: Some(evidence) })
     }
@@ -665,6 +673,17 @@ mod tests {
             assert!(matches!(r.gate_receipt.decision(), GateDecision::Denied(_)), "vector: {vector:?}");
             assert_eq!(b.participant_mut().submit_calls, 0, "vector: {vector:?}");
         }
+    }
+
+    #[test]
+    fn never_accepted_cannot_contradict_prior_committed_evidence() {
+        let (mut b, p, g, c) = fixture();
+        let dispatched = b.dispatch(&p, Some(&g), c);
+        assert_eq!(dispatched.participant_status, Some(AttemptStatus::Committed));
+        // Simulate a faulty or contradictory participant query result.
+        let result = b.reconcile_same_attempt("tenant-a", "logical-action-1", "attempt-1",
+            &Digest::from_byte(4));
+        assert_eq!(result, Err(GateDenial::ParticipantEvidenceMismatch));
     }
 
     #[test]
