@@ -185,6 +185,7 @@ pub enum SealedRunError {
     MissingScenarioReceipt(String),
     UnplannedScenarioReceipt(String),
     ScenarioBindingMismatch(String),
+    ScenarioCommitmentCollision(String),
     ScenarioGeneratedBeforeFreeze(String),
     ScenarioIssuedBeforeGenerated(String),
     MissingRetirementTime(String),
@@ -411,6 +412,9 @@ fn validate_scenario(
         || scenario.source_id != manifest.evidence_source_id
     {
         return Err(SealedRunError::ScenarioBindingMismatch(id));
+    }
+    if scenario.case_payload_commitment == scenario.oracle_commitment {
+        return Err(SealedRunError::ScenarioCommitmentCollision(id));
     }
     if scenario.control_domain != manifest.evidence_control_domain
         || scenario.control_domain == manifest.agent.control_domain
@@ -937,8 +941,8 @@ mod tests {
     }
 
     #[test]
-    fn sixty_six_adversarial_mutations_fail_closed() {
-        for vector in 0..66 {
+    fn sixty_seven_adversarial_mutations_fail_closed() {
+        for vector in 0..67 {
             let (mut m, commitment, mut freeze, mut scenarios, mut events) = valid_fixture();
             match vector {
                 0 => { m.run_id.clear(); }
@@ -1006,7 +1010,8 @@ mod tests {
                 62 => { events[0].trial_id = "unknown".into(); }
                 63 => { freeze.manifest_commitment = Digest::from_byte(99); }
                 64 => { freeze.publisher_id = "substituted-authority".into(); }
-                _ => { freeze.publisher_control_domain = "substituted-domain".into(); }
+                65 => { freeze.publisher_control_domain = "substituted-domain".into(); }
+                _ => { scenarios[0].oracle_commitment = scenarios[0].case_payload_commitment.clone(); }
             };
             assert!(
                 validate_run_ledger(&m, &commitment, &freeze, &scenarios, &events).is_err(),
