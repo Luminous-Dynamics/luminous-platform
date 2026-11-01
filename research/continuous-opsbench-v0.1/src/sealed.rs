@@ -907,15 +907,37 @@ mod tests {
         at: u64,
         kind: TrialEventKind,
     ) -> TrialEvent {
+        event_for_arm(
+            manifest, commitment, scenario, trial_id, event_id, attempt, at, kind,
+            EvaluationArm::Candidate,
+        )
+    }
+
+    fn event_for_arm(
+        manifest: &RunManifest,
+        commitment: &Digest,
+        scenario: &ScenarioReceipt,
+        trial_id: &str,
+        event_id: &str,
+        attempt: u16,
+        at: u64,
+        kind: TrialEventKind,
+        arm: EvaluationArm,
+    ) -> TrialEvent {
+        let arm_identity_digest = match arm {
+            EvaluationArm::Candidate => manifest.agent_identity_digest.clone(),
+            EvaluationArm::Baseline => manifest.baseline_identity_digest.clone(),
+        };
         TrialEvent {
             run_id: manifest.run_id.clone(),
+            arm,
             trial_id: trial_id.into(),
             event_id: event_id.into(),
             attempt,
             occurred_at_ms: at,
             kind,
             manifest_commitment: commitment.clone(),
-            agent_identity_digest: manifest.agent_identity_digest.clone(),
+            arm_identity_digest,
             evaluator_digest: manifest.evaluator_digest.clone(),
             scenario_commitment: scenario.case_payload_commitment.clone(),
             source_id: manifest.evidence_source_id.clone(),
@@ -958,6 +980,15 @@ mod tests {
             event(&m, &commitment, &scenarios[2], "trial-c", "c-start", 1, 40, TrialEventKind::Started),
             event(&m, &commitment, &scenarios[2], "trial-c", "c-invalid", 1, 45, TrialEventKind::Invalidated),
         ];
+        events.extend(vec![
+            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-1-start", 1, 40, TrialEventKind::Started, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-1-fail", 1, 50, TrialEventKind::Failed, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-2-start", 2, 60, TrialEventKind::Started, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[0], "trial-a", "base-a-2-done", 2, 70, TrialEventKind::Completed, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[1], "trial-b", "base-b-skip", 0, 35, TrialEventKind::Skipped, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[2], "trial-c", "base-c-start", 1, 40, TrialEventKind::Started, EvaluationArm::Baseline),
+            event_for_arm(&m, &commitment, &scenarios[2], "trial-c", "base-c-invalid", 1, 45, TrialEventKind::Invalidated, EvaluationArm::Baseline),
+        ]);
         events.reverse(); // input order is not trusted; event timestamps/attempts are.
         (m, commitment, freeze, scenarios, events)
     }
