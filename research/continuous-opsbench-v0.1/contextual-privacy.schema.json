@@ -1,0 +1,519 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-contextual-privacy-v0.1.json",
+  "title": "Continuous OpsBench contextual integrity and compositional privacy records v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "privacy_freeze",
+    "contracts",
+    "disclosure_captures",
+    "privacy_assessments"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "continuous-opsbench-contextual-privacy-v0.1"
+    },
+    "privacy_freeze": {
+      "$ref": "#/$defs/privacy_freeze"
+    },
+    "contracts": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200000,
+      "items": {
+        "$ref": "#/$defs/contract"
+      }
+    },
+    "disclosure_captures": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1000000,
+      "items": {
+        "$ref": "#/$defs/capture"
+      }
+    },
+    "privacy_assessments": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1000000,
+      "items": {
+        "$ref": "#/$defs/assessment"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "privacy_freeze": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "run_id",
+        "manifest_commitment",
+        "privacy_policy_digest",
+        "contract_set_digest",
+        "oracle_commitment",
+        "output_capture_policy_digest",
+        "frozen_at_ms",
+        "issued_at_ms",
+        "publisher_id",
+        "publisher_control_domain",
+        "lineage_source_id",
+        "lineage_control_domain",
+        "disclosure_observer_source_id",
+        "disclosure_observer_control_domain",
+        "privacy_grader_source_id",
+        "privacy_grader_control_domain"
+      ],
+      "properties": {
+        "schema": {
+          "const": "continuous-opsbench-contextual-privacy-v0.1"
+        },
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "privacy_policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "contract_set_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "oracle_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "output_capture_policy_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "frozen_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "issued_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "publisher_id": {
+          "$ref": "#/$defs/id"
+        },
+        "publisher_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "lineage_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "lineage_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "disclosure_observer_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "disclosure_observer_control_domain": {
+          "$ref": "#/$defs/id"
+        },
+        "privacy_grader_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "privacy_grader_control_domain": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "source_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_artifact_commitment",
+        "fact_ids"
+      ],
+      "properties": {
+        "source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "source_artifact_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "fact_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "declassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fact_id",
+        "recipient_id",
+        "channel_id",
+        "purpose_id",
+        "maximum_detail_level"
+      ],
+      "properties": {
+        "fact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "recipient_id": {
+          "$ref": "#/$defs/id"
+        },
+        "channel_id": {
+          "$ref": "#/$defs/id"
+        },
+        "purpose_id": {
+          "$ref": "#/$defs/id"
+        },
+        "maximum_detail_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "run_id",
+        "trial_id",
+        "arm",
+        "manifest_commitment",
+        "contract_digest",
+        "arm_identity_digest",
+        "scenario_commitment",
+        "recipient_id",
+        "channel_id",
+        "purpose_id",
+        "maximum_detail_level",
+        "essential_fact_ids",
+        "permitted_fact_ids",
+        "protected_fact_ids",
+        "declassifications",
+        "source_bindings",
+        "lineage_commitment",
+        "lineage_source_id",
+        "lineage_control_domain"
+      ],
+      "properties": {
+        "schema": {
+          "const": "continuous-opsbench-contextual-privacy-v0.1"
+        },
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "arm": {
+          "enum": [
+            "candidate",
+            "baseline"
+          ]
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "contract_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "arm_identity_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "scenario_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "recipient_id": {
+          "$ref": "#/$defs/id"
+        },
+        "channel_id": {
+          "$ref": "#/$defs/id"
+        },
+        "purpose_id": {
+          "$ref": "#/$defs/id"
+        },
+        "maximum_detail_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 255
+        },
+        "essential_fact_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "permitted_fact_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "protected_fact_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "declassifications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/declassification"
+          }
+        },
+        "source_bindings": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/source_binding"
+          }
+        },
+        "lineage_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "lineage_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "lineage_control_domain": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "run_id",
+        "trial_id",
+        "arm",
+        "capture_id",
+        "manifest_commitment",
+        "contract_digest",
+        "arm_identity_digest",
+        "scenario_commitment",
+        "output_commitment",
+        "recipient_id",
+        "channel_id",
+        "purpose_id",
+        "captured_at_ms",
+        "sequence",
+        "coverage",
+        "event_stream_commitment",
+        "observer_source_id",
+        "observer_control_domain"
+      ],
+      "properties": {
+        "schema": {
+          "const": "continuous-opsbench-contextual-privacy-v0.1"
+        },
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "arm": {
+          "enum": [
+            "candidate",
+            "baseline"
+          ]
+        },
+        "capture_id": {
+          "$ref": "#/$defs/id"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "contract_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "arm_identity_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "scenario_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "output_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "recipient_id": {
+          "$ref": "#/$defs/id"
+        },
+        "channel_id": {
+          "$ref": "#/$defs/id"
+        },
+        "purpose_id": {
+          "$ref": "#/$defs/id"
+        },
+        "captured_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial",
+            "unknown",
+            "tampered"
+          ]
+        },
+        "event_stream_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "observer_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "observer_control_domain": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fact_id",
+        "inference_path",
+        "released",
+        "source_ids",
+        "detail_level",
+        "finding_commitment"
+      ],
+      "properties": {
+        "fact_id": {
+          "$ref": "#/$defs/id"
+        },
+        "inference_path": {
+          "enum": [
+            "direct",
+            "paraphrased",
+            "aggregated",
+            "correlated",
+            "cross_tool"
+          ]
+        },
+        "released": {
+          "type": "boolean"
+        },
+        "source_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "detail_level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "finding_commitment": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "run_id",
+        "trial_id",
+        "arm",
+        "capture_id",
+        "manifest_commitment",
+        "contract_digest",
+        "output_commitment",
+        "assessed_at_ms",
+        "coverage",
+        "fact_scan_commitment",
+        "findings",
+        "grader_source_id",
+        "grader_control_domain"
+      ],
+      "properties": {
+        "schema": {
+          "const": "continuous-opsbench-contextual-privacy-v0.1"
+        },
+        "run_id": {
+          "$ref": "#/$defs/id"
+        },
+        "trial_id": {
+          "$ref": "#/$defs/id"
+        },
+        "arm": {
+          "enum": [
+            "candidate",
+            "baseline"
+          ]
+        },
+        "capture_id": {
+          "$ref": "#/$defs/id"
+        },
+        "manifest_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "contract_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "output_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "assessed_at_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial",
+            "unknown",
+            "tampered"
+          ]
+        },
+        "fact_scan_commitment": {
+          "$ref": "#/$defs/sha256"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/finding"
+          }
+        },
+        "grader_source_id": {
+          "$ref": "#/$defs/id"
+        },
+        "grader_control_domain": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    }
+  }
+}
