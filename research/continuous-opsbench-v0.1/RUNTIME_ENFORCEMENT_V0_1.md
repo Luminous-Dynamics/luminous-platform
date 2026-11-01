@@ -1,114 +1,82 @@
-# Independent runtime enforcement evidence v0.1
+# Independent runtime enforcement receipts v0.1
 
-## Purpose
+## What changed
 
-This module complements the frozen run/trial ledger in `sealed.rs`. That ledger establishes the declared candidate and baseline identities, scenario/arm histories, shared resource budget, environment and declared sandbox policies. This module requires independent runtime receipts showing that monitoring covered each complete arm execution and that no prohibited access, egress or state carry-over was observed.
-
-The separation is intentional:
-
-- `sealed.rs` establishes the exact planned/evaluated systems and complete candidate/baseline attempt histories.
-- `runtime.rs` validates independent runtime observer receipts and joins them to those exact histories.
-- The existing typed source-evidence verifier (#190/#191) authenticates issuers, trust domains, subjects, policy digests, freshness and durable replay.
-- A real runtime adapter measures the sandbox and emits the receipts. The structural validator does not implement the sandbox.
-
-## Required identity and trust boundary
-
-The run manifest and freeze receipt pin:
-- runtime observer source ID;
-- runtime observer control domain;
-- runtime observer adapter digest.
-
-The observer control domain must differ from candidate, baseline, freeze authority, evaluator and scenario/effect evidence domains. The observer source ID is distinct from the scenario/effect evidence source.
-
-The receipt publisher must be authenticated by the typed source-evidence adapter. The runtime process being measured, the agent, and the component enforcing the policy cannot be the sole source of the attestation. No caller-provided `signature_verified` or `sandbox_enforced` boolean is accepted.
-
-## One receipt per trial arm
-
-Every planned scenario has exactly two arm histories, Candidate and Baseline. This module requires exactly one `RuntimeTrialAttestation` for each (trial ID, arm).
-
-Each receipt binds:
-- run, trial, arm and arm identity digest;
-- the exact case-payload commitment;
-- manifest commitment, evaluator and execution-environment digests;
-- shared resource-budget digest;
+This module closes a gap between a frozen policy and evidence that the policy was actually enforced during a trial. The sealed run manifest now pins:
+- a runtime observer source, adapter digest and separate control domain;
+- a distinct runtime challenge authority identity and control domain;
 - state-isolation, artifact-access and network-egress policy digests;
-- runtime instance and writable state namespace digests;
-- runtime observer source, control domain and adapter digest;
-- monotonic observer sequence and measurement interval;
-- process tree, mount namespace, filesystem access, network egress and runtime event-stream commitments;
-- coverage state, gap/drop counters and violation counters.
+- the common execution environment and resource-budget digests.
 
-Runtime instance IDs and writable namespace IDs must be nonzero and unique across all trial/arm pairs. A fresh writable namespace is required for each pair. Shared read-only artifacts are allowed by policy, but writable caches, home directories or volumes cannot silently leak between arms/trials.
+Each planned (trial, Candidate) and (trial, Baseline) arm requires exactly one RuntimeTrialAttestation.
 
-## Coverage interval and time
+## One-use freshness challenge
 
-The runtime measurement must start no later than the first observed activity in the arm and end no earlier than that arm's final terminal event. The receipt itself must be issued after the measurement interval ends.
+Every runtime attestation carries:
+- a 32-byte nonzero challenge nonce digest;
+- the frozen challenge-authority identity and control domain;
+- challenge issue and expiry times;
+- the runtime measurement start/end and receipt issue times.
 
-Clock uncertainty is bounded at 1,000 ms in v0.1. Coverage uses conservative bounds: `measurement_start + uncertainty` must still precede the first arm activity, and `measurement_end - uncertainty` must still follow the final terminal event. Deployments requiring tighter bounds must adopt a stricter profile before evaluation.
+The structural contract requires the challenge to be issued after the run freeze, before runtime measurement starts, and to remain valid through measurement completion and receipt issuance. Nonce digests must be unique across all arm trials in the run. This rejects stale replay and nonce reuse at the structural layer.
 
-Receipt sequence numbers are scoped to one run and observer source. They must be nonzero, unique, strictly ordered by issue time, begin at one and be contiguous across the complete run receipt set. The external durable replay adapter additionally prevents receipt replay across runs. Sequence gaps and dropped runtime events are hard failures.
+The source-evidence adapter must authenticate the challenge authority, verify the challenge signature and subject binding, and enforce one-use nonce consumption through the existing durable replay guard (#191 / issue #190). A self-reported nonce is not cryptographic freshness evidence by itself.
 
-A skip is still measured: the interval must cover the explicit skip disposition. It cannot disappear because the process was never started.
+## Runtime observation requirements
 
-## Fail-closed enforcement semantics
+A valid receipt binds:
+- exact run, trial, arm, candidate/baseline identity, scenario commitment and manifest commitment;
+- evaluator, execution environment, resource budget and all three enforcement policy digests;
+- runtime instance and writable namespace digests;
+- the independent observer and adapter;
+- process tree, mount namespace, filesystem/object-access, network-egress and runtime-event log commitments;
+- complete coverage, zero sequence gaps and zero dropped events;
+- clock uncertainty no greater than the contract limit;
+- zero oracle-read attempts or successes;
+- zero unauthorized-artifact read attempts or successes;
+- zero disallowed-egress attempts or successes;
+- zero cross-trial state observations and shared writable namespace observations.
 
-Only `complete` runtime coverage is accepted. `partial`, `unknown` and `tampered` are not equivalent to zero events.
+A denied attempt is still counted and fails the strict sealed policy. Allowlisted egress remains separately countable; the authenticated runtime adapter must resolve the exact destinations against the frozen allowlist and bind its event log to the attestation. Missing allowlist evidence is not equivalent to zero egress.
 
-The following counters must all be zero:
-- oracle read attempts or successes;
-- unauthorized artifact read attempts or successes;
-- disallowed egress attempts or successes;
-- cross-trial state observations;
-- shared writable namespace observations;
-- runtime event sequence gaps and dropped events.
+Exactly one nonzero runtime-instance digest and one nonzero writable-state-namespace digest are required per arm trial; neither may be reused across another arm or trial.
 
-A blocked oracle-read attempt remains a policy violation. It is not made acceptable by the runtime successfully denying it. The attempt and success counters remain separate so a later reporting layer can distinguish prevention from successful compromise.
+## Join and denominator rules
 
-Allowed egress is counted separately. The runtime adapter must bind every allowed request to the exact frozen allowlist, resolver, destination identity, request/response digest and timestamp. The structural validator can pin the allowlist policy digest and require a nonzero network log commitment, but it cannot inspect the underlying log or prove a destination was allowed. That verification belongs to the authenticated runtime adapter.
+The validator first rechecks the frozen manifest, freeze receipt and scenario bindings; then it independently recomputes candidate/baseline trial summary counts, declared attempts, cluster count and time-line shape from the trial-result records. It does not trust caller-supplied aggregate counts.
 
-## Structural join
+For every planned scenario and arm:
+- exactly one trial result and exactly one runtime attestation must exist;
+- attestation source, control domain, adapter, challenge authority and nonce must match frozen identities;
+- the monitoring interval (including the declared clock uncertainty) must enclose the first activity through the final terminal event;
+- the challenge must cover the measurement interval;
+- runtime instance, writable namespace, nonce and observer sequence must be unique and run-contiguous;
+- all policy violation counters and telemetry-gap counters must be zero.
 
-Before accepting runtime receipts, the caller supplies the manifest, freeze receipt, the exact ledger output, scenario receipts and runtime attestations. The module rechecks the freeze structure and verifies:
-- the ledger identities, policies, denominators and arm summaries agree with the manifest;
-- every planned candidate/baseline arm has one and only one ledger result;
-- cluster IDs and first-arm execution order agree with the frozen plan;
-- every scenario is planned and bound to the exact run/freeze;
-- every runtime receipt binds to the same run, scenario, arm, system identity, evaluator, environment, budget and policy digests;
-- coverage encloses the complete observed arm interval;
-- observer instance, namespace and receipt-sequence identities do not collide;
-- the complete receipt population exactly covers the planned arm denominator.
-
-The validator does not infer missing receipts as zero accesses. Missing, duplicated, unplanned, substituted or incomplete evidence is rejected. It reuses the canonical sealed manifest, freeze and scenario validators rather than defining parallel interpretations of those records.
-
-## Validation suite
-
-The tests include:
-- clean positive control across candidate and baseline arms;
-- exact freeze and manifest commitment binding;
-- one receipt per planned arm;
-- clean allowlisted egress as a separate non-violation counter;
-- oracle access attempt and success;
-- prohibited artifact read attempt/success;
-- disallowed egress attempt/success;
-- partial/unknown/tampered coverage;
-- dropped events and sequence gaps;
-- observer source/control-domain/adapter substitution;
-- duplicate runtime instance, writable namespace or observer sequence;
-- interval gaps and excessive clock uncertainty;
-- candidate/baseline digest substitution and policy-digest mismatch;
-- ledger denominator, arm-order, cluster and summary substitution;
-- a 60-vector adversarial mutation matrix.
-
-These deterministic tests validate the evaluator's structural contract. They are not a live sandbox penetration test and do not prove a production kernel/hypervisor enforced any policy.
+Missing, duplicate, unknown, stale, expired, replayed, substituted, partial or tampered evidence is rejected. These are hard gates, not terms in a compensatory score.
 
 ## Claim ceiling
 
-A green Rust/schema run proves that the supplied records satisfy the structural contract. It does not prove:
-- runtime observer signatures or source identities are authentic until the existing adapter verifies them;
-- the access/egress logs are complete or faithfully produced;
-- the kernel, hypervisor, container runtime, device or hardware enforced isolation;
-- the agent could not exploit an unobserved channel;
-- a sealed oracle was actually inaccessible to every process and credential;
-- the scenario distribution is representative or that any agent is better than SOTA.
+This is a structural receipt validator. It is not a kernel/hypervisor enforcement proof and does not implement signatures, hardware attestation, challenge issuance, nonce persistence, or runtime probes. It cannot establish that eBPF/IMA/LSM hooks were attached or that events could not be suppressed before collection. The source-evidence adapter must authenticate receipts and challenge issuers, while an independent runtime adapter must prove its own coverage using platform measurements and positive/negative sensor controls.
 
-Production qualification requires a real NixOS/runtime adapter, independent observer, kernel/hypervisor-specific controls, sandbox escape tests, object-store/IAM denial tests, DNS/egress controls, event-loss fault injection, and adversarial cross-trial state tests. Nixward remains the only host transaction/interlock/journal/recovery authority; this module does not introduce another policy engine or journal.
+The current target adapters should use established mechanisms rather than custom cryptography:
+- verifier-issued nonce/challenge and independent relying-party verification;
+- platform and workload-image measurements, not only one VM boot claim;
+- runtime integrity/event-log evidence and verified log replay;
+- CPU/GPU/workload attestation separately where those devices are in scope;
+- privacy-preserving audit commitments that do not log prompts, model weights, keys or customer data.
+
+The benchmark should measure observer false negatives and detection latency using injected known-answer events, hook detach/failure, sequence gaps, event loss, process-tree escapes, filesystem/object access, DNS/egress and deliberate cross-trial cache probes. A monitor that fails silently must invalidate the run.
+
+## Reference alignment
+
+The design follows the emerging continuous-attestation direction: trust at launch is insufficient for mutable workloads, and runtime integrity, behavior and transport bindings must be continuously checked. It also follows the established separation between measurement, appraisal and relying-party authorization. IMA measurement does not itself enforce file policy; dm-verity enforces content integrity; the verifier must replay ordered measurements against a fresh quote and independently approved values. The runtime verifier therefore treats evidence collection and policy enforcement as distinct components.
+
+## Architecture boundaries
+
+- Platform Saga coordinates the episode.
+- The broker enforces tool/mutation authority.
+- Participant-owned ledgers own remote effect truth.
+- Independent workload/service observers own business outcomes.
+- Nixward remains the sole host transaction/interlock/journal/recovery authority.
+- The runtime observer is a measurement source, not another policy engine, participant ledger or journal.
