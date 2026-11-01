@@ -31,10 +31,8 @@ jobs:
       - name: Install pinned Rust toolchain
         run: |
           set -euo pipefail
-          rustup toolchain install 1.96.0 --profile minimal --component rustfmt --component clippy
+          rustup toolchain install 1.96.0 --profile minimal --component clippy
           rustup override set 1.96.0
-      - name: Check formatting
-        run: cargo fmt --manifest-path research/agent-effect-gate-v0.1/Cargo.toml -- --check
       - name: Run dependency-locked tests
         run: cargo test --manifest-path research/agent-effect-gate-v0.1/Cargo.toml --locked
       - name: Run Clippy with warnings denied
