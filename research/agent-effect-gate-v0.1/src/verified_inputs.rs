@@ -880,4 +880,120 @@ mod tests {
             super::super::GateDecision::Denied(GateDenial::ClockUncertaintyExceeded));
         assert_eq!(broker.participant_mut().submit_calls, 0);
     }
+    #[test]
+    fn evidence_sequences_are_consumed_once_across_dispatches() {
+        let (mut broker, p, e) = verified_broker(None, None);
+        let first = broker.dispatch(&p, &e);
+        assert_eq!(first.gate_receipt.decision(), super::super::GateDecision::Allowed);
+        let second = broker.dispatch(&p, &e);
+        assert_eq!(second.gate_receipt.decision(),
+            super::super::GateDecision::Denied(GateDenial::EvidenceSequenceRollback));
+        assert_eq!(broker.participant_mut().submit_calls, 1);
+    }
+
+    #[test]
+    fn evidence_replay_store_outage_fails_closed() {
+        let (mut broker, p, e) = verified_broker(None, None);
+        broker.replay_guard.unavailable = true;
+        let result = broker.dispatch(&p, &e);
+        assert_eq!(result.gate_receipt.decision(),
+            super::super::GateDecision::Denied(GateDenial::EvidenceSequenceStoreUnavailable));
+        assert_eq!(broker.participant_mut().submit_calls, 0);
+    }
+
+    fn apply_evidence_attack(
+        index: usize,
+        broker: &mut VerifiedEffectBroker<FakeParticipant, FakeVerifier, FakeClock, FakeReplayGuard>,
+    ) {
+        let results = &mut broker.attestation_verifier.results;
+        match index {
+            0 => results[0].payload.role = EvidenceRole::Manifest,
+            1 => results[2].payload.schema_version.push_str("-old"),
+            2 => results[0].payload.evidence_id.clear(),
+            3 => results[0].payload.subject_digest = Digest::ZERO,
+            4 => results[0].dsse_payload_type = "wrong/type".into(),
+            5 => results[0].statement_type = "https://in-toto.io/Statement/v0".into(),
+            6 => results[0].predicate_type = "urn:wrong-predicate".into(),
+            7 => results[0].payload.source_id.push_str("-other"),
+            8 => results[0].publisher.issuer.push_str("-other"),
+            9 => results[0].publisher.subject.push_str("-other"),
+            10 => results[0].publisher.key_fingerprint.push_str("-other"),
+            11 => results[0].publisher.trust_domain.push_str("-other"),
+            12 => results[1].payload.evidence_id = results[0].payload.evidence_id.clone(),
+            13 => results[0].payload.binding.tenant_id.push_str("-other"),
+            14 => results[0].payload.binding.principal_id.push_str("-other"),
+            15 => results[0].payload.binding.episode_id.push_str("-other"),
+            16 => results[0].payload.binding.plan_digest = Digest::from_byte(99),
+            17 => results[0].payload.binding.step_id.push_str("-other"),
+            18 => results[0].payload.binding.tool_id.push_str("-other"),
+            19 => results[0].payload.binding.operation_id.push_str("-other"),
+            20 => results[0].payload.binding.manifest_version.push_str("-other"),
+            21 => results[0].payload.binding.manifest_digest = Digest::from_byte(99),
+            22 => results[0].payload.binding.toolchain_id.push_str("-other"),
+            23 => results[0].payload.binding.toolchain_digest = Digest::from_byte(99),
+            24 => results[0].payload.binding.policy_version.push_str("-other"),
+            25 => results[0].payload.binding.policy_digest = Digest::from_byte(99),
+            26 => results[0].payload.binding.target_digest = Digest::from_byte(99),
+            27 => results[0].payload.binding.request_digest = Digest::from_byte(99),
+            28 => results[0].payload.binding.grant_id.push_str("-other"),
+            29 => results[0].payload.binding.attempt_id.push_str("-other"),
+            30 => results[0].payload.binding.idempotency_key.push_str("-other"),
+            31 => results[0].payload.binding.environment.push_str("-other"),
+            32 => results[0].payload.binding.risk_level = 99,
+            33 => results[0].payload.claim = EvidenceClaim::ObserverCapable,
+            34 => results[3].payload.issued_at_ms = 100_001,
+            35 => results[3].payload.observed_at_ms = results[3].payload.issued_at_ms - 1,
+            36 => results[3].payload.expires_at_ms = 100_001,
+            37 => results[3].payload.observed_at_ms = 90_000,
+            38 => results[2].payload.sequence = 3,
+            39 => broker.trust_policy.publisher_rules[2].schema_version.push_str("-old"),
+            40 => broker.trust_policy.publisher_rules.push(broker.trust_policy.publisher_rules[0].clone()),
+            41 => {
+                broker.trust_policy.executor_control_domain =
+                    broker.trust_policy.publisher_rules[4].control_domain.clone();
+            }
+            42 => {
+                broker.trust_policy.publisher_rules[3].control_domain =
+                    broker.trust_policy.publisher_rules[4].control_domain.clone();
+            }
+            43 => broker.clock.0.source_id.push_str("-other"),
+            44 => broker.clock.0.trust_domain.push_str("-other"),
+            45 => broker.clock.0.control_domain.push_str("-other"),
+            46 => broker.clock.0.uncertainty_ms = 99,
+            47 => results[0].authority_grant = None,
+            48 => results[0].authority_grant.as_mut().unwrap().issuer.push_str("-other"),
+            49 => results[0].authority_grant.as_mut().unwrap().subject_digest = Digest::from_byte(99),
+            50 => results[1].payload.subject_digest = Digest::from_byte(99),
+            51 => results[2].payload.subject_digest = Digest::from_byte(99),
+            52 => broker.trust_policy.policy_version.push_str("-old"),
+            53 => broker.replay_guard.unavailable = true,
+            54 => broker.attestation_verifier.fail_at = Some(2),
+            _ => unreachable!("the conformance vector array is fixed"),
+        }
+    }
+
+    #[test]
+    fn fifty_five_source_evidence_negative_vectors_never_dispatch() {
+        let vectors: [usize; 55] = [
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+            11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+            21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+            31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+            41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+            51, 52, 53, 54,
+        ];
+        for vector in vectors {
+            let (mut broker, proposal, bundle) = verified_broker(None, None);
+            apply_evidence_attack(vector, &mut broker);
+            let result = broker.dispatch(&proposal, &bundle);
+            assert!(
+                matches!(result.gate_receipt.decision(), super::super::GateDecision::Denied(_)),
+                "evidence attack {vector} was not denied"
+            );
+            assert_eq!(
+                broker.participant_mut().submit_calls, 0,
+                "evidence attack {vector} reached participant submit"
+            );
+        }
+    }
 }
