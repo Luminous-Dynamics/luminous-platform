@@ -204,7 +204,9 @@
         "network_egress_policy_digest",
         "runtime_observer_source_id",
         "runtime_observer_control_domain",
-        "runtime_observer_adapter_digest"
+        "runtime_observer_adapter_digest",
+        "runtime_challenge_authority_id",
+        "runtime_challenge_authority_control_domain"
       ],
       "properties": {
         "schema": {
@@ -295,6 +297,12 @@
         },
         "runtime_observer_adapter_digest": {
           "$ref": "#/$defs/sha256"
+        },
+        "runtime_challenge_authority_id": {
+          "$ref": "#/$defs/id"
+        },
+        "runtime_challenge_authority_control_domain": {
+          "$ref": "#/$defs/id"
         }
       }
     },
@@ -319,7 +327,9 @@
         "network_egress_policy_digest",
         "runtime_observer_source_id",
         "runtime_observer_control_domain",
-        "runtime_observer_adapter_digest"
+        "runtime_observer_adapter_digest",
+        "runtime_challenge_authority_id",
+        "runtime_challenge_authority_control_domain"
       ],
       "properties": {
         "run_id": {
@@ -377,6 +387,12 @@
         },
         "runtime_observer_adapter_digest": {
           "$ref": "#/$defs/sha256"
+        },
+        "runtime_challenge_authority_id": {
+          "$ref": "#/$defs/id"
+        },
+        "runtime_challenge_authority_control_domain": {
+          "$ref": "#/$defs/id"
         }
       }
     }
