@@ -212,6 +212,7 @@ struct AttemptRecord {
     attempt_id: String,
     request_digest: Digest,
     participant_id: String,
+    status: AttemptStatus,
 }
 
 /// Internal one-use permit. It is non-Clone, non-Serialize, and never exposed to the model.
