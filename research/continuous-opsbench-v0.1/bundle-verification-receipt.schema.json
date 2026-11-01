@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-bundle-verification-receipt-v0.1.json",
+  "title": "Continuous OpsBench offline bundle verification receipt v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "bundle_id",
+    "run_id",
+    "lane",
+    "visibility",
+    "bundle_digest",
+    "manifest_commitment",
+    "verifier_id",
+    "verifier_digest",
+    "trust_policy_digest",
+    "verified_at_ms",
+    "artifact_count",
+    "authenticated_artifact_count",
+    "indeterminate_artifact_count",
+    "claim_count",
+    "passing_claim_count",
+    "failing_claim_count",
+    "indeterminate_claim_count",
+    "integrity",
+    "claims"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-bundle-verification-receipt-v0.1"
+    },
+    "bundle_id": {
+      "$ref": "#/$defs/id"
+    },
+    "run_id": {
+      "$ref": "#/$defs/id"
+    },
+    "lane": {
+      "enum": [
+        "open_development",
+        "sealed_certification",
+        "retired_reproducibility"
+      ]
+    },
+    "visibility": {
+      "enum": [
+        "public",
+        "restricted"
+      ]
+    },
+    "bundle_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "manifest_commitment": {
+      "$ref": "#/$defs/sha256"
+    },
+    "verifier_id": {
+      "$ref": "#/$defs/id"
+    },
+    "verifier_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "trust_policy_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "verified_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "artifact_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "authenticated_artifact_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "indeterminate_artifact_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "claim_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "passing_claim_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failing_claim_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "indeterminate_claim_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "integrity": {
+      "enum": [
+        "verified",
+        "indeterminate"
+      ]
+    },
+    "claims": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/claim_result"
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "claim_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "claim_type",
+        "status",
+        "verified_evidence_count",
+        "indeterminate_evidence_count",
+        "dependencies"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/id"
+        },
+        "claim_type": {
+          "enum": [
+            "authorization",
+            "external_effect",
+            "service_outcome",
+            "request_impact",
+            "safety",
+            "calibration",
+            "contextual_privacy",
+            "runtime_enforcement",
+            "sandbox_tier",
+            "resource_telemetry",
+            "energy_measurement",
+            "statistical_comparison",
+            "contamination_control"
+          ]
+        },
+        "status": {
+          "enum": [
+            "pass",
+            "fail",
+            "indeterminate"
+          ]
+        },
+        "verified_evidence_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "indeterminate_evidence_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dependencies": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    }
+  }
+}
