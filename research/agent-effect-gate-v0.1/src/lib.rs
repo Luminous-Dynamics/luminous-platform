@@ -470,6 +470,7 @@ mod tests {
         submit_result: Result<ParticipantEvidence, ParticipantError>,
         query_result: Result<ParticipantEvidence, ParticipantError>,
         logical_action: LogicalActionEvidence,
+        query_updates_logical_action: bool,
         submit_calls: usize,
     }
 
@@ -500,9 +501,11 @@ mod tests {
         fn query_same_attempt(&mut self, _tenant: &str, _key: &str, _a: &str, _d: &Digest)
             -> Result<ParticipantEvidence, ParticipantError> {
             let result = self.query_result.clone();
-            if let Ok(e) = &result {
-                self.logical_action.ledger_cursor = e.ledger_cursor.clone();
-                self.logical_action.latest_attempt = Some(e.clone());
+            if self.query_updates_logical_action {
+                if let Ok(e) = &result {
+                    self.logical_action.ledger_cursor = e.ledger_cursor.clone();
+                    self.logical_action.latest_attempt = Some(e.clone());
+                }
             }
             result
         }
@@ -558,6 +561,7 @@ mod tests {
             logical_action: LogicalActionEvidence { participant_id: "participant-a".into(),
                 tenant_id: "tenant-a".into(), idempotency_key: "logical-action-1".into(),
                 ledger_cursor: "ledger:0".into(), latest_attempt: None },
+            query_updates_logical_action: true,
             submit_calls: 0,
         };
         (EffectBroker::new(registry, participant), proposal, grant, context)
@@ -731,7 +735,8 @@ mod tests {
         let (mut b, p, g, c) = fixture();
         let dispatched = b.dispatch(&p, Some(&g), c);
         assert_eq!(dispatched.participant_status, Some(AttemptStatus::Committed));
-        // Simulate a faulty or contradictory participant query result.
+        // Simulate a query that contradicts the still-committed logical-key ledger view.
+        b.participant.query_updates_logical_action = false;
         let result = b.reconcile_same_attempt("participant-a", "tenant-a",
             "logical-action-1", "attempt-1", &Digest::from_byte(4));
         assert_eq!(result, Err(GateDenial::ParticipantEvidenceMismatch));
