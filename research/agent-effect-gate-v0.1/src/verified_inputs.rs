@@ -705,7 +705,7 @@ mod tests {
             attempt_id: p.attempt_id.clone(), idempotency_key: p.idempotency_key.clone(),
             environment: p.environment.clone(), risk_level: p.risk_level,
             policy_version: p.policy_version.clone(), policy_digest: p.policy_digest.clone(),
-            subject_digest: Digest::from_byte(10), expires_at_ms: 50_000, revoked: false,
+            subject_digest: Digest::from_byte(10), expires_at_ms: 150_000, revoked: false,
         }
     }
 
