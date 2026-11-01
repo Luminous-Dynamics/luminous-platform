@@ -971,6 +971,8 @@ mod tests {
             runtime_observer_source_id: "runtime-independent-observer".into(),
             runtime_observer_control_domain: "runtime-observer-domain".into(),
             runtime_observer_adapter_digest: runtime_observer_adapter_digest.clone(),
+            runtime_challenge_authority_id: "challenge-authority".into(),
+            runtime_challenge_authority_control_domain: "challenge-domain".into(),
             agent_identity_digest: agent_identity_digest.clone(),
             baseline_identity_digest: baseline_identity_digest.clone(),
             agent: FrozenAgentIdentity {
@@ -1029,6 +1031,8 @@ mod tests {
             runtime_observer_source_id: "runtime-independent-observer".into(),
             runtime_observer_control_domain: "runtime-observer-domain".into(),
             runtime_observer_adapter_digest,
+            runtime_challenge_authority_id: "challenge-authority".into(),
+            runtime_challenge_authority_control_domain: "challenge-domain".into(),
             publisher_id: "freeze-authority".into(),
             publisher_control_domain: "authority-domain".into(),
         };
