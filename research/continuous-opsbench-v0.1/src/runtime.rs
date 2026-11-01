@@ -422,6 +422,13 @@ pub(crate) fn validate_ledger_binding(
         || ledger.runtime_observer_source_id != manifest.runtime_observer_source_id
         || ledger.runtime_observer_control_domain != manifest.runtime_observer_control_domain
         || ledger.runtime_observer_adapter_digest != manifest.runtime_observer_adapter_digest
+        || ledger.sandbox_tier != manifest.sandbox_tier
+        || ledger.sandbox_profile_digest != manifest.sandbox_profile_digest
+        || ledger.supervisor_id != manifest.supervisor_id
+        || ledger.supervisor_source_id != manifest.supervisor_source_id
+        || ledger.supervisor_control_domain != manifest.supervisor_control_domain
+        || ledger.supervisor_adapter_digest != manifest.supervisor_adapter_digest
+        || ledger.supervisor_key_class != manifest.supervisor_key_class
         || ledger.planned_trials != manifest.trials.len()
         || ledger.planned_arm_trials != manifest.trials.len().saturating_mul(2)
         || ledger.trials.len() != manifest.trials.len().saturating_mul(2)
