@@ -6,7 +6,8 @@
 //! before they are passed here.
 
 use crate::sealed::{
-    validate_freeze_receipt, validate_scenario, ArmRunSummary, EvaluationArm, FreezeReceipt,
+    validate_freeze_receipt, validate_manifest, validate_scenario, ArmRunSummary,
+    EvaluationArm, FreezeReceipt,
     RunLedgerSummary, RunManifest, ScenarioReceipt, TrialDisposition, TrialResult,
 };
 use crate::Digest;
@@ -142,6 +143,8 @@ pub fn validate_runtime_attestations(
     scenarios: &[ScenarioReceipt],
     attestations: &[RuntimeTrialAttestation],
 ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
+    validate_manifest(manifest)
+        .map_err(|_| RuntimeAttestationError::LedgerManifestMismatch)?;
     validate_freeze_receipt(manifest, &freeze.manifest_commitment, freeze)
         .map_err(|_| RuntimeAttestationError::LedgerManifestMismatch)?;
     if ledger.manifest_commitment != freeze.manifest_commitment {
