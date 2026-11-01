@@ -16,6 +16,7 @@ pub use verified_inputs::{
     GateEvidenceBundle, PublisherRule, SignedSourceEvidence, TrustPolicy,
     TrustedClock, VerifiedAttestation, VerifiedEffectBroker, VerifiedGateContext,
     VerifiedPublisher,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Digest(pub [u8; 32]);
