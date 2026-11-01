@@ -86,6 +86,9 @@ pub struct RunManifest {
     pub runtime_observer_source_id: String,
     pub runtime_observer_control_domain: String,
     pub runtime_observer_adapter_digest: Digest,
+    /// Independent verifier that issues one-use, post-freeze runtime challenges.
+    pub runtime_challenge_authority_id: String,
+    pub runtime_challenge_authority_control_domain: String,
     pub agent_identity_digest: Digest,
     pub baseline_identity_digest: Digest,
     pub agent: FrozenAgentIdentity,
@@ -117,6 +120,8 @@ pub struct FreezeReceipt {
     pub runtime_observer_source_id: String,
     pub runtime_observer_control_domain: String,
     pub runtime_observer_adapter_digest: Digest,
+    pub runtime_challenge_authority_id: String,
+    pub runtime_challenge_authority_control_domain: String,
     pub publisher_id: String,
     pub publisher_control_domain: String,
 }
@@ -523,6 +528,8 @@ pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunE
         (manifest.evidence_control_domain.as_str(), "evidence_control_domain"),
         (manifest.runtime_observer_source_id.as_str(), "runtime_observer_source_id"),
         (manifest.runtime_observer_control_domain.as_str(), "runtime_observer_control_domain"),
+        (manifest.runtime_challenge_authority_id.as_str(), "runtime_challenge_authority_id"),
+        (manifest.runtime_challenge_authority_control_domain.as_str(), "runtime_challenge_authority_control_domain"),
     ] {
         if !valid_record_id(value) { return Err(SealedRunError::EmptyIdentity(name)); }
     }
@@ -554,6 +561,13 @@ pub(crate) fn validate_manifest(manifest: &RunManifest) -> Result<(), SealedRunE
         || manifest.runtime_observer_control_domain == manifest.evaluator_control_domain
         || manifest.runtime_observer_control_domain == manifest.evidence_control_domain
         || manifest.runtime_observer_source_id == manifest.evidence_source_id
+        || manifest.runtime_challenge_authority_control_domain == manifest.agent.control_domain
+        || manifest.runtime_challenge_authority_control_domain == manifest.baseline.control_domain
+        || manifest.runtime_challenge_authority_control_domain == manifest.freeze_authority_control_domain
+        || manifest.runtime_challenge_authority_control_domain == manifest.evaluator_control_domain
+        || manifest.runtime_challenge_authority_control_domain == manifest.evidence_control_domain
+        || manifest.runtime_challenge_authority_control_domain == manifest.runtime_observer_control_domain
+        || manifest.runtime_challenge_authority_id == manifest.runtime_observer_source_id
         || digest_is_zero(&manifest.runtime_observer_adapter_digest)
         || digest_is_zero(&manifest.evaluator_digest)
         || digest_is_zero(&manifest.execution_environment_digest)
@@ -605,6 +619,8 @@ pub(crate) fn validate_freeze_receipt(
         || receipt.runtime_observer_source_id != manifest.runtime_observer_source_id
         || receipt.runtime_observer_control_domain != manifest.runtime_observer_control_domain
         || receipt.runtime_observer_adapter_digest != manifest.runtime_observer_adapter_digest
+        || receipt.runtime_challenge_authority_id != manifest.runtime_challenge_authority_id
+        || receipt.runtime_challenge_authority_control_domain != manifest.runtime_challenge_authority_control_domain
         || receipt.publisher_id != manifest.freeze_authority_id
         || receipt.publisher_control_domain != manifest.freeze_authority_control_domain
     {
