@@ -4,6 +4,8 @@
 //! participant effect receipts, and independent observer windows as distinct inputs.
 //! It does not run agents or infrastructure and does not authenticate publishers.
 
+pub mod impact;
+
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
