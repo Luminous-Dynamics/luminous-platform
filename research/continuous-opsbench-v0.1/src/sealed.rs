@@ -544,13 +544,13 @@ pub fn validate_run_ledger_with_reveals(
         runtime_challenge_authority_id: manifest.runtime_challenge_authority_id.clone(),
         runtime_challenge_authority_control_domain: manifest.runtime_challenge_authority_control_domain.clone(),
         trials: results,
-        pub sandbox_tier: SandboxTier,
-        pub sandbox_profile_digest: Digest,
-        pub supervisor_id: String,
-        pub supervisor_source_id: String,
-        pub supervisor_control_domain: String,
-        pub supervisor_adapter_digest: Digest,
-        pub supervisor_key_class: SupervisorKeyClass,
+        sandbox_tier: manifest.sandbox_tier,
+        sandbox_profile_digest: manifest.sandbox_profile_digest.clone(),
+        supervisor_id: manifest.supervisor_id.clone(),
+        supervisor_source_id: manifest.supervisor_source_id.clone(),
+        supervisor_control_domain: manifest.supervisor_control_domain.clone(),
+        supervisor_adapter_digest: manifest.supervisor_adapter_digest.clone(),
+        supervisor_key_class: manifest.supervisor_key_class,
     })
 }
 
