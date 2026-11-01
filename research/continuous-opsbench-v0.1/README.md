@@ -33,3 +33,10 @@ The synthetic fixture is not a benchmark result and cannot support SOTA or produ
 ## Request-level impact v0.2
 
 The v0.1 aggregate `max(failed, slow, incorrect)` remains a **lower bound**, not an exact unique-request estimand. The additive v0.2 paired-cell evaluator in `src/impact.rs` uses keyed request pseudonyms, exact set unions, preregistered Candidate/NoAction cell pairs, matched intervals and demand contracts. See `REQUEST_IMPACT_PAIRED_CELLS_V0_2.md`. Do not report v0.1 degradation ratios as exact paired counterfactual effects.
+
+
+## Event-level degraded request-time v0.1
+
+The additive `src/impact_intervals.rs` module computes in-window degraded request-ms from actual per-request onset/recovery intervals, merging overlaps and adjacent categories once per keyed request token. It handles right-censoring at the window boundary and rejects left-censored intervals for the exact-duration estimand. The paired result reports both unique affected-request count and observed degraded request-ms deltas. See `REQUEST_DEGRADATION_INTERVALS_V0_1.md` and the interval contract/observation schemas.
+
+Do not interpret the original v0.1 `degraded_request_ms` counter-window proxy as exact request-time: it multiplies class-level `max(failed, slow, incorrect)` counts by the full observation window and lacks request identities or event onset/recovery times. It can overstate or understate actual exposure. Use #192 for exact request prevalence and the interval evaluator for time exposure. Neither proves ingress completeness or clock/source authenticity until the typed evidence adapter authenticates the input records.
