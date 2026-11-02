@@ -197,6 +197,7 @@ pub enum RuntimeAttestationError {
     DisallowedEgressObserved(String, EvaluationArm),
     CrossTrialStateObserved(String, EvaluationArm),
     SharedWritableNamespaceObserved(String, EvaluationArm),
+    EventCountExceedsAttempts(String, EvaluationArm),
     DuplicateObserverSequence,
     ObserverSequenceOrderInvalid,
     ObserverSequenceNotContiguous,
@@ -403,18 +404,31 @@ fn validate_runtime_attestations(
                 receipt.arm,
             ));
         }
+        if receipt.oracle_read_successes > receipt.oracle_read_attempts
+            || receipt.unauthorized_artifact_read_successes
+                > receipt.unauthorized_artifact_read_attempts
+            || receipt.disallowed_egress_successes > receipt.disallowed_egress_attempts
+        {
+            return Err(RuntimeAttestationError::EventCountExceedsAttempts(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
         if is_zero(&receipt.challenge_nonce_digest) {
             return Err(RuntimeAttestationError::ChallengeNonceInvalid);
         }
+        let combined_uncertainty = receipt.clock_uncertainty_ms
+            .checked_add(challenge.clock_uncertainty_ms)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        let measurement_end_latest = receipt.measurement_end_ms
+            .checked_add(combined_uncertainty)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+        let receipt_issue_latest = receipt.issued_at_ms
+            .checked_add(combined_uncertainty)
+            .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
         if receipt.challenge_issued_at_ms <= manifest.frozen_at_ms
-            || receipt.challenge_issued_at_ms >= receipt.measurement_start_ms
-            || receipt.challenge_expires_at_ms <= receipt.measurement_end_ms
-            || receipt.challenge_expires_at_ms <= receipt.issued_at_ms
-            || receipt.challenge_expires_at_ms <= receipt.challenge_issued_at_ms
-            || receipt.challenge_expires_at_ms
-                <= receipt.measurement_end_ms.saturating_add(receipt.clock_uncertainty_ms)
-            || receipt.challenge_expires_at_ms
-                <= receipt.issued_at_ms.saturating_add(receipt.clock_uncertainty_ms)
+            || receipt.challenge_expires_at_ms <= measurement_end_latest
+            || receipt.challenge_expires_at_ms <= receipt_issue_latest
         {
             return Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
                 receipt.trial_id.clone(),
@@ -794,12 +808,28 @@ fn validate_challenge_binding(
             challenge.trial_id.clone(), challenge.arm,
         ));
     }
+    let challenge_issue_latest = challenge.issued_at_ms
+        .checked_add(challenge.clock_uncertainty_ms)
+        .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+    let measurement_start_earliest = attestation.measurement_start_ms
+        .checked_sub(attestation.clock_uncertainty_ms)
+        .ok_or_else(|| RuntimeAttestationError::ChallengeFreshnessInvalid(
+            challenge.trial_id.clone(), challenge.arm,
+        ))?;
+    let combined_uncertainty = challenge.clock_uncertainty_ms
+        .checked_add(attestation.clock_uncertainty_ms)
+        .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+    let measurement_end_latest = attestation.measurement_end_ms
+        .checked_add(combined_uncertainty)
+        .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
+    let receipt_issue_latest = attestation.issued_at_ms
+        .checked_add(combined_uncertainty)
+        .ok_or(RuntimeAttestationError::ArithmeticOverflow)?;
     if challenge.issued_at_ms <= manifest.frozen_at_ms
-        || challenge.issued_at_ms >= attestation.measurement_start_ms
-        || challenge.expires_at_ms <= attestation.measurement_end_ms
-        || challenge.expires_at_ms <= attestation.issued_at_ms
-        || challenge.expires_at_ms <= attestation.issued_at_ms.saturating_add(attestation.clock_uncertainty_ms)
-        || challenge.expires_at_ms <= challenge.issued_at_ms.saturating_add(challenge.clock_uncertainty_ms)
+        || challenge_issue_latest >= measurement_start_earliest
+        || challenge.expires_at_ms <= measurement_end_latest
+        || challenge.expires_at_ms <= receipt_issue_latest
+        || challenge.expires_at_ms <= challenge_issue_latest
         || challenge.expires_at_ms.saturating_sub(challenge.issued_at_ms) > MAX_RUNTIME_CHALLENGE_TTL_MS
     {
         return Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
