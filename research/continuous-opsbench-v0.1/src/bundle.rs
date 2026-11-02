@@ -253,6 +253,7 @@ pub enum BundleError {
     DuplicateClaimEvidence(String),
     MissingClaimEvidence(String, String),
     ClaimUsesUnavailableEvidence(String, String),
+    ClaimEvidenceRoleMismatch(String, String),
     RequiredArtifactUnreferenced(String),
     DuplicateClaimDependency(String, String),
     MissingClaimDependency(String, String),
@@ -536,6 +537,11 @@ fn validate_artifacts(
         if artifact.delivery == ArtifactDelivery::ExternalReference {
             return Err(BundleError::ExternalReferenceForbidden(artifact.artifact_id.clone()));
         }
+        if artifact.sensitivity != ArtifactSensitivity::RetiredReveal
+            && artifact.retired_at_ms.is_some()
+        {
+            return Err(BundleError::InvalidArtifact(artifact.artifact_id.clone()));
+        }
         match artifact.sensitivity {
             ArtifactSensitivity::ActiveSealedPayload | ArtifactSensitivity::PrivateOracle => {
                 if bundle.disclosure == BundleDisclosure::Public
@@ -676,6 +682,22 @@ fn validate_claim_graph(
                 .ok_or_else(|| BundleError::MissingClaimEvidence(claim.claim_id.clone(), artifact_id.clone()))?;
             if artifact.delivery == ArtifactDelivery::Unavailable && claim.status == ClaimStatus::Pass {
                 return Err(BundleError::ClaimUsesUnavailableEvidence(claim.claim_id.clone(), artifact_id.clone()));
+            }
+            let evidence_role_matches = if claim.kind == ClaimKind::SealedCommitment {
+                matches!(
+                    artifact.sensitivity,
+                    ArtifactSensitivity::ActiveSealedPayload
+                        | ArtifactSensitivity::PrivateOracle
+                        | ArtifactSensitivity::RetiredReveal
+                )
+            } else {
+                artifact.sensitivity == ArtifactSensitivity::OperationalEvidence
+            };
+            if !evidence_role_matches {
+                return Err(BundleError::ClaimEvidenceRoleMismatch(
+                    claim.claim_id.clone(),
+                    artifact_id.clone(),
+                ));
             }
             referenced_artifacts.insert(artifact_id.clone());
         }
@@ -1132,7 +1154,17 @@ mod tests {
                 26 => bundle.artifacts[0].delivery = ArtifactDelivery::Unavailable,
                 27 => bundle.artifacts[2].sensitivity = ArtifactSensitivity::ActiveSealedPayload,
                 28 => bundle.artifacts[2].delivery = ArtifactDelivery::Embedded,
-                29 => bundle.artifacts[2].sensitivity = ArtifactSensitivity::RestrictedPrivate,
+                29 => {
+                    bundle.artifacts[2].sensitivity = ArtifactSensitivity::RestrictedPrivate;
+                    bundle.artifacts[2].delivery = ArtifactDelivery::Embedded;
+                    bundle.artifacts[2].archive_path = Some("private/oracle.bin".into());
+                    materialized.push(MaterializedArtifact {
+                        artifact_id: "oracle-commitment".into(),
+                        archive_path: "private/oracle.bin".into(),
+                        computed_digest: d(32),
+                        computed_byte_length: 32,
+                    });
+                }
                 30 => bundle.artifacts[2].delivery = ArtifactDelivery::CommitmentOnly,
                 31 => bundle.artifacts[2].sensitivity = ArtifactSensitivity::RetiredReveal,
                 32 => {
