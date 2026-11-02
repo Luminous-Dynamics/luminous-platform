@@ -1313,6 +1313,22 @@ mod tests {
         validate_observer_fitness_bundle(manifest, freeze, &bundle).unwrap()
     }
 
+    fn validate_with_fitness_bundle(
+        manifest: &RunManifest,
+        freeze: &FreezeReceipt,
+        ledger: &RunLedgerSummary,
+        scenarios: &[ScenarioReceipt],
+        bundle: &ObserverFitnessBundle,
+        attestations: &[RuntimeTrialAttestation],
+    ) -> Result<RuntimeAttestationSummary, RuntimeAttestationError> {
+        let challenges = challenge_receipts(attestations);
+        let fitness_summary = validate_observer_fitness_bundle(manifest, freeze, bundle)
+            .map_err(RuntimeAttestationError::ObserverFitnessInvalid)?;
+        validate_runtime_attestations(
+            manifest, freeze, ledger, scenarios, &fitness_summary, &challenges, attestations,
+        )
+    }
+
     fn validate_with_challenges(
         manifest: &RunManifest,
         freeze: &FreezeReceipt,
@@ -2325,6 +2341,110 @@ mod tests {
                 "trial-a".into(), EvaluationArm::Baseline
             ))
         );
+    }
+
+    #[test]
+    fn valid_run_requires_pre_and_post_observer_fitness_batches() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let bundle = observer_fitness_bundle(&manifest, &freeze);
+        let result = validate_with_fitness_bundle(
+            &manifest, &freeze, &ledger, &scenarios, &bundle, &attestations,
+        ).unwrap();
+        assert_eq!(result.positive_fitness_controls, 18);
+        assert_eq!(result.negative_fitness_controls, 18);
+        assert_eq!(result.loss_fitness_controls, 2);
+        assert_ne!(result.pre_run_fitness_receipt_digest, result.post_run_fitness_receipt_digest);
+        assert_eq!(result.runtime_kernel_profile_digest, manifest.runtime_kernel_profile_digest);
+        assert_eq!(result.observer_fitness_plan_digest, manifest.observer_fitness_plan_digest);
+    }
+
+    #[test]
+    fn missing_pre_or_post_fitness_batch_invalidates_runtime_admission() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut bundle = observer_fitness_bundle(&manifest, &freeze);
+        bundle.batches.remove(0);
+        assert_eq!(
+            validate_with_fitness_bundle(
+                &manifest, &freeze, &ledger, &scenarios, &bundle, &attestations,
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessBatchCountInvalid)
+        );
+
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut bundle = observer_fitness_bundle(&manifest, &freeze);
+        bundle.batches.remove(1);
+        assert_eq!(
+            validate_with_fitness_bundle(
+                &manifest, &freeze, &ledger, &scenarios, &bundle, &attestations,
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessBatchCountInvalid)
+        );
+    }
+
+    #[test]
+    fn pre_run_fitness_must_remain_valid_through_every_runtime_receipt() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut bundle = observer_fitness_bundle(&manifest, &freeze);
+        bundle.batches[0].receipt.expires_at_ms = 120;
+        assert_eq!(
+            validate_with_fitness_bundle(
+                &manifest, &freeze, &ledger, &scenarios, &bundle, &attestations,
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessPreRunQualificationInvalid)
+        );
+    }
+
+    #[test]
+    fn post_run_fitness_must_start_after_the_latest_runtime_window() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut bundle = observer_fitness_bundle(&manifest, &freeze);
+        // Probes still fit inside the receipt interval, but the interval overlaps
+        // the last runtime window once both clock uncertainties are included.
+        bundle.batches[1].receipt.measurement_start_ms = 145;
+        assert_eq!(
+            validate_with_fitness_bundle(
+                &manifest, &freeze, &ledger, &scenarios, &bundle, &attestations,
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessPostRunQualificationInvalid)
+        );
+    }
+
+    #[test]
+    fn runtime_attestations_must_reference_the_exact_pre_run_fitness_receipt() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].observer_fitness_receipt_digest = digest(99);
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::AttestationBindingMismatch(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
+    fn challenge_must_be_issued_after_pre_run_fitness_and_before_monitoring() {
+        let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].challenge_issued_at_ms = 40;
+        assert_eq!(
+            validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
+            Err(RuntimeAttestationError::ChallengeFreshnessInvalid(
+                "trial-a".into(), EvaluationArm::Candidate
+            ))
+        );
+    }
+
+    #[test]
+    fn pre_and_post_fitness_calibration_sandboxes_must_be_distinct() {
+        let (manifest, freeze, ledger, scenarios, attestations) = fixture();
+        let mut bundle = observer_fitness_bundle(&manifest, &freeze);
+        bundle.batches[1].receipt.calibration_runtime_digest =
+            bundle.batches[0].receipt.calibration_runtime_digest.clone();
+        assert!(matches!(
+            validate_with_fitness_bundle(
+                &manifest, &freeze, &ledger, &scenarios, &bundle, &attestations,
+            ),
+            Err(RuntimeAttestationError::ObserverFitnessInvalid(_))
+        ));
     }
 
     #[test]
