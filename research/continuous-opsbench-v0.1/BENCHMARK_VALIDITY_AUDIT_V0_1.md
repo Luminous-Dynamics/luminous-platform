@@ -89,3 +89,12 @@ Reproduce an external benchmark's own metric as a compatibility result. Do not c
 Passing these checks establishes consistency of the supplied component records and successful execution of the included controls. It does not prove that the component publishers are authentic, the environment models production, the oracle is semantically complete, a grader has no unknown false negatives, or the task distribution is representative. Those require independent source authentication, adversarial cohort review, blinded semantic adjudication and external replications.
 
 The audit is research-only and synthetic. It has no production side effects and does not replace the sealed run, runtime enforcement, privacy, sandbox or service-outcome evaluators.
+
+
+## Metamorphic task controls and error-rate semantics
+
+The audit requires at least ten metamorphic task controls. Each binds a base task instruction to a distinct wording variant while preserving the exact precondition and postcondition commitments under an explicit equivalence-contract digest. The evaluator records whether semantic equivalence was expected and whether the independent control observed it. A mismatch fails both UserTask and Evaluation components; missing controls are insufficient evidence.
+
+Per-component false-positive and false-negative rates are reported in parts per million using negative and positive known-answer controls respectively. Mutation-miss rate uses expected-rejection mutation controls as its denominator. A rate is `null` when its denominator is unavailable; it is never silently rendered as zero. Each component must have at least two positive and two negative known-answer controls, at least five known-answer controls total, at least five expected-rejection mutations, and at least one expected-non-rejection mutation. This keeps the error profile interpretable and tests both over-rejection and missed rejection.
+
+The mutation fixture includes both malformed/rejection-required vectors and valid controls that must remain accepted. These controls are independent of the known-answer corpus.
