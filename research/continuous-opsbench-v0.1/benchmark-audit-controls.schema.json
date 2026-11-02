@@ -162,34 +162,200 @@
           "$ref": "#/$defs/id"
         },
         "pair": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "first",
-            "second"
-          ],
-          "properties": {
-            "first": {
-              "$ref": "#/$defs/component"
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "user_task"
+                },
+                "second": {
+                  "const": "environment_tools"
+                }
+              }
             },
-            "second": {
-              "$ref": "#/$defs/component"
-            }
-          },
-          "not": {
-            "required": [
-              "first",
-              "second"
-            ],
-            "properties": {
-              "first": {
-                "const": "user_task"
-              },
-              "second": {
-                "const": "user_task"
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "environment_tools"
+                },
+                "second": {
+                  "const": "user_task"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "user_task"
+                },
+                "second": {
+                  "const": "ground_truth"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "ground_truth"
+                },
+                "second": {
+                  "const": "user_task"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "user_task"
+                },
+                "second": {
+                  "const": "evaluation"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "evaluation"
+                },
+                "second": {
+                  "const": "user_task"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "environment_tools"
+                },
+                "second": {
+                  "const": "ground_truth"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "ground_truth"
+                },
+                "second": {
+                  "const": "environment_tools"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "environment_tools"
+                },
+                "second": {
+                  "const": "evaluation"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "evaluation"
+                },
+                "second": {
+                  "const": "environment_tools"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "ground_truth"
+                },
+                "second": {
+                  "const": "evaluation"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "first",
+                "second"
+              ],
+              "properties": {
+                "first": {
+                  "const": "evaluation"
+                },
+                "second": {
+                  "const": "ground_truth"
+                }
               }
             }
-          }
+          ]
         },
         "expected_acceptance": {
           "type": "boolean"
