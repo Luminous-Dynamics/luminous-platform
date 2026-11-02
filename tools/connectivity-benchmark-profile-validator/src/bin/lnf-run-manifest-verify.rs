@@ -400,10 +400,10 @@ fn validate_topology(manifest: &Value) -> Vec<String> {
             if link.get("physical_technology_claimed").and_then(Value::as_bool) != Some(false) {
                 errors.push(format!("link {id} must not claim a physical technology"));
             }
-            if matches!(id, "wan-a" | "wan-b") {
-                if let Some(domain) = link.get("failure_domain").and_then(Value::as_str) {
-                    wan_domains.insert(domain.to_owned());
-                }
+            if matches!(id, "wan-a" | "wan-b")
+                && let Some(domain) = link.get("failure_domain").and_then(Value::as_str)
+            {
+                wan_domains.insert(domain.to_owned());
             }
         }
         if wan_domains.len() != 2 {
