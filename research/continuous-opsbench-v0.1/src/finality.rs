@@ -58,7 +58,7 @@ pub struct CandidateAct {
     pub arm: EvaluationArm,
     pub arm_identity_digest: Digest,
     pub scenario_commitment: Digest,
-    pub runtime_evidence_digest: Digest,
+    pub runtime_evidence_payload_digest: Digest,
     pub broker_receipt_digest: Digest,
     pub created_at_ms: u64,
 }
@@ -104,7 +104,7 @@ impl CandidateAct {
         });
         put_digest(&mut out, &self.arm_identity_digest);
         put_digest(&mut out, &self.scenario_commitment);
-        put_digest(&mut out, &self.runtime_evidence_digest);
+        put_digest(&mut out, &self.runtime_evidence_payload_digest);
         put_digest(&mut out, &self.broker_receipt_digest);
         out.extend_from_slice(&self.created_at_ms.to_be_bytes());
         Ok(out)
@@ -164,6 +164,10 @@ pub struct BrokerAuthorizationReceipt {
 pub struct ActRuntimeEvidence {
     /// The runtime observer/challenge authority appraises this exact Candidate Act.
     pub act_digest: Digest,
+    /// Digest of the observer's canonical pre-act evidence payload, excluding
+    /// the subject-binding act digest to avoid a circular hash.
+    pub evidence_payload_digest: Digest,
+    /// Authenticated receipt digest over the payload plus the exact act subject.
     pub evidence_digest: Digest,
     pub run_id: String,
     pub trial_id: String,
@@ -182,6 +186,8 @@ pub struct ActRuntimeEvidence {
     pub challenge_authority_control_domain: String,
     pub challenge_receipt_digest: Digest,
     pub challenge_nonce_digest: Digest,
+    pub challenge_issued_at_ms: u64,
+    pub challenge_expires_at_ms: u64,
     pub issued_at_ms: u64,
     pub expires_at_ms: u64,
     pub clock_uncertainty_ms: u64,
@@ -235,7 +241,7 @@ pub struct ExecutionHandle {
     attempt_id: String,
     idempotency_key: String,
     environment_digest: Digest,
-    runtime_evidence_digest: Digest,
+    runtime_evidence_payload_digest: Digest,
     challenge_receipt_digest: Digest,
     challenge_nonce_digest: Digest,
     broker_receipt_digest: Digest,
@@ -281,6 +287,8 @@ pub fn issue_execution_handle(
     if issue.issued_at_ms != now_ms
         || issue.expires_at_ms <= issue.issued_at_ms
         || issue.expires_at_ms > runtime.expires_at_ms
+        || issue.expires_at_ms > runtime.challenge_expires_at_ms
+        || issue.expires_at_ms > broker_receipt.expires_at_ms
         || issue.expires_at_ms - issue.issued_at_ms > profile.max_handle_ttl_ms
         || issue.expires_at_ms - issue.issued_at_ms > MAX_FINALITY_HANDLE_TTL_MS
     {
@@ -304,7 +312,7 @@ pub fn issue_execution_handle(
         attempt_id: act.attempt_id.clone(),
         idempotency_key: act.idempotency_key.clone(),
         environment_digest: act.environment_digest.clone(),
-        runtime_evidence_digest: runtime.evidence_digest.clone(),
+        runtime_evidence_payload_digest: runtime.evidence_payload_digest.clone(),
         challenge_receipt_digest: runtime.challenge_receipt_digest.clone(),
         challenge_nonce_digest: runtime.challenge_nonce_digest.clone(),
         broker_receipt_digest: broker_receipt.receipt_digest.clone(),
@@ -380,7 +388,7 @@ fn validate_act(act: &CandidateAct) -> Result<(), FinalityError> {
         &act.environment_digest,
         &act.arm_identity_digest,
         &act.scenario_commitment,
-        &act.runtime_evidence_digest,
+        &act.runtime_evidence_payload_digest,
         &act.broker_receipt_digest,
     ] {
         if is_zero(digest) {
@@ -435,6 +443,7 @@ fn validate_broker_binding(
         || is_zero(&receipt.grant_digest)
         || receipt.expires_at_ms <= now_ms
         || receipt.issued_at_ms > now_ms
+        || receipt.issued_at_ms > act.created_at_ms
     {
         return Err(FinalityError::BrokerAuthorizationBindingMismatch);
     }
@@ -448,11 +457,31 @@ fn validate_runtime_binding(
     expected_act_digest: &Digest,
     now_ms: u64,
 ) -> Result<(), FinalityError> {
+    if runtime.clock_uncertainty_ms > MAX_FINALITY_CLOCK_UNCERTAINTY_MS {
+        return Err(FinalityError::RuntimeEvidenceClockUncertaintyExceeded);
+    }
+    if runtime.expires_at_ms <= now_ms || runtime.challenge_expires_at_ms <= now_ms {
+        return Err(FinalityError::RuntimeEvidenceExpired);
+    }
+    if runtime.issued_at_ms > now_ms || runtime.challenge_issued_at_ms > runtime.issued_at_ms {
+        return Err(FinalityError::RuntimeEvidenceBindingMismatch);
+    }
+    if now_ms.saturating_sub(runtime.issued_at_ms) > profile.max_evidence_age_ms {
+        return Err(FinalityError::RuntimeEvidenceTooOld);
+    }
+    if runtime.challenge_expires_at_ms <= runtime.challenge_issued_at_ms
+        || runtime.issued_at_ms > runtime.challenge_expires_at_ms
+        || runtime.challenge_issued_at_ms > act.created_at_ms
+        || runtime.challenge_nonce_digest == Digest::ZERO
+    {
+        return Err(FinalityError::RuntimeEvidenceBindingMismatch);
+    }
     if runtime.run_id != act.run_id
         || runtime.trial_id != act.trial_id
         || runtime.arm != act.arm
         || runtime.arm_identity_digest != act.arm_identity_digest
         || runtime.scenario_commitment != act.scenario_commitment
+        || runtime.evidence_payload_digest != act.runtime_evidence_payload_digest
         || runtime.manifest_commitment != profile.expected_manifest_commitment
         || runtime.environment_digest != profile.expected_environment_digest
         || runtime.environment_digest != act.environment_digest
@@ -470,11 +499,11 @@ fn validate_runtime_binding(
         || is_zero(&runtime.challenge_receipt_digest)
         || is_zero(&runtime.challenge_nonce_digest)
         || runtime.observer_high_water_sequence == 0
-        || runtime.clock_uncertainty_ms > MAX_FINALITY_CLOCK_UNCERTAINTY_MS
-        || runtime.expires_at_ms <= now_ms
-        || runtime.issued_at_ms > now_ms
-        || now_ms.saturating_sub(runtime.issued_at_ms) > profile.max_evidence_age_ms
         || runtime.expires_at_ms <= runtime.issued_at_ms
+        || runtime.writable_namespace_digest == Digest::ZERO
+        || runtime.challenge_receipt_digest == Digest::ZERO
+        || runtime.challenge_nonce_digest == Digest::ZERO
+        || runtime.observer_high_water_sequence == 0
     {
         return Err(FinalityError::RuntimeEvidenceBindingMismatch);
     }
@@ -498,7 +527,7 @@ pub struct ParticipantEffectReceipt {
     pub act_digest: Digest,
     pub request_digest: Digest,
     pub broker_receipt_digest: Digest,
-    pub runtime_evidence_digest: Digest,
+    pub runtime_evidence_payload_digest: Digest,
     pub challenge_receipt_digest: Digest,
     pub tenant_id: String,
     pub participant_id: String,
@@ -649,7 +678,7 @@ impl ParticipantFinalitySink for ReferenceParticipantLedger {
             act_digest,
             request_digest,
             broker_receipt_digest: handle.broker_receipt_digest.clone(),
-            runtime_evidence_digest: handle.runtime_evidence_digest.clone(),
+            runtime_evidence_payload_digest: handle.runtime_evidence_payload_digest.clone(),
             challenge_receipt_digest: handle.challenge_receipt_digest.clone(),
             tenant_id: received.act.tenant_id.clone(),
             participant_id: self.participant_id.clone(),
@@ -697,7 +726,7 @@ pub fn digest_handle(
     put_text(&mut out, &handle.attempt_id)?;
     put_text(&mut out, &handle.idempotency_key)?;
     put_digest(&mut out, &handle.environment_digest);
-    put_digest(&mut out, &handle.runtime_evidence_digest);
+    put_digest(&mut out, &handle.runtime_evidence_payload_digest);
     put_digest(&mut out, &handle.challenge_receipt_digest);
     put_digest(&mut out, &handle.challenge_nonce_digest);
     put_digest(&mut out, &handle.broker_receipt_digest);
@@ -823,7 +852,7 @@ mod tests {
             arm: EvaluationArm::Candidate,
             arm_identity_digest: digest(8),
             scenario_commitment: digest(9),
-            runtime_evidence_digest: digest(10),
+            runtime_evidence_payload_digest: digest(10),
             broker_receipt_digest: digest(11),
             created_at_ms: 10,
         }
@@ -885,6 +914,7 @@ mod tests {
     fn runtime(act: &CandidateAct, profile: &FinalityAuthorityProfile, digester: &dyn DigestProvider) -> ActRuntimeEvidence {
         ActRuntimeEvidence {
             act_digest: act.digest(digester).unwrap(),
+            evidence_payload_digest: act.runtime_evidence_payload_digest.clone(),
             evidence_digest: digest(16),
             run_id: act.run_id.clone(),
             trial_id: act.trial_id.clone(),
@@ -903,6 +933,8 @@ mod tests {
             challenge_authority_control_domain: profile.expected_challenge_authority_control_domain.clone(),
             challenge_receipt_digest: digest(18),
             challenge_nonce_digest: digest(19),
+            challenge_issued_at_ms: 90,
+            challenge_expires_at_ms: 180,
             issued_at_ms: 95,
             expires_at_ms: 180,
             clock_uncertainty_ms: 5,
@@ -1007,7 +1039,7 @@ mod tests {
             |a| a.attempt_id = "other-attempt".into(),
             |a| a.idempotency_key = "other-idem".into(),
             |a| a.environment_digest = digest(96),
-            |a| a.runtime_evidence_digest = digest(97),
+            |a| a.runtime_evidence_payload_digest = digest(97),
             |a| a.broker_receipt_digest = digest(98),
         ];
         for mutate in mutate {
