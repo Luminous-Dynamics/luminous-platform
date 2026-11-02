@@ -287,6 +287,12 @@ fn validate_runtime_attestations(
             scenario,
             receipt,
         )?;
+        if receipt.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS {
+            return Err(RuntimeAttestationError::ClockUncertaintyExceeded(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
         if is_zero(&receipt.challenge_nonce_digest) {
             return Err(RuntimeAttestationError::ChallengeNonceInvalid);
         }
@@ -339,12 +345,6 @@ fn validate_runtime_attestations(
             || receipt.issued_at_ms < receipt.measurement_end_ms
         {
             return Err(RuntimeAttestationError::InvalidMeasurementInterval(
-                receipt.trial_id.clone(),
-                receipt.arm,
-            ));
-        }
-        if receipt.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS {
-            return Err(RuntimeAttestationError::ClockUncertaintyExceeded(
                 receipt.trial_id.clone(),
                 receipt.arm,
             ));
