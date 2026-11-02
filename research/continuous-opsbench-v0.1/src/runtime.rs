@@ -553,6 +553,7 @@ fn validate_runtime_attestations(
             runtime_instance_digest: receipt.runtime_instance_digest.clone(),
             writable_state_namespace_digest: receipt.writable_state_namespace_digest.clone(),
             challenge_nonce_digest: receipt.challenge_nonce_digest.clone(),
+            challenge_receipt_digest: receipt.challenge_receipt_digest.clone(),
             challenge_issued_at_ms: receipt.challenge_issued_at_ms,
             challenge_expires_at_ms: receipt.challenge_expires_at_ms,
             receipt_sequence: receipt.receipt_sequence,
