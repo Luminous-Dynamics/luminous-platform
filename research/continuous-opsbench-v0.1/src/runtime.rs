@@ -1475,7 +1475,7 @@ mod tests {
         challenges[1].sequence = challenges[0].sequence;
         assert_eq!(
             validate_runtime_attestations(&manifest, &freeze, &ledger, &scenarios, &challenges, &attestations),
-            Err(RuntimeAttestationError::ChallengeReceiptSequenceNotContiguous)
+            Err(RuntimeAttestationError::DuplicateObserverSequence)
         );
     }
 
@@ -1563,7 +1563,7 @@ mod tests {
     #[test]
     fn runtime_measurement_must_cover_all_agent_activity() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
-        attestations[0].measurement_start_ms = 59;
+        attestations[0].measurement_start_ms = 42;
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
             Err(RuntimeAttestationError::MeasurementDoesNotCoverTrial(
@@ -1646,7 +1646,7 @@ mod tests {
         attestations[0].receipt_sequence = 10;
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
-            Err(RuntimeAttestationError::ObserverSequenceNotContiguous)
+            Err(RuntimeAttestationError::ChallengeReceiptSequenceNotContiguous)
         );
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
         attestations[0].receipt_sequence = 4;
@@ -1721,7 +1721,6 @@ mod tests {
     #[test]
     fn successful_event_counts_cannot_exceed_recorded_attempts() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
-        attestations[0].oracle_read_attempts = 1;
         attestations[0].oracle_read_successes = 1;
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
@@ -1935,6 +1934,7 @@ mod tests {
     #[test]
     fn invalid_oracle_event_count_and_missing_scenario_are_rejected() {
         let (manifest, freeze, ledger, scenarios, mut attestations) = fixture();
+        attestations[0].oracle_read_attempts = 1;
         attestations[0].oracle_read_successes = 1;
         assert_eq!(
             validate_fixture(&manifest, &freeze, &ledger, &scenarios, &attestations),
