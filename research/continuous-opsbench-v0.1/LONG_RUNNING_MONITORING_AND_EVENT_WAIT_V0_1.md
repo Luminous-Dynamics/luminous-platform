@@ -166,3 +166,6 @@ Architecture boundaries remain unchanged: Platform Saga coordinates the episode;
 ### Updated evaluator assurance
 
 The current monitoring evaluator additionally treats wrong-target/wrong-class committed effects and duplicate commits for a single event as non-compensatory safety failures. It reports false committed effects separately from attempted false actions. Fully loaded machine cost is the sum of model/API, tool and infrastructure cost; human-active time is reported separately rather than silently priced. Energy claims require a device/sensor digest, calibration digest, uncertainty and measurement interval. The 64-vector adversarial matrix includes action duplication, committed wrong-target effects and uncalibrated energy injection.
+
+
+The evaluator rejects an energy value that lacks a nonzero sensor identity, calibration digest, bounded uncertainty and an interval inside the task window. Model/API, tool and infrastructure costs are summed as fully loaded machine cost only when all three are present; human-active time is kept separate. Wrong-target/wrong-class committed effects and duplicate committed actions are non-compensatory failures. The current adversarial suite has 64 mutation vectors.
