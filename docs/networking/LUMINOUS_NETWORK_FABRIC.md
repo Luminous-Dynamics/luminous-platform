@@ -64,9 +64,18 @@ Hard exclusions precede ranking: unavailable path, prohibited route, stale/unkno
 
 ### 3.4 Live transport and multi-path plane
 
-Use IP and mature transport protocols for live reachability. Preserve application sessions only where the chosen transport and both endpoints support it. Evaluate MPTCP and Multipath QUIC where implementation and deployment constraints are met; otherwise expose handover interruption and reconnect behavior honestly.
+Use IP and mature transport protocols for live reachability. Preserve application sessions only where the chosen transport and both endpoints support it. Evaluate MPTCP (RFC 8684) and Multipath QUIC where implementation and deployment constraints are met; otherwise expose handover interruption and reconnect behavior honestly.
 
-Do not tunnel every protocol through a single proprietary overlay. Avoid packet-content inspection. Distinguish same-LAN path change, Wi-Fi roam/reassociation, WAN route failover, cellular/eSIM profile change, multi-path aggregation, application reconnect, and durable message forwarding. These are different events with different guarantees and metrics.
+Separate three distinct decisions:
+1. **Broker eligibility:** the provider-neutral broker (#64) determines which links may be used under trust, authorization, freshness, cost, data and quality policy.
+2. **Path management:** the transport path manager creates/removes subflows and manages address/path lifecycle.
+3. **Session scheduling:** a scheduler distributes bytes/packets among the already eligible live subflows, considering completion deadline, congestion, RTT/jitter/loss, data/cost/energy caps, shared failure domains and receiver reorder pressure.
+
+LNF-MPATH-001 (draft PR #211) starts a deterministic Rust model and benchmark contract for the third decision. It does not modify MPTCP or QUIC wire formats, create subflows, or actuate routes. Linux MPTCP provides a real comparator with a separation between path manager and packet scheduler. Multipath QUIC -21 was IESG-approved as a Proposed Standard but remained in the RFC Editor queue as of 2 November 2026; its protocol specification does not define application scheduling. Do not call it a published RFC until publication is confirmed.
+
+A multipath scheduler must not simply maximize the sum of advertised bandwidths. More paths can increase out-of-order delivery, head-of-line delay, receiver memory, energy and metered cost. Compare useful task completion and tail latency under the same quality/security/cost floor, and include single-path fallback where multipath is unavailable or does not improve the workload.
+
+Do not tunnel every protocol through a single proprietary overlay. Avoid packet-content inspection. Distinguish same-LAN path change, Wi-Fi roam/reassociation, WAN route failover, cellular/eSIM profile change, multi-path aggregation within a session, application reconnect, and durable message forwarding. These are different events with different guarantees and metrics.
 
 ### 3.5 Local-first and DTN plane
 
@@ -289,6 +298,7 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 ### Immediate execution sequence
 
 0. Use LNF-EDGE-DTN-001 / issue #208 as the cross-project end-to-end campaign owner; it binds the broker, gateway, local-first and DTN stages without duplicating their implementations.
+1. Keep LNF-MPATH-001 / PR #211 stacked on the broker: qualify the offline schedule model first, then integrate with a named Linux MPTCP kernel/path manager/scheduler; test Multipath QUIC only against a pinned two-ended implementation of the approved revision.
 1. Review and reconcile LNF PR #207 with PR #64 and the existing owner issues above.
 2. Close the software-only broker contract and reviewed dependency lockfiles in the existing PR #64; retain the already reported tests as source/CI evidence, not live network proof.
 3. Run the isolated OpenWrt/two-WAN fault matrix and local-only service campaign on named gateway revisions. Record physical/VM evidence separately.
@@ -310,6 +320,7 @@ LNF is an integration programme, not a reason to create parallel projects. The f
 | symthaea | prediction, diagnosis and constrained optimization proposals | sole authority for routing safety or privileged actuation |
 | symtropy | validated models, simulation and digital twins | replacing mature 5G/PHY/EM/RF engines without evidence |
 | sol-atlas-leptos | geospatial planning and infrastructure coordination | treating modeled coverage as field-tested coverage |
+| LNF multipath policy core (draft PR #211) | offline, deterministic session scheduling among broker-eligible paths | path discovery, subflow lifecycle, route mutation or transport wire changes |
 
 ## 10. South African deployment gates
 
