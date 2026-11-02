@@ -507,6 +507,13 @@ fn validate_runtime_attestations(
         if !runtime_identity_digests.insert(receipt.writable_state_namespace_digest.clone()) {
             return Err(RuntimeAttestationError::StateNamespaceCollision);
         }
+        for sensor in &receipt.sensor_coverage {
+            if !runtime_identity_digests.insert(sensor.sensor_instance_digest.clone()) {
+                return Err(RuntimeAttestationError::SensorCoverageInstanceCollision(
+                    receipt.trial_id.clone(), receipt.arm,
+                ));
+            }
+        }
 
         if receipt.measurement_start_ms >= receipt.measurement_end_ms
             || receipt.issued_at_ms <= receipt.measurement_end_ms
@@ -579,7 +586,7 @@ fn validate_runtime_attestations(
         }
 
         validate_log_commitments(receipt)?;
-        validate_sensor_coverage(receipt, result)?;
+        validate_sensor_coverage(receipt)?;
 
         allowlisted_egress_events = allowlisted_egress_events
             .checked_add(receipt.allowlisted_egress_events as u128)
@@ -976,7 +983,6 @@ fn validate_log_commitments(
 
 fn validate_sensor_coverage(
     receipt: &RuntimeTrialAttestation,
-    result: &TrialResult,
 ) -> Result<(), RuntimeAttestationError> {
     const EXPECTED: [RuntimeSensorRole; 5] = [
         RuntimeSensorRole::ProcessTree,
@@ -1062,7 +1068,6 @@ fn validate_sensor_coverage(
             ));
         }
     }
-    let _ = result;
     Ok(())
 }
 
@@ -1348,6 +1353,34 @@ mod tests {
             EvaluationArm::Candidate => manifest.agent_identity_digest.clone(),
             EvaluationArm::Baseline => manifest.baseline_identity_digest.clone(),
         };
+        let log_commitments = [digest(50), digest(51), digest(52), digest(53), digest(54)];
+        let sensor_roles = [
+            RuntimeSensorRole::ProcessTree,
+            RuntimeSensorRole::MountNamespace,
+            RuntimeSensorRole::FilesystemAccess,
+            RuntimeSensorRole::NetworkEgress,
+            RuntimeSensorRole::RuntimeEventStream,
+        ];
+        let sensor_coverage = sensor_roles.into_iter().enumerate().map(|(index, role)| {
+            RuntimeSensorCoverage {
+                role,
+                sensor_instance_digest: digest(80u8.saturating_add(
+                    (sequence as u8).saturating_mul(5).saturating_add(index as u8)
+                )),
+                sensor_binary_digest: digest(100u8.saturating_add(index as u8)),
+                observer_source_id: manifest.runtime_observer_source_id.clone(),
+                observer_control_domain: manifest.runtime_observer_control_domain.clone(),
+                observer_adapter_digest: manifest.runtime_observer_adapter_digest.clone(),
+                coverage_start_ms: measurement_start_ms.saturating_sub(10),
+                coverage_end_ms: measurement_end_ms.saturating_add(10),
+                first_sequence: Some(1),
+                last_sequence: Some(2),
+                observed_event_count: 2,
+                sequence_gap_count: 0,
+                dropped_event_count: 0,
+                log_commitment: log_commitments[index].clone(),
+            }
+        }).collect();
         RuntimeTrialAttestation {
             schema: RUNTIME_ATTESTATION_SCHEMA.into(),
             run_id: manifest.run_id.clone(),
@@ -1378,11 +1411,12 @@ mod tests {
             measurement_start_ms,
             measurement_end_ms,
             clock_uncertainty_ms: 10,
-            process_tree_commitment: digest(50),
-            mount_namespace_commitment: digest(51),
-            filesystem_access_log_commitment: digest(52),
-            network_egress_log_commitment: digest(53),
-            runtime_event_stream_commitment: digest(54),
+            process_tree_commitment: log_commitments[0].clone(),
+            mount_namespace_commitment: log_commitments[1].clone(),
+            filesystem_access_log_commitment: log_commitments[2].clone(),
+            network_egress_log_commitment: log_commitments[3].clone(),
+            runtime_event_stream_commitment: log_commitments[4].clone(),
+            sensor_coverage,
             coverage: RuntimeCoverage::Complete,
             sequence_gap_count: 0,
             dropped_event_count: 0,
