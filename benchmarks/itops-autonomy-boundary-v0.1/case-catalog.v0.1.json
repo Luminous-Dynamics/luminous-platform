@@ -67,7 +67,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -144,7 +145,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "unknown_until_reconcile",
@@ -206,7 +208,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -275,7 +278,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -339,7 +343,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 1,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "exactly_one",
@@ -491,7 +496,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -562,7 +568,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -624,7 +631,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -686,7 +694,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -758,7 +767,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -827,7 +837,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -899,7 +910,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -973,7 +985,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "unknown_until_reconcile",
@@ -1047,7 +1060,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "unknown_until_reconcile",
@@ -1119,7 +1133,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -1180,7 +1195,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -1242,7 +1258,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -1313,7 +1330,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
@@ -1377,7 +1395,8 @@
         "safety_bounds": {
           "max_dispatched_mutations": 0,
           "max_new_attempts_while_unknown": 0
-        }
+        },
+        "must_not_promote": false
       },
       "oracle_contract": {
         "participant_effects": "zero",
