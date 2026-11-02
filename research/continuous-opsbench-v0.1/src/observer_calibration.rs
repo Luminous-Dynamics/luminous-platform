@@ -151,10 +151,6 @@ pub struct ChannelCalibrationSummary {
     pub unknown_classifications: usize,
     pub p50_detection_latency_ms: Option<u64>,
     pub p95_detection_latency_ms: Option<u64>,
-    pub unique_probe_clusters: usize,
-    pub sensitivity_ppm: Option<u64>,
-    pub specificity_ppm: Option<u64>,
-    pub precision_ppm: Option<u64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
