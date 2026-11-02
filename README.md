@@ -125,6 +125,8 @@ The platform should be evaluated on operational outcomes, not feature count alon
 
 Cross-project benchmark methodology is maintained in the [Luminous Dynamics benchmark programme](https://github.com/Luminous-Dynamics/.github/blob/main/benchmarks/README.md). An experimental [Luminous Evidence Result Profile](https://github.com/Luminous-Dynamics/.github/tree/main/standards/evidence/v0.1) describes how a result can record its subject, inputs, execution context, checks, uncertainty, and limitations inside an established attestation envelope. The profile is a draft and does not replace in-toto, SLSA, or component-specific qualification requirements.
 
+For agentic IT operations, the focused [ITOPS Autonomy Boundary Benchmark v0.1](https://github.com/Luminous-Dynamics/luminous-platform/tree/main/benchmarks/itops-autonomy-boundary-v0.1) specifies independent effect and service oracles, authorization negative controls, unknown-outcome handling, human handoff, and resource accounting. Its protocol is a draft; the schema and synthetic example are not evidence of a completed runner or measured results.
+
 | Area | Evidence to collect |
 |---|---|
 | Change safety | Unauthorized-action negative controls; policy-denial behavior; no silent actuation |
