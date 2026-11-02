@@ -166,14 +166,6 @@ fn validate_schema(schema: &Value, manifest: &Value) -> Vec<String> {
         .collect()
 }
 
-fn source_binding_by_id<'a>(manifest: &'a Value, id: &str) -> Option<&'a Value> {
-    manifest
-        .get("source_bindings")?
-        .as_array()?
-        .iter()
-        .find(|binding| binding.get("id").and_then(Value::as_str) == Some(id))
-}
-
 fn git_blob_at(root: &Path, commit: &str, path: &str) -> Result<String, String> {
     let tree_path = format!("{commit}:{path}");
     let output = Command::new("git")
@@ -316,7 +308,7 @@ fn validate_benchmarks(manifest: &Value, profile: &Value) -> Vec<String> {
                     errors.push(format!("selected benchmark {id} is duplicated"));
                 }
                 if !profile_ids.contains(id) {
-                    errors.push(format!("selected benchmark {id} is absent from the pinned profile"));
+                    errors.push(format!("selected_benchmarks/{id}: benchmark is absent from the pinned profile"));
                 }
             }
             None => errors.push("selected benchmark IDs must be strings".to_owned()),
