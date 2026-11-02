@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-benchmark-audit-controls-v0.1.json",
+  "title": "Continuous OpsBench benchmark audit controls v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "known_answers",
+    "mutations",
+    "interactions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "continuous-opsbench-benchmark-audit-controls-v0.1"
+    },
+    "known_answers": {
+      "type": "array",
+      "minItems": 40,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/known_answer"
+      }
+    },
+    "mutations": {
+      "type": "array",
+      "minItems": 60,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/mutation"
+      }
+    },
+    "interactions": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/interaction"
+      }
+    }
+  },
+  "$defs": {
+    "component": {
+      "enum": [
+        "user_task",
+        "environment_tools",
+        "ground_truth",
+        "evaluation"
+      ]
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "known_answer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "component",
+        "class",
+        "expected_acceptance",
+        "observed_acceptance"
+      ],
+      "properties": {
+        "control_id": {
+          "$ref": "#/$defs/id"
+        },
+        "component": {
+          "$ref": "#/$defs/component"
+        },
+        "class": {
+          "enum": [
+            "positive",
+            "negative"
+          ]
+        },
+        "expected_acceptance": {
+          "type": "boolean"
+        },
+        "observed_acceptance": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "class": {
+                "const": "positive"
+              }
+            },
+            "required": [
+              "class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expected_acceptance": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "class": {
+                "const": "negative"
+              }
+            },
+            "required": [
+              "class"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expected_acceptance": {
+                "const": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    "mutation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mutation_id",
+        "component",
+        "expected_rejection",
+        "observed_rejection"
+      ],
+      "properties": {
+        "mutation_id": {
+          "$ref": "#/$defs/id"
+        },
+        "component": {
+          "$ref": "#/$defs/component"
+        },
+        "expected_rejection": {
+          "type": "boolean"
+        },
+        "observed_rejection": {
+          "type": "boolean"
+        }
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "pair",
+        "expected_acceptance",
+        "observed_acceptance"
+      ],
+      "properties": {
+        "control_id": {
+          "$ref": "#/$defs/id"
+        },
+        "pair": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "first",
+            "second"
+          ],
+          "properties": {
+            "first": {
+              "$ref": "#/$defs/component"
+            },
+            "second": {
+              "$ref": "#/$defs/component"
+            }
+          },
+          "not": {
+            "required": [
+              "first",
+              "second"
+            ],
+            "properties": {
+              "first": {
+                "const": "user_task"
+              },
+              "second": {
+                "const": "user_task"
+              }
+            }
+          }
+        },
+        "expected_acceptance": {
+          "type": "boolean"
+        },
+        "observed_acceptance": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}
