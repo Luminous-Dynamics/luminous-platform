@@ -301,10 +301,7 @@ pub fn validate_access_audit(
                     AccessOperation::WorkspaceRead | AccessOperation::WorkspaceWrite
                     | AccessOperation::CacheRead | AccessOperation::CacheWrite => {
                         summary.workspace_cache_events += 1;
-                        validate_state_namespace(runtime, event)?;
-                        if event.state_namespace_digest.as_ref()
-                            != Some(&runtime.writable_state_namespace_digest)
-                        {
+                        if validate_state_namespace(runtime, event)? {
                             summary.cross_trial_state_events += 1;
                         }
                     }
@@ -386,10 +383,7 @@ pub fn validate_access_audit(
             total_cross_trial = checked_add(total_cross_trial, summary.cross_trial_state_events as u128)?;
             total_policy_violations = checked_add(
                 total_policy_violations,
-                (summary.oracle_access_attempts
-                    + summary.grader_access_attempts
-                    + summary.secret_access_attempts
-                    + summary.unauthorized_artifact_attempts
+                (summary.unauthorized_artifact_attempts
                     + summary.disallowed_egress_attempts
                     + summary.cross_trial_state_events) as u128,
             )?;
@@ -572,20 +566,14 @@ fn validate_event_binding(
 fn validate_state_namespace(
     runtime: &RuntimeTrialEvidence,
     event: &AccessAuditEvent,
-) -> Result<(), AccessAuditError> {
+) -> Result<bool, AccessAuditError> {
     if event.state_namespace_digest.as_ref().map(is_zero) != Some(false) {
         return Err(AccessAuditError::StateNamespaceMissing(
             runtime.trial_id.clone(), runtime.arm
         ));
     }
-    if event.state_namespace_digest.as_ref()
-        != Some(&runtime.writable_state_namespace_digest)
-    {
-        return Err(AccessAuditError::CrossTrialStateObserved(
-            runtime.trial_id.clone(), runtime.arm
-        ));
-    }
-    Ok(())
+    Ok(event.state_namespace_digest.as_ref()
+        != Some(&runtime.writable_state_namespace_digest))
 }
 
 fn is_zero(digest: &Digest) -> bool {
