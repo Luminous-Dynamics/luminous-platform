@@ -23,6 +23,12 @@ pub enum EffectClass { ReadOnly, BoundedMutation, IrreversibleMutation, Unknown 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AgentDecision { Act, Clarify, RequestAuthority, Reconcile, Escalate, Halt }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FinalityMode {
+    GrantOnly,
+    AttestationBound,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ToolManifest {
     pub tool_id: String,
@@ -41,6 +47,11 @@ pub struct ToolManifest {
     pub participant_ledger_supported: bool,
     pub preflight_verifier_id: String,
     pub observer_verifier_id: String,
+    /// Finality mode is manifest-owned, never selected by the agent per request.
+    pub finality_mode: FinalityMode,
+    pub finality_verifier_id: String,
+    pub finality_verifier_control_domain: String,
+    pub max_finality_handle_ttl_ms: u64,
     pub max_risk_level: u8,
     pub allowed_environments: Vec<String>,
 }
@@ -140,6 +151,9 @@ pub enum GateDenial {
     ToolchainMismatch,
     MissingRequiredField, AttemptIdReplay, PriorAttemptUnresolved, PermitBindingMismatch,
     ParticipantEvidenceMismatch, ParticipantLedgerUnavailable, IdempotencyKeyConflict,
+    ExecutionFinalityRequired, ExecutionFinalityNotRequired, RuntimeEvidenceInvalid,
+    FinalityVerifierUnavailable, FinalityHandleInvalid, FinalityHandleExpired,
+    FinalitySinkUnsupported,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -177,6 +191,9 @@ pub struct ParticipantEvidence {
     pub request_digest: Digest,
     pub ledger_cursor: String,
     pub state: ParticipantState,
+    /// Present only when the effect boundary consumed this exact act-bound handle
+    /// atomically with the committed effect.
+    pub finality_handle_digest: Option<Digest>,
 }
 
 /// Strong participant-owned index for one logical idempotency key.
@@ -192,7 +209,11 @@ pub struct LogicalActionEvidence {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ParticipantError { TransportOrOutcomeUnknown }
+pub enum ParticipantError {
+    TransportOrOutcomeUnknown,
+    FinalityUnsupported,
+    FinalityRejected,
+}
 
 /// Participant ledger is authoritative for logical-key and same-attempt reconciliation.
 /// submit() must atomically enforce tenant+idempotency-key+request-digest semantics so
@@ -201,6 +222,20 @@ pub trait ParticipantPort {
     fn inspect_logical_action(&mut self, tenant_id: &str, idempotency_key: &str)
         -> Result<LogicalActionEvidence, ParticipantError>;
     fn submit(&mut self, request: &DispatchRequest) -> Result<ParticipantEvidence, ParticipantError>;
+
+    /// The participant/finality sink must independently reconstruct the exact act,
+    /// verify the handle's signature/audience/expiry/bindings, and atomically consume
+    /// the handle in the same durable transaction that records the protected effect.
+    /// The default is deliberately fail-closed for participants without that capability.
+    fn submit_with_finality(
+        &mut self,
+        _request: &DispatchRequest,
+        _handle: &ExecutionHandle,
+        _now_ms: u64,
+    ) -> Result<ParticipantEvidence, ParticipantError> {
+        Err(ParticipantError::FinalityUnsupported)
+    }
+
     fn query_same_attempt(&mut self, tenant_id: &str, idempotency_key: &str,
         attempt_id: &str, request_digest: &Digest) -> Result<ParticipantEvidence, ParticipantError>;
 }
@@ -209,10 +244,20 @@ pub trait ParticipantPort {
 pub struct DispatchRequest {
     pub participant_id: String,
     pub tenant_id: String,
+    pub principal_id: String,
+    pub plan_digest: Digest,
     pub episode_id: String,
     pub step_id: String,
     pub tool_id: String,
     pub operation_id: String,
+    pub grant_id: String,
+    pub manifest_version: String,
+    pub manifest_digest: Digest,
+    pub toolchain_id: String,
+    pub toolchain_digest: Digest,
+    pub policy_version: String,
+    pub environment: String,
+    pub risk_level: u8,
     pub target_digest: Digest,
     pub request_digest: Digest,
     pub attempt_id: String,
@@ -227,6 +272,7 @@ pub struct DispatchReport {
     pub gate_receipt: GateReceipt,
     pub participant_status: Option<AttemptStatus>,
     pub participant_evidence: Option<ParticipantEvidence>,
+    pub finality_handle_digest: Option<Digest>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
