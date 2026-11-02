@@ -195,7 +195,7 @@
     {
       "id": "dtn-selected-implementation",
       "role": "selected BPv7 implementation after capability and durability audit",
-      "status": "blocked_pending_bpsac_audit",
+      "status": "blocked_pending_bpsec_audit",
       "same_workload_required": true
     },
     {
