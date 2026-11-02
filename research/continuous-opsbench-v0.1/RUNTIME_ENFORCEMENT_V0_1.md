@@ -16,7 +16,7 @@ Every runtime attestation carries:
 - a 32-byte nonzero challenge nonce digest;
 - the frozen challenge-authority identity and control domain;
 - challenge issue and expiry times;
-- the runtime measurement start/end and receipt issue times.
+- the runtime measurement start/end and receipt issue times. Receipt issuance must be strictly after measurement end.
 
 The structural contract requires the challenge to be issued after both the run freeze and the scenario receipt, and before runtime measurement starts. The challenge must remain valid through measurement completion and attestation issuance. Cross-domain comparisons use the sum of challenge-authority and runtime-observer clock uncertainty: the latest plausible challenge issue must precede the earliest plausible measurement start, and the latest plausible measurement/receipt times must precede challenge expiry. Challenge lifetime is capped at 24 hours. Nonce digests must be nonzero and unique across all arm trials in the run. This rejects stale replay and nonce reuse at the structural layer.
 
@@ -90,4 +90,4 @@ The design follows the emerging continuous-attestation direction: trust at launc
 
 The runtime validator has positive clean-run controls and negative controls for forged ledger summaries, missing/duplicated arm receipts, challenge reuse/expiry/authority substitution, observer/control-domain substitution, exact manifest/policy binding, unique runtime and namespace identity, measurement coverage including clock uncertainty, sequence start/order/contiguity, partial/unknown/tampered coverage, oracle/artifact access, forbidden egress, state carry-over and missing scenarios. The source-event certification entry point is tested independently of the supplied-summary composition path.
 
-The 75-vector runtime mutation matrix is deterministic and synthetic. It includes challenge expiry/TTL, challenge-before-scenario ordering, combined clock uncertainty, zero and reused nonces, impossible success/attempt counter relationships, cross-class runtime/namespace collisions, uncertainty-overlapping and provably reversed sequence timestamps, and frozen challenge-authority substitution. Direct tests separately exercise the timing and counter invariants. A green CI run proves the encoded structural conformance tests, not a real sandbox security guarantee.
+The 76-vector runtime mutation matrix is deterministic and synthetic. It includes challenge expiry/TTL, challenge-before-scenario ordering, combined clock uncertainty, zero and reused nonces, impossible success/attempt counter relationships, cross-class runtime/namespace collisions, uncertainty-overlapping and provably reversed sequence timestamps, and frozen challenge-authority substitution. Direct tests separately exercise the timing and counter invariants. A green CI run proves the encoded structural conformance tests, not a real sandbox security guarantee.
