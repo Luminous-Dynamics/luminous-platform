@@ -22,6 +22,23 @@ The structural contract requires the challenge to be issued after both the run f
 
 The source-evidence adapter must authenticate the challenge authority, verify the challenge signature and exact run/trial/arm/observer/policy subject binding, and enforce one-use nonce consumption through the existing durable replay guard (#191 / issue #190). A self-reported nonce is not cryptographic freshness evidence by itself.
 
+## Observer fitness is an admission prerequisite
+
+The frozen manifest also pins:
+- an exact runtime kernel/BTF profile digest;
+- an observer-fitness plan digest;
+- separate probe-injector and fitness-verifier identities/control domains.
+
+The public certification entrypoint accepts the observer-fitness bundle and validates it using `validate_observer_fitness_bundle` before evaluating runtime attestations. A fitness bundle is not accepted just because a caller supplies a valid-looking receipt digest.
+
+Each run requires exactly two structurally valid batches:
+- **Pre-run:** the probe measurement and receipt issuance must complete before the earliest runtime measurement, after clock uncertainty. Its expiry must cover every runtime measurement and runtime receipt publication. Every runtime challenge and every runtime attestation binds the exact pre-run receipt digest and frozen kernel profile.
+- **Post-run:** its measurement must start after the latest runtime measurement, and its receipt must be issued after the latest runtime receipt publication, after clock uncertainty. Its receipt digest, nonce, batch ID, calibration runtime and calibration namespace must differ from the pre-run batch and from evaluated runtime identities.
+
+The runtime summary retains the exact pre-run and post-run receipt digests and reports positive, negative and event-loss control counts. Missing, extra, early, expired, reused or unbound batches invalidate the run.
+
+This v0.1 contract uses one pre-run fitness receipt to cover the whole measured campaign. Its maximum receipt lifetime remains one hour. A campaign that exceeds that validity interval must be split into separately attested runtime intervals and requalified, or a later schema version must add explicit renewal receipts. The expiry must not be stretched to accommodate a longer campaign.
+
 ## Runtime observation requirements
 
 A valid receipt binds:
