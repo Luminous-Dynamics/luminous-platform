@@ -221,6 +221,7 @@ pub enum ObserverCalibrationError {
     InjectorClockUncertaintyExceeded(String),
     DetectionBeforeInjection(String),
     DetectionOutsideMeasurement(String),
+    DetectionAfterChallengeExpiry(String),
     DetectionEventMissing(String),
     DetectionSequenceInvalid,
     DetectionSequenceDuplicate,
@@ -615,6 +616,11 @@ pub fn evaluate_observer_calibration(
                 }
                 // Conservative upper bound on latency: latest plausible detect time
                 // minus earliest plausible injection time.
+                if detection_latest > plan.expires_at_ms {
+                    return Err(ObserverCalibrationError::DetectionAfterChallengeExpiry(
+                        injection.trial_id.clone(),
+                    ));
+                }
                 let latency = detection_latest.saturating_sub(injection_earliest);
                 total_detected += 1;
                 accumulator.detections += 1;
@@ -1198,6 +1204,40 @@ mod tests {
         ).unwrap();
         assert_eq!(summary.disposition, CalibrationDisposition::Fail);
         assert_eq!(summary.over_latency_probes, 1);
+    }
+
+    #[test]
+    fn calibration_challenge_ttl_is_bounded() {
+        let (m, f, s, e, r, mut p, i, d) = fixture();
+        p[0].expires_at_ms = p[0].issued_at_ms + MAX_CALIBRATION_CHALLENGE_TTL_MS + 1;
+        assert_eq!(
+            evaluate_observer_calibration(&m, &f, &s, &[], &e, &r, &p, &i, &d),
+            Err(ObserverCalibrationError::InvalidPlanInterval("trial-1".into()))
+        );
+    }
+
+    #[test]
+    fn detection_after_calibration_challenge_expiry_is_rejected() {
+        let (m, f, s, e, r, p, i, mut detections) = fixture();
+        if let ProbeObservation::Detected { detected_at_ms, .. } = &mut detections[0].observation {
+            *detected_at_ms = 151;
+        }
+        assert_eq!(
+            evaluate_observer_calibration(&m, &f, &s, &[], &e, &r, &p, &i, &detections),
+            Err(ObserverCalibrationError::DetectionAfterChallengeExpiry("trial-1".into()))
+        );
+    }
+
+    #[test]
+    fn conservative_latency_includes_both_independent_clock_uncertainties() {
+        let (m, f, s, e, r, p, mut injections, mut detections) = fixture();
+        injections[0].injector_clock_uncertainty_ms = 50;
+        if let ProbeObservation::Detected { detected_at_ms, .. } = &mut detections[0].observation {
+            *detected_at_ms = injections[0].injected_at_ms + 1_900;
+        }
+        let summary = evaluate_observer_calibration(&m, &f, &s, &[], &e, &r, &p, &injections, &detections).unwrap();
+        assert_eq!(summary.over_latency_probes, 1);
+        assert_eq!(summary.disposition, CalibrationDisposition::Fail);
     }
 
     #[test]
