@@ -51,7 +51,9 @@
     "cross_trial_state_observations",
     "shared_writable_namespace_observations",
     "allowlisted_egress_events",
-    "sensor_coverage"
+    "sensor_coverage",
+    "runtime_kernel_profile_digest",
+    "observer_fitness_receipt_digest"
   ],
   "properties": {
     "schema": {
@@ -268,6 +270,14 @@
         "$ref": "#/$defs/sensor_coverage"
       },
       "description": "Exactly one independently measured record for each required sensor role. Role completeness, identity uniqueness, sequence arithmetic, and interval binding are enforced by the Rust validator."
+    },
+    "runtime_kernel_profile_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "observer_fitness_receipt_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
     }
   },
   "description": "One independently source-authenticated receipt per planned (trial, arm). This schema validates record shape; it does not authenticate signatures or enforce sandbox policy.",
