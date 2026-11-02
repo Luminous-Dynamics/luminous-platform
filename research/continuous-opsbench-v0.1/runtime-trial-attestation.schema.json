@@ -50,7 +50,9 @@
     "disallowed_egress_successes",
     "cross_trial_state_observations",
     "shared_writable_namespace_observations",
-    "allowlisted_egress_events"
+    "allowlisted_egress_events",
+    "runtime_kernel_profile_digest",
+    "observer_fitness_receipt_digest"
   ],
   "properties": {
     "schema": {
@@ -254,6 +256,14 @@
     },
     "challenge_receipt_digest": {
       "$ref": "#/$defs/sha256"
+    },
+    "runtime_kernel_profile_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "observer_fitness_receipt_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
     }
   },
   "description": "One independently source-authenticated receipt per planned (trial, arm). This schema validates record shape; it does not authenticate signatures or enforce sandbox policy."
