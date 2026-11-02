@@ -301,6 +301,7 @@ pub struct RuntimeEvidenceBinding {
     pub observer_adapter_digest: Digest,
     pub runtime_policy_digest: Digest,
     pub evidence_bundle_digest: Digest,
+    pub issued_at_ms: u64,
     pub valid_until_ms: u64,
 }
 
@@ -488,6 +489,115 @@ impl<P: ParticipantPort> EffectBroker<P> {
             participant_evidence: evidence, finality_handle_digest: None }
     }
 
+    /// Strict act-bound dispatch for manifests that explicitly require runtime finality.
+    /// The finality authority authenticates #196 evidence and signs the exact act; the
+    /// participant sink independently verifies and atomically consumes that handle.
+    pub fn dispatch_with_finality(
+        &mut self,
+        proposal: &MutationProposal,
+        grant: Option<&AuthorityGrant>,
+        context: GateContext,
+        runtime_evidence: &RuntimeEvidenceBinding,
+        canonicalizer: &dyn CandidateActCanonicalizer,
+        finality_authority: &mut dyn ExecutionFinalityAuthority,
+    ) -> DispatchReport {
+        let grant = match grant {
+            Some(value) => value,
+            None => return self.denied_report(proposal, GateDenial::MissingGrant),
+        };
+        let manifest = match self.authorize(proposal, Some(grant), context) {
+            Ok(value) => value.clone(),
+            Err(reason) => return self.denied_report(proposal, reason),
+        };
+        if manifest.finality_mode != FinalityMode::AttestationBound {
+            return self.denied_report(proposal, GateDenial::ExecutionFinalityNotRequired);
+        }
+        if !runtime_evidence_matches_manifest(proposal, &manifest, runtime_evidence, context.now_ms) {
+            return self.denied_report(proposal, GateDenial::RuntimeEvidenceInvalid);
+        }
+
+        let attempt_key = (proposal.tenant_id.clone(), proposal.attempt_id.clone());
+        if self.used_attempts.contains(&attempt_key) {
+            return self.denied_report(proposal, GateDenial::AttemptIdReplay);
+        }
+        let logical = match self.participant.inspect_logical_action(
+            &proposal.tenant_id, &proposal.idempotency_key
+        ) {
+            Ok(value) => value,
+            Err(_) => return self.denied_report(proposal, GateDenial::ParticipantLedgerUnavailable),
+        };
+        if logical.participant_id != manifest.participant_id
+            || logical.tenant_id != proposal.tenant_id
+            || logical.idempotency_key != proposal.idempotency_key
+            || logical.ledger_cursor.is_empty()
+        {
+            return self.denied_report(proposal, GateDenial::ParticipantEvidenceMismatch);
+        }
+        if let Some(previous) = logical.latest_attempt.as_ref() {
+            if previous.participant_id != manifest.participant_id
+                || previous.tenant_id != proposal.tenant_id
+                || previous.idempotency_key != proposal.idempotency_key
+                || previous.ledger_cursor.is_empty()
+            {
+                return self.denied_report(proposal, GateDenial::ParticipantEvidenceMismatch);
+            }
+            if previous.attempt_id == proposal.attempt_id {
+                return self.denied_report(proposal, GateDenial::AttemptIdReplay);
+            }
+            if previous.request_digest != proposal.request_digest {
+                return self.denied_report(proposal, GateDenial::IdempotencyKeyConflict);
+            }
+            if previous.state != ParticipantState::NeverAccepted {
+                return self.denied_report(proposal, GateDenial::PriorAttemptUnresolved);
+            }
+        }
+
+        let request = self.dispatch_request(proposal, grant, &manifest);
+        let candidate_act = CandidateAct {
+            request: request.clone(),
+            effect_class: manifest.effect_class,
+            policy_digest: manifest.policy_digest.clone(),
+            runtime_evidence: runtime_evidence.clone(),
+        };
+        let act_digest = match canonicalizer.canonical_digest(&candidate_act) {
+            Ok(value) if value != Digest::ZERO => value,
+            _ => return self.denied_report(proposal, GateDenial::FinalityHandleInvalid),
+        };
+        let handle = match finality_authority.issue_handle(
+            &candidate_act, &act_digest, runtime_evidence, context.now_ms
+        ) {
+            Ok(value) => value,
+            Err(_) => return self.denied_report(proposal, GateDenial::FinalityVerifierUnavailable),
+        };
+        if !execution_handle_matches(
+            &handle, &candidate_act, &act_digest, &manifest, runtime_evidence, context.now_ms
+        ) {
+            return self.denied_report(proposal, GateDenial::FinalityHandleInvalid);
+        }
+
+        let gate_receipt = self.allowed_receipt(proposal);
+        // Local attempt guard is burned before the remote call; authoritative one-use
+        // handle consumption and effect commit occur atomically in the participant ledger.
+        self.used_attempts.insert(attempt_key);
+        let handle_digest = handle.handle_digest.clone();
+        let (status, evidence) = match self.participant.submit_with_finality(
+            &request, &handle, context.now_ms
+        ) {
+            Ok(value) if self.evidence_matches_finality(&value, &manifest, proposal, &handle)
+                && !matches!(value.state, ParticipantState::NeverAccepted | ParticipantState::Unknown)
+                => (Some(map_state(value.state)), Some(value)),
+            Err(ParticipantError::FinalityUnsupported | ParticipantError::FinalityRejected) => {
+                return self.denied_report(proposal, GateDenial::FinalitySinkUnsupported);
+            }
+            _ => (Some(AttemptStatus::OutcomeUnknown), None),
+        };
+        DispatchReport {
+            gate_receipt,
+            participant_status: status,
+            participant_evidence: evidence,
+            finality_handle_digest: Some(handle_digest),
+        }
+    }
     /// Query the exact attempt, then cross-check it against the participant's current
     /// logical-key index. The broker stores no participant attempt history itself.
     pub fn reconcile_same_attempt(&mut self, participant_id: &str, tenant_id: &str,
@@ -691,6 +801,74 @@ impl<P: ParticipantPort> EffectBroker<P> {
     }
 }
 
+fn runtime_evidence_matches_manifest(
+    proposal: &MutationProposal,
+    manifest: &ToolManifest,
+    evidence: &RuntimeEvidenceBinding,
+    now_ms: u64,
+) -> bool {
+    evidence.run_id == proposal.evaluation_run_id
+        && evidence.trial_id == proposal.evaluation_trial_id
+        && evidence.arm_id == proposal.evaluation_arm_id
+        && evidence.manifest_commitment != Digest::ZERO
+        && evidence.attestation_digest != Digest::ZERO
+        && evidence.challenge_receipt_digest != Digest::ZERO
+        && evidence.challenge_nonce_digest != Digest::ZERO
+        && evidence.observer_source_id == manifest.runtime_observer_source_id
+        && evidence.observer_control_domain == manifest.runtime_observer_control_domain
+        && evidence.observer_control_domain != manifest.finality_verifier_control_domain
+        && evidence.observer_adapter_digest == manifest.runtime_observer_adapter_digest
+        && evidence.runtime_policy_digest == manifest.policy_digest
+        && evidence.evidence_bundle_digest != Digest::ZERO
+        && !evidence.run_id.is_empty()
+        && !evidence.trial_id.is_empty()
+        && !evidence.arm_id.is_empty()
+        && !evidence.observer_source_id.is_empty()
+        && !evidence.observer_control_domain.is_empty()
+        && evidence.issued_at_ms <= now_ms
+        && now_ms < evidence.valid_until_ms
+        && evidence.issued_at_ms < evidence.valid_until_ms
+}
+
+fn execution_handle_matches(
+    handle: &ExecutionHandle,
+    act: &CandidateAct,
+    act_digest: &Digest,
+    manifest: &ToolManifest,
+    evidence: &RuntimeEvidenceBinding,
+    now_ms: u64,
+) -> bool {
+    let request = &act.request;
+    let lifetime = handle.expires_at_ms.checked_sub(handle.issued_at_ms);
+    !handle.handle_id.is_empty()
+        && handle.handle_digest != Digest::ZERO
+        && handle.signature.len() >= 32
+        && handle.act_digest == *act_digest
+        && handle.runtime_evidence_digest == evidence.evidence_bundle_digest
+        && handle.challenge_receipt_digest == evidence.challenge_receipt_digest
+        && handle.challenge_nonce_digest == evidence.challenge_nonce_digest
+        && handle.audience == manifest.participant_id
+        && handle.finality_sink_id == manifest.participant_id
+        && handle.tenant_id == request.tenant_id
+        && handle.principal_id == request.principal_id
+        && handle.participant_id == request.participant_id
+        && handle.grant_id == request.grant_id
+        && handle.grant_issuer == request.grant_issuer
+        && handle.grant_scope == request.grant_scope
+        && handle.manifest_digest == request.manifest_digest
+        && handle.toolchain_digest == request.toolchain_digest
+        && handle.policy_digest == request.policy_digest
+        && handle.target_digest == request.target_digest
+        && handle.request_digest == request.request_digest
+        && handle.attempt_id == request.attempt_id
+        && handle.idempotency_key == request.idempotency_key
+        && handle.verifier_id == manifest.finality_verifier_id
+        && handle.verifier_control_domain == manifest.finality_verifier_control_domain
+        && handle.issued_at_ms <= now_ms
+        && now_ms < handle.expires_at_ms
+        && handle.expires_at_ms <= evidence.valid_until_ms
+        && lifetime.map(|ttl| ttl > 0 && ttl <= manifest.max_finality_handle_ttl_ms).unwrap_or(false)
+}
 fn map_state(state: ParticipantState) -> AttemptStatus {
     match state {
         ParticipantState::NeverAccepted => AttemptStatus::NeverAccepted,
