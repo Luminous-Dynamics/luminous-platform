@@ -52,6 +52,9 @@ pub struct ToolManifest {
     pub finality_mode: FinalityMode,
     pub finality_verifier_id: String,
     pub finality_verifier_control_domain: String,
+    pub runtime_observer_source_id: String,
+    pub runtime_observer_control_domain: String,
+    pub runtime_observer_adapter_digest: Digest,
     pub max_finality_handle_ttl_ms: u64,
     pub max_risk_level: u8,
     pub allowed_environments: Vec<String>,
@@ -85,6 +88,10 @@ pub struct MutationProposal {
     pub tenant_id: String,
     pub principal_id: String,
     pub episode_id: String,
+    /// Sealed certification coordinates. Required when the manifest mandates finality.
+    pub evaluation_run_id: String,
+    pub evaluation_trial_id: String,
+    pub evaluation_arm_id: String,
     pub plan_digest: Digest,
     pub step_id: String,
     pub tool_id: String,
@@ -113,6 +120,9 @@ pub struct AuthorityGrant {
     pub tenant_id: String,
     pub principal_id: String,
     pub episode_id: String,
+    pub evaluation_run_id: String,
+    pub evaluation_trial_id: String,
+    pub evaluation_arm_id: String,
     pub plan_digest: Digest,
     pub step_id: String,
     pub tool_id: String,
@@ -250,6 +260,9 @@ pub struct DispatchRequest {
     pub principal_id: String,
     pub plan_digest: Digest,
     pub episode_id: String,
+    pub evaluation_run_id: String,
+    pub evaluation_trial_id: String,
+    pub evaluation_arm_id: String,
     pub step_id: String,
     pub tool_id: String,
     pub operation_id: String,
@@ -287,6 +300,7 @@ pub struct RuntimeEvidenceBinding {
     pub observer_control_domain: String,
     pub observer_adapter_digest: Digest,
     pub runtime_policy_digest: Digest,
+    pub evidence_bundle_digest: Digest,
     pub valid_until_ms: u64,
 }
 
@@ -297,9 +311,7 @@ pub struct CandidateAct {
     pub request: DispatchRequest,
     pub effect_class: EffectClass,
     pub policy_digest: Digest,
-    pub runtime_evidence_digest: Digest,
-    pub challenge_receipt_digest: Digest,
-    pub challenge_nonce_digest: Digest,
+    pub runtime_evidence: RuntimeEvidenceBinding,
 }
 
 /// Adapter for deterministic canonicalization (for example deterministic CBOR + SHA-256).
@@ -558,7 +570,14 @@ impl<P: ParticipantPort> EffectBroker<P> {
         if m.finality_mode == FinalityMode::AttestationBound
             && (m.finality_verifier_id.is_empty()
                 || m.finality_verifier_control_domain.is_empty()
-                || m.max_finality_handle_ttl_ms == 0)
+                || m.runtime_observer_source_id.is_empty()
+                || m.runtime_observer_control_domain.is_empty()
+                || m.runtime_observer_control_domain == m.finality_verifier_control_domain
+                || m.runtime_observer_adapter_digest == Digest::ZERO
+                || m.max_finality_handle_ttl_ms == 0
+                || p.evaluation_run_id.is_empty()
+                || p.evaluation_trial_id.is_empty()
+                || p.evaluation_arm_id.is_empty())
         {
             return Err(GateDenial::FinalityVerifierUnavailable);
         }
@@ -566,6 +585,9 @@ impl<P: ParticipantPort> EffectBroker<P> {
             && g.principal_id == p.principal_id && g.episode_id == p.episode_id
             && g.plan_digest == p.plan_digest && g.step_id == p.step_id
             && g.tool_id == p.tool_id && g.operation_id == p.operation_id
+            && g.evaluation_run_id == p.evaluation_run_id
+            && g.evaluation_trial_id == p.evaluation_trial_id
+            && g.evaluation_arm_id == p.evaluation_arm_id
             && g.manifest_version == p.manifest_version && g.manifest_digest == p.manifest_digest
             && g.toolchain_id == p.toolchain_id && g.toolchain_digest == p.toolchain_digest
             && g.target_digest == p.target_digest && g.request_digest == p.request_digest
@@ -621,6 +643,9 @@ impl<P: ParticipantPort> EffectBroker<P> {
             principal_id: proposal.principal_id.clone(),
             plan_digest: proposal.plan_digest.clone(),
             episode_id: proposal.episode_id.clone(),
+            evaluation_run_id: proposal.evaluation_run_id.clone(),
+            evaluation_trial_id: proposal.evaluation_trial_id.clone(),
+            evaluation_arm_id: proposal.evaluation_arm_id.clone(),
             step_id: proposal.step_id.clone(),
             tool_id: proposal.tool_id.clone(),
             operation_id: proposal.operation_id.clone(),
