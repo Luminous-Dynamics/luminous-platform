@@ -81,3 +81,10 @@ The `src/benchmark_audit.rs` module audits four independently versioned componen
 The output is a four-component Pass/Fail/Indeterminate vector. It reports per-component false-positive, false-negative and mutation-miss rates; each rate is null when its denominator is unavailable. It does not emit a scalar benchmark-validity score. See `BENCHMARK_VALIDITY_AUDIT_V0_1.md`, `benchmark-cohort-contract.schema.json`, `benchmark-audit-controls.schema.json` and `benchmark-audit-result.schema.json`.
 
 Minimum controls: 40 known-answer controls (at least 10 positive, 10 negative, and 5 per component; each component also needs at least 2 positive and 2 negative), 60 mutations (at least 10 per component, including both expected-reject and expected-accept controls), 10 metamorphic task-equivalence controls, and all six component-pair interactions.
+
+
+## Portable offline evidence bundles
+
+The additive `src/bundle.rs` verifier transports the existing evidence and claim graph without creating another participant ledger or policy engine. It requires an offline verification mode, eight distinct run trust domains, complete candidate/baseline planned-arm subjects, content-addressed artifact inventory, a pinned trust-policy snapshot and a dependency-checked claim DAG. Mutable external references, path traversal and public embedding of active sealed payload/private oracle bytes are rejected. Missing required artifacts remain Indeterminate.
+
+See `OFFLINE_EVIDENCE_BUNDLE_V0_1.md` and the strict `evidence-bundle.schema.json`, `evidence-trust-policy.schema.json`, and `evidence-verification-receipt.schema.json` schemas. Signature verification, trust-root/revocation authentication, archive/bundle digest recomputation and no-network sandboxing remain with the existing typed source-evidence adapter and the offline CLI environment. The Rust module validates the resulting structural bindings only.
