@@ -535,22 +535,33 @@ pub fn evaluate(
     let (chosen, explanation) = match strategy {
         Strategy::BestRtt => (
             best_rtt_single,
-            vec!["selected the eligible single path with the lowest estimated completion time".to_owned()],
+            vec![
+                "selected the eligible single path with the lowest estimated completion time".to_owned(),
+            ],
         ),
         Strategy::LowestCost => (
             cheapest_single,
-            vec!["selected the lowest estimated cost single path that meets the declared hard limits".to_owned()],
+            vec![
+                "selected the lowest estimated cost single path that meets the declared hard limits"
+                    .to_owned(),
+            ],
         ),
         Strategy::AggregateCapacity => {
             if let Some(candidate) = multi {
                 (
                     Some(candidate),
-                    vec!["distributed payload by effective path capacity within per-path allowance and session budgets".to_owned()],
+                    vec![
+                        "distributed payload by effective path capacity within per-path allowance and session budgets"
+                            .to_owned(),
+                    ],
                 )
             } else {
                 (
                     best_single,
-                    vec!["multipath candidate unavailable or inadmissible; fell back to the best eligible single path".to_owned()],
+                    vec![
+                        "multipath candidate unavailable or inadmissible; fell back to the best eligible single path"
+                            .to_owned(),
+                    ],
                 )
             }
         }
@@ -564,17 +575,25 @@ pub fn evaluate(
             if use_multi {
                 (
                     multi,
-                    vec!["multipath met the workload-specific improvement threshold and all hard constraints".to_owned()],
+                    vec![
+                        "multipath met the workload-specific improvement threshold and all hard constraints"
+                            .to_owned(),
+                    ],
                 )
             } else {
                 let candidate = match request.intent {
                     TrafficIntent::Interactive => best_single,
                     TrafficIntent::BulkTransfer => best_single.or(multi),
-                    TrafficIntent::Messaging | TrafficIntent::CostSensitive => cheapest_single.or(multi),
+                    TrafficIntent::Messaging | TrafficIntent::CostSensitive => {
+                        cheapest_single.or(multi)
+                    }
                 };
                 (
                     candidate,
-                    vec!["multipath did not meet the declared gain threshold or single-path intent preference was safer".to_owned()],
+                    vec![
+                        "multipath did not meet the declared gain threshold or single-path intent preference was safer"
+                            .to_owned(),
+                    ],
                 )
             }
         }
