@@ -486,6 +486,10 @@ pub fn evaluate_monitoring_trial(
                 observation.condition_digest == *condition
                     && observation.observed_at_ms >= wait.requested_at_ms
                     && observation.observed_at_ms <= wait.returned_at_ms
+                    && events.iter().any(|event| {
+                        event.condition_digest == *condition
+                            && event_active_at(event, observation.observed_at_ms)
+                    })
             });
             if !observed {
                 return Err(MonitoringError::WaitWithoutObservation(wait.wait_id.clone()));
@@ -536,11 +540,9 @@ pub fn evaluate_monitoring_trial(
     let mut missed_detections = 0usize;
     let mut correct_actions = 0usize;
     let mut missed_actions = 0usize;
-    let mut late_detections = 0usize;
     let mut late_action_ids = BTreeSet::new();
     let mut premature_actions = 0usize;
     let mut false_actions = 0usize;
-    let mut action_ids = BTreeSet::new();
     let mut unauthorized_attempts = 0usize;
     let mut unauthorized_committed_effects = 0usize;
     let mut unknown_effect_outcomes = 0usize;
@@ -1373,6 +1375,20 @@ mod tests {
         assert_eq!(result.correct_action_delta, 0);
         assert_eq!(result.missed_detection_delta, 0);
         assert_eq!(result.observation_call_delta, 0);
+    }
+
+    #[test]
+    fn event_wait_cannot_be_satisfied_by_a_stale_pre_event_observation() {
+        let c = contract(EvaluationArm::Candidate, MonitoringTaskKind::UrgentEphemeral);
+        let e = vec![event(2_000, Some(2_500))];
+        let o = vec![observation(EvaluationArm::Candidate,"stale",1,1_900,true,
+            ObservationPurpose::ConditionCheck,None)];
+        let w = vec![wait(EvaluationArm::Candidate,"wake",2,1_800,2_100,
+            WaitStrategy::ConditionWait,WaitOutcome::ConditionSatisfied,Some(d(2)))];
+        assert_eq!(
+            evaluate_monitoring_trial(&c,&e,&o,&w,&[],&resources()),
+            Err(MonitoringError::WaitWithoutObservation("wake".into()))
+        );
     }
 
     #[test]
