@@ -12,8 +12,8 @@ use crate::sealed::{
     TrialDisposition, TrialEvent, TrialResult,
 };
 use crate::observer_fitness::{
-    validate_observer_fitness_bundle, ObserverFitnessBundle, ObserverFitnessError,
-    ObserverFitnessSummary,
+    validate_observer_fitness_bundle, ObserverFitnessBatchSummary, ObserverFitnessBundle,
+    ObserverFitnessError, ObserverFitnessSummary,
 };
 use crate::Digest;
 use std::collections::{BTreeMap, BTreeSet};
@@ -275,6 +275,27 @@ fn validate_runtime_attestations(
         return Err(RuntimeAttestationError::LedgerManifestMismatch);
     }
     validate_ledger_binding(manifest, ledger)?;
+    if fitness_summary.run_id != manifest.run_id
+        || fitness_summary.plan_digest != manifest.observer_fitness_plan_digest
+        || fitness_summary.batches.is_empty()
+    {
+        return Err(RuntimeAttestationError::LedgerManifestMismatch);
+    }
+    let mut fitness_index: BTreeMap<&Digest, &ObserverFitnessBatchSummary> = BTreeMap::new();
+    let mut calibration_identities = BTreeSet::new();
+    for fitness in &fitness_summary.batches {
+        if fitness_index.insert(&fitness.receipt_digest, fitness).is_some() {
+            return Err(RuntimeAttestationError::ObserverFitnessInvalid(
+                ObserverFitnessError::ZeroOrDuplicateDigest,
+            ));
+        }
+        if !calibration_identities.insert(fitness.calibration_runtime_digest.clone())
+            || !calibration_identities.insert(fitness.calibration_namespace_digest.clone())
+        {
+            return Err(RuntimeAttestationError::ObserverFitnessRuntimeIdentityCollision);
+        }
+    }
+    let mut used_fitness_receipts = BTreeSet::new();
 
     let mut scenario_index: BTreeMap<&str, &ScenarioReceipt> = BTreeMap::new();
     for scenario in scenarios {
@@ -428,6 +449,28 @@ fn validate_runtime_attestations(
             challenge,
             receipt,
         )?;
+        let fitness = fitness_index
+            .get(&receipt.observer_fitness_receipt_digest)
+            .copied()
+            .ok_or_else(|| RuntimeAttestationError::ObserverFitnessReceiptMissing(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ))?;
+        let first_activity = result.first_started_at_ms.unwrap_or(result.terminal_at_ms);
+        if first_activity < fitness.valid_from_ms || result.terminal_at_ms > fitness.expires_at_ms {
+            return Err(RuntimeAttestationError::ObserverFitnessReceiptExpired(
+                receipt.trial_id.clone(),
+                receipt.arm,
+            ));
+        }
+        if receipt.runtime_instance_digest == fitness.calibration_runtime_digest
+            || receipt.runtime_instance_digest == fitness.calibration_namespace_digest
+            || receipt.writable_state_namespace_digest == fitness.calibration_runtime_digest
+            || receipt.writable_state_namespace_digest == fitness.calibration_namespace_digest
+        {
+            return Err(RuntimeAttestationError::ObserverFitnessRuntimeIdentityCollision);
+        }
+        used_fitness_receipts.insert(receipt.observer_fitness_receipt_digest.clone());
         if receipt.clock_uncertainty_ms > MAX_CLOCK_UNCERTAINTY_MS {
             return Err(RuntimeAttestationError::ClockUncertaintyExceeded(
                 receipt.trial_id.clone(),
@@ -487,9 +530,6 @@ fn validate_runtime_attestations(
                 receipt.arm,
             ));
         }
-        let first_activity = result
-            .first_started_at_ms
-            .unwrap_or(result.terminal_at_ms);
         if receipt.measurement_start_ms.saturating_add(receipt.clock_uncertainty_ms)
                 > first_activity
             || receipt.measurement_end_ms.saturating_sub(receipt.clock_uncertainty_ms)
@@ -598,6 +638,11 @@ fn validate_runtime_attestations(
         }
     }
 
+    if used_fitness_receipts.len() != fitness_summary.batches.len() {
+        return Err(RuntimeAttestationError::ObserverFitnessInvalid(
+            ObserverFitnessError::FitnessReceiptBindingMismatch("unused-fitness-batch".into()),
+        ));
+    }
     if sequences.len() != attestations.len() {
         return Err(RuntimeAttestationError::DuplicateObserverSequence);
     }
