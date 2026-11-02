@@ -507,6 +507,7 @@ pub fn validate_benchmark_component_audit(
         result.mutation_miss_rate_ppm = (result.expected_rejection_controls > 0)
             .then(|| rate_ppm(result.missed_mutations, result.expected_rejection_controls));
         if *component == BenchmarkComponent::EnvironmentTools
+            && result.disposition == AuditDisposition::Pass
             && result.reset_repetitions < cohort.environment.minimum_reset_repetitions
         {
             result.disposition = AuditDisposition::Indeterminate;
@@ -666,6 +667,11 @@ fn validate_components<'a>(
         }
         if index.len() > REQUIRED_COMPONENTS {
             return Err(BenchmarkAuditError::InvalidComponentEvidence(component.component));
+        }
+    }
+    for component in BenchmarkComponent::ALL {
+        if !index.contains_key(&component) {
+            return Err(BenchmarkAuditError::MissingComponent(component));
         }
     }
     let expected_task_component = index.get(&BenchmarkComponent::UserTask)
@@ -1168,9 +1174,9 @@ mod tests {
         ).unwrap();
         let user = result.components.iter()
             .find(|component| component.component == BenchmarkComponent::UserTask).unwrap();
-        assert_eq!(user.false_positive_rate_ppm, 200_000);
-        assert_eq!(user.false_negative_rate_ppm, 200_000);
-        assert_eq!(user.mutation_miss_rate_ppm, 66_666);
+        assert_eq!(user.false_positive_rate_ppm, Some(200_000));
+        assert_eq!(user.false_negative_rate_ppm, Some(200_000));
+        assert_eq!(user.mutation_miss_rate_ppm, Some(66_666));
         assert_eq!(user.expected_rejection_controls, 15);
     }
 
