@@ -24,6 +24,7 @@
     "observer_control_domain",
     "observer_adapter_digest",
     "challenge_nonce_digest",
+    "challenge_receipt_digest",
     "challenge_authority_id",
     "challenge_authority_control_domain",
     "challenge_issued_at_ms",
@@ -250,6 +251,9 @@
       "type": "integer",
       "minimum": 0,
       "description": "Must be strictly after measurement_end_ms and issued_at_ms including clock uncertainty; TTL from challenge_issued_at_ms must not exceed 86,400,000 ms."
+    },
+    "challenge_receipt_digest": {
+      "$ref": "#/$defs/sha256"
     }
   },
   "description": "One independently source-authenticated receipt per planned (trial, arm). This schema validates record shape; it does not authenticate signatures or enforce sandbox policy."
