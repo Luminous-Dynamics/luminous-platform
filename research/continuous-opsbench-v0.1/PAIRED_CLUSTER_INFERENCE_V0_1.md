@@ -64,7 +64,12 @@ Algorithm identifier: `splitmix64-paired-cluster-bootstrap-v1`.
 4. Calculate equally weighted means across the sampled paired clusters for Candidate/ Baseline lower and upper rates, indeterminate rates, and the two paired-effect endpoints.
 5. Sort each replicate statistic and report nearest-rank percentile intervals. For B replicates and quantile q, the index is `ceil(q × B) − 1`.
 
-The default confirmatory target is 10,000 replicates; the implementation accepts 1,000-100,000. The PRNG is **not cryptographic** and is not used for treatment assignment. The seed digest and exact plan must be frozen/authenticated upstream. Bootstrap reproducibility does not establish randomization quality or causal identification.
+The evaluator has two claim modes:
+
+- **Exploratory:** accepts the configured pilot sample (at least two clusters) and reports effects/intervals, but can never return a superiority verdict. Its verdict is `exploratory_only` unless the indeterminate-coverage gate fails.
+- **Confirmatory:** requires at least 500 independent clusters and at least 10,000 bootstrap replicates. Only this mode can return `superiority_established`, and then only if the conservative effect and indeterminate-coverage gates both pass.
+
+The general implementation accepts 1,000-100,000 bootstrap replicates; confirmatory has the higher floor. The PRNG is **not cryptographic** and is not used for treatment assignment. The seed digest and exact plan must be frozen/authenticated upstream. Bootstrap reproducibility does not establish randomization quality or causal identification.
 
 ## Superiority gate
 
@@ -75,11 +80,14 @@ The benchmark reports:
 - confidence intervals for conservative lower and upper paired-effect endpoints;
 - point estimates for the paired effect bounds and indeterminate rates.
 
-Superiority is established only when:
-1. the lower confidence bound for the conservative Candidate-minus-Baseline effect exceeds the preregistered minimum meaningful effect; and
-2. the **upper confidence bound** on the mean indeterminate rate for both arms is no greater than the preregistered indeterminate ceiling.
+A superiority claim is allowed only in Confirmatory mode and only when:
+1. at least 500 independent paired clusters and at least 10,000 bootstrap replicates are used;
+2. the lower confidence bound for the conservative Candidate-minus-Baseline effect exceeds the preregistered minimum meaningful effect; and
+3. the **upper confidence bound** on the mean indeterminate rate for both arms is no greater than the preregistered indeterminate ceiling.
 
-If the indeterminate upper bound exceeds its ceiling, the verdict is `indeterminate_coverage_exceeded`, not success or failure. Otherwise, failure to clear the effect threshold is `not_established`. There is no compensatory aggregate score.
+Exploratory mode always returns `exploratory_only` (unless coverage itself exceeds its ceiling), irrespective of the size of the observed effect.
+
+If the indeterminate upper bound exceeds its ceiling, the verdict is `indeterminate_coverage_exceeded`, not success or failure. Exploratory runs are labelled `exploratory_only`; confirmatory runs that fail to clear the effect threshold are `not_established`. There is no compensatory aggregate score.
 
 ## Rare-event safety bounds
 
