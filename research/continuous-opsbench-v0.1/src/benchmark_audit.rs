@@ -330,6 +330,11 @@ pub fn validate_benchmark_component_audit(
     }
 
     let component_index = validate_components(manifest, cohort)?;
+    if component_index.values().any(|component|
+        component.control_domain == cohort.auditor_control_domain)
+    {
+        return Err(BenchmarkAuditError::AuditorControlDomainCollision);
+    }
     validate_tasks(cohort)?;
     let reset_repetitions = validate_environment(&cohort.environment, cohort.issued_at_ms)?;
     let ground_truth_component = component_index.get(&BenchmarkComponent::GroundTruth)
@@ -653,6 +658,7 @@ fn validate_environment(
     }
     let mut ids = BTreeSet::new();
     let mut repetition_ids = BTreeSet::new();
+    let mut reset_times = BTreeMap::new();
     for receipt in &environment.reset_receipts {
         if !valid_id(&receipt.reset_id) || !ids.insert(receipt.reset_id.as_str())
             || receipt.repetition == 0
@@ -662,6 +668,7 @@ fn validate_environment(
         }
         if receipt.reset_completed_at_ms == 0
             || receipt.reset_completed_at_ms > audit_issued_at_ms
+            || reset_times.insert(receipt.repetition, receipt.reset_completed_at_ms).is_some()
         {
             return Err(BenchmarkAuditError::InvalidEnvironmentContract);
         }
@@ -671,6 +678,18 @@ fn validate_environment(
         if !receipt.fault_activation_control_passed {
             return Err(BenchmarkAuditError::FaultActivationControlFailed(receipt.reset_id.clone()));
         }
+    }
+    if repetition_ids.len() != environment.reset_receipts.len()
+        || repetition_ids.iter().enumerate().any(|(index, repetition)|
+            *repetition != (index as u32 + 1))
+        || reset_times.values().copied().collect::<BTreeSet<_>>().len()
+            != reset_times.len()
+    {
+        return Err(BenchmarkAuditError::InvalidEnvironmentContract);
+    }
+    let ordered_times: Vec<u64> = reset_times.values().copied().collect();
+    if ordered_times.windows(2).any(|pair| pair[0] >= pair[1]) {
+        return Err(BenchmarkAuditError::InvalidEnvironmentContract);
     }
     Ok(environment.reset_receipts.len())
 }
