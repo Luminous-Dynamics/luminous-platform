@@ -305,7 +305,7 @@
           "enum": [
             "planned_unpinned",
             "planned",
-            "blocked_pending_bpsac_audit",
+            "blocked_pending_bpsec_audit",
             "conditional_interoperability_comparator"
           ]
         },
