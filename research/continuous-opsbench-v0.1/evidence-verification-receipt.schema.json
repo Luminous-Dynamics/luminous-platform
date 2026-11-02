@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminousdynamics.io/schemas/continuous-opsbench-verification-receipt-v0.1.json",
+  "title": "Continuous OpsBench deterministic offline verification receipt v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "bundle_id",
+    "bundle_digest",
+    "run_id",
+    "manifest_commitment",
+    "verifier_id",
+    "verifier_digest",
+    "trust_policy_digest",
+    "trust_roots_digest",
+    "revocation_policy_digest",
+    "verified_at_ms",
+    "artifact_count",
+    "embedded_artifact_count",
+    "commitment_only_artifact_count",
+    "unavailable_required_artifacts",
+    "claim_count",
+    "pass_claims",
+    "fail_claims",
+    "indeterminate_claims",
+    "disposition"
+  ],
+  "properties": {
+    "schema": {
+      "const": "continuous-opsbench-verification-receipt-v0.1"
+    },
+    "bundle_id": {
+      "$ref": "#/$defs/id"
+    },
+    "bundle_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "run_id": {
+      "$ref": "#/$defs/id"
+    },
+    "manifest_commitment": {
+      "$ref": "#/$defs/sha256"
+    },
+    "verifier_id": {
+      "$ref": "#/$defs/id"
+    },
+    "verifier_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "trust_policy_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "trust_roots_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "revocation_policy_digest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "verified_at_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "artifact_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "embedded_artifact_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "commitment_only_artifact_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unavailable_required_artifacts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "claim_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "pass_claims": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "fail_claims": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "indeterminate_claims": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "disposition": {
+      "enum": [
+        "pass",
+        "fail",
+        "indeterminate"
+      ]
+    }
+  }
+}
