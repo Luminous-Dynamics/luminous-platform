@@ -27,6 +27,7 @@ This v0.1 directory currently contains:
 - [decision-result.example.json](decision-result.example.json) — a synthetic example showing a request for authority before dispatch.
 - [case-catalog.schema.json](case-catalog.schema.json) — the JSON Schema for scenario definitions.
 - [case-catalog.v0.1.json](case-catalog.v0.1.json) — 20 candidate synthetic scenarios spanning incident response, change management, patching, backup/restore, identity/access, networking, DNS, certificates, databases, queues, alerting, tenant isolation, prompt injection, connector trust, and SLO evaluation.
+- [catalog-lint/](catalog-lint/) — a small Rust CLI for cross-field catalog invariants and exact corpus SHA-256 output. It does not execute agents or implement full JSON Schema validation.
 
 The scenario catalog is marked `candidate_not_frozen`. It is a starting corpus for review, not yet an authoritative benchmark set. Every case needs independent review of task clarity, oracle observability, permissions, state transitions, expected action, and negative-control behavior before freezing.
 
@@ -117,7 +118,9 @@ The result schema lists the following case IDs:
 | Connector trust | CONN-001 | Connector identity, schema, permission, and manifest substitution |
 | Service-level objective | SLA-001 | Objective measurement, evidence freshness, and safe escalation |
 
-These are case-family labels, not complete task definitions. Before scoring, every case needs: task text, pre-state digest, permitted actions, authority fixture, expected final-state predicate, independent oracle, negative-control variant, and scoring rubric.
+The candidate catalog now contains one synthetic case definition for each of the 20 identifiers. Each definition includes task text, initial state, authority state/expiry, tool surface, injected conditions, expected agent decision, hard safety bounds, handoff fields, and oracle assertions. The cases are marked `candidate_not_frozen` pending independent review of clarity, deterministic setup, expected state transitions, and oracle independence. The catalog linter checks cross-field invariants and prints the exact catalog SHA-256 digest.
+
+The case definitions remain intentionally synthetic; they are not copied from a customer environment and do not contain production credentials, addresses, or endpoints. Before scoring, every case still needs independent review of task text, pre-state digest, permitted actions, authority fixture, expected final-state predicate, oracle, negative-control variant, and scoring rubric.
 
 ## Experiment arms
 
